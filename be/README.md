@@ -337,6 +337,7 @@ Handshake từ trình duyệt có `Origin` ngoài `CORS_ORIGINS` / `FRONTEND_URL
 npm --workspace=be test                 # unit test (không cần database) — CI chạy bước này
 
 # e2e cần PostgreSQL đã áp dụng migration + Redis + SeaweedFS (upload thật). CI chạy y hệt (job `e2e`).
+# SeaweedFS chạy ở cổng STORAGE_PORT của .env gốc (mặc định 8333): test/e2e-env.ts tự đọc cổng này.
 docker compose up -d postgres redis seaweedfs storage-init
 npm --workspace=be run db:deploy
 npm --workspace=be run test:e2e

@@ -106,7 +106,7 @@ describe('Print export (e2e)', () => {
     expect(url.pathname).toMatch(/^\/wrapfit-private\/private\/projects\/[0-9a-f-]{36}\/exports\/[0-9a-f-]{36}\.pdf$/);
     expect((await fetch(`${url.origin}${url.pathname}`)).status).toBe(403);
     const key = url.pathname.replace(/^\/wrapfit-private\//, '');
-    expect((await fetch(`http://localhost:8333/wrapfit/${key}`)).status).toBe(404);
+    expect((await fetch(`${process.env.STORAGE_PUBLIC_URL}/${key}`)).status).toBe(404);
   });
 
   it('renders SVG and DXF too', async () => {
