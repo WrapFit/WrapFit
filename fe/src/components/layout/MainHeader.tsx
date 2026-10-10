@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ROUTES } from '@/constants';
+import { useAuth } from '@/features/auth';
+import { displayName, loginHref } from './account';
 import { BrandLogo } from './BrandLogo';
 import { UserAvatarDropdown } from './UserAvatarDropdown';
 
@@ -99,11 +102,27 @@ export const MEGA_MENU_DATA: MegaMenuSection[] = [
   },
 ];
 
+/** Menu entries that only make sense for a visitor who is not signed in. */
+const ANONYMOUS_ONLY_HREFS = new Set<string>([ROUTES.login, ROUTES.register]);
+
 export function MainHeader({ className = '', showCta = true }: MainHeaderProps) {
   const pathname = usePathname();
+  const { user, status } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Signed in: no "Đăng nhập" / "Đăng ký" entries in the menus.
+  const menuSections = useMemo(
+    () =>
+      user
+        ? MEGA_MENU_DATA.map((section) => ({
+            ...section,
+            items: section.items.filter((item) => !ANONYMOUS_ONLY_HREFS.has(item.href)),
+          }))
+        : MEGA_MENU_DATA,
+    [user],
+  );
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -240,7 +259,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
 
               {/* 5-Column Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                {MEGA_MENU_DATA.map((section, idx) => (
+                {menuSections.map((section, idx) => (
                   <div key={idx} className="space-y-3.5">
                     <div className="flex items-center justify-between pb-2 border-b border-stone-100">
                       <div className="flex items-center gap-2">
@@ -345,7 +364,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
 
             {/* Mobile Categorized Sections */}
             <div className="space-y-4">
-              {MEGA_MENU_DATA.map((section, idx) => (
+              {menuSections.map((section, idx) => (
                 <div key={idx} className="space-y-2">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400 font-['JetBrains_Mono']">
                     {section.title}
@@ -370,13 +389,29 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             </div>
 
             <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
-              <Link
-                href="/auth/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 py-2.5 text-center text-xs font-semibold rounded-full bg-stone-100 text-stone-800"
-              >
-                Đăng Nhập
-              </Link>
+              {status === 'loading' ? (
+                // Neutral placeholder while the session is checked: no flash of the login button.
+                <span aria-hidden className="flex-1 h-[38px] rounded-full bg-stone-100 animate-pulse motion-reduce:animate-none" />
+              ) : user ? (
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 min-w-0 py-2.5 px-3 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-full bg-stone-100 text-stone-800"
+                >
+                  <span className="material-symbols-outlined text-base text-stone-500" aria-hidden>
+                    account_circle
+                  </span>
+                  <span className="truncate">{displayName(user)}</span>
+                </Link>
+              ) : (
+                <Link
+                  href={loginHref(pathname)}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 py-2.5 text-center text-xs font-semibold rounded-full bg-stone-100 text-stone-800"
+                >
+                  Đăng Nhập
+                </Link>
+              )}
               <Link
                 href="/editor/step-1"
                 onClick={() => setMobileMenuOpen(false)}
