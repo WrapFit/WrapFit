@@ -9,6 +9,7 @@ export const SOURCE_DIR = path.join(STITCH_DIR, 'source');
 export const MANIFEST_FILE = path.join(STITCH_DIR, 'screens.json');
 export const OVERRIDES_FILE = path.join(STITCH_DIR, 'overrides.json');
 export const ASSET_INDEX_FILE = path.join(STITCH_DIR, 'assets.json');
+export const LOCK_FILE = path.join(STITCH_DIR, 'generated.lock.json');
 
 export const APP_DIR = path.join(FE_ROOT, 'src/app');
 export const VIEWS_DIR = path.join(FE_ROOT, 'src/views');

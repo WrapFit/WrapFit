@@ -70,6 +70,18 @@ fe/
 
 Quy tắc: không sửa file có banner `AUTO-GENERATED`. Muốn đổi, sửa `stitch/source`, `stitch/overrides.json` hoặc `scripts/stitch`, rồi chạy `npm run stitch:sync`.
 
+`status` trong `screens.json` (cập nhật 2026-10-11):
+
+| Status | Generator sinh | Dùng khi |
+|---|---|---|
+| `converted` | view, page, CSS, token, behavior | Màn hình tĩnh, giữ đúng bản Stitch |
+| `wired` | CSS, token, behavior; **không** ghi view / page | View viết tay bằng React và nối API ([`12`](12_FE_BE_INTEGRATION_PLAN.md)), vẫn dùng CSS và token của screen. `stitch:parity` bỏ qua, trừ khi có `--include-wired` |
+| `approximation`, `manual` | không sinh gì | Trang viết tay không có HTML Stitch; `manual` còn hiện BottomNavBar |
+
+**Chống ghi đè sửa tay**: `stitch/generated.lock.json` lưu hash mọi file generator đã ghi. Lần sync sau chỉ thay / xoá
+file còn đúng nội dung đó; file đã sửa tay (25 file lúc tạo lock: view, CSS, behavior của các màn được chỉnh header,
+sidebar, link) được giữ nguyên và liệt kê cuối output. `npm run stitch:sync -- --force` ghi đè cả những file này.
+
 ### 3.1. Trang (`src/views/**/index.tsx` + `src/app/**/page.tsx`)
 - `<body>` của Stitch thành `<div data-stitch="<slug>">` mang nguyên class và style của body.
 - Giữ khoảng trắng giữa các phần tử inline (JSX mặc định sẽ nuốt), sửa hoa/thường tag SVG filter, thuộc tính số (`tabIndex={0}`), form state không kiểm soát (`defaultValue`, `defaultChecked`).
@@ -131,7 +143,7 @@ Mỗi token mà một screen Stitch định nghĩa trở thành biến CSS (`--s
 ## 6. Lệnh
 
 ```bash
-npm run stitch:sync -w fe        # sinh lại trang, CSS, behavior từ fe/stitch
+npm run stitch:sync -w fe        # sinh lại trang, CSS, behavior từ fe/stitch (giữ file đã sửa tay; -- --force để ghi đè)
 npm run stitch:parity -w fe      # so ảnh với Stitch (cần dev server ở :3000)
 npm run build -w fe              # build production
 ```

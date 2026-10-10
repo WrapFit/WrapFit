@@ -7,6 +7,7 @@
  *   npm run stitch:parity                     all screens with a source HTML
  *   npm run stitch:parity -- admin pricing    only slugs containing these words
  * Options: --base-url=http://localhost:3000  --threshold=1 (max % differing pixels)
+ *          --include-wired (also compare "wired" screens, whose views show live API data)
  *
  * Output: .visual-parity/<slug>.png = Stitch | app | diff, and report.json.
  * Exits 1 when a screen differs by more than the threshold.
@@ -79,7 +80,10 @@ function sideBySide(images, width, height) {
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
   const screens = readManifest().screens.filter(
-    (s) => fs.existsSync(path.join(SOURCE_DIR, `${s.id}.html`)) && (!filters.length || filters.some((f) => s.slug.includes(f))),
+    (s) =>
+      fs.existsSync(path.join(SOURCE_DIR, `${s.id}.html`)) &&
+      (s.status !== 'wired' || 'include-wired' in options) &&
+      (!filters.length || filters.some((f) => s.slug.includes(f))),
   );
 
   const report = [];
