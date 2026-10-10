@@ -1,6 +1,6 @@
 import React from "react";
 import { fontVariables } from "@/assets/fonts";
-import { MainLayout } from "@/layouts/main";
+import { AppProviders, MainLayout } from "@/layouts/main";
 import "@/assets/styles/globals.css";
 
 export const metadata = {
@@ -16,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="vi" className={fontVariables}>
       <body className="antialiased min-h-screen bg-paper-ivory text-ink-primary font-sans selection:bg-brand-gold/30 selection:text-brand-forest">
-        <MainLayout>{children}</MainLayout>
+        <AppProviders>
+          <MainLayout>{children}</MainLayout>
+        </AppProviders>
       </body>
     </html>
   );
