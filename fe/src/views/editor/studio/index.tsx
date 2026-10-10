@@ -62,7 +62,7 @@ import { StickerAssetBank } from "@/features/studio/components/StickerAssetBank"
 import { Step1BoxTemplatePicker } from "@/features/studio/components/Step1BoxTemplatePicker";
 import { Step2DimensionAndMaterial } from "@/features/studio/components/Step2DimensionAndMaterial";
 import { Step4Model3DWithEnvironments } from "@/features/studio/components/Step4Model3DWithEnvironments";
-import { apiClient, ApiError, ExportJobStatus, SnapshotDto } from "@/api";
+import { apiClient, ApiError, ExportJob, SnapshotSummary } from "@/api";
 import { materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 
 export default function PackagingStudioPage() {
@@ -139,10 +139,10 @@ export default function PackagingStudioPage() {
 
   // Backend Persistence State
   const [saveStatus, setSaveStatus] = useState<string>("Đã lưu trên Cloud");
-  const [snapshots, setSnapshots] = useState<SnapshotDto[]>([]);
+  const [snapshots, setSnapshots] = useState<SnapshotSummary[]>([]);
   const [showSnapshotsModal, setShowSnapshotsModal] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [exportJob, setExportJob] = useState<ExportJobStatus | null>(null);
+  const [exportJob, setExportJob] = useState<ExportJob | null>(null);
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
@@ -163,9 +163,7 @@ export default function PackagingStudioPage() {
       if (params.id === "demo" || params.id === "new") return;
       try {
         const proj = await apiClient.getProject(params.id);
-        // getProject falls back to a demo project when offline: never autosave that over the real one.
-        if (!proj || proj.version === undefined) return;
-        const structure = (proj.template?.id ?? proj.templateId) as BoxStructureType;
+        const structure = proj.template.id as BoxStructureType;
         versionRef.current = proj.version;
         justLoadedRef.current = true;
         setSavedStructure(structure);
@@ -345,13 +343,13 @@ export default function PackagingStudioPage() {
   const handleStartExport = async (format: "pdf" | "svg" | "png") => {
         setIsExporting(true);
     try {
-      const exportType = format === "svg" ? "SVG" : "PDF";
+      const exportType = format === "svg" ? "SVG" : "PDF_CMYK";
       const res = await apiClient.requestExport(params.id, exportType);
 
       // Poll BullMQ job
       const pollTimer = setInterval(async () => {
         try {
-          const status = await apiClient.getExportStatus(res.jobId);
+          const status = await apiClient.getExportJob(res.jobId);
           setExportJob(status);
           if (status.status === "COMPLETED" || status.status === "FAILED") {
             clearInterval(pollTimer);

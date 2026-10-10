@@ -19,12 +19,12 @@ import {
 import { InteractiveFoldingBox3D } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { GoiMascot } from "@/components/common/GoiMascot";
 
-import { apiClient, PublicUnboxingData } from "@/api";
+import { apiClient, PublicUnboxing } from "@/api";
 
 export default function VirtualUnboxingPage() {
   // Next.js 15 passes route params to pages as a Promise; a client component reads them with useParams().
   const params = useParams<{ slug: string }>();
-  const [data, setData] = useState<PublicUnboxingData | null>(null);
+  const [data, setData] = useState<PublicUnboxing | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isOpened, setIsOpened] = useState<boolean>(false);
   const [copiedVoucher, setCopiedVoucher] = useState<boolean>(false);
@@ -188,7 +188,7 @@ export default function VirtualUnboxingPage() {
         <div className="relative w-full max-w-2xl h-[360px] sm:h-[460px] lg:h-[500px] flex items-center justify-center">
           <InteractiveFoldingBox3D
             dimensions={
-              data?.project?.dimensions || { length: 120, width: 80, height: 60, paperThickness: 0.38 }
+              data?.box.dimensions || { length: 120, width: 80, height: 60, paperThickness: 0.38 }
             }
             foldProgress={isOpened ? 0.6 : 1.0}
             theme="gold_foil"

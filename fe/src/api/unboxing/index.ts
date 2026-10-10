@@ -1,41 +1,24 @@
-/** 3D QR virtual unboxing (`be/src/modules/unboxing`). */
+/** 3D unboxing experience of my project and its QR code (`be/src/unboxing`). Public page: `src/api/public`. */
 
+import { API_BASE_URL } from "@/config";
 import { request } from "@/services/api";
-import type { PublicUnboxingData, UnboxingParticleEffect } from "@/types/api";
+import type { SaveUnboxingRequest, UnboxingConfig } from "@/types/api";
 
-export async function getPublicUnboxing(slug: string): Promise<PublicUnboxingData> {
-  try {
-    return await request<PublicUnboxingData>(`/public/unboxing/${slug}`);
-  } catch {
-    // Fallback unboxing data
-    return {
-      slug,
-      recipientName: "Mai Anh Thân Yêu",
-      giftNote:
-        "Chúc bạn một tuổi mới luôn ngập tràn bình yên, hạnh phúc và luôn tỏa sáng như đóa hoa rực rỡ nhất. Món quà nhỏ này được gói ghém bằng tất cả sự chân thành và yêu thương!",
-      particleEffect: "confetti",
-      audioTrackUrl: null,
-      viewsCount: 1,
-      project: {
-        title: "Hộp Quà Kỷ Niệm WrapFit",
-        template: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
-        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
-      },
-    };
-  }
+/** 404 while the project has no unboxing experience. */
+export function getProjectUnboxing(projectId: string): Promise<UnboxingConfig> {
+  return request(`/projects/${projectId}/unboxing`);
 }
 
-export async function saveProjectUnboxing(
-  projectId: string,
-  data: {
-    recipientName: string;
-    giftNote: string;
-    audioTrackUrl?: string | null;
-    particleEffect?: UnboxingParticleEffect;
-  }
-): Promise<any> {
-  return await request(`/projects/${projectId}/unboxing`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+/** Creates (201) or replaces (200) the experience; the slug, and so the QR code, never changes. */
+export function saveProjectUnboxing(projectId: string, data: SaveUnboxingRequest): Promise<UnboxingConfig> {
+  return request(`/projects/${projectId}/unboxing`, { method: "POST", json: data });
+}
+
+export function deleteProjectUnboxing(projectId: string): Promise<void> {
+  return request(`/projects/${projectId}/unboxing`, { method: "DELETE" });
+}
+
+/** Download link of the QR code (same-origin, the session cookie goes along): PNG 1200 px or SVG for print. */
+export function unboxingQrDownloadUrl(projectId: string, format: "png" | "svg" = "png"): string {
+  return `${API_BASE_URL}/projects/${projectId}/unboxing/qr?format=${format}`;
 }
