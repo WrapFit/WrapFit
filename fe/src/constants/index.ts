@@ -1,4 +1,6 @@
-/** App-wide constants: route paths, storage keys, limits. */
+/** App-wide constants: route paths, storage keys, limits, labels. */
+
+import type { Role, SubscriptionTier } from "@/types/api";
 
 /**
  * Pages of the app. The three email-link pages must keep these exact paths: the backend builds the links of its
@@ -24,3 +26,18 @@ export const ROUTES = {
 
 /** Page opened after signing in when no `?redirect=` was given. */
 export const DEFAULT_AFTER_LOGIN = ROUTES.dashboard;
+
+/** Vietnamese names of the account roles, the same on every screen (header, admin console). */
+export const ROLE_LABELS: Record<Role, string> = {
+  MAKER: "Nhà sáng tạo",
+  PRO_ARTISAN: "Nghệ nhân Pro",
+  PRINT_SHOP: "Xưởng in",
+  ADMIN: "Quản trị viên",
+};
+
+/** Names of the subscription tiers. */
+export const TIER_LABELS: Record<SubscriptionTier, string> = {
+  FREE: "Gói Free",
+  STARTER: "Gói Starter",
+  PRO_BUSINESS: "Gói Pro Business",
+};

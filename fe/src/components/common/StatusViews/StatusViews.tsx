@@ -3,6 +3,10 @@ import React from "react";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { ApiError, errorMessage } from "@/services/api";
 
+/**
+ * The views below carry `data-app-tokens` (see features/stitch/tailwindStitch.ts): inside a Stitch screen they keep the
+ * app's colours and fonts.
+ */
 const CARD =
   "mx-auto w-full max-w-md rounded-3xl border border-stone-200/80 bg-white/80 p-8 text-center shadow-[0_4px_20px_-2px_rgba(31,36,33,0.08)] backdrop-blur-md";
 
@@ -35,7 +39,7 @@ export function ErrorState({
 }: ErrorStateProps) {
   const requestId = error instanceof ApiError ? error.requestId : undefined;
   return (
-    <div role="alert" className={`${CARD} ${className}`}>
+    <div role="alert" data-app-tokens="" className={`${CARD} ${className}`}>
       <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-vibrant-coral/15 text-vibrant-coral-dark">
         <AlertTriangle className="h-6 w-6" aria-hidden />
       </span>
@@ -73,7 +77,7 @@ interface EmptyStateProps {
 /** Nothing to show yet: Gói is chilling. */
 export function EmptyState({ title, description, action, className = "" }: EmptyStateProps) {
   return (
-    <div className={`${CARD} ${className}`}>
+    <div data-app-tokens="" className={`${CARD} ${className}`}>
       <div className="mb-3 flex justify-center">
         <GoiMascot pose="chilling" size={88} showPhotoBadge={false} enableTracking={false} />
       </div>
@@ -87,7 +91,7 @@ export function EmptyState({ title, description, action, className = "" }: Empty
 /** Full-height placeholder while a page waits for data or for the session check. */
 export function PageLoader({ label = "Đang tải…" }: { label?: string }) {
   return (
-    <div role="status" className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4">
+    <div role="status" data-app-tokens="" className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4">
       <span className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-brand-forest motion-reduce:animate-none" />
       <span className="font-mono text-xs uppercase tracking-wider text-stone-500">{label}</span>
     </div>
