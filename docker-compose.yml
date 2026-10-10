@@ -237,9 +237,11 @@ services:
       context: .
       dockerfile: fe/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
         NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-WrapFit Studio}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        # The browser calls /api on the frontend origin; Next.js forwards it to the backend container
+        BACKEND_INTERNAL_URL: http://backend:8080
     container_name: wrapfit-frontend
     restart: unless-stopped
     mem_limit: 1024m
@@ -255,7 +257,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      # Server-side requests (SSR, generateMetadata) go straight to the backend container
+      BACKEND_INTERNAL_URL: http://backend:8080
     depends_on:
       backend:
         condition: service_healthy

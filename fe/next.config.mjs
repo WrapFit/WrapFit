@@ -35,6 +35,8 @@ const nextConfig = {
       },
     ];
   },
+  // The browser calls the API on this origin (/api), so the session cookies are first-party. `output: "standalone"`
+  // fixes the destination at build time: BACKEND_INTERNAL_URL must be set when building (see fe/Dockerfile).
   async rewrites() {
     const backendUrl = process.env.BACKEND_INTERNAL_URL || 'http://localhost:8080';
     return [
