@@ -37,14 +37,14 @@ Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-q
 
 ### 1.3. Lỗi tích hợp tìm thấy khi đọc code (ngoài bảng `06` §13)
 
-1. **Generator Stitch xoá CSS khi đổi status.** `scripts/stitch/sync.mjs` chỉ sinh cho screen `converted` và xoá mọi file
+1. *(Đã xử lý ở S1)* **Generator Stitch xoá CSS khi đổi status.** `scripts/stitch/sync.mjs` chỉ sinh cho screen `converted` và xoá mọi file
    CSS / behavior có banner `AUTO-GENERATED` trước khi sinh lại. Đổi một screen sang `manual` để viết tay → lần sync sau
    mất `screens/<slug>.css` và biến token `[data-stitch="<slug>"]`, giao diện vỡ. Cần status mới (Phase 0).
-2. **`views/dashboard/index.tsx` đã sửa tay nhưng screen vẫn `converted`**: `npm run stitch:sync` sẽ ghi đè mất các thay
-   đổi của commit `e509d8f`.
+2. *(Đã xử lý ở S1)* **`views/dashboard/index.tsx` đã sửa tay nhưng screen vẫn `converted`**: `npm run stitch:sync` sẽ
+   ghi đè mất các thay đổi của commit `e509d8f`. S1 tìm thấy thêm 24 file generated khác cũng đã sửa tay.
 3. **Cookie path `/api`** nên request trang `/dashboard` không mang cookie: không chặn được bằng Next `middleware.ts`,
    kiểm tra đăng nhập phải làm phía client (`GET /api/auth/me`).
-4. **`.env.example`, `fe/.env.example`, `docker-compose.yml` đặt `NEXT_PUBLIC_API_URL=http://localhost:8080/api`** (gọi
+4. *(Đã xử lý ở S1)* **`.env.example`, `fe/.env.example`, `docker-compose.yml` đặt `NEXT_PUBLIC_API_URL=http://localhost:8080/api`** (gọi
    thẳng cổng 8080), trái khuyến nghị proxy cùng domain của `07` §1.2. `next.config.mjs` đã có rewrite `/api/*` nhưng
    không được dùng.
 5. **Studio upload ảnh bằng data URL** (`FileReader.readAsDataURL`): backend từ chối (`content` ≤ 5000 ký tự, chỉ nhận
@@ -57,7 +57,7 @@ Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-q
 8. **Hoa văn AI**: `canvasState.backgroundPattern` chỉ nhận id preset `[a-z0-9_-]{1,40}`, không nhận SVG. Tile SVG do
    `POST /api/ai/pattern` trả về muốn lưu được phải upload thành file (`purpose: LOGO`, nhận SVG) rồi thêm phần tử
    `type: "pattern"` với `content` = `fileUrl`.
-9. **Rewrite của Next ở chế độ `standalone` được chốt lúc build**: `BACKEND_INTERNAL_URL` phải có mặt khi `next build`
+9. *(Đã xử lý ở S1)* **Rewrite của Next ở chế độ `standalone` được chốt lúc build**: `BACKEND_INTERNAL_URL` phải có mặt khi `next build`
    trong Docker, không chỉ lúc chạy.
 
 ## 2. Quyết định đã chốt
@@ -103,7 +103,7 @@ Mỗi phase có **DoD** (điều kiện xong). Mọi phase: `npx tsc --noEmit -p
 
 | # | Việc | File |
 |---|---|---|
-| 0.1 | Generator: status `wired` = sinh CSS + token + behavior, **không** ghi view / page. `STITCH_ROUTES` giữ route `wired` (BottomNavBar vẫn ẩn). `stitch:parity` bỏ qua `wired` trừ khi có `--include-wired` | `scripts/stitch/sync.mjs`, `visual-parity.mjs` |
+| 0.1 | Generator: status `wired` = sinh CSS + token + behavior, **không** ghi view / page. `STITCH_ROUTES` giữ route `wired` (BottomNavBar vẫn ẩn). `stitch:parity` bỏ qua `wired` trừ khi có `--include-wired`. *(Thêm trong S1)* `stitch/generated.lock.json`: không ghi đè / xoá file generated đã sửa tay (`--force` để ghi đè) | `scripts/stitch/sync.mjs`, `lib/guard.mjs`, `visual-parity.mjs` |
 | 0.2 | Đổi `auth-login`, `dashboard`, `dashboard-projects`, `dashboard-brand-kit`, `dashboard-settings`, `admin-accounts` sang `wired`; chạy `stitch:sync`, `git diff` chỉ được đổi `screens.json` | `stitch/screens.json` |
 | 0.3 | Cài `@tanstack/react-query`; `AppProviders` (QueryClient + AuthProvider + Toaster) bọc trong `app/layout.tsx` | `fe/package.json`, `src/layouts/main/` |
 | 0.4 | Viết lại HTTP client: base `/api`; body `FormData` không đặt `Content-Type`; `204` → `undefined`; `401` → **một** `POST /auth/refresh` dùng chung (single-flight) rồi gửi lại 1 lần, trừ các route `auth/login|register|refresh|logout|verify-email*|password/*`; refresh thất bại → phát sự kiện `session-expired` (không tự `location.assign`); `ApiError { status, code, messages[], requestId, currentVersion?, fitCheck?, retryAfter? }`; hàm `errorMessage(err)` tiếng Việt theo bảng `06` §2 | `src/services/api/` |
@@ -346,3 +346,4 @@ kiểm tra nhanh trên trình duyệt các màn vừa nối.
 | Phiên | Ngày | Commit | Đã xong | Còn dở / ghi chú cho phiên sau |
 |---|---|---|---|---|
 | Plan | 2026-10-10 | — | Plan duyệt; chốt D1–D8 | Bắt đầu S1 |
+| S1 | 2026-10-11 | `81aca6c`, `301fce2` | 0.1, 0.2, 0.10. Nhánh `feat/fe-be-integration`. `next build` pass. Qua proxy `localhost:3000/api`: `health` ok, `login` → cookie → `auth/me` → `refresh` → `logout` chạy đúng, OriginGuard nhận request qua proxy | **Phát hiện**: 25 file generated đã bị sửa tay (commit `e07d23b`, `e509d8f`), `stitch:sync` cũ sẽ xoá hết → thêm lock chống ghi đè (docs/11 §3). **Môi trường local**: (1) phải `npm run build:shared` trước `npm run dev:be` (backend đọc `shared/dist`); (2) Windows đang giữ cổng 8320–8419 → SeaweedFS chạy cổng 18333 (`STORAGE_PORT=18333` trong `.env` gốc, `STORAGE_ENDPOINT` / `STORAGE_PUBLIC_URL` trong `be/.env` đổi theo; file local, không commit); (3) `.claude/launch.json` có cấu hình `fe`, `be`; worker chưa chạy (S4 cần cho email: `npm --workspace=be run dev:worker`). Phiên sau: S2 |
