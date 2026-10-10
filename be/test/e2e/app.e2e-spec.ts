@@ -375,6 +375,8 @@ describe('API (e2e)', () => {
       await api().post('/api/auth/logout-all').set('Cookie', cookies({ wf_access: bobAccess })).expect(204);
       expect(await closed).toBe('io server disconnect');
       socket.close();
+      // The access token stops working at once, not when it expires.
+      await api().get('/api/auth/me').set('Cookie', cookies({ wf_access: bobAccess })).expect(401);
     });
   });
 });

@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { ConfigService, SESSIONS_REVOKED, SessionsRevokedEvent } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { MailService } from '../mail';
+import { revokeUserSessions } from '../users';
 import { AuthTokensService } from './auth-tokens.service';
 import { LoginAttemptsService } from './login-attempts.service';
 
@@ -99,10 +100,7 @@ export class AccountRecoveryService {
         select: { email: true },
       });
       await tx.user.updateMany({ where: { id: outcome.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: now } });
-      const { count } = await tx.refreshToken.updateMany({
-        where: { userId: outcome.userId, revokedAt: null },
-        data: { revokedAt: now },
-      });
+      const count = await revokeUserSessions(tx, outcome.userId, now);
       return { outcome, sessionsRevoked: count, email };
     });
 

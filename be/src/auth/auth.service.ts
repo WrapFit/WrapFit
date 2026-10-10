@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import {
@@ -15,7 +15,7 @@ import {
 } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { MailService } from '../mail';
-import { presentUser, SafeUser, toSafeUser, userSelect, UsersService } from '../users';
+import { presentUser, revokeUserSessions, SafeUser, toSafeUser, userSelect, UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
 import { AuthTokensService } from './auth-tokens.service';
 import { REFRESH_REUSE_GRACE_MS } from './auth.constants';
@@ -108,8 +108,7 @@ export class AuthService {
     if (!user.emailVerifiedAt) throw emailNotVerified();
 
     await this.loginAttempts.reset(dto.email);
-    const safeUser = toSafeUser(user);
-    return { user: safeUser, ...(await this.issueTokens(safeUser, meta)) };
+    return { user: toSafeUser(user), ...(await this.issueTokens(user, meta)) };
   }
 
   /**
@@ -131,8 +130,7 @@ export class AuthService {
     }
     if (!user.isActive) throw new UnauthorizedException('Account is disabled');
 
-    const safeUser = toSafeUser(user);
-    return { user: safeUser, ...(await this.issueTokens(safeUser, meta)) };
+    return { user: toSafeUser(user), ...(await this.issueTokens(user, meta)) };
   }
 
   /**
@@ -142,6 +140,7 @@ export class AuthService {
    */
   async refresh(refreshToken: string, meta: SessionMeta = {}): Promise<AuthResult> {
     const payload = await this.verifyRefreshToken(refreshToken);
+    const sessionVersion = payload.sv ?? 0;
 
     const record = await this.prisma.refreshToken.findUnique({ where: { id: payload.jti } });
     if (!record || record.userId !== payload.sub) throw new UnauthorizedException('Invalid refresh token');
@@ -153,7 +152,7 @@ export class AuthService {
       where: { id: record.id, revokedAt: null },
       data: { revokedAt: new Date(), replacedById: replacementId },
     });
-    if (claimed.count === 1) return this.startSession(record.userId, meta, replacementId);
+    if (claimed.count === 1) return this.startSession(record.userId, meta, sessionVersion, replacementId);
 
     // Already revoked, possibly a moment ago by the request that won the claim above.
     const current = await this.prisma.refreshToken.findUnique({
@@ -162,7 +161,7 @@ export class AuthService {
     });
     const justRotated =
       current?.replacedById && current.revokedAt && Date.now() - current.revokedAt.getTime() < REFRESH_REUSE_GRACE_MS;
-    if (justRotated) return this.startSession(record.userId, meta);
+    if (justRotated) return this.startSession(record.userId, meta, sessionVersion);
 
     // A revoked token being replayed means it may have been stolen: kill every session of this user.
     await this.revokeAllForUser(record.userId);
@@ -181,11 +180,9 @@ export class AuthService {
     }
   }
 
+  /** Signs the user out of every device at once, access tokens included (see revokeUserSessions). */
   async revokeAllForUser(userId: string): Promise<void> {
-    await this.prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
+    await this.prisma.$transaction((tx) => revokeUserSessions(tx, userId));
     const event: SessionsRevokedEvent = { userId };
     this.events.emit(SESSIONS_REVOKED, event);
   }
@@ -200,18 +197,31 @@ export class AuthService {
     }
   }
 
-  /** New token pair for an active, verified user (refresh). */
-  private async startSession(userId: string, meta: SessionMeta, refreshId?: string): Promise<AuthResult> {
-    const user = await this.prisma.user.findUnique({
+  /**
+   * New token pair for an active, verified user (refresh). `sessionVersion` is the one of the presented refresh
+   * token: an older number than the account's means every session was revoked since (a refresh racing the
+   * revocation must not keep the session alive).
+   */
+  private async startSession(
+    userId: string,
+    meta: SessionMeta,
+    sessionVersion: number,
+    refreshId?: string,
+  ): Promise<AuthResult> {
+    const row = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { ...userSelect },
+      select: { ...userSelect, sessionVersion: true },
     });
-    if (!user || !user.isActive || !user.emailVerifiedAt) throw new UnauthorizedException('Invalid refresh token');
-    return { user: presentUser(user), ...(await this.issueTokens(user, meta, refreshId)) };
+    if (!row) throw new UnauthorizedException('Invalid refresh token');
+    const { sessionVersion: current, ...user } = row;
+    if (!user.isActive || !user.emailVerifiedAt || current !== sessionVersion) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+    return { user: presentUser(user), ...(await this.issueTokens(row, meta, refreshId)) };
   }
 
   private async issueTokens(
-    user: Pick<SafeUser, 'id' | 'email' | 'role'>,
+    user: Pick<User, 'id' | 'email' | 'role' | 'sessionVersion'>,
     meta: SessionMeta,
     refreshId: string = randomUUID(),
   ): Promise<TokenPair> {
@@ -228,8 +238,9 @@ export class AuthService {
       },
     });
 
-    const accessPayload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
-    const refreshPayload: RefreshPayload = { sub: user.id, jti: refreshId };
+    const sv = user.sessionVersion;
+    const accessPayload: JwtPayload = { sub: user.id, email: user.email, role: user.role, sv };
+    const refreshPayload: RefreshPayload = { sub: user.id, jti: refreshId, sv };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(accessPayload, {

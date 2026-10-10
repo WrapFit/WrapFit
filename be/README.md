@@ -231,7 +231,7 @@ if (res.status === 401) {
 4. Mỗi request, `JwtStrategy` kiểm tra lại user trong database nên việc khoá tài khoản hay đổi role có hiệu lực ngay.
 5. Tài khoản chỉ đăng nhập bằng Google (`passwordHash = null`) không thể đăng nhập bằng mật khẩu.
 6. Ngoài giới hạn 10 lần / phút theo IP, mỗi **địa chỉ email** chỉ được đăng nhập sai 10 lần trong 15 phút (đếm trong Redis, kể cả địa chỉ không có tài khoản): sau đó `429 LOGIN_RATE_LIMITED` kèm `retryAfterSeconds`, kể cả khi đúng mật khẩu. Đăng nhập thành công hoặc đặt lại mật khẩu xoá bộ đếm. Redis lỗi thì bỏ qua bước này.
-7. Thu hồi phiên (`logout-all`, phát hiện refresh token bị dùng lại, đặt lại mật khẩu, admin khoá / xoá tài khoản) cũng đóng mọi kết nối WebSocket của user. Email gửi tới tài khoản chưa xác minh không chèn `fullName` (ai cũng có thể đăng ký địa chỉ của người khác với tên tuỳ ý).
+7. Thu hồi phiên (`logout-all`, phát hiện refresh token bị dùng lại, đặt lại mật khẩu, admin khoá / xoá tài khoản) có hiệu lực ngay với cả access token đã cấp: mỗi token mang `users.session_version` lúc ký (claim `sv`), thu hồi phiên thì số này tăng (`revokeUserSessions`, `src/users/user-sessions.ts`) và `JwtStrategy`, `/auth/refresh`, handshake WebSocket từ chối token mang số cũ. Thu hồi phiên cũng đóng mọi kết nối WebSocket của user. Email gửi tới tài khoản chưa xác minh không chèn `fullName` (ai cũng có thể đăng ký địa chỉ của người khác với tên tuỳ ý).
 
 ### Đăng nhập bằng Google — cách lấy Client ID
 

@@ -15,6 +15,7 @@ import { StorageService } from '../storage';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { revokeUserSessions } from './user-sessions';
 import { presentUser, SafeUser, userSelect } from './user.select';
 
 @Injectable()
@@ -67,10 +68,7 @@ export class UsersService {
     const unprovenPassword = user.passwordHash !== null && user.emailVerifiedAt === null;
     const linked = await this.prisma.$transaction(async (tx) => {
       if (unprovenPassword) {
-        const { count } = await tx.refreshToken.updateMany({
-          where: { userId: user.id, revokedAt: null },
-          data: { revokedAt: new Date() },
-        });
+        const count = await revokeUserSessions(tx, user.id);
         this.logger.warn(
           `auth.google_link_cleared_unverified_password userId=${user.id} sessionsRevoked=${count}`,
         );
@@ -157,14 +155,12 @@ export class UsersService {
     const data: Prisma.UserUpdateInput = { role: dto.role, isActive: dto.isActive };
 
     if (dto.isActive === false) {
-      // Deactivated users must lose all existing sessions.
-      const [user] = await this.prisma.$transaction([
-        this.prisma.user.update({ where: { id }, data, select: userSelect }),
-        this.prisma.refreshToken.updateMany({
-          where: { userId: id, revokedAt: null },
-          data: { revokedAt: new Date() },
-        }),
-      ]);
+      // Deactivated users must lose all existing sessions (also the access tokens: unlocking does not revive them).
+      const user = await this.prisma.$transaction(async (tx) => {
+        const row = await tx.user.update({ where: { id }, data, select: userSelect });
+        await revokeUserSessions(tx, id);
+        return row;
+      });
       this.sessionsRevoked(id);
       return presentUser(user);
     }

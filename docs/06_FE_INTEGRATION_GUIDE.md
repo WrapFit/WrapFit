@@ -55,7 +55,8 @@ async function api<T>(path: string, init: RequestInit = {}, retry = true): Promi
 ```
 
 - Biết ai đang đăng nhập: `GET /api/auth/me` (hoặc `/api/users/me`) → `SafeUser` (mục 14). `401` = chưa đăng nhập.
-- Đăng xuất: `POST /api/auth/logout` (204, xóa cookie). Đăng xuất mọi thiết bị: `POST /api/auth/logout-all`.
+- Đăng xuất: `POST /api/auth/logout` (204, xóa cookie). Đăng xuất mọi thiết bị: `POST /api/auth/logout-all` (có hiệu
+  lực ngay: các thiết bị khác nhận `401`, refresh cũng `401`, FE coi là phiên hết hạn).
 
 ## 2. Định dạng lỗi và mã lỗi
 
@@ -167,8 +168,9 @@ POST /api/auth/password/reset    { "token": "<?token=>", "password": "NewPassw0r
 
 - `forgot` luôn `202` (không lộ email). Link có hạn **30 phút**, dùng 1 lần. Tài khoản chỉ có Google cũng dùng được để
   đặt mật khẩu lần đầu.
-- `reset` dùng cho **cả** `/reset-password` và `/complete-signup`. Thành công thì **mọi phiên bị đăng xuất** và cookie
-  bị xóa → chuyển tới `/login` với thông báo "Đặt mật khẩu thành công, hãy đăng nhập". Email cũng được xác minh luôn.
+- `reset` dùng cho **cả** `/reset-password` và `/complete-signup`. Thành công thì **mọi phiên bị đăng xuất ngay** (thiết
+  bị khác nhận `401` ở request kế tiếp, không chờ access token hết hạn) và cookie bị xóa → chuyển tới `/login` với thông
+  báo "Đặt mật khẩu thành công, hãy đăng nhập". Email cũng được xác minh luôn.
 - Mật khẩu mới cùng quy tắc với đăng ký (lỗi `400` không có `code`, link vẫn còn dùng được).
 
 ## 4. Upload file và quy tắc URL ảnh
@@ -475,7 +477,7 @@ Toàn bộ 56 route HTTP của backend và mục tài liệu tương ứng. Rout
 | Bộ sưu tập | `GET` · `POST /api/collections`, `GET` · `PATCH` · `DELETE /api/collections/:id` | Đăng nhập | 12 |
 
 **Quản trị**: chỉ `role = ADMIN`; người khác nhận `403`. Admin không tự đổi role / tự khóa / tự xóa mình (`400`). Khóa
-tài khoản (`isActive: false`) thu hồi mọi phiên của người đó.
+tài khoản (`isActive: false`) thu hồi mọi phiên của người đó, có hiệu lực ngay: request kế tiếp của người đó nhận `401`.
 
 **Health**: `status: "degraded"` khi Redis lỗi (xuất file in và email tạm dừng); `worker: "down"` khi không có worker
 nào chạy. Dùng cho trang trạng thái / giám sát, không cần gọi từ giao diện người dùng.

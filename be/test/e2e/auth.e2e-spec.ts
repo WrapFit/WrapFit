@@ -225,9 +225,10 @@ describe('Account emails (e2e)', () => {
 
     it('sets a new password once, signs the account out everywhere, and needs a new sign-in', async () => {
       const session = await login(address).expect(200);
-      const refresh = (session.headers['set-cookie'] as unknown as string[])
-        .find((line) => line.startsWith('wf_refresh='))!
-        .split(';')[0];
+      const setCookie = session.headers['set-cookie'] as unknown as string[];
+      const refresh = setCookie.find((line) => line.startsWith('wf_refresh='))!.split(';')[0];
+      const access = accessCookie(setCookie);
+      await api().get('/api/auth/me').set('Cookie', access).expect(200);
 
       await api().post('/api/auth/password/forgot').send({ email: address }).expect(202, {});
       const token = await linkToken(address, 'RESET_PASSWORD');
@@ -240,6 +241,7 @@ describe('Account emails (e2e)', () => {
       expect(replay.body.code).toBe('AUTH_TOKEN_CONSUMED');
 
       await api().post('/api/auth/refresh').set('Cookie', refresh).expect(401); // old session revoked
+      await api().get('/api/auth/me').set('Cookie', access).expect(401); // its access token too, before it expires
       await login(address).expect(401);
       await login(address, 'NewPassw0rd9').expect(200);
     });

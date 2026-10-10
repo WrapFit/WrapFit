@@ -56,6 +56,7 @@ erDiagram
         enum subscription_tier "FREE | STARTER | PRO_BUSINESS"
         jsonb brand_kit "{ logoKey, colors, fonts, slogan }"
         boolean is_active
+        int session_version "tăng khi thu hồi mọi phiên"
     }
 
     RefreshToken {
@@ -210,7 +211,7 @@ erDiagram
 
 ## 2. Chi Tiết Các Bảng Dữ Liệu
 
-1. **`users`**: Hồ sơ người dùng / chủ shop handmade, vai trò (RBAC), gói thuê bao, Brand Kit, mã giới thiệu. `is_active = false` khi Admin khóa tài khoản.
+1. **`users`**: Hồ sơ người dùng / chủ shop handmade, vai trò (RBAC), gói thuê bao, Brand Kit, mã giới thiệu. `is_active = false` khi Admin khóa tài khoản. `session_version` tăng mỗi lần thu hồi mọi phiên (đặt lại mật khẩu, đăng xuất mọi thiết bị, khóa tài khoản): access / refresh token mang số cũ bị từ chối ngay, không chờ hết hạn.
 2. **`refresh_tokens`**: Mỗi phiên đăng nhập (thiết bị) là một dòng; hỗ trợ xoay vòng token, đăng xuất từng thiết bị và phát hiện token bị đánh cắp.
 3. **`box_templates`**: 4 cấu trúc hộp MVP cùng công thức tham số (seed tự động khi khởi động backend).
 4. **`project_collections`**: Bộ sưu tập / thư mục nhóm dự án theo chiến dịch.
