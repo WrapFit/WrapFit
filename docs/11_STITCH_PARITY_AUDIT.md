@@ -78,6 +78,11 @@ Quy tắc: không sửa file có banner `AUTO-GENERATED`. Muốn đổi, sửa `
 | `wired` | CSS, token, behavior; **không** ghi view / page | View viết tay bằng React và nối API ([`12`](12_FE_BE_INTEGRATION_PLAN.md)), vẫn dùng CSS và token của screen. `stitch:parity` bỏ qua, trừ khi có `--include-wired` |
 | `approximation`, `manual` | không sinh gì | Trang viết tay không có HTML Stitch; `manual` còn hiện BottomNavBar |
 
+**Component của app bên trong màn `wired`**: CSS của một screen đặt `initial` cho mọi token screen đó không định nghĩa
+(vd. `--st-c-brand-forest` ở các màn admin), nên class như `bg-brand-forest`, `font-serif` mất màu / font bên trong
+`[data-stitch]`. Bọc component đó bằng phần tử có thuộc tính `data-app-tokens` để lấy lại giá trị `:root` của app
+(`features/stitch/tailwindStitch.ts`). `ErrorState`, `EmptyState`, `PageLoader` đã mang sẵn thuộc tính này.
+
 **Chống ghi đè sửa tay**: `stitch/generated.lock.json` lưu hash mọi file generator đã ghi. Lần sync sau chỉ thay / xoá
 file còn đúng nội dung đó; file đã sửa tay (25 file lúc tạo lock: view, CSS, behavior của các màn được chỉnh header,
 sidebar, link) được giữ nguyên và liệt kê cuối output. `npm run stitch:sync -- --force` ghi đè cả những file này.
