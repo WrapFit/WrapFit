@@ -154,6 +154,7 @@
 - Hạn mức theo gói: FREE 100 MB, STARTER 1 GB, PRO_BUSINESS 10 GB, tính từ lúc cấp URL. Vượt → `403`.
 - `projectId` (tùy chọn) gắn file vào dự án của mình (không được ở thùng rác): file bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn hoặc bị cron dọn thùng rác — trừ ảnh / logo mà dự án khác (bản sao, Remix) vẫn hiển thị (`project_file_refs`): file đó được giữ lại và tách khỏi dự án đã xóa.
 - Admin xóa người dùng → file của người đó (và file sinh ra cho dự án của họ) bị xóa khỏi bucket, trừ ảnh mà dự án của người khác vẫn dùng: ảnh đó được chuyển (cả hạn mức) cho chủ dự án Remix cũ nhất.
+- Ảnh đại diện / logo Brand Kit bị thay hoặc gỡ: file `AVATAR` / `LOGO` không gắn dự án và không còn canvas nào hiển thị bị xóa cùng object trên bucket (không tính vào hạn mức nữa). File `IMAGE` dùng làm avatar / logo được giữ (có thể đang là thumbnail / preview).
 - Dùng file ở đâu cũng phải là file **của mình** đã tải lên: `thumbnailUrl`, `previewUrl` (THUMBNAIL / IMAGE), `avatarUrl` (AVATAR / IMAGE), `logoUrl` của Brand Kit (LOGO / IMAGE). URL trang khác → `400 code FILE_URL_NOT_ALLOWED`; file của người khác → `400 code FILE_NOT_OWNED`.
 - Canvas chỉ được thêm ảnh của mình (LOGO / IMAGE); ảnh mà dự án đã hiển thị từ trước (vd. ảnh của tác giả gốc trong bản Remix) được giữ nguyên. Đường dẫn tĩnh (`/branding/...`) và ảnh trang khác vẫn lưu như gửi lên, nhưng không được nhúng vào file in.
 - Chưa cấu hình storage (`STORAGE_BUCKET` trống) → `503`.

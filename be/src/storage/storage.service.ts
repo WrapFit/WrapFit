@@ -232,6 +232,19 @@ export class StorageService implements IProjectFiles {
   }
 
   /**
+   * Forgets the avatar or logo a user just replaced or removed, inside the transaction that changed it, and returns
+   * its key to delete from the bucket after the commit (`deleteObjects`); null when the file must stay. Only an
+   * upload made for that slot (AVATAR, LOGO) and owned by no project is removed: an IMAGE may also be a project
+   * thumbnail or snapshot preview, and a logo still shown on a canvas is kept by `project_file_refs`.
+   */
+  async forgetProfileUpload(db: Db, userId: string, key: string, purpose: 'AVATAR' | 'LOGO'): Promise<string | null> {
+    const { count } = await db.storedFile.deleteMany({
+      where: { key, userId, purpose, projectId: null, refs: { none: {} } },
+    });
+    return count ? key : null;
+  }
+
+  /**
    * A saved canvas may show the caller's own logos and images, and the uploads it already showed (a remix keeps the
    * images of the original author). Anything else is refused: pointing at another user's file would keep it alive
    * after its owner deleted it.

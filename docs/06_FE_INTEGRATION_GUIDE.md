@@ -365,6 +365,9 @@ GET|POST /api/collections       · GET|PATCH|DELETE /api/collections/:id   (colo
 ```
 
 - Brand Kit được **thay cả bộ**: trường bỏ trống bị xóa. `avatarUrl: null` xóa ảnh đại diện (cả ảnh Google).
+- Ảnh đại diện / logo bị thay hoặc gỡ được xóa luôn khỏi storage (không còn tính vào hạn mức), nếu file đó upload với
+  purpose `AVATAR` / `LOGO` và không gắn dự án. Giữ lại: file `IMAGE` (có thể đang là thumbnail), logo còn hiện trên
+  canvas của một dự án. Đừng dùng lại `fileUrl` cũ sau khi đã thay: upload lại.
 - Thư mục: tối đa 100; xóa thư mục giữ lại dự án. Đưa dự án vào / ra: `PATCH /api/projects/:id { collectionId }`.
 
 ## 13. Những chỗ `apiClient` hiện tại lệch backend

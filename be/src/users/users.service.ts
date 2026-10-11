@@ -119,32 +119,60 @@ export class UsersService {
     return presentUser(user);
   }
 
-  /** `avatarUrl` must be an image the user uploaded; `null` removes the avatar (the Google photo too). */
+  /**
+   * `avatarUrl` must be an image the user uploaded; `null` removes the avatar (the Google photo too). The avatar it
+   * replaces is deleted with its file, so it stops counting against the storage quota.
+   */
   async updateProfile(id: string, dto: UpdateProfileDto): Promise<SafeUser> {
-    const avatar =
-      dto.avatarUrl === undefined
-        ? {}
-        : {
-            avatarKey: dto.avatarUrl === null ? null : await this.storage.resolveUpload(dto.avatarUrl, id, ['AVATAR', 'IMAGE']),
-            avatarUrl: null,
-          };
-    const row = await this.prisma.user.update({
-      where: { id },
-      data: { fullName: dto.fullName, shopName: dto.shopName, ...avatar },
-      select: userSelect,
+    const avatarKey =
+      dto.avatarUrl === undefined || dto.avatarUrl === null
+        ? dto.avatarUrl
+        : await this.storage.resolveUpload(dto.avatarUrl, id, ['AVATAR', 'IMAGE']);
+    const { row, replaced } = await this.prisma.$transaction(async (tx) => {
+      const before = avatarKey === undefined ? null : await this.lockProfileFiles(tx, id);
+      const row = await tx.user.update({
+        where: { id },
+        data: {
+          fullName: dto.fullName,
+          shopName: dto.shopName,
+          ...(avatarKey !== undefined && { avatarKey, avatarUrl: null }),
+        },
+        select: userSelect,
+      });
+      const old = before?.avatarKey;
+      const replaced = old && old !== avatarKey ? await this.storage.forgetProfileUpload(tx, id, old, 'AVATAR') : null;
+      return { row, replaced };
     });
+    if (replaced) await this.storage.deleteObjects([replaced]);
     return presentUser(row);
   }
 
-  /** Replaces the whole brand kit; an empty slogan is stored as null. The logo must be an upload of the user. */
+  /**
+   * Replaces the whole brand kit; an empty slogan is stored as null. The logo must be an upload of the user; the logo
+   * it replaces is deleted with its file unless a project still shows it.
+   */
   async updateBrandKit(id: string, dto: UpdateBrandKitDto): Promise<SafeUser> {
     const logoKey = dto.logoUrl ? await this.storage.resolveUpload(dto.logoUrl, id, ['LOGO', 'IMAGE']) : null;
-    const row = await this.prisma.user.update({
-      where: { id },
-      data: { brandKit: { logoKey, colors: dto.colors, fonts: dto.fonts, slogan: dto.slogan || null } },
-      select: userSelect,
+    const { row, replaced } = await this.prisma.$transaction(async (tx) => {
+      const before = await this.lockProfileFiles(tx, id);
+      const row = await tx.user.update({
+        where: { id },
+        data: { brandKit: { logoKey, colors: dto.colors, fonts: dto.fonts, slogan: dto.slogan || null } },
+        select: userSelect,
+      });
+      const old = before?.logoKey;
+      const replaced = old && old !== logoKey ? await this.storage.forgetProfileUpload(tx, id, old, 'LOGO') : null;
+      return { row, replaced };
     });
+    if (replaced) await this.storage.deleteObjects([replaced]);
     return presentUser(row);
+  }
+
+  /** Current avatar and logo keys, with the user row locked: two saves at once cannot both miss the replaced file. */
+  private async lockProfileFiles(tx: Prisma.TransactionClient, id: string) {
+    const [row] = await tx.$queryRaw<{ avatar_key: string | null; brand_kit: { logoKey?: string | null } | null }[]>`
+      SELECT avatar_key, brand_kit FROM users WHERE id = ${id}::uuid FOR UPDATE`;
+    return row ? { avatarKey: row.avatar_key, logoKey: row.brand_kit?.logoKey ?? null } : null;
   }
 
   async adminUpdate(id: string, dto: AdminUpdateUserDto, actorId: string): Promise<SafeUser> {
