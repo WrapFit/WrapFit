@@ -13,9 +13,17 @@ import { templateHref } from "./TemplateCards";
 const DECK_SIZE = 6;
 const SWIPE_PX = 40;
 
+/** Signed distance of a card from the selected one around the ring, so the deck has cards on both sides. */
+function ringOffset(index: number, current: number, count: number): number {
+  const half = Math.floor(count / 2);
+  return ((index - current + count + half) % count) - half;
+}
+
 /** Position of a card in the stacked deck, `offset` cards away from the selected one. */
 function deckStyle(offset: number): React.CSSProperties {
   const selected = offset === 0;
+  // The card at the back of the ring stays hidden: it is the one that crosses over when the deck wraps around.
+  const hidden = Math.abs(offset) > 2;
   return {
     willChange: "transform, opacity, filter",
     transform: selected
@@ -23,9 +31,9 @@ function deckStyle(offset: number): React.CSSProperties {
       : `translate(calc(-50% + ${offset * 310}px), -50%) scale(${Math.max(0.7, 1.05 - Math.abs(offset) * 0.15)})`,
     left: "50%",
     zIndex: selected ? 35 : 25 - Math.abs(offset) * 10,
-    opacity: selected ? 1 : Math.max(0.3, 1 - Math.abs(offset) * 0.25),
+    opacity: hidden ? 0 : selected ? 1 : Math.max(0.3, 1 - Math.abs(offset) * 0.25),
     filter: selected ? "blur(0px)" : `blur(${Math.abs(offset) * 1.5}px)`,
-    pointerEvents: "auto",
+    pointerEvents: hidden ? "none" : "auto",
   };
 }
 
@@ -66,10 +74,10 @@ export function HomeTemplateDeck() {
         </div>
 
         {/*  Apple-style Navigation Controls (Infinite Wrap) */}
-        <div className="flex items-center gap-3 self-end md:self-auto">
+        <div className="flex items-center gap-3 self-end md:self-auto shrink-0">
           <Link
             href={ROUTES.templates}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 px-5 rounded-full bg-white/80 hover:bg-white text-[#152e22] text-sm font-medium border border-[#e3ded6] shadow-xs transition-all active:scale-95"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 px-5 rounded-full whitespace-nowrap bg-white/80 hover:bg-white text-[#152e22] text-sm font-medium border border-[#e3ded6] shadow-xs transition-all active:scale-95"
           >
             Xem tất cả
             <span className="material-symbols-outlined text-base text-[#486458]" aria-hidden>
@@ -134,7 +142,7 @@ export function HomeTemplateDeck() {
               <DeckCard
                 key={card.id}
                 card={card}
-                offset={idx - current}
+                offset={ringOffset(idx, current, count)}
                 position={`${idx + 1} / ${count}`}
                 onSelect={() => setActive(idx)}
               />
@@ -185,7 +193,9 @@ function DeckCard({
     ? { "aria-roledescription": "slide", "aria-label": `${position}: ${card.title}` }
     : {
         role: "button",
-        tabIndex: 0,
+        // The hidden card at the back of the ring is out of the tab order too.
+        tabIndex: Math.abs(offset) > 2 ? -1 : 0,
+        "aria-hidden": Math.abs(offset) > 2 || undefined,
         "aria-label": `Xem mẫu ${card.title}`,
         onClick: onSelect,
         onKeyDown: (event: React.KeyboardEvent) => {

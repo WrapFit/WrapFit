@@ -145,13 +145,14 @@ function DashboardSettingsScreen() {
   return (
     <div
       data-stitch="dashboard-settings"
-      className="bg-background font-body-md text-on-surface antialiased relative min-h-screen selection:bg-blue-100 selection:text-primary pb-36"
+      className="bg-background font-body-md text-on-surface antialiased relative min-h-screen selection:bg-blue-100 selection:text-primary"
     >
       {/* Top Apple Floating Navigation Bar */} <MainHeader /> {/* Main Content Wrapper */}{' '}
-      <main className="relative z-10 w-full pt-28 px-4 sm:px-6 md:px-8 max-w-5xl 2xl:max-w-6xl mx-auto pb-24 flex-1">
-        <div className="mb-8">
-          <DashboardHeaderNav />
-        </div>
+      {/* The dashboard tabs keep the width they have on the other dashboard pages; the settings column is narrower. */}
+      <div className="relative z-20 w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 mb-8">
+        <DashboardHeaderNav />
+      </div>
+      <main className="relative z-10 w-full px-4 sm:px-6 md:px-8 max-w-5xl 2xl:max-w-6xl mx-auto pb-10 flex-1">
         {/* Clean Apple Title Header */}
         <div className="text-center max-w-xl mx-auto mb-8">
           <h1 className="font-headline-lg text-3xl sm:text-4xl text-on-surface tracking-tight font-medium">
@@ -305,8 +306,9 @@ function DashboardSettingsScreen() {
           </div>
         </div>
       </main>
-      {/* LUXURY FLOATING BOTTOM ACTION DOCK: above the mobile bottom navigation */}
-      <footer className="fixed bottom-24 md:bottom-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+      {/* LUXURY FLOATING BOTTOM ACTION DOCK: above the mobile bottom navigation. Sticky, so it floats while the
+          settings scroll and comes to rest above the page footer instead of covering it. */}
+      <footer className="sticky bottom-24 md:bottom-6 z-50 flex justify-center px-4 mb-16 pointer-events-none">
         <div className="pointer-events-auto h-13 px-3 py-1.5 flex items-center gap-3 rounded-full bg-forest-900 text-white shadow-[0_12px_32px_rgba(19,48,32,0.22)] border border-forest-800">
           <button
             type="button"

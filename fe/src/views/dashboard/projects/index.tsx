@@ -149,7 +149,7 @@ function DashboardProjectsScreen() {
     );
   } else if (list.isPending) {
     gridBody = (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg" aria-busy="true">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-space-lg" aria-busy="true">
         <span role="status" className="sr-only">
           Đang tải dự án…
         </span>
@@ -205,7 +205,7 @@ function DashboardProjectsScreen() {
   } else {
     gridBody = (
       <div
-        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg transition-opacity ${
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-space-lg transition-opacity ${
           list.isPlaceholderData ? 'opacity-60' : ''
         }`}
         id="projectsGrid"
