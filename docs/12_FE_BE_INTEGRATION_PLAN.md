@@ -2,12 +2,13 @@
 
 > Ngày lập: 2026-10-10 · Nhánh gốc: `feat/studio-editor-and-mascot-copilot` · Trạng thái: **đã duyệt 2026-10-10**,
 > thực hiện theo từng phiên ở [§9](#9-chia-phiên-làm-việc-và-bàn-giao). Phase 7 (rà soát giao diện theo kích thước màn
-> hình) thêm ngày 2026-10-11, duyệt và làm ở phiên S9 (kết quả: [`13`](13_UI_VIEWPORT_AUDIT.md))
+> hình) thêm ngày 2026-10-11, duyệt và làm ở phiên S9 (kết quả: [`13`](13_UI_VIEWPORT_AUDIT.md)). Phase 8 (rà soát
+> công thức hộp: dieline, 3D, FitCheck, file in) thêm ngày 2026-10-11, làm ở phiên S10
 > Contract API: [`06_FE_INTEGRATION_GUIDE.md`](06_FE_INTEGRATION_GUIDE.md) (cách dùng), Swagger `http://localhost:8080/api/docs`
 > (nguồn sự thật), [`03_API_DESIGN.md`](03_API_DESIGN.md). Kiến trúc Stitch: [`11_STITCH_PARITY_AUDIT.md`](11_STITCH_PARITY_AUDIT.md).
 
 Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-quyết-định-đã-chốt) · [3. Bản đồ màn hình](#3-bản-đồ-màn-hình--api) ·
-[4. Các phase](#4-các-phase) · [5. Sở hữu file](#5-ma-trận-sở-hữu-file) · [6. Điều phối subagent](#6-điều-phối-subagent) ·
+[4. Các phase](#4-các-phase) (Phase 8: [công thức hộp](#phase-8--rà-soát-và-sửa-công-thức-hộp-thêm-2026-10-11)) · [5. Sở hữu file](#5-ma-trận-sở-hữu-file) · [6. Điều phối subagent](#6-điều-phối-subagent) ·
 [7. Kiểm thử](#7-kịch-bản-kiểm-thử-end-to-end) · [8. Rủi ro, câu hỏi mở](#8-rủi-ro-và-câu-hỏi-mở) ·
 [9. Phiên làm việc](#9-chia-phiên-làm-việc-và-bàn-giao)
 
@@ -283,6 +284,62 @@ một lượt ở M và X+ cho các trang G1, G4, G5.
 console ngoài danh sách đã biết; mọi ảnh G1–G5 đã xem theo checklist, lỗi P1 / P2 đã sửa; P3 và G7 có trong docs/13 kèm
 phiên sẽ sửa; `tsc`, `next build` pass; mốc `stitch:parity` mới đã ghi.
 
+### Phase 8 — Rà soát và sửa công thức hộp (thêm 2026-10-11)
+
+**Lý do.** Ở S6 tìm ra 2 lỗi trong công thức hộp nắp gài (nắp đè mặt sau, không có nét cắt), đã sửa bằng công thức
+phiên bản 2 (`7e4e105`). Rà nhanh khi viết phase này thấy lỗi cùng loại ở mọi cấu trúc: hộp gối, âm dương, bao diêm
+cũng **không có nét cắt**, nên lớp cắt của file in PDF / SVG / DXF trống, xưởng không bế được. Mỗi nơi vẽ hộp (dieline
+2D, mô hình 3D, ảnh xem trước, file in, thumbnail) lại tự có công thức riêng, không đối chiếu với nhau. Phase này kiểm
+toàn bộ chuỗi, từ công thức tới mọi nơi dùng nó, và sửa để hình trên màn hình, mô hình 3D và file in là **một** hộp,
+gấp được thật.
+
+**Nguyên tắc**
+
+- **Một nguồn sự thật**: hình học hộp nằm ở `@wrapfit/shared` (`generateDielinePieces`). 2D, 3D, ảnh xem trước, file in
+  và FitCheck đọc từ đó, hoặc có test chứng minh khớp với nó (sai lệch ≤ 0,5 mm).
+- **Không xê dịch dự án cũ**: đổi công thức = phiên bản mới trong `registry.ts` (bản cũ đóng băng như
+  `tuck-top.v1.ts`), seed gán `CURRENT_FORMULA_VERSION` cho box template. Dự án đã tạo giữ phiên bản của nó.
+- **Quy ước kích thước** chốt một lần và ghi vào docs: L × W × H là **lòng trong** (vừa món quà), công thức tự cộng bù
+  độ dày giấy `t` theo skill `fitcheck-validator` (`t = GSM × 0,0014 mm`, vd. 300 GSM ≈ 0,42 mm).
+- Mỗi lỗi sửa kèm test (unit trong `be/src/**` chạy với `@wrapfit/shared`, như `dieline-geometry.spec.ts`).
+
+**Phạm vi: mọi nơi có công thức hộp**
+
+| # | Nơi | File | Điều đã biết / cần kiểm |
+|---|---|---|---|
+| H1 | Công thức dieline 4 cấu trúc | `shared/src/parametric/{tuck-top,pillow,lid-base,sleeve-drawer}.ts`, `registry.ts` | Gối, âm dương, bao diêm không có nét cắt. Âm dương thiếu tai dán góc (4 thành không dán được với nhau); nắp cao `max(15, 0,6H)`, dư `2t + 1,2`. Bao diêm: vỏ quấn theo chiều nào so với hướng rút khay, khay có tai dán / gập đôi thành không, dư `2t + 1` có đủ trượt. Gối: `faceWidth = W + 0,4H` là ước lượng, cung Bézier là nét gấp (`pathString`) nhưng hai đầu cong chưa có nét cắt. Nắp gài bản 2 chưa cộng bù `t` (bản 1 tính biến `clearance` mà không dùng) |
+| H2 | Giới hạn kích thước | `be/prisma/seed-data.ts` (`dimensionParams`), DTO `be/src/projects`, `Step2DimensionAndMaterial` | Cả 4 cấu trúc chung 40–600 mm; tỉ lệ vô lý (vd. hộp gối 600 × 30) vẫn qua. Phôi trải phẳng có thể vượt khổ máy in: thêm kiểm khổ giấy tối đa (vd. B1 1020 × 720 mm) ở FitCheck hoặc validate |
+| H3 | FitCheck | `shared/src/fitcheck/validator.ts`, `be/src/projects/domain/project-fitcheck.ts`, `fe/src/features/studio/utils/dieline.ts` | Chỉ có lề an toàn 3 mm và DPI. Thiếu so với skill: tràn lề (bleed ≥ 2 mm) cho hoa văn / nền, tai dán không có mực, phần tử nằm ngoài mọi mặt, phần tử xoay (đang bỏ qua `rotation`), chữ tràn khung. Công thức điểm (−30 lỗi, −10 cảnh báo) cần chốt |
+| H4 | File in | `be/src/export/rendering/print-{layout,renderers}.ts` | Chỉ vẽ `segments`, nên nét cắt phụ thuộc H1. DXF xấp xỉ đường cong bằng dây cung. Cỡ chữ lệch: canvas vẽ `fontSize × 0,42 mm`, file in dùng `fontSize / 2,835` (= × 0,353 mm), chữ in nhỏ hơn trên màn hình ~16 % |
+| H5 | Canvas 2D | `fe/src/features/studio/components/canvas/DielineCanvas2D.tsx` | Vẽ đúng `segments`, `panels` của phiên bản dự án; `pathString` có cộng lề `padding` không (bộ xuất cũ `shared/src/exporter/pdf-export.ts` quên cộng). Cỡ chữ (xem H4) |
+| H6 | Mô hình 3D | `fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx`, `FoldingBox3D.tsx` | Tự dựng hình, không đọc dieline: âm dương nắp cao `max(16, 0,5H)` dư 2 mm (dieline `max(15, 0,6H)`, dư `2t + 1,2`); bao diêm vỏ dư 2 mm (dieline `2t + 1`); nắp gài gấp theo bản lề riêng. Chuyển sang dựng từ `panels` + bản lề của dieline (trường `hingeAxis` có sẵn trong `PanelFace`, chưa dùng) hoặc có test so kích thước khối 3D với dieline. Chữ / ảnh / hoa văn dán lên đúng mặt (`panelId`) |
+| H7 | Ảnh xem trước, thumbnail | `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `fe/src/features/studio/utils/thumbnail.ts` | Phác thảo isometric tự tính, cần khớp tỉ lệ L : W : H. Thumbnail chỉ vẽ `pieces[0]` (hộp 2 mảnh chỉ thấy 1 mảnh) |
+| H8 | Số liệu hiển thị | `Step2DimensionAndMaterial.tsx` (khổ trải phẳng `2L + 2W + 30`, bù `2t`), `Step1BoxTemplatePicker` (`creaseCount`), `PanelNavigator` | Lấy từ `totalBoundingBox` và `segments` thật thay vì công thức cứng |
+| H9 | Vật liệu, độ dày | `fe/src/features/studio/utils/projectMaterial.ts`, `PAPER_MATERIALS`, `DimensionControls` (GSM → t) | Ba bảng GSM / caliper khác nhau; thống nhất theo `t = GSM × 0,0014` |
+| H10 | Gợi ý của Gói | `fe/src/features/studio/components/copilot/AiCopilotAssistant.tsx`, skill `ai-packaging-copilot`, `handleAutoFix` trong `StudioWorkspace.tsx` | Heuristic kích thước; auto-fix lề chỉ đẩy phần tử về 4 mm ở mép trái / trên, không xét mép phải / dưới |
+| H11 | Mã không dùng | `shared/src/core/contracts.ts` (870 dòng, không file nào import), `shared/src/exporter/pdf-export.ts` (`exportDielineToSVG`, không còn ai gọi) | Xoá hoặc ghi rõ trạng thái, tránh dùng nhầm công thức cũ |
+
+**Các bước**
+
+| # | Việc | File |
+|---|---|---|
+| 8.1 | Bảng kiểm công thức: với mỗi cấu trúc, vẽ phôi bằng code (SVG → PNG, như khi kiểm bản 2 nắp gài) ở 4 cỡ (rộng, cao, dẹt, nhỏ nhất); đối chiếu cấu trúc thật (ECMA / FEFCO: A20.20 nắp gài, hộp gối, hộp âm dương có tai dán góc, hộp bao diêm); ghi kết quả từng mục H1–H11 | `docs/14_BOX_FORMULA_AUDIT.md` (mới) |
+| 8.2 | Chốt quy ước kích thước lòng trong + bù `t`; ghi vào docs/06 §5.1 và README của shared | `docs/06`, `shared/README.md` |
+| 8.3 | Công thức phiên bản 3: nét cắt đủ cho gối / âm dương / bao diêm, tai dán còn thiếu, bù `t` cho cả 4 cấu trúc; bản 1, 2 đóng băng | `shared/src/parametric/**` |
+| 8.4 | Test hình học cho mọi phiên bản đang dùng: mặt không chồng, nằm trong khổ, đường cắt khép kín (mỗi đầu mút nét cắt nối với nét cắt / gấp khác), mặt gấp lại khớp lòng trong ± 0,5 mm, bản cũ không đổi | `be/src/projects/domain/dieline-geometry.spec.ts` |
+| 8.5 | FitCheck: thêm bleed, phần tử ngoài mặt, xoay, tai dán, khổ giấy tối đa (H2, H3); client (`checkDesign`) và server (`checkProject`) dùng chung một hàm; cập nhật thông báo và auto-fix (H10) | `shared/src/fitcheck`, `be/src/projects/domain`, `fe/src/features/studio` |
+| 8.6 | File in: cỡ chữ khớp canvas (H4), đường cong trong DXF; xuất thử PDF / SVG / DXF cả 4 cấu trúc ở phiên bản mới (cần worker), mở bằng Illustrator / Inkscape / viewer DXF, kiểm lớp `CutContour`, `Crease` | `be/src/export/rendering` |
+| 8.7 | 3D dựng từ dieline (H6): kích thước khối, vị trí bản lề, chữ / ảnh trên đúng mặt; test so kích thước 3D với dieline ở 4 cỡ | `fe/src/features/studio/components/three` |
+| 8.8 | 2D, ảnh xem trước, số liệu (H5, H7, H8, H9) đọc từ dieline và một bảng vật liệu | `fe/src/features/studio`, `fe/src/features/templates` |
+| 8.9 | Dọn mã không dùng (H11) | `shared/src` |
+| 8.10 | *(Người dùng quyết)* Dự án cũ ở phiên bản 1 / 2: giữ nguyên, hay thêm nút "Cập nhật lên công thức mới" trong studio (cần BE: đổi `formulaVersion`, chạy lại FitCheck, tự lưu mốc phiên bản trước khi đổi) | — |
+| 8.11 | Kiểm trên trình duyệt: tạo dự án mỗi cấu trúc, so 2D / 3D / thumbnail / file in của cùng một hộp; quét G7 (`--group=G7`); in thử phôi tỉ lệ 1 : 1 trên A4 và gấp tay nếu được | `docs/14` |
+
+**DoD**: 4 cấu trúc có phôi đủ nét cắt, nét gấp, tai dán, gấp lại đúng lòng trong (test 8.4 pass); file in 4 cấu trúc
+có lớp cắt và lớp gấp, chữ cùng cỡ với canvas; 3D, 2D, ảnh xem trước cùng kích thước với dieline (test hoặc ảnh so sánh
+trong docs/14); FitCheck đủ quy tắc của skill `fitcheck-validator`; dự án cũ mở và xuất đúng như trước; unit, e2e
+backend, `tsc`, `next build` pass.
+
 ## 5. Ma trận sở hữu file
 
 Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ đọc; cần đổi thì báo lại agent chính.
@@ -298,6 +355,7 @@ Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ
 | Chính (Phase 7) | Nhóm G1 (`src/components/layout/**`, `src/components/common/**`), G6 (qua `stitch/overrides.json` hoặc component dùng chung), `fe/scripts/page-shots*`, `fe/scripts/ui-fixtures.mjs`, `docs/13_UI_VIEWPORT_AUDIT.md` |
 | F — Phase 7 (tuỳ chọn) | Sửa giao diện G2 + G3: như cột A (trừ `components/layout`) và cột E |
 | G — Phase 7 (tuỳ chọn) | Sửa giao diện G4 + G5: như cột B và D, cả phần còn lại của `src/views/home/index.tsx` |
+| H — Phase 8 | `shared/src/{parametric,fitcheck,exporter,core}/**`, `shared/README.md`, `be/src/export/rendering/**`, `be/src/projects/domain/**`, `be/prisma/seed-data.ts`, `fe/src/features/studio/components/{three,canvas}/**`, `fe/src/features/studio/utils/**`, `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `docs/14_BOX_FORMULA_AUDIT.md` (mới). Cần sửa `StudioWorkspace.tsx`, `Step2DimensionAndMaterial.tsx` (thuộc C) thì làm sau S7 hoặc báo agent chính |
 
 Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện): C chỉ đổi `href`, D chỉ đổi khối
 `<section id="thu-vien-mau">`. Agent chính gộp nếu xung đột.
@@ -305,7 +363,8 @@ Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện):
 ## 6. Điều phối subagent
 
 Thứ tự phụ thuộc: Phase 0 → (1, 2, 3a, 4, 5 độc lập với nhau) → 3b (sau 3a) → 6. Phase 7 (thêm sau) cần 1, 2, 4, 5
-xong và nên chạy trước 3a; Phase 6 cần cả 7. Để vừa hạn mức mỗi lần chạy, các phase được xếp thành 9 phiên, mỗi phiên
+xong và nên chạy trước 3a; Phase 8 (thêm sau) cần 3a; Phase 6 cần cả 7 và 8. Để vừa hạn mức mỗi lần chạy, các phase
+được xếp thành 10 phiên, mỗi phiên
 tối đa 2 subagent song song (§9).
 
 - **Cùng working tree, file tách biệt** (§5): không dùng git worktree vì mỗi worktree phải `npm install` lại monorepo.
@@ -386,10 +445,11 @@ cần để làm tiếp nằm trong file này, `git log` và nhật ký §9.3.
 | **S5** | Phase 2 (dashboard, dự án, Brand Kit, hồ sơ, cài đặt) + Phase 4 (thư viện mẫu, `/p/[slug]`, `/unbox/[slug]`) | B, D song song | S3 xong (không cần S4) | DoD Phase 2 và Phase 4 |
 | **S6** | Phase 3a (`/editor/new`, mở / lưu / xung đột, upload, thumbnail, chuyển hướng) | C | S3 xong | DoD 3a |
 | **S7** | Phase 3b (mốc phiên bản, xuất file, chia sẻ, QR, hoa văn AI) | C (hoặc 2 agent: xuất file + mốc / chia sẻ + QR + AI, mỗi tính năng một file component) | S6 xong | DoD Phase 3 |
-| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7 và S9 xong | 15 bước §7 đạt, có ảnh bằng chứng ở M và X+ (Phase 7) |
+| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7, S9 và S10 xong | 15 bước §7 đạt, có ảnh bằng chứng ở M và X+ (Phase 7) |
 | **S9** | Phase 7: rà soát giao diện các màn S1–S5, khung chung và màn Stitch tĩnh theo ma trận 6 kích thước; ghi mốc studio cho S6 / S7 | Không cho 7.1–7.5; F, G song song cho 7.6 nếu nhiều lỗi | S5 xong. **Nên chạy trước S6**: S6 / S7 làm trên khung đã sửa và dùng lại script | DoD Phase 7 |
+| **S10** | Phase 8: rà soát và sửa công thức hộp (H1–H11): dieline phiên bản 3, FitCheck đủ quy tắc, file in, 3D / 2D / ảnh xem trước khớp dieline, `docs/14` | Không cho 8.1–8.4 (công thức là gốc, làm tuần tự); 8.5–8.8 có thể 2 agent: H (BE / shared: 8.5, 8.6) và H' (FE: 8.7, 8.8) | S6 xong. Không phụ thuộc S7 (khác file, trừ `StudioWorkspace.tsx`); **phải xong trước S8**. Lớn: tách S10a (8.1–8.4, 8.9) và S10b (8.5–8.8, 8.11) nếu thiếu hạn mức; 8.10 hỏi người dùng trước khi làm | DoD Phase 8 |
 
-S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Thứ tự đề xuất cho phần còn lại: S9 → S6 → S7 → S8. Một phiên quá lớn so với hạn mức còn lại thì tách
+S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Thứ tự đề xuất cho phần còn lại: S9 → S6 → S7 → S10 → S8 (S10 có thể làm trước S7: S7 kiểm luồng xuất file, S10 kiểm nội dung file). Một phiên quá lớn so với hạn mức còn lại thì tách
 theo từng agent (vd. S4 → S4a Phase 1, S4b Phase 5) và ghi rõ vào nhật ký.
 
 ### 9.2. Quy trình mỗi phiên
@@ -432,3 +492,4 @@ hoặc khung chung) và xem ảnh trong `fe/.page-shots/`; không đánh giá de
 | S6 | 2026-10-11 | `61f5f3e`, `b4cd3d6`, `9d5d36a` | **Phase 3a xong** (agent chính làm, không dùng subagent). `/editor/new` (`views/editor/new`): bước 1 lấy cấu trúc từ `GET /templates/structures` (thứ tự, tên, mô tả của API; badge, gợi ý quà vẫn ở `BOX_STRUCTURES`), bước 2 slider + ô nhập mm theo `dimensionLimits` (ngoài giới hạn: khoá nút, báo lỗi; món quà mẫu ngoài giới hạn bị khoá), "Tạo Dự Án" → `POST /projects` → `router.replace('/editor/<id>')`, invalidate `projects.all`; `?template=<id>` → khoá bước 1, gửi `designTemplateId` + canvas của mẫu. `/editor/[id]` (`views/editor/studio/index.tsx` tải dự án bằng React Query, luôn lấy bản mới khi mở; `StudioWorkspace.tsx` giữ bản sao để sửa): dieline = `generateDielinePieces(template.id, dimensions, formulaVersion)` (hộp 2 mảnh có nút chọn mảnh), FitCheck tính như server (`checkDesign`, mọi mảnh), header hiện điểm server sau khi lưu; 404 / id sai → "Không tìm thấy dự án"; `/editor/demo` chạy offline không cần đăng nhập. `features/studio/hooks/useProjectSync.ts`: autosave 900 ms theo `version`, hàng đợi tuần tự, lỗi mạng / 5xx tự thử lại sau 5 giây, `beforeunload` khi chưa lưu, rời trang thì gửi nốt thay đổi; `409 PROJECT_VERSION_CONFLICT` → `VersionConflictDialog` (Tải bản mới = tải lại và dựng lại editor; Ghi đè = gửi với `currentVersion`); `409` không code / dự án `DELETED` → chỉ xem (`inert`) + "Khôi phục dự án". Ảnh PNG / JPG / WebP → `IMAGE`, SVG → `LOGO` qua `uploadFileToStorage` (kiểm định dạng, 15 MB; vừa mặt hộp đang chọn, giữ tỉ lệ, tính `dpi`). Thumbnail PNG 640 px (`utils/thumbnail.ts`, ảnh đọc thành data URL để canvas không bị "tainted") → `THUMBNAIL` → `PATCH { thumbnailUrl, version }` trong cùng hàng đợi, tối đa 1 lần / 60 giây và khi rời trang. `next.config.mjs` `redirects`: `/editor`, `/editor/studio`, `/editor/step-1..4`, `/editor/export` → `/editor/new` (307, giữ query); xoá `app/editor/studio`. Link: header, mega menu, bottom bar, avatar, sidebar admin, trang chủ → `ROUTES.editorNew`; footer, "3D Studio" ở dashboard → `ROUTES.editorDemo` (mới). Việc S5 để lại: `InteractiveFoldingBox3D` thêm `showStatusBar`, `minHeight`; trang công khai ẩn thanh trạng thái. `tsc` sạch, `next build` pass (bản sao tạm), `stitch:sync` không đổi file. Đã kiểm trên trình duyệt với backend thật (admin seed): tạo dự án 120 × 80 × 60 → đổi tên → upload PNG → thêm chữ → F5 còn đủ; thumbnail lên dashboard (ảnh có chữ + ảnh); sửa rồi chuyển trang ngay (< 900 ms) vẫn lưu; tab khác lưu trước → hộp thoại → Ghi đè đúng, lần 2 Tải bản mới đúng; chuyển dự án vào thùng rác khi đang mở → chỉ xem → Khôi phục → lưu tiếp; tạo từ mẫu lid-base → 2 mảnh phôi, canvas của mẫu. Quét G7 (docs/13 §4): 30 / 30 ô `ok` ở M, X+; xem thêm ảnh T, L, X. Dữ liệu thử đã xoá (fixture của S9 còn) | **Phát hiện ngoài phạm vi (đã tách việc)**: (1) mẫu Curated của seed đặt mọi chữ ở `panelId: 'front'`, chỉ hộp nắp gài có mặt đó → chữ của mẫu gối / âm dương / bao diêm không hiện, không được FitCheck, có thể không in; (2) `tuck-top.ts`: nắp trên `y = 0`, cao W, đè lên mặt sau (bắt đầu `y = H`) khi W > H; sửa phải thêm `formulaVersion` 2. **Cho S7**: nút xuất file, QR, mốc phiên bản vẫn là code cũ trong `StudioWorkspace.tsx` (xuất file còn `setInterval`, QR còn `api.qrserver.com`), thay bằng component riêng ở `features/studio/components/<tên>/`; `useProjectSync` có `serverReport` (FitCheck server) và hàng đợi lưu: thao tác đổi version (khôi phục mốc) phải đi qua nó hoặc dựng lại editor (`onReload`) để không bị `409`; bước 3 trên điện thoại: dock công cụ đứng dọc chiếm cả cột (có từ trước). **Môi trường**: `next dev` của phiên khác đang chạy ở cổng 3000 nên S6 dùng chung (Fast Refresh, `next.config` tự nạp lại); `window.scrollTo` trên Chromium mới trả Promise, đừng viết `useEffect(() => window.scrollTo(...))`. Phiên sau: S7 |
 | S6 (bổ sung) | 2026-10-11 | `74bc021` | **Mẫu Curated của seed đặt chữ đúng mặt hộp** (phát hiện (1) của S6). Dữ liệu seed tách ra `be/prisma/seed-data.ts`; chữ dùng id mặt đầy đủ của từng cấu trúc (`panel_front`, `pillow_front`, `lid_top`, `sleeve_top`) và vị trí / bề rộng nằm trong mặt (mẫu "Hộp Skincare Tối Giản" trước tràn mặt trước 60 mm). Test `be/src/templates/seed-data.spec.ts`: mọi phần tử nằm trên một mặt của dieline, mọi mẫu qua FitCheck không vi phạm. Unit 202/202. Đã chạy `db:seed` ở local, tạo dự án từ mẫu âm dương: mở đúng mảnh "Nắp", chữ "Hỷ" hiện, FitCheck 100. Không dự án nào trong DB local dùng id cũ nên không cần migration | Phát hiện (2) (`tuck-top.ts` nắp đè mặt sau) vẫn là việc riêng. Phiên sau: S7 |
 | S6 (bổ sung 2) | 2026-10-11 | `7e4e105` | **Dieline hộp nắp gài phiên bản công thức 2** (phát hiện (2) của S6). `shared/src/parametric/tuck-top.ts`: tai gài, nắp L × W, thân, đáy L × W, tai gài theo cột mặt sau; tai chống bụi ở 2 mặt hông; tai dán vát; đủ nét cắt và nét gấp. Id và kích thước các mặt giữ như bản 1 nên canvas và điểm FitCheck không đổi. Bản 1 đóng băng ở `tuck-top.v1.ts` cho dự án cũ; `CURRENT_FORMULA_VERSION = 2`, seed gán cho cả 4 cấu trúc (3 cấu trúc kia giống bản 1). Test `be/src/projects/domain/dieline-geometry.spec.ts`: mặt không chồng nhau, không ra ngoài khổ, ở 4 cỡ, cả 4 cấu trúc; bản 1 không đổi. Unit 221/221, e2e `export` `projects` `templates` `public-showcase` 66/66. Studio vẽ đúng phôi mới (415 × 256 mm cho 120 × 80 × 60) | **Phát hiện mới**: hộp gối, âm dương, bao diêm cũng **không có nét cắt** (`type: "cut"`), nên lớp cắt của file in PDF / SVG / DXF trống với 3 cấu trúc này; cần phiên bản 3. Môi trường: backend / `next dev` đang chạy tự nhận `shared/dist` mới sau `npm run build:shared` (nếu thấy `UnsupportedFormulaVersionError` 500 thì khởi động lại backend). Phiên sau: S7 |
+| Plan (bổ sung Phase 8) | 2026-10-11 | — | Thêm Phase 8 (rà soát và sửa công thức hộp, mục H1–H11) và phiên S10 theo yêu cầu người dùng, sau khi S6 tìm ra lỗi công thức hộp nắp gài và thấy 3 cấu trúc còn lại cũng không có nét cắt | S10 phải xong trước S8; có thể làm trước hoặc sau S7. Mục 8.10 (cập nhật dự án cũ lên công thức mới) hỏi người dùng trước |
