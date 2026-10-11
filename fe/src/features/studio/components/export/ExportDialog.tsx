@@ -15,7 +15,7 @@ const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
     type: "PDF_CMYK",
     title: "PDF vector CMYK",
-    hint: "Cho xưởng in: lớp CutContour, Crease, Artwork, Dimensions. Ảnh PNG / JPG được nhúng.",
+    hint: "Cho xưởng in: nét cắt đỏ, nét gấp xanh nét đứt (màu CMYK), chữ và ảnh PNG / JPG.",
   },
   { type: "SVG", title: "SVG nhiều lớp", hint: "Cho máy cắt Cricut, laser; mở bằng Illustrator, CorelDraw, Figma." },
   { type: "DXF", title: "DXF", hint: "Cho máy bế CNC: chỉ nét cắt và nét gấp, không có hình in." },
