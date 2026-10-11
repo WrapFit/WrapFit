@@ -233,6 +233,16 @@ Mức: **P1** che / cắt nội dung, không bấm được, tràn ngang; **P2**
 
 `editor/step-2`, `editor/step-4`, `editor/export` chỉ được đổi đường dẫn ảnh `mascot-hero.png` (F13), không đổi bố cục.
 
+**G7 sau S6 (2026-10-11, quét `--group=G7`, M và X+; thêm ảnh T, L, X cho studio và `/editor/new`): 30 / 30 ô `ok`.**
+
+| # | Kết quả S6 |
+|---|---|
+| L1–L5 | Hết: `/editor`, `/editor/studio`, `/editor/step-1..4`, `/editor/export` chuyển hướng 307 về `/editor/new` (giữ query), route quét có `endsAt` `^/editor/new$`. Các màn Stitch đó vẫn được sinh (lock) nhưng không còn mở được |
+| L6 | Đã sửa sớm: chip hoa văn có `title` |
+| Mới | Route G7 mới: `g7-editor-new` (+ bước 2, + `?template=`, khách → đăng nhập), `g7-editor-project` (+ bước 2, bước 4), `g7-editor-two-piece` (lid-base, 2 mảnh phôi), `g7-editor-trashed` (chỉ xem), `g7-editor-missing` (404), `g7-editor-demo` (khách) |
+| Sửa trong lúc quét | Header studio ở L (1024 px): thanh bước đè tên dự án → nhãn bước chỉ hiện từ `xl`, nhãn lưu chỉ hiện từ `xl` (dưới đó là chấm màu + `title`); chữ bị cắt không `title` ở thẻ cấu trúc, món quà mẫu |
+| Còn lại (S7) | Bước 3 trên điện thoại: dock công cụ đứng dọc chiếm cả cột trước canvas (bố cục có từ trước S6, không bị kiểm tra tự động bắt) |
+
 **P3 còn lại:**
 
 | # | Màn / kích thước | Ghi chú |
