@@ -276,7 +276,7 @@ function AdminAccountsScreen() {
               <span className="font-cad-dimension text-cad-dimension text-on-surface-variant font-semibold">100%</span>
             </div>
           </div>
-          <AdminSidebarNav />
+          <AdminSidebarNav mobileToggle={false} />
         </div>
         <div className="px-3 pt-3 bg-surface-container-low">
           <div className="flex items-center justify-between p-3 rounded-2xl bg-surface-container-lowest shadow-[0_1px_3px_rgba(28,25,23,0.04)]">

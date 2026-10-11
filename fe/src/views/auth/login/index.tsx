@@ -237,7 +237,7 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
               <img
                 alt="Luxury Packaging 3D"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                src="https://lh3.googleusercontent.com/aida/AEtjO1Uspg_z7u6HUHwxug2zn0dP_ORO7bcN3t1JPm5gpUPgqwRTn-PZxNTGy6jwX6cRHrJWBif8jouGcXyokXK9LjgLIkfyRcVYFrchcSonmM0rDnr2RrAI6kPCaT2_uc1evheMkx5CeRN5wHvbqlRAk0hY9BynK8v1AVZ143Hzsh3KgenXiu8P9m0goczlGZIUlibmW4LyjCSpJvI0-ORnEh1p5fBH6o2PgdjhBTCyHawNNKGTTS4KZrpgQgm7"
+                src="/branding/hero-packaging-model.webp"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-transparent" />
               <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-xs font-mono text-white/95">
@@ -269,7 +269,7 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
                 <img
                   alt="Bé Gói WrapFit Mascot"
                   className="w-full h-full object-contain filter drop-shadow-sm"
-                  src="https://lh3.googleusercontent.com/aida/AEtjO1XxMYClelQATTbgX-vN_jkPVV4PnMq2OIqCnXmvGWJZVLKvlmtyezi-_Xmj82uuy0I0F9K3YDSknOObCwlRFLmimZMNB29nGbj-O-qQZnuPZ9FkcHbB8Cvt6yE7WrNrURALTtcfv129y3JfhuVsWsF2bwCwPyTHEjBAfHHBsXdjJQNcV_W9LJjzJmd9Io_1uZhRLT_5EMNaOHFvUyLbucdqWwc5Fve6ZbGa8e0Z6hUsoD2JeAHPo1q6TVY"
+                  src="/mascots/goi.webp"
                 />
               </div>
               <span className="font-mono text-[11px] uppercase font-bold text-amber-900 tracking-wider">

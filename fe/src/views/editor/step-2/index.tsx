@@ -462,7 +462,7 @@ export default function Step2DimensionsPage() {
             {/* Bottom-left Mascot Floating Speech Card */}
             <div className="relative z-10 max-w-md bg-white/95 backdrop-blur-md rounded-2xl p-3.5 border border-stone-200/90 shadow-md flex items-start gap-3">
               <img
-                src="/branding/mascot-hero.png"
+                src="/mascots/goi.webp"
                 alt="Bé Gói Mascot"
                 className="w-10 h-10 object-contain rounded-full bg-emerald-50 p-1 border border-emerald-200 shrink-0"
               />
