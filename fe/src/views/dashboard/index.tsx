@@ -1,13 +1,89 @@
 'use client';
 
+/**
+ * Stitch screen `dashboard` (status "wired": `stitch:sync` keeps this hand-edited file). Recent projects, storage and
+ * AI usage come from the API (`GET /projects`, `/storage/usage`, `/ai/usage`); the ecosystem shortcuts and the Copilot
+ * bar stay static (docs/12, D6). The screen's behavior script did nothing here, so there is no StitchRuntime.
+ */
+
 import React from 'react';
 import Link from 'next/link';
 import { MainHeader, MainFooter, DashboardHeaderNav } from '@/components/layout';
-import { StitchRuntime } from '@/features/stitch/runtime/StitchRuntime';
+import { GoiMascot } from '@/components/common/GoiMascot';
+import { EmptyState, ErrorState, PRIMARY_BUTTON } from '@/components/common/StatusViews';
+import { ROUTES } from '@/constants';
+import { RequireAuth } from '@/features/auth';
+import {
+  AiUsageTile,
+  RECENT_PROJECTS_QUERY,
+  RecentProjectCard,
+  RecentProjectSkeleton,
+  StorageUsageTile,
+  formatCount,
+  useProjectList,
+} from '@/features/dashboard';
 
 export default function DashboardPage() {
   return (
-    <div data-stitch="dashboard" className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
+    <RequireAuth>
+      <DashboardScreen />
+    </RequireAuth>
+  );
+}
+
+function DashboardScreen() {
+  const recent = useProjectList(RECENT_PROJECTS_QUERY);
+  const projects = recent.data?.items ?? [];
+  const latest = projects[0];
+
+  let recentBody: React.ReactNode;
+  if (recent.isPending) {
+    recentBody = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" aria-busy="true">
+        <span role="status" className="sr-only">
+          Đang tải dự án gần đây…
+        </span>
+        {[0, 1, 2, 3].map((index) => (
+          <RecentProjectSkeleton key={index} />
+        ))}
+      </div>
+    );
+  } else if (recent.isError) {
+    recentBody = (
+      <ErrorState
+        error={recent.error}
+        title="Không tải được dự án gần đây"
+        onRetry={() => void recent.refetch()}
+        retrying={recent.isFetching}
+      />
+    );
+  } else if (projects.length === 0) {
+    recentBody = (
+      <EmptyState
+        title="Chưa có dự án nào"
+        description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
+        action={
+          <Link href={ROUTES.editorNew} className={PRIMARY_BUTTON}>
+            Tạo hộp mới
+          </Link>
+        }
+      />
+    );
+  } else {
+    recentBody = (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {projects.map((project) => (
+          <RecentProjectCard key={project.id} project={project} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-stitch="dashboard"
+      className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none"
+    >
       {/* 1. Unified Main Header with Mega Menu */}
       <MainHeader />
 
@@ -29,258 +105,68 @@ export default function DashboardPage() {
                 Không Gian Dự Án Bao Bì Của Bạn
               </h1>
               <p className="text-sm text-[#717971] mt-1 max-w-2xl font-normal leading-relaxed">
-                Quản lý các khuôn bế CAD, thông số dung sai nếp gấp, kết cấu bao bì FEFCO và thư viện vật liệu thực tế phục vụ sản xuất.
+                Quản lý các khuôn bế CAD, thông số dung sai nếp gấp, kết cấu bao bì FEFCO và thư viện vật liệu thực tế
+                phục vụ sản xuất.
               </p>
             </div>
 
             {/* Quick Action CTAs */}
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
               <Link
-                href="/editor/step-1"
-                className="px-5 py-2.5 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-bold shadow-md shadow-[#122e20]/20 flex items-center gap-2 transition-all active:scale-95"
+                href={ROUTES.editorNew}
+                className="min-h-[44px] px-5 py-2.5 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-bold shadow-md shadow-[#122e20]/20 flex items-center gap-2 transition-all active:scale-95"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>+ Tạo Hộp Mới (4 Bước)</span>
+                <span>Tạo hộp mới</span>
               </Link>
               <Link
-                href="/editor/studio"
-                className="px-5 py-2.5 rounded-full bg-white hover:bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold shadow-2xs flex items-center gap-2 transition-all active:scale-95"
+                href={latest ? ROUTES.editor(latest.id) : ROUTES.editorNew}
+                title={latest ? `Mở “${latest.title}”` : undefined}
+                className="min-h-[44px] px-5 py-2.5 rounded-full bg-white hover:bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold shadow-2xs flex items-center gap-2 transition-all active:scale-95"
               >
                 <span className="material-symbols-outlined text-[18px] text-[#2563eb]">view_in_ar</span>
-                <span>Mở Master Studio 3D</span>
+                <span>{latest ? 'Tiếp tục dự án gần nhất' : 'Mở Master Studio 3D'}</span>
               </Link>
             </div>
           </div>
         </header>
 
         {/* 3. Main Bento: Active Packaging Projects (Dự Án Gần Đây) */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
+        <section className="space-y-4" aria-labelledby="recent-projects-title">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-3">
-              <h2 className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20]">
+              <h2 id="recent-projects-title" className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20]">
                 Dự Án Bao Bì Gần Đây
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-stone-200/70 text-stone-700 text-xs font-['JetBrains_Mono'] font-bold">
-                4 Đồ Án
-              </span>
+              {recent.data && (
+                <span className="px-2.5 py-0.5 rounded-full bg-stone-200/70 text-stone-700 text-xs font-['JetBrains_Mono'] font-bold">
+                  {formatCount(recent.data.meta.total)} dự án
+                </span>
+              )}
             </div>
             <Link
-              href="/dashboard/projects"
-              className="text-xs font-semibold text-[#122e20] hover:underline flex items-center gap-1"
+              href={ROUTES.projects}
+              className="min-h-[44px] text-xs font-semibold text-[#122e20] hover:underline flex items-center gap-1"
             >
               <span>Xem Tất Cả Dự Án</span>
               <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Project 1 */}
-            <article className="group bg-white rounded-3xl p-4 border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 mb-3.5">
-                  <img
-                    src="/stitch/img/727b7e0788de4f2f.jpg"
-                    alt="Hộp Cài Đáy Khóa"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold text-emerald-800 font-['JetBrains_Mono'] flex items-center gap-1 shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>FitCheck™ 100%</span>
-                  </div>
-                  <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-mono">
-                    220 × 140 × 80 mm
-                  </span>
-                </div>
+          {recentBody}
+        </section>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-['JetBrains_Mono'] text-stone-500">
-                    <span>FEFCO 0215</span>
-                    <span>Ivory 350 GSM</span>
-                  </div>
-                  <h3 className="font-['Playfair_Display'] text-base font-bold text-[#122e20] group-hover:text-blue-700 transition-colors truncate">
-                    Hộp Nắp Gài Đáy Khóa Ngược
-                  </h3>
-                  <p className="text-xs text-stone-500 line-clamp-1">
-                    Cán màng mờ Velvet, ép kim nhũ vàng Kurz 22K.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-2">
-                <Link
-                  href="/editor/studio"
-                  className="flex-1 py-2 px-3 rounded-xl bg-stone-100 hover:bg-[#122e20] hover:text-white text-stone-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[15px]">view_in_ar</span>
-                  <span>Mở 3D</span>
-                </Link>
-                <Link
-                  href="/editor/step-4"
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
-                  title="Kiểm định FitCheck™"
-                >
-                  <span className="material-symbols-outlined text-[17px] text-emerald-700">verified</span>
-                </Link>
-              </div>
-            </article>
-
-            {/* Project 2 */}
-            <article className="group bg-white rounded-3xl p-4 border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 mb-3.5">
-                  <img
-                    src="/stitch/img/9aeea1ca61895060.jpg"
-                    alt="Hộp Âm Dương Luxury"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold text-emerald-800 font-['JetBrains_Mono'] flex items-center gap-1 shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>FitCheck™ 100%</span>
-                  </div>
-                  <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-mono">
-                    180 × 180 × 60 mm
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-['JetBrains_Mono'] text-stone-500">
-                    <span>Rigid Box</span>
-                    <span>Greyboard 2.0mm</span>
-                  </div>
-                  <h3 className="font-['Playfair_Display'] text-base font-bold text-[#122e20] group-hover:text-blue-700 transition-colors truncate">
-                    Hộp Âm Dương Quà Tặng VIP
-                  </h3>
-                  <p className="text-xs text-stone-500 line-clamp-1">
-                    Bồi giấy mỹ thuật kẹp bông, khóa nam châm giấu cạnh.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-2">
-                <Link
-                  href="/editor/studio"
-                  className="flex-1 py-2 px-3 rounded-xl bg-stone-100 hover:bg-[#122e20] hover:text-white text-stone-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[15px]">view_in_ar</span>
-                  <span>Mở 3D</span>
-                </Link>
-                <Link
-                  href="/editor/step-4"
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
-                  title="Kiểm định FitCheck™"
-                >
-                  <span className="material-symbols-outlined text-[17px] text-emerald-700">verified</span>
-                </Link>
-              </div>
-            </article>
-
-            {/* Project 3 */}
-            <article className="group bg-white rounded-3xl p-4 border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 mb-3.5">
-                  <img
-                    src="/stitch/img/4c7ce7d1a5170261.jpg"
-                    alt="Hộp Khay Trượt Bao Diêm"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold text-emerald-800 font-['JetBrains_Mono'] flex items-center gap-1 shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>FitCheck™ 100%</span>
-                  </div>
-                  <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-mono">
-                    150 × 100 × 40 mm
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-['JetBrains_Mono'] text-stone-500">
-                    <span>Sleeve Drawer</span>
-                    <span>Kraft 300 GSM</span>
-                  </div>
-                  <h3 className="font-['Playfair_Display'] text-base font-bold text-[#122e20] group-hover:text-blue-700 transition-colors truncate">
-                    Hộp Bao Diêm Khay Trượt
-                  </h3>
-                  <p className="text-xs text-stone-500 line-clamp-1">
-                    Kraft mộc tái sinh, ruy băng lụa kéo khay tinh tế.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-2">
-                <Link
-                  href="/editor/studio"
-                  className="flex-1 py-2 px-3 rounded-xl bg-stone-100 hover:bg-[#122e20] hover:text-white text-stone-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[15px]">view_in_ar</span>
-                  <span>Mở 3D</span>
-                </Link>
-                <Link
-                  href="/editor/step-4"
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
-                  title="Kiểm định FitCheck™"
-                >
-                  <span className="material-symbols-outlined text-[17px] text-emerald-700">verified</span>
-                </Link>
-              </div>
-            </article>
-
-            {/* Project 4 */}
-            <article className="group bg-white rounded-3xl p-4 border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-stone-100 mb-3.5">
-                  <img
-                    src="/stitch/img/0bdf429fa5bb6e20.jpg"
-                    alt="Hộp Gối Cong"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[10px] font-bold text-amber-800 font-['JetBrains_Mono'] flex items-center gap-1 shadow-2xs">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <span>Đang Chỉnh Sửa</span>
-                  </div>
-                  <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-mono">
-                    120 × 80 × 30 mm
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-['JetBrains_Mono'] text-stone-500">
-                    <span>Pillow Box</span>
-                    <span>Kraft 280 GSM</span>
-                  </div>
-                  <h3 className="font-['Playfair_Display'] text-base font-bold text-[#122e20] group-hover:text-blue-700 transition-colors truncate">
-                    Hộp Gối Uốn Cong Phụ Kiện
-                  </h3>
-                  <p className="text-xs text-stone-500 line-clamp-1">
-                    Cấn gân cung tròn hai đầu, khóa cài tự ngậm không keo.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-stone-100 flex items-center gap-2">
-                <Link
-                  href="/editor/studio"
-                  className="flex-1 py-2 px-3 rounded-xl bg-stone-100 hover:bg-[#122e20] hover:text-white text-stone-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[15px]">view_in_ar</span>
-                  <span>Mở 3D</span>
-                </Link>
-                <Link
-                  href="/editor/step-4"
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors"
-                  title="Kiểm định FitCheck™"
-                >
-                  <span className="material-symbols-outlined text-[17px] text-amber-600">verified</span>
-                </Link>
-              </div>
-            </article>
-          </div>
+        {/* Storage & AI usage of the plan */}
+        <section aria-label="Hạn mức của gói" className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <StorageUsageTile />
+          <AiUsageTile />
         </section>
 
         {/* 4. Packaging Ecosystem Shortcuts (Brand Kit, Materials, Orders, Specs) */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Card 1: Brand Kit */}
           <Link
-            href="/dashboard/brand-kit"
+            href={ROUTES.brandKit}
             className="group p-6 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
           >
             <div>
@@ -331,9 +217,7 @@ export default function DashboardPage() {
               <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-700 mb-4 group-hover:scale-105 transition-transform">
                 <span className="material-symbols-outlined text-[24px]">receipt_long</span>
               </div>
-              <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">
-                Đơn Hàng &amp; Hóa Đơn VAT
-              </h3>
+              <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">Đơn Hàng &amp; Hóa Đơn VAT</h3>
               <p className="text-xs text-stone-500 mt-1 leading-relaxed">
                 Theo dõi tiến độ chế bản, xuất hóa đơn điện tử CQT và quản lý bản quyền CAD.
               </p>
@@ -371,11 +255,8 @@ export default function DashboardPage() {
         <section className="bg-white rounded-3xl p-5 border border-[#e8ded0]/80 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/60 p-1 flex items-center justify-center shrink-0">
-              <img
-                src="https://lh3.googleusercontent.com/aida/AEtjO1XxMYClelQATTbgX-vN_jkPVV4PnMq2OIqCnXmvGWJZVLKvlmtyezi-_Xmj82uuy0I0F9K3YDSknOObCwlRFLmimZMNB29nGbj-O-qQZnuPZ9FkcHbB8Cvt6yE7WrNrURALTtcfv129y3JfhuVsWsF2bwCwPyTHEjBAfHHBsXdjJQNcV_W9LJjzJmd9Io_1uZhRLT_5EMNaOHFvUyLbucdqWwc5Fve6ZbGa8e0Z6hUsoD2JeAHPo1q6TVY"
-                alt="Bé Gói WrapFit Copilot"
-                className="w-full h-full object-contain"
-              />
+              {/* The Stitch image of the mascot has expired: the app's own Gói. */}
+              <GoiMascot pose="chilling" size={40} interactive={false} label="Bé Gói WrapFit Copilot" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -385,7 +266,8 @@ export default function DashboardPage() {
                 </span>
               </div>
               <p className="text-xs text-stone-500 mt-0.5">
-                Các bản vẽ trong kho đồ án của bạn luôn được tiền kiểm tự động: Vùng an toàn &ge; 3mm, Bleed bù xén &ge; 2mm, đảm bảo không lỗi khi lên máy bế!
+                Các bản vẽ trong kho đồ án của bạn luôn được tiền kiểm tự động: Vùng an toàn &ge; 3mm, Bleed bù xén &ge;
+                2mm, đảm bảo không lỗi khi lên máy bế!
               </p>
             </div>
           </div>
@@ -393,14 +275,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               href="/support"
-              className="px-4 py-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors flex items-center gap-1.5"
+              className="min-h-[44px] px-4 py-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">help</span>
               <span>Trợ Giúp CAD</span>
             </Link>
             <Link
-              href="/editor/step-1"
-              className="px-4 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
+              href={ROUTES.editorNew}
+              className="min-h-[44px] px-4 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
             >
               <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
               <span>Bắt Đầu Ngay</span>
@@ -411,8 +293,6 @@ export default function DashboardPage() {
 
       {/* 6. Unified Footer */}
       <MainFooter />
-
-      <StitchRuntime screen="dashboard" />
     </div>
   );
 }
