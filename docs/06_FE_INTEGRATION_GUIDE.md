@@ -368,6 +368,9 @@ GET|POST /api/collections       · GET|PATCH|DELETE /api/collections/:id   (colo
 - Ảnh đại diện / logo bị thay hoặc gỡ được xóa luôn khỏi storage (không còn tính vào hạn mức), nếu file đó upload với
   purpose `AVATAR` / `LOGO` và không gắn dự án. Giữ lại: file `IMAGE` (có thể đang là thumbnail), logo còn hiện trên
   canvas của một dự án. Đừng dùng lại `fileUrl` cũ sau khi đã thay: upload lại.
+- File upload mà **không nơi nào dùng** (canvas, mốc phiên bản, avatar, logo, thumbnail, ảnh xem trước của mốc) bị
+  xoá **24 giờ** sau khi upload (cron dọn storage mỗi 10 phút): ảnh đã gỡ khỏi canvas và mọi mốc, thumbnail cũ, logo
+  upload rồi không bấm lưu. Upload xong thì lưu (`PATCH`) trong vòng 24 giờ; quá hạn → `400 FILE_NOT_OWNED`, upload lại.
 - Thư mục: tối đa 100; xóa thư mục giữ lại dự án. Đưa dự án vào / ra: `PATCH /api/projects/:id { collectionId }`.
 
 ## 13. Những chỗ `apiClient` hiện tại lệch backend
