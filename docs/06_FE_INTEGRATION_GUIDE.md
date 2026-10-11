@@ -302,7 +302,7 @@ GET  /api/projects/:id/exports   → 20 lần xuất gần nhất
 
 ```http
 PATCH /api/projects/:id/visibility   { "visibility"?: "PRIVATE" | "UNLISTED" | "PUBLIC", "allowFork"?: boolean }
-GET   /api/public/projects/:slug              (công khai; có cookie thì biết người xem)
+GET   /api/public/projects/:slug              (công khai; có cookie thì biết người xem; ?count=false: không tính lượt xem)
 POST  /api/public/projects/:slug/fork         → 201 ProjectDetail (bản remix của tôi)
 POST  /api/public/projects/:slug/like         → { "liked": true, "likesCount": 12 }
 DELETE /api/public/projects/:slug/like        → { "liked": false, "likesCount": 11 }
@@ -311,6 +311,9 @@ DELETE /api/public/projects/:slug/like        → { "liked": false, "likesCount"
 - Trang `/p/[slug]` hiển thị `slug, title, visibility, allowFork, template, dimensions, materialSpec, canvasState,
   thumbnailUrl, tags, occasion, industry, viewsCount, likesCount, createdAt, updatedAt, author { fullName, shopName,
   avatarUrl }, forkedFrom { slug, title, author } | null, viewer { isOwner, liked }`.
+- Lượt xem: mỗi người xem (tài khoản, hoặc IP + trình duyệt) tính 1 lần / 10 phút, chủ dự án không tính. Code chạy trên
+  server Next.js (SSR, `generateMetadata`) không mang cookie phiên nên gọi với `?count=false`; request của trình duyệt
+  mới tính lượt xem (`features/showcase/server.ts`).
 - `PRIVATE` / thùng rác / slug sai → `404` (kể cả với chủ dự án). Trang `UNLISTED` nên có
   `<meta name="robots" content="noindex">`. `allowFork: false` → fork trả `403`.
 - Đưa lên Thư viện cộng đồng: `PUBLIC` + gắn `occasion` / `industry` (qua `PATCH /api/projects/:id`); chỉ thiết kế có

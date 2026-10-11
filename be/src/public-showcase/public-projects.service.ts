@@ -62,12 +62,13 @@ export class PublicProjectsService {
 
   /**
    * Read-only view. Counts a view unless the owner looks at their own project, once per viewer every
-   * VIEW_DEDUP_SECONDS (the count orders the community hub).
+   * VIEW_DEDUP_SECONDS (the count orders the community hub). `countView: false` only reads: the frontend server
+   * renders the page without the visitor's cookie, so the browser's own request is the one that counts.
    */
-  async view(slug: string, viewerId?: string, client: Omit<Viewer, 'userId'> = {}) {
+  async view(slug: string, viewerId?: string, client: Omit<Viewer, 'userId'> = {}, countView = true) {
     const project = await this.findShared(slug);
     const isOwner = project.userId === viewerId;
-    const counts = !isOwner && (await isFirstView(this.redis, `project:${project.id}`, { ...client, userId: viewerId }));
+    const counts = countView && !isOwner && (await isFirstView(this.redis, `project:${project.id}`, { ...client, userId: viewerId }));
 
     const [viewsCount, liked] = await Promise.all([
       counts ? this.incrementViews(project.id) : project.viewsCount,
