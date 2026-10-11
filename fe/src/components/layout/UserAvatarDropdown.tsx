@@ -15,6 +15,8 @@ export interface UserAvatarDropdownProps {
   size?: 'sm' | 'md' | 'lg';
   align?: 'left' | 'right';
   className?: string;
+  /** Where the name and tier show next to the avatar: a crowded header hides them while its desktop nav is shown. */
+  labelClassName?: string;
 }
 
 /**
@@ -28,6 +30,7 @@ export function UserAvatarDropdown({
   size = 'md',
   align = 'right',
   className = '',
+  labelClassName = 'hidden lg:flex',
 }: UserAvatarDropdownProps) {
   const { user, status, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -147,7 +150,7 @@ export function UserAvatarDropdown({
         </div>
 
         {/* User name on large displays */}
-        <div className="hidden lg:flex flex-col items-start leading-none pr-1">
+        <div className={`${labelClassName} flex-col items-start leading-none pr-1`}>
           <span className="font-['Plus_Jakarta_Sans'] text-xs font-semibold text-stone-800 group-hover:text-black max-w-[140px] truncate">
             {name}
           </span>

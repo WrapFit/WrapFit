@@ -136,7 +136,8 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 pointer-events-none ${className}`}>
+    // data-app-tokens: inside a Stitch screen the header keeps the app's fonts and colours, not the screen's.
+    <header data-app-tokens className={`fixed top-0 left-0 right-0 z-50 pointer-events-none font-sans ${className}`}>
       <div 
         className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col items-center pointer-events-auto"
         onMouseEnter={handleMouseEnter}
@@ -146,7 +147,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
         <div className="w-full bg-white/90 backdrop-blur-xl rounded-full border border-stone-200/80 shadow-[0_4px_25px_rgba(28,25,23,0.08)] px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 relative z-50">
           {/* 1. Left: Brand Logo */}
           <div className="flex items-center gap-3 shrink-0">
-            <BrandLogo size="md" badge="CAD CADRE v4.2" href="/" />
+            <BrandLogo size="md" badge="CAD CADRE v4.2" badgeClassName="hidden sm:inline-block xl:hidden 2xl:inline-block" href="/" />
           </div>
 
           {/* 2. Center: Desktop Navigation Tabs & Mega Menu Trigger */}
@@ -207,13 +208,15 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             </Link>
 
             {/* Smart User Avatar Dropdown */}
-            <UserAvatarDropdown size="md" align="right" />
+            {/* The desktop nav (xl and up) fills the bar: no CTA there (its links lead to the studio), the badge and
+                the name next to the avatar come back only from 2xl, where the bar is wider. */}
+            <UserAvatarDropdown size="md" align="right" labelClassName="hidden lg:flex xl:hidden 2xl:flex" />
 
             {/* CTA: Create New Box */}
             {showCta && (
               <Link
                 href="/editor/step-1"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all"
+                className="hidden sm:inline-flex xl:hidden items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all"
               >
                 <span>Bắt Đầu Hộp Quà</span>
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
