@@ -265,6 +265,26 @@ describe('Account emails (e2e)', () => {
     });
   });
 
+  describe('refresh rate limit (per session, not per IP)', () => {
+    const refreshWith = (cookie?: string) => {
+      const call = api().post('/api/auth/refresh');
+      return cookie ? call.set('Cookie', `wf_refresh=${cookie}`) : call;
+    };
+
+    it('lets a guest (no refresh cookie) try on every page load: 401, never 429 at 10 a minute', async () => {
+      for (let i = 0; i < 20; i++) await refreshWith().expect(401);
+    });
+
+    it('limits one session to 30 a minute without touching another session behind the same IP', async () => {
+      const busy = `busy-session-${run}`;
+      for (let i = 0; i < 30; i++) await refreshWith(busy).expect(401);
+      const limited = await refreshWith(busy).expect(429);
+      expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+      await refreshWith(`other-session-${run}`).expect(401);
+      await refreshWith().expect(401);
+    });
+  });
+
   describe('failed logins per address (Redis)', () => {
     // Through the services: the per-IP limits of the routes (10 / minute) would answer 429 first.
     const signIn = (address: string, password: string) => app.get(AuthService).login({ email: address, password });

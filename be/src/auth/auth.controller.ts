@@ -10,6 +10,7 @@ import {
   Public,
   REFRESH_COOKIE,
   SessionMeta,
+  ThrottlePerSession,
 } from '../common';
 import { SafeUser, UsersService } from '../users';
 import { AccountRecoveryService } from './account-recovery.service';
@@ -26,6 +27,9 @@ import { readOAuthState } from './strategies/oauth-state.store';
 const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 // Routes that send an email: per IP on top of the per-account limits of AuthTokensService.canSend.
 const AUTH_EMAIL_THROTTLE = { default: { limit: 5, ttl: 60_000 } };
+// Refresh: per session, not per IP (see ThrottlePerSession). A browser refreshes about once per access token (15 min)
+// per tab; guests (no cookie) try once per page load.
+const REFRESH_THROTTLE = { cookie: REFRESH_COOKIE, limit: 30, anonymousLimit: 300, ttl: 60_000 };
 
 /**
  * Registration opens no session (the account signs in once its email is verified), and its answer is the same for a
@@ -134,7 +138,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle(AUTH_THROTTLE)
+  @ThrottlePerSession(REFRESH_THROTTLE)
   @HttpCode(200)
   @Post('refresh')
   @ApiOperation({ summary: 'Rotate the refresh token cookie and issue a new access token cookie' })
