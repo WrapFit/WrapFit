@@ -17,7 +17,7 @@ export interface MainHeaderProps {
 }
 
 export const MAIN_NAV_ITEMS = [
-  { href: '/editor/step-1', label: 'Thư Viện Mẫu', icon: 'grid_view' },
+  { href: ROUTES.templates, label: 'Thư Viện Mẫu', icon: 'grid_view' },
   { href: '/editor/studio', label: 'Studio 3D', icon: 'view_in_ar' },
   { href: '/pricing', label: 'Bảng Giá', icon: 'payments' },
   { href: '/team', label: 'Đội Ngũ & Xưởng In', icon: 'group' },

@@ -17,11 +17,16 @@ export const ROUTES = {
   completeSignup: "/complete-signup",
   dashboard: "/dashboard",
   projects: "/dashboard/projects",
+  brandKit: "/dashboard/brand-kit",
+  profile: "/dashboard/profile",
+  settings: "/dashboard/settings",
   templates: "/templates",
   editorNew: "/editor/new",
   editor: (projectId: string) => `/editor/${projectId}`,
   publicProject: (slug: string) => `/p/${slug}`,
   unbox: (slug: string) => `/unbox/${slug}`,
+  /** Code-entry page: the recipient types or pastes the code printed with the gift. */
+  unboxCode: "/unbox",
 } as const;
 
 /** Page opened after signing in when no `?redirect=` was given. */

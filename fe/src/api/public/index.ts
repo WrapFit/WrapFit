@@ -8,23 +8,23 @@ import type { LikeState, ProjectDetail, PublicProject, PublicUnboxing } from "@/
 
 /** UNLISTED or PUBLIC project; 404 for PRIVATE, trashed or unknown slugs (also for the owner). Counts one view. */
 export function getPublicProject(slug: string): Promise<PublicProject> {
-  return request(`/public/projects/${slug}`);
+  return request(`/public/projects/${encodeURIComponent(slug)}`);
 }
 
 /** Copies the design to my account; 403 when the author does not allow remixes. */
 export function forkPublicProject(slug: string): Promise<ProjectDetail> {
-  return request(`/public/projects/${slug}/fork`, { method: "POST" });
+  return request(`/public/projects/${encodeURIComponent(slug)}/fork`, { method: "POST" });
 }
 
 export function likePublicProject(slug: string): Promise<LikeState> {
-  return request(`/public/projects/${slug}/like`, { method: "POST" });
+  return request(`/public/projects/${encodeURIComponent(slug)}/like`, { method: "POST" });
 }
 
 export function unlikePublicProject(slug: string): Promise<LikeState> {
-  return request(`/public/projects/${slug}/like`, { method: "DELETE" });
+  return request(`/public/projects/${encodeURIComponent(slug)}/like`, { method: "DELETE" });
 }
 
 /** Page opened from the QR code; works even when the design is PRIVATE. Counts one view. */
 export function getPublicUnboxing(slug: string): Promise<PublicUnboxing> {
-  return request(`/public/unboxing/${slug}`);
+  return request(`/public/unboxing/${encodeURIComponent(slug)}`);
 }

@@ -156,9 +156,14 @@ export function errorMessage(error: unknown): string {
         ? "Email hoặc mật khẩu không đúng."
         : "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.";
     case 403:
-      return "Bạn không có quyền thực hiện thao tác này.";
+      // The only 403 of an upload request: the files already stored fill the quota of the subscription tier.
+      return error.body?.path.endsWith("/storage/presigned-upload")
+        ? "Đã hết dung lượng lưu trữ của gói. Xoá bớt dự án hoặc nâng cấp gói để tải thêm."
+        : "Bạn không có quyền thực hiện thao tác này.";
     case 404:
       return "Không tìm thấy dữ liệu.";
+    case 409:
+      return "Thao tác không thực hiện được ở trạng thái hiện tại. Tải lại trang rồi thử lại.";
     case 413:
       return "Tệp quá lớn so với giới hạn cho phép.";
     case 422:
