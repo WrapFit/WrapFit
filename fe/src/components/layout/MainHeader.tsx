@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ROUTES } from '@/constants';
@@ -124,12 +124,35 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
     [user],
   );
 
-  const handleMouseEnter = () => {
+  const headerRef = useRef<HTMLElement>(null);
+
+  // An open mega menu closes on Escape and on a press outside the header (touch screens have no hover to leave).
+  useEffect(() => {
+    if (!megaMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMegaMenuOpen(false);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) setMegaMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [megaMenuOpen]);
+
+  // Hover opens the mega menu for a mouse only: a tap also fires enter events, and would open it on top of the
+  // avatar menu or the mobile drawer (touch uses the trigger's click instead).
+  const handlePointerEnter = (event: React.PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setMegaMenuOpen(true);
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = (event: React.PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
     timeoutRef.current = setTimeout(() => {
       setMegaMenuOpen(false);
     }, 300);
@@ -137,12 +160,8 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
 
   return (
     // data-app-tokens: inside a Stitch screen the header keeps the app's fonts and colours, not the screen's.
-    <header data-app-tokens className={`fixed top-0 left-0 right-0 z-50 pointer-events-none font-sans ${className}`}>
-      <div 
-        className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col items-center pointer-events-auto"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
+    <header ref={headerRef} data-app-tokens className={`fixed top-0 left-0 right-0 z-50 pointer-events-none font-sans ${className}`}>
+      <div className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col items-center pointer-events-auto">
         {/* Main Floating Glass Capsule Bar */}
         <div className="w-full bg-white/90 backdrop-blur-xl rounded-full border border-stone-200/80 shadow-[0_4px_25px_rgba(28,25,23,0.08)] px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 relative z-50">
           {/* 1. Left: Brand Logo */}
@@ -155,12 +174,14 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             {/* Mega Menu Hover Trigger Button */}
             <div
               className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              onPointerEnter={handlePointerEnter}
+              onPointerLeave={handlePointerLeave}
             >
               <button
                 type="button"
                 onClick={() => setMegaMenuOpen(!megaMenuOpen)}
+                aria-expanded={megaMenuOpen}
+                aria-haspopup="true"
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   megaMenuOpen
                     ? 'bg-[#122e20] text-white shadow-xs'
@@ -237,12 +258,12 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
           </div>
         </div>
 
-        {/* 4. Desktop Mega Dropdown Panel (Appears on Hover) */}
+        {/* 4. Desktop Mega Dropdown Panel (Appears on Hover). Its trigger only exists from xl. */}
         {megaMenuOpen && (
           <div
-            className="w-full mt-2.5 pointer-events-auto transition-all duration-300 transform origin-top animate-in fade-in slide-in-from-top-2"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            className="hidden xl:block w-full mt-2.5 pointer-events-auto transition-all duration-300 transform origin-top animate-in fade-in slide-in-from-top-2"
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
           >
             <div className="w-full bg-white/95 backdrop-blur-2xl rounded-3xl border border-stone-200/90 shadow-[0_16px_50px_rgba(28,25,23,0.12)] p-6 lg:p-8">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
@@ -298,8 +319,8 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                               {item.icon}
                             </span>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-xs text-stone-800 group-hover:text-[#122e20] truncate">
+                              <div className="flex items-start justify-between gap-1.5">
+                                <span className="font-semibold text-xs leading-snug text-stone-800 group-hover:text-[#122e20]">
                                   {item.title}
                                 </span>
                                 {item.badge && (
@@ -308,7 +329,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[11px] text-stone-500 line-clamp-1 leading-tight mt-0.5">
+                              <p className="text-[11px] text-stone-500 line-clamp-2 leading-tight mt-0.5">
                                 {item.desc}
                               </p>
                             </div>

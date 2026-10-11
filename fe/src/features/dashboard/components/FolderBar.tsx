@@ -45,12 +45,13 @@ export function FolderBar({
   const active = collections?.find((collection) => collection.id === selected);
   const full = (collections?.length ?? 0) >= MAX_COLLECTIONS;
 
-  const chip = (filter: FolderFilter, label: React.ReactNode, key: string) => {
+  const chip = (filter: FolderFilter, label: React.ReactNode, key: string, title?: string) => {
     const isActive = selected === filter;
     return (
       <button
         key={key}
         type="button"
+        title={title}
         aria-pressed={isActive}
         onClick={() => onSelect(filter)}
         className={`${CHIP} ${isActive ? CHIP_ACTIVE : CHIP_IDLE}`}
@@ -97,6 +98,7 @@ export function FolderBar({
                 <span className="font-cad-dimension text-cad-dimension opacity-70">{collection.projectCount}</span>
               </>,
               collection.id,
+              collection.title,
             ),
           )}
         </div>

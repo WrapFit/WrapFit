@@ -18,7 +18,7 @@ export const DASHBOARD_TABS = [
 
 export function DashboardHeaderNav({
   showActions = true,
-  showAvatar = true,
+  showAvatar = false,
 }: {
   showActions?: boolean;
   showAvatar?: boolean;
@@ -89,7 +89,8 @@ export function DashboardHeaderNav({
           </>
         )}
 
-        {/* The tabs need the row: the name shows only on very wide screens (the main header has it too). */}
+        {/* Off by default: every dashboard page also has MainHeader, whose avatar menu is the same one. A second
+            avatar here took room the tabs need (they scrolled at 1280–1535 px) and showed two avatars on phones. */}
         {showAvatar && <UserAvatarDropdown size="md" align="right" labelClassName="hidden 2xl:flex" />}
       </div>
     </div>

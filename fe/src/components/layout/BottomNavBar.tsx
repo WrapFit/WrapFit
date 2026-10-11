@@ -22,7 +22,9 @@ export const BottomNavBar: React.FC = () => {
 
   // Hide only on fullscreen interactive 3D studio where canvas gestures take priority
   const isFullscreenStudio = pathname === "/editor" || (pathname.startsWith("/editor/") && !pathname.includes("step-") && !pathname.includes("export") && !pathname.includes("inspect") && !pathname.includes("materials"));
-  if (isFullscreenStudio) return null;
+  // The intro is a full-screen 3D stage too, with its own stage dock at the bottom (under this bar otherwise).
+  const isIntro = pathname.startsWith("/intro");
+  if (isFullscreenStudio || isIntro) return null;
 
   const isHome = pathname === "/";
   const isDashboard = pathname.startsWith("/dashboard");

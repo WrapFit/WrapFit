@@ -6,6 +6,8 @@ import "@/assets/styles/globals.css";
 export const metadata = {
   title: "WrapFit — Packaging Personalization & Intelligence Platform",
   description: "Make Every Present, Present. Thiết kế chiếc hộp bao quanh món quà với 100% khả thi sản xuất.",
+  // Without a declared icon every first page load asks for /favicon.ico and gets 404.
+  icons: { icon: "/branding/wrapfit-logo.png" },
 };
 
 export default function RootLayout({
