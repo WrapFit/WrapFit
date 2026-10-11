@@ -310,7 +310,7 @@ gấp được thật.
 | H1 | Công thức dieline 4 cấu trúc | `shared/src/parametric/{tuck-top,pillow,lid-base,sleeve-drawer}.ts`, `registry.ts` | Gối, âm dương, bao diêm không có nét cắt. Âm dương thiếu tai dán góc (4 thành không dán được với nhau); nắp cao `max(15, 0,6H)`, dư `2t + 1,2`. Bao diêm: vỏ quấn theo chiều nào so với hướng rút khay, khay có tai dán / gập đôi thành không, dư `2t + 1` có đủ trượt. Gối: `faceWidth = W + 0,4H` là ước lượng, cung Bézier là nét gấp (`pathString`) nhưng hai đầu cong chưa có nét cắt. Nắp gài bản 2 chưa cộng bù `t` (bản 1 tính biến `clearance` mà không dùng) |
 | H2 | Giới hạn kích thước | `be/prisma/seed-data.ts` (`dimensionParams`), DTO `be/src/projects`, `Step2DimensionAndMaterial` | Cả 4 cấu trúc chung 40–600 mm; tỉ lệ vô lý (vd. hộp gối 600 × 30) vẫn qua. Phôi trải phẳng có thể vượt khổ máy in: thêm kiểm khổ giấy tối đa (vd. B1 1020 × 720 mm) ở FitCheck hoặc validate |
 | H3 | FitCheck | `shared/src/fitcheck/validator.ts`, `be/src/projects/domain/project-fitcheck.ts`, `fe/src/features/studio/utils/dieline.ts` | Chỉ có lề an toàn 3 mm và DPI. Thiếu so với skill: tràn lề (bleed ≥ 2 mm) cho hoa văn / nền, tai dán không có mực, phần tử nằm ngoài mọi mặt, phần tử xoay (đang bỏ qua `rotation`), chữ tràn khung. Công thức điểm (−30 lỗi, −10 cảnh báo) cần chốt |
-| H4 | File in | `be/src/export/rendering/print-{layout,renderers}.ts` | Chỉ vẽ `segments`, nên nét cắt phụ thuộc H1. DXF xấp xỉ đường cong bằng dây cung. Cỡ chữ lệch: canvas vẽ `fontSize × 0,42 mm`, file in dùng `fontSize / 2,835` (= × 0,353 mm), chữ in nhỏ hơn trên màn hình ~16 % |
+| H4 | File in | `be/src/export/rendering/print-{layout,renderers}.ts` | Chỉ vẽ `segments`, nên nét cắt phụ thuộc H1. DXF xấp xỉ đường cong bằng dây cung. Cỡ chữ lệch: canvas vẽ `fontSize × 0,42 mm`, file in dùng `fontSize / 2,835` (= × 0,353 mm), chữ in nhỏ hơn trên màn hình ~16 % (**chuyển sang Phase 9**, cùng font, lớp PDF, màu pha, nét liền) |
 | H5 | Canvas 2D | `fe/src/features/studio/components/canvas/DielineCanvas2D.tsx` | Vẽ đúng `segments`, `panels` của phiên bản dự án; `pathString` có cộng lề `padding` không (bộ xuất cũ `shared/src/exporter/pdf-export.ts` quên cộng). Cỡ chữ (xem H4) |
 | H6 | Mô hình 3D | `fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx`, `FoldingBox3D.tsx` | Tự dựng hình, không đọc dieline: âm dương nắp cao `max(16, 0,5H)` dư 2 mm (dieline `max(15, 0,6H)`, dư `2t + 1,2`); bao diêm vỏ dư 2 mm (dieline `2t + 1`); nắp gài gấp theo bản lề riêng. Chuyển sang dựng từ `panels` + bản lề của dieline (trường `hingeAxis` có sẵn trong `PanelFace`, chưa dùng) hoặc có test so kích thước khối 3D với dieline. Chữ / ảnh / hoa văn dán lên đúng mặt (`panelId`) |
 | H7 | Ảnh xem trước, thumbnail | `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `fe/src/features/studio/utils/thumbnail.ts` | Phác thảo isometric tự tính, cần khớp tỉ lệ L : W : H. Thumbnail chỉ vẽ `pieces[0]` (hộp 2 mảnh chỉ thấy 1 mảnh) |
@@ -328,7 +328,7 @@ gấp được thật.
 | 8.3 | Công thức phiên bản 3: nét cắt đủ cho gối / âm dương / bao diêm, tai dán còn thiếu, bù `t` cho cả 4 cấu trúc; bản 1, 2 đóng băng | `shared/src/parametric/**` |
 | 8.4 | Test hình học cho mọi phiên bản đang dùng: mặt không chồng, nằm trong khổ, đường cắt khép kín (mỗi đầu mút nét cắt nối với nét cắt / gấp khác), mặt gấp lại khớp lòng trong ± 0,5 mm, bản cũ không đổi | `be/src/projects/domain/dieline-geometry.spec.ts` |
 | 8.5 | FitCheck: thêm bleed, phần tử ngoài mặt, xoay, tai dán, khổ giấy tối đa (H2, H3); client (`checkDesign`) và server (`checkProject`) dùng chung một hàm; cập nhật thông báo và auto-fix (H10) | `shared/src/fitcheck`, `be/src/projects/domain`, `fe/src/features/studio` |
-| 8.6 | File in: cỡ chữ khớp canvas (H4), đường cong trong DXF; xuất thử PDF / SVG / DXF cả 4 cấu trúc ở phiên bản mới (cần worker), mở bằng Illustrator / Inkscape / viewer DXF, kiểm lớp `CutContour`, `Crease` | `be/src/export/rendering` |
+| 8.6 | File in (cỡ chữ, font, lớp, màu pha, nét liền: Phase 9): đường cong trong DXF; xuất thử PDF / SVG / DXF cả 4 cấu trúc ở phiên bản mới (cần worker), mở bằng Illustrator / Inkscape / viewer DXF, kiểm lớp `CutContour`, `Crease` | `be/src/export/rendering` |
 | 8.7 | 3D dựng từ dieline (H6): kích thước khối, vị trí bản lề, chữ / ảnh trên đúng mặt; test so kích thước 3D với dieline ở 4 cỡ | `fe/src/features/studio/components/three` |
 | 8.8 | 2D, ảnh xem trước, số liệu (H5, H7, H8, H9) đọc từ dieline và một bảng vật liệu | `fe/src/features/studio`, `fe/src/features/templates` |
 | 8.9 | Dọn mã không dùng (H11) | `shared/src` |
@@ -398,6 +398,42 @@ trong docs/14); FitCheck đủ quy tắc của skill `fitcheck-validator`; dự 
 như trước; dự án chưa xuất đã lên bản mới (8.10a, có bảng kết quả trong docs/14); nút cập nhật + hoàn tác chạy đúng
 (8.10b); unit, e2e backend, `tsc`, `next build` pass.
 
+### Phase 9 — File in đúng chuẩn xưởng và chữ khớp canvas (thêm 2026-10-12)
+
+Sau S7, người dùng mở file `PDF_CMYK` của dự án thử (nắp gài 120 × 80 × 60, hai chữ trên mặt trước) và hỏi file đã đúng
+chuẩn chưa. Phôi đúng hình (đường cắt khép kín, nét gấp đúng chỗ, CMYK, font nhúng), nhưng chữ trong file khác canvas và
+file chưa đủ những gì xưởng in / làm khuôn bế cần. Phase này gom các lỗi đó lại; phần **công thức** (bù độ dày giấy, nét
+cắt của 3 cấu trúc kia, đường cong DXF) vẫn thuộc Phase 8.
+
+| # | Lỗi | Ở đâu | Hiện tại |
+|---|---|---|---|
+| P1 | Chữ mới chồng lên chữ cũ | `DielineCanvas2D.tsx` (`handleAddText`) | Mọi chữ thêm bằng "Chèn Vào Mặt Hộp" đặt ở `x 4, y 10` của mặt đang chọn |
+| P2 | Cỡ chữ lệch | canvas, `utils/thumbnail.ts`, `print-layout.ts` | Canvas vẽ `fontSize × 0,42 mm`, file in `fontSize` pt (`/ 2,8346`): chữ in nhỏ hơn ~16 %. Chuyển từ H4 của Phase 8 sang đây |
+| P3 | Font khác | canvas, `print-renderers.ts`, `fe/src/assets/fonts` | File in luôn Be Vietnam Pro Regular; canvas vẽ đậm với font của phần tử, nhưng FE chưa nạp Cormorant Garamond, Big Shoulders Display, Inter (Playfair nạp qua `next/font` mang tên băm), nên màn hình cũng đang dùng font dự phòng |
+| P4 | Căn chữ, xuống dòng | canvas, file in | Canvas: một dòng, căn giữa khung. PDF: căn trái từ góc trên, tự xuống dòng theo bề rộng khung. SVG: một dòng căn trái |
+| P5 | Xoay | canvas, file in | Canvas xoay quanh tâm khung, PDF / SVG xoay quanh góc trên trái |
+| P6 | Ảnh bị kéo giãn | `print-renderers.ts` | Canvas giữ tỉ lệ ảnh trong khung (`meet`), PDF / SVG kéo giãn ảnh cho đầy khung |
+| P7 | PDF không chia lớp | `renderPdf` | Không có Optional Content (OCG); hộp thoại xuất file từng ghi "4 lớp" (đã sửa câu chữ ở `ae79344`) |
+| P8 | Nét cắt / gấp là màu in thường | `renderPdf` | CMYK 0/100/100/0 và 100/0/0/0, không phải màu pha `CutContour` / `Crease`, không overprint: in thẳng file thì đường bế in lên hộp |
+| P9 | Nét cắt là các đoạn rời | PDF, SVG, DXF | Mỗi `segment` là một nét riêng (DXF: một `LINE`), máy cắt / phần mềm làm khuôn cần đường liền |
+| P10 | Thiếu khung trang và lớp kích thước | `renderPdf`, `renderSvg` | Không có `TrimBox` / `BleedBox`; dòng thông tin nằm chung với hình in; không có kích thước phôi |
+
+**Việc cần làm:**
+
+| # | Việc | File |
+|---|---|---|
+| 9.1 | Mô hình chữ chung `shared/src/print/text-layout.ts`: `fontSize` là pt (`PT_TO_MM`), đậm 700, dòng cao 1,2 × cỡ chữ, xuống dòng theo từ trong bề rộng khung (từ quá dài thì cắt theo ký tự), căn giữa ngang và dọc trong khung, xoay quanh tâm khung. Hàm nhận một hàm đo bề rộng (trình duyệt: canvas 2D; máy chủ: PDFKit) nên mọi nơi xuống dòng như nhau. Bảng font in `PRINT_FONTS` (Be Vietnam Pro, Playfair Display, Cormorant Garamond, Big Shoulders Display, Inter) + `printFontOf(fontFamily)` | `shared/src/print/**` |
+| 9.2 | FE: nạp 5 font đó bằng `next/font` (700, `vietnamese`), canvas và thumbnail vẽ chữ bằng 9.1 (tên font thật đọc từ biến CSS), chữ mới đặt so le không chồng chữ cũ (P1) | `fe/src/assets/fonts`, `features/studio/components/canvas`, `features/studio/utils/thumbnail.ts` |
+| 9.3 | BE: nhúng đúng font của phần tử (gói `@expo-google-fonts/*`, bản 700), chữ PDF / SVG theo 9.1, xoay quanh tâm, ảnh giữ tỉ lệ (`meet`) | `be/src/export/rendering/**`, `be/package.json` |
+| 9.4 | PDF chuẩn xưởng: PDF 1.6; lớp OCG `Artwork`, `Crease`, `CutContour`, `Dimensions` (lớp cuối không in); nét cắt màu pha `CutContour` (100 % M), nét gấp màu pha `Crease` (100 % C), overprint; `TrimBox` = phôi, `BleedBox` = phôi + 2 mm; lớp `Dimensions` có dòng thông tin và kích thước phôi | `print-renderers.ts` |
+| 9.5 | Nối nét: các đoạn cùng loại nối đầu – cuối thành đường liền (PDF / SVG một `path` mỗi đường, DXF `POLYLINE`) | `print-layout.ts`, `print-renderers.ts` |
+| 9.6 | SVG cùng lớp với PDF (`artwork`, `crease`, `cut`, `dimensions`); mô tả hộp thoại xuất file và docs/06 §7 theo file thật | `print-renderers.ts`, `features/studio/components/export`, `docs/06` |
+| 9.7 | Test: chữ (xuống dòng, căn giữa, cỡ pt, font), lớp OCG, màu pha, overprint, `TrimBox`, đường nối liền, DXF `POLYLINE`; xuất thật PDF / SVG / DXF bằng worker, đọc lại file | `be/src/export/rendering/print-rendering.spec.ts`, `shared` |
+
+**DoD**: file PDF của dự án thử có 4 lớp (lớp `Dimensions` không in), nét cắt / gấp là màu pha `CutContour` / `Crease`
+có overprint, `TrimBox` / `BleedBox` đúng, mỗi đường cắt là một đường liền; chữ cùng font, cỡ, cách xuống dòng, căn và
+xoay như canvas; ảnh không bị kéo giãn; chữ mới không chồng chữ cũ; unit + e2e `export` pass, `tsc` sạch.
+
 ## 5. Ma trận sở hữu file
 
 Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ đọc; cần đổi thì báo lại agent chính.
@@ -414,6 +450,7 @@ Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ
 | F — Phase 7 (tuỳ chọn) | Sửa giao diện G2 + G3: như cột A (trừ `components/layout`) và cột E |
 | G — Phase 7 (tuỳ chọn) | Sửa giao diện G4 + G5: như cột B và D, cả phần còn lại của `src/views/home/index.tsx` |
 | H — Phase 8 | `shared/src/{parametric,fitcheck,exporter,core}/**`, `shared/README.md`, `be/src/export/rendering/**`, `be/src/projects/**` (8.10b: endpoint, mốc phiên bản), `be/prisma/{seed-data.ts,seed.ts,schema.prisma,migrations,scripts}/**`, `fe/src/features/studio/components/{three,canvas}/**`, `fe/src/features/studio/utils/**`, `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `docs/14_BOX_FORMULA_AUDIT.md` (mới). Cần sửa `StudioWorkspace.tsx`, `Step2DimensionAndMaterial.tsx` (thuộc C) thì làm sau S7 hoặc báo agent chính |
+| I — Phase 9 | `shared/src/print/**` (mới), `be/src/export/rendering/**`, `be/package.json` (font), `fe/src/assets/fonts/**`, `fe/src/features/studio/components/canvas/**`, `fe/src/features/studio/utils/thumbnail.ts`, `fe/src/features/studio/components/export/**`, `docs/06` §7. Trùng file với H (`export/rendering`, `canvas`, `thumbnail`): S11 làm trước S10, S10 dựa trên mô hình chữ của 9.1 |
 
 Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện): C chỉ đổi `href`, D chỉ đổi khối
 `<section id="thu-vien-mau">`. Agent chính gộp nếu xung đột.
@@ -503,9 +540,10 @@ cần để làm tiếp nằm trong file này, `git log` và nhật ký §9.3.
 | **S5** | Phase 2 (dashboard, dự án, Brand Kit, hồ sơ, cài đặt) + Phase 4 (thư viện mẫu, `/p/[slug]`, `/unbox/[slug]`) | B, D song song | S3 xong (không cần S4) | DoD Phase 2 và Phase 4 |
 | **S6** | Phase 3a (`/editor/new`, mở / lưu / xung đột, upload, thumbnail, chuyển hướng) | C | S3 xong | DoD 3a |
 | **S7** | Phase 3b (mốc phiên bản, xuất file, chia sẻ, QR, hoa văn AI) | C (hoặc 2 agent: xuất file + mốc / chia sẻ + QR + AI, mỗi tính năng một file component) | S6 xong | DoD Phase 3 |
-| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7, S9 và S10 xong | 15 bước §7 đạt, có ảnh bằng chứng ở M và X+ (Phase 7) |
+| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7, S9, S10 và S11 xong | 15 bước §7 đạt, có ảnh bằng chứng ở M và X+ (Phase 7) |
 | **S9** | Phase 7: rà soát giao diện các màn S1–S5, khung chung và màn Stitch tĩnh theo ma trận 6 kích thước; ghi mốc studio cho S6 / S7 | Không cho 7.1–7.5; F, G song song cho 7.6 nếu nhiều lỗi | S5 xong. **Nên chạy trước S6**: S6 / S7 làm trên khung đã sửa và dùng lại script | DoD Phase 7 |
 | **S10** | Phase 8: rà soát và sửa công thức hộp (H1–H11): dieline phiên bản 3, FitCheck đủ quy tắc, file in, 3D / 2D / ảnh xem trước khớp dieline, `docs/14` | Không cho 8.1–8.4 (công thức là gốc, làm tuần tự); 8.5–8.8 có thể 2 agent: H (BE / shared: 8.5, 8.6) và H' (FE: 8.7, 8.8) | S6 xong. Không phụ thuộc S7 (khác file, trừ `StudioWorkspace.tsx`); **phải xong trước S8**. Lớn: tách S10a (8.1–8.4, 8.9), S10b (8.5–8.8, 8.11), S10c (8.10 = D + B đã chốt; phần FE của B làm sau S7) nếu thiếu hạn mức | DoD Phase 8 |
+| **S11** | Phase 9: file in đúng chuẩn xưởng (lớp OCG, màu pha `CutContour` / `Crease`, overprint, `TrimBox`, nét liền) và chữ khớp canvas (font, cỡ pt, xuống dòng, căn, xoay), chữ mới không chồng | Không | S7 xong | DoD Phase 9 |
 
 S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Thứ tự đề xuất cho phần còn lại: S9 → S6 → S7 → S10 → S8 (S10 có thể làm trước S7: S7 kiểm luồng xuất file, S10 kiểm nội dung file). Một phiên quá lớn so với hạn mức còn lại thì tách
 theo từng agent (vd. S4 → S4a Phase 1, S4b Phase 5) và ghi rõ vào nhật ký.
