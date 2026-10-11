@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "stitch:sync": "node scripts/stitch/sync.mjs",
-    "stitch:parity": "node scripts/stitch/visual-parity.mjs"
+    "stitch:parity": "node scripts/stitch/visual-parity.mjs",
+    "shots": "node scripts/page-shots.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.9",

@@ -63,6 +63,8 @@ desktop.ini
 
 # Stitch visual parity output (fe/scripts/stitch/visual-parity.mjs)
 .visual-parity/
+# Desktop / phone screenshots of app pages (fe/scripts/page-shots.mjs)
+.page-shots/
 
 # AI agent tooling: keep the project skills, ignore local tool state and vendored repositories
 .claude/
