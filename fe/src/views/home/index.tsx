@@ -6,51 +6,13 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { GoiMascot } from '@/components/common/GoiMascot';
 import { MainHeader, MainFooter } from '@/components/layout';
 import { InteractiveFoldingBox3D, BoxMaterialTheme, BoxStructureType } from '@/features/studio/components/three/InteractiveFoldingBox3D';
+import { HomeTemplateDeck } from '@/features/templates';
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const coverflowCards = [
-  {
-    id: 0,
-    title: "Hộp Nam Châm Nắp Gập",
-    app: "Ứng dụng: Trang sức & Quà tặng Luxury",
-    material: "Ivory 350gsm + Ép kim",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuA2zKm10lZA5_uLx_XiKNiDdyCMqwBqAr0jyQUcyg6tebSpZJVIrZ8gavZi33lsz0hzmpyiU8WDJl4IAOeySEiAJjjnVaaz3QTNPhOuKP4nZHJtfwhMWlx9IMsRKKGuxovEaWPX-35mP5x3tozWyVOLhu10LTo-PF6diJwTSW6L15XpwxXjz5frM9_yt0VS8uV9JcILni4Mc235pxwtkAgI72LdG1e1P6pBZsO7i4ujn22m0YCZG_PQbA",
-  },
-  {
-    id: 1,
-    title: "Hộp Nắp Gài Đáy Khóa (Tuck Top)",
-    app: "Ứng dụng: Mỹ phẩm & Chai tinh chất",
-    material: "Giấy Kraft / Duplex 300gsm",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCy16QC5UUOnGHZaX6PILgkjlAIJqc2uh0eqEW4QD6MFKx5IgjK1eiYpFcDthcUJgG09wUUnO3J5VHX8gnIrg5JmbibLPygbNvIBYc7BwOgxhMChbqlGwmxfBd4-RrT-8qoQ_OKGKFEBSPt15j5GsbfoVwMl2a3qOms99r-AbOg-573gTnRSj7qAxInsZSlkxo1vunE8aqtJRt1EDbjYK5hGvzFslXxGt9wvn6vrBp5VVR8Zt0oToxetg",
-  },
-  {
-    id: 2,
-    title: "Hộp Bao Diêm (Sleeve & Drawer)",
-    app: "Ứng dụng: Bánh kẹo & Quà lưu niệm",
-    material: "Ivory 300gsm + Cửa sổ mica",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuAeDih3Kv05iOmH3UmFllzTASy6mCuhpML5nSPIJNUQTBGpWaXDc5itsd9Fpwm6WRNSIFYTBNacVqFUTRTcPwdWshWLNtVgpaP1YSbDpS_bLPgHdp-L6xZe-yYlADodxg9StnvNgSRVup4t2oJyVK-TJwJMaqL_f36N9ooeUgQ84nPqkgxiRO5vut8xHH0aq99s3dI6vBI1Uc9nliHN9UHatOpxrwTtmwhHf831XQIBqIiYLcwDUQ77Wg",
-  },
-  {
-    id: 3,
-    title: "Hộp Âm Dương (Lid & Base)",
-    app: "Ứng dụng: Hộp quà cao cấp & Set trà",
-    material: "Carton cứng bồi C150 cán mờ",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCPvp8dvLTHkSlJZOjnxFBsmkLsp2I-4WavB8GnWYReakxzXHve6yoSunol_OGKcKNnSBYsm8DQdDQy1mMDPoMgLWBjxWGqqx_SpZNnOpIdRDenDPhj2kiHHaX3JbH_ukVueiz7IKaGKco3zi8ZOeYQTEv7iR1t7JCMLZk_-cwNWnoXB9EgkkkSFEN6YLG2TB9hJJGGbyGwyQcJK5myX4chVVfJ2JB8AYucY0Yds0SehKHMRMPnDSsG1w",
-  },
-  {
-    id: 4,
-    title: "Hộp Gối (Pillow Box)",
-    app: "Ứng dụng: Phụ kiện thời trang & Khăn lụa",
-    material: "Mỹ thuật dập chìm gân giấy",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCy16QC5UUOnGHZaX6PILgkjlAIJqc2uh0eqEW4QD6MFKx5IgjK1eiYpFcDthcUJgG09wUUnO3J5VHX8gnIrg5JmbibLPygbNvIBYc7BwOgxhMChbqlGwmxfBd4-RrT-8qoQ_OKGKFEBSPt15j5GsbfoVwMl2a3qOms99r-AbOg-573gTnRSj7qAxInsZSlkxo1vunE8aqtJRt1EDbjYK5hGvzFslXxGt9wvn6vrBp5VVR8Zt0oToxetg",
-  },
-];
-
 export default function Page() {
-  const [activeCover, setActiveCover] = useState(0);
   const [pipelineStep, setPipelineStep] = useState(3);
   const [heroFoldProgress, setHeroFoldProgress] = useState(0.85);
   const [heroRotationY, setHeroRotationY] = useState(0.45);
@@ -159,139 +121,7 @@ export default function Page() {
     <div className="absolute -bottom-20 right-[-5%] w-[460px] h-[460px] rounded-full filter blur-[120px] opacity-35" style={{"background":"radial-gradient(circle, rgba(245, 230, 202, 0.5) 0%, rgba(254, 243, 199, 0.1) 50%, transparent 75%)"}} />
   </div>
 
-  {/*  Minimalist Title Header  */}
-  <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
-    <div>
-      <div className="flex items-center gap-2 mb-1.5">
-        <span className="inline-block w-2 h-2 rounded-full bg-[#133020]"></span>
-        <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">INTERACTIVE 3D STACKED DECK</span>
-      </div>
-      <h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#122e20] font-['Playfair_Display'] font-medium tracking-tight">
-        Thư Viện Cấu Trúc Mẫu
-      </h2>
-      <p className="font-body-md text-sm md:text-base text-[#485950] mt-1 font-['Plus_Jakarta_Sans']">
-        Khám phá các cấu trúc bao bì tiêu chuẩn ECMA/FEFCO được dựng sẵn. Xoay 3D trực quan và tải dieline vector sẵn sàng sản xuất.
-      </p>
-    </div>
-
-    {/*  Apple-style Navigation Controls (Infinite Wrap) */}
-    <div className="flex items-center gap-3 self-end md:self-auto">
-      <button
-        aria-label="Previous Slide"
-        onClick={() => setActiveCover(prev => (prev === 0 ? coverflowCards.length - 1 : prev - 1))}
-        className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90"
-      >
-        <span className="material-symbols-outlined text-xl">arrow_back</span>
-      </button>
-      <button
-        aria-label="Next Slide"
-        onClick={() => setActiveCover(prev => (prev === coverflowCards.length - 1 ? 0 : prev + 1))}
-        className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90"
-      >
-        <span className="material-symbols-outlined text-xl">arrow_forward</span>
-      </button>
-    </div>
-  </div>
-
-  {/*  Continuous Circular Carousel Stage  */}
-  <div className="relative w-full py-2 select-none">
-    <div className="relative w-full h-[500px] md:h-[530px] flex items-center justify-center overflow-visible" id="coverflowContainer">
-      {coverflowCards.map((card, idx) => {
-        const isSelected = activeCover === idx;
-        const offset = idx - activeCover;
-        return (
-          <div
-            key={card.id}
-            className="coverflow-card absolute top-1/2 -translate-y-1/2 cursor-pointer flex flex-col items-center"
-            data-index={idx}
-            onClick={() => setActiveCover(idx)}
-            style={{
-              willChange: 'transform, opacity, filter',
-              transition: 'all 0.65s cubic-bezier(0.25, 1, 0.35, 1)',
-              transform: isSelected
-                ? 'translate(-50%, -50%) scale(1.05)'
-                : `translate(calc(-50% + ${offset * 310}px), -50%) scale(${Math.max(0.7, 1.05 - Math.abs(offset) * 0.15)})`,
-              left: '50%',
-              zIndex: isSelected ? 35 : 25 - Math.abs(offset) * 10,
-              opacity: isSelected ? 1 : Math.max(0.3, 1 - Math.abs(offset) * 0.25),
-              filter: isSelected ? 'blur(0px)' : `blur(${Math.abs(offset) * 1.5}px)`,
-              pointerEvents: 'auto',
-            }}
-          >
-            <div
-              className={`coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 ${
-                isSelected
-                  ? 'border-[#cfc4b0] shadow-2xl bg-white/95'
-                  : 'border-[#e3d7c5] shadow-md bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80'
-              }`}
-            >
-              {/* Subtle Browser Window Bar for active card */}
-              {isSelected && (
-                <div className="w-full flex items-center justify-between pb-3.5 mb-2 border-b border-[#e8ded0]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
-                  </div>
-                  <div className="px-3.5 py-1 rounded-full bg-[#f4eee3] border border-[#e3d7c5] text-[11px] font-mono text-[#526359] flex items-center gap-1.5 shadow-2xs">
-                    <span className="material-symbols-outlined text-[13px] text-[#486458]">lock</span>
-                    <span>wrapfit.studio/cad-preview</span>
-                  </div>
-                  <div className="w-10" />
-                </div>
-              )}
-
-              <div className="w-full aspect-[16/10] rounded-[22px] bg-[#fbf9f5]/85 flex items-center justify-center p-3 overflow-hidden shadow-inner">
-                <img
-                  alt={card.title}
-                  className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 pointer-events-none"
-                  src={card.image}
-                />
-              </div>
-
-              <div className="card-caption w-full pt-4 flex flex-col items-center">
-                <h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">
-                  {card.title}
-                </h3>
-                <div
-                  className="card-details mt-2.5 flex flex-wrap items-center justify-center gap-2 transition-all duration-300"
-                  style={{
-                    maxHeight: isSelected ? '80px' : '0px',
-                    opacity: isSelected ? 1 : 0,
-                    transform: isSelected ? 'translateY(0px)' : 'translateY(6px)',
-                    pointerEvents: isSelected ? 'auto' : 'none',
-                  }}
-                >
-                  <span className="px-3.5 py-1 rounded-full bg-white/90 border border-[#ded5c5] font-cad-dimension text-xs text-[#133020] shadow-xs">
-                    {card.app}
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">
-                    {card.material}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-
-    {/*  Apple-style Minimal Pagination Dots  */}
-    <div className="flex items-center justify-center gap-2 mt-6" id="coverflowDots">
-      {coverflowCards.map((_, idx) => (
-        <button
-          key={idx}
-          aria-label={`Go to slide ${idx + 1}`}
-          onClick={() => setActiveCover(idx)}
-          className={`transition-all duration-300 rounded-full ${
-            activeCover === idx
-              ? 'h-2.5 w-7 bg-[#133020]'
-              : 'w-2.5 h-2.5 bg-[#cfc5b3] hover:bg-[#8e8574]'
-          }`}
-        />
-      ))}
-    </div>
-  </div>
+  <HomeTemplateDeck />
 </section>
 {/*  REDESIGNED PRECISION PIPELINE: CONTINUOUS CHART LINE & INTERACTIVE 4-STAGE SHOWCASE  */}
 <section className="w-full max-w-7xl 2xl:max-w-[1560px] mx-auto px-gutter py-space-xl relative overflow-hidden" id="pipeline"><div className="absolute inset-0 pointer-events-none -z-0 overflow-hidden"><div className="absolute top-12 left-[10%] w-[580px] h-[340px] rounded-full filter blur-[130px] opacity-45" style={{"background":"radial-gradient(circle, rgba(219, 225, 255, 0.4) 0%, rgba(202, 234, 217, 0.2) 50%, transparent 75%)"}}></div><div className="absolute bottom-8 right-[5%] w-[640px] h-[400px] rounded-full filter blur-[140px] opacity-35 mix-blend-multiply" style={{"background":"radial-gradient(circle, rgba(254, 243, 199, 0.5) 0%, rgba(202, 234, 217, 0.3) 45%, transparent 70%)"}}></div></div>

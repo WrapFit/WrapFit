@@ -1,289 +1,253 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { animate } from "animejs";
+import { Gift, Music2, QrCode, RotateCcw, VolumeX } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  Gift,
-  Sparkles,
-  Heart,
-  Volume2,
-  VolumeX,
-  Copy,
-  Check,
-  RotateCcw,
-  ArrowRight,
-  PackageCheck,
-  Share2,
-} from "lucide-react";
-import { InteractiveFoldingBox3D } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { GoiMascot } from "@/components/common/GoiMascot";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { getPublicUnboxing } from "@/api/public";
+import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
+import { ErrorState } from "@/components/common/StatusViews";
+import { ROUTES } from "@/constants";
+import { BoxStage3D, isShareSlug, playParticles, usePrefersReducedMotion } from "@/features/showcase";
+import { AuthorAvatar, authorName, formatDimensions } from "@/features/templates";
+import { queryKeys } from "@/hooks/data";
+import { isApiError } from "@/services/api";
+import { tactileAudio } from "@/services/audio/tactileAudio";
+import type { PublicUnboxing } from "@/types/api";
+import { UnboxFrame } from "./UnboxFrame";
 
-import { apiClient, PublicUnboxing } from "@/api";
+/** `/unbox/[slug]`: the page a gift's QR code opens. Works without an account, also when the design is private. */
+export default function UnboxView({ slug }: { slug: string }) {
+  const validSlug = isShareSlug(slug);
+  const unboxing = useQuery({
+    queryKey: queryKeys.public.unboxing(slug),
+    queryFn: () => getPublicUnboxing(slug),
+    enabled: validSlug,
+    // Every read counts a view: read once per visit.
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
 
-export default function VirtualUnboxingPage() {
-  // Next.js 15 passes route params to pages as a Promise; a client component reads them with useParams().
-  const params = useParams<{ slug: string }>();
-  const [data, setData] = useState<PublicUnboxing | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isOpened, setIsOpened] = useState<boolean>(false);
-  const [copiedVoucher, setCopiedVoucher] = useState<boolean>(false);
-  const confettiCanvasRef = useRef<HTMLCanvasElement>(null);
+  let content: React.ReactNode;
+  if (!validSlug || (isApiError(unboxing.error) && unboxing.error.status === 404)) {
+    content = <ExpiredCode />;
+  } else if (unboxing.isError) {
+    content = (
+      <ErrorState
+        error={unboxing.error}
+        title="Chưa mở được hộp quà"
+        onRetry={() => void unboxing.refetch()}
+        retrying={unboxing.isFetching}
+      />
+    );
+  } else if (!unboxing.data) {
+    content = (
+      <div role="status" className="flex flex-col items-center gap-4 py-24">
+        <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-brand-gold motion-reduce:animate-none" />
+        <span className="font-mono text-xs uppercase tracking-wider text-stone-300">Đang chuẩn bị hộp quà…</span>
+      </div>
+    );
+  } else {
+    content = <GiftExperience gift={unboxing.data} />;
+  }
 
-  // Fetch unboxing data from NestJS API
+  return <UnboxFrame>{content}</UnboxFrame>;
+}
+
+function GiftExperience({ gift }: { gift: PublicUnboxing }) {
+  const reducedMotion = usePrefersReducedMotion();
+  const [opened, setOpened] = useState(false);
+  const [pose, setPose] = useState<MascotPose>("unboxing_pop");
+  const [musicOn, setMusicOn] = useState(false);
+  const particlesRef = useRef<HTMLCanvasElement>(null);
+  const stopParticles = useRef<() => void>(() => undefined);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const noteRef = useRef<HTMLElement>(null);
+  const sender = authorName(gift.sender);
+  const { box } = gift;
+
+  useEffect(() => () => stopParticles.current(), []);
+
+  // The note slides in once the lid is open, then comes into view (it sits under the 3D stage on phones).
   useEffect(() => {
-    async function loadData() {
-      try {
-        const res = await apiClient.getPublicUnboxing(params.slug);
-        setData(res);
-      } catch {
-        // Fallback
-      } finally {
-        setLoading(false);
-      }
+    const note = noteRef.current;
+    if (!opened || !note) return;
+    note.focus({ preventScroll: true });
+    if (!reducedMotion) animate(note, { opacity: [0, 1], translateY: [24, 0], duration: 560, delay: 250, ease: "outCubic" });
+    const timer = window.setTimeout(
+      () => note.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "nearest" }),
+      reducedMotion ? 0 : 900,
+    );
+    return () => window.clearTimeout(timer);
+  }, [opened, reducedMotion]);
+
+  const playMusic = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    // Autoplay rules: this runs inside the tap that opens the box.
+    audio.play().then(
+      () => setMusicOn(true),
+      () => setMusicOn(false),
+    );
+  }, []);
+
+  const openBox = () => {
+    if (opened) return;
+    setOpened(true);
+    setPose("celebration");
+    tactileAudio.playUnboxPop();
+    if (!reducedMotion && particlesRef.current) {
+      stopParticles.current();
+      stopParticles.current = playParticles(particlesRef.current, gift.particleEffect);
     }
-    loadData();
-  }, [params.slug]);
-
-  // Confetti Particle Explosion
-  const fireConfetti = () => {
-    const canvas = confettiCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const colors = ["#D4AF37", "#FF6B6B", "#2563EB", "#10B981", "#FAF6EE", "#FFD166"];
-    const particles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      size: number;
-      color: string;
-      rotation: number;
-      rotationSpeed: number;
-    }> = [];
-
-    // Emit 150 particles from center
-    for (let i = 0; i < 160; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 4 + Math.random() * 12;
-      particles.push({
-        x: canvas.width / 2,
-        y: canvas.height * 0.45,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 4,
-        size: 5 + Math.random() * 8,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 10,
-      });
-    }
-
-    let frame = 0;
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.22; // gravity
-        p.vx *= 0.98; // drag
-        p.rotation += p.rotationSpeed;
-
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate((p.rotation * Math.PI) / 180);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-        ctx.restore();
-      });
-
-      frame++;
-      if (frame < 220) {
-        requestAnimationFrame(animate);
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-    };
-    animate();
+    if (gift.audioTrackUrl) playMusic();
   };
 
-  const handleOpenBox = () => {
-    if (isOpened) return;
-    
-    setIsOpened(true);
-    fireConfetti();
+  const closeBox = () => {
+    stopParticles.current();
+    setOpened(false);
+    setPose("unboxing_pop");
   };
 
-  const handleCopyVoucher = () => {
-    
-    navigator.clipboard.writeText("WRAPFIT-GIFT-2026");
-    setCopiedVoucher(true);
-    setTimeout(() => setCopiedVoucher(false), 2500);
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (musicOn) {
+      audio.pause();
+      setMusicOn(false);
+    } else {
+      playMusic();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#10241C] via-[#1A362B] to-[#0D1C16] text-white flex flex-col items-center justify-between p-4 sm:p-8 relative overflow-hidden font-sans select-none">
-      {/* 360 Confetti Canvas Layer */}
-      <canvas
-        ref={confettiCanvasRef}
-        className="pointer-events-none fixed inset-0 z-40"
-      />
+    <>
+      <canvas ref={particlesRef} aria-hidden className="pointer-events-none fixed inset-0 z-40 h-full w-full" />
+      {gift.audioTrackUrl && <audio ref={audioRef} src={gift.audioTrackUrl} loop preload="none" onEnded={() => setMusicOn(false)} />}
 
-      {/* Background Star Ambient Dots */}
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#D4AF37_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
-
-      {/* Top Header */}
-      <header className="w-full max-w-6xl 2xl:max-w-7xl flex items-center justify-between z-20 pt-2">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 text-brand-gold hover:text-white transition"
-        >
-          <div className="w-8 h-8 rounded-squircle bg-brand-gold/20 border border-brand-gold/40 flex items-center justify-center font-serif font-bold text-brand-gold">
-            W
-          </div>
-          <span className="font-serif text-lg font-bold tracking-wide">
-            WrapFit Unboxing 3D
-          </span>
-        </Link>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              
-              setIsOpened(false);
-            }}
-            className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 text-stone-200"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Đóng Hộp Lại</span>
-          </button>
-        </div>
-      </header>
-
-      {/* Center 3D Stage & Floating Presentation */}
-      <main className="w-full max-w-6xl 2xl:max-w-7xl flex-1 flex flex-col items-center justify-center my-4 sm:my-6 z-10 space-y-6">
-        {/* Recipient Ribbon Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-xs font-semibold animate-pulse">
-            <Gift className="w-3.5 h-3.5" />
-            <span>Món Quà Dành Riêng Cho Bạn</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-tight">
-            Gửi {data?.recipientName || "Người Bạn Thân Thương"}
+      <div className="flex w-full flex-col items-center gap-6">
+        <div className="space-y-3 text-center">
+          <p className="inline-flex items-center gap-2 rounded-full border border-brand-gold/40 bg-brand-gold/15 px-3.5 py-1 text-xs font-semibold text-brand-gold">
+            <Gift className="h-3.5 w-3.5" aria-hidden />
+            Món quà dành riêng cho bạn
+          </p>
+          <h1 className="font-serif text-[32px] font-bold leading-tight tracking-tight text-white sm:text-5xl">
+            Gửi {gift.recipientName}
           </h1>
-          <p className="text-xs sm:text-sm text-stone-300 font-sans max-w-md mx-auto">
-            {isOpened
-              ? "Chiếc hộp đã được mở! Hãy đón nhận những tình cảm chân thành nhất."
-              : "Một món quà đặc biệt được thiết kế và đóng gói độc bản đang chờ bạn mở ra."}
+          <p className="mx-auto max-w-md text-sm text-stone-300">
+            {opened ? `Hộp đã mở. Lời chúc của ${sender} ở ngay bên dưới.` : `${sender} đã gói một món quà cho bạn. Chạm vào hộp để mở.`}
           </p>
         </div>
 
-        {/* 3D Box Model Stage */}
-        <div className="relative w-full max-w-2xl h-[360px] sm:h-[460px] lg:h-[500px] flex items-center justify-center">
-          <InteractiveFoldingBox3D
-            dimensions={
-              data?.box.dimensions || { length: 120, width: 80, height: 60, paperThickness: 0.38 }
-            }
-            foldProgress={isOpened ? 0.6 : 1.0}
-            theme="gold_foil"
-            customLogoText="Special Present"
-            autoRotate={!isOpened}
+        <div className="relative h-[460px] w-full max-w-2xl sm:h-[520px]">
+          <BoxStage3D
+            structure={box.template.id}
+            dimensions={box.dimensions}
+            materialSpec={box.materialSpec}
+            canvasState={box.canvasState}
+            title={box.title}
+            open={opened}
+            environment="forest_velvet"
+            className="h-full"
           />
-
-          {/* Tap to Unbox CTA Overlay (when unopened) */}
-          {!isOpened && (
-            <div
-              onClick={handleOpenBox}
-              className="absolute inset-0 z-30 cursor-pointer flex flex-col items-center justify-center bg-black/25 backdrop-blur-[2px] rounded-squircle-lg transition-all hover:bg-black/15 group"
+          {!opened && (
+            <button
+              type="button"
+              onClick={openBox}
+              aria-label="Mở hộp quà"
+              className="group absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 rounded-squircle-lg bg-black/30 backdrop-blur-[2px] transition hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
             >
-              <div className="p-4 rounded-full bg-vibrant-cobalt hover:bg-vibrant-cobalt-dark text-white shadow-cobalt-glow transform group-hover:scale-110 transition-transform flex items-center justify-center animate-bounce">
-                <Sparkles className="w-7 h-7" />
-              </div>
-              <span className="mt-3 px-4 py-2 rounded-full bg-stone-900/90 text-white font-serif font-bold text-sm tracking-wide border border-white/20 shadow-tactile">
-                Chạm Vào Để Mở Hộp Quà 🎁
+              <span className="transition-transform group-hover:scale-105 motion-reduce:transition-none">
+                <GoiMascot pose={pose} size={92} interactive={false} enableTracking={false} showPhotoBadge={false} />
               </span>
-            </div>
+              <span className="rounded-full border border-white/20 bg-stone-900/90 px-5 py-2.5 font-serif text-base font-bold tracking-wide text-white shadow-tactile">
+                Chạm để mở hộp quà
+              </span>
+            </button>
           )}
         </div>
 
-        {/* Greeting Card Modal / Reveal (when opened) */}
-        {isOpened && (
-          <div className="w-full max-w-md bg-[#FAF6EE] text-stone-900 rounded-squircle-xl p-6 border-2 border-brand-gold shadow-tactile-lg space-y-4 animate-fadeIn">
-            <div className="flex items-center justify-between border-b border-[#E8D8C8] pb-3">
-              <div className="flex items-center gap-2">
-                <GoiMascot pose="celebration" size={38} />
-                <div>
-                  <span className="font-serif font-bold text-base text-brand-forest block">
-                    Lời Chúc Từ Người Gửi
-                  </span>
-                  <span className="text-[10px] text-stone-500 font-mono">
-                    Hộp Quà Kỷ Niệm WrapFit
-                  </span>
-                </div>
-              </div>
-              <Heart className="w-5 h-5 text-vibrant-coral fill-vibrant-coral animate-pulse" />
-            </div>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-stone-400">
+          {box.template.name} · {formatDimensions(box.dimensions)}
+        </p>
 
-            {/* Note text */}
-            <p className="text-xs sm:text-sm text-stone-700 leading-relaxed font-serif italic bg-white/70 p-4 rounded-squircle border border-[#E8D8C8]">
-              &quot;{data?.giftNote}&quot;
-            </p>
-
-            {/* Voucher Card */}
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-3.5 rounded-squircle border border-amber-200 flex items-center justify-between">
+        {opened && (
+          <article
+            ref={noteRef}
+            tabIndex={-1}
+            aria-labelledby="gift-note-title"
+            style={{ opacity: reducedMotion ? 1 : 0 }}
+            className="w-full max-w-md rounded-squircle-xl border-2 border-brand-gold bg-paper-cotton p-6 text-stone-900 shadow-tactile-lg focus:outline-none"
+          >
+            <div className="flex items-center gap-3 border-b border-paper-kraft pb-3">
+              <GoiMascot pose={pose} size={44} showPhotoBadge={false} />
               <div>
-                <span className="text-[10px] font-mono font-bold text-amber-800 uppercase block">
-                  Mã Ưu Đãi Độc Quyền
-                </span>
-                <span className="font-mono font-bold text-xs text-stone-900">
-                  WRAPFIT-GIFT-2026
-                </span>
+                <h2 id="gift-note-title" className="font-serif text-lg font-bold text-brand-forest">
+                  Lời chúc từ {sender}
+                </h2>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-stone-500">Hộp quà WrapFit</p>
               </div>
-
-              <button
-                type="button"
-                onClick={handleCopyVoucher}
-                className="px-3 py-1.5 rounded-squircle bg-white border border-amber-300 hover:bg-amber-100 text-xs font-semibold text-stone-800 transition flex items-center gap-1 shadow-sm"
-              >
-                {copiedVoucher ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-green-600" />
-                    <span>Đã Chép</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Sao Chép</span>
-                  </>
-                )}
-              </button>
             </div>
-          </div>
+            <p className="mt-4 whitespace-pre-line break-words rounded-squircle border border-paper-kraft bg-white/70 p-4 font-serif text-[15px] italic leading-relaxed text-stone-800">
+              {gift.giftNote}
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2 text-sm text-stone-600">
+              <span>— {sender}</span>
+              <AuthorAvatar author={gift.sender} />
+            </div>
+          </article>
         )}
-      </main>
 
-      {/* Bottom CTA to Create Own Box */}
-      <footer className="w-full max-w-xl flex flex-col sm:flex-row items-center justify-center gap-3 z-20 pb-2">
-        <Link
-          href="/"
-          className="w-full sm:w-auto px-6 py-2.5 rounded-squircle bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-semibold text-white transition text-center"
-        >
-          Khám Phá WrapFit
-        </Link>
-        <Link
-          href="/editor/step-1"
-          className="w-full sm:w-auto px-6 py-2.5 rounded-squircle bg-vibrant-cobalt hover:bg-vibrant-cobalt-dark text-white text-xs font-bold transition shadow-cobalt-glow flex items-center justify-center gap-1.5"
-        >
-          <span>Tự Tay Thiết Kế Hộp Quà</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </footer>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {opened && (
+            <button
+              type="button"
+              onClick={closeBox}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden />
+              Đóng hộp lại
+            </button>
+          )}
+          {gift.audioTrackUrl && opened && (
+            <button
+              type="button"
+              onClick={toggleMusic}
+              aria-pressed={musicOn}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
+            >
+              {musicOn ? <Music2 className="h-4 w-4 text-brand-gold" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
+              {musicOn ? "Tắt nhạc" : "Bật nhạc"}
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** The slug does not exist any more (experience removed, project in the trash) or never did. */
+function ExpiredCode() {
+  return (
+    <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/[0.06] p-8 text-center shadow-tactile-lg backdrop-blur-md">
+      <div className="mb-4 flex justify-center">
+        <GoiMascot pose="chilling" size={88} showPhotoBadge={false} enableTracking={false} />
+      </div>
+      <p className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand-gold">
+        <QrCode className="h-3.5 w-3.5" aria-hidden />
+        Mở hộp qua mã QR
+      </p>
+      <h1 className="mt-2 font-serif text-[28px] leading-tight tracking-tight text-white">Mã QR không còn hiệu lực</h1>
+      <p className="mt-3 text-sm leading-relaxed text-stone-300">
+        Hộp quà gắn với mã này đã bị gỡ hoặc chưa từng tồn tại. Hãy hỏi người gửi một liên kết mới.
+      </p>
+      <Link
+        href={ROUTES.unboxCode}
+        className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20"
+      >
+        Nhập mã khác
+      </Link>
     </div>
   );
 }
