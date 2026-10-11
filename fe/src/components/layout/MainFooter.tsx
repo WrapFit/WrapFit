@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { BrandLogo } from './BrandLogo';
 
 export interface MainFooterProps {
@@ -57,7 +58,7 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
                   </Link>
                 </li>
                 <li>
-                  <Link href="/editor" className="hover:text-black hover:underline transition-colors">
+                  <Link href={ROUTES.editorDemo} className="hover:text-black hover:underline transition-colors">
                     3D Interactive WebGL Studio
                   </Link>
                 </li>

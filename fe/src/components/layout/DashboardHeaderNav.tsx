@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { usePathname } from 'next/navigation';
 import { UserAvatarDropdown } from './UserAvatarDropdown';
 
@@ -73,14 +74,14 @@ export function DashboardHeaderNav({
         {showActions && (
           <>
             <Link
-              href="/editor"
+              href={ROUTES.editorDemo}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold transition-all border border-stone-200/60 shadow-2xs"
             >
               <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
               <span>3D Studio</span>
             </Link>
             <Link
-              href="/editor/step-1"
+              href={ROUTES.editorNew}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold shadow-sm active:scale-95 transition-all"
             >
               <span className="material-symbols-outlined text-[16px]">add</span>

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { usePathname } from 'next/navigation';
 
 interface AdminNavItem {
@@ -159,7 +160,7 @@ export function AdminSidebarNav({ mobileToggle = true }: AdminSidebarNavProps) {
           Lối Tắt Nhanh
         </div>
         <Link
-          href="/editor"
+          href={ROUTES.editorNew}
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[12px] text-blue-700 hover:bg-blue-50 font-medium transition-colors"
         >
           <span className="material-symbols-outlined text-[17px]">view_in_ar</span>

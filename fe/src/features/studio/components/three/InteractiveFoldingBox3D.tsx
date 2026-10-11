@@ -26,6 +26,10 @@ interface InteractiveFoldingBox3DProps {
   rotationY?: number; // External yaw rotation (radians) driven by GSAP ScrollTrigger
   rotationX?: number; // External pitch tilt (radians) driven by GSAP ScrollTrigger
   enableMacroZoom?: boolean;
+  /** Status bar at the bottom (fold %, size, paper): studio information, hidden on public pages. */
+  showStatusBar?: boolean;
+  /** 460 px minimum height; false lets the parent decide (e.g. a square stage on a phone). */
+  minHeight?: boolean;
 }
 
 export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = ({
@@ -44,6 +48,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   rotationY,
   rotationX,
   enableMacroZoom = true,
+  showStatusBar = true,
+  minHeight = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -871,7 +877,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
   return (
     <div
-      className={`relative w-full h-full min-h-[460px] rounded-squircle-lg overflow-hidden bg-paper-ivory border border-stone-200 shadow-tactile ${className}`}
+      className={`relative w-full h-full ${minHeight ? "min-h-[460px]" : ""} rounded-squircle-lg overflow-hidden bg-paper-ivory border border-stone-200 shadow-tactile ${className}`}
     >
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
@@ -938,6 +944,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       </div>
 
       {/* Bottom Status Info */}
+      {showStatusBar && (
       <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 bg-white/95 backdrop-blur-md px-4 py-2 rounded-squircle border border-stone-200 text-xs text-stone-600 shadow-tactile">
         <div className="flex items-center gap-3">
           <span className="font-semibold text-brand-forest">
@@ -968,6 +975,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           </span>
         </div>
       </div>
+      )}
     </div>
   );
 };

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth';
 import { displayName, initialsOf, loginHref, ROLE_LABELS, TIER_LABELS } from './account';
@@ -245,7 +246,7 @@ export function UserAvatarDropdown({
           {/* Group 2: Quick Jump to 3D Studio & Admin */}
           <div className="space-y-0.5 py-1 text-xs font-medium text-stone-700">
             <Link
-              href="/editor"
+              href={ROUTES.editorNew}
               onClick={() => setIsOpen(false)}
               className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-stone-100/80 transition-colors group"
             >

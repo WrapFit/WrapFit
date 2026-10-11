@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { GoiMascot } from '@/components/common/GoiMascot';
@@ -87,7 +88,7 @@ export default function Page() {
         <div className="flex flex-wrap items-center gap-4 pt-1">
           <Link
             className="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full bg-[#133020] text-white text-sm font-medium hover:bg-[#1c422d] transition-all shadow-sm active:scale-95 group"
-            href="/editor/step-1"
+            href={ROUTES.editorNew}
           >
             <span>Khám phá 3D Studio</span>
             <span className="material-symbols-outlined text-base transition-transform group-hover:translate-x-0.5">arrow_forward</span>
@@ -461,7 +462,7 @@ export default function Page() {
         Chuẩn hóa quy trình thiết kế khuôn bế cùng WrapFit ngay hôm nay.
       </p>
 <div className="flex flex-wrap items-center gap-space-md mt-space-lg">
-<Link className="inline-flex items-center justify-center px-6 py-3 bg-[#133020] text-white text-sm font-medium rounded-full hover:bg-[#1c422d] transition-all active:scale-95 shadow-xs" href="/editor/step-1">
+<Link className="inline-flex items-center justify-center px-6 py-3 bg-[#133020] text-white text-sm font-medium rounded-full hover:bg-[#1c422d] transition-all active:scale-95 shadow-xs" href={ROUTES.editorNew}>
 <span className="">Mở Studio Miễn Phí</span>
 <span className="material-symbols-outlined text-base ml-2">arrow_forward</span>
 </Link>

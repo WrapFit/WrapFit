@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { ROUTES } from "@/constants";
 import { usePathname } from "next/navigation";
 import { Home, FolderHeart, Box, Sparkles } from "lucide-react";
 import { GoiMascot } from "@/components/common/GoiMascot";
@@ -65,7 +66,7 @@ export const BottomNavBar: React.FC = () => {
 
       {/* 3. 2D/3D Studio */}
       <Link
-        href="/editor/step-1"
+        href={ROUTES.editorNew}
         onClick={handleTabClick}
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isStudio

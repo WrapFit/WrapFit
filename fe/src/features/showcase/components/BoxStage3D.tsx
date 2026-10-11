@@ -79,6 +79,7 @@ export function BoxStage3D({
           environment={environment}
           interactiveOpenState={open}
           enableMacroZoom={false}
+          showStatusBar={false}
           className="h-full"
         />
       </WebGlBoundary>

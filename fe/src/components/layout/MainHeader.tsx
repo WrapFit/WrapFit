@@ -18,7 +18,7 @@ export interface MainHeaderProps {
 
 export const MAIN_NAV_ITEMS = [
   { href: ROUTES.templates, label: 'Thư Viện Mẫu', icon: 'grid_view' },
-  { href: '/editor/studio', label: 'Studio 3D', icon: 'view_in_ar' },
+  { href: ROUTES.editorNew, label: 'Studio 3D', icon: 'view_in_ar' },
   { href: '/pricing', label: 'Bảng Giá', icon: 'payments' },
   { href: '/team', label: 'Đội Ngũ & Xưởng In', icon: 'group' },
   { href: '/support', label: 'Hỗ Trợ Kỹ Thuật', icon: 'help' },
@@ -46,11 +46,11 @@ export const MEGA_MENU_DATA: MegaMenuSection[] = [
     icon: 'deployed_code',
     badge: 'Core Workflow',
     items: [
-      { title: 'Bước 1: Chọn Cấu Trúc Hộp', href: '/editor/step-1', desc: '4 kết cấu FEFCO/ECMA tiêu chuẩn', icon: 'category', badge: 'Step 1' },
-      { title: 'Bước 2: Nhập Kích Thước (mm)', href: '/editor/step-2', desc: 'L x W x H & độ dày Caliper giấy', icon: 'straighten', badge: 'Step 2' },
-      { title: 'Bước 3: Studio Thiết Kế 2D/3D', href: '/editor/step-3', desc: 'Trải phẳng dieline & ốp decal UV', icon: 'draw', badge: 'Step 3' },
-      { title: 'Bước 4: Kiểm Định FitCheck™', href: '/editor/step-4', desc: 'Báo cáo tiền kiểm dao bế ISO 12647', icon: 'verified', badge: 'Step 4' },
-      { title: 'Master Studio 3D Toàn Cảnh', href: '/editor/studio', desc: 'Không gian WebGL gập mở thời gian thực', icon: 'view_in_ar', badge: 'WebGL' },
+      { title: 'Tạo Dự Án Mới', href: ROUTES.editorNew, desc: 'Chọn cấu trúc hộp & kích thước món quà (mm)', icon: 'category', badge: 'Bước 1–2' },
+      { title: 'Dự Án Của Tôi', href: ROUTES.projects, desc: 'Mở lại bản thiết kế đã lưu trên Cloud', icon: 'folder_special' },
+      { title: 'Bắt Đầu Từ Mẫu', href: ROUTES.templates, desc: 'Mẫu hộp đạt FitCheck™, chỉnh kích thước theo quà', icon: 'verified' },
+      { title: 'Studio Dùng Thử', href: ROUTES.editorDemo, desc: 'Dieline 2D & hộp 3D gập mở, không cần đăng nhập', icon: 'view_in_ar', badge: 'Demo' },
+      { title: 'Mở Hộp Quà QR', href: ROUTES.unboxCode, desc: 'Nhập mã in kèm món quà để mở hộp 3D', icon: 'qr_code_2' },
       { title: 'Kho Vật Liệu Giấy & Hot Foil', href: '/editor/materials/backdrop', desc: 'Giấy kẹp bông, Kraft, Kurz 22K', icon: 'layers' },
     ],
   },
@@ -236,7 +236,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             {/* CTA: Create New Box */}
             {showCta && (
               <Link
-                href="/editor/step-1"
+                href={ROUTES.editorNew}
                 className="hidden sm:inline-flex xl:hidden items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all"
               >
                 <span>Bắt Đầu Hộp Quà</span>
@@ -355,7 +355,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                 </div>
                 <div className="flex items-center gap-3">
                   <Link
-                    href="/editor/step-1"
+                    href={ROUTES.editorNew}
                     onClick={() => setMegaMenuOpen(false)}
                     className="inline-flex items-center gap-1.5 font-bold text-[#122e20] hover:underline"
                   >
@@ -437,7 +437,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                 </Link>
               )}
               <Link
-                href="/editor/step-1"
+                href={ROUTES.editorNew}
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex-1 py-2.5 text-center text-xs font-semibold rounded-full bg-[#122e20] text-white"
               >
