@@ -11,9 +11,13 @@ import { generateLidBaseDieline } from "./lid-base";
 import { generatePillowBoxDieline } from "./pillow";
 import { generateSleeveDrawerDieline } from "./sleeve-drawer";
 import { generateTuckTopDieline } from "./tuck-top";
+import { generateTuckTopDielineV1 } from "./tuck-top.v1";
 
-/** Version given to new projects. */
-export const CURRENT_FORMULA_VERSION = 1;
+/**
+ * Version given to new projects (the backend stores it on each box template, see be/prisma/seed-data.ts).
+ * 2: tuck-top lid and bottom placed on the back panel, with tuck flaps, dust flaps and cut lines.
+ */
+export const CURRENT_FORMULA_VERSION = 2;
 
 /** One flat piece of a box: two-piece boxes print as base + lid, sleeve + drawer. */
 export interface DielinePiece {
@@ -26,25 +30,28 @@ export class UnsupportedFormulaVersionError extends Error {}
 
 type PieceGenerator = (dimensions: BoxDimensions) => DielinePiece[];
 
-const FORMULAS: Record<number, Record<string, PieceGenerator>> = {
-  1: {
-    "tuck-top": (d) => [{ name: "Thân hộp", geometry: generateTuckTopDieline(d) }],
-    pillow: (d) => [{ name: "Thân hộp", geometry: generatePillowBoxDieline(d) }],
-    "lid-base": (d) => {
-      const { base, lid } = generateLidBaseDieline(d);
-      return [
-        { name: "Đáy (hộp dương)", geometry: base },
-        { name: "Nắp (hộp âm)", geometry: lid },
-      ];
-    },
-    "sleeve-drawer": (d) => {
-      const { sleeve, drawer } = generateSleeveDrawerDieline(d);
-      return [
-        { name: "Vỏ bao", geometry: sleeve },
-        { name: "Khay kéo", geometry: drawer },
-      ];
-    },
+const VERSION_1: Record<string, PieceGenerator> = {
+  "tuck-top": (d) => [{ name: "Thân hộp", geometry: generateTuckTopDielineV1(d) }],
+  pillow: (d) => [{ name: "Thân hộp", geometry: generatePillowBoxDieline(d) }],
+  "lid-base": (d) => {
+    const { base, lid } = generateLidBaseDieline(d);
+    return [
+      { name: "Đáy (hộp dương)", geometry: base },
+      { name: "Nắp (hộp âm)", geometry: lid },
+    ];
   },
+  "sleeve-drawer": (d) => {
+    const { sleeve, drawer } = generateSleeveDrawerDieline(d);
+    return [
+      { name: "Vỏ bao", geometry: sleeve },
+      { name: "Khay kéo", geometry: drawer },
+    ];
+  },
+};
+
+const FORMULAS: Record<number, Record<string, PieceGenerator>> = {
+  1: VERSION_1,
+  2: { ...VERSION_1, "tuck-top": (d) => [{ name: "Thân hộp", geometry: generateTuckTopDieline(d) }] },
 };
 
 /**

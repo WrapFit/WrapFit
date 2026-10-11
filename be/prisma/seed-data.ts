@@ -1,6 +1,7 @@
 // Data of the seed (be/prisma/seed.ts): box structures and the curated designs of the template hub. Kept apart from
 // the script so tests can check it without a database (src/templates/seed-data.spec.ts).
 import { Prisma } from '@prisma/client';
+import { CURRENT_FORMULA_VERSION } from '@wrapfit/shared';
 
 // Kích thước tối thiểu (mm) khớp với IT1-02: L >= 40, W >= 30, H >= 20.
 const dimensionParams = {
@@ -10,6 +11,10 @@ const dimensionParams = {
   paperThickness: { unit: 'mm', min: 0.2, max: 1.5 },
 };
 
+/**
+ * The 4 box structures. Every start of the seed sets their `formulaVersion` to the current dieline formulas of
+ * @wrapfit/shared: new projects get it, existing projects keep the version they were created with.
+ */
 export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
   {
     id: 'tuck-top',
@@ -21,6 +26,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
       generator: 'generateTuckTopDieline',
       params: dimensionParams,
     },
+    formulaVersion: CURRENT_FORMULA_VERSION,
   },
   {
     id: 'sleeve-drawer',
@@ -32,6 +38,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
       generator: 'generateSleeveDrawerDieline',
       params: dimensionParams,
     },
+    formulaVersion: CURRENT_FORMULA_VERSION,
   },
   {
     id: 'lid-base',
@@ -42,6 +49,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
       generator: 'generateLidBaseDieline',
       params: dimensionParams,
     },
+    formulaVersion: CURRENT_FORMULA_VERSION,
   },
   {
     id: 'pillow',
@@ -53,6 +61,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
       generator: 'generatePillowDieline',
       params: dimensionParams,
     },
+    formulaVersion: CURRENT_FORMULA_VERSION,
   },
 ];
 

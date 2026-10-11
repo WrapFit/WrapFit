@@ -1,13 +1,11 @@
 import {
   type BoxDimensions,
   type CanvasElement,
+  CURRENT_FORMULA_VERSION,
   generateDielinePieces,
   runFitCheck,
 } from '@wrapfit/shared';
 import { designTemplates } from '../../prisma/seed-data';
-
-/** Formula version of the box templates in the seed (projects created from these designs get it). */
-const FORMULA_VERSION = 1;
 
 describe('curated design templates of the seed', () => {
   it.each(designTemplates.map((design) => [design.title, design] as const))(
@@ -16,7 +14,8 @@ describe('curated design templates of the seed', () => {
       const pieces = generateDielinePieces(
         design.boxTemplateId,
         design.dimensions as unknown as BoxDimensions,
-        FORMULA_VERSION,
+        // Projects created from these designs get the current formulas.
+        CURRENT_FORMULA_VERSION,
       );
       const panels = pieces.flatMap((piece) => piece.geometry.panels);
       const elements = (

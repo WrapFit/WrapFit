@@ -235,6 +235,10 @@ GET  /api/projects/:id   → ProjectDetail
 - **`formulaVersion`** (trong `ProjectDetail`): phiên bản công thức dieline mà dự án được chốt khi tạo. Editor phải
   dựng dieline / 3D / FitCheck bằng `generateDielinePieces(templateId, dimensions, formulaVersion)` của
   `@wrapfit/shared`, **không** gọi thẳng `generateTuckTopDieline`…, để hình trên màn hình khớp đúng file in.
+  Các phiên bản (`shared/src/parametric/registry.ts`): **1** bản đầu (hộp nắp gài: nắp trên đè mặt sau khi W > H,
+  chưa có nét cắt); **2** (từ 2026-10-11, dự án mới) hộp nắp gài có nắp và đáy gắn vào mặt sau, tai gài, tai chống
+  bụi, tai dán và nét cắt; 3 cấu trúc còn lại giống bản 1, kích thước các mặt không đổi nên điểm FitCheck không đổi.
+  Dự án cũ giữ phiên bản 1.
 
 ### 5.2. `canvasState`
 
