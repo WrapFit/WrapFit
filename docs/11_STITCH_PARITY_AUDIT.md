@@ -16,6 +16,10 @@
 
 Đo bằng `npm run stitch:parity` (xem §3.5). Ảnh so sánh: `fe/.visual-parity/<slug>.png` (Stitch | app | diff).
 
+> **Mốc mới (2026-10-11, S9):** từ khi các màn được sửa tay header / sidebar (`e07d23b`, `e509d8f`) và header chung đổi
+> font (S5), ngưỡng 1% không còn áp dụng: số đo từng màn trước / sau S9 ở [`13`](13_UI_VIEWPORT_AUDIT.md) §2.3. So sánh
+> với cột "Sau S9" của bảng đó.
+
 ## 2. Đánh giá kiến trúc frontend (trước lượt 2)
 
 | # | Vấn đề | Mức | Xử lý |
