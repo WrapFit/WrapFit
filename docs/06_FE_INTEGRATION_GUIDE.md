@@ -32,6 +32,11 @@ Mục lục: [1. Kết nối](#1-kết-nối-và-phiên-đăng-nhập) · [2. L�
   gửi lại request cũ; refresh cũng `401` → chuyển về `/login`. Chỉ cho **một** refresh chạy cùng lúc (nhiều tab / nhiều
   request song song cùng chờ một promise). Backend chấp nhận 2 tab refresh gần như đồng thời (30 giây), nhưng dùng lại
   refresh token cũ sau đó bị coi là bị đánh cắp và **đăng xuất mọi thiết bị**.
+- **Chỉ `401` của refresh mới là hết phiên.** Refresh `429` (bị chặn trước khi token được xem: chờ `Retry-After`, tối đa
+  10 giây, rồi thử lại **một** lần), `5xx` hay mất mạng không nói gì về phiên: báo lỗi đó, **không** đăng xuất. Không thử
+  lại refresh khi mất mạng (server có thể đã đổi token). Giới hạn của refresh tính **theo phiên** (30 / phút cho một
+  cookie `wf_refresh`), không theo IP, nên nhiều người sau một IP (NAT văn phòng, mạng di động) không chia nhau; request
+  không có cookie (khách) 300 / phút / IP. Code thật: `fe/src/services/api/index.ts`.
 
 ```ts
 let refreshing: Promise<boolean> | null = null;
@@ -43,6 +48,7 @@ async function api<T>(path: string, init: RequestInit = {}, retry = true): Promi
     headers: { 'Content-Type': 'application/json', ...init.headers },
   });
   if (res.status === 401 && retry && !path.startsWith('/auth/')) {
+    // Rút gọn: bản đầy đủ chờ Retry-After khi refresh trả 429 và chỉ đăng xuất khi refresh trả 401 (xem trên).
     refreshing ??= fetch(`${API_BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
       .then((r) => r.ok)
       .finally(() => (refreshing = null));
@@ -121,7 +127,8 @@ POST /api/auth/register
   "Email của bạn đã có tài khoản"). Sau `201` luôn chuyển tới `/check-email?email=…`.
 - **Không có `409`**, không đặt cookie. Đừng hiển thị "email đã tồn tại".
 - Mật khẩu: 8–72 ký tự, có ít nhất 1 chữ và 1 số. `fullName` ≤ 100 ký tự. Email được chuyển chữ thường ở backend.
-- Giới hạn 10 request / phút / IP cho các route đăng ký, đăng nhập, xác minh, đặt lại mật khẩu.
+- Giới hạn 10 request / phút / IP cho các route đăng ký, đăng nhập, xác minh, đặt lại mật khẩu. `refresh` tính theo phiên
+  (mục 1).
 
 ### 3.3. Kiểm tra hộp thư, gửi lại email
 

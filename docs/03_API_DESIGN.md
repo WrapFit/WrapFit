@@ -31,7 +31,7 @@
 | `POST` | `/api/auth/verify-email/resend` | Public | `{ email }` → luôn `202 {}` (không lộ email nào có tài khoản) |
 | `POST` | `/api/auth/password/forgot` | Public | `{ email }` → luôn `202 {}`; gửi link đặt lại mật khẩu (30 phút) |
 | `POST` | `/api/auth/password/reset` | Public | `{ token, password }` (link đặt lại mật khẩu **hoặc** link hoàn tất đăng ký) → `200 {}`, thu hồi mọi phiên, xóa cookie; rồi đăng nhập lại. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED \| AUTH_TOKEN_CONSUMED` |
-| `POST` | `/api/auth/refresh` | Public (cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới |
+| `POST` | `/api/auth/refresh` | Public (cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới. Giới hạn theo phiên: 30 / phút cho một cookie, 300 / phút / IP khi không có cookie; `429` không làm hết phiên |
 | `POST` | `/api/auth/logout` | Public | Thu hồi phiên hiện tại, xoá cookie |
 | `GET` | `/api/auth/google?redirect=/p/abc` | Public | Bắt đầu đăng nhập Google (điều hướng trình duyệt) |
 | `GET` | `/api/auth/google/callback` | Public | Google gọi lại → đặt cookie → chuyển về frontend |
