@@ -62,10 +62,10 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
 
   return (
     <div
-      className={`flex flex-col items-center bg-white/95 backdrop-blur-md border border-stone-200/90 rounded-3xl p-2 shadow-tactile-lg space-y-1.5 select-none ${className}`}
+      className={`flex flex-row lg:flex-col items-center gap-1.5 max-w-full overflow-x-auto lg:overflow-visible bg-white/95 backdrop-blur-md border border-stone-200/90 rounded-3xl p-2 shadow-tactile-lg select-none ${className}`}
     >
       {/* Primary Tools */}
-      <div className="flex flex-col items-center space-y-1 w-full">
+      <div className="flex flex-row lg:flex-col items-center gap-1 flex-shrink-0 lg:w-full">
         {tools.map((t) => {
           const Icon = t.icon;
           const isActive = activeTool === t.id;
@@ -101,7 +101,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
       </div>
 
       {/* Divider */}
-      <div className="w-6 h-[1px] bg-stone-200 my-1" />
+      <div className="w-[1px] h-6 lg:w-6 lg:h-[1px] flex-shrink-0 bg-stone-200 mx-1 lg:mx-0 lg:my-1" />
 
       {/* CAD Ruler Toggle */}
       <button
@@ -110,7 +110,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
           
           onToggleRulers();
         }}
-        className={`w-11 h-11 rounded-2xl flex items-center justify-center transition ${
+        className={`w-11 h-11 flex-shrink-0 rounded-2xl flex items-center justify-center transition ${
           showRulers
             ? "bg-amber-100 text-amber-900 border border-amber-300"
             : "text-stone-500 hover:text-stone-900 hover:bg-stone-100"
@@ -121,7 +121,7 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
       </button>
 
       {/* Undo & Redo */}
-      <div className="flex flex-col items-center space-y-1 pt-1">
+      <div className="flex flex-row lg:flex-col items-center gap-1 flex-shrink-0 lg:pt-1">
         <button
           type="button"
           disabled={!canUndo}

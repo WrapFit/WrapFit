@@ -51,6 +51,27 @@ export interface ProjectSync {
   /** Takes the project out of the trash; the editor becomes editable again. */
   restore: () => Promise<void>;
   restoring: boolean;
+  /**
+   * Sends the change still waiting for its debounce now and waits for every queued save. Resolves true when the
+   * server has the design on screen (e.g. before an export or a snapshot, which read the saved project).
+   */
+  flush: () => Promise<boolean>;
+  /** Saves other fields of the project (e.g. occasion) in the save queue, with the current version. */
+  patch: (body: Omit<UpdateProjectRequest, "version">) => Promise<ProjectDetail>;
+  /**
+   * Runs a call that gives the project a new version on the server (restoring a snapshot), after the pending
+   * changes are saved. Afterwards this editor sends nothing more: mount it again with the project returned.
+   * Rejects with UnsavedChangesError when the pending changes could not be saved first.
+   */
+  replace: (task: () => Promise<ProjectDetail>) => Promise<ProjectDetail>;
+}
+
+/** The latest changes could not be saved, so an action that reads the saved project did not run. */
+export class UnsavedChangesError extends Error {
+  constructor() {
+    super("Chưa lưu được thay đổi mới nhất. Đợi lưu xong rồi thử lại.");
+    this.name = "UnsavedChangesError";
+  }
 }
 
 const isVersionConflict = (err: unknown): err is ApiError =>
@@ -84,9 +105,11 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
   const renderRef = useRef(renderThumbnail);
   renderRef.current = renderThumbnail;
   const thumbRef = useRef({ key, at: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined });
+  // Set once `replace` gave the project a new version: this editor is about to be remounted and must not save.
+  const detachedRef = useRef(false);
 
-  const enqueue = useCallback((task: () => Promise<void>) => {
-    queueRef.current = queueRef.current.then(task, task);
+  const enqueue = useCallback((task: () => Promise<unknown>) => {
+    queueRef.current = queueRef.current.then(task, task).then(() => undefined);
     return queueRef.current;
   }, []);
 
@@ -101,12 +124,13 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
 
   const uploadThumbnail = useCallback(
     async (forKey: string) => {
-      if (!projectId) return;
+      if (!projectId || detachedRef.current) return;
       clearTimeout(thumbRef.current.timer);
       thumbRef.current = { key: forKey, at: Date.now(), timer: undefined };
       try {
         const { fileUrl } = await uploadFileToStorage(await renderRef.current(), "THUMBNAIL", projectId);
         await enqueue(async () => {
+          if (detachedRef.current) return;
           savedProject(await updateProject(projectId, { thumbnailUrl: fileUrl, version: versionRef.current }));
         });
       } catch {
@@ -133,9 +157,12 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
     [uploadThumbnail]
   );
 
+  /** One PATCH of the design; resolves true when the server has it. */
   const save = useCallback(
-    async (sendKey: string, body: DesignPayload) => {
-      if (!projectId) return;
+    async (sendKey: string, body: DesignPayload): Promise<boolean> => {
+      if (!projectId || detachedRef.current) return false;
+      // Already sent by an earlier task of the queue (e.g. a flush before the debounce timer fired).
+      if (sendKey === latestRef.current.savedKey) return true;
       setSaving(true);
       try {
         const saved = await updateProject(projectId, { ...body, version: versionRef.current });
@@ -145,6 +172,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
         latestRef.current.savedKey = sendKey;
         setError(null);
         scheduleThumbnail(sendKey);
+        return true;
       } catch (err) {
         if (isVersionConflict(err)) {
           setConflict({ version: err.currentVersion });
@@ -156,6 +184,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
           const retryable = !(err instanceof ApiError) || err.status === 0 || err.status === 429 || err.status >= 500;
           if (retryable) setTimeout(() => setRetryTick((tick) => tick + 1), RETRY_DELAY_MS);
         }
+        return false;
       } finally {
         setSaving(false);
       }
@@ -182,8 +211,8 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
       // eslint-disable-next-line react-hooks/exhaustive-deps
       clearTimeout(thumbRef.current.timer);
       const latest = latestRef.current;
-      // Conflict or trash: nothing of this design goes to the server any more.
-      if (latest.blocked) return;
+      // Conflict, trash or replaced: nothing of this design goes to the server any more.
+      if (latest.blocked || detachedRef.current) return;
       if (latest.key !== latest.savedKey) {
         void enqueue(() => save(latest.key, latest.payload)).then(() => uploadThumbnail(latest.key));
       } else if (latest.savedKey !== thumbRef.current.key) {
@@ -224,6 +253,57 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
     }
   }, [projectId, queryClient]);
 
+  const flush = useCallback(async () => {
+    if (!projectId) return true;
+    let ok = true;
+    await enqueue(async () => {
+      const latest = latestRef.current;
+      if (latest.blocked) ok = false;
+      else if (latest.key !== latest.savedKey) ok = await save(latest.key, latest.payload);
+    });
+    return ok;
+  }, [projectId, enqueue, save]);
+
+  const patch = useCallback(
+    (body: Omit<UpdateProjectRequest, "version">) =>
+      new Promise<ProjectDetail>((resolve, reject) => {
+        if (!projectId) return reject(new Error("The demo has no project"));
+        void enqueue(async () => {
+          try {
+            const saved = await updateProject(projectId, { ...body, version: versionRef.current });
+            savedProject(saved);
+            resolve(saved);
+          } catch (err) {
+            if (isVersionConflict(err)) setConflict({ version: err.currentVersion });
+            reject(err);
+          }
+        });
+      }),
+    [projectId, enqueue, savedProject]
+  );
+
+  const replace = useCallback(
+    async (task: () => Promise<ProjectDetail>) => {
+      if (!projectId) throw new Error("The demo has no project");
+      if (!(await flush())) throw new UnsavedChangesError();
+      return new Promise<ProjectDetail>((resolve, reject) => {
+        void enqueue(async () => {
+          try {
+            const replaced = await task();
+            detachedRef.current = true;
+            clearTimeout(thumbRef.current.timer);
+            queryClient.setQueryData(queryKeys.projects.detail(projectId), replaced);
+            void queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
+            resolve(replaced);
+          } catch (err) {
+            reject(err);
+          }
+        });
+      });
+    },
+    [projectId, flush, enqueue, queryClient]
+  );
+
   let state: SyncState;
   if (!projectId) state = "demo";
   else if (trashed) state = "trash";
@@ -234,5 +314,17 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
   else if (error) state = "error";
   else state = "pending";
 
-  return { state, serverReport, dirty, error, conflict: conflict !== null, overwrite, restore, restoring };
+  return {
+    state,
+    serverReport,
+    dirty,
+    error,
+    conflict: conflict !== null,
+    overwrite,
+    restore,
+    restoring,
+    flush,
+    patch,
+    replace,
+  };
 }

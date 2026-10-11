@@ -10,7 +10,7 @@ import { ROUTES } from "@/constants";
 import { RequireAuth } from "@/features/auth";
 import { queryKeys } from "@/hooks/data";
 import type { ProjectDetail } from "@/types/api";
-import { StudioWorkspace } from "./StudioWorkspace";
+import { StudioWorkspace, type RestoreNotice } from "./StudioWorkspace";
 
 /** Route id of the offline demo: no sign-in, nothing saved (docs/12 D5). */
 const DEMO_ID = "demo";
@@ -45,8 +45,10 @@ function ProjectEditor({ projectId }: { projectId: string }) {
   });
 
   // The editor works on its own copy: later refetches of the query never replace what the user is editing.
-  // `nonce` remounts it with a fresh copy (after a version conflict).
-  const [session, setSession] = useState<{ project: ProjectDetail; nonce: number } | null>(null);
+  // `nonce` remounts it with a fresh copy (after a version conflict or a snapshot restore).
+  const [session, setSession] = useState<{ project: ProjectDetail; nonce: number; notice?: RestoreNotice | null } | null>(
+    null
+  );
   const [reloading, setReloading] = useState(false);
 
   useEffect(() => {
@@ -109,6 +111,10 @@ function ProjectEditor({ projectId }: { projectId: string }) {
       structures={structures.data}
       onReload={() => void reload()}
       reloading={reloading}
+      onReplaced={(replaced, notice) =>
+        setSession((current) => ({ project: replaced, nonce: (current?.nonce ?? 0) + 1, notice }))
+      }
+      notice={session.notice}
     />
   );
 }

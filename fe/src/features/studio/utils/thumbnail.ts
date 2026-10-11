@@ -69,7 +69,7 @@ export async function renderThumbnail(
   const images = new Map<string, string | null>();
   await Promise.all(
     elements
-      .filter((el) => (el.type === "image" || el.type === "logo") && isFileUrl(el.content))
+      .filter((el) => (el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content))
       .map(async (el) => {
         if (!images.has(el.content)) images.set(el.content, await inlineImage(new URL(el.content, location.href).href));
       })
@@ -82,7 +82,7 @@ export async function renderThumbnail(
       const x = panel.bounds.x + el.x;
       const y = panel.bounds.y + el.y;
       const rotate = el.rotation ? ` transform="rotate(${el.rotation} ${x + el.width / 2} ${y + el.height / 2})"` : "";
-      if ((el.type === "image" || el.type === "logo") && isFileUrl(el.content)) {
+      if ((el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content)) {
         const href = images.get(el.content);
         return href
           ? `<image href="${href}" x="${x}" y="${y}" width="${el.width}" height="${el.height}" preserveAspectRatio="xMidYMid meet"${rotate}/>`

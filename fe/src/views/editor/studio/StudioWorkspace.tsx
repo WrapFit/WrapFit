@@ -6,15 +6,16 @@ import {
   ArrowLeft,
   Download,
   ShieldCheck,
-  CheckCircle2,
-  X,
-  RotateCw,
+  ShieldAlert,
   ArrowRight,
-  QrCode,
   Trash2,
   ImageUp,
+  History,
+  Share2,
+  RotateCcw,
+  X,
 } from "lucide-react";
-import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
+import { BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
@@ -37,11 +38,16 @@ import { Step2DimensionAndMaterial } from "@/features/studio/components/Step2Dim
 import { Step4Model3DWithEnvironments } from "@/features/studio/components/Step4Model3DWithEnvironments";
 import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { VersionConflictDialog } from "@/features/studio/components/sync/VersionConflictDialog";
-import { useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
+import { AiPatternPanel } from "@/features/studio/components/ai-pattern/AiPatternPanel";
+import { ExportDialog } from "@/features/studio/components/export/ExportDialog";
+import { ShareDialog } from "@/features/studio/components/share/ShareDialog";
+import { SnapshotsDialog } from "@/features/studio/components/snapshots/SnapshotsDialog";
+import { UnboxingDialog } from "@/features/studio/components/unboxing/UnboxingDialog";
+import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { checkDesign, dielinePiecesOf, dimensionErrors, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
-import { apiClient, errorMessage, ExportJob, uploadFileToStorage } from "@/api";
+import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
 import type { BoxStructure, ProjectDetail } from "@/types/api";
@@ -116,6 +122,15 @@ async function imageSizeOf(file: File): Promise<{ width: number; height: number 
   }
 }
 
+/** A snapshot was just restored: the editor offers to undo it. */
+export interface RestoreNotice {
+  snapshotName: string;
+  /** Snapshot of the design just before the restore. */
+  backupId: string;
+}
+
+type StudioDialogId = "export" | "snapshots" | "share" | "unboxing";
+
 interface StudioWorkspaceProps {
   /** The saved project; null runs the offline demo (nothing is sent to the API). */
   project: ProjectDetail | null;
@@ -124,10 +139,21 @@ interface StudioWorkspaceProps {
   /** Opens the version on the server again (after a version conflict). */
   onReload?: () => void;
   reloading?: boolean;
+  /** The server replaced the design (snapshot restored): mount the editor again with `project`. */
+  onReplaced?: (project: ProjectDetail, notice: RestoreNotice | null) => void;
+  /** Shown after a restore, with an undo button. */
+  notice?: RestoreNotice | null;
 }
 
 /** Steps 1–4 of the studio for one design. Mount it again (new `key`) to load another state of the project. */
-export function StudioWorkspace({ project, structures, onReload, reloading = false }: StudioWorkspaceProps) {
+export function StudioWorkspace({
+  project,
+  structures,
+  onReload,
+  reloading = false,
+  onReplaced,
+  notice = null,
+}: StudioWorkspaceProps) {
   const router = useRouter();
   const toast = useToast();
   const isDemo = project === null;
@@ -181,10 +207,9 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
   );
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [exportJob, setExportJob] = useState<ExportJob | null>(null);
-  const [showExportModal, setShowExportModal] = useState<boolean>(false);
-  const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [dialog, setDialog] = useState<StudioDialogId | null>(null);
+  const [restoreNotice, setRestoreNotice] = useState<RestoreNotice | null>(notice);
+  const [undoing, setUndoing] = useState<boolean>(false);
 
   // 1. Mathematical CAD Dieline: the pieces of the formulas the project is pinned to, as they get printed
   const pieces = useMemo(
@@ -230,12 +255,12 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
     }),
     [projectTitle, dimensions, activeMaterial, elements, backgroundPatternSvg, selectedPalette]
   );
-  const sync = useProjectSync({
-    project,
-    payload,
-    invalidReason,
-    renderThumbnail: () => renderThumbnail(pieces[0].geometry, elements, activeMaterial),
-  });
+  const renderPreview = () => renderThumbnail(pieces[0].geometry, elements, activeMaterial);
+  const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
+  // 422 of the last export, shown in the FitCheck tab while the design is the one the server checked.
+  const payloadKey = useMemo(() => JSON.stringify(payload), [payload]);
+  const [exportBlock, setExportBlock] = useState<{ report: FitCheckReport; key: string } | null>(null);
+  const blockingReport = exportBlock?.key === payloadKey ? exportBlock.report : null;
   const readOnly = sync.state === "trash";
   // The score the server stored with the last save; while a change waits for its save, the score of the browser.
   const displayReport = sync.dirty || !sync.serverReport ? fitcheckReport : sync.serverReport;
@@ -339,35 +364,72 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
     [placementPanel, project, toast, handleAddElement]
   );
 
-  // Start Vector Print Export
-  const handleStartExport = async (format: "pdf" | "svg" | "png") => {
+  // AI pattern: under the other elements of the panel
+  const handleInsertPattern = useCallback((pattern: CanvasElement) => {
+    setElements((prev) => [pattern, ...prev]);
+    setSelectedElementId(pattern.id);
+  }, []);
+
+  // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
+  const openDialog = (id: StudioDialogId) => {
     if (!project) {
-      toast.show({ tone: "info", title: "Bản dùng thử không xuất file", description: "Đăng nhập và tạo dự án để xuất file in." });
+      toast.show({
+        tone: "info",
+        title: "Bản dùng thử chưa lưu lên Cloud",
+        description: "Đăng nhập và tạo dự án để xuất file in, lưu mốc, chia sẻ và tạo mã QR.",
+      });
       return;
     }
-    setIsExporting(true);
-    try {
-      const exportType = format === "svg" ? "SVG" : "PDF_CMYK";
-      const res = await apiClient.requestExport(project.id, exportType);
+    setDialog(id);
+  };
 
-      // Poll BullMQ job
-      const pollTimer = setInterval(async () => {
-        try {
-          const status = await apiClient.getExportJob(res.jobId);
-          setExportJob(status);
-          if (status.status === "COMPLETED" || status.status === "FAILED") {
-            clearInterval(pollTimer);
-            setIsExporting(false);
-          }
-        } catch {
-          clearInterval(pollTimer);
-          setIsExporting(false);
-        }
-      }, 1500);
-    } catch {
-      setIsExporting(false);
+  const showBlockingReport = (report: FitCheckReport) => {
+    setExportBlock({ report, key: payloadKey });
+    setDialog(null);
+    setCurrentStep(3);
+    setActiveInspectorTab("fitcheck");
+  };
+
+  const undoRestore = async () => {
+    if (!project || !restoreNotice) return;
+    setUndoing(true);
+    try {
+      const undone = await sync.replace(async () => (await restoreSnapshot(project.id, restoreNotice.backupId)).project);
+      toast.show({ tone: "success", title: "Đã hoàn tác khôi phục", description: "Thiết kế quay về như trước khi khôi phục." });
+      onReplaced?.(undone, null);
+    } catch (err) {
+      if (err instanceof UnsavedChangesError) toast.show({ tone: "error", title: "Chưa hoàn tác được", description: err.message });
+      else toast.error(err, "Chưa hoàn tác được");
+      setUndoing(false);
     }
   };
+
+  const projectActions = (
+    <>
+      <button
+        type="button"
+        onClick={() => openDialog("snapshots")}
+        disabled={readOnly}
+        aria-label="Mốc phiên bản"
+        title="Mốc phiên bản"
+        className="min-h-[40px] min-w-[40px] px-2.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+      >
+        <History className="w-4 h-4" aria-hidden />
+        <span className="hidden 2xl:inline">Mốc</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => openDialog("share")}
+        disabled={readOnly}
+        aria-label="Chia sẻ"
+        title="Chia sẻ"
+        className="min-h-[40px] min-w-[40px] px-2.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+      >
+        <Share2 className="w-4 h-4" aria-hidden />
+        <span className="hidden 2xl:inline">Chia sẻ</span>
+      </button>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-paper-grain flex flex-col font-sans select-none overflow-x-hidden">
@@ -411,14 +473,14 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
 
           {/* Right: Cloud Save Status, FitCheck & Export */}
           <div className="flex items-center gap-2">
-            {/* Save status: the label from xl, a dot below */}
+            {/* Save status: the label from 2xl, a dot below */}
             <div
               role="status"
               title={syncLabel}
-              className="flex items-center gap-1.5 xl:px-3 py-1 rounded-full xl:bg-stone-100 text-stone-600 text-xs max-w-[220px]"
+              className="flex items-center gap-1.5 2xl:px-3 py-1 rounded-full 2xl:bg-stone-100 text-stone-600 text-xs max-w-[220px]"
             >
               <span className={`w-2 h-2 flex-shrink-0 rounded-full ${DOT_CLASS[syncTone]}`} aria-hidden />
-              <span title={syncLabel} className="sr-only xl:not-sr-only text-[11px] font-medium truncate whitespace-nowrap">
+              <span title={syncLabel} className="sr-only 2xl:not-sr-only text-[11px] font-medium truncate whitespace-nowrap">
                 {syncLabel}
               </span>
             </div>
@@ -437,10 +499,13 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
               <span>FitCheck: {displayReport.score}/100</span>
             </button>
 
+            {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
+            {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
+
             {/* Export CTA Button */}
             <button
               type="button"
-              onClick={() => setShowExportModal(true)}
+              onClick={() => openDialog("export")}
               disabled={readOnly}
               aria-label="Xuất File In"
               className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile transition flex items-center gap-1.5 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
@@ -476,6 +541,45 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
             >
               {sync.restoring ? "Đang khôi phục…" : "Khôi phục dự án"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Snapshot just restored: undo it */}
+      {restoreNotice && !readOnly && (
+        <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
+          <div
+            role="status"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-squircle-lg bg-white border border-blue-200 shadow-tactile"
+          >
+            <div className="flex items-center gap-3 text-sm text-stone-700 min-w-0">
+              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-blue-50 text-vibrant-cobalt flex items-center justify-center">
+                <RotateCcw className="w-4 h-4" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                Đã khôi phục mốc <strong className="text-stone-900">“{restoreNotice.snapshotName}”</strong>. Bản trước đó được
+                lưu thành mốc tự động.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => void undoRestore()}
+                disabled={undoing}
+                className="min-h-[40px] px-4 rounded-full bg-vibrant-cobalt hover:bg-blue-700 text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
+              >
+                {undoing ? "Đang hoàn tác…" : "Hoàn tác"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setRestoreNotice(null)}
+                disabled={undoing}
+                aria-label="Ẩn thông báo"
+                className="w-10 h-10 rounded-full hover:bg-stone-100 text-stone-500 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" aria-hidden />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -545,6 +649,7 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
+                {!isDemo && <div className="flex sm:hidden items-center gap-2">{projectActions}</div>}
                 {uploading && (
                   <span role="status" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-vibrant-cobalt text-xs font-semibold">
                     <ImageUp className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none" aria-hidden />
@@ -573,7 +678,7 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
             {/* Main 2D Workspace: Left Dock (1 col) + Central Canvas (8 cols) + Right Inspector (3 cols) */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[620px]">
               {/* LEFT STUDIO TOOL DOCK (1 col) */}
-              <div className="lg:col-span-1 flex lg:flex-col items-center justify-start py-1">
+              <div className="lg:col-span-1 min-w-0 flex lg:flex-col items-center justify-start py-1">
                 <StudioToolDock
                   activeTool={activeTool}
                   onSelectTool={(tool) => {
@@ -677,7 +782,16 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
                       }}
                     />
 
-                    {/* AI Pattern Presets */}
+                    <div className="pt-2 border-t border-stone-100">
+                      <AiPatternPanel
+                        projectId={project?.id ?? null}
+                        panel={placementPanel}
+                        colors={selectedPalette.colors}
+                        onInsert={handleInsertPattern}
+                      />
+                    </div>
+
+                    {/* Pattern Presets */}
                     <div className="space-y-2 pt-2 border-t border-stone-100">
                       <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
                         Hoa Văn Lặp (Seamless Patterns)
@@ -742,7 +856,16 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
                           : "Điểm do máy chủ kiểm ở lần lưu gần nhất, cũng là điểm dùng khi xuất file in."}
                       </p>
                     )}
-                    <FitCheckDrawer report={displayReport} onAutoFix={handleAutoFix} />
+                    {blockingReport && (
+                      <p
+                        role="alert"
+                        className="flex gap-2 p-3 rounded-2xl bg-vibrant-coral/10 border border-vibrant-coral/30 text-xs text-stone-800"
+                      >
+                        <ShieldAlert className="w-4 h-4 flex-shrink-0 text-vibrant-coral-dark" aria-hidden />
+                        Máy chủ chặn xuất file vì các lỗi dưới đây. Sửa xong thì xuất lại.
+                      </p>
+                    )}
+                    <FitCheckDrawer report={blockingReport ?? displayReport} onAutoFix={handleAutoFix} />
                   </div>
                 )}
               </div>
@@ -759,8 +882,8 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
             backgroundPatternSvg={backgroundPatternSvg}
             elements={elements}
             onBack={() => setCurrentStep(3)}
-            onOpenExportModal={() => setShowExportModal(true)}
-            onOpenQrModal={() => setShowQrModal(true)}
+            onOpenExportModal={() => openDialog("export")}
+            onOpenQrModal={() => openDialog("unboxing")}
           />
         )}
       </main>
@@ -774,144 +897,34 @@ export function StudioWorkspace({ project, structures, onReload, reloading = fal
         />
       )}
 
-      {/* ================= 3. EXPORT MODAL ================= */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 border border-stone-200 shadow-tactile-lg">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-2xl bg-blue-50 text-vibrant-cobalt">
-                  <Download className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold text-stone-900 text-base">
-                    Xuất Bản Vẽ Kỹ Thuật Chuẩn In
-                  </h3>
-                  <span className="text-[11px] text-stone-500 font-mono">
-                    CMYK 300 DPI • Vector Layers
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowExportModal(false)}
-                aria-label="Đóng"
-                className="w-8 h-8 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-400 hover:text-stone-600 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {/* PDF Vector */}
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => handleStartExport("pdf")}
-                className="w-full p-3.5 rounded-squircle-lg border border-stone-200 hover:border-vibrant-cobalt hover:bg-blue-50/40 text-left transition flex items-center justify-between group"
-              >
-                <div>
-                  <span className="font-semibold text-xs text-stone-900 group-hover:text-vibrant-cobalt block">
-                    Layered Vector PDF (Khuyến Nghị Cho Xưởng In)
-                  </span>
-                  <span className="text-[11px] text-stone-500 block mt-0.5">
-                    Phân tách 4 lớp: CutContour (#E53E3E), Crease (#3182CE), Artwork, Dimensions.
-                  </span>
-                </div>
-                <Download className="w-4 h-4 text-stone-400 group-hover:text-vibrant-cobalt" />
-              </button>
-
-              {/* SVG Vector */}
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => handleStartExport("svg")}
-                className="w-full p-3.5 rounded-squircle-lg border border-stone-200 hover:border-vibrant-cobalt hover:bg-blue-50/40 text-left transition flex items-center justify-between group"
-              >
-                <div>
-                  <span className="font-semibold text-xs text-stone-900 group-hover:text-vibrant-cobalt block">
-                    Bản Vẽ Vector SVG
-                  </span>
-                  <span className="text-[11px] text-stone-500 block mt-0.5">
-                    Mở được trên Adobe Illustrator, CorelDraw, Figma.
-                  </span>
-                </div>
-                <Download className="w-4 h-4 text-stone-400 group-hover:text-vibrant-cobalt" />
-              </button>
-            </div>
-
-            {/* Export Polling Status */}
-            {isExporting && (
-              <div className="p-3.5 rounded-squircle bg-blue-50 border border-blue-200 flex items-center gap-3 animate-fadeIn">
-                <RotateCw className="w-4 h-4 text-vibrant-cobalt animate-spin" />
-                <div className="text-xs text-blue-900">
-                  <span className="font-bold block">BullMQ Worker đang xử lý file vector...</span>
-                  <span className="text-[11px] text-blue-700">
-                    Vui lòng đợi giây lát, hệ thống đang tính toán bù trừ nếp gập 2t.
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {exportJob && exportJob.status === "COMPLETED" && (
-              <div className="p-3.5 rounded-squircle bg-emerald-50 border border-emerald-200 flex items-center justify-between animate-fadeIn">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span className="text-xs font-bold text-emerald-900">Xuất file thành công!</span>
-                </div>
-                {exportJob.downloadUrl && (
-                  <a
-                    href={exportJob.downloadUrl}
-                    download
-                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-semibold transition"
-                  >
-                    Tải Về Ngay
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* ================= 3. PROJECT DIALOGS ================= */}
+      {project && dialog === "export" && (
+        <ExportDialog
+          projectId={project.id}
+          flush={sync.flush}
+          onBlocked={showBlockingReport}
+          onClose={() => setDialog(null)}
+        />
       )}
-
-      {/* ================= 4. QR UNBOXING MODAL ================= */}
-      {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-stone-200 shadow-tactile-lg text-center">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowQrModal(false)}
-                aria-label="Đóng"
-                className="w-7 h-7 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-400 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-blue-50 text-vibrant-cobalt flex items-center justify-center mx-auto">
-              <QrCode className="w-6 h-6" />
-            </div>
-            <h3 className="font-serif font-bold text-stone-900 text-lg">
-              Mã QR Mở Hộp Ảo 3D
-            </h3>
-            <p className="text-xs text-stone-600">
-              Quét mã này để xem trải nghiệm bóc hộp 3D thực tế trên điện thoại thông minh:
-            </p>
-            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 inline-block shadow-inner">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                  `https://wrapfit.vn/unbox/${project?.slug ?? "demo"}`
-                )}`}
-                alt="QR Code Unboxing"
-                className="w-40 h-40 object-contain mx-auto"
-              />
-            </div>
-            <span className="font-mono text-[10px] text-stone-400 block">
-              URL: wrapfit.vn/unbox/{project?.slug ?? "demo"}
-            </span>
-          </div>
-        </div>
+      {project && dialog === "snapshots" && (
+        <SnapshotsDialog
+          projectId={project.id}
+          flush={sync.flush}
+          replace={sync.replace}
+          renderPreview={renderPreview}
+          onRestored={(restored, backup, snapshotName) => onReplaced?.(restored, { snapshotName, backupId: backup.id })}
+          onClose={() => setDialog(null)}
+        />
       )}
+      {project && dialog === "share" && (
+        <ShareDialog
+          project={project}
+          score={sync.serverReport?.score ?? project.fitcheckScore}
+          patch={sync.patch}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {project && dialog === "unboxing" && <UnboxingDialog projectId={project.id} onClose={() => setDialog(null)} />}
     </div>
   );
 }

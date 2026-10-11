@@ -754,7 +754,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 )}
 
                 {/* Content: Image/Logo or Text */}
-                {el.type === "image" || el.type === "logo" ? (
+                {el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
                   <image
                     href={el.content}
                     x={elX}

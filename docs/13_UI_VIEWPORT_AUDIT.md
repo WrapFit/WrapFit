@@ -243,6 +243,15 @@ Mức: **P1** che / cắt nội dung, không bấm được, tràn ngang; **P2**
 | Sửa trong lúc quét | Header studio ở L (1024 px): thanh bước đè tên dự án → nhãn bước chỉ hiện từ `xl`, nhãn lưu chỉ hiện từ `xl` (dưới đó là chấm màu + `title`); chữ bị cắt không `title` ở thẻ cấu trúc, món quà mẫu |
 | Còn lại (S7) | Bước 3 trên điện thoại: dock công cụ đứng dọc chiếm cả cột trước canvas (bố cục có từ trước S6, không bị kiểm tra tự động bắt) |
 
+**G7 sau S7 (2026-10-12, quét `--group=G7`, M và X+): 36 / 36 ô `ok`.**
+
+| # | Kết quả S7 |
+|---|---|
+| Mới | Route `g7-studio-{export,snapshots,share,unboxing}-dialog`: 4 hộp thoại của Phase 3b mở trên dự án `projects.public` (QR: chấp nhận `404` của `/unboxing` khi dự án chưa có trang mở hộp) |
+| Sửa trong lúc quét | (1) X+: thêm 2 nút "Mốc phiên bản", "Chia sẻ" làm nhãn trạng thái lưu xuống 3 dòng → nhãn chỉ hiện từ `2xl` (dưới đó là chấm màu + `title`); (2) M: thanh bước đè nút quay lại khi header có thêm 2 nút → trên điện thoại 2 nút nằm ở hàng công cụ bước 3, từ `sm` ở header; (3) link `unboxUrl` bị cắt không `title` (ô `text`) |
+| Việc S6 để lại | Hết: dock công cụ bước 3 nằm ngang dưới `lg` (cuộn ngang khi thiếu chỗ), canvas hiện ngay dưới dock |
+| Còn lại | Bước 3, M: hộp zoom của canvas đè một phần nhãn "Bản Bế 2D Phẳng · 415 × …" (có từ trước, thuộc `DielineCanvas2D`) |
+
 **P3 còn lại:**
 
 | # | Màn / kích thước | Ghi chú |
