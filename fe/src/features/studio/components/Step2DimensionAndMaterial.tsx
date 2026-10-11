@@ -16,6 +16,9 @@ import {
 import { BoxDimensions, FitCheckReport } from "@wrapfit/shared";
 
 import { GoiMascot } from "@/components/common/GoiMascot";
+import type { DimensionLimits } from "@/types/api";
+import { MmInput } from "./MmInput";
+import { clampDimension, dimensionErrors, type DimensionField } from "@/features/studio/utils/dieline";
 
 interface GiftPreset {
   id: string;
@@ -94,14 +97,28 @@ const PAPER_MATERIALS = [
   },
 ];
 
+/** Slider ranges when the structure has no limits (offline demo). */
+const DEFAULT_RANGES: Record<DimensionField, { min: number; max: number }> = {
+  length: { min: 20, max: 400 },
+  width: { min: 20, max: 300 },
+  height: { min: 15, max: 300 },
+  paperThickness: { min: 0.3, max: 0.6 },
+};
+
 interface Step2DimensionAndMaterialProps {
   dimensions: BoxDimensions;
   onDimensionsChange: (dims: BoxDimensions) => void;
   activeMaterial: string;
   onMaterialChange: (mat: string) => void;
   fitCheckReport: FitCheckReport;
-  onBack: () => void;
+  /** Allowed size of each dimension for the box structure (`GET /templates/structures`). */
+  limits?: DimensionLimits;
+  /** Omitted: no way back (the structure of a saved project is fixed). */
+  onBack?: () => void;
   onNext: () => void;
+  nextLabel?: string;
+  /** The next step is running (e.g. creating the project). */
+  busy?: boolean;
 }
 
 export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps> = ({
@@ -110,19 +127,44 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   activeMaterial,
   onMaterialChange,
   fitCheckReport,
+  limits,
   onBack,
   onNext,
+  nextLabel = "Tiến Vào Xưởng Bản Vẽ Bế 2D (Bước 3)",
+  busy = false,
 }) => {
-  const updateDim = (field: keyof BoxDimensions, value: number) => {
-    const clamped = Math.max(10, Math.min(600, Math.round(value)));
+  const range = (field: DimensionField) => {
+    const own = limits?.[field];
+    if (!own) return DEFAULT_RANGES[field];
+    // Sliders stay usable: the paper slider keeps its fine range inside the allowed one.
+    if (field === "paperThickness") {
+      return {
+        min: Math.max(own.min, Math.min(DEFAULT_RANGES.paperThickness.min, own.max)),
+        max: Math.min(own.max, Math.max(DEFAULT_RANGES.paperThickness.max, own.min)),
+      };
+    }
+    return own;
+  };
+
+  const updateDim = (field: "length" | "width" | "height", value: number) => {
+    const { min, max } = range(field);
     onDimensionsChange({
       ...dimensions,
-      [field]: clamped,
+      [field]: Math.max(min, Math.min(max, Math.round(value))),
     });
   };
 
+  const updateThickness = (value: number) => {
+    onDimensionsChange({
+      ...dimensions,
+      paperThickness: clampDimension(limits, "paperThickness", Number(value.toFixed(2))),
+    });
+  };
+
+  const fitsLimits = (dims: BoxDimensions) => dimensionErrors(dims, limits).length === 0;
+  const errors = dimensionErrors(dimensions, limits);
+
   const applyPreset = (p: GiftPreset) => {
-    
     onDimensionsChange(p.dims);
   };
 
@@ -169,20 +211,23 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   gp.dims.length === dimensions.length &&
                   gp.dims.width === dimensions.width &&
                   gp.dims.height === dimensions.height;
+                const fits = fitsLimits(gp.dims);
 
                 return (
                   <button
                     key={gp.id}
                     type="button"
+                    disabled={!fits}
+                    title={fits ? undefined : "Kích thước này ngoài giới hạn của cấu trúc hộp đã chọn"}
                     onClick={() => applyPreset(gp)}
-                    className={`p-3 rounded-squircle text-left border transition-all flex flex-col justify-between ${
+                    className={`p-3 rounded-squircle text-left border transition-all flex flex-col justify-between disabled:cursor-not-allowed disabled:opacity-45 ${
                       isMatch
                         ? "border-vibrant-cobalt bg-blue-50/70 text-vibrant-cobalt shadow-sm ring-2 ring-blue-500/20"
                         : "border-stone-200 hover:border-stone-300 bg-stone-50/50 hover:bg-white text-stone-700"
                     }`}
                   >
                     <div>
-                      <span className="text-xs font-semibold block truncate">{gp.name}</span>
+                      <span className="text-xs font-semibold block truncate" title={gp.name}>{gp.name}</span>
                       <span className="text-[10px] text-stone-400 block mt-0.5">
                         {gp.category}
                       </span>
@@ -202,77 +247,43 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               Nhập Kích Thước Lọt Lòng Hộp (Length × Width × Height)
             </span>
 
-            {/* Length (L) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-stone-700">Chiều Dài (Length - L)</span>
-                <span className="font-mono font-bold text-brand-forest text-sm bg-stone-100 px-2 py-0.5 rounded">
-                  {dimensions.length} mm
-                </span>
-              </div>
-              <input
-                type="range"
-                min={20}
-                max={400}
-                step={1}
-                value={dimensions.length}
-                onChange={(e) => updateDim("length", Number(e.target.value))}
-                className="w-full accent-brand-forest cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-stone-400 font-mono">
-                <span>20 mm</span>
-                <span>200 mm</span>
-                <span>400 mm</span>
-              </div>
-            </div>
-
-            {/* Width (W) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-stone-700">Chiều Rộng (Width - W)</span>
-                <span className="font-mono font-bold text-brand-forest text-sm bg-stone-100 px-2 py-0.5 rounded">
-                  {dimensions.width} mm
-                </span>
-              </div>
-              <input
-                type="range"
-                min={20}
-                max={300}
-                step={1}
-                value={dimensions.width}
-                onChange={(e) => updateDim("width", Number(e.target.value))}
-                className="w-full accent-brand-forest cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-stone-400 font-mono">
-                <span>20 mm</span>
-                <span>150 mm</span>
-                <span>300 mm</span>
-              </div>
-            </div>
-
-            {/* Height (H) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-stone-700">Chiều Cao / Độ Sâu (Height - H)</span>
-                <span className="font-mono font-bold text-brand-forest text-sm bg-stone-100 px-2 py-0.5 rounded">
-                  {dimensions.height} mm
-                </span>
-              </div>
-              <input
-                type="range"
-                min={15}
-                max={300}
-                step={1}
-                value={dimensions.height}
-                onChange={(e) => updateDim("height", Number(e.target.value))}
-                className="w-full accent-brand-forest cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-stone-400 font-mono">
-                <span>15 mm</span>
-                <span>150 mm</span>
-                <span>300 mm</span>
-              </div>
-            </div>
+            {([
+              { field: "length", label: "Chiều Dài (Length - L)" },
+              { field: "width", label: "Chiều Rộng (Width - W)" },
+              { field: "height", label: "Chiều Cao / Độ Sâu (Height - H)" },
+            ] as const).map(({ field, label }) => {
+              const { min, max } = range(field);
+              return (
+                <div key={field} className="space-y-2">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="font-medium text-stone-700">{label}</span>
+                    <MmInput
+                      value={dimensions[field]}
+                      min={min}
+                      max={max}
+                      step={1}
+                      label={label}
+                      onCommit={(value) => updateDim(field, value)}
+                    />
+                  </div>
+                  <input
+                    type="range"
+                    aria-label={label}
+                    min={min}
+                    max={max}
+                    step={1}
+                    value={dimensions[field]}
+                    onChange={(e) => updateDim(field, Number(e.target.value))}
+                    className="w-full accent-brand-forest cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-stone-500 font-mono">
+                    <span>{min} mm</span>
+                    <span>{Math.round((min + max) / 2)} mm</span>
+                    <span>{max} mm</span>
+                  </div>
+                </div>
+              );
+            })}
 
             {/* Paper Thickness (t) */}
             <div className="pt-3 border-t border-stone-100 space-y-2">
@@ -287,16 +298,12 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               </div>
               <input
                 type="range"
-                min={0.3}
-                max={0.6}
+                aria-label="Độ dày giấy"
+                min={range("paperThickness").min}
+                max={range("paperThickness").max}
                 step={0.01}
                 value={dimensions.paperThickness}
-                onChange={(e) => {
-                  onDimensionsChange({
-                    ...dimensions,
-                    paperThickness: Number(Number(e.target.value).toFixed(2)),
-                  });
-                }}
+                onChange={(e) => updateThickness(Number(e.target.value))}
                 className="w-full accent-vibrant-cobalt cursor-pointer"
               />
             </div>
@@ -319,11 +326,10 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   <div
                     key={mat.id}
                     onClick={() => {
-                      
                       onMaterialChange(mat.id);
                       onDimensionsChange({
                         ...dimensions,
-                        paperThickness: mat.caliper,
+                        paperThickness: clampDimension(limits, "paperThickness", mat.caliper),
                       });
                     }}
                     className={`p-3.5 rounded-squircle border transition-all cursor-pointer ${
@@ -410,29 +416,35 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-squircle-lg bg-white border border-stone-200 shadow-tactile">
-        <button
-          type="button"
-          onClick={() => {
-            
-            onBack();
-          }}
-          className="w-full sm:w-auto px-6 py-2.5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold text-xs transition flex items-center justify-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Quay Lại Bước 1 (Chọn Mẫu Hộp)</span>
-        </button>
+      {errors.length > 0 && (
+        <div role="alert" className="p-4 rounded-squircle-lg bg-vibrant-coral/10 border border-vibrant-coral/30 text-xs text-stone-800 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-vibrant-coral-dark flex-shrink-0 mt-0.5" />
+          <span>{errors.join(" ")}</span>
+        </div>
+      )}
+      <div className={`flex flex-col sm:flex-row items-center gap-4 p-5 rounded-squircle-lg bg-white border border-stone-200 shadow-tactile ${onBack ? "justify-between" : "justify-end"}`}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold text-xs transition flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay Lại Bước 1 (Chọn Mẫu Hộp)</span>
+          </button>
+        )}
 
         <button
           type="button"
-          onClick={() => {
-            
-            onNext();
-          }}
-          className="w-full sm:w-auto px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95"
+          onClick={onNext}
+          disabled={busy || errors.length > 0}
+          className="w-full sm:w-auto min-h-[44px] px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
         >
-          <span>Tiến Vào Xưởng Bản Vẽ Bế 2D (Bước 3)</span>
-          <ArrowRight className="w-4 h-4" />
+          {busy ? (
+            <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin motion-reduce:animate-none" />
+          ) : null}
+          <span>{nextLabel}</span>
+          {!busy && <ArrowRight className="w-4 h-4" />}
         </button>
       </div>
     </div>

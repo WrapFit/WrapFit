@@ -22,6 +22,8 @@ export const ROUTES = {
   settings: "/dashboard/settings",
   templates: "/templates",
   editorNew: "/editor/new",
+  /** The studio without an account: nothing is saved. */
+  editorDemo: "/editor/demo",
   editor: (projectId: string) => `/editor/${projectId}`,
   publicProject: (slug: string) => `/p/${slug}`,
   unbox: (slug: string) => `/unbox/${slug}`,

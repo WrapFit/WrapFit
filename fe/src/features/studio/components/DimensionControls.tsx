@@ -2,33 +2,45 @@
 
 import React from "react";
 import { BoxDimensions } from "@wrapfit/shared";
-import { Sliders, Ruler, Sparkles } from "lucide-react";
+import { Ruler } from "lucide-react";
+import type { DimensionLimits } from "@/types/api";
+import { clampDimension } from "@/features/studio/utils/dieline";
+import { MmInput } from "./MmInput";
+
+/** Ranges when the structure has no limits (offline demo). */
+const DEFAULT_RANGES = {
+  length: { min: 30, max: 350 },
+  width: { min: 20, max: 260 },
+  height: { min: 15, max: 200 },
+};
 
 
 interface DimensionControlsProps {
   dimensions: BoxDimensions;
   onChange: (dims: BoxDimensions) => void;
+  /** Allowed size of each dimension for the box structure (`GET /templates/structures`). */
+  limits?: DimensionLimits;
   className?: string;
 }
 
 export const DimensionControls: React.FC<DimensionControlsProps> = ({
   dimensions,
   onChange,
+  limits,
   className = "",
 }) => {
-  const updateDim = (key: keyof BoxDimensions, val: number) => {
-    
+  const updateDim = (key: "length" | "width" | "height", val: number) => {
+    const { min, max } = limits?.[key] ?? DEFAULT_RANGES[key];
     onChange({
       ...dimensions,
-      [key]: Math.max(10, Number(val) || 10),
+      [key]: Math.max(min, Math.min(max, Math.round(val))),
     });
   };
 
-  const handleGsmChange = (gsm: number, t: number) => {
-    
+  const handleGsmChange = (t: number) => {
     onChange({
       ...dimensions,
-      paperThickness: t,
+      paperThickness: clampDimension(limits, "paperThickness", t),
     });
   };
 
@@ -48,83 +60,37 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
         </span>
       </div>
 
-      {/* Length (L) */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between items-center text-xs font-semibold text-stone-700">
-          <span>Chiều Dài (Length - L)</span>
-          <div className="flex items-center gap-1">
+      {([
+        { field: "length", label: "Chiều Dài (Length - L)" },
+        { field: "width", label: "Chiều Rộng (Width - W)" },
+        { field: "height", label: "Chiều Cao (Height - H)" },
+      ] as const).map(({ field, label }) => {
+        const { min, max } = limits?.[field] ?? DEFAULT_RANGES[field];
+        return (
+          <div key={field} className="space-y-1.5">
+            <div className="flex justify-between items-center gap-2 text-xs font-semibold text-stone-700">
+              <span>{label}</span>
+              <MmInput
+                value={dimensions[field]}
+                min={min}
+                max={max}
+                step={1}
+                label={label}
+                onCommit={(value) => updateDim(field, value)}
+              />
+            </div>
             <input
-              type="number"
-              min="30"
-              max="400"
-              value={dimensions.length}
-              onChange={(e) => updateDim("length", Number(e.target.value))}
-              className="w-16 px-1.5 py-0.5 text-right font-mono font-bold text-brand-forest bg-stone-50 border border-stone-200 rounded text-xs focus:outline-none focus:border-vibrant-cobalt"
+              type="range"
+              aria-label={label}
+              min={min}
+              max={max}
+              value={dimensions[field]}
+              onChange={(e) => updateDim(field, Number(e.target.value))}
+              className="w-full cursor-pointer"
             />
-            <span className="text-[10px] text-stone-400 font-mono">mm</span>
           </div>
-        </div>
-        <input
-          type="range"
-          min="30"
-          max="350"
-          value={dimensions.length}
-          onChange={(e) => updateDim("length", Number(e.target.value))}
-          className="w-full cursor-pointer"
-        />
-      </div>
-
-      {/* Width (W) */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between items-center text-xs font-semibold text-stone-700">
-          <span>Chiều Rộng (Width - W)</span>
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min="20"
-              max="300"
-              value={dimensions.width}
-              onChange={(e) => updateDim("width", Number(e.target.value))}
-              className="w-16 px-1.5 py-0.5 text-right font-mono font-bold text-brand-forest bg-stone-50 border border-stone-200 rounded text-xs focus:outline-none focus:border-vibrant-cobalt"
-            />
-            <span className="text-[10px] text-stone-400 font-mono">mm</span>
-          </div>
-        </div>
-        <input
-          type="range"
-          min="20"
-          max="260"
-          value={dimensions.width}
-          onChange={(e) => updateDim("width", Number(e.target.value))}
-          className="w-full cursor-pointer"
-        />
-      </div>
-
-      {/* Height / Depth (H) */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between items-center text-xs font-semibold text-stone-700">
-          <span>Chiều Cao (Height - H)</span>
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              min="15"
-              max="250"
-              value={dimensions.height}
-              onChange={(e) => updateDim("height", Number(e.target.value))}
-              className="w-16 px-1.5 py-0.5 text-right font-mono font-bold text-brand-forest bg-stone-50 border border-stone-200 rounded text-xs focus:outline-none focus:border-vibrant-cobalt"
-            />
-            <span className="text-[10px] text-stone-400 font-mono">mm</span>
-          </div>
-        </div>
-        <input
-          type="range"
-          min="15"
-          max="200"
-          value={dimensions.height}
-          onChange={(e) => updateDim("height", Number(e.target.value))}
-          className="w-full cursor-pointer"
-        />
-      </div>
+        );
+      })}
 
       {/* Paper GSM & Thickness preset */}
       <div className="pt-3 border-t border-stone-100 space-y-2">
@@ -146,7 +112,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
               <button
                 key={item.gsm}
                 type="button"
-                onClick={() => handleGsmChange(item.gsm, item.t)}
+                onClick={() => handleGsmChange(item.t)}
                 className={`py-2 px-1 text-center rounded-squircle transition border flex flex-col items-center ${
                   isSelected
                     ? "bg-brand-forest text-white border-brand-forest shadow-sm"
