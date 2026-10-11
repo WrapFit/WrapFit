@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { DielineGeometry, CanvasElement } from "@wrapfit/shared";
+import { DielineGeometry, CanvasElement, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
 import {
   ZoomIn,
   ZoomOut,
@@ -20,7 +20,15 @@ import {
   Sparkles,
   Info,
 } from "lucide-react";
-import { measurePackagingText } from "@/utils/text-layout/textLayout";
+import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
+import { printFontOf, textBlockHeight } from "@wrapfit/shared";
+
+/** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
+const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
+/** FitCheck safe margin: new texts start this far inside the panel. */
+const NEW_TEXT_MARGIN_MM = 4;
+/** Loaded ahead, so the first text added is measured with its real font. */
+const NEW_TEXT_FONTS = [printFontOf(NEW_TEXT_STYLE.fontFamily)];
 
 
 interface DielineCanvas2DProps {
@@ -77,6 +85,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   const [cursorMm, setCursorMm] = useState<{ x: number; y: number } | null>(null);
   const [newTextValue, setNewTextValue] = useState<string>("");
   const [showAddTextModal, setShowAddTextModal] = useState<boolean>(false);
+  // Changes once the fonts of the texts are loaded: texts first measured with a fallback font are laid out again.
+  const fontsVersion = useBoxFonts(elements, NEW_TEXT_FONTS);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
   const padding = 35; // 35mm margin
@@ -269,38 +279,45 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     onElementsChange(updated);
   };
 
-  // Add new text element with Pretext calculation
+  // Add a text: a box that fits its lines (text model of the print files), centred on the panel, at the first height
+  // where it covers no other element of that panel.
   const handleAddText = () => {
     if (!newTextValue.trim() || !onElementsChange) return;
-    
 
+    // "Toàn Bộ" selects no panel: the text goes on the first one.
     const targetPanel = dieline.panels.find((p) => p.id === activePanelId) || dieline.panels[0];
+    const { width: panelW, height: panelH } = targetPanel.bounds;
+    const content = newTextValue.trim();
+    const maxWidth = Math.max(10, panelW - 2 * NEW_TEXT_MARGIN_MM);
+    const wrapped = layoutBoxText({ content, width: maxWidth, height: 0, style: NEW_TEXT_STYLE });
+    const width = Math.round(Math.min(maxWidth, Math.max(...wrapped.lines.map((line) => line.width)) + 2) * 10) / 10;
+    const height = Math.round((textBlockHeight(wrapped) + 2) * 10) / 10;
+    const x = Math.round(((panelW - width) / 2) * 10) / 10;
 
-    const layout = measurePackagingText(newTextValue, {
-      fontFamily: "Cormorant Garamond",
-      fontSizePx: 12,
-      lineHeightPx: 14,
-      maxPanelWidthMm: targetPanel.bounds.width - 8,
-      maxPanelHeightMm: targetPanel.bounds.height - 8,
-      elementXMm: 4,
-      elementYMm: 10,
-    });
+    const others = elements.filter((el) => el.panelId === targetPanel.id);
+    const overlaps = (y: number) =>
+      others.some((el) => x < el.x + el.width && el.x < x + width && y < el.y + el.height && el.y < y + height);
+    // The free height closest to the middle of the panel (the middle itself when the panel is empty).
+    const middle = Math.max(NEW_TEXT_MARGIN_MM, Math.round(((panelH - height) / 2) * 10) / 10);
+    const candidates: number[] = [];
+    for (let candidate = NEW_TEXT_MARGIN_MM; candidate + height <= panelH - NEW_TEXT_MARGIN_MM; candidate += 1) {
+      candidates.push(candidate);
+    }
+    candidates.push(middle);
+    candidates.sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle));
+    const y = candidates.find((candidate) => !overlaps(candidate)) ?? middle;
 
     const newElement: CanvasElement = {
       id: `text_${Date.now()}`,
       type: "text",
-      panelId: activePanelId,
-      x: 4,
-      y: 10,
-      width: Math.min(layout.totalWidth + 4, targetPanel.bounds.width - 6),
-      height: Math.max(14, layout.totalHeight + 4),
+      panelId: targetPanel.id,
+      x,
+      y,
+      width,
+      height,
       rotation: 0,
-      content: newTextValue,
-      style: {
-        fontFamily: "Cormorant Garamond, serif",
-        fontSize: 12,
-        color: "#1A362B",
-      },
+      content,
+      style: { ...NEW_TEXT_STYLE },
     };
 
     onElementsChange([...elements, newElement]);
@@ -765,18 +782,28 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                     className="pointer-events-none"
                   />
                 ) : (
-                  <text
-                    x={elX + el.width / 2}
-                    y={elY + el.height / 2 + 1.5}
-                    textAnchor="middle"
-                    fontSize={el.style?.fontSize ? el.style.fontSize * 0.42 : 5}
-                    fontFamily={el.style?.fontFamily || "sans-serif"}
-                    fill={el.style?.color || "#1C1917"}
-                    fontWeight="bold"
-                    className="pointer-events-none select-none"
-                  >
-                    {el.content}
-                  </text>
+                  // Same lines, font, size and alignment as the print files (docs/12 Phase 9).
+                  (() => {
+                    const box = layoutBoxText(el);
+                    return (
+                      <g
+                        data-fonts={fontsVersion}
+                        fontSize={box.fontSizeMm}
+                        fontWeight={TEXT_FONT_WEIGHT}
+                        fill={el.style?.color || "#1C1917"}
+                        style={{ fontFamily: cssFontFamily(box.font) }}
+                        className="pointer-events-none select-none"
+                      >
+                        {box.lines.map((line, index) =>
+                          line.text ? (
+                            <text key={index} x={elX + line.x} y={elY + line.baseline}>
+                              {line.text}
+                            </text>
+                          ) : null
+                        )}
+                      </g>
+                    );
+                  })()
                 )}
 
                 {/* 4 Interactive Corner Resize Handles for selected element */}

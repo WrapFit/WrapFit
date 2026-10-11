@@ -8,7 +8,43 @@ import {
   UnsupportedFormulaVersionError,
   UnsupportedStructureError,
 } from './print-layout';
-import { Artwork, canEmbedInPdf, hexToCmyk, renderDxf, renderPdf, renderSvg } from './print-renderers';
+import { layoutTextBox, printFontOf, PT_TO_MM } from '@wrapfit/shared';
+import {
+  Artwork,
+  BLEED_MM,
+  canEmbedInPdf,
+  hexToCmyk,
+  PRINT_LAYERS,
+  renderDxf,
+  renderPdf,
+  renderSvg,
+} from './print-renderers';
+
+describe('text model shared with the editor canvas', () => {
+  // 1 mm per character at any size: easy to reason about.
+  const measure = (text: string) => text.length;
+  const box = { content: 'aaa bbb ccc', width: 7, height: 20, style: { fontSize: 10 } };
+
+  it('wraps words inside the box, centres the lines and the block', () => {
+    const layout = layoutTextBox(box, measure);
+    expect(layout.fontSizeMm).toBeCloseTo(10 * PT_TO_MM);
+    expect(layout.lines.map((line) => line.text)).toEqual(['aaa bbb', 'ccc']);
+    expect(layout.lines[1].x).toBe(2); // (7 - 3) / 2
+    const blockTop = (20 - 2 * layout.lineHeightMm) / 2;
+    expect(layout.lines[0].baseline).toBeCloseTo(blockTop + 0.5 * layout.lineHeightMm + 0.35 * layout.fontSizeMm);
+  });
+
+  it('keeps line breaks and cuts words longer than the box', () => {
+    expect(layoutTextBox({ ...box, content: 'ab\ncd' }, measure).lines.map((l) => l.text)).toEqual(['ab', 'cd']);
+    expect(layoutTextBox({ ...box, content: 'abcdefghij' }, measure).lines.map((l) => l.text)).toEqual(['abcdefg', 'hij']);
+  });
+
+  it('prints the first family of the CSS list that WrapFit embeds', () => {
+    expect(printFontOf("'Big Shoulders Display', sans-serif")).toBe('big-shoulders-display');
+    expect(printFontOf('Comic Sans MS, Inter')).toBe('inter');
+    expect(printFontOf(undefined)).toBe('be-vietnam-pro');
+  });
+});
 
 const dimensions = { length: 120, width: 80, height: 60, paperThickness: 0.4 };
 const greeting = {
@@ -84,28 +120,83 @@ describe('print layout', () => {
 });
 
 describe('print renderers', () => {
-  it('writes a layered SVG at true size with escaped text', () => {
+  it('writes a layered SVG at true size with the text laid out like the canvas', () => {
     const svg = renderSvg(layoutOf('tuck-top'));
-    expect(svg).toMatch(/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="[\d.]+mm" height="[\d.]+mm"/);
-    for (const layer of ['info', 'crease', 'cut', 'artwork']) expect(svg).toContain(`<g id="${layer}"`);
+    expect(svg).toMatch(/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" [^>]*width="[\d.]+mm" height="[\d.]+mm"/);
+    for (const layer of ['artwork', 'crease', 'cut', 'dimensions']) expect(svg).toContain(`<g id="${layer}"`);
     expect(svg).toContain('stroke="#E53E3E"');
     expect(svg).toContain('stroke-dasharray="4,4"');
-    expect(svg).toContain('Chúc mừng năm mới &lt;Tết&gt; &amp; an khang');
-    // Curved segments (pillow box) keep their path data, moved to the piece position.
-    expect(renderSvg(layoutOf('pillow'))).toContain(
-      `<path transform="translate(${SHEET_MARGIN_MM} ${SHEET_MARGIN_MM})" d="M `,
-    );
+    // Bold, the font of the element (none: Be Vietnam Pro), wrapped inside the 60 mm box, escaped.
+    expect(svg).toContain('font-family="Be Vietnam Pro, sans-serif" font-weight="700"');
+    expect(svg).toContain('>Chúc mừng năm mới</text><text ');
+    expect(svg).toContain('>&lt;Tết&gt; &amp; an khang</text>');
+    // Curved segments (pillow box) keep their curve commands, moved to the piece position.
+    expect(renderSvg(layoutOf('pillow'))).toMatch(/<path d="M [\d. ]+Q /);
+  });
+
+  it('joins the cut segments of a box into one closed line', () => {
+    const layout = buildPrintLayout({ title: 'x', structure: 'tuck-top', formulaVersion: 2, dimensions, elements: [] });
+    const cut = layout.strokes.filter((stroke) => stroke.type === 'cut');
+    expect(cut).toHaveLength(1);
+    expect(cut[0].closed).toBe(true);
+    expect(cut[0].d.endsWith('Z')).toBe(true);
+    const cutSegments = layout.pieces[0].geometry.segments.filter((segment) => segment.type === 'cut');
+    expect(cut[0].points).toHaveLength(cutSegments.length);
+    // Collinear creases across panels become one line.
+    const creases = layout.strokes.filter((stroke) => stroke.type === 'crease');
+    expect(creases.length).toBeLessThan(layout.pieces[0].geometry.segments.filter((s) => s.type === 'crease').length);
+  });
+
+  it('keeps images in proportion and rotates elements around their centre, like the canvas', () => {
+    const element = { ...greeting, id: 'png', type: 'image' as const, content: 'https://cdn/users/u/a.png', rotation: 30 };
+    const layout = layoutOf('tuck-top', [element, { ...greeting, rotation: 30 }]);
+    const svg = renderSvg(layout, new Map([['https://cdn/users/u/a.png', { body: Buffer.from('x'), contentType: 'image/png' }]]));
+    const [image] = layout.images;
+    const centre = `${image.x + image.width / 2} ${image.y + image.height / 2}`;
+    expect(svg).toContain('preserveAspectRatio="xMidYMid meet"');
+    expect(svg.match(new RegExp(`rotate\\(30 ${centre}\\)`, 'g'))).toHaveLength(2);
   });
 
   it('writes a vector PDF of the sheet size with the Vietnamese font embedded', async () => {
     const layout = layoutOf('lid-base');
     const pdf = await renderPdf(layout);
-    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(pdf.subarray(0, 8).toString()).toBe('%PDF-1.6');
     const text = pdf.toString('latin1');
     expect(text).toContain('BeVietnamPro');
     const [width, height] = /\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(text)!.slice(1).map(Number);
     expect(width).toBeCloseTo((layout.width * 72) / 25.4, 1);
     expect(height).toBeCloseTo((layout.height * 72) / 25.4, 1);
+  });
+
+  it('is ready for the print shop: layers, CutContour / Crease spot colors with overprint, trim and bleed boxes', async () => {
+    const layout = buildPrintLayout({ title: 'x', structure: 'tuck-top', formulaVersion: 2, dimensions, elements: [greeting] });
+    const text = (await renderPdf(layout)).toString('latin1');
+    for (const layer of PRINT_LAYERS) expect(text).toMatch(new RegExp(`/Type /OCG\\s+/Name \\(${layer}\\)`));
+    expect(text).toContain('/OCProperties');
+    expect(text).toContain('BeVietnamPro-Bold'); // the text, bold like on the canvas
+    // Dimensions is shown on screen, never printed.
+    expect(text).toMatch(/\/Name \(Dimensions\)\s+\/Usage <<\s+\/Print <<\s+\/PrintState \/OFF/);
+    expect(text).toMatch(/\[\/Separation \/CutContour \/DeviceCMYK/);
+    expect(text).toMatch(/\[\/Separation \/Crease \/DeviceCMYK/);
+    expect(text).toMatch(/\/OP true\s+\/op true\s+\/OPM 1/);
+
+    const box = (name: string) => /\[([\d. ]+)\]/.exec(text.slice(text.indexOf(`/${name}`)))![1].split(' ').map(Number);
+    const pt = (mm: number) => (mm * 72) / 25.4;
+    const piece = layout.pieces[0];
+    const trim = box('TrimBox');
+    expect(trim[0]).toBeCloseTo(pt(piece.x), 2);
+    expect(trim[2]).toBeCloseTo(pt(piece.x + piece.geometry.totalBoundingBox.width), 2);
+    expect(trim[3]).toBeCloseTo(pt(layout.height - piece.y), 2);
+    const bleed = box('BleedBox');
+    expect(bleed[0]).toBeCloseTo(trim[0] - pt(BLEED_MM), 2);
+    expect(bleed[3]).toBeCloseTo(trim[3] + pt(BLEED_MM), 2);
+  });
+
+  it('embeds the font chosen in the editor', async () => {
+    const styled = { ...greeting, style: { ...greeting.style, fontFamily: "'Cormorant Garamond', serif" } };
+    const text = (await renderPdf(layoutOf('tuck-top', [styled]))).toString('latin1');
+    expect(text).toContain('CormorantGaramond-Bold');
+    expect(text).not.toContain('PlayfairDisplay');
   });
 
   it('embeds the artwork: every image format in the SVG, PNG / JPEG in the PDF', async () => {
@@ -140,9 +231,12 @@ describe('print renderers', () => {
     expect(dxf.startsWith('0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n')).toBe(true);
     expect(dxf).toContain('\nLAYER\n2\nCUT\n');
     expect(dxf).toContain('\nLAYER\n2\nCREASE\n');
-    // One LINE per dieline segment of both pieces (sleeve + drawer).
-    const segments = layout.pieces.reduce((sum, piece) => sum + piece.geometry.segments.length, 0);
-    expect(dxf.match(/\nLINE\n/g)).toHaveLength(segments);
+    // One POLYLINE per continuous line of both pieces (sleeve + drawer), no loose LINE entities.
+    expect(dxf.match(/\nPOLYLINE\n/g)).toHaveLength(layout.strokes.length);
+    expect(dxf.match(/\nSEQEND\n/g)).toHaveLength(layout.strokes.length);
+    const vertices = layout.strokes.reduce((sum, stroke) => sum + stroke.points.length, 0);
+    expect(dxf.match(/\nVERTEX\n/g)).toHaveLength(vertices);
+    expect(dxf).not.toMatch(/\nLINE\n/);
     expect(dxf.trimEnd().endsWith('EOF')).toBe(true);
   });
 

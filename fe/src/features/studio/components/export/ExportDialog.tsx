@@ -14,11 +14,11 @@ import { StudioDialog } from "../dialog/StudioDialog";
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
     type: "PDF_CMYK",
-    title: "PDF vector CMYK",
-    hint: "Cho xưởng in: nét cắt đỏ, nét gấp xanh nét đứt (màu CMYK), chữ và ảnh PNG / JPG.",
+    title: "PDF in CMYK nhiều lớp",
+    hint: "Cho xưởng in: lớp Artwork, Crease, CutContour (màu pha, overprint), Dimensions (không in); nhúng font và ảnh PNG / JPG.",
   },
-  { type: "SVG", title: "SVG nhiều lớp", hint: "Cho máy cắt Cricut, laser; mở bằng Illustrator, CorelDraw, Figma." },
-  { type: "DXF", title: "DXF", hint: "Cho máy bế CNC: chỉ nét cắt và nét gấp, không có hình in." },
+  { type: "SVG", title: "SVG nhiều lớp", hint: "Cho máy cắt Cricut, laser; cùng 4 lớp, mở bằng Illustrator, Inkscape, Figma." },
+  { type: "DXF", title: "DXF", hint: "Cho máy bế CNC: lớp CUT và CREASE, mỗi đường là một polyline liền, không có hình in." },
 ];
 
 const FORMAT_NAMES: Record<ExportFileType, string> = { PDF_CMYK: "PDF", SVG: "SVG", DXF: "DXF" };

@@ -1,4 +1,6 @@
-import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { JetBrains_Mono, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
+import type { PrintFontId } from "@wrapfit/shared";
 
 /** Editorial display serif for headings and hero copy. */
 export const playfair = Playfair_Display({
@@ -24,5 +26,45 @@ export const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "700"],
 });
 
-/** Class names that expose the three font variables; put them on `<html>`. */
-export const fontVariables = `${playfair.variable} ${jakarta.variable} ${jetbrains.variable}`;
+// Fonts of the texts on a box: the very files the print PDF embeds (./print/README.md), so a text measures and
+// wraps the same on screen and on paper. Not preloaded: only pages that draw box texts download them.
+// (next/font only accepts literal options, hence the repetition.)
+const beVietnam = localFont({
+  src: [{ path: "./print/BeVietnamPro_700Bold.ttf", weight: "700" }],
+  variable: "--font-print-be-vietnam",
+  preload: false,
+});
+const playfairPrint = localFont({
+  src: [{ path: "./print/PlayfairDisplay_700Bold.ttf", weight: "700" }],
+  variable: "--font-print-playfair",
+  preload: false,
+});
+const cormorant = localFont({
+  src: [{ path: "./print/CormorantGaramond_700Bold.ttf", weight: "700" }],
+  variable: "--font-print-cormorant",
+  preload: false,
+});
+const bigShoulders = localFont({
+  src: [{ path: "./print/BigShouldersDisplay_700Bold.ttf", weight: "700" }],
+  variable: "--font-print-big-shoulders",
+  preload: false,
+});
+const inter = localFont({
+  src: [{ path: "./print/Inter_700Bold.ttf", weight: "700" }],
+  variable: "--font-print-inter",
+  preload: false,
+});
+
+/** CSS variable holding the loaded family of each print font. */
+export const PRINT_FONT_VARIABLES: Record<PrintFontId, string> = {
+  "be-vietnam-pro": "--font-print-be-vietnam",
+  "playfair-display": "--font-print-playfair",
+  "cormorant-garamond": "--font-print-cormorant",
+  "big-shoulders-display": "--font-print-big-shoulders",
+  inter: "--font-print-inter",
+};
+
+/** Class names that expose the font variables; put them on `<html>`. */
+export const fontVariables = [playfair, jakarta, jetbrains, beVietnam, playfairPrint, cormorant, bigShoulders, inter]
+  .map((font) => font.variable)
+  .join(" ");

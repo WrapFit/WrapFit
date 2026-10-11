@@ -308,6 +308,17 @@ GET  /api/projects/:id/exports   → 20 lần xuất gần nhất
 - Hỏi trạng thái mỗi 2 giây: `PENDING` → `PROCESSING` → `COMPLETED` (có `downloadUrl`, hết hạn sau 15 phút: hết hạn
   thì GET lại để lấy link mới) hoặc `FAILED` (`error`). Không có trường `progress`.
 - Chỉ ảnh upload lên WrapFit được nhúng vào file in. Tối đa 10 yêu cầu xuất / phút.
+- Nội dung file (docs/12 Phase 9):
+  - `PDF_CMYK`: PDF 1.6, khổ thật (1 mm = 2,8346 pt), 4 lớp OCG `Artwork`, `Crease`, `CutContour`, `Dimensions`
+    (lớp cuối chỉ xem, không in). Nét cắt là màu pha `CutContour` (thay thế 100 % M), nét gấp là màu pha `Crease`
+    (100 % C, nét đứt 4 mm), cả hai overprint; mỗi đường cắt / gấp là một đường liền. `TrimBox` = vùng phôi,
+    `BleedBox` = phôi + 2 mm. Nhúng ảnh PNG / JPEG (giữ tỉ lệ trong khung) và font của chữ (bản đậm).
+  - `SVG`: cùng 4 lớp (`<g id>` + nhãn lớp Inkscape), ảnh mọi định dạng nhúng base64; chữ ghi tên font (máy mở file
+    cần có font).
+  - `DXF`: R12, mm, lớp `CUT` / `CREASE`, mỗi đường là một `POLYLINE` (đường cong tạm thay bằng dây cung).
+  - Chữ dùng cùng mô hình với canvas (`layoutTextBox` của `@wrapfit/shared`): `style.fontSize` là pt, đậm 700, dòng
+    cao 1,2, xuống dòng trong bề rộng khung, căn giữa ngang và dọc, xoay quanh tâm khung. Font in được: Be Vietnam Pro
+    (mặc định), Playfair Display, Cormorant Garamond, Big Shoulders Display, Inter; tên khác in bằng Be Vietnam Pro.
 
 ## 8. Chia sẻ, remix, thả tim
 

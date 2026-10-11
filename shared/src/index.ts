@@ -8,3 +8,4 @@ export * from "./parametric/pillow";
 export * from "./parametric/registry";
 export * from "./fitcheck/validator";
 export * from "./exporter/pdf-export";
+export * from "./print/text-layout";

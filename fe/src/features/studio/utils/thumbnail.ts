@@ -1,4 +1,5 @@
-import type { CanvasElement, DielineGeometry } from "@wrapfit/shared";
+import { PRINT_FONTS, TEXT_FONT_WEIGHT, type CanvasElement, type DielineGeometry } from "@wrapfit/shared";
+import { layoutBoxText } from "../components/canvas/boxText";
 
 /** Paper colour of each look of the editor (BoxMaterialTheme). */
 const PAPER_FILL: Record<string, string> = {
@@ -88,8 +89,14 @@ export async function renderThumbnail(
           ? `<image href="${href}" x="${x}" y="${y}" width="${el.width}" height="${el.height}" preserveAspectRatio="xMidYMid meet"${rotate}/>`
           : `<rect x="${x}" y="${y}" width="${el.width}" height="${el.height}" fill="${ink}" fill-opacity="0.08"${rotate}/>`;
       }
-      const size = el.style?.fontSize ? el.style.fontSize * 0.42 : 5;
-      return `<text x="${x + el.width / 2}" y="${y + el.height / 2 + 1.5}" text-anchor="middle" font-size="${size}" font-weight="bold" font-family="${escapeXml(el.style?.fontFamily ?? "sans-serif")}" fill="${escapeXml(el.style?.color ?? ink)}"${rotate}>${escapeXml(el.content)}</text>`;
+      // Lines as on the canvas and in the print files. An SVG drawn as an image cannot use the page's web fonts, so
+      // the preview names the family and the system draws it (or a fallback).
+      const box = layoutBoxText(el);
+      const lines = box.lines
+        .filter((line) => line.text)
+        .map((line) => `<text x="${x + line.x}" y="${y + line.baseline}">${escapeXml(line.text)}</text>`)
+        .join("");
+      return `<g font-size="${box.fontSizeMm}" font-weight="${TEXT_FONT_WEIGHT}" font-family="${escapeXml(PRINT_FONTS[box.font])}, sans-serif" fill="${escapeXml(el.style?.color ?? ink)}"${rotate}>${lines}</g>`;
     })
     .join("");
 
