@@ -1,7 +1,8 @@
 # 12 — Kế hoạch nối Frontend ↔ Backend
 
 > Ngày lập: 2026-10-10 · Nhánh gốc: `feat/studio-editor-and-mascot-copilot` · Trạng thái: **đã duyệt 2026-10-10**,
-> thực hiện theo từng phiên ở [§9](#9-chia-phiên-làm-việc-và-bàn-giao)
+> thực hiện theo từng phiên ở [§9](#9-chia-phiên-làm-việc-và-bàn-giao). Phase 7 (rà soát giao diện theo kích thước màn
+> hình) thêm ngày 2026-10-11, **chờ duyệt**
 > Contract API: [`06_FE_INTEGRATION_GUIDE.md`](06_FE_INTEGRATION_GUIDE.md) (cách dùng), Swagger `http://localhost:8080/api/docs`
 > (nguồn sự thật), [`03_API_DESIGN.md`](03_API_DESIGN.md). Kiến trúc Stitch: [`11_STITCH_PARITY_AUDIT.md`](11_STITCH_PARITY_AUDIT.md).
 
@@ -218,6 +219,70 @@ bị thu hồi.
 3. Review diff (`/code-review`), sửa lỗi.
 4. Cập nhật `06` §13 (đánh dấu đã sửa), `04_PROGRESS.md`, `fe/README.md` (cách chạy cùng backend), `11` (status `wired`).
 
+### Phase 7 — Rà soát giao diện theo kích thước màn hình (thêm 2026-10-11)
+
+**Lý do.** Từ S1 tới S5, giao diện được kiểm trong pane trình duyệt của ứng dụng. Pane chỉ rộng khoảng 570–720 px, và
+ảnh chụp viewport giả lập lớn hơn bị thu nhỏ theo pane, nên các lần "kiểm trên trình duyệt" thực chất chỉ thấy bố cục
+mobile / tablet. Lần kiểm lại desktop ở cuối S5 (chụp đủ độ phân giải) tìm ra lỗi có từ trước: nút CTA của
+`MainHeader` bị đẩy ra ngoài màn hình ở mọi độ rộng desktop, tên cạnh avatar tràn khỏi thanh, thanh tab dashboard bị
+cắt, dock trang Cài đặt che footer. Kiểm tra tự động cũ (`scrollWidth > clientWidth`) không bắt được các lỗi này: phần
+tử `fixed` bị đẩy ra ngoài không làm trang cuộn ngang.
+
+**Phạm vi.** Mọi màn đã làm hoặc đã sửa từ S1 tới S5, cộng khung chung xuất hiện trên mọi trang:
+
+| Nhóm | Màn / thành phần | Phiên gốc | Ghi chú |
+|---|---|---|---|
+| G1 Khung chung | `MainHeader` (mega menu, menu mobile), `UserAvatarDropdown` (menu mở), `DashboardHeaderNav`, `AdminSidebarNav`, `BottomNavBar` + Gói (Dynamic Island), `MainFooter`, toast, `ErrorState` / `EmptyState` / `PageLoader`, `app/error.tsx`, `not-found`, trang 403 của `RequireAuth` | S3, S4, S5 | Sửa ở đây ảnh hưởng mọi trang: làm trước |
+| G2 Tài khoản | `/auth/login`, `/auth/register`, `/check-email`, `/verify-email` (đang xác minh / thành công / link hết hạn), `/forgot-password`, `/reset-password`, `/complete-signup`, banner `?error=google_*`, `?notice=` | S4 | Chưa từng chụp ở desktop |
+| G3 Quản trị | `/admin/accounts`: bảng, phân trang, drawer chi tiết, hộp thoại khoá / xoá, hàng của chính mình; 403 với MAKER | S4 | Bảng rộng: cuộn ngang trong vùng bảng, không phải cả trang |
+| G4 Dashboard | 5 trang S5 + menu thao tác, hộp thoại thư mục / chuyển thư mục / xoá vĩnh viễn, thùng rác, trạng thái rỗng (tài khoản mới), lỗi upload | S5 | Đã chụp 1280–1920 ở cuối S5; còn 768, 1024, các hộp thoại và trạng thái rỗng |
+| G5 Công khai | Trang chủ (toàn trang), `/templates` (lọc, không có kết quả, trang sau), `/p/[slug]` (khách / chủ / người khác, `allowFork: false`), `/unbox/[slug]` (trước / sau khi mở), `/unbox`, `/unbox/<mã sai>` | S5 | Như G4 |
+| G6 Màn Stitch tĩnh | 23 màn `converted` và 11 màn `approximation` còn tĩnh theo D6 | trước S1, sửa tay ở `e07d23b`, `e509d8f` | Chỉ sửa khung (header, footer, nav, tràn, chồng lấn), không sửa nội dung. Sửa qua component dùng chung hoặc `stitch/overrides.json`; file generated đã khoá (docs/11 §3) thì ghi lý do khi sửa tay |
+| G7 Studio | `/editor/[id]`, `/editor/step-1..4`, `/editor/studio`, `/editor/export` | trước S1 | Chỉ chụp mốc ban đầu và ghi lỗi; sửa trong S6 / S7 (Agent C sở hữu file) |
+
+**Ma trận kích thước.** Mỗi màn chụp ở 6 kích thước, tương ứng các breakpoint Tailwind của app:
+
+| Mã | Viewport | Đại diện | Breakpoint |
+|---|---|---|---|
+| M | 375 × 812, giả lập mobile + cảm ứng | điện thoại | dưới `sm` (BottomNavBar, bottom sheet) |
+| T | 768 × 1024 | tablet dọc | `md` |
+| L | 1024 × 768 | tablet ngang, laptop nhỏ | `lg` (nav desktop chưa hiện) |
+| X | 1280 × 800 | laptop | `xl` (nav desktop hiện, chật nhất) |
+| X+ | 1440 × 900 | màn laptop phổ biến | giữa `xl` và `2xl` |
+| W | 1920 × 1080 | màn rời | `2xl` (`max-w-[1560px]`, `[1720px]`) |
+
+Vai trò: khách, MAKER mới (chưa có dữ liệu, để thấy trạng thái rỗng), ADMIN có dữ liệu. Trạng thái lỗi (tắt backend):
+một lượt ở M và X+ cho các trang G1, G4, G5.
+
+**Các bước**
+
+| # | Việc | File |
+|---|---|---|
+| 7.1 | Nâng `page-shots`: danh sách route trong file (đường dẫn, vai trò, thao tác trước khi chụp: mở menu, hộp thoại, drawer, hover mega menu); báo phần tử bị đẩy ra ngoài màn hình (kể cả trong `fixed` / `sticky`, bỏ qua vùng tự cuộn ngang), ảnh vỡ (`naturalWidth = 0`), request ≥ 400 ngoài danh sách dự kiến, chữ tràn khỏi nút; mobile giả lập cảm ứng | `fe/scripts/page-shots.mjs`, `fe/scripts/page-shots.routes.json` (mới) |
+| 7.2 | Dữ liệu thử dựng lại được: tạo tài khoản MAKER (xác minh qua Mailpit), dự án ở cả 3 trạng thái, thư mục, dự án PUBLIC / UNLISTED / `allowFork: false`, mở hộp QR; `--clean` xoá sạch | `fe/scripts/ui-fixtures.mjs` (mới) |
+| 7.3 | Quét tự động mọi route nhóm G1–G7 × 6 kích thước × vai trò; lưu kết quả thành bảng route × kích thước | `docs/13_UI_VIEWPORT_AUDIT.md` (mới) |
+| 7.4 | Xem từng ảnh theo checklist bên dưới: G1–G5 ở cả 6 kích thước; G6 ở M, T, W (X đã có `stitch:parity` ở 1280); G7 ở M, X+ | — |
+| 7.5 | Kiểm tương tác ở đúng kích thước: luồng bấm trong pane với `resize_window` nhỏ hơn hoặc bằng độ rộng pane; trạng thái mở (menu, hộp thoại, toast) ở desktop chụp bằng thao tác của 7.1 | — |
+| 7.6 | Sửa lỗi: G1 trước, rồi G2–G5, G6. Mức P1 (che / cắt nội dung, không bấm được, tràn ngang) và P2 (bố cục lệch, nút xuống dòng, cột / khoảng trắng bất hợp lý) sửa trong phase; P3 (thẩm mỹ nhỏ) và mọi lỗi G7 ghi vào docs/13 | theo §5 |
+| 7.7 | Chụp lại sau khi sửa, cập nhật docs/13 (trạng thái từng ô); đo lại `stitch:parity` làm mốc mới (header đã đổi font trên màn Stitch ở S5) | `docs/11` (mốc parity) |
+
+**Checklist mỗi ảnh**
+
+1. Không có gì bị cắt, đẩy ra ngoài màn hình hay tràn khỏi khung chứa (header, thẻ, bảng, nút).
+2. Header và thanh điều hướng vừa một hàng; mục đang mở nhìn thấy được.
+3. Phần tử nổi (dock, bottom nav, Gói, toast) không che nội dung hoặc footer ở cuối trang.
+4. Nút và nhãn ngắn không xuống dòng; chữ dài cắt bằng `truncate` có `title`, hoặc xuống dòng có chủ đích.
+5. Lưới đổi số cột hợp lý theo kích thước: không có thẻ khổng lồ ở W, không 1 cột ở desktop.
+6. Khoảng cách và căn lề thống nhất giữa header, thanh tab và nội dung.
+7. Mobile: vùng bấm ≥ 44 px, không cần zoom, bàn phím ảo không che ô nhập (form G2).
+8. Font, màu đúng token của app (Cormorant / Playfair, Plus Jakarta, JetBrains Mono), kể cả bên trong màn Stitch.
+9. Trạng thái rỗng, lỗi, đang tải căn giữa, đọc được, có lối thoát (nút thử lại / quay lại).
+10. Ảnh, icon (Material Symbols) và mô hình 3D hiện đủ, không ảnh vỡ.
+
+**DoD**: mọi route G1–G6 qua quét tự động ở 6 kích thước với 0 phần tử ra ngoài màn hình, 0 tràn ngang, 0 ảnh vỡ, 0 lỗi
+console ngoài danh sách đã biết; mọi ảnh G1–G5 đã xem theo checklist, lỗi P1 / P2 đã sửa; P3 và G7 có trong docs/13 kèm
+phiên sẽ sửa; `tsc`, `next build` pass; mốc `stitch:parity` mới đã ghi.
+
 ## 5. Ma trận sở hữu file
 
 Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ đọc; cần đổi thì báo lại agent chính.
@@ -230,14 +295,18 @@ Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ
 | C — Phase 3 | `src/views/editor/studio/**`, `src/app/editor/**`, `src/features/studio/**`, mục `redirects` trong `next.config.mjs`, link `/editor/*` trong `src/views/home/index.tsx` |
 | D — Phase 4 | `src/views/{templates,public-project,unbox}/**`, `src/app/{templates,p,unbox}/**`, `src/features/{templates,showcase}/**` (mới), phần `#thu-vien-mau` trong `src/views/home/index.tsx` |
 | E — Phase 5 | `src/views/admin/{index.tsx,accounts}/**`, `src/features/admin/**` (mới) |
+| Chính (Phase 7) | Nhóm G1 (`src/components/layout/**`, `src/components/common/**`), G6 (qua `stitch/overrides.json` hoặc component dùng chung), `fe/scripts/page-shots*`, `fe/scripts/ui-fixtures.mjs`, `docs/13_UI_VIEWPORT_AUDIT.md` |
+| F — Phase 7 (tuỳ chọn) | Sửa giao diện G2 + G3: như cột A (trừ `components/layout`) và cột E |
+| G — Phase 7 (tuỳ chọn) | Sửa giao diện G4 + G5: như cột B và D, cả phần còn lại của `src/views/home/index.tsx` |
 
 Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện): C chỉ đổi `href`, D chỉ đổi khối
 `<section id="thu-vien-mau">`. Agent chính gộp nếu xung đột.
 
 ## 6. Điều phối subagent
 
-Thứ tự phụ thuộc: Phase 0 → (1, 2, 3a, 4, 5 độc lập với nhau) → 3b (sau 3a) → 6. Để vừa hạn mức mỗi lần chạy, các
-phase được xếp thành 8 phiên, mỗi phiên tối đa 2 subagent song song (§9).
+Thứ tự phụ thuộc: Phase 0 → (1, 2, 3a, 4, 5 độc lập với nhau) → 3b (sau 3a) → 6. Phase 7 (thêm sau) cần 1, 2, 4, 5
+xong và nên chạy trước 3a; Phase 6 cần cả 7. Để vừa hạn mức mỗi lần chạy, các phase được xếp thành 9 phiên, mỗi phiên
+tối đa 2 subagent song song (§9).
 
 - **Cùng working tree, file tách biệt** (§5): không dùng git worktree vì mỗi worktree phải `npm install` lại monorepo.
 - Quy tắc cho mọi subagent: không cài package, không chạy `stitch:sync`, không commit; chỉ chạy `npx tsc --noEmit -p fe`
@@ -282,6 +351,8 @@ Môi trường: `docker compose up -d postgres redis seaweedfs storage-init mail
 | R7 | Đi qua proxy Next ở local, backend thấy mọi request cùng IP → giới hạn 10 lần đăng nhập / phút dùng chung | Local chấp nhận được; bật `TRUST_PROXY=true` nếu vướng. Production qua Caddy không bị |
 | R8 | WebSocket chưa có sự kiện nghiệp vụ | Không dùng trong kế hoạch này; xuất file dùng polling |
 | R9 | Bundle tăng do React Query (~13 kB gzip) | Chấp nhận |
+| R10 | Pane trình duyệt của ứng dụng hẹp (~570–720 px) và thu nhỏ ảnh viewport lớn: không đánh giá được desktop | **Đã chốt** (2026-10-11): kiểm giao diện bằng `npm --workspace=fe run shots` (Chrome headless, đủ độ phân giải); pane chỉ dùng cho luồng bấm. Phase 7 rà lại S1–S5 |
+| R11 | Sửa khung trên màn Stitch `converted` đụng file generated đã khoá | Ưu tiên sửa component dùng chung hoặc `overrides.json`; sửa tay file khoá thì ghi lý do trong docs/13 |
 
 ## Ước lượng
 
@@ -294,6 +365,7 @@ Môi trường: `docker compose up -d postgres redis seaweedfs storage-init mail
 | 4 | ~1,5 ngày | |
 | 5 | ~0,5 ngày | |
 | 6 | ~1 ngày | |
+| 7 | ~1–1,5 ngày | ~50 route × 6 kích thước; phần lớn thời gian là xem ảnh và sửa G1 |
 
 Chạy song song đợt 2: tổng thời gian thực ≈ 1 (Phase 0) + 1,5 (đợt 2, phase dài nhất) + 1 (3b) + 1 (Phase 6) ≈
 **4,5 ngày làm việc** (so với ~9 ngày nếu làm tuần tự).
@@ -314,9 +386,10 @@ cần để làm tiếp nằm trong file này, `git log` và nhật ký §9.3.
 | **S5** | Phase 2 (dashboard, dự án, Brand Kit, hồ sơ, cài đặt) + Phase 4 (thư viện mẫu, `/p/[slug]`, `/unbox/[slug]`) | B, D song song | S3 xong (không cần S4) | DoD Phase 2 và Phase 4 |
 | **S6** | Phase 3a (`/editor/new`, mở / lưu / xung đột, upload, thumbnail, chuyển hướng) | C | S3 xong | DoD 3a |
 | **S7** | Phase 3b (mốc phiên bản, xuất file, chia sẻ, QR, hoa văn AI) | C (hoặc 2 agent: xuất file + mốc / chia sẻ + QR + AI, mỗi tính năng một file component) | S6 xong | DoD Phase 3 |
-| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7 xong | 15 bước §7 đạt, có ảnh bằng chứng |
+| **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7 và S9 xong | 15 bước §7 đạt, có ảnh bằng chứng ở M và X+ (Phase 7) |
+| **S9** | Phase 7: rà soát giao diện các màn S1–S5, khung chung và màn Stitch tĩnh theo ma trận 6 kích thước; ghi mốc studio cho S6 / S7 | Không cho 7.1–7.5; F, G song song cho 7.6 nếu nhiều lỗi | S5 xong. **Nên chạy trước S6**: S6 / S7 làm trên khung đã sửa và dùng lại script | DoD Phase 7 |
 
-S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Một phiên quá lớn so với hạn mức còn lại thì tách
+S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Thứ tự đề xuất cho phần còn lại: S9 → S6 → S7 → S8. Một phiên quá lớn so với hạn mức còn lại thì tách
 theo từng agent (vd. S4 → S4a Phase 1, S4b Phase 5) và ghi rõ vào nhật ký.
 
 ### 9.2. Quy trình mỗi phiên
@@ -333,7 +406,9 @@ Tiếp tục kế hoạch nối FE-BE: làm phiên S<n> theo docs/12_FE_BE_INTEG
 3. Chạy backend nếu phiên cần (§7, phần môi trường).
 
 **Trong phiên**: giao việc cho subagent theo §6; agent chính review diff của từng agent, chạy `npx tsc --noEmit -p fe`,
-kiểm tra nhanh trên trình duyệt các màn vừa nối.
+kiểm tra nhanh trên trình duyệt các màn vừa nối. **Bắt buộc từ 2026-10-11** (R10): mọi màn vừa sửa được chụp bằng
+`npm --workspace=fe run shots -- <đường dẫn> --widths=375x812,1440x900,1920x1080` (thêm 768, 1024, 1280 khi đổi bố cục
+hoặc khung chung) và xem ảnh trong `fe/.page-shots/`; không đánh giá desktop bằng ảnh của pane trình duyệt.
 
 **Đóng phiên** (kể cả khi chưa xong hết):
 
