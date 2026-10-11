@@ -332,10 +332,10 @@ gấp được thật.
 | 8.7 | 3D dựng từ dieline (H6): kích thước khối, vị trí bản lề, chữ / ảnh trên đúng mặt; test so kích thước 3D với dieline ở 4 cỡ | `fe/src/features/studio/components/three` |
 | 8.8 | 2D, ảnh xem trước, số liệu (H5, H7, H8, H9) đọc từ dieline và một bảng vật liệu | `fe/src/features/studio`, `fe/src/features/templates` |
 | 8.9 | Dọn mã không dùng (H11) | `shared/src` |
-| 8.10 | *(Chờ người dùng chốt, xem bảng 8.10 bên dưới)* Dự án đã tạo bằng công thức cũ | theo lựa chọn |
+| 8.10 | Dự án đã tạo bằng công thức cũ: **D + B** (người dùng chốt 2026-10-11, chi tiết ở 8.10 bên dưới). 8.10a: script tự chuyển dự án chưa từng xuất file in; 8.10b: nút "Cập nhật lên công thức mới" trong studio | `be/prisma/scripts/`, `be/src/projects/**`, `be/prisma/schema.prisma` + migration, `fe/src/features/studio/**`, `fe/src/types/api`, `fe/src/api/projects` |
 | 8.11 | Kiểm trên trình duyệt: tạo dự án mỗi cấu trúc, so 2D / 3D / thumbnail / file in của cùng một hộp; quét G7 (`--group=G7`); in thử phôi tỉ lệ 1 : 1 trên A4 và gấp tay nếu được | `docs/14` |
 
-**8.10. Dự án đã tạo bằng công thức cũ** (chờ người dùng chốt). Mỗi dự án chốt `formulaVersion` lúc tạo; sau Phase 8
+**8.10. Dự án đã tạo bằng công thức cũ** (đã chốt **D + B**, 2026-10-11). Mỗi dự án chốt `formulaVersion` lúc tạo; sau Phase 8
 dự án mới dùng bản 3, còn dự án cũ vẫn ở bản 1 (hoặc 2). Phần tử canvas gắn theo mặt (`panelId`, toạ độ trong mặt), id
 mặt giữ nguyên giữa các bản, nên đổi phiên bản không làm mất chữ / ảnh; kích thước mặt có thể đổi vài phần mm (bù `t`),
 FitCheck có thể đổi điểm.
@@ -347,16 +347,56 @@ FitCheck có thể đổi điểm.
 | C. Tự chuyển mọi dự án | Script một lần: đổi `formulaVersion` của mọi dự án lên bản mới, chạy lại FitCheck | Mọi dự án có phôi đúng ngay, không thêm UI | Phá nguyên tắc phiên bản: dự án đã in / đã gửi xưởng đổi phôi mà chủ không biết; điểm FitCheck có thể tụt, dự án PUBLIC tụt dưới 90 bị rớt khỏi thư viện cộng đồng | ~1–2 giờ |
 | D. Tự chuyển dự án **chưa từng xuất file in** | Như C nhưng chỉ cho dự án không có `export_jobs` `COMPLETED`; dự án đã xuất giữ bản cũ | Dự án chưa in (chưa ai cầm phôi cũ) có phôi đúng ngay; dự án đã in không bị đổi | Dự án đã xuất mà lỗi vẫn kẹt bản cũ (cần B sau này); vẫn có thể tụt điểm FitCheck | ~2–3 giờ |
 
-**Đề xuất: D trong S10, B để sau (backlog, làm khi có người dùng thật đã in hộp).** Lý do: chưa chạy production, dữ
-liệu hiện có là dữ liệu thử (local 2026-10-11: 7 dự án, đều bản 1, 0 dự án đã xuất file); bản 1 không có nét cắt nên
-chưa có file in hợp lệ nào cần giữ nguyên; D giữ đúng tinh thần "không xê dịch thứ đã in" mà không tốn công làm B lúc
-chưa ai cần. Kèm theo: `be/prisma/seed.ts` tạo dự án mẫu với `formulaVersion: 1` viết cứng → đổi sang phiên bản của
-cấu trúc. Script D chạy được lại nhiều lần (idempotent) và in danh sách dự án đã đổi, điểm FitCheck trước / sau.
+**Quyết định (2026-10-11): D + B, cả hai làm trong S10.** D đưa ngay mọi dự án chưa in lên công thức mới; B cho
+dự án đã xuất file (và mọi lần đổi công thức sau này) một đường cập nhật chủ động, có hoàn tác. Dữ liệu local lúc chốt:
+7 dự án, đều bản 1, 0 dự án đã xuất file.
 
-**DoD**: 4 cấu trúc có phôi đủ nét cắt, nét gấp, tai dán, gấp lại đúng lòng trong (test 8.4 pass); file in 4 cấu trúc
-có lớp cắt và lớp gấp, chữ cùng cỡ với canvas; 3D, 2D, ảnh xem trước cùng kích thước với dieline (test hoặc ảnh so sánh
-trong docs/14); FitCheck đủ quy tắc của skill `fitcheck-validator`; dự án cũ mở và xuất đúng như trước; unit, e2e
-backend, `tsc`, `next build` pass.
+*8.10a — D: script tự chuyển dự án chưa từng xuất file in*
+
+1. `be/prisma/scripts/upgrade-formulas.ts` (chạy bằng ts-node như seed, image Docker đã có thư mục `prisma`), lệnh
+   `npm --workspace=be run db:upgrade-formulas -- [--dry-run]`.
+2. Chọn dự án có `formulaVersion` < `box_templates.formula_version` của cấu trúc **và** không có `export_jobs` nào
+   `COMPLETED` (mọi trạng thái dự án, kể cả thùng rác).
+3. Mỗi dự án, trong một transaction: lưu mốc tự động (`isAutomatic`, không tính vào giới hạn 50) "Trước khi cập nhật
+   công thức (bản X → Y)" có `formulaVersion` X (cột mới của 8.10b), đổi `formulaVersion`, chạy lại FitCheck bằng
+   `checkProject` của `be/src/projects/domain`, ghi `fitcheckScore` / `fitcheckState`, tăng `version` (tab đang mở sẽ
+   nhận 409 và tải bản mới như S6).
+4. In bảng: dự án, phiên bản cũ → mới, điểm FitCheck trước / sau; cảnh báo riêng dự án PUBLIC tụt dưới 90 (rớt khỏi
+   thư viện cộng đồng). Chạy lại nhiều lần không đổi gì thêm (idempotent). `--dry-run` chỉ in bảng.
+5. Không tự chạy khi container khởi động: chạy tay một lần sau khi công thức bản 3 vào, và sau mỗi lần thêm phiên bản
+   công thức (ghi vào `be/README.md` mục triển khai).
+6. Sửa `be/prisma/seed.ts`: dự án mẫu lấy `formulaVersion` của cấu trúc, không viết cứng `1`.
+7. Test: unit cho phần chọn dự án (đã xuất / chưa xuất / đã mới nhất), e2e chạy script trên DB test.
+
+*8.10b — B: nút "Cập nhật lên công thức mới"*
+
+1. **DB**: migration thêm `project_snapshots.formula_version Int?` (mốc cũ: `null` = giữ phiên bản hiện tại khi khôi
+   phục). Mọi mốc mới (thủ công, tự động, sao lưu trước khi khôi phục) lưu `formulaVersion` của dự án lúc đó.
+2. **Khôi phục mốc** (`POST /projects/:id/snapshots/:sid/restore`): mốc có `formulaVersion` thì đặt lại phiên bản đó
+   cho dự án (để hoàn tác việc cập nhật), rồi chạy lại FitCheck.
+3. **API mới** `POST /projects/:id/formula-upgrade`, body `{ version }` (chống ghi đè như PATCH): chủ dự án; `409` khi
+   dự án trong thùng rác; `409 PROJECT_VERSION_CONFLICT` khi `version` cũ; đã mới nhất thì trả nguyên dự án. Trong
+   transaction: lưu mốc tự động như 8.10a.3, đổi `formulaVersion` sang của cấu trúc, chạy lại FitCheck. Trả
+   `{ project, backup }` giống khôi phục mốc. Ghi vào docs/03, docs/06 §5–§6, Swagger.
+4. **`ProjectDetail`** thêm `latestFormulaVersion` (phiên bản hiện tại của cấu trúc) để FE biết có bản mới.
+5. **FE studio**: banner khi `formulaVersion < latestFormulaVersion`: "Phôi của dự án dùng công thức cũ (bản X). Bản
+   mới: <tóm tắt thay đổi theo phiên bản, vd. bản 2 nắp gài: nắp không đè mặt sau, có nét cắt>". Nút mở hộp thoại xác
+   nhận: hình phôi sẽ đổi, chữ / ảnh giữ nguyên theo mặt, điểm FitCheck có thể đổi, đã gửi file cũ cho xưởng thì cân
+   nhắc; có mốc để hoàn tác. Xác nhận → gọi API qua hàng đợi lưu của `useProjectSync` (gửi hết thay đổi đang chờ
+   trước) → dựng lại editor bằng `project` trả về → toast có nút "Hoàn tác" (khôi phục `backup.id`). Dự án trong thùng
+   rác: không hiện banner.
+6. **Dashboard** *(tuỳ chọn)*: nhãn nhỏ "Công thức cũ" trên thẻ dự án.
+7. **Test**: e2e cập nhật → hoàn tác → phiên bản và FitCheck trở lại; 409 thùng rác, 409 version; quét G7 có ảnh
+   banner + hộp thoại (thêm route vào `page-shots.routes.json`, dùng dự án fixture ở bản cũ).
+
+Thứ tự: 8.10b.1–2 (cột `formula_version` của mốc) trước 8.10a (script cần lưu mốc có phiên bản); 8.10a chạy sau khi
+công thức bản 3 (8.3) vào; 8.10b.5 sửa `StudioWorkspace.tsx` (thuộc C) nên làm sau S7.
+
+**DoD**: 4 cấu trúc có phôi đủ nét cắt, nét gấp, tai dán, gấp lại đúng lòng trong (test 8.4 pass); file in 4 cấu trúc có
+lớp cắt và lớp gấp, chữ cùng cỡ với canvas; 3D, 2D, ảnh xem trước cùng kích thước với dieline (test hoặc ảnh so sánh
+trong docs/14); FitCheck đủ quy tắc của skill `fitcheck-validator`; dự án đã xuất file giữ phiên bản cũ, mở và xuất đúng
+như trước; dự án chưa xuất đã lên bản mới (8.10a, có bảng kết quả trong docs/14); nút cập nhật + hoàn tác chạy đúng
+(8.10b); unit, e2e backend, `tsc`, `next build` pass.
 
 ## 5. Ma trận sở hữu file
 
@@ -373,7 +413,7 @@ Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ
 | Chính (Phase 7) | Nhóm G1 (`src/components/layout/**`, `src/components/common/**`), G6 (qua `stitch/overrides.json` hoặc component dùng chung), `fe/scripts/page-shots*`, `fe/scripts/ui-fixtures.mjs`, `docs/13_UI_VIEWPORT_AUDIT.md` |
 | F — Phase 7 (tuỳ chọn) | Sửa giao diện G2 + G3: như cột A (trừ `components/layout`) và cột E |
 | G — Phase 7 (tuỳ chọn) | Sửa giao diện G4 + G5: như cột B và D, cả phần còn lại của `src/views/home/index.tsx` |
-| H — Phase 8 | `shared/src/{parametric,fitcheck,exporter,core}/**`, `shared/README.md`, `be/src/export/rendering/**`, `be/src/projects/domain/**`, `be/prisma/seed-data.ts`, `fe/src/features/studio/components/{three,canvas}/**`, `fe/src/features/studio/utils/**`, `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `docs/14_BOX_FORMULA_AUDIT.md` (mới). Cần sửa `StudioWorkspace.tsx`, `Step2DimensionAndMaterial.tsx` (thuộc C) thì làm sau S7 hoặc báo agent chính |
+| H — Phase 8 | `shared/src/{parametric,fitcheck,exporter,core}/**`, `shared/README.md`, `be/src/export/rendering/**`, `be/src/projects/**` (8.10b: endpoint, mốc phiên bản), `be/prisma/{seed-data.ts,seed.ts,schema.prisma,migrations,scripts}/**`, `fe/src/features/studio/components/{three,canvas}/**`, `fe/src/features/studio/utils/**`, `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `docs/14_BOX_FORMULA_AUDIT.md` (mới). Cần sửa `StudioWorkspace.tsx`, `Step2DimensionAndMaterial.tsx` (thuộc C) thì làm sau S7 hoặc báo agent chính |
 
 Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện): C chỉ đổi `href`, D chỉ đổi khối
 `<section id="thu-vien-mau">`. Agent chính gộp nếu xung đột.
@@ -465,7 +505,7 @@ cần để làm tiếp nằm trong file này, `git log` và nhật ký §9.3.
 | **S7** | Phase 3b (mốc phiên bản, xuất file, chia sẻ, QR, hoa văn AI) | C (hoặc 2 agent: xuất file + mốc / chia sẻ + QR + AI, mỗi tính năng một file component) | S6 xong | DoD Phase 3 |
 | **S8** | Phase 6: build toàn monorepo, `stitch:parity`, kịch bản §7 trên trình duyệt, review, cập nhật docs `04`, `06`, `11`, `fe/README.md` | Không (có thể 1 agent review) | S4–S7, S9 và S10 xong | 15 bước §7 đạt, có ảnh bằng chứng ở M và X+ (Phase 7) |
 | **S9** | Phase 7: rà soát giao diện các màn S1–S5, khung chung và màn Stitch tĩnh theo ma trận 6 kích thước; ghi mốc studio cho S6 / S7 | Không cho 7.1–7.5; F, G song song cho 7.6 nếu nhiều lỗi | S5 xong. **Nên chạy trước S6**: S6 / S7 làm trên khung đã sửa và dùng lại script | DoD Phase 7 |
-| **S10** | Phase 8: rà soát và sửa công thức hộp (H1–H11): dieline phiên bản 3, FitCheck đủ quy tắc, file in, 3D / 2D / ảnh xem trước khớp dieline, `docs/14` | Không cho 8.1–8.4 (công thức là gốc, làm tuần tự); 8.5–8.8 có thể 2 agent: H (BE / shared: 8.5, 8.6) và H' (FE: 8.7, 8.8) | S6 xong. Không phụ thuộc S7 (khác file, trừ `StudioWorkspace.tsx`); **phải xong trước S8**. Lớn: tách S10a (8.1–8.4, 8.9) và S10b (8.5–8.8, 8.11) nếu thiếu hạn mức; 8.10 hỏi người dùng trước khi làm | DoD Phase 8 |
+| **S10** | Phase 8: rà soát và sửa công thức hộp (H1–H11): dieline phiên bản 3, FitCheck đủ quy tắc, file in, 3D / 2D / ảnh xem trước khớp dieline, `docs/14` | Không cho 8.1–8.4 (công thức là gốc, làm tuần tự); 8.5–8.8 có thể 2 agent: H (BE / shared: 8.5, 8.6) và H' (FE: 8.7, 8.8) | S6 xong. Không phụ thuộc S7 (khác file, trừ `StudioWorkspace.tsx`); **phải xong trước S8**. Lớn: tách S10a (8.1–8.4, 8.9), S10b (8.5–8.8, 8.11), S10c (8.10 = D + B đã chốt; phần FE của B làm sau S7) nếu thiếu hạn mức | DoD Phase 8 |
 
 S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Thứ tự đề xuất cho phần còn lại: S9 → S6 → S7 → S10 → S8 (S10 có thể làm trước S7: S7 kiểm luồng xuất file, S10 kiểm nội dung file). Một phiên quá lớn so với hạn mức còn lại thì tách
 theo từng agent (vd. S4 → S4a Phase 1, S4b Phase 5) và ghi rõ vào nhật ký.
@@ -510,4 +550,4 @@ hoặc khung chung) và xem ảnh trong `fe/.page-shots/`; không đánh giá de
 | S6 | 2026-10-11 | `61f5f3e`, `b4cd3d6`, `9d5d36a` | **Phase 3a xong** (agent chính làm, không dùng subagent). `/editor/new` (`views/editor/new`): bước 1 lấy cấu trúc từ `GET /templates/structures` (thứ tự, tên, mô tả của API; badge, gợi ý quà vẫn ở `BOX_STRUCTURES`), bước 2 slider + ô nhập mm theo `dimensionLimits` (ngoài giới hạn: khoá nút, báo lỗi; món quà mẫu ngoài giới hạn bị khoá), "Tạo Dự Án" → `POST /projects` → `router.replace('/editor/<id>')`, invalidate `projects.all`; `?template=<id>` → khoá bước 1, gửi `designTemplateId` + canvas của mẫu. `/editor/[id]` (`views/editor/studio/index.tsx` tải dự án bằng React Query, luôn lấy bản mới khi mở; `StudioWorkspace.tsx` giữ bản sao để sửa): dieline = `generateDielinePieces(template.id, dimensions, formulaVersion)` (hộp 2 mảnh có nút chọn mảnh), FitCheck tính như server (`checkDesign`, mọi mảnh), header hiện điểm server sau khi lưu; 404 / id sai → "Không tìm thấy dự án"; `/editor/demo` chạy offline không cần đăng nhập. `features/studio/hooks/useProjectSync.ts`: autosave 900 ms theo `version`, hàng đợi tuần tự, lỗi mạng / 5xx tự thử lại sau 5 giây, `beforeunload` khi chưa lưu, rời trang thì gửi nốt thay đổi; `409 PROJECT_VERSION_CONFLICT` → `VersionConflictDialog` (Tải bản mới = tải lại và dựng lại editor; Ghi đè = gửi với `currentVersion`); `409` không code / dự án `DELETED` → chỉ xem (`inert`) + "Khôi phục dự án". Ảnh PNG / JPG / WebP → `IMAGE`, SVG → `LOGO` qua `uploadFileToStorage` (kiểm định dạng, 15 MB; vừa mặt hộp đang chọn, giữ tỉ lệ, tính `dpi`). Thumbnail PNG 640 px (`utils/thumbnail.ts`, ảnh đọc thành data URL để canvas không bị "tainted") → `THUMBNAIL` → `PATCH { thumbnailUrl, version }` trong cùng hàng đợi, tối đa 1 lần / 60 giây và khi rời trang. `next.config.mjs` `redirects`: `/editor`, `/editor/studio`, `/editor/step-1..4`, `/editor/export` → `/editor/new` (307, giữ query); xoá `app/editor/studio`. Link: header, mega menu, bottom bar, avatar, sidebar admin, trang chủ → `ROUTES.editorNew`; footer, "3D Studio" ở dashboard → `ROUTES.editorDemo` (mới). Việc S5 để lại: `InteractiveFoldingBox3D` thêm `showStatusBar`, `minHeight`; trang công khai ẩn thanh trạng thái. `tsc` sạch, `next build` pass (bản sao tạm), `stitch:sync` không đổi file. Đã kiểm trên trình duyệt với backend thật (admin seed): tạo dự án 120 × 80 × 60 → đổi tên → upload PNG → thêm chữ → F5 còn đủ; thumbnail lên dashboard (ảnh có chữ + ảnh); sửa rồi chuyển trang ngay (< 900 ms) vẫn lưu; tab khác lưu trước → hộp thoại → Ghi đè đúng, lần 2 Tải bản mới đúng; chuyển dự án vào thùng rác khi đang mở → chỉ xem → Khôi phục → lưu tiếp; tạo từ mẫu lid-base → 2 mảnh phôi, canvas của mẫu. Quét G7 (docs/13 §4): 30 / 30 ô `ok` ở M, X+; xem thêm ảnh T, L, X. Dữ liệu thử đã xoá (fixture của S9 còn) | **Phát hiện ngoài phạm vi (đã tách việc)**: (1) mẫu Curated của seed đặt mọi chữ ở `panelId: 'front'`, chỉ hộp nắp gài có mặt đó → chữ của mẫu gối / âm dương / bao diêm không hiện, không được FitCheck, có thể không in; (2) `tuck-top.ts`: nắp trên `y = 0`, cao W, đè lên mặt sau (bắt đầu `y = H`) khi W > H; sửa phải thêm `formulaVersion` 2. **Cho S7**: nút xuất file, QR, mốc phiên bản vẫn là code cũ trong `StudioWorkspace.tsx` (xuất file còn `setInterval`, QR còn `api.qrserver.com`), thay bằng component riêng ở `features/studio/components/<tên>/`; `useProjectSync` có `serverReport` (FitCheck server) và hàng đợi lưu: thao tác đổi version (khôi phục mốc) phải đi qua nó hoặc dựng lại editor (`onReload`) để không bị `409`; bước 3 trên điện thoại: dock công cụ đứng dọc chiếm cả cột (có từ trước). **Môi trường**: `next dev` của phiên khác đang chạy ở cổng 3000 nên S6 dùng chung (Fast Refresh, `next.config` tự nạp lại); `window.scrollTo` trên Chromium mới trả Promise, đừng viết `useEffect(() => window.scrollTo(...))`. Phiên sau: S7 |
 | S6 (bổ sung) | 2026-10-11 | `74bc021` | **Mẫu Curated của seed đặt chữ đúng mặt hộp** (phát hiện (1) của S6). Dữ liệu seed tách ra `be/prisma/seed-data.ts`; chữ dùng id mặt đầy đủ của từng cấu trúc (`panel_front`, `pillow_front`, `lid_top`, `sleeve_top`) và vị trí / bề rộng nằm trong mặt (mẫu "Hộp Skincare Tối Giản" trước tràn mặt trước 60 mm). Test `be/src/templates/seed-data.spec.ts`: mọi phần tử nằm trên một mặt của dieline, mọi mẫu qua FitCheck không vi phạm. Unit 202/202. Đã chạy `db:seed` ở local, tạo dự án từ mẫu âm dương: mở đúng mảnh "Nắp", chữ "Hỷ" hiện, FitCheck 100. Không dự án nào trong DB local dùng id cũ nên không cần migration | Phát hiện (2) (`tuck-top.ts` nắp đè mặt sau) vẫn là việc riêng. Phiên sau: S7 |
 | S6 (bổ sung 2) | 2026-10-11 | `7e4e105` | **Dieline hộp nắp gài phiên bản công thức 2** (phát hiện (2) của S6). `shared/src/parametric/tuck-top.ts`: tai gài, nắp L × W, thân, đáy L × W, tai gài theo cột mặt sau; tai chống bụi ở 2 mặt hông; tai dán vát; đủ nét cắt và nét gấp. Id và kích thước các mặt giữ như bản 1 nên canvas và điểm FitCheck không đổi. Bản 1 đóng băng ở `tuck-top.v1.ts` cho dự án cũ; `CURRENT_FORMULA_VERSION = 2`, seed gán cho cả 4 cấu trúc (3 cấu trúc kia giống bản 1). Test `be/src/projects/domain/dieline-geometry.spec.ts`: mặt không chồng nhau, không ra ngoài khổ, ở 4 cỡ, cả 4 cấu trúc; bản 1 không đổi. Unit 221/221, e2e `export` `projects` `templates` `public-showcase` 66/66. Studio vẽ đúng phôi mới (415 × 256 mm cho 120 × 80 × 60) | **Phát hiện mới**: hộp gối, âm dương, bao diêm cũng **không có nét cắt** (`type: "cut"`), nên lớp cắt của file in PDF / SVG / DXF trống với 3 cấu trúc này; cần phiên bản 3. Môi trường: backend / `next dev` đang chạy tự nhận `shared/dist` mới sau `npm run build:shared` (nếu thấy `UnsupportedFormulaVersionError` 500 thì khởi động lại backend). Phiên sau: S7 |
-| Plan (bổ sung Phase 8) | 2026-10-11 | — | Thêm Phase 8 (rà soát và sửa công thức hộp, mục H1–H11) và phiên S10 theo yêu cầu người dùng, sau khi S6 tìm ra lỗi công thức hộp nắp gài và thấy 3 cấu trúc còn lại cũng không có nét cắt | S10 phải xong trước S8; có thể làm trước hoặc sau S7. Mục 8.10 (cập nhật dự án cũ lên công thức mới) hỏi người dùng trước |
+| Plan (bổ sung Phase 8) | 2026-10-11 | — | Thêm Phase 8 (rà soát và sửa công thức hộp, mục H1–H11) và phiên S10 theo yêu cầu người dùng, sau khi S6 tìm ra lỗi công thức hộp nắp gài và thấy 3 cấu trúc còn lại cũng không có nét cắt | S10 phải xong trước S8; có thể làm trước hoặc sau S7. Mục 8.10 (cập nhật dự án cũ lên công thức mới): người dùng chốt **D + B** (`8.10a` script tự chuyển dự án chưa xuất file in, `8.10b` nút cập nhật có hoàn tác) |
