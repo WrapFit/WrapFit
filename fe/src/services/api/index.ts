@@ -63,16 +63,42 @@ export interface RequestOptions extends Omit<RequestInit, "body" | "headers"> {
 // Their 401 means "wrong credentials" or "no session", never "access cookie expired": no refresh.
 const NO_REFRESH_PATHS = /^\/auth\/(login|register|refresh|logout|verify-email|password\/)/;
 
-let refreshing: Promise<boolean> | null = null;
+/**
+ * Result of `POST /auth/refresh`. Only a 401 ends the session; a rate limit, a server error or a lost connection says
+ * nothing about it, so the caller keeps the user signed in and reports the error instead.
+ */
+type RefreshOutcome = { ok: true } | { ok: false; expired: true } | { ok: false; expired: false; error: ApiError };
+
+/** Longest `Retry-After` the client waits for before trying a rate-limited refresh again. */
+const REFRESH_RETRY_MAX_SECONDS = 10;
+
+let refreshing: Promise<RefreshOutcome> | null = null;
+
+const postRefresh = () => fetch(`${API_BASE_URL}/auth/refresh`, { method: "POST", credentials: "include" });
 
 /** One refresh at a time: parallel requests (and their retries) share it. */
-function refreshSession(): Promise<boolean> {
-  refreshing ??= fetch(`${API_BASE_URL}/auth/refresh`, { method: "POST", credentials: "include" })
-    .then((res) => res.ok)
-    .catch(() => false)
-    .finally(() => {
-      refreshing = null;
-    });
+function refreshSession(): Promise<RefreshOutcome> {
+  refreshing ??= (async (): Promise<RefreshOutcome> => {
+    try {
+      let res = await postRefresh();
+      if (res.status === 429) {
+        // Refused before the token was looked at: the same cookie may try once more after the wait.
+        const wait = retryAfterSeconds(res) ?? 1;
+        if (wait <= REFRESH_RETRY_MAX_SECONDS) {
+          await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+          res = await postRefresh();
+        }
+      }
+      if (res.ok) return { ok: true };
+      if (res.status === 401) return { ok: false, expired: true };
+      return { ok: false, expired: false, error: await errorFrom(res) };
+    } catch (cause) {
+      // No answer. Not retried: the server may have rotated the token already, and the user stays signed in.
+      return { ok: false, expired: false, error: new ApiError(0, null, { cause }) };
+    }
+  })().finally(() => {
+    refreshing = null;
+  });
   return refreshing;
 }
 
@@ -87,6 +113,11 @@ export function buildUrl(endpoint: string, query?: object): string {
   return search ? `${url}${url.includes("?") ? "&" : "?"}${search}` : url;
 }
 
+function retryAfterSeconds(res: Response): number | undefined {
+  const seconds = Number(res.headers.get("Retry-After"));
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+}
+
 async function errorFrom(res: Response): Promise<ApiError> {
   let body: ApiErrorBody | null = null;
   try {
@@ -95,16 +126,17 @@ async function errorFrom(res: Response): Promise<ApiError> {
   } catch {
     // Not JSON (e.g. the dev proxy answers "Internal Server Error" while the API is down).
   }
-  const retryAfter = Number(res.headers.get("Retry-After"));
   return new ApiError(res.status, body, {
     requestId: res.headers.get("X-Request-Id"),
-    retryAfter: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined,
+    retryAfter: retryAfterSeconds(res),
   });
 }
 
 /**
  * Calls the API and returns the parsed JSON (`undefined` for 204). Throws `ApiError`.
- * A 401 is answered by one `POST /auth/refresh` and one retry; when that fails too, `SESSION_EXPIRED_EVENT` fires.
+ * A 401 is answered by one `POST /auth/refresh` and one retry. A refresh answered 401 means the session is over:
+ * `SESSION_EXPIRED_EVENT` fires. Any other refresh failure (429 after one wait, 5xx, offline) is thrown as that error,
+ * and the user stays signed in.
  */
 export async function request<T>(endpoint: string, options: RequestOptions = {}, retry = true): Promise<T> {
   const { json, body, query, headers, ...init } = options;
@@ -122,7 +154,9 @@ export async function request<T>(endpoint: string, options: RequestOptions = {},
   }
 
   if (res.status === 401 && retry && !NO_REFRESH_PATHS.test(endpoint)) {
-    if (await refreshSession()) return request<T>(endpoint, options, false);
+    const refreshed = await refreshSession();
+    if (refreshed.ok) return request<T>(endpoint, options, false);
+    if (!refreshed.expired) throw refreshed.error;
     if (typeof window !== "undefined") window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   }
   if (!res.ok) throw await errorFrom(res);

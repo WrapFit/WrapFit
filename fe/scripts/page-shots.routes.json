@@ -2,8 +2,7 @@
   "$comment": "Viewport audit routes of docs/12 Phase 7 (fe/scripts/page-shots.mjs --routes). Groups G1–G7 as in the plan. Placeholders {…} come from fe/.page-shots/fixtures.json (fe/scripts/ui-fixtures.mjs). Actions: waitFor (selector), click / clickText / hover / hoverText (+ in), into + type, key, scroll, eval, wait (ms after the step).",
   "expectedRequests": [
     { "role": "guest", "url": "^/api/auth/(me|refresh)$", "status": 401 },
-    { "$comment": "Signed in: the access cookie expires every 15 minutes during a long scan, the client refreshes and retries (a real sign-out shows as a redirect).", "url": "^/api/", "status": 401 },
-    { "$comment": "Every full page load of a guest tries a refresh; a scan loads more than 10 a minute (AUTH_THROTTLE). See docs/13.", "role": "guest", "url": "^/api/auth/refresh$", "status": 429 }
+    { "$comment": "Signed in: the access cookie expires every 15 minutes during a long scan, the client refreshes and retries (a real sign-out shows as a redirect).", "url": "^/api/", "status": 401 }
   ],
   "knownConsole": [
     "Download the React DevTools",

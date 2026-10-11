@@ -63,10 +63,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onSessionExpired = () => {
       const wasSignedIn = queryClient.getQueryData(queryKeys.me) != null;
-      setUser(null);
-      if (wasSignedIn) {
-        toast.show({ tone: "info", title: "Phiên đăng nhập đã hết hạn", description: "Hãy đăng nhập lại để tiếp tục." });
+      if (!wasSignedIn) {
+        // A guest stays a guest (every page load of a guest ends here): keep the cache. Removing a query also cancels
+        // its fetch, and a page still waiting for it (a gift opened from a QR code) would show its loader forever.
+        queryClient.setQueryData(queryKeys.me, null);
+        return;
       }
+      setUser(null);
+      toast.show({ tone: "info", title: "Phiên đăng nhập đã hết hạn", description: "Hãy đăng nhập lại để tiếp tục." });
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
