@@ -332,8 +332,26 @@ gấp được thật.
 | 8.7 | 3D dựng từ dieline (H6): kích thước khối, vị trí bản lề, chữ / ảnh trên đúng mặt; test so kích thước 3D với dieline ở 4 cỡ | `fe/src/features/studio/components/three` |
 | 8.8 | 2D, ảnh xem trước, số liệu (H5, H7, H8, H9) đọc từ dieline và một bảng vật liệu | `fe/src/features/studio`, `fe/src/features/templates` |
 | 8.9 | Dọn mã không dùng (H11) | `shared/src` |
-| 8.10 | *(Người dùng quyết)* Dự án cũ ở phiên bản 1 / 2: giữ nguyên, hay thêm nút "Cập nhật lên công thức mới" trong studio (cần BE: đổi `formulaVersion`, chạy lại FitCheck, tự lưu mốc phiên bản trước khi đổi) | — |
+| 8.10 | *(Chờ người dùng chốt, xem bảng 8.10 bên dưới)* Dự án đã tạo bằng công thức cũ | theo lựa chọn |
 | 8.11 | Kiểm trên trình duyệt: tạo dự án mỗi cấu trúc, so 2D / 3D / thumbnail / file in của cùng một hộp; quét G7 (`--group=G7`); in thử phôi tỉ lệ 1 : 1 trên A4 và gấp tay nếu được | `docs/14` |
+
+**8.10. Dự án đã tạo bằng công thức cũ** (chờ người dùng chốt). Mỗi dự án chốt `formulaVersion` lúc tạo; sau Phase 8
+dự án mới dùng bản 3, còn dự án cũ vẫn ở bản 1 (hoặc 2). Phần tử canvas gắn theo mặt (`panelId`, toạ độ trong mặt), id
+mặt giữ nguyên giữa các bản, nên đổi phiên bản không làm mất chữ / ảnh; kích thước mặt có thể đổi vài phần mm (bù `t`),
+FitCheck có thể đổi điểm.
+
+| Lựa chọn | Làm gì | Được | Mất / rủi ro | Công |
+|---|---|---|---|---|
+| A. Giữ nguyên | Không làm gì | Không rủi ro, đúng nguyên tắc "không xê dịch dự án cũ" | Dự án cũ giữ phôi lỗi mãi (nắp gài đè mặt sau, cả 4 cấu trúc không có nét cắt): file in vẫn không bế được; người dùng phải tạo dự án mới rồi làm lại thiết kế bằng tay | 0 |
+| B. Nút "Cập nhật lên công thức mới" | Studio hiện banner khi `formulaVersion` của dự án cũ hơn của cấu trúc; bấm → BE (endpoint mới) tự lưu mốc "Trước khi cập nhật công thức", đổi `formulaVersion`, chạy lại FitCheck → editor tải lại. Hoàn tác = khôi phục mốc (mốc phải lưu thêm `formulaVersion`: migration cột mới ở `project_snapshots`) | Người dùng chủ động, có hoàn tác; dự án đã in mà không muốn đổi thì không bấm | Thêm endpoint, migration, banner, hộp thoại, e2e; người dùng phải tự thấy và bấm | ~0,5–1 ngày |
+| C. Tự chuyển mọi dự án | Script một lần: đổi `formulaVersion` của mọi dự án lên bản mới, chạy lại FitCheck | Mọi dự án có phôi đúng ngay, không thêm UI | Phá nguyên tắc phiên bản: dự án đã in / đã gửi xưởng đổi phôi mà chủ không biết; điểm FitCheck có thể tụt, dự án PUBLIC tụt dưới 90 bị rớt khỏi thư viện cộng đồng | ~1–2 giờ |
+| D. Tự chuyển dự án **chưa từng xuất file in** | Như C nhưng chỉ cho dự án không có `export_jobs` `COMPLETED`; dự án đã xuất giữ bản cũ | Dự án chưa in (chưa ai cầm phôi cũ) có phôi đúng ngay; dự án đã in không bị đổi | Dự án đã xuất mà lỗi vẫn kẹt bản cũ (cần B sau này); vẫn có thể tụt điểm FitCheck | ~2–3 giờ |
+
+**Đề xuất: D trong S10, B để sau (backlog, làm khi có người dùng thật đã in hộp).** Lý do: chưa chạy production, dữ
+liệu hiện có là dữ liệu thử (local 2026-10-11: 7 dự án, đều bản 1, 0 dự án đã xuất file); bản 1 không có nét cắt nên
+chưa có file in hợp lệ nào cần giữ nguyên; D giữ đúng tinh thần "không xê dịch thứ đã in" mà không tốn công làm B lúc
+chưa ai cần. Kèm theo: `be/prisma/seed.ts` tạo dự án mẫu với `formulaVersion: 1` viết cứng → đổi sang phiên bản của
+cấu trúc. Script D chạy được lại nhiều lần (idempotent) và in danh sách dự án đã đổi, điểm FitCheck trước / sau.
 
 **DoD**: 4 cấu trúc có phôi đủ nét cắt, nét gấp, tai dán, gấp lại đúng lòng trong (test 8.4 pass); file in 4 cấu trúc
 có lớp cắt và lớp gấp, chữ cùng cỡ với canvas; 3D, 2D, ảnh xem trước cùng kích thước với dieline (test hoặc ảnh so sánh
