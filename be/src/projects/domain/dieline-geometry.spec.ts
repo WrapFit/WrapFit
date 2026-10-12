@@ -2,7 +2,11 @@ import {
   type BoxDimensions,
   CURRENT_FORMULA_VERSION,
   type DielineGeometry,
+  foldedCorners,
+  foldedSize,
   generateDielinePieces,
+  pillowShapeOf,
+  segmentPoints,
 } from '@wrapfit/shared';
 
 const STRUCTURES = ['tuck-top', 'pillow', 'lid-base', 'sleeve-drawer'];
@@ -13,13 +17,17 @@ const SIZES: [number, number, number][] = [
   [200, 150, 40],
   [40, 30, 20],
 ];
+/** Formula versions projects can be pinned to. */
+const VERSIONS = [1, 2, 3];
+const T = 0.42; // 300 GSM × 0.0014
 const EPSILON = 1e-6;
+/** Allowed gap between the inside of a folded box and the size the user typed, mm (docs/12 Phase 8). */
+const FIT = 0.5;
 
-const box = ([length, width, height]: [
-  number,
-  number,
-  number,
-]): BoxDimensions => ({ length, width, height, paperThickness: 0.4 });
+const box = (
+  [length, width, height]: [number, number, number],
+  paperThickness = T,
+): BoxDimensions => ({ length, width, height, paperThickness });
 
 type Bounds = DielineGeometry['panels'][number]['bounds'];
 const overlaps = (a: Bounds, b: Bounds) =>
@@ -28,21 +36,21 @@ const overlaps = (a: Bounds, b: Bounds) =>
   a.y < b.y + b.height - EPSILON &&
   b.y < a.y + a.height - EPSILON;
 
-describe('dieline geometry of the current formulas', () => {
-  const cases = STRUCTURES.flatMap((structure) =>
-    SIZES.map((size) => [structure, size.join(' × ')] as const),
-  );
+// Tuck-top version 1 is the known defect fixed by version 2 (its lid overlaps the back panel); tested on its own below.
+const cases = VERSIONS.flatMap((version) =>
+  STRUCTURES.filter((s) => version > 1 || s !== 'tuck-top').flatMap(
+    (structure) => SIZES.map((size) => [version, structure, size] as const),
+  ),
+);
 
+describe('dieline geometry of every formula version in use', () => {
   it.each(cases)(
-    '%s %s: panels of a piece never overlap and stay on the sheet',
-    (structure, size) => {
-      const dimensions = box(
-        size.split(' × ').map(Number) as [number, number, number],
-      );
+    'v%s %s %p: panels never overlap and every line stays on the sheet',
+    (version, structure, size) => {
       for (const { name, geometry } of generateDielinePieces(
         structure,
-        dimensions,
-        CURRENT_FORMULA_VERSION,
+        box(size),
+        version,
       )) {
         const { panels, segments, totalBoundingBox: sheet } = geometry;
         for (const [i, a] of panels.entries()) {
@@ -62,53 +70,191 @@ describe('dieline geometry of the current formulas', () => {
             sheet.height + EPSILON,
           );
         }
-        for (const point of segments
-          .filter((s) => !s.pathString)
-          .flatMap((s) => [s.start, s.end])) {
-          expect(point.x).toBeGreaterThanOrEqual(-EPSILON);
-          expect(point.y).toBeGreaterThanOrEqual(-EPSILON);
-          expect(point.x).toBeLessThanOrEqual(sheet.width + EPSILON);
-          expect(point.y).toBeLessThanOrEqual(sheet.height + EPSILON);
+        for (const point of segments.flatMap((s) => segmentPoints(s))) {
+          expect(point.x).toBeGreaterThanOrEqual(-1e-3);
+          expect(point.y).toBeGreaterThanOrEqual(-1e-3);
+          expect(point.x).toBeLessThanOrEqual(sheet.width + 1e-3);
+          expect(point.y).toBeLessThanOrEqual(sheet.height + 1e-3);
         }
       }
     },
   );
 });
 
-describe('tuck-top formulas', () => {
-  it('version 2 hinges the lid and the bottom on the back panel and has cut lines', () => {
-    const [{ geometry }] = generateDielinePieces(
-      'tuck-top',
-      box([120, 80, 60]),
-      2,
-    );
-    const panel = (id: string) =>
-      geometry.panels.find((p) => p.id === id)!.bounds;
-    expect(panel('panel_top_lid').y + panel('panel_top_lid').height).toBe(
-      panel('panel_back').y,
-    );
-    expect(panel('panel_bottom').y).toBe(
-      panel('panel_back').y + panel('panel_back').height,
-    );
-    expect(
-      geometry.segments.filter((s) => s.type === 'cut').length,
-    ).toBeGreaterThan(0);
+describe('formula version 3', () => {
+  const v3 = (structure: string, size: [number, number, number], t = T) =>
+    generateDielinePieces(structure, box(size, t), 3).map((p) => p.geometry);
+
+  it('is the version given to new projects', () => {
+    expect(CURRENT_FORMULA_VERSION).toBe(3);
   });
 
-  it('keeps version 1 unchanged for the projects pinned to it', () => {
+  it.each(SIZES)(
+    'tuck-top %s × %s × %s folds into a box whose inside is L × W × H',
+    (...size) => {
+      const [geometry] = v3('tuck-top', size);
+      const folded = foldedSize(geometry)!;
+      // Creases on the paper mid-plane: half a thickness on each side.
+      expect(Math.abs(folded.x - T - size[0])).toBeLessThanOrEqual(FIT);
+      expect(Math.abs(folded.z - T - size[1])).toBeLessThanOrEqual(FIT);
+      expect(Math.abs(folded.y - T - size[2])).toBeLessThanOrEqual(FIT);
+    },
+  );
+
+  it.each(SIZES)(
+    'lid-base %s × %s × %s: the base holds L × W × H, the lid slides over it',
+    (...size) => {
+      const [base, lid] = v3('lid-base', size).map((g) => foldedSize(g)!);
+      // Base: two corner tabs inside the side walls take 2t of the length.
+      expect(Math.abs(base.x - 3 * T - size[0])).toBeLessThanOrEqual(FIT);
+      expect(Math.abs(base.z - T - size[1])).toBeLessThanOrEqual(FIT);
+      expect(Math.abs(base.y - T / 2 - size[2])).toBeLessThanOrEqual(FIT);
+      const gapL = lid.x - 3 * T - (base.x + T);
+      const gapW = lid.z - T - (base.z + T);
+      for (const gap of [gapL, gapW]) {
+        expect(gap).toBeGreaterThanOrEqual(0.5);
+        expect(gap).toBeLessThanOrEqual(1.5);
+      }
+      expect(lid.y).toBeLessThanOrEqual(base.y + EPSILON);
+    },
+  );
+
+  it.each(SIZES)(
+    'sleeve-drawer %s × %s × %s: the drawer holds L × W × H and slides along L in the sleeve',
+    (...size) => {
+      const [sleeve, drawer] = v3('sleeve-drawer', size).map((g) =>
+        foldedSize(g)!,
+      );
+      expect(Math.abs(drawer.x - 3 * T - size[0])).toBeLessThanOrEqual(FIT);
+      expect(Math.abs(drawer.z - T - size[1])).toBeLessThanOrEqual(FIT);
+      expect(Math.abs(drawer.y - T / 2 - size[2])).toBeLessThanOrEqual(FIT);
+      // Sleeve open along x: as long as the drawer, a little larger on W and H.
+      expect(Math.abs(sleeve.x - (drawer.x + T))).toBeLessThanOrEqual(FIT);
+      const gapW = sleeve.z - T - (drawer.z + T);
+      const gapH = sleeve.y - T - (drawer.y + T / 2);
+      for (const gap of [gapW, gapH]) {
+        expect(gap).toBeGreaterThanOrEqual(0.5);
+        expect(gap).toBeLessThanOrEqual(1.5);
+      }
+    },
+  );
+
+  it.each(
+    STRUCTURES.filter((s) => s !== 'pillow').flatMap((structure) =>
+      SIZES.map((size) => [structure, size] as const),
+    ),
+  )(
+    '%s %p: every folded panel corner meets a corner of another panel (no gap)',
+    (structure, size) => {
+      for (const geometry of v3(structure, size)) {
+        const corners = foldedCorners(geometry);
+        const ids = Object.keys(corners);
+        for (const id of ids) {
+          for (const corner of corners[id]) {
+            const shared = ids.filter(
+              (other) =>
+                other !== id &&
+                corners[other].some(
+                  (p) =>
+                    Math.hypot(
+                      p[0] - corner[0],
+                      p[1] - corner[1],
+                      p[2] - corner[2],
+                    ) < 0.01,
+                ),
+            );
+            expect([id, shared.length > 0]).toEqual([id, true]);
+          }
+        }
+      }
+    },
+  );
+
+  it('pillow faces are as wide as one arc of the section', () => {
+    // Flat pillow: the arc is the chord.
+    expect(pillowShapeOf(box([100, 80, 0], 0)).faceWidth).toBeCloseTo(80, 6);
+    // Round pillow (H = W): half a circle of diameter W + t.
+    expect(pillowShapeOf(box([100, 80, 80])).faceWidth).toBeCloseTo(
+      (Math.PI * (80 + T)) / 2,
+      6,
+    );
+    const [geometry] = v3('pillow', [120, 80, 30]);
+    const shape = pillowShapeOf(box([120, 80, 30]));
+    for (const panel of geometry.panels) {
+      expect(panel.bounds.width).toBeCloseTo(shape.faceWidth, 6);
+      expect(panel.bounds.height).toBe(120);
+    }
+    expect(geometry.totalBoundingBox.height).toBeCloseTo(
+      120 + 4 * shape.endDepth,
+      6,
+    );
+  });
+
+  it('pillow faces stay clear of the curved creases', () => {
+    const [geometry] = v3('pillow', [120, 80, 30]);
+    const creases = geometry.segments.filter(
+      (s) => s.type === 'crease' && s.pathString,
+    );
+    for (const panel of geometry.panels) {
+      const { x, y, width, height } = panel.bounds;
+      for (const point of creases.flatMap((s) => segmentPoints(s, 0.01))) {
+        const inside =
+          point.x > x + 1e-3 &&
+          point.x < x + width - 1e-3 &&
+          point.y > y + 1e-3 &&
+          point.y < y + height - 1e-3;
+        expect([panel.id, inside]).toEqual([panel.id, false]);
+      }
+    }
+  });
+
+  it('keeps the panel ids of version 2, so canvas elements stay on their panels', () => {
+    for (const structure of STRUCTURES) {
+      const ids = (version: number) =>
+        generateDielinePieces(structure, box([120, 80, 60]), version)
+          .flatMap((p) => p.geometry.panels.map((panel) => panel.id))
+          .sort();
+      expect(ids(3)).toEqual(ids(2));
+    }
+  });
+});
+
+describe('frozen formula versions', () => {
+  it('keep their sheets unchanged for the projects pinned to them', () => {
+    const sheets = (structure: string, version: number) =>
+      generateDielinePieces(structure, box([120, 80, 60], 0.4), version).map(
+        (p) => p.geometry.totalBoundingBox,
+      );
+    expect(sheets('tuck-top', 1)).toEqual([{ width: 415, height: 238 }]);
+    expect(sheets('tuck-top', 2)).toEqual([{ width: 415, height: 256 }]);
+    for (const version of [1, 2]) {
+      expect(sheets('pillow', version)).toEqual([
+        { width: 218.4, height: 148.8 },
+      ]);
+      expect(sheets('lid-base', version)).toEqual([
+        { width: 240, height: 200 },
+        { width: 194, height: 154 },
+      ]);
+      const [sleeve, drawer] = sheets('sleeve-drawer', version);
+      expect(sleeve.width).toBeCloseTo(382.2, 6);
+      expect(sleeve.height).toBeCloseTo(81.8, 6);
+      expect(drawer).toEqual({ width: 240, height: 200 });
+    }
+  });
+
+  it('tuck-top version 1 has no cut lines and its lid overlaps the back panel', () => {
     const [{ geometry }] = generateDielinePieces(
       'tuck-top',
-      box([120, 80, 60]),
+      box([120, 80, 60], 0.4),
       1,
     );
     expect(
       geometry.panels.find((p) => p.id === 'panel_top_lid')!.bounds,
     ).toEqual({ x: 15, y: 0, width: 120, height: 80 });
-    expect(geometry.totalBoundingBox).toEqual({ width: 415, height: 238 });
     expect(geometry.segments.some((s) => s.type === 'cut')).toBe(false);
   });
 
-  it('keeps the panel sizes of version 1, so FitCheck scores do not change', () => {
+  it('tuck-top version 2 keeps the panel sizes of version 1, so FitCheck scores do not change', () => {
     const size = (version: number) =>
       generateDielinePieces(
         'tuck-top',

@@ -235,10 +235,18 @@ GET  /api/projects/:id   → ProjectDetail
 - **`formulaVersion`** (trong `ProjectDetail`): phiên bản công thức dieline mà dự án được chốt khi tạo. Editor phải
   dựng dieline / 3D / FitCheck bằng `generateDielinePieces(templateId, dimensions, formulaVersion)` của
   `@wrapfit/shared`, **không** gọi thẳng `generateTuckTopDieline`…, để hình trên màn hình khớp đúng file in.
-  Các phiên bản (`shared/src/parametric/registry.ts`): **1** bản đầu (hộp nắp gài: nắp trên đè mặt sau khi W > H,
-  chưa có nét cắt); **2** (từ 2026-10-11, dự án mới) hộp nắp gài có nắp và đáy gắn vào mặt sau, tai gài, tai chống
-  bụi, tai dán và nét cắt; 3 cấu trúc còn lại giống bản 1, kích thước các mặt không đổi nên điểm FitCheck không đổi.
-  Dự án cũ giữ phiên bản 1.
+  Các phiên bản (`shared/src/parametric/registry.ts`, tóm tắt tiếng Việt cho studio: `FORMULA_CHANGES`): **1** bản
+  đầu (hộp nắp gài: nắp trên đè mặt sau khi W > H; cả 4 cấu trúc chưa có nét cắt); **2** (2026-10-11) hộp nắp gài có
+  nắp và đáy gắn vào mặt sau, tai gài, tai chống bụi, tai dán và nét cắt, 3 cấu trúc còn lại giống bản 1; **3**
+  (2026-10-12, dự án mới) cả 4 cấu trúc có đủ nét cắt, khay / đáy / nắp có tai dán 4 góc, vỏ bao diêm quấn quanh khay
+  theo chiều rộng (khay rút theo chiều dài), bề rộng mặt hộp gối tính theo cung, mọi công thức cộng bù độ dày giấy
+  (quy ước dưới đây), mỗi mặt có bản lề `fold` để dựng 3D. Id các mặt giữ nguyên qua các phiên bản; kích thước mặt
+  đổi vài phần mm (bù `t`) hoặc nhiều hơn (mặt hộp gối, hai mặt hông vỏ bao diêm nay là L × H). Dự án cũ giữ phiên
+  bản của nó (docs/12 Phase 8, mục 8.10 để cập nhật).
+- **Quy ước kích thước** (từ công thức bản 3): `length × width × height` là **lòng trong** của hộp, món quà phải vừa;
+  `paperThickness` (`t`, mm) ≈ GSM × 0,0014 (300 GSM ≈ 0,42 mm). Nét gấp nằm giữa bề dày giấy, nên mặt nào phủ một
+  kích thước lòng trong giữa hai thành thì rộng thêm `t`; hộp âm dương và khay bao diêm còn cộng 2t theo chiều dài cho
+  tai dán nằm trong thành, nắp / vỏ rộng hơn mặt ngoài của đáy / khay 1 mm. Chi tiết từng cấu trúc: docs/14 §2.
 
 ### 5.2. `canvasState`
 

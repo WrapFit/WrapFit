@@ -282,8 +282,7 @@ export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map()): Pr
 
 /**
  * ASCII DXF (R12) in mm with layers CUT (red, ACI 1) and CREASE (blue, ACI 5, dashed) for CNC die-cutting machines.
- * Each continuous line is one POLYLINE; curved segments are approximated by their chord until the shared engine
- * exposes curve points.
+ * Each continuous line is one POLYLINE; curves (pillow box) become short chords within 0.1 mm of the curve.
  */
 export function renderDxf(layout: PrintLayout): string {
   const out: (string | number)[] = [];

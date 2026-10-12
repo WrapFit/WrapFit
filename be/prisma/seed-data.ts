@@ -33,7 +33,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
     name: 'Hộp Kéo Bao Diêm',
     category: 'luxury',
     description:
-      'Phôi 2 mảnh: vỏ ngoài và khay kéo, dung sai trượt 2t + 0.5mm.',
+      'Phôi 2 mảnh: vỏ ngoài và khay kéo rút theo chiều dài, khe trượt 1 mm.',
     formulaSchema: {
       generator: 'generateSleeveDrawerDieline',
       params: dimensionParams,
@@ -44,7 +44,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
     id: 'lid-base',
     name: 'Hộp Âm Dương',
     category: 'luxury',
-    description: 'Phôi 2 mảnh: nắp bao khít đáy, mép cuốn bảo vệ.',
+    description: 'Phôi 2 mảnh: nắp trùm khít đáy, tai dán 4 góc.',
     formulaSchema: {
       generator: 'generateLidBaseDieline',
       params: dimensionParams,
@@ -56,7 +56,7 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
     name: 'Hộp Gối Bầu Cong',
     category: 'accessories',
     description:
-      'Thân hộp elip với nếp cấn cong Bezier, hợp cho trang sức, phụ kiện nhỏ.',
+      'Hai mặt phồng, hai đầu gập theo nếp cong, hợp cho trang sức, phụ kiện nhỏ.',
     formulaSchema: {
       generator: 'generatePillowDieline',
       params: dimensionParams,

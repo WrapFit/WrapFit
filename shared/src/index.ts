@@ -6,6 +6,7 @@ export * from "./parametric/sleeve-drawer";
 export * from "./parametric/lid-base";
 export * from "./parametric/pillow";
 export * from "./parametric/registry";
+export * from "./parametric/segments";
+export * from "./parametric/fold";
 export * from "./fitcheck/validator";
-export * from "./exporter/pdf-export";
 export * from "./print/text-layout";

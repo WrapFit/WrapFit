@@ -703,6 +703,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 <path
                   key={seg.id}
                   d={seg.pathString}
+                  transform={`translate(${padding} ${padding})`}
                   className={isCut ? "dieline-cut" : "dieline-crease"}
                   fill="none"
                 />

@@ -1,7 +1,10 @@
 /**
  * Master Domain & OOP Class Contracts (Pacdora-grade Architecture)
  * Based on Clean Architecture + Domain-Driven Design (DDD)
- * Single Source of Truth for WrapFit Platform
+ *
+ * Status (2026-10-12): design sketch, not part of the package API (`src/index.ts` does not export it) and imported by no
+ * code. The types in use are `src/types/*`; box geometry and folding are `src/parametric/*` (generateDielinePieces,
+ * panelTransforms), checks are `src/fitcheck/*`. Do not build on the box or fold interfaces below.
  */
 
 import { BoxDimensions, BoxStructureType, DielineGeometry, PanelFace, DielineSegment } from "../types/dieline";

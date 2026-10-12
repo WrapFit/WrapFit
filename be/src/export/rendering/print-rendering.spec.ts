@@ -5,10 +5,11 @@ import {
   buildPrintLayout,
   PIECE_GAP_MM,
   SHEET_MARGIN_MM,
+  strokesOf,
   UnsupportedFormulaVersionError,
   UnsupportedStructureError,
 } from './print-layout';
-import { layoutTextBox, printFontOf, PT_TO_MM } from '@wrapfit/shared';
+import { CURRENT_FORMULA_VERSION, layoutTextBox, printFontOf, PT_TO_MM } from '@wrapfit/shared';
 import {
   Artwork,
   BLEED_MM,
@@ -135,7 +136,7 @@ describe('print renderers', () => {
   });
 
   it('joins the cut segments of a box into one closed line', () => {
-    const layout = buildPrintLayout({ title: 'x', structure: 'tuck-top', formulaVersion: 2, dimensions, elements: [] });
+    const layout = buildPrintLayout({ title: 'x', structure: 'tuck-top', formulaVersion: 3, dimensions, elements: [] });
     const cut = layout.strokes.filter((stroke) => stroke.type === 'cut');
     expect(cut).toHaveLength(1);
     expect(cut[0].closed).toBe(true);
@@ -146,6 +147,32 @@ describe('print renderers', () => {
     const creases = layout.strokes.filter((stroke) => stroke.type === 'crease');
     expect(creases.length).toBeLessThan(layout.pieces[0].geometry.segments.filter((s) => s.type === 'crease').length);
   });
+
+  it.each(['tuck-top', 'pillow', 'lid-base', 'sleeve-drawer'])(
+    '%s (current formulas): every piece has exactly one closed cut line, curves sampled for DXF',
+    (structure) => {
+      const layout = buildPrintLayout({
+        title: 'x',
+        structure,
+        formulaVersion: CURRENT_FORMULA_VERSION,
+        dimensions,
+        elements: [],
+      });
+      for (const piece of layout.pieces) {
+        const cut = strokesOf(piece).filter((stroke) => stroke.type === 'cut');
+        expect([piece.name, cut.length, cut[0]?.closed]).toEqual([piece.name, 1, true]);
+      }
+      if (structure === 'pillow') {
+        // Each curve of the outline adds many points, all within the sheet.
+        const [cut] = layout.strokes.filter((stroke) => stroke.type === 'cut');
+        expect(cut.points.length).toBeGreaterThan(40);
+        for (const [x, y] of cut.points) {
+          expect(x).toBeGreaterThanOrEqual(SHEET_MARGIN_MM - 1e-3);
+          expect(y).toBeGreaterThanOrEqual(SHEET_MARGIN_MM - 1e-3);
+        }
+      }
+    },
+  );
 
   it('keeps images in proportion and rotates elements around their centre, like the canvas', () => {
     const element = { ...greeting, id: 'png', type: 'image' as const, content: 'https://cdn/users/u/a.png', rotation: 30 };

@@ -5,11 +5,15 @@
 
 export type BoxStructureType = "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
 
+/**
+ * Size of a box. L × W × H is the inside of the closed box (the gift must fit); since formula version 3 the dieline
+ * adds the paper thickness `t` itself (see shared/README.md, "Quy ước kích thước").
+ */
 export interface BoxDimensions {
   length: number; // L (mm)
   width: number;  // W (mm)
   height: number; // H (mm)
-  paperThickness: number; // t (mm, e.g., 0.35mm for 300 GSM)
+  paperThickness: number; // t (mm): GSM × 0.0014, e.g. 0.42 mm for 300 GSM
 }
 
 export type LineType = "cut" | "crease" | "bleed" | "safe-margin";
@@ -36,9 +40,16 @@ export interface PanelFace {
     width: number;
     height: number;
   };
-  hingeAxis?: "top" | "bottom" | "left" | "right";
-  hingeOffset?: number; // Fold angle relative to parent
+  /**
+   * How the panel folds onto its parent once the box is closed (3D model and folded-size checks, see fold.ts): `edge`
+   * is the side of this panel on the shared crease, `angle` the fold in degrees away from the printed side. The root
+   * panel of a piece, and panels that do not fold flat (pillow faces), have none.
+   */
+  fold?: { parent: string; edge: "top" | "bottom" | "left" | "right"; angle: number };
 }
+
+/** An axis of the flat sheet: x to the right, y down, z out of the printed side. */
+export type SheetAxis = "+x" | "-x" | "+y" | "-y" | "+z" | "-z";
 
 export interface DielineGeometry {
   structureType: BoxStructureType;
@@ -49,4 +60,6 @@ export interface DielineGeometry {
   };
   panels: PanelFace[];
   segments: DielineSegment[];
+  /** Sheet axes that point up and to the front of the closed piece (3D), when its panels have `fold`. */
+  orientation?: { up: SheetAxis; front: SheetAxis };
 }

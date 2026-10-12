@@ -1,6 +1,12 @@
 // Pure layout for print files: which dieline pieces a box has and where each one sits on the sheet (mm).
 // Geometry comes from the parametric engine of IT2 (`@wrapfit/shared`); nothing here depends on NestJS.
-import { fontSizeMmOf, type BoxDimensions, type CanvasElement, type DielineGeometry } from '@wrapfit/shared';
+import {
+  fontSizeMmOf,
+  segmentPoints,
+  type BoxDimensions,
+  type CanvasElement,
+  type DielineGeometry,
+} from '@wrapfit/shared';
 import { dielinePieces, matchesPanel } from '../../projects';
 
 export { dielinePieces, matchesPanel, UnsupportedFormulaVersionError, UnsupportedStructureError } from '../../projects';
@@ -22,7 +28,7 @@ export interface Stroke {
   type: 'cut' | 'crease';
   /** SVG / PDF path data (absolute commands). */
   d: string;
-  /** Corner points, curves replaced by their chord (DXF polylines). */
+  /** Points along the line, curves sampled within 0.1 mm (DXF polylines). */
   points: [number, number][];
   closed: boolean;
 }
@@ -87,7 +93,8 @@ function placedCurve(pathString: string, dx: number, dy: number, start: Point): 
   return { from: [x, y], rest };
 }
 
-type Edge = { a: Point; b: Point; curve?: string };
+/** `samples`: points of a curve after its start, on the sheet. */
+type Edge = { a: Point; b: Point; curve?: string; samples?: Point[] };
 
 /** Joins the cut and crease segments of a placed piece into continuous strokes. */
 export function strokesOf(piece: PlacedPiece): Stroke[] {
@@ -103,7 +110,10 @@ export function strokesOf(piece: PlacedPiece): Stroke[] {
         continue;
       }
       const curve = placedCurve(seg.pathString, piece.x, piece.y, a);
-      if (curve) edges.push({ a, b, curve: curve.rest });
+      const samples = segmentPoints(seg)
+        .slice(1)
+        .map((p): Point => [piece.x + p.x, piece.y + p.y]);
+      if (curve) edges.push({ a, b, curve: curve.rest, samples });
       else strokes.push({ type, d: `M ${num(a[0])} ${num(a[1])} L ${num(b[0])} ${num(b[1])}`, points: [a, b], closed: false });
     }
 
@@ -113,14 +123,16 @@ export function strokesOf(piece: PlacedPiece): Stroke[] {
       used.add(first);
       // Each step draws from the previous point to `to`. Straight edges may be walked backwards, curves only forwards.
       let start = edges[first].a;
-      let steps: { to: Point; curve?: string }[] = [{ to: edges[first].b, curve: edges[first].curve }];
+      let steps: { to: Point; curve?: string; samples?: Point[] }[] = [
+        { to: edges[first].b, curve: edges[first].curve, samples: edges[first].samples },
+      ];
       for (let extended = true; extended; ) {
         extended = false;
         const end = steps[steps.length - 1].to;
         for (let i = 0; i < edges.length && !extended; i++) {
           if (used.has(i)) continue;
           const edge = edges[i];
-          if (same(edge.a, end)) steps.push({ to: edge.b, curve: edge.curve });
+          if (same(edge.a, end)) steps.push({ to: edge.b, curve: edge.curve, samples: edge.samples });
           else if (!edge.curve && same(edge.b, end)) steps.push({ to: edge.a });
           else continue;
           used.add(i);
@@ -130,7 +142,7 @@ export function strokesOf(piece: PlacedPiece): Stroke[] {
           if (used.has(i)) continue;
           const edge = edges[i];
           if (same(edge.b, start)) {
-            steps = [{ to: start, curve: edge.curve }, ...steps];
+            steps = [{ to: start, curve: edge.curve, samples: edge.samples }, ...steps];
             start = edge.a;
           } else if (!edge.curve && same(edge.a, start)) {
             steps = [{ to: start }, ...steps];
@@ -147,7 +159,7 @@ export function strokesOf(piece: PlacedPiece): Stroke[] {
         return closed && index === steps.length - 1 ? '' : `L ${num(step.to[0])} ${num(step.to[1])}`;
       });
       const d = [`M ${num(start[0])} ${num(start[1])}`, ...commands.filter(Boolean), ...(closed ? ['Z'] : [])].join(' ');
-      const points: Point[] = [start, ...steps.map((step) => step.to)];
+      const points: Point[] = [start, ...steps.flatMap((step) => (step.curve && step.samples?.length ? step.samples : [step.to]))];
       if (closed) points.pop();
       strokes.push({ type, d, points, closed });
     }

@@ -1,5 +1,6 @@
 import { PrismaClient, Role, SubscriptionTier } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { CURRENT_FORMULA_VERSION } from '@wrapfit/shared';
 import { boxTemplates, designTemplates } from './seed-data';
 
 const prisma = new PrismaClient();
@@ -64,7 +65,8 @@ async function main() {
           create: {
             userId: admin.id,
             templateId: 'tuck-top',
-            formulaVersion: 1,
+            // The formulas the box templates get above, like a project created in the studio.
+            formulaVersion: CURRENT_FORMULA_VERSION,
             title: 'Hộp Nến Thơm Tinh Dầu',
             visibility: 'PUBLIC',
             dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
