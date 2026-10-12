@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { DielineGeometry, CanvasElement, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
+import { DielineGeometry, CanvasElement, matchesPanel, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
 import {
   ZoomIn,
   ZoomOut,
@@ -21,6 +21,7 @@ import {
   Info,
 } from "lucide-react";
 import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
+import { formatMm } from "@/features/studio/utils/dieline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
@@ -43,6 +44,8 @@ interface DielineCanvas2DProps {
   activePanelId?: string;
   onSelectPanel?: (panelId: string) => void;
   showRulers?: boolean;
+  /** Elements FitCheck flags (margin, bleed, glue…): drawn with a red badge. */
+  flaggedElementIds?: ReadonlySet<string>;
   className?: string;
 }
 
@@ -70,6 +73,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   activePanelId = "panel_front",
   onSelectPanel,
   showRulers = true,
+  flaggedElementIds,
   className = "",
 }) => {
   const [showLayers, setShowLayers] = useState({
@@ -123,7 +127,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
     if (onSelectElement) onSelectElement(el.id);
 
-    const targetPanel = dieline.panels.find((p) => p.id === el.panelId);
+    const targetPanel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
     const panelBounds = targetPanel ? targetPanel.bounds : { x: 0, y: 0, width: 100, height: 100 };
 
     const pt = getSvgCoordinates(e.clientX, e.clientY);
@@ -174,7 +178,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             centerY >= p.bounds.y &&
             centerY <= p.bounds.y + p.bounds.height
         ) ||
-        dieline.panels.find((p) => p.id === el.panelId) ||
+        dieline.panels.find((p) => matchesPanel(p, el.panelId)) ||
         dieline.panels[0];
 
       // Relative coordinates inside target panel
@@ -339,7 +343,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <span className="font-serif font-bold text-brand-forest">Bản Bế 2D Phẳng</span>
           <span className="text-stone-300">|</span>
           <span className="font-mono text-[11px] text-stone-500">
-            {totalW} × {totalH} mm
+            {formatMm(totalW)} × {formatMm(totalH)} mm
           </span>
         </div>
 
@@ -415,7 +419,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               {selectedEl.content || "Phần tử"}
             </span>
             <span className="font-mono text-[10px] text-stone-400">
-              {selectedEl.width}×{selectedEl.height}mm
+              {formatMm(selectedEl.width)}×{formatMm(selectedEl.height)}mm
             </span>
           </div>
 
@@ -684,7 +688,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                       fontFamily="monospace"
                       fill={isPanelActive ? "#2563EB" : "#94A3B8"}
                     >
-                      {pw}×{ph}mm
+                      {formatMm(pw)}×{formatMm(ph)}mm
                     </text>
                   </>
                 )}
@@ -725,14 +729,16 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           {/* Layer 4: Placed Artwork Elements (Images, Logos, Stickers, Texts)
               Now equipped with FREE DRAG & DROP POINTER LISTENERS! */}
           {elements.map((el) => {
-            const targetPanel = dieline.panels.find((p) => p.id === el.panelId);
-            const panelOffset = targetPanel ? targetPanel.bounds : { x: 0, y: 0 };
+            // Elements of the other piece of a two-piece box are drawn when that piece is on screen.
+            const targetPanel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
+            if (!targetPanel) return null;
+            const panelOffset = targetPanel.bounds;
             const elX = panelOffset.x + el.x + padding;
             const elY = panelOffset.y + el.y + padding;
             const isSelected = el.id === selectedElementId;
 
-            // Safe margin breach detection (< 3mm)
-            const isMarginBreached = el.x < 3.0 || el.y < 3.0;
+            // FitCheck flags it (safe margin on every side, bleed, glue flap…)
+            const isMarginBreached = flaggedElementIds?.has(el.id) ?? false;
 
             return (
               <g
@@ -1082,7 +1088,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 >
                   {dieline.panels.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({p.bounds.width}×{p.bounds.height}mm)
+                      {p.name} ({formatMm(p.bounds.width)}×{formatMm(p.bounds.height)}mm)
                     </option>
                   ))}
                 </select>

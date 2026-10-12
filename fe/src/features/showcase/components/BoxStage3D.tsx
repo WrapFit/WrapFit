@@ -28,11 +28,9 @@ interface BoxStage3DProps {
   className?: string;
 }
 
-const LOGO_MAX = 22;
-
 /**
- * The one WebGL canvas of a public page: a saved design folded in 3D (structure, real mm size, paper look, text and
- * pattern of its canvas). Pixel ratio is clamped to 2 by the box component; auto-rotation stops for reduced motion.
+ * The one WebGL canvas of a public page: a saved design folded in 3D (structure, real mm size, paper look, and the
+ * artwork of its canvas on each panel). Pixel ratio is clamped to 2 by the box component; auto-rotation stops for reduced motion.
  * Without WebGL the parametric sketch is shown instead.
  */
 export function BoxStage3D({
@@ -52,10 +50,9 @@ export function BoxStage3D({
     () => ({ length, width, height, paperThickness }),
     [length, width, height, paperThickness],
   );
-  // Only text is drawn on the 3D faces (it prints `content` as text, so image URLs are left out).
-  const elements = useMemo(() => (canvasState?.elements ?? []).filter((element) => element.type === "text"), [canvasState]);
+  // Every element on its panel, like the print file (texts, images, logos, patterns).
+  const elements = useMemo(() => canvasState?.elements ?? [], [canvasState]);
   const theme = materialThemeOf(canvasState?.materialTheme, materialSpec ?? undefined);
-  const logoText = title.length > LOGO_MAX ? `${title.slice(0, LOGO_MAX - 1)}…` : title;
 
   return (
     <div className={`relative min-w-0 ${className}`} role="group" aria-label={`Mô hình 3D: ${title}`}>
@@ -72,7 +69,6 @@ export function BoxStage3D({
           foldProgress={1}
           boxType={structure}
           theme={theme}
-          customLogoText={logoText}
           elements={elements}
           backgroundPatternSvg={canvasState?.backgroundPattern ?? null}
           autoRotate={!reducedMotion}

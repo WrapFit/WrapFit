@@ -144,6 +144,6 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     panels,
     segments,
     glueAreas: [{ x: 0, y: yBody, width: glue, height: H }],
-    orientation: { up: "-y", front: "-z" },
+    orientation: { up: "-y", front: "+z" },
   };
 }

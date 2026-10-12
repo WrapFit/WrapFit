@@ -2,9 +2,10 @@
  * Folds a flat dieline piece into 3D from the hinges of its panels (`PanelFace.fold`), so the 3D model and the size
  * checks use the same geometry as the print file.
  *
- * Sheet space: x to the right, y down (the dieline coordinates, mm), z out of the printed side. Every fold turns the
- * panel away from the printed side (the inside of a box is the unprinted side). Box space: x along L, y up, z along W
- * towards the front, origin at the centre of the bottom of the closed piece.
+ * Sheet space: x to the right, y down (the dieline coordinates, mm) and, right-handed, z away from whoever looks at the
+ * printed side, i.e. towards the unprinted side. Every fold turns the panel towards +z (the inside of a box is the
+ * unprinted side), so printed sides end up outside. Box space: x along L, y up, z along W towards the front, origin at
+ * the centre of the bottom of the closed piece.
  * Owned by IT 2 (Packaging Math)
  */
 
@@ -72,9 +73,14 @@ export function hingeOf(panel: PanelFace): [Vec3, Vec3] {
 
 /**
  * Sheet-space transform of every panel of a piece: flat point (x, y, 0) of the panel → its folded position. `progress`
- * scales every fold angle (0 = flat sheet, 1 = closed box). Panels without `fold` stay where they are.
+ * scales the fold angles (0 = flat sheet, 1 = closed box, negative = folded the other way), for every panel or per
+ * panel (staged animations). Panels without `fold` stay where they are.
  */
-export function panelTransforms(geometry: DielineGeometry, progress = 1): Record<string, Mat4> {
+export function panelTransforms(
+  geometry: DielineGeometry,
+  progress: number | ((panel: PanelFace) => number) = 1,
+): Record<string, Mat4> {
+  const progressOf = typeof progress === "number" ? () => progress : progress;
   const byId = new Map(geometry.panels.map((panel) => [panel.id, panel]));
   const result: Record<string, Mat4> = {};
   const resolve = (panel: PanelFace, seen: Set<string>): Mat4 => {
@@ -85,11 +91,11 @@ export function panelTransforms(geometry: DielineGeometry, progress = 1): Record
     const [a, b] = hingeOf(panel);
     const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
     const axis: Vec3 = [(b[0] - a[0]) / length, (b[1] - a[1]) / length, 0];
-    // Turn the panel away from the printed side: its centre must move to −z.
+    // Turn the panel towards the unprinted side: its centre must move to +z.
     const cx = panel.bounds.x + panel.bounds.width / 2 - a[0];
     const cy = panel.bounds.y + panel.bounds.height / 2 - a[1];
     const lift = axis[0] * cy - axis[1] * cx; // z of axis × (centre − a)
-    const angle = ((panel.fold.angle * Math.PI) / 180) * progress * (lift > 0 ? -1 : 1);
+    const angle = ((panel.fold.angle * Math.PI) / 180) * progressOf(panel) * (lift < 0 ? -1 : 1);
     return (result[panel.id] = multiply(parentMatrix, rotationAround(a, axis, angle)));
   };
   for (const panel of geometry.panels) resolve(panel, new Set());

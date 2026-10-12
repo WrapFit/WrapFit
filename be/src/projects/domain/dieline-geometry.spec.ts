@@ -1,12 +1,16 @@
 import {
+  boxFrameOf,
   type BoxDimensions,
   CURRENT_FORMULA_VERSION,
   type DielineGeometry,
   foldedCorners,
   foldedSize,
   generateDielinePieces,
+  multiply,
+  panelTransforms,
   pillowShapeOf,
   segmentPoints,
+  transformPoint,
 } from '@wrapfit/shared';
 
 const STRUCTURES = ['tuck-top', 'pillow', 'lid-base', 'sleeve-drawer'];
@@ -165,6 +169,78 @@ describe('formula version 3', () => {
             );
             expect([id, shared.length > 0]).toEqual([id, true]);
           }
+        }
+      }
+    },
+  );
+
+  const UPRIGHT = new Set([
+    'panel_back',
+    'panel_left',
+    'panel_front',
+    'panel_right',
+    'base_front',
+    'drawer_front',
+    'lid_front',
+    'sleeve_right',
+  ]);
+  /** Top faces whose texts read upright from the front of the box. */
+  const READS_FROM_FRONT = new Set(['lid_top', 'sleeve_top']);
+  it.each(STRUCTURES.filter((s) => s !== 'pillow'))(
+    '%s: printed sides face out, side panels stand upright and read left to right (3D model)',
+    (structure) => {
+      for (const geometry of v3(structure, [120, 80, 60])) {
+        const frame = boxFrameOf(geometry)!;
+        const transforms = panelTransforms(geometry, 1);
+        const at = (id: string, p: [number, number, number]) =>
+          transformPoint(multiply(frame, transforms[id]), p);
+        const centre = [0, 0, 0];
+        const all = geometry.panels.map((panel) => {
+          const { x, y, width, height } = panel.bounds;
+          return at(panel.id, [x + width / 2, y + height / 2, 0]);
+        });
+        for (let i = 0; i < 3; i++)
+          centre[i] = all.reduce((sum, p) => sum + p[i], 0) / all.length;
+        for (const panel of geometry.panels) {
+          const { x, y, width, height } = panel.bounds;
+          const c = at(panel.id, [x + width / 2, y + height / 2, 0]);
+          const dir = (p: [number, number, number]) => {
+            const q = at(panel.id, p);
+            return [q[0] - c[0], q[1] - c[1], q[2] - c[2]];
+          };
+          // Printed side: −z on the sheet (fold.ts).
+          const normal = dir([x + width / 2, y + height / 2, -1]);
+          const outward = c.map((v, i) => v - centre[i]);
+          const dot = (a: number[], b: number[]) =>
+            a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+          expect([panel.id, dot(normal, outward) > 0]).toEqual([
+            panel.id,
+            true,
+          ]);
+          if (Math.abs(normal[1]) > 0.5) {
+            // Top and bottom faces: the top of their texts points to the back (−z in box space).
+            if (READS_FROM_FRONT.has(panel.id)) {
+              const up = dir([x + width / 2, y + height / 2 - 1, 0]);
+              expect([panel.id, up[2] < -0.5]).toEqual([panel.id, true]);
+            }
+            continue;
+          }
+          const up = dir([x + width / 2, y + height / 2 - 1, 0]); // sheet −y
+          const right = dir([x + width / 2 + 1, y + height / 2, 0]); // sheet +x
+          // Seen from outside (looking along −normal) with this up, "right" is up × normal.
+          const expectedRight = [
+            up[1] * normal[2] - up[2] * normal[1],
+            up[2] * normal[0] - up[0] * normal[2],
+            up[0] * normal[1] - up[1] * normal[0],
+          ];
+          expect([panel.id, dot(right, expectedRight) > 0]).toEqual([
+            panel.id,
+            true,
+          ]);
+          // Walls whose top edge is the hinge side on the sheet stand upright; the others (tray back walls, the
+          // last panel of the sleeve) are upside down in 3D, like the folded print.
+          if (UPRIGHT.has(panel.id))
+            expect([panel.id, up[1] > 0.5]).toEqual([panel.id, true]);
         }
       }
     },

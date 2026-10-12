@@ -255,7 +255,7 @@ export function StudioWorkspace({
     }),
     [projectTitle, dimensions, activeMaterial, elements, backgroundPatternSvg, selectedPalette]
   );
-  const renderPreview = () => renderThumbnail(pieces[0].geometry, elements, activeMaterial);
+  const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
   const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
   // 422 of the last export, shown in the FitCheck tab while the design is the one the server checked.
   const payloadKey = useMemo(() => JSON.stringify(payload), [payload]);
@@ -264,6 +264,10 @@ export function StudioWorkspace({
   const readOnly = sync.state === "trash";
   // The score the server stored with the last save; while a change waits for its save, the score of the browser.
   const displayReport = sync.dirty || !sync.serverReport ? fitcheckReport : sync.serverReport;
+  const flaggedElementIds = useMemo(
+    () => new Set(fitcheckReport.violations.flatMap((v) => (v.elementId ? [v.elementId] : []))),
+    [fitcheckReport]
+  );
   const syncLabel =
     sync.state === "error" ? `Chưa lưu được: ${errorMessage(sync.error)}` : sync.state === "invalid" && invalidReason ? `Chưa lưu: ${invalidReason}` : SYNC_LABELS[sync.state].label;
   const syncTone = SYNC_LABELS[sync.state].tone;
@@ -716,6 +720,7 @@ export function StudioWorkspace({
                   activePanelId={activePanelId}
                   onSelectPanel={selectPanel}
                   showRulers={showRulers}
+                  flaggedElementIds={flaggedElementIds}
                   className="h-full"
                 />
               </div>
@@ -877,6 +882,7 @@ export function StudioWorkspace({
             activeMaterial={activeMaterial}
             backgroundPatternSvg={backgroundPatternSvg}
             elements={elements}
+            formulaVersion={project?.formulaVersion}
             onBack={() => setCurrentStep(3)}
             onOpenExportModal={() => openDialog("export")}
             onOpenQrModal={() => openDialog("unboxing")}

@@ -37,7 +37,7 @@ export function generateLidBaseDieline(dimensions: BoxDimensions): {
     length: baseL,
     width: baseW,
     wall: height + t / 2,
-    up: "-z",
+    up: "+z",
     panels: {
       bottom: { id: "base_bottom", name: "Đáy hộp" },
       front: { id: "base_front", name: "Thành trước" },
@@ -53,7 +53,8 @@ export function generateLidBaseDieline(dimensions: BoxDimensions): {
     length: outsideL + LID_CLEARANCE_MM + 3 * t,
     width: outsideW + LID_CLEARANCE_MM + t,
     wall: lidWallOf(height, t),
-    up: "+z",
+    up: "-z",
+    frontAtTop: false,
     panels: {
       bottom: { id: "lid_top", name: "Mặt nắp" },
       front: { id: "lid_front", name: "Vách nắp trước" },

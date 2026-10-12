@@ -31,6 +31,11 @@ export function checkDesign(pieces: DielinePiece[], elements: CanvasElement[]): 
   return checkBox(pieces, elements);
 }
 
+/** A length for display: at most one decimal (formula version 3 adds the paper thickness, e.g. 120.42 → "120.4"). */
+export function formatMm(value: number): string {
+  return String(Math.round(value * 10) / 10);
+}
+
 /** Piece that holds a panel, so the canvas shows the piece of the selected element. */
 export function pieceIndexOfPanel(pieces: DielinePiece[], panelId: string): number {
   return pieces.findIndex((piece) => piece.geometry.panels.some((p) => p.id === panelId || p.id === `panel_${panelId}`));

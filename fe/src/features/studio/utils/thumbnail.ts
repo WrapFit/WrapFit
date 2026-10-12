@@ -1,4 +1,11 @@
-import { PRINT_FONTS, TEXT_FONT_WEIGHT, type CanvasElement, type DielineGeometry } from "@wrapfit/shared";
+import {
+  matchesPanel,
+  PRINT_FONTS,
+  TEXT_FONT_WEIGHT,
+  type CanvasElement,
+  type DielineGeometry,
+  type DielinePiece,
+} from "@wrapfit/shared";
 import { layoutBoxText } from "../components/canvas/boxText";
 
 /** Paper colour of each look of the editor (BoxMaterialTheme). */
@@ -11,6 +18,8 @@ const PAPER_FILL: Record<string, string> = {
 
 const WIDTH_PX = 640;
 const PAD_MM = 6;
+/** Gap between the pieces of a two-piece box, mm. */
+const GAP_MM = 12;
 
 const escapeXml = (text: string) =>
   text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -38,23 +47,70 @@ async function inlineImage(url: string): Promise<string | null> {
 }
 
 /**
- * Preview of a design for the dashboard: the flat dieline in the paper colour with its artwork, as a PNG of 640 px
- * width (upload purpose THUMBNAIL, ≤ 2 MB). Web fonts are not available to an SVG drawn as an image, so text falls
- * back to the closest system font.
+ * Preview of a design for the dashboard: the flat dieline of every piece side by side, in the paper colour with its
+ * artwork, as a PNG of 640 px width (upload purpose THUMBNAIL, ≤ 2 MB). Web fonts are not available to an SVG drawn as
+ * an image, so text falls back to the closest system font.
  */
 export async function renderThumbnail(
-  dieline: DielineGeometry,
+  pieces: DielinePiece[],
   elements: CanvasElement[],
   materialTheme: string
 ): Promise<Blob> {
-  const { width: totalW, height: totalH } = dieline.totalBoundingBox;
+  const totalW = pieces.reduce((sum, p) => sum + p.geometry.totalBoundingBox.width, 0) + GAP_MM * (pieces.length - 1);
+  const totalH = Math.max(...pieces.map((p) => p.geometry.totalBoundingBox.height));
   const viewW = totalW + 2 * PAD_MM;
   const viewH = totalH + 2 * PAD_MM;
   const heightPx = Math.max(1, Math.round((WIDTH_PX * viewH) / viewW));
   const paper = PAPER_FILL[materialTheme] ?? PAPER_FILL.ivory;
   const ink = materialTheme === "forest" ? "#F7F5F0" : "#1C1917";
 
-  // Panels carry the outline: the generators only list crease lines and curved cuts as segments.
+  const images = new Map<string, string | null>();
+  await Promise.all(
+    elements
+      .filter((el) => (el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content))
+      .map(async (el) => {
+        if (!images.has(el.content)) images.set(el.content, await inlineImage(new URL(el.content, location.href).href));
+      })
+  );
+
+  let x = 0;
+  const drawn = pieces.map(({ geometry }) => {
+    const group = `<g transform="translate(${x} 0)">${pieceSvg(geometry, elements, images, paper, ink)}</g>`;
+    x += geometry.totalBoundingBox.width + GAP_MM;
+    return group;
+  });
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH_PX}" height="${heightPx}" viewBox="0 0 ${viewW} ${viewH}">` +
+    `<rect width="100%" height="100%" fill="#F7F5F0"/>` +
+    `<g transform="translate(${PAD_MM} ${PAD_MM})">${drawn.join("")}</g></svg>`;
+
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = WIDTH_PX;
+    canvas.height = heightPx;
+    canvas.getContext("2d")!.drawImage(image, 0, 0);
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Thumbnail encoding failed"))), "image/png")
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** One piece: panels in the paper colour, the artwork of its panels, then its cut and crease lines. */
+function pieceSvg(
+  dieline: DielineGeometry,
+  elements: CanvasElement[],
+  images: Map<string, string | null>,
+  paper: string,
+  ink: string
+): string {
+  // Panels are outlined too: dielines of formula version 1 have no cut lines.
   const panels = dieline.panels
     .map((p) => `<rect x="${p.bounds.x}" y="${p.bounds.y}" width="${p.bounds.width}" height="${p.bounds.height}" fill="${paper}" stroke="${ink}" stroke-opacity="0.55" stroke-width="0.5"/>`)
     .join("");
@@ -67,18 +123,9 @@ export async function renderThumbnail(
     })
     .join("");
 
-  const images = new Map<string, string | null>();
-  await Promise.all(
-    elements
-      .filter((el) => (el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content))
-      .map(async (el) => {
-        if (!images.has(el.content)) images.set(el.content, await inlineImage(new URL(el.content, location.href).href));
-      })
-  );
-
   const artwork = elements
     .map((el) => {
-      const panel = dieline.panels.find((p) => p.id === el.panelId || p.id === `panel_${el.panelId}`);
+      const panel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
       if (!panel) return "";
       const x = panel.bounds.x + el.x;
       const y = panel.bounds.y + el.y;
@@ -100,24 +147,5 @@ export async function renderThumbnail(
     })
     .join("");
 
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH_PX}" height="${heightPx}" viewBox="0 0 ${viewW} ${viewH}">` +
-    `<rect width="100%" height="100%" fill="#F7F5F0"/>` +
-    `<g transform="translate(${PAD_MM} ${PAD_MM})">${panels}${artwork}${segments}</g></svg>`;
-
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-  try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = WIDTH_PX;
-    canvas.height = heightPx;
-    canvas.getContext("2d")!.drawImage(image, 0, 0);
-    return await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Thumbnail encoding failed"))), "image/png")
-    );
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  return `${panels}${artwork}${segments}`;
 }

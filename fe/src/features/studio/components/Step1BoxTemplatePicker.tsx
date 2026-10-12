@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Box, Sparkles, Check, ArrowRight, ShieldCheck, Layers, Gift, Feather } from "lucide-react";
-import { BoxStructureType } from "@wrapfit/shared";
+import { BoxStructureType, caliperOf, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
 import type { BoxStructure } from "@/types/api";
 
 
@@ -17,7 +17,6 @@ export interface BoxStructureOption {
   recommendedGifts: string[];
   recommendedPaper: string;
   foldDifficulty: "Dễ" | "Trung bình" | "Cao cấp";
-  creaseCount: number;
   defaultDims: { length: number; width: number; height: number; paperThickness: number };
   svgPath: string; // SVG visual icon
 }
@@ -34,8 +33,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Hũ nến thơm", "Chai nước hoa", "Mỹ phẩm dưỡng da", "Cốc gốm sứ"],
     recommendedPaper: "Ivory 300 – 350 GSM",
     foldDifficulty: "Dễ",
-    creaseCount: 8,
-    defaultDims: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
+    defaultDims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) },
     svgPath: "M10 20 L50 5 L90 20 L90 70 L50 85 L10 70 Z M50 5 L50 85 M10 20 L50 35 L90 20",
   },
   {
@@ -49,8 +47,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Socola thủ công", "Macaron", "Trang sức cao cấp", "Bộ tinh dầu"],
     recommendedPaper: "Duplex cán mờ 350 GSM hoặc Carton lạnh",
     foldDifficulty: "Trung bình",
-    creaseCount: 10,
-    defaultDims: { length: 140, width: 90, height: 45, paperThickness: 0.42 },
+    defaultDims: { length: 140, width: 90, height: 45, paperThickness: caliperOf(300) },
     svgPath: "M15 25 L85 25 L85 65 L15 65 Z M30 35 L70 35 L70 55 L30 55 Z",
   },
   {
@@ -64,8 +61,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Đồng hồ cao cấp", "Vòng tay bạc", "Kỷ niệm chương", "Set quà tết"],
     recommendedPaper: "Carton lạnh bồi giấy mỹ thuật ép kim vàng",
     foldDifficulty: "Cao cấp",
-    creaseCount: 12,
-    defaultDims: { length: 130, width: 130, height: 55, paperThickness: 0.5 },
+    defaultDims: { length: 130, width: 130, height: 55, paperThickness: caliperOf(300) },
     svgPath: "M10 25 L50 10 L90 25 L50 40 Z M10 32 L50 47 L90 32 L90 75 L50 90 L10 75 Z",
   },
   {
@@ -79,8 +75,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Khăn lụa tơ tằm", "Cà vạt", "Trang sức nhỏ", "Kẹo cưới thủ công"],
     recommendedPaper: "Kraft mộc 250 – 300 GSM",
     foldDifficulty: "Dễ",
-    creaseCount: 4,
-    defaultDims: { length: 160, width: 110, height: 35, paperThickness: 0.35 },
+    defaultDims: { length: 160, width: 110, height: 35, paperThickness: caliperOf(300) },
     svgPath: "M15 50 Q50 15 85 50 Q50 85 15 50 Z",
   },
 ];
@@ -97,10 +92,22 @@ const GENERIC_STRUCTURE: Omit<BoxStructureOption, "id" | "name" | "vietnameseNam
   recommendedGifts: [],
   recommendedPaper: "Ivory 300 GSM",
   foldDifficulty: "Trung bình",
-  creaseCount: 0,
-  defaultDims: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
+  defaultDims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) },
   svgPath: "M15 25 L85 25 L85 75 L15 75 Z",
 };
+
+/** Crease lines of the box at its default size, counted on the dieline of the current formulas (every piece). */
+function creaseCountOf(item: BoxStructureOption): number {
+  try {
+    return generateDielinePieces(item.id, item.defaultDims, CURRENT_FORMULA_VERSION).reduce(
+      (sum, piece) => sum + piece.geometry.segments.filter((segment) => segment.type === "crease").length,
+      0
+    );
+  } catch (error) {
+    if (error instanceof UnsupportedStructureError) return 0;
+    throw error;
+  }
+}
 
 const orderOf = (id: string) => {
   const index = BOX_STRUCTURES.findIndex((s) => s.id === id);
@@ -187,7 +194,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                     {item.badge}
                   </span>
                   <span className="text-[11px] font-mono text-stone-400">
-                    {item.creaseCount} Nếp cấn
+                    {creaseCountOf(item)} Nếp gấp
                   </span>
                 </div>
 

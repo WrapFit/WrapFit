@@ -7,6 +7,9 @@
  *   left wall   bottom    right wall
  *          ┌tab┐ back wall  ┌tab┐
  *
+ * A lid swaps the front and back walls (`frontAtTop: false`): turned over, its top then reads upright from the front,
+ * and so does its front wall.
+ *
  * The tabs hinge on the ends of the front and back walls and are glued inside the left and right walls. Their ends are
  * slanted so they clear the bottom and the rim. Since version 3 is frozen once a later version exists, change this
  * file only together with a new version (copy it to tray.v3.ts first).
@@ -35,10 +38,15 @@ export function generateTray(input: {
   width: number;
   wall: number;
   panels: TrayPanels;
-  /** "-z" when the tray opens upwards (base, drawer), "+z" when it is turned over as a lid. */
+  /** "+z" when the tray opens upwards (base, drawer), "-z" when it is turned over as a lid (z: see fold.ts). */
   up: SheetAxis;
+  /** Front wall above the bottom on the sheet (default), or below it (lids). */
+  frontAtTop?: boolean;
 }): DielineGeometry {
-  const { length: L, width: W, wall: H, panels: ids } = input;
+  const { length: L, width: W, wall: H } = input;
+  const frontAtTop = input.frontAtTop ?? true;
+  // Wall above the bottom on the sheet, wall below it.
+  const ids = frontAtTop ? input.panels : { ...input.panels, front: input.panels.back, back: input.panels.front };
   const tab = Math.min(15, H * 0.8, W / 2 - 2); // how far a tab reaches along the side wall
   const rimTaper = Math.min(1, H / 10);
   const bottomTaper = Math.min(tab / 2, H / 3);
@@ -104,6 +112,6 @@ export function generateTray(input: {
       { x: x0 - tab, y: y1, width: tab, height: H },
       { x: x1, y: y1, width: tab, height: H },
     ],
-    orientation: { up: input.up, front: "-y" },
+    orientation: { up: input.up, front: frontAtTop ? "-y" : "+y" },
   };
 }

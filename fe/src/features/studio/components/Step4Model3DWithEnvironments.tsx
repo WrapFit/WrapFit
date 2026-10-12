@@ -76,6 +76,8 @@ interface Step4Model3DWithEnvironmentsProps {
   activeMaterial?: string;
   backgroundPatternSvg?: string | null;
   elements?: CanvasElement[];
+  /** Dieline formulas of the project: the 3D box is folded from the same dieline. */
+  formulaVersion?: number;
   onBack: () => void;
   onOpenExportModal: () => void;
   onOpenQrModal?: () => void;
@@ -87,6 +89,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
   activeMaterial = "ivory",
   backgroundPatternSvg,
   elements = [],
+  formulaVersion,
   onBack,
   onOpenExportModal,
   onOpenQrModal,
@@ -203,6 +206,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
               boxType={boxType as any}
               theme={activeMaterial as any}
               elements={elements}
+              formulaVersion={formulaVersion}
               backgroundPatternSvg={backgroundPatternSvg}
               environment={selectedEnv}
               interactiveOpenState={isLidOpen}

@@ -10,7 +10,7 @@
  *   │    top   L × W    │
  *   │   right  L × H    │
  *   │   bottom L × W    │
- *   │   left   L × H    │   (the glue flap is glued inside the left panel)
+ *   │   left   L × H    │   (the glue flap is glued inside the left panel; the right panel faces the front)
  *   └───────────────────┘
  *
  * Paper thickness t: the drawer is sized like the base of the lid & base box (bottom L + 3t by W + t, walls H + t/2);
@@ -40,7 +40,7 @@ export function generateSleeveDrawerDieline(dimensions: BoxDimensions): {
     length: drawerL,
     width: drawerW,
     wall: drawerH,
-    up: "-z",
+    up: "+z",
     panels: {
       bottom: { id: "drawer_base", name: "Đáy khay (Base)" },
       front: { id: "drawer_front", name: "Thành trước" },
@@ -107,7 +107,7 @@ export function generateSleeveDrawerDieline(dimensions: BoxDimensions): {
     panels,
     segments,
     glueAreas: [{ x: 0, y: 0, width: L, height: glue }],
-    orientation: { up: "+z", front: "-y" },
+    orientation: { up: "-z", front: "+y" },
   };
 
   return { sleeve, drawer };
