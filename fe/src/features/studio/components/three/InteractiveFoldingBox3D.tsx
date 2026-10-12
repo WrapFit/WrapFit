@@ -26,7 +26,8 @@ interface InteractiveFoldingBox3DProps {
   onFlapClick?: (flapName: string) => void;
   className?: string;
   autoRotate?: boolean;
-  environment?: "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow";
+  /** Colour behind the box; "transparent" shows the page behind the canvas. */
+  environment?: "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow" | "transparent";
   interactiveOpenState?: boolean;
   rotationY?: number; // External yaw rotation (radians) driven by GSAP ScrollTrigger
   rotationX?: number; // External pitch tilt (radians) driven by GSAP ScrollTrigger
@@ -35,6 +36,8 @@ interface InteractiveFoldingBox3DProps {
   showStatusBar?: boolean;
   /** 460 px minimum height; false lets the parent decide (e.g. a square stage on a phone). */
   minHeight?: boolean;
+  /** No frame of its own (border, corners, shadow, paper background): the box sits on the parent's surface. */
+  frameless?: boolean;
 }
 
 export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = ({
@@ -56,6 +59,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   enableMacroZoom = true,
   showStatusBar = true,
   minHeight = true,
+  frameless = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -225,7 +229,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         : environment === "festive_glow"
         ? "#FFF7ED"
         : "#FDFBF7";
-    scene.background = new THREE.Color(envBg);
+    scene.background = environment === "transparent" ? null : new THREE.Color(envBg);
 
     const { length: L, width: W, height: H } = dimensions;
     const maxDim = Math.max(L, W, H);
@@ -419,7 +423,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
   return (
     <div
-      className={`relative w-full h-full ${minHeight ? "min-h-[460px]" : ""} rounded-squircle-lg overflow-hidden bg-paper-ivory border border-stone-200 shadow-tactile ${className}`}
+      className={`relative w-full h-full ${minHeight ? "min-h-[460px]" : ""} overflow-hidden ${frameless ? "" : "rounded-squircle-lg bg-paper-ivory border border-stone-200 shadow-tactile"} ${className}`}
     >
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
