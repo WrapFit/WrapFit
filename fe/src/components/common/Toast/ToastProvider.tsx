@@ -41,6 +41,8 @@ const TONES: Record<ToastTone, { icon: typeof Info; iconClass: string }> = {
 };
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** Toasts sit at the top on phones and slide down from there; from md up they rise from the bottom corner. */
+const slide = (distance: number) => (window.matchMedia("(min-width: 768px)").matches ? distance : -distance);
 
 export function useToast(): ToastApi {
   const api = useContext(ToastContext);
@@ -78,8 +80,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {/* Above the mobile bottom navigation; bottom-right corner from md up. */}
-      <div className="pointer-events-none fixed inset-x-4 bottom-24 z-[100] flex flex-col gap-2 md:inset-x-auto md:bottom-6 md:right-6 md:w-[380px]">
+      {/* Phones: under the header, so a toast never covers the buttons of a bottom sheet or the bottom navigation.
+          Bottom-right corner from md up. */}
+      <div className="pointer-events-none fixed inset-x-4 top-20 z-[100] flex flex-col gap-2 md:inset-x-auto md:top-auto md:bottom-6 md:right-6 md:w-[380px]">
         {toasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
@@ -99,7 +102,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
     if (!ref.current || reducedMotion()) return onDismiss(toast.id);
     animate(ref.current, {
       opacity: [1, 0],
-      translateY: [0, 12],
+      translateY: [0, slide(12)],
       duration: 180,
       ease: "inQuad",
       onComplete: () => onDismiss(toast.id),
@@ -108,7 +111,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
 
   useEffect(() => {
     if (ref.current && !reducedMotion()) {
-      animate(ref.current, { opacity: [0, 1], translateY: [16, 0], scale: [0.96, 1], duration: 420, ease: "outBack" });
+      animate(ref.current, { opacity: [0, 1], translateY: [slide(16), 0], scale: [0.96, 1], duration: 420, ease: "outBack" });
     }
     const timer = window.setTimeout(leave, toast.durationMs);
     return () => window.clearTimeout(timer);

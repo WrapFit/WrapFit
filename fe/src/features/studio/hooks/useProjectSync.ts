@@ -23,6 +23,8 @@ export type SyncState =
 const SAVE_DELAY_MS = 900;
 /** After a network or server error, the save is tried again after this delay. */
 const RETRY_DELAY_MS = 5000;
+/** Tries of the last save when leaving the editor (no retry tick runs once it is unmounted). */
+const LEAVE_SAVE_ATTEMPTS = 4;
 /** At most one thumbnail upload per minute, plus one when leaving the editor. */
 const THUMBNAIL_INTERVAL_MS = 60_000;
 
@@ -108,6 +110,8 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
   const thumbRef = useRef({ key, at: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined });
   // Set once `replace` gave the project a new version: this editor is about to be remounted and must not save.
   const detachedRef = useRef(false);
+  // Whether the last failed save may succeed later (offline, 429, 5xx).
+  const retryableRef = useRef(false);
 
   const enqueue = useCallback((task: () => Promise<unknown>) => {
     queueRef.current = queueRef.current.then(task, task).then(() => undefined);
@@ -168,6 +172,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
       try {
         const saved = await updateProject(projectId, { ...body, version: versionRef.current });
         savedProject(saved);
+        retryableRef.current = false;
         setServerReport(saved.fitcheckState);
         setSavedKey(sendKey);
         latestRef.current.savedKey = sendKey;
@@ -175,6 +180,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
         scheduleThumbnail(sendKey);
         return true;
       } catch (err) {
+        retryableRef.current = false;
         if (isVersionConflict(err)) {
           setConflict({ version: err.currentVersion });
         } else if (err instanceof ApiError && err.status === 409) {
@@ -183,6 +189,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
         } else {
           setError(err);
           const retryable = !(err instanceof ApiError) || err.status === 0 || err.status === 429 || err.status >= 500;
+          retryableRef.current = retryable;
           if (retryable) setTimeout(() => setRetryTick((tick) => tick + 1), RETRY_DELAY_MS);
         }
         return false;
@@ -215,7 +222,17 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
       // Conflict, trash or replaced: nothing of this design goes to the server any more.
       if (latest.blocked || detachedRef.current) return;
       if (latest.key !== latest.savedKey) {
-        void enqueue(() => save(latest.key, latest.payload)).then(() => uploadThumbnail(latest.key));
+        // Nobody sees the editor any more: a save refused for a passing reason (offline, 429, 5xx) is tried again.
+        const send = (attempt: number) => {
+          let ok = false;
+          void enqueue(async () => {
+            ok = await save(latest.key, latest.payload);
+          }).then(() => {
+            if (ok) void uploadThumbnail(latest.key);
+            else if (retryableRef.current && attempt < LEAVE_SAVE_ATTEMPTS) setTimeout(() => send(attempt + 1), RETRY_DELAY_MS);
+          });
+        };
+        send(1);
       } else if (latest.savedKey !== thumbRef.current.key) {
         void uploadThumbnail(latest.savedKey);
       }

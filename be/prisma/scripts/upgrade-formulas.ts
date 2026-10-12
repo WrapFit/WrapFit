@@ -17,6 +17,7 @@ import {
   generateDielinePieces,
   UnsupportedStructureError,
 } from '@wrapfit/shared';
+import { pruneAutomaticSnapshots } from '../../src/projects/infrastructure/snapshot-retention';
 
 /** FitCheck score a design needs to stay in the community template hub (MIN_COMMUNITY_FITCHECK_SCORE of the API). */
 const COMMUNITY_SCORE = 90;
@@ -129,6 +130,8 @@ async function main(): Promise<void> {
               isAutomatic: true,
             },
           });
+          // Same retention as the API's upgrade: at most MAX_AUTOMATIC_SNAPSHOTS automatic snapshots, file refs in sync.
+          await pruneAutomaticSnapshots(tx, project.id);
           return true;
         });
         if (done) upgraded++;
