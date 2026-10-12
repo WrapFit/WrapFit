@@ -3,12 +3,16 @@
 > Ngày lập: 2026-10-10 · Nhánh gốc: `feat/studio-editor-and-mascot-copilot` · Trạng thái: **đã duyệt 2026-10-10**,
 > thực hiện theo từng phiên ở [§9](#9-chia-phiên-làm-việc-và-bàn-giao). Phase 7 (rà soát giao diện theo kích thước màn
 > hình) thêm ngày 2026-10-11, duyệt và làm ở phiên S9 (kết quả: [`13`](13_UI_VIEWPORT_AUDIT.md)). Phase 8 (rà soát
-> công thức hộp: dieline, 3D, FitCheck, file in) thêm ngày 2026-10-11, làm ở phiên S10
+> công thức hộp: dieline, 3D, FitCheck, file in) thêm ngày 2026-10-11, làm ở phiên S10. Phase 9 (file in chuẩn xưởng)
+> thêm 2026-10-12, làm ở S11. Phase 10 (hoàn thiện sau rà soát: việc dở trong DoD, lỗi nhỏ, tài liệu) thêm 2026-10-12,
+> làm ở phiên S12.
 > Contract API: [`06_FE_INTEGRATION_GUIDE.md`](06_FE_INTEGRATION_GUIDE.md) (cách dùng), Swagger `http://localhost:8080/api/docs`
 > (nguồn sự thật), [`03_API_DESIGN.md`](03_API_DESIGN.md). Kiến trúc Stitch: [`11_STITCH_PARITY_AUDIT.md`](11_STITCH_PARITY_AUDIT.md).
 
 Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-quyết-định-đã-chốt) · [3. Bản đồ màn hình](#3-bản-đồ-màn-hình--api) ·
-[4. Các phase](#4-các-phase) (Phase 8: [công thức hộp](#phase-8--rà-soát-và-sửa-công-thức-hộp-thêm-2026-10-11)) · [5. Sở hữu file](#5-ma-trận-sở-hữu-file) · [6. Điều phối subagent](#6-điều-phối-subagent) ·
+[4. Các phase](#4-các-phase) (Phase 8: [công thức hộp](#phase-8--rà-soát-và-sửa-công-thức-hộp-thêm-2026-10-11),
+Phase 9: [file in](#phase-9--file-in-đúng-chuẩn-xưởng-và-chữ-khớp-canvas-thêm-2026-10-12),
+Phase 10: [hoàn thiện](#phase-10--hoàn-thiện-sau-rà-soát-thêm-2026-10-12)) · [5. Sở hữu file](#5-ma-trận-sở-hữu-file) · [6. Điều phối subagent](#6-điều-phối-subagent) ·
 [7. Kiểm thử](#7-kịch-bản-kiểm-thử-end-to-end) · [8. Rủi ro, câu hỏi mở](#8-rủi-ro-và-câu-hỏi-mở) ·
 [9. Phiên làm việc](#9-chia-phiên-làm-việc-và-bàn-giao)
 
@@ -74,6 +78,9 @@ Mục lục: [1. Hiện trạng](#1-hiện-trạng) · [2. Quyết định](#2-q
 | D6 | **Màn không có backend giữ nguyên tĩnh**, không nối, không gắn nhãn, không ẩn link: `/pricing`, `/checkout/*`, `/dashboard/orders`, `/dashboard/materials`, `/dashboard/specs`, `/notifications`, `/team`, `/support`, `/auth/2fa`, `/editor/inspect/fefco`, `/editor/materials/backdrop`, mọi `/admin/*` trừ `/admin/accounts` | Backend chưa có module tương ứng (thanh toán, đơn hàng, thông báo, 2FA…); giữ nguyên để test UI/UX |
 | D7 | **Xác minh email không bắt buộc nhập mật khẩu**: `/verify-email` xác minh xong → nút tới `/auth/login` | Bản hiện tại của backend (`06` §3.4); không cần sửa BE |
 | D8 | **Làm theo từng phiên** (§9): mỗi phiên tự đủ, kết thúc bằng typecheck + commit + ghi nhật ký bàn giao, phiên sau đọc nhật ký để làm tiếp | Phòng hết hạn mức trong một lần chạy |
+| D9 | *(2026-10-12)* **Gói Copilot gắn vào studio** `/editor/[id]` (Phase 10, 10.6): viên nổi theo skill `ai-packaging-copilot`, tự hiện khi FitCheck có vi phạm mới, nút sửa 1-Click, gợi ý kích thước theo món quà. Không xoá `AiCopilotAssistant.tsx` | AGENTS.md §3 (Proactive Watchdog); component đã có sẵn |
+| D10 | *(2026-10-12)* **Nhạc nền mở hộp bỏ khỏi phạm vi**: hộp thoại QR không có ô nhạc, giữ nguyên `audioTrackUrl` đang có; chỉ sửa tài liệu cho đúng quy tắc của backend (file đã upload lên WrapFit hoặc đường dẫn của FE, không nhận `https` trang khác) | Không có loại upload âm thanh, `fe/public` không có file nhạc |
+| D11 | *(2026-10-12)* **Làm cả hai việc tuỳ chọn còn lại**: ô "Tình trạng hệ thống" (5.2) và nhãn "Công thức cũ" (8.10b.6) | Người dùng chọn |
 
 ## 3. Bản đồ màn hình ↔ API
 
@@ -434,6 +441,334 @@ cắt của 3 cấu trúc kia, đường cong DXF) vẫn thuộc Phase 8.
 có overprint, `TrimBox` / `BleedBox` đúng, mỗi đường cắt là một đường liền; chữ cùng font, cỡ, cách xuống dòng, căn và
 xoay như canvas; ảnh không bị kéo giãn; chữ mới không chồng chữ cũ; unit + e2e `export` pass, `tsc` sạch.
 
+### Phase 10 — Hoàn thiện sau rà soát (thêm 2026-10-12)
+
+**Lý do.** Sau S8, ngày 2026-10-12, toàn bộ plan được đối chiếu lại với code. Kết quả lúc rà: `tsc --noEmit` của `fe`, `be`,
+`shared` sạch; unit BE 311/311; lint BE pass; mọi phiên S1–S11 đã commit. Tuy vậy vẫn còn việc dở trong DoD của Phase 2,
+3b, 7, 8. Vài chỗ S7 làm khác plan mà §4 chưa ghi lại. Có thêm vài lỗi nhỏ nằm ngoài plan, và tài liệu chưa cập nhật.
+Phase này gom hết các việc đó vào phiên S12, để nhánh `feat/fe-be-integration` sẵn sàng merge vào `main`. Quyết định của
+người dùng: D9, D10, D11 (§2).
+
+**Danh sách tồn đọng**
+
+| # | Tồn đọng | Nguồn | Việc |
+|---|---|---|---|
+| T1 | FitCheck chưa kiểm chữ tràn khung. Chữ không bị cắt: canvas (`DielineCanvas2D`) và file in (`print-renderers.ts`) đều vẽ phần dòng thừa ra ngoài khung, cả phía trên lẫn phía dưới, nên chữ có thể đè lên nếp gấp mà FitCheck không thấy | DoD Phase 8; docs/14 H3 ("Chưa kiểm"); chú thích đầu `shared/src/fitcheck/validator.ts` | 10.2 |
+| T2 | Server chưa cấu hình Google: bấm nút Google thì trình duyệt mở trang JSON `503` thô (`GoogleOAuthGuard` ném `ServiceUnavailableException`) | Nhật ký S4 | 10.3 |
+| T3 | Brand Kit gỡ `overflow: hidden` của CSS generated bằng thẻ `<style>{SCROLL_FIX}</style>` trong view, chưa chuyển sang `sourcePatches` | Nhật ký S5 (giao cho S8, chưa làm) | 10.4 |
+| T4 | `npm --workspace=fe run lint` không chạy: `next lint` (đã deprecated ở Next 15.5) dừng lại hỏi cấu hình vì FE chưa có ESLint. CI (`.github/workflows/ci.yml`) không kiểm FE: không `tsc`, không lint, không build | Rà soát 2026-10-12 | 10.5 |
+| T5 | `AiCopilotAssistant.tsx` (388 dòng) không màn nào dùng. Bảng quà mẫu `POPULAR_GIFT_PRESETS` của nó trùng với `GIFT_PRESETS` của bước 2. Cả hai viết cứng độ dày giấy (0,35–0,5 mm), lệch quy ước `caliperOf(gsm)` của H9 | Nhật ký S10; H10, H11 | 10.6 |
+| T6 | Chữ mới luôn dùng Cormorant Garamond (`NEW_TEXT_STYLE` trong `DielineCanvas2D.tsx`), không theo bộ font đang chọn. Thẻ font ở tab "Màu & Font" luôn bắt đầu ở bộ đầu tiên (`CURATED_FONT_PRESETS[0]`, Big Shoulders), không theo chữ của dự án | Nhật ký S11, giới hạn (4) | 10.7 |
+| T7 | Chưa kiểm trên trình duyệt: (a) thông báo `413`, `403` hết dung lượng, `FILE_NOT_OWNED` khi upload (DoD Phase 2); (b) `409` khi đủ 50 mốc, `429` khi hết lượt AI (Phase 3b) | Nhật ký S5, S7 | 10.8 |
+| T8 | Ô "Tình trạng hệ thống" từ `GET /health/details` (5.2, tuỳ chọn) chưa làm. `getHealthDetails` và `queryKeys.admin.health` đã có, chưa có giao diện | Phase 5; D11 | 10.9 |
+| T9 | Nhãn "Công thức cũ" trên thẻ dự án (8.10b.6, tuỳ chọn) chưa làm. `ProjectSummary` chưa có `formulaVersion` | Phase 8; D11 | 10.10 |
+| T10 | 6 lỗi P3 của docs/13 §5 (P3-1 → P3-6) chưa ghi phiên sửa, trong khi DoD Phase 7 yêu cầu | docs/13 | 10.11 |
+| T11 | File in chưa được mở bằng Illustrator / Inkscape / viewer DXF; chưa in thử 1 : 1 và gấp tay (8.6, 8.11) | Nhật ký S10; docs/14 | 10.12 |
+| T12 | Tài liệu chưa cập nhật: §1.3 mục 5–8 đã sửa nhưng chưa đánh dấu; §4 mục 10, 11 của Phase 3 chưa ghi việc S7 làm khác plan; §6 ghi "10 phiên"; bảng ước lượng thiếu Phase 8–10; Phase 6.1 ghi "23 màn"; docs/03 và docs/06 §10 ghi `audioTrackUrl` phải là `https` (sai so với backend) | Rà soát 2026-10-12 | 10.1 |
+
+**Các bước**
+
+Mỗi bước kèm file chính và cách kiểm. Đọc skill liên quan trước khi code (AGENTS.md §6): `fitcheck-validator` (10.2),
+`ai-packaging-copilot`, `tactile-haptic-audio`, `fluid-mobile-gestures`, `wrapfit-design-system` (10.6, 10.9, 10.10,
+10.11), `insforge-backend-flow` (10.3, 10.10).
+
+*10.1 — Tài liệu* (làm phần lớn ở cuối phiên, khi kết quả các bước khác đã có)
+
+1. docs/12 §1.3: đánh dấu *(Đã xử lý)* cho các mục sau.
+   - Mục 5 (upload bằng data URL): S6, `uploadFileToStorage`.
+   - Mục 6 (xuất file): S7, `features/studio/components/export/`.
+   - Mục 7 (dieline): S6, `generateDielinePieces`.
+   - Mục 8 (hoa văn AI): S7. Hoa văn upload PNG, xem mục 11 của Phase 3.
+   - Mục 3 (cookie path): ghi chú "xử lý ở S3 bằng `useMe()` và `RequireAuth` phía client".
+2. docs/12 §4 Phase 3: thêm ghi chú *(Thực tế S7)*.
+   - Mục 10: không có ô nhạc nền (D10).
+   - Mục 11: "Dùng" hoa văn upload ảnh **PNG** (`IMAGE`), không phải SVG, vì file PDF in chỉ nhúng PNG / JPEG.
+3. docs/12 Phase 6.1: ghi số màn đúng. `screens.json` có 23 màn `converted`. `stitch:parity` đo 22 màn, vì bỏ qua route có
+   redirect. Đếm lại bằng `screens.json` trước khi ghi.
+4. docs/12 §6: đổi "10 phiên" thành "12 phiên". Thêm câu: Phase 10 chạy sau S8.
+5. docs/12 bảng "Ước lượng": thêm dòng Phase 8 (~2 ngày), Phase 9 (~1 ngày), Phase 10 (~2 ngày). Lấy số thực tế từ
+   §9.3 nếu có.
+6. docs/03 dòng `audioTrackUrl` và docs/06 §10 (ví dụ `"audioTrackUrl"?: "https://…"`): sửa theo quy tắc thật trong
+   `isAllowedMediaUrl` (`be/src/storage/asset-keys.ts`). Quy tắc: URL của file đã upload lên WrapFit, hoặc đường dẫn
+   tương đối bắt đầu bằng `/` của FE; không nhận `https` trang khác. Ghi thêm: FE hiện không có ô nhập nhạc (D10).
+7. Cuối phiên: cập nhật docs/14 (H3 và mục "Chưa làm"), docs/13 (cột phiên sửa của P3), docs/06 (mã `TEXT_OVERFLOW`,
+   `google_unavailable`, trường mới của `ProjectSummary`), docs/03, `04_PROGRESS.md`, §7 (kết quả 10.8), §9.3.
+
+*10.2 — FitCheck: chữ tràn khung (T1)*
+
+Nguyên tắc: client và server vẫn gọi chung một hàm `checkBox`. Hàm nhận thêm hàm đo chữ `measure`, giống
+`layoutTextBox`. Trình duyệt truyền `measureInBrowser`; server truyền số đo PDFKit, là số đo file in dùng.
+
+1. `shared/src/types/fitcheck.ts`: thêm mã `"TEXT_OVERFLOW"` vào `FitCheckErrorCode`.
+2. `shared/src/fitcheck/validator.ts`:
+   - Đổi chữ ký thành `checkBox(pieces, elements, options: { measure?: MeasureText } = {})`.
+   - Với phần tử `text`, khi có `measure`: tính `need = textBlockHeight(layoutTextBox(element, measure))`.
+   - Nếu `need > element.height + 0.5` (mm): báo vi phạm `TEXT_OVERFLOW`, mức `warning`.
+     - Tiêu đề: "Chữ tràn khỏi khung".
+     - Nội dung: chữ cần cao `need` mm, khung chỉ cao `height` mm, dòng thừa in ra ngoài khung.
+     - Gợi ý: kéo khung cao hơn, giảm cỡ chữ, hoặc bớt chữ.
+   - Kiểm lề an toàn và tai dán (quy tắc 1 và 3) bằng **khung thật của chữ**: khung giữ nguyên tâm, cao `max(height,
+     need)`, rồi xoay bằng `envelopeOf`. Lý do: phần chữ tràn đè lên nếp gấp thì phải bị bắt.
+   - Không có `measure`: bỏ qua quy tắc này, giữ hành vi cũ.
+   - Sửa chú thích đầu file: bỏ câu "Not checked yet".
+3. `autoFixElements(pieces, elements, options)`: sửa chữ tràn trước, rồi mới sửa lề.
+   - Cách 1: tăng `height` lên `need`, giữ tâm.
+   - Mặt không đủ chỗ: giảm `style.fontSize` từng 0,5 pt cho tới khi vừa, nhỏ nhất 6 pt.
+   - Sau đó chạy phần sửa lề hiện có.
+4. BE: chuyển `FONT_FILES`, `INFO_FONT` và hàm `measure` từ `be/src/export/rendering/print-renderers.ts` (khoảng dòng
+   32–79) sang module hạ tầng mới `be/src/shared/print-fonts/`. Module có `index.ts` export `PRINT_FONT_FILES`,
+   `INFO_FONT_FILE`, `measurePrintText`.
+   - Lý do: `projects` không được import `export`, vì `export` đã import `projects`. `shared/` không import module
+     nghiệp vụ, nên dùng chung được (be/README.md, docs/07 §1.3–1.5).
+   - `print-renderers.ts` import lại từ module mới.
+5. `be/src/projects/domain/project-fitcheck.ts`: `checkProject` gọi `checkBox(..., { measure: measurePrintText })`.
+   Nhờ vậy lúc lưu, lúc chặn xuất file, lúc khôi phục mốc và script `db:upgrade-formulas` đều có quy tắc mới.
+6. FE: `fe/src/features/studio/utils/dieline.ts` `checkDesign` truyền `measureInBrowser`
+   (`components/canvas/boxText.ts`).
+   - `StudioWorkspace.tsx` (dòng `useMemo(() => checkDesign(...))`) thêm số `useBoxFonts` vào deps. Lý do: font tải
+     xong thì tính lại, lần đo đầu có thể dùng font dự phòng.
+   - Nút 1-Click (`handleAutoFix`) truyền `measureInBrowser`.
+7. Test (`be/src/projects/domain/fitcheck.spec.ts`), mỗi ca một test:
+   - chữ vừa khung;
+   - chữ tràn thì có `TEXT_OVERFLOW`;
+   - chữ tràn tới sát nếp gấp thì có thêm `CREASE_OVERLAP`;
+   - chữ xoay 90°;
+   - auto-fix tăng chiều cao;
+   - auto-fix giảm cỡ chữ khi mặt hẹp;
+   - không truyền `measure` thì không có quy tắc mới.
+   Chạy lại `be/src/templates/seed-data.spec.ts` (mẫu Curated vẫn qua FitCheck) và `print-rendering.spec.ts`.
+8. Rủi ro: số đo của trình duyệt và PDFKit lệch nhỏ. Ở sát ngưỡng, editor và server có thể khác nhau một dòng. Cách
+   giảm: dung sai 0,5 mm; điểm server là điểm được lưu. Kiểm trên trình duyệt một chữ dài ở 3 font: điểm editor bằng
+   điểm server sau khi lưu.
+
+*10.3 — Nút Google khi server chưa cấu hình (T2)*
+
+1. `be/src/auth/guards/google-oauth.guard.ts`: khi `!enabled`, không ném `503`. Thay vào đó đặt `req.user = null` và trả
+   `true`.
+2. `be/src/auth/auth.controller.ts`:
+   - `googleLogin` nhận `@Res() res`. Handler này chỉ chạy khi Google tắt, vì khi bật thì passport chuyển hướng
+     trước. Nó chuyển trình duyệt về `${frontendUrl}/login?error=google_unavailable`.
+   - `googleCallback`: Google tắt thì cũng chuyển về `error=google_unavailable`, không phải `google_auth_failed`.
+   - Swagger: bỏ mô tả `503`.
+3. FE `fe/src/views/auth/login/index.tsx`: thêm vào `GOOGLE_ERRORS` câu `google_unavailable`: "Đăng nhập bằng Google
+   chưa được bật trên máy chủ này. Vui lòng dùng email và mật khẩu." `/login` đã chuyển sang `/auth/login` giữ query.
+4. Test:
+   - Sửa `google-oauth.guard.spec.ts`: guard không còn ném lỗi khi tắt.
+   - Thêm unit cho controller: Google tắt thì chuyển hướng đúng.
+   - e2e `auth` vẫn chạy với id Google giả (`be/test/e2e-env.ts`).
+5. Kiểm tay: để trống `GOOGLE_CLIENT_ID` ở `be/.env`, khởi động lại API, bấm nút Google. Kết quả mong đợi: về
+   `/auth/login` có banner lỗi. Sau đó trả lại cấu hình.
+6. docs/03 (dòng `/api/auth/google`) và docs/06 §3.5: ghi `error=google_unavailable`.
+
+*10.4 — Brand Kit cuộn được nhờ `sourcePatches` (T3)*
+
+1. `fe/stitch/overrides.json` → `sourcePatches`: thêm 2 patch cho screen `0460ce4b82164674ac5f8930e9d737bd`, mỗi patch kèm
+   `reason`.
+   - Patch 1: `find` = `"      overflow: hidden;"`, `replace` = `"      overflow: visible;"`.
+   - Patch 2: `find` = `"height: 100%;"`, `replace` = `"min-height: 100%;"`.
+   - Mỗi chuỗi chỉ xuất hiện 1 lần trong source (dòng 84–85, khối `html, body`). Lưu ý: `applySourcePatches` thay
+     **mọi** chỗ khớp. File source dùng CRLF, nên `find` chỉ được nằm trên một dòng.
+2. Chạy `npm --workspace=fe run stitch:sync`. `git diff` chỉ được có các file sau:
+   - `overrides.json`;
+   - `src/assets/styles/stitch/screens/dashboard-brand-kit.css`;
+   - `stitch/generated.lock.json` (đổi hash).
+   CSS đó chưa sửa tay nên lock cho phép ghi đè. Nếu lock báo file đã sửa tay thì dừng lại và xem lý do.
+3. `fe/src/views/dashboard/brand-kit/index.tsx`: xoá hằng `SCROLL_FIX`, thẻ `<style>{SCROLL_FIX}</style>` và chú thích
+   đi kèm.
+4. Kiểm: `npm --workspace=fe run shots -- --routes --only=brand-kit --sizes=M,X+,W` với tài khoản MAKER (fixture S9).
+   - Không có ô trượt.
+   - Trong trang, `document.scrollingElement.scrollHeight > innerHeight` và cuộn được tới footer.
+   - Chạy `stitch:parity` cho màn này: số không đổi, vì màn `wired` bị bỏ qua.
+
+*10.5 — ESLint cho FE và CI kiểm FE (T4)*
+
+1. Cài devDependencies cho workspace `fe`: `eslint-config-next@15.5.27` (cùng bản với `next`), `@eslint/eslintrc`
+   (FlatCompat). `eslint@9` đã có ở root.
+2. Tạo `fe/eslint.config.mjs` (flat config), extends `next/core-web-vitals` và `next/typescript`.
+   - `ignores`: `.next/`, `scripts/`, `stitch/`, `src/features/stitch/behaviors/**`, và mọi file trong
+     `stitch/generated.lock.json` (đọc khoá của file JSON ngay trong config). Nhờ đó file generated tự được bỏ qua.
+   - `react-hooks/exhaustive-deps` để mức `warn`. Sửa deps có thể đổi hành vi, nên không tự sửa hàng loạt.
+3. `fe/package.json`: đổi `"lint": "next lint"` thành `"lint": "eslint ."`.
+4. Chạy, rồi phân loại lỗi.
+   - Lỗi trong code viết tay mà sửa không đổi hành vi (biến không dùng, `any` hiển nhiên, `<a>` nội bộ): sửa.
+   - Lỗi cần đổi logic: hạ rule đó xuống `warn`, có chú thích lý do trong config, và ghi vào nhật ký.
+   - Mục tiêu: `npm --workspace=fe run lint` thoát 0, có 0 lỗi; ghi số cảnh báo còn lại.
+   - Nếu số lỗi viết tay vượt ~100 thì dừng: ghi số liệu và hỏi người dùng trước khi sửa hàng loạt.
+5. `.github/workflows/ci.yml`: thêm job `frontend`, chạy song song với `validate`. Các bước:
+   - `npm ci`;
+   - `npm --workspace=shared run build`;
+   - `npx tsc --noEmit -p fe`;
+   - `npm --workspace=fe run lint`;
+   - `npm --workspace=fe run build` với env `BACKEND_INTERNAL_URL=http://localhost:8080`, `NEXT_PUBLIC_API_URL=/api`.
+6. Kiểm `next build` ở local. Nếu `next dev` của phiên khác đang chạy, dùng bản sao `.agents/build-copy` (cách làm ở
+   nhật ký S8): không build chung `fe/.next`.
+
+*10.6 — Gói Copilot trong studio (T5, D9)*
+
+1. Dùng chung một bảng quà mẫu: tạo `fe/src/features/studio/utils/giftPresets.ts` (`GIFT_PRESETS`). Mỗi mục có:
+   - `id`, `name`, `category`;
+   - `structure: BoxStructureType`;
+   - `dimensions: { length, width, height }`;
+   - `gsm`, `tip`.
+   Độ dày giấy tính bằng `caliperOf(gsm)` (H9). Dữ liệu lấy theo bảng §2 của skill `ai-packaging-copilot`.
+   `Step2DimensionAndMaterial.tsx` và Copilot cùng import bảng này; xoá `POPULAR_GIFT_PRESETS` và `GIFT_PRESETS` cũ.
+2. Viết lại props của `fe/src/features/studio/components/copilot/AiCopilotAssistant.tsx`:
+   - `structure`, `dimensions`, `limits` (`dimensionLimits` của cấu trúc);
+   - `report` (`displayReport`), `readOnly`;
+   - `onApplyDimensions(dims)`, `onAutoFix()`, `onOpenFitCheck()`.
+   - Bỏ `onSwitchTab` nếu studio không còn tab 2D/3D tương ứng.
+3. Hành vi theo skill `ai-packaging-copilot`.
+   - **Watchdog**: khi `report` có vi phạm **mới** (so `id` với lần trước, chờ 600 ms sau thay đổi cuối), viên tự mở
+     ra, dáng và nút theo mã:
+
+     | Mã | Dáng | Nút |
+     |---|---|---|
+     | `CREASE_OVERLAP`, `CUT_OVERLAP` | `measuring` | "1-Click: Thụt lề an toàn +3mm" (`onAutoFix`) |
+     | `TEXT_OVERFLOW` | `measuring` | "Nới khung chữ" (`onAutoFix`) |
+     | `BLEED_INSUFFICIENT` | `folding` | "Kéo hoa văn tràn 2 mm" (`onAutoFix`) |
+     | `GLUE_CONTAMINATED` | `measuring` | "Dời khỏi tai dán" (`onAutoFix`) |
+     | `LOW_DPI` | `presenting` | Không có nút sửa, chỉ lời khuyên dùng SVG hoặc ảnh nét hơn |
+     | `NO_PANEL`, `DIMENSION_OUT_OF_BOUNDS` | `presenting` | "Mở FitCheck" (`onOpenFitCheck`) |
+
+   - Điểm lên 100 thì dáng `celebration` một lần.
+   - Người dùng đóng một vi phạm thì không nhắc lại cùng `id` đó.
+   - Chế độ chỉ đọc (dự án trong thùng rác): ẩn viên.
+   - **Gợi ý kích thước**: chỉ hiện quà mẫu có `structure` trùng cấu trúc của dự án, vì cấu trúc không đổi được sau khi
+     tạo. "Áp dụng" = `clampDimension` theo `limits` và giữ `paperThickness` hiện tại. Ô hỏi đáp chỉ tra bảng quà mẫu
+     tại chỗ. Câu chữ không nói "AI" nếu không gọi API.
+   - Âm thanh qua `tactileAudio` (skill `tactile-haptic-audio`), tôn trọng nút tắt tiếng. Chuyển động bằng Anime.js.
+4. `fe/src/views/editor/studio/StudioWorkspace.tsx`: gắn Copilot ở bước 3 (canvas). Bước 2 và 4 đã có Gói riêng.
+   - Nối `onAutoFix` với `handleAutoFix` (có `measure` của 10.2).
+   - Nối `onApplyDimensions` với `setDimensions`.
+   - Nối `onOpenFitCheck` với chỗ mở `FitCheckDrawer`.
+   - Chế độ demo (`/editor/demo`) cũng gắn, vì Copilot không gọi API.
+5. Vị trí: `fixed`, góc dưới phải. Không được che dock công cụ, bottom sheet, nút "Lưu" của studio trên điện thoại. Nằm
+   dưới `StudioDialog` và toast (kiểm `z-index`). Vùng bấm ≥ 44 px.
+6. Kiểm:
+   - Thêm route G7 vào `fe/scripts/page-shots.routes.json`: dự án fixture có chữ ở `x = 0`, thao tác chờ Copilot mở.
+   - Chụp M, T, X+, W: 0 lỗi `overlap` / `covered`.
+   - Trong pane, bấm "1-Click": điểm lên lại, Copilot sang dáng `celebration`.
+
+*10.7 — Chữ mới theo bộ font đang chọn (T6)*
+
+1. `fe/src/features/studio/components/canvas/DielineCanvas2D.tsx`:
+   - Thêm prop `newTextFontFamily?: string`.
+   - `handleAddText` dùng font này. Nếu không có prop thì dùng `NEW_TEXT_STYLE` như cũ.
+   - `NEW_TEXT_FONTS` (font tải sẵn cho `useBoxFonts`) lấy theo prop.
+2. `StudioWorkspace.tsx`:
+   - Giá trị đầu của `selectedFont`: thẻ trong `CURATED_FONT_PRESETS` có `printFontOf(fontFamilyHeading)` trùng font của
+     phần tử `text` đầu tiên trong dự án.
+   - Dự án chưa có chữ: thẻ Cormorant Garamond, khớp với chữ mới mặc định.
+   - Truyền `selectedFont.fontFamilyHeading` cho canvas.
+3. Kiểm trong pane:
+   - Chọn thẻ Playfair, rồi "Chèn Vào Mặt Hộp": `style.fontFamily` của chữ mới là Playfair (đọc qua API sau khi lưu).
+   - F5: thẻ Playfair vẫn đang chọn.
+   - Xuất PDF: chữ dùng Playfair (lớp `Artwork`).
+
+*10.8 — Kiểm lỗi upload, giới hạn mốc, hết lượt AI trên trình duyệt (T7)*
+
+Thêm các bước 16–20 vào `fe/scripts/e2e-scenario.mjs` (chạy bằng `--steps=16-20`; bước 4 tạo dự án dùng chung). Thêm
+helper `page.mockApi(urlPattern, method, { status, body, headers })` dùng `Fetch.enable` / `Fetch.fulfillRequest` của CDP.
+Lý do: một số lỗi không dựng được bằng dữ liệu thật ở local.
+
+| Bước | Tình huống | Cách dựng | Kết quả mong đợi |
+|---|---|---|---|
+| 16 | `413` | (a) Ảnh đại diện PNG 3 MB ở `/dashboard/profile`: `UPLOAD_RULES.AVATAR` (2 MB, `features/dashboard/upload.ts`) chặn ngay ở trình duyệt, không gửi request. (b) Phía backend: `mockApi` cho request xin URL upload của `/api/storage` trả `413`, rồi chọn một ảnh hợp lệ. Lý do: client luôn chặn trước nên giao diện không bao giờ nhận `413` thật | (a) Báo quá 2 MB, không có request `/api/storage`; (b) toast "Tệp quá lớn so với giới hạn cho phép." |
+| 17 | `403` hết dung lượng | Ghi thẳng DB (Prisma, như `ui-fixtures.mjs`) một dòng `stored_files` đã xác nhận, kích thước = hạn mức gói FREE (100 MB), rồi upload logo ở Brand Kit. Xoá dòng đó khi xong, kể cả khi bước lỗi | Toast "hết dung lượng" |
+| 18 | `FILE_NOT_OWNED` | `mockApi` cho lệnh `PATCH /api/projects/<id>` trả `400 { code: "FILE_NOT_OWNED" }`, rồi sửa canvas để autosave chạy. Phía backend đã có e2e `projects` | Studio báo "Chỉ dùng được ảnh do bạn tải lên.", không mất thay đổi đang chờ |
+| 19 | `409` đủ 50 mốc | Tạo 50 mốc thủ công qua API (`POST /projects/:id/snapshots`), rồi bấm "Lưu mốc" trong hộp thoại | Hộp thoại báo đã đủ 50 mốc và gợi ý xoá mốc cũ |
+| 20 | `429` hết lượt AI | `mockApi` cho `POST /api/ai/pattern` trả `429` (có `Retry-After`). Local không bật AI nên không có `429` thật; backend dùng bộ sinh procedural không giới hạn | `AiPatternPanel` báo hết lượt, không treo nút |
+
+Chạy ở M và X+. Ghi kết quả vào §7 thành một bảng mới. Bước nào làm lộ lỗi code thì sửa ngay trong S12.
+
+*10.9 — Ô "Tình trạng hệ thống" (T8, D11)*
+
+1. Tạo `fe/src/features/admin/health/SystemHealthCard.tsx` và export qua `features/admin/index.ts`.
+   - Dữ liệu: `useQuery({ queryKey: queryKeys.admin.health, queryFn: getHealthDetails, refetchInterval: 30_000 })`, chỉ
+     bật khi `useAuth().user?.role === "ADMIN"`.
+   - Hiện chấm xanh / đỏ cho `database`, `redis`, `worker`.
+   - Hàng đợi xuất file: `waiting`, `active`, `failed`.
+   - `uptime` dạng "3 ngày 4 giờ".
+   - Lỗi (vd. `503` khi DB tắt): một dòng "Không đọc được tình trạng" kèm nút thử lại.
+2. Gắn vào `fe/src/components/layout/AdminSidebarNav.tsx`, đầu sidebar (cả bản desktop lẫn drawer mobile). Mọi trang
+   `/admin/*` dùng chung sidebar này, nên **không sửa file Stitch generated**. Khách và người không phải ADMIN không thấy
+   ô này; các trang admin tĩnh vẫn giữ nguyên (D6).
+3. Kiểm:
+   - Shots `/admin` với vai trò ADMIN ở M, L, X+, W: ô không làm sidebar tràn hay cuộn ngang.
+   - Tắt worker: chấm `worker` chuyển đỏ trong ≤ 30 giây.
+   - Khách mở `/admin`: không có request `/health/details`.
+
+*10.10 — Nhãn "Công thức cũ" trên thẻ dự án (T9, D11)*
+
+1. BE `be/src/projects/infrastructure/project.select.ts`:
+   - `summarySelect` thêm `formulaVersion: true`; `template` thêm `formulaVersion`.
+   - `toSummary` trả thêm `formulaVersion` và `latestFormulaVersion`, giữ `template: { id, name }` như cũ (giống
+     `toDetail`).
+   - Trước khi sửa, grep mọi chỗ dùng `summarySelect` / `toSummary`: danh sách dự án, dashboard, thư mục, trang công
+     khai nếu có. Response công khai không được lộ thêm gì ngoài 2 số này.
+2. Cập nhật kiểu `ProjectSummary` ở `be/src/projects/domain/project.types.ts`, DTO Swagger nếu có, và
+   `fe/src/types/api/index.ts`.
+3. FE `fe/src/features/dashboard/components/ProjectCard.tsx` và `RecentProjectCard.tsx`: nhãn nhỏ "Công thức cũ" khi
+   `formulaVersion < latestFormulaVersion` và dự án không ở thùng rác.
+   - `title`: "Mở dự án để cập nhật lên công thức bản N".
+   - Màu theo token cảnh báo của `wrapfit-design-system`.
+4. Test:
+   - e2e `projects`: danh sách trả 2 trường mới.
+   - Shots `/dashboard`, `/dashboard/projects` (fixture S10 có dự án bản cũ, `ui-fixtures.mjs`) ở M, L, X, W: nhãn không
+     làm tên dự án tràn.
+5. docs/06 §5.1 và §14: ghi 2 trường mới.
+
+*10.11 — Lỗi giao diện P3 của docs/13 (T10)*
+
+| Mục | Xử lý trong S12 |
+|---|---|
+| P3-2 | **Sửa**: thanh tab cuộn ngang có mép mờ (`mask-image`) ở phía còn tab. Bật / tắt theo vị trí cuộn bằng một hook dùng chung, vd. `useScrollEdges` trong `fe/src/hooks/`. Áp cho `DashboardHeaderNav`, thanh tab `/admin/accounts`, tab trạng thái `/dashboard/projects` |
+| P3-6 | **Sửa**: ở đúng 1280 px thu khoảng cách / padding tab của `DashboardHeaderNav` (chỉ ở `xl`, không đụng `2xl`) cho đủ 8 tab. Kiểm 1280, 1366, 1440 |
+| P3-4 | Không sửa: tên bị cắt có `title`, lưới 4 cột ở 1024 px là chủ đích |
+| P3-1 | Không sửa trong S12: cần kiểm trên điện thoại thật (người dùng mở `/intro/blueprint`, `/intro/minimal` trên iOS / Android và báo lại) |
+| P3-3, P3-5 | Sau MVP: màn tĩnh theo D6 (`/pricing`, admin tĩnh); sửa sẽ đụng file generated đã khoá |
+
+Ghi cột "Phiên sửa" cho từng mục trong docs/13 §5. Chạy lại
+`npm --workspace=fe run shots -- --routes --group=G1,G3,G4 --table` sau khi sửa: 0 ô trượt mới.
+
+*10.12 — Chuẩn bị kiểm file in bằng tay (T11)*
+
+1. Agent làm:
+   - Dùng 4 dự án fixture (4 cấu trúc, bản 3).
+   - Chọn kích thước nhỏ để phôi vừa A4 khi in 1 : 1, vd. nắp gài 50 × 30 × 40.
+   - Xuất PDF / SVG / DXF bằng worker. Tải file về `.agents/print-check/` (git bỏ qua).
+2. Thêm mục "Kiểm thủ công" vào docs/14, dạng checklist cho người dùng tự điền:
+   - Illustrator / Inkscape: 4 lớp; lớp `Dimensions` không in; màu pha `CutContour` / `Crease`; Overprint Preview;
+     `TrimBox` / `BleedBox`.
+   - LibreCAD hoặc viewer DXF: mỗi đường cắt là một polyline liền.
+   - In A4 ở tỉ lệ 100 % (tắt "fit to page"), đo một cạnh phôi bằng thước (sai ≤ 0,5 mm).
+   - Cắt, gấp, đo lòng trong L × W × H (sai ≤ 1 mm).
+3. Người dùng tự làm phần mở file và in. Kết quả ghi vào docs/14 ở phiên sau. S12 không chờ việc này.
+
+**Thứ tự trong phiên**: 10.3 → 10.4 → 10.2 → 10.7 → 10.6 (dùng `TEXT_OVERFLOW` và `measure` của 10.2) → 10.10 → 10.9 →
+10.11 → 10.5 (lint chạy trên code đã sửa xong) → 10.8 → 10.12 → 10.1. Commit theo từng nhóm, vd. `fix(auth): …`,
+`feat(fitcheck): …`, `feat(studio): …`, `chore(fe): eslint + CI`, `docs: …`.
+
+**DoD**:
+
+1. FitCheck có `TEXT_OVERFLOW`, editor và server cho cùng điểm với một chữ tràn khung; auto-fix sửa được.
+2. Google tắt thì người dùng về trang đăng nhập có banner, không thấy JSON.
+3. Brand Kit cuộn được mà view không có `<style>`.
+4. `npm --workspace=fe run lint` thoát 0; CI có job `frontend` (`tsc`, lint, build).
+5. Gói Copilot hiện trong studio ở M và X+ không che công cụ; 1-Click sửa được vi phạm.
+6. Chữ mới theo bộ font đang chọn.
+7. Bước 16–20 của `e2e-scenario.mjs` đạt ở M và X+.
+8. Ô tình trạng hệ thống và nhãn "Công thức cũ" chạy đúng.
+9. P3-2, P3-6 đã sửa; các P3 còn lại có phiên sửa hoặc lý do trong docs/13.
+10. docs/14 có checklist kiểm thủ công và file mẫu đã xuất.
+11. Kiểm chung:
+    - `tsc` của `fe`, `be`, `shared` sạch.
+    - Unit BE pass.
+    - e2e BE `auth`, `projects`, `export`, `templates`, `storage` pass.
+    - `next build` pass.
+    - Kịch bản §7 bước 1–14 vẫn đạt ở M và X+ (chạy hồi quy).
+12. Mọi mục T1–T12 có trạng thái trong §9.3.
+
 ## 5. Ma trận sở hữu file
 
 Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ đọc; cần đổi thì báo lại agent chính.
@@ -451,6 +786,7 @@ Agent chỉ sửa file trong cột của mình. File dùng chung (Phase 0) chỉ
 | G — Phase 7 (tuỳ chọn) | Sửa giao diện G4 + G5: như cột B và D, cả phần còn lại của `src/views/home/index.tsx` |
 | H — Phase 8 | `shared/src/{parametric,fitcheck,exporter,core}/**`, `shared/README.md`, `be/src/export/rendering/**`, `be/src/projects/**` (8.10b: endpoint, mốc phiên bản), `be/prisma/{seed-data.ts,seed.ts,schema.prisma,migrations,scripts}/**`, `fe/src/features/studio/components/{three,canvas}/**`, `fe/src/features/studio/utils/**`, `fe/src/features/templates/components/{BoxPreview,DesignThumb}.tsx`, `docs/14_BOX_FORMULA_AUDIT.md` (mới). Cần sửa `StudioWorkspace.tsx`, `Step2DimensionAndMaterial.tsx` (thuộc C) thì làm sau S7 hoặc báo agent chính |
 | I — Phase 9 | `shared/src/print/**` (mới), `be/src/export/rendering/**`, `be/package.json` (font), `fe/src/assets/fonts/**`, `fe/src/features/studio/components/canvas/**`, `fe/src/features/studio/utils/thumbnail.ts`, `fe/src/features/studio/components/export/**`, `docs/06` §7. Trùng file với H (`export/rendering`, `canvas`, `thumbnail`): S11 làm trước S10, S10 dựa trên mô hình chữ của 9.1 |
+| Chính — Phase 10 | Mọi file trong các bước 10.1–10.12. Nếu tách 2 subagent: **J** (BE / shared: 10.2 phần `shared` + `be`, 10.3 phần `be`, 10.10 phần `be`) và **K** (FE: 10.4, 10.6, 10.7, 10.9, 10.11, phần FE của 10.2, 10.3, 10.10). 10.5 (lint, CI), 10.8 (`e2e-scenario.mjs`) và 10.1 (docs) do agent chính làm sau khi J, K xong |
 
 Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện): C chỉ đổi `href`, D chỉ đổi khối
 `<section id="thu-vien-mau">`. Agent chính gộp nếu xung đột.
@@ -458,7 +794,8 @@ Hai agent cùng chạm `views/home/index.tsx` (C: link, D: section thư viện):
 ## 6. Điều phối subagent
 
 Thứ tự phụ thuộc: Phase 0 → (1, 2, 3a, 4, 5 độc lập với nhau) → 3b (sau 3a) → 6. Phase 7 (thêm sau) cần 1, 2, 4, 5
-xong và nên chạy trước 3a; Phase 8 (thêm sau) cần 3a; Phase 6 cần cả 7 và 8. Để vừa hạn mức mỗi lần chạy, các phase
+xong và nên chạy trước 3a; Phase 8 (thêm sau) cần 3a; Phase 6 cần cả 7 và 8; Phase 10 (thêm sau) chạy sau Phase 6. Để
+vừa hạn mức mỗi lần chạy, các phase
 được xếp thành 10 phiên, mỗi phiên
 tối đa 2 subagent song song (§9).
 
@@ -568,6 +905,7 @@ cần để làm tiếp nằm trong file này, `git log` và nhật ký §9.3.
 | **S9** | Phase 7: rà soát giao diện các màn S1–S5, khung chung và màn Stitch tĩnh theo ma trận 6 kích thước; ghi mốc studio cho S6 / S7 | Không cho 7.1–7.5; F, G song song cho 7.6 nếu nhiều lỗi | S5 xong. **Nên chạy trước S6**: S6 / S7 làm trên khung đã sửa và dùng lại script | DoD Phase 7 |
 | **S10** | Phase 8: rà soát và sửa công thức hộp (H1–H11): dieline phiên bản 3, FitCheck đủ quy tắc, file in, 3D / 2D / ảnh xem trước khớp dieline, `docs/14` | Không cho 8.1–8.4 (công thức là gốc, làm tuần tự); 8.5–8.8 có thể 2 agent: H (BE / shared: 8.5, 8.6) và H' (FE: 8.7, 8.8) | S6 xong. Không phụ thuộc S7 (khác file, trừ `StudioWorkspace.tsx`); **phải xong trước S8**. Lớn: tách S10a (8.1–8.4, 8.9), S10b (8.5–8.8, 8.11), S10c (8.10 = D + B đã chốt; phần FE của B làm sau S7) nếu thiếu hạn mức | DoD Phase 8 |
 | **S11** | Phase 9: file in đúng chuẩn xưởng (lớp OCG, màu pha `CutContour` / `Crease`, overprint, `TrimBox`, nét liền) và chữ khớp canvas (font, cỡ pt, xuống dòng, căn, xoay), chữ mới không chồng | Không | S7 xong | DoD Phase 9 |
+| **S12** | Phase 10: hoàn thiện sau rà soát (T1–T12): FitCheck chữ tràn khung, nút Google, Brand Kit `sourcePatches`, ESLint FE + CI, Gói Copilot trong studio, font chữ mới, kiểm lỗi upload / 50 mốc / hết lượt AI, ô tình trạng hệ thống, nhãn "Công thức cũ", P3 docs/13, chuẩn bị kiểm file in bằng tay, tài liệu | Không bắt buộc; có thể J + K song song (§5) | S8 xong. Cần backend + worker + Mailpit cho 10.8, 10.9, 10.12. Lớn (~2 ngày): nếu thiếu hạn mức thì tách **S12a** (10.2, 10.3, 10.4, 10.7, 10.5), **S12b** (10.6, 10.9, 10.10, 10.11), **S12c** (10.8, 10.12, 10.1) và ghi vào nhật ký | DoD Phase 10. Sau S12: merge `feat/fe-be-integration` vào `main` và push (người dùng xác nhận trước), deploy theo be/README.md kèm `db:upgrade-formulas` |
 
 S4, S5, S6 chỉ phụ thuộc S3, nên chạy theo thứ tự nào cũng được. Thứ tự đề xuất cho phần còn lại: S9 → S6 → S7 → S10 → S8 (S10 có thể làm trước S7: S7 kiểm luồng xuất file, S10 kiểm nội dung file). Một phiên quá lớn so với hạn mức còn lại thì tách
 theo từng agent (vd. S4 → S4a Phase 1, S4b Phase 5) và ghi rõ vào nhật ký.
@@ -617,3 +955,4 @@ hoặc khung chung) và xem ảnh trong `fe/.page-shots/`; không đánh giá de
 | S11 | 2026-10-12 | `c5472f5`, `9562720` | **Phase 9 xong** (cùng cuộc trò chuyện với S7, theo yêu cầu người dùng sau khi xem file PDF thử). Plan Phase 9 (P1–P10, việc 9.1–9.7). **Mô hình chữ chung** `shared/src/print/text-layout.ts` (`layoutTextBox`, `printFontOf`, `PRINT_FONTS`, `PT_TO_MM`): cỡ pt, đậm 700, dòng 1,2, xuống dòng theo từ trong khung (từ dài cắt theo ký tự), căn giữa ngang + dọc, xoay quanh tâm; đo bề rộng bằng callback. **BE** (`be/src/export/rendering`): PDF 1.6, 4 lớp OCG `Artwork` / `Crease` / `CutContour` / `Dimensions` (lớp cuối `PrintState /OFF`), màu pha `CutContour` (100 % M) / `Crease` (100 % C) + ExtGState overprint, `TrimBox` = phôi, `BleedBox` = phôi + 2 mm, lớp Dimensions có kích thước từng mảnh + dòng thông tin; nét cắt / gấp nối thành đường liền (`strokesOf` trong `print-layout.ts`, đường cong nối được khi đi xuôi), DXF một `POLYLINE` mỗi đường; ảnh giữ tỉ lệ (`fit`), xoay quanh tâm; SVG cùng 4 lớp (nhãn lớp Inkscape). Font in: 5 gói `@expo-google-fonts/*` bản 700 (thêm 4 gói vào `be/package.json`). **FE**: `assets/fonts/print/` chứa đúng 5 file TTF đó (OFL, README ghi nguồn), nạp bằng `next/font/local` (`preload: false`); `components/canvas/boxText.ts` đo chữ bằng canvas 2D với font thật, `useBoxFonts` vẽ lại khi font tải xong; canvas 2D và thumbnail vẽ chữ theo mô hình chung; "Chèn Vào Mặt Hộp": khung vừa chữ, căn giữa ngang, đặt ở chỗ trống gần giữa mặt nhất, lưu `panelId` thật (trước lưu `"all"` khi đang xem "Toàn Bộ"). Hộp thoại xuất file và docs/06 §7 mô tả đúng file. Kiểm: unit BE 228/228 (+7 test: mô hình chữ, nối nét, lớp, màu pha, overprint, `TrimBox` / `BleedBox`, font theo phần tử, ảnh `meet`, DXF polyline), e2e `export` 8/8, `tsc` FE + BE sạch, G7 36 / 36 `ok`. Xuất thật bằng worker (nắp gài 120 × 80 × 60, chữ thêm bằng giao diện): PDF có catalog `OCProperties`, 2 `Separation`, overprint, `TrimBox [56.693 56.693 1233.071 782.362]`, 1 đường cắt khép kín 28 đỉnh, nhúng `CormorantGaramond-Bold`; chữ đặt đúng tọa độ của canvas; SVG / DXF tương ứng. Dữ liệu thử đã xoá | **Giới hạn còn lại**: (1) thumbnail là SVG vẽ thành ảnh nên không dùng được web font của trang: ngắt dòng đúng nhưng hình chữ là font hệ thống; (2) SVG xuất ra chỉ ghi tên font (máy mở file cần cài font), PDF mới nhúng font; (3) đường cong chỉ nối được khi đi xuôi chiều, DXF vẫn thay đường cong bằng dây cung (8.6); (4) chữ mới luôn dùng Cormorant Garamond, chưa theo bộ font đang chọn ở tab "Màu & Font" (bấm bộ font thì mọi chữ đổi theo, như trước); (5) chữ hiện **nhỏ hơn trước ~16 %** trên canvas vì giờ đúng pt như file in, dự án cũ không bị đổi dữ liệu. **Lưu ý kiểm thử**: đừng chạy `node be/dist/worker.js` của DB dev trong lúc chạy e2e `export`: worker đó lấy mất job của e2e trên cùng hàng đợi Redis (5 ca lỗi `404` giả). **Cho S10**: bù độ dày giấy, nét cắt của gối / âm dương / bao diêm, đường cong DXF vẫn thuộc Phase 8; dùng `layoutTextBox` khi vẽ chữ ở 3D (8.7). File PDF cũ người dùng tải ở S7 (`s7-thu-nghiem-pdf-cmyk.pdf`, gốc repo, không commit) có thể xoá. Phiên sau: S10 |
 | S10 | 2026-10-12 | `cf6a8d1`, `3127271`, `25e2a21`, `d060b70`, `2ef2180` | **Phase 8 xong** (agent chính, không dùng subagent; S10a + S10b + S10c trong một phiên). Kết quả chi tiết, ảnh, bảng: `docs/14_BOX_FORMULA_AUDIT.md`. **Công thức bản 3** (`CURRENT_FORMULA_VERSION = 3`, seed gán cho 4 box template): L × W × H là lòng trong, mọi công thức cộng bù `t` (nét gấp giữa bề dày giấy: D + t; thành H + t/2; tai dán trong thành +2t; nắp / vỏ = mặt ngoài + 1 mm); gối, âm dương, bao diêm có nét cắt khép kín; khay một tờ (`tray.ts`) có tai dán 4 góc; vỏ bao diêm quấn quanh W × H (khay rút theo L); mặt hộp gối rộng đúng một cung (`pillowShapeOf`); bản 1, 2 đóng băng ở `*.v1.ts`, `tuck-top.v2.ts`; `FORMULA_CHANGES` tóm tắt từng bản. Mỗi mặt có bản lề `PanelFace.fold`, `fold.ts` gấp phôi thành 3D (`panelTransforms`, `boxFrameOf`, `foldedSize`); `segmentPoints` lấy điểm trên đường cong (DXF). **FitCheck** một hàm `checkBox` cho editor + server: khung xoay, `CUT_OVERLAP` / `CREASE_OVERLAP`, bleed 2 mm cho hoa văn, `GLUE_CONTAMINATED` (`glueAreas`), `NO_PANEL`, phôi > B1; `autoFixElements` mọi mép; hoa văn AI phủ mặt + tràn ở mép cắt; quy tắc tỉ lệ `dimensionRuleErrors` (hộp gối H ≤ W/2, API 400); `caliperOf` = GSM × 0,0014 cho mọi bảng giấy và mặc định (0,42 mm). **3D** dựng từ phôi (`three/boxModel.ts`), mỗi mặt một texture với phần tử của mặt đó (ảnh hiện cả ở trang công khai); thumbnail vẽ mọi mảnh; khổ phôi, số nếp gấp, kích thước mặt đọc từ phôi; canvas 2D sửa lệch đường cong (H5), đánh dấu theo FitCheck, không vẽ phần tử của mảnh kia. Xoá `exporter/pdf-export.ts`, `FoldingBox3D.tsx`; `core/contracts.ts` ghi rõ là phác thảo. **8.10 (D + B)**: cột `project_snapshots.formula_version` (migration `20261012000100`), khôi phục mốc đặt lại phiên bản; `POST /projects/:id/formula-upgrade` + `latestFormulaVersion`; banner, hộp thoại, Hoàn tác trong studio; script `npm --workspace=be run db:upgrade-formulas -- [--dry-run] [--project=<id>]` (đã chạy ở local: 2 dự án 1 → 3). Kiểm: unit BE 311/311, e2e 153/153, `tsc` FE + BE sạch, `next build` pass (bản sao tạm trong `.agents/`, đã xoá); xuất thật PDF / SVG / DXF 4 cấu trúc bằng worker, đọc lại file (mỗi mảnh 1 đường cắt khép kín); 3D 4 cấu trúc đóng / mở chụp bằng Chrome headless; G7 40 / 40 ô `ok` (thêm `g7-studio-formula-banner`, `g7-studio-formula-dialog`). Dữ liệu thử đã xoá; fixture S9 được tạo lại (có `oldFormula` ở bản 1) | **Giả định / quyết định mới**: (1) quy ước gấp: trục z của tờ phôi hướng về mặt không in, mọi nếp gấp gấp về phía đó; (2) chữ in theo hướng phôi, nên trên hộp thật và 3D chữ ở thành sau khay, nắp trên hộp nắp gài, mặt hông trái vỏ bao diêm nằm ngược khi nhìn từ trước (đúng như gấp tờ in); bản 3 đặt vách trước nắp âm dương dưới mặt nắp và cho mặt hông phải vỏ bao diêm quay ra trước để mặt chính đọc xuôi; (3) dự án bản 1–2 xem 3D bằng công thức hiện tại (id mặt như nhau); (4) điểm FitCheck đã lưu chỉ tính lại khi lưu / khôi phục / cập nhật công thức (xuất file luôn kiểm theo quy tắc mới); (5) `ui-fixtures.mjs` ghi thẳng DB (Prisma của backend) để có dự án bản cũ. **Chưa làm**: mở file in bằng Illustrator / Inkscape / viewer DXF, in thử 1 : 1 và gấp tay; FitCheck chưa kiểm chữ tràn khung (cần số đo font); nhãn "Công thức cũ" trên thẻ dashboard (tuỳ chọn, `ProjectSummary` chưa có `formulaVersion`); `AiCopilotAssistant` không màn nào dùng. **Deploy**: sau khi lên server, chạy `db:upgrade-formulas` theo be/README.md. Phiên sau: S8 |
 | S8 | 2026-10-12 | `db6e189`, `f7b0eba` | **Phase 6 xong**, không dùng subagent. (1) `npm run build`: shared, be, fe pass (fe trong bản sao tạm vì `next dev` đang chạy). (2) `stitch:parity`: 20 / 22 màn `converted` khớp cột "Sau S9" của docs/13 §2.3 (chênh ≤ 0,1 điểm %), `/intro/blueprint` và `/` dao động như cũ; `visual-parity.mjs` bỏ qua route có redirect trong `next.config.mjs` (`/editor`, `/editor/export` từng đo 13–52 % vì chụp trang đích). (3) Kịch bản §7: script mới `fe/scripts/e2e-scenario.mjs` (CDP, nhiều tab, context riêng như cửa sổ ẩn danh, đọc Mailpit, chờ nút đứng yên và không bị che rồi mới bấm, ảnh khi bước lỗi); 15 / 15 bước đạt ở M và X+, bảng kết quả ở §7. (4) `/code-review` cả nhánh (5 phát hiện): toast che bottom sheet trên điện thoại → toast nằm dưới header dưới `md` (`ToastProvider`); autosave lúc rời editor lỗi tạm thời thì mất thay đổi → thử lại tối đa 4 lần (`useProjectSync`); `db:upgrade-formulas` không giới hạn mốc tự động như API → `pruneAutomaticSnapshots`; parity so route chuyển hướng (đã nêu). (5) Docs: `06` §13 đánh dấu đã sửa (cột "Sửa ở"), `04_PROGRESS`, `fe/README.md` (chạy cùng backend, bảng script kiểm thử), `11` (mốc S8, việc còn lại). Kiểm: `tsc` FE + BE sạch, unit BE 311/311 | **Còn lại / ghi chú**: (1) bước 7 đưa chữ ra mép bằng API, chưa kéo trên canvas bằng script; (2) chạy kịch bản hai kích thước liền nhau cần nghỉ ~1 phút, không thì gặp `429` (100 request / phút / IP qua proxy, R7); (3) đừng chạy `npm --workspace=be run build` khi `nest start --watch` đang chạy: build xoá `be/dist`, API dừng (gặp ở phiên này, đã chạy lại API từ `dist`); (4) dữ liệu thử của kịch bản tự xoá; fixture S9 vẫn còn. **Kế hoạch docs/12 đã xong hết các phiên.** Việc tiếp theo (ngoài kế hoạch): merge `feat/fe-be-integration` vào `main`, deploy theo be/README.md (kèm `db:upgrade-formulas`), in thử 1 : 1 |
+| Plan (bổ sung Phase 10) | 2026-10-12 | — | Rà soát toàn bộ plan sau S8: `tsc` fe / be / shared sạch, unit BE 311/311, lint BE pass; mọi phiên đã commit nhưng còn 12 tồn đọng (T1–T12). Thêm Phase 10 và phiên S12; người dùng chốt D9 (Gói Copilot gắn vào studio), D10 (nhạc nền mở hộp bỏ khỏi phạm vi), D11 (làm cả ô tình trạng hệ thống và nhãn "Công thức cũ") | Chưa merge: nhánh hơn `main` 63 commit, chưa push. `origin/main` có 3 commit merge không đổi nội dung, merge sẽ không xung đột. Phiên sau: S12 (đọc Phase 10 ở §4) |
