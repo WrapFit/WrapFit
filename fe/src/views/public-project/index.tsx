@@ -1,39 +1,42 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronRight, Eye, GitFork, Heart, Link2, Lock } from "lucide-react";
+import { Box, Check, Eye, GitFork, Heart, Info, Link2, Lock, Ruler } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { forkPublicProject, getPublicProject, likePublicProject, unlikePublicProject } from "@/api/public";
+import { landingFontVariables } from "@/assets/fonts/landing";
 import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
-import { EmptyState, ErrorState, PageLoader, PRIMARY_BUTTON } from "@/components/common/StatusViews";
+import { EmptyState, ErrorState, PageLoader } from "@/components/common/StatusViews";
 import { useToast } from "@/components/common/Toast";
 import { MainFooter, MainHeader } from "@/components/layout";
+import { LibraryCard, outlineButton, primaryButton } from "@/components/library";
 import { ROUTES } from "@/constants";
 import { loginUrl, useAuth } from "@/features/auth";
 import { BoxStage3D, isShareSlug } from "@/features/showcase";
 import {
   AuthorAvatar,
+  DielineSketch,
+  INDUSTRY_LABELS,
+  OCCASION_LABELS,
   authorName,
   formatCount,
   formatDimensions,
   formatMaterial,
-  TagChips,
+  useCommunityTemplates,
 } from "@/features/templates";
 import { queryKeys } from "@/hooks/data";
 import { isApiError } from "@/services/api";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import type { PublicProject } from "@/types/api";
+import { cn } from "@/utils/helpers";
 
 interface PublicProjectViewProps {
   slug: string;
   /** Read by the server for the metadata (`features/showcase/server`); absent when that request failed. */
   initialProject?: PublicProject;
 }
-
-const SECONDARY_BUTTON =
-  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-stone-200 bg-white px-5 text-sm font-semibold text-stone-800 transition hover:border-brand-forest/40 active:scale-95 disabled:cursor-wait disabled:opacity-60";
 
 // dd/mm/yyyy in Vietnam time: the same text on the server and in the browser (no hydration mismatch).
 const dateFormat = new Intl.DateTimeFormat("vi-VN", {
@@ -43,13 +46,16 @@ const dateFormat = new Intl.DateTimeFormat("vi-VN", {
   timeZone: "Asia/Ho_Chi_Minh",
 });
 
-/** `/p/[slug]`: a shared design in 3D, its author, likes and remix. Readable without an account. */
+/**
+ * `/p/[slug]`: a shared design in 3D, its author, likes and remix. Readable without an account. Laid out after
+ * pacdora.com's mockup viewer: a grey workspace with the box in 3D, a side panel, a fold slider and the actions on top.
+ */
 export default function PublicProjectView({ slug, initialProject }: PublicProjectViewProps) {
   return (
     <>
       <MainHeader />
       {/* Bottom padding clears the floating mobile navigation bar. */}
-      <main className="min-h-screen bg-paper-ivory pb-28 pt-24 font-sans text-stone-800 md:pb-16">
+      <main className={`${landingFontVariables} min-h-screen bg-white pb-28 pt-[5.5rem] font-landing-heading text-library-text md:pb-0`}>
         <PublicProjectContent slug={slug} initialProject={initialProject} />
       </main>
       <MainFooter compact />
@@ -79,12 +85,7 @@ function PublicProjectContent({ slug, initialProject }: PublicProjectViewProps) 
   if (project.isError && !project.data) {
     return (
       <div className="px-4 py-16">
-        <ErrorState
-          error={project.error}
-          title="Chưa tải được thiết kế"
-          onRetry={() => void project.refetch()}
-          retrying={project.isFetching}
-        />
+        <ErrorState error={project.error} title="Chưa tải được thiết kế" onRetry={() => void project.refetch()} retrying={project.isFetching} />
       </div>
     );
   }
@@ -92,18 +93,27 @@ function PublicProjectContent({ slug, initialProject }: PublicProjectViewProps) 
 
   // The like button waits until we know whether this visitor already liked the design (a failed check leaves the
   // server's answer: liking is idempotent anyway).
-  const viewerKnown =
-    auth.status === "anonymous" || auth.status === "error" || project.dataUpdatedAt > 0 || project.isError;
-  return <ProjectDetail slug={slug} project={project.data} viewerKnown={viewerKnown} />;
+  const viewerKnown = auth.status === "anonymous" || auth.status === "error" || project.dataUpdatedAt > 0 || project.isError;
+  return (
+    <>
+      <ProjectWorkspace slug={slug} project={project.data} viewerKnown={viewerKnown} />
+      <RelatedDesigns project={project.data} />
+    </>
+  );
 }
 
-function ProjectDetail({ slug, project, viewerKnown }: { slug: string; project: PublicProject; viewerKnown: boolean }) {
+type PanelTab = "info" | "dieline";
+
+function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; project: PublicProject; viewerKnown: boolean }) {
   const auth = useAuth();
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [pose, setPose] = useState<MascotPose>("presenting");
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState<PanelTab>("info");
+  const [fold, setFold] = useState(1);
+  const [open, setOpen] = useState(false);
   const timers = useRef<number[]>([]);
   const key = queryKeys.public.project(slug);
   const here = ROUTES.publicProject(slug);
@@ -133,7 +143,7 @@ function ProjectDetail({ slug, project, viewerKnown }: { slug: string; project: 
     },
     onSuccess: (state) => {
       queryClient.setQueryData<PublicProject>(key, (current) =>
-        current && { ...current, likesCount: state.likesCount, viewer: { ...current.viewer, liked: state.liked } },
+        current && { ...current, likesCount: state.likesCount, viewer: { ...current.viewer, liked: state.liked } }
       );
       if (state.liked) celebrate();
     },
@@ -188,190 +198,323 @@ function ProjectDetail({ slug, project, viewerKnown }: { slug: string; project: 
     }
   };
 
-  const { liked, isOwner } = project.viewer;
+  const { liked } = project.viewer;
+  const toggleLike = () => {
+    // One request at a time, so answers cannot arrive out of order.
+    if (like.isPending || requireAccount()) return;
+    tactileAudio.playSquishyTap();
+    like.mutate(!liked);
+  };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-      <nav aria-label="Vị trí" className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-stone-500">
-        <Link href={ROUTES.templates} className="inline-flex min-h-[44px] items-center hover:text-brand-forest">
-          Thư viện mẫu
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-        <span className="min-w-0 truncate text-stone-700">{project.title}</span>
-      </nav>
-
-      <div className="mt-2 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
-        <BoxStage3D
-          structure={project.template.id}
-          dimensions={project.dimensions}
-          materialSpec={project.materialSpec}
-          canvasState={project.canvasState}
-          title={project.title}
-          className="h-[460px] sm:h-[560px]"
-        />
-
-        <section
-          aria-labelledby="project-title"
-          className="relative rounded-3xl border border-stone-200/80 bg-white/85 p-6 shadow-tactile backdrop-blur-md sm:p-8 lg:sticky lg:top-28"
-        >
-          <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
-            <GoiMascot pose={pose} size={60} showPhotoBadge={false} label="Gói, trợ lý đóng gói của WrapFit" />
-          </div>
-
-          <p className="flex flex-wrap items-center gap-2 pr-16 font-mono text-[11px] font-semibold uppercase tracking-wider text-stone-500">
-            <span>{project.template.name}</span>
-            {project.visibility === "UNLISTED" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 normal-case tracking-normal text-stone-600">
-                <Lock className="h-3 w-3" aria-hidden />
-                Chỉ ai có liên kết
-              </span>
-            )}
-          </p>
-          <h1
-            id="project-title"
-            className="mt-2 pr-16 font-serif text-[30px] leading-[1.1] tracking-tight text-stone-900 sm:text-[38px]"
-          >
+    <section aria-labelledby="project-title" className="border-y border-library-line">
+      {/* Top bar: where we are, and the actions on the right */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white px-4 py-3 sm:px-5">
+        <nav aria-label="Vị trí" className="flex min-w-0 items-center gap-2 text-sm">
+          <Link href={ROUTES.templates} className="shrink-0 text-library-ink hover:underline">
+            Thư viện mẫu
+          </Link>
+          <span className="text-library-muted">/</span>
+          <span className="truncate text-library-muted" title={project.title}>
             {project.title}
-          </h1>
-
-          <div className="mt-4 flex items-center gap-3">
-            <AuthorAvatar author={project.author} size="md" />
-            <div className="min-w-0 text-sm">
-              <p className="truncate font-semibold text-stone-900">{authorName(project.author)}</p>
-              {project.author.shopName && project.author.fullName && (
-                <p className="truncate text-stone-500">{project.author.fullName}</p>
-              )}
-            </div>
-          </div>
-
-          {project.forkedFrom && (
-            <p className="mt-3 flex items-start gap-1.5 text-sm text-stone-600">
-              <GitFork className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden />
-              <span>
-                Remix từ{" "}
-                <Link
-                  href={ROUTES.publicProject(project.forkedFrom.slug)}
-                  className="font-semibold text-brand-forest underline-offset-4 hover:underline"
-                >
-                  {project.forkedFrom.title}
-                </Link>{" "}
-                của {authorName(project.forkedFrom.author)}
-              </span>
-            </p>
-          )}
-
-          <dl className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-xs text-stone-500">
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Lượt xem</dt>
-              <Eye className="h-4 w-4" aria-hidden />
-              <dd>{formatCount(project.viewsCount)} lượt xem</dd>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Lượt thích</dt>
-              <Heart className="h-4 w-4 text-vibrant-coral" aria-hidden />
-              <dd>{formatCount(project.likesCount)} lượt thích</dd>
-            </div>
-            <div>
-              <dt className="sr-only">Ngày tạo</dt>
-              <dd>
-                <time dateTime={project.createdAt}>{dateFormat.format(new Date(project.createdAt))}</time>
-              </dd>
-            </div>
-          </dl>
-
-          <div className="mt-6 flex flex-wrap gap-3">
+          </span>
+        </nav>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            aria-pressed={liked}
+            aria-busy={!viewerKnown || like.isPending}
+            disabled={!viewerKnown}
+            onClick={toggleLike}
+            className={cn(outlineButton, liked && "border-[#E53E3E] text-[#C53030]")}
+          >
+            <Heart className={cn("size-4", liked && "fill-[#E53E3E] text-[#E53E3E]")} aria-hidden />
+            {liked ? "Đã thích" : "Thả tim"}
+            <span className="text-sm text-library-muted">{formatCount(project.likesCount)}</span>
+          </button>
+          <span className="hidden h-6 w-px bg-library-line sm:block" aria-hidden />
+          <button type="button" onClick={() => void copyLink()} className={cn(outlineButton, "w-10 px-0")} aria-label={copied ? "Đã sao chép liên kết" : "Sao chép liên kết"} title="Sao chép liên kết">
+            {copied ? <Check className="size-4 text-library-accent" aria-hidden /> : <Link2 className="size-4" aria-hidden />}
+          </button>
+          {project.allowFork && (
             <button
               type="button"
-              aria-pressed={liked}
-              aria-busy={!viewerKnown || like.isPending}
-              disabled={!viewerKnown}
+              disabled={fork.isPending || auth.status === "loading"}
               onClick={() => {
-                // One request at a time, so answers cannot arrive out of order.
-                if (like.isPending || requireAccount()) return;
-                tactileAudio.playSquishyTap();
-                like.mutate(!liked);
+                if (requireAccount()) return;
+                fork.mutate();
               }}
-              className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border px-5 text-sm font-semibold transition active:scale-95 disabled:cursor-wait disabled:opacity-60 ${
-                liked
-                  ? "border-vibrant-coral/50 bg-vibrant-coral/10 text-vibrant-coral-dark"
-                  : "border-stone-200 bg-white text-stone-800 hover:border-vibrant-coral/50"
-              }`}
+              className={primaryButton}
             >
-              <Heart className={`h-4 w-4 ${liked ? "fill-vibrant-coral text-vibrant-coral" : ""}`} aria-hidden />
-              {liked ? "Đã thích" : "Thả tim"}
-              <span className="font-mono text-xs opacity-70">{formatCount(project.likesCount)}</span>
+              <GitFork className="size-4" aria-hidden />
+              {fork.isPending ? "Đang tạo bản remix…" : "Remix thiết kế này"}
             </button>
+          )}
+        </div>
+      </div>
+      <span className="sr-only" aria-live="polite">
+        {copied ? "Đã sao chép liên kết" : ""}
+      </span>
 
-            {project.allowFork && (
-              <button
-                type="button"
-                disabled={fork.isPending || auth.status === "loading"}
-                onClick={() => {
-                  if (requireAccount()) return;
-                  fork.mutate();
-                }}
-                className={`${PRIMARY_BUTTON} disabled:cursor-wait disabled:opacity-60`}
-              >
-                <GitFork className="h-4 w-4" aria-hidden />
-                {fork.isPending ? "Đang tạo bản remix…" : "Remix thiết kế này"}
-              </button>
-            )}
+      {/* Workspace: grey surface, 3D stage, side panel, fold toolbar */}
+      <div className="relative flex flex-col bg-gradient-to-b from-[#E9E9E9] to-library-canvas lg:h-[calc(100vh-9.5rem)] lg:min-h-[640px] lg:flex-row">
+        <div className="relative z-10 flex gap-2 p-4 lg:p-5">
+          <Rail tab={tab} onTab={setTab} pose={pose} />
+          <aside className="min-w-0 flex-1 rounded-2xl bg-white px-4 py-5 shadow-panel lg:w-[320px] lg:flex-none lg:overflow-y-auto">
+            {tab === "info" ? <InfoPanel project={project} /> : <DielinePanel project={project} />}
+          </aside>
+        </div>
 
-            <button type="button" onClick={() => void copyLink()} className={SECONDARY_BUTTON}>
-              {copied ? <Check className="h-4 w-4 text-brand-forest" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
-              <span aria-live="polite">{copied ? "Đã sao chép" : "Sao chép liên kết"}</span>
-            </button>
+        <div className="relative h-[420px] sm:h-[520px] lg:h-auto lg:flex-1">
+          {/* The stage fills its column, whose height the workspace sets on large screens: hence the absolute frame. */}
+          <div className="absolute inset-0">
+            <BoxStage3D
+              structure={project.template.id}
+              dimensions={project.dimensions}
+              materialSpec={project.materialSpec}
+              canvasState={project.canvasState}
+              title={project.title}
+              open={open}
+              foldProgress={fold}
+              environment="transparent"
+              frameless
+              className="h-full"
+            />
           </div>
 
-          {!project.allowFork && (
-            <p className="mt-3 text-xs text-stone-500">Tác giả chưa bật remix cho thiết kế này.</p>
-          )}
-          {auth.status === "anonymous" && (
-            <p className="mt-3 text-xs text-stone-500">
-              {project.allowFork
-                ? "Đăng nhập để thả tim hoặc remix vào dự án của bạn."
-                : "Đăng nhập để thả tim cho thiết kế này."}
-            </p>
-          )}
-          {isOwner && (
-            <p className="mt-4 rounded-2xl border border-brand-forest/15 bg-brand-forest/5 px-4 py-3 text-sm text-brand-forest">
-              Đây là thiết kế của bạn.{" "}
-              <Link href={ROUTES.projects} className="font-semibold underline-offset-4 hover:underline">
-                Quản lý trong Dự án
-              </Link>
-            </p>
-          )}
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 sm:bottom-6">
+            <div className="flex h-11 items-center gap-3 rounded-full bg-white px-4 text-xs text-[#60656C] shadow-[0_0_4px_rgba(0,0,0,0.1)]">
+              <label htmlFor="fold" className="whitespace-nowrap">
+                Trải phẳng
+              </label>
+              <input
+                id="fold"
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={fold}
+                onChange={(event) => setFold(Number(event.target.value))}
+                className="h-1 w-28 cursor-pointer accent-library-ink sm:w-36"
+                aria-valuetext={`${Math.round(fold * 100)}% đã gập`}
+              />
+              <span className="whitespace-nowrap">Gập kín</span>
+              <span className="h-5 w-px bg-library-line" aria-hidden />
+              <button
+                type="button"
+                aria-pressed={open}
+                onClick={() => setOpen((value) => !value)}
+                disabled={fold < 1}
+                className="inline-flex items-center gap-1.5 whitespace-nowrap font-medium text-library-ink disabled:opacity-40"
+              >
+                <Box className="size-4" aria-hidden />
+                {open ? "Đóng nắp" : "Mở nắp"}
+              </button>
+            </div>
+            <span className="hidden h-11 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-xs text-library-ink shadow-[0_0_4px_rgba(0,0,0,0.1)] md:inline-flex">
+              <Eye className="size-4 text-library-muted" aria-hidden />
+              {formatCount(project.viewsCount)} lượt xem
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-          <dl className="mt-7 grid grid-cols-2 gap-x-4 gap-y-4 border-t border-stone-200/80 pt-6 font-mono text-xs">
-            <Spec label="Kích thước L × W × H">{formatDimensions(project.dimensions)}</Spec>
-            <Spec label="Độ dày giấy">t = {project.dimensions.paperThickness} mm</Spec>
-            <Spec label="Chất liệu" wide>
-              {formatMaterial(project.materialSpec) || "—"}
-            </Spec>
-          </dl>
-
-          <TagChips occasion={project.occasion} industry={project.industry} />
-          {project.tags.length > 0 && (
-            <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Thẻ">
-              {project.tags.map((tag) => (
-                <li key={tag} className="font-mono text-[11px] text-stone-500">
-                  #{tag}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+/** Narrow white column of panel switches, and Gói below it (like Pacdora's AI card). */
+function Rail({ tab, onTab, pose }: { tab: PanelTab; onTab(tab: PanelTab): void; pose: MascotPose }) {
+  const items: { id: PanelTab; label: string; icon: typeof Info }[] = [
+    { id: "info", label: "Chi tiết", icon: Info },
+    { id: "dieline", label: "Khuôn bế", icon: Ruler },
+  ];
+  return (
+    <div className="flex w-[70px] shrink-0 flex-col gap-2">
+      <div className="flex flex-col rounded-2xl bg-white py-1 shadow-panel" role="tablist" aria-label="Bảng thông tin">
+        {items.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => onTab(id)}
+            className={cn(
+              "flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors",
+              tab === id ? "text-library-accent" : "text-library-ink hover:text-library-accent"
+            )}
+          >
+            <Icon className="size-6" strokeWidth={1.75} aria-hidden />
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-col items-center gap-1 rounded-2xl bg-white py-2 text-[11px] text-library-ink shadow-panel">
+        <GoiMascot pose={pose} size={44} showPhotoBadge={false} label="Gói, trợ lý đóng gói của WrapFit" />
+        Gói
       </div>
     </div>
   );
 }
 
-function Spec({ label, wide = false, children }: { label: string; wide?: boolean; children: React.ReactNode }) {
+function InfoPanel({ project }: { project: PublicProject }) {
+  const tags = [
+    ...(project.occasion ? [OCCASION_LABELS[project.occasion]] : []),
+    ...(project.industry ? [INDUSTRY_LABELS[project.industry]] : []),
+    ...project.tags.map((tag) => `#${tag}`),
+  ];
   return (
-    <div className={wide ? "col-span-2" : undefined}>
-      <dt className="text-[10px] uppercase tracking-wider text-stone-500">{label}</dt>
-      <dd className="mt-1 text-stone-900">{children}</dd>
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="flex flex-wrap items-center gap-2 text-xs text-library-muted">
+          {project.template.name}
+          {project.visibility === "UNLISTED" && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-library-panel px-1.5 py-0.5">
+              <Lock className="size-3" aria-hidden />
+              Chỉ ai có liên kết
+            </span>
+          )}
+        </p>
+        <h1 id="project-title" className="mt-1 text-xl font-medium leading-snug text-library-ink">
+          {project.title}
+        </h1>
+      </div>
+
+      <div className="flex items-center gap-3 rounded-lg border border-library-line bg-library-panel px-4 py-2.5">
+        <AuthorAvatar author={project.author} size="md" />
+        <div className="min-w-0">
+          <p className="text-xs text-library-muted">Tác giả</p>
+          <p className="truncate text-sm text-library-ink">{authorName(project.author)}</p>
+        </div>
+      </div>
+
+      {project.forkedFrom && (
+        <p className="flex items-start gap-1.5 text-sm text-library-sub">
+          <GitFork className="mt-0.5 size-4 shrink-0 text-library-muted" aria-hidden />
+          <span>
+            Remix từ{" "}
+            <Link href={ROUTES.publicProject(project.forkedFrom.slug)} className="font-medium text-library-accent underline-offset-4 hover:underline">
+              {project.forkedFrom.title}
+            </Link>{" "}
+            của {authorName(project.forkedFrom.author)}
+          </span>
+        </p>
+      )}
+
+      <Row label="Kích thước L × W × H" value={formatDimensions(project.dimensions)} />
+      <Row label="Chất liệu" value={formatMaterial(project.materialSpec) || "—"} />
+
+      <dl className="grid grid-cols-3 gap-2 text-center">
+        <Stat label="Lượt xem" value={formatCount(project.viewsCount)} />
+        <Stat label="Lượt thích" value={formatCount(project.likesCount)} />
+        <Stat label="Ngày tạo" value={dateFormat.format(new Date(project.createdAt))} />
+      </dl>
+
+      {tags.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5" aria-label="Thẻ">
+          {tags.map((tag) => (
+            <li key={tag} className="rounded-md border border-library-line bg-white px-2 py-1 text-xs text-library-sub">
+              {tag}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {project.viewer.isOwner ? (
+        <p className="rounded-lg bg-library-accent-mist px-4 py-3 text-sm text-library-accent">
+          Đây là thiết kế của bạn.{" "}
+          <Link href={ROUTES.projects} className="font-medium underline-offset-4 hover:underline">
+            Quản lý trong Dự án
+          </Link>
+        </p>
+      ) : (
+        !project.allowFork && <p className="text-xs text-library-muted">Tác giả chưa bật remix cho thiết kế này.</p>
+      )}
     </div>
+  );
+}
+
+function DielinePanel({ project }: { project: PublicProject }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="text-base font-medium text-library-ink">Khuôn bế trải phẳng</h2>
+      <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-library-accent bg-library-accent-mist p-4">
+        <DielineSketch
+          structure={project.template.id}
+          dimensions={project.dimensions}
+          label={`Khuôn bế ${project.template.name} ${formatDimensions(project.dimensions)}`}
+          className="max-h-full w-full"
+        />
+      </div>
+      <p className="flex gap-4 text-xs text-library-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-0.5 w-4 bg-[#E53E3E]" aria-hidden />
+          Nét cắt
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-4 border-t-2 border-dashed border-[#3182CE]" aria-hidden />
+          Nét gấp
+        </span>
+      </p>
+      <Row label="Cấu trúc" value={project.template.name} />
+      <Row label="Kích thước lòng hộp" value={formatDimensions(project.dimensions)} />
+      <Row label="Độ dày giấy" value={`t = ${project.dimensions.paperThickness} mm`} />
+      <p className="text-xs text-library-muted">
+        Mã thiết kế: <span className="underline">{project.slug}</span>
+      </p>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-library-line bg-library-panel px-4 py-2">
+      <p className="text-xs text-library-muted">{label}</p>
+      <p className="text-sm text-library-ink">{value}</p>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-lg bg-library-panel px-1 py-2">
+      <dt className="text-[11px] text-library-muted">{label}</dt>
+      <dd className="truncate text-[13px] text-library-ink" title={value}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+/** Other public designs of the same structure (`GET /templates/hub?section=community`). */
+function RelatedDesigns({ project }: { project: PublicProject }) {
+  const related = useCommunityTemplates({ structure: project.template.id, page: 1, limit: 7 });
+  const items = (related.data?.items ?? []).filter((item) => item.slug !== project.slug).slice(0, 6);
+  if (!items.length) return null;
+  return (
+    <section aria-labelledby="related-title" className="mx-auto w-full max-w-[1440px] px-4 py-14 sm:px-6 lg:px-10">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <h2 id="related-title" className="text-2xl font-medium text-library-ink">
+          Thiết kế {project.template.name.toLowerCase()} khác
+        </h2>
+        <Link href={`${ROUTES.templates}?tab=community&structure=${project.template.id}`} className="text-sm text-library-ink underline-offset-4 hover:underline">
+          Xem tất cả
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((item) => (
+          <LibraryCard
+            key={item.slug}
+            href={ROUTES.publicProject(item.slug)}
+            title={item.title}
+            structure={item.structure.id}
+            dimensions={item.dimensions}
+            materialSpec={item.materialSpec}
+            thumbnailUrl={item.thumbnailUrl}
+            tags={[...(item.fitcheckScore !== null ? [`FitCheck ${item.fitcheckScore}`] : []), `♥ ${formatCount(item.likesCount)}`]}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -383,7 +526,7 @@ function ProjectNotFound() {
         title="Không tìm thấy thiết kế"
         description="Liên kết sai, hoặc tác giả đã chuyển thiết kế về riêng tư hay xoá nó."
         action={
-          <Link href={ROUTES.templates} className={PRIMARY_BUTTON}>
+          <Link href={ROUTES.templates} className={primaryButton}>
             Xem thư viện mẫu
           </Link>
         }

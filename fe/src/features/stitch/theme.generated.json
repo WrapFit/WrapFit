@@ -454,11 +454,6 @@
       "var": "--st-c-accent-green-light",
       "channels": true,
       "fallback": "244 253 230"
-    },
-    "primary-hover": {
-      "var": "--st-c-primary-hover",
-      "channels": true,
-      "fallback": "28 69 46"
     }
   },
   "fontFamily": {
@@ -876,7 +871,6 @@
     "auth-login",
     "team",
     "notifications",
-    "support",
     "admin-dieline-vault",
     "admin-revenue",
     "admin-media"

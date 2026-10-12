@@ -7,7 +7,7 @@ import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { usePrefersReducedMotion } from "../usePrefersReducedMotion";
 
-type Environment = "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow";
+type Environment = "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow" | "transparent";
 
 // three.js only loads in the browser, after the page is interactive.
 const InteractiveFoldingBox3D = dynamic(
@@ -24,6 +24,10 @@ interface BoxStage3DProps {
   title: string;
   /** Lid / drawer open. */
   open?: boolean;
+  /** 0 flat sheet → 1 folded box (default). */
+  foldProgress?: number;
+  /** No frame of its own: the box sits on the parent's surface. */
+  frameless?: boolean;
   environment?: Environment;
   className?: string;
 }
@@ -40,6 +44,8 @@ export function BoxStage3D({
   canvasState,
   title,
   open,
+  foldProgress = 1,
+  frameless = false,
   environment = "studio",
   className = "",
 }: BoxStage3DProps) {
@@ -66,7 +72,7 @@ export function BoxStage3D({
       >
         <InteractiveFoldingBox3D
           dimensions={dims}
-          foldProgress={1}
+          foldProgress={foldProgress}
           boxType={structure}
           theme={theme}
           elements={elements}
@@ -76,6 +82,7 @@ export function BoxStage3D({
           interactiveOpenState={open}
           enableMacroZoom={false}
           showStatusBar={false}
+          frameless={frameless}
           className="h-full"
         />
       </WebGlBoundary>

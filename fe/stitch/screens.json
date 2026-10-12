@@ -149,11 +149,12 @@
       "slug": "pricing",
       "route": "/pricing",
       "title": "WrapFit — Bảng Giá & Nâng Cấp (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
-      }
+      },
+      "note": "Rewritten by hand in src/views/pricing after pack.ly's plan page, on the API tiers and quotas; not generated."
     },
     {
       "id": "689a394a749743c18b0620e14392455d",
@@ -215,11 +216,12 @@
       "slug": "support",
       "route": "/support",
       "title": "WrapFit — Trung Tâm Hỗ Trợ Ma Trận Tinh Chuẩn (Hyperchain Minimal Grid)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
-      }
+      },
+      "note": "Rewritten by hand in src/views/support after pack.ly's help center; not generated."
     },
     {
       "id": "49731e481c8c41258c83713c4069d851",
