@@ -9,6 +9,8 @@ export interface NewSnapshot {
   previewKey: string | null;
   canvasState: CanvasState;
   dimensions: BoxDimensions;
+  /** Formulas of the project at that moment. */
+  formulaVersion: number;
 }
 
 export interface SnapshotContent {
@@ -16,6 +18,8 @@ export interface SnapshotContent {
   name: string;
   canvasState: CanvasState;
   dimensions: BoxDimensions;
+  /** Null for snapshots taken before the column existed: a restore keeps the project's version. */
+  formulaVersion: number | null;
 }
 
 export interface ISnapshotRepository {
@@ -30,7 +34,7 @@ export interface ISnapshotRepository {
   delete(projectId: string, snapshotId: string): Promise<boolean>;
   /**
    * In one transaction: saves `backup` (the current state, automatic), then copies the snapshot into the project
-   * with the FitCheck of the restored design.
+   * (with its formula version when it has one) and the FitCheck of the restored design.
    */
   restore(
     projectId: string,
@@ -38,4 +42,15 @@ export interface ISnapshotRepository {
     backup: NewSnapshot,
     fitCheck: FitCheckReport | null,
   ): Promise<{ project: ProjectDetail; backup: SnapshotSummary }>;
+  /**
+   * In one transaction, only while the project is still at `expectedVersion` (else null): moves the project to the
+   * formulas `formulaVersion` with the FitCheck computed for them and saves `backup` (automatic).
+   */
+  upgradeFormula(
+    projectId: string,
+    expectedVersion: number,
+    formulaVersion: number,
+    backup: NewSnapshot,
+    fitCheck: FitCheckReport | null,
+  ): Promise<{ project: ProjectDetail; backup: SnapshotSummary } | null>;
 }

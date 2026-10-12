@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Box, Sparkles, Check, ArrowRight, ShieldCheck, Layers, Gift, Feather } from "lucide-react";
-import { BoxStructureType } from "@wrapfit/shared";
+import { BoxStructureType, caliperOf, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
+import type { BoxStructure } from "@/types/api";
 
 
 export interface BoxStructureOption {
@@ -16,7 +17,6 @@ export interface BoxStructureOption {
   recommendedGifts: string[];
   recommendedPaper: string;
   foldDifficulty: "Dễ" | "Trung bình" | "Cao cấp";
-  creaseCount: number;
   defaultDims: { length: number; width: number; height: number; paperThickness: number };
   svgPath: string; // SVG visual icon
 }
@@ -33,8 +33,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Hũ nến thơm", "Chai nước hoa", "Mỹ phẩm dưỡng da", "Cốc gốm sứ"],
     recommendedPaper: "Ivory 300 – 350 GSM",
     foldDifficulty: "Dễ",
-    creaseCount: 8,
-    defaultDims: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
+    defaultDims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) },
     svgPath: "M10 20 L50 5 L90 20 L90 70 L50 85 L10 70 Z M50 5 L50 85 M10 20 L50 35 L90 20",
   },
   {
@@ -48,8 +47,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Socola thủ công", "Macaron", "Trang sức cao cấp", "Bộ tinh dầu"],
     recommendedPaper: "Duplex cán mờ 350 GSM hoặc Carton lạnh",
     foldDifficulty: "Trung bình",
-    creaseCount: 10,
-    defaultDims: { length: 140, width: 90, height: 45, paperThickness: 0.42 },
+    defaultDims: { length: 140, width: 90, height: 45, paperThickness: caliperOf(300) },
     svgPath: "M15 25 L85 25 L85 65 L15 65 Z M30 35 L70 35 L70 55 L30 55 Z",
   },
   {
@@ -63,8 +61,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Đồng hồ cao cấp", "Vòng tay bạc", "Kỷ niệm chương", "Set quà tết"],
     recommendedPaper: "Carton lạnh bồi giấy mỹ thuật ép kim vàng",
     foldDifficulty: "Cao cấp",
-    creaseCount: 12,
-    defaultDims: { length: 130, width: 130, height: 55, paperThickness: 0.5 },
+    defaultDims: { length: 130, width: 130, height: 55, paperThickness: caliperOf(300) },
     svgPath: "M10 25 L50 10 L90 25 L50 40 Z M10 32 L50 47 L90 32 L90 75 L50 90 L10 75 Z",
   },
   {
@@ -78,24 +75,74 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Khăn lụa tơ tằm", "Cà vạt", "Trang sức nhỏ", "Kẹo cưới thủ công"],
     recommendedPaper: "Kraft mộc 250 – 300 GSM",
     foldDifficulty: "Dễ",
-    creaseCount: 4,
-    defaultDims: { length: 160, width: 110, height: 35, paperThickness: 0.35 },
+    defaultDims: { length: 160, width: 110, height: 35, paperThickness: caliperOf(300) },
     svgPath: "M15 50 Q50 15 85 50 Q50 85 15 50 Z",
   },
 ];
+
+/** Presentation of a structure: name and description from the API, the rest from BOX_STRUCTURES. */
+interface StructureCard extends BoxStructureOption {
+  apiName: string;
+}
+
+const GENERIC_STRUCTURE: Omit<BoxStructureOption, "id" | "name" | "vietnameseName" | "description"> = {
+  subtitle: "",
+  badge: "Cấu trúc mới",
+  badgeColor: "bg-stone-50 text-stone-700 border-stone-200",
+  recommendedGifts: [],
+  recommendedPaper: "Ivory 300 GSM",
+  foldDifficulty: "Trung bình",
+  defaultDims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) },
+  svgPath: "M15 25 L85 25 L85 75 L15 75 Z",
+};
+
+/** Crease lines of the box at its default size, counted on the dieline of the current formulas (every piece). */
+function creaseCountOf(item: BoxStructureOption): number {
+  try {
+    return generateDielinePieces(item.id, item.defaultDims, CURRENT_FORMULA_VERSION).reduce(
+      (sum, piece) => sum + piece.geometry.segments.filter((segment) => segment.type === "crease").length,
+      0
+    );
+  } catch (error) {
+    if (error instanceof UnsupportedStructureError) return 0;
+    throw error;
+  }
+}
+
+const orderOf = (id: string) => {
+  const index = BOX_STRUCTURES.findIndex((s) => s.id === id);
+  return index < 0 ? BOX_STRUCTURES.length : index;
+};
+
+/**
+ * Cards of the structures the API offers (`GET /templates/structures`), most common first (order of BOX_STRUCTURES,
+ * new structures last); offline demo: the 4 built in.
+ */
+function structureCards(structures: BoxStructure[] | undefined): StructureCard[] {
+  if (!structures) return BOX_STRUCTURES.map((s) => ({ ...s, apiName: s.vietnameseName }));
+  return [...structures].sort((a, b) => orderOf(a.id) - orderOf(b.id)).map((api) => {
+    const local = BOX_STRUCTURES.find((s) => s.id === api.id);
+    const base = local ?? { ...GENERIC_STRUCTURE, id: api.id, name: api.name, vietnameseName: api.name, description: "" };
+    return { ...base, apiName: api.name, description: api.description ?? base.description };
+  });
+}
 
 interface Step1BoxTemplatePickerProps {
   selectedStructure: BoxStructureType;
   onSelectStructure: (type: BoxStructureType) => void;
   onNext: () => void;
+  /** Structures of the API; omitted in the offline demo. */
+  structures?: BoxStructure[];
 }
 
 export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   selectedStructure,
   onSelectStructure,
   onNext,
+  structures,
 }) => {
-  const current = BOX_STRUCTURES.find((s) => s.id === selectedStructure) || BOX_STRUCTURES[0];
+  const cards = structureCards(structures);
+  const current = cards.find((s) => s.id === selectedStructure) || cards[0];
 
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
@@ -116,17 +163,16 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
 
       {/* Grid 4 Box Structure Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {BOX_STRUCTURES.map((item) => {
+        {cards.map((item) => {
           const isSelected = item.id === selectedStructure;
 
           return (
-            <div
+            <button
+              type="button"
               key={item.id}
-              onClick={() => {
-                
-                onSelectStructure(item.id);
-              }}
-              className={`rounded-squircle-lg border-2 p-5 flex flex-col justify-between transition-all cursor-pointer relative bg-white ${
+              aria-pressed={isSelected}
+              onClick={() => onSelectStructure(item.id)}
+              className={`rounded-squircle-lg border-2 p-5 flex flex-col justify-between text-left transition-all cursor-pointer relative bg-white ${
                 isSelected
                   ? "border-vibrant-cobalt shadow-tactile-lg ring-4 ring-blue-500/10 scale-[1.02]"
                   : "border-stone-200 hover:border-stone-300 hover:shadow-tactile hover:scale-[1.01]"
@@ -148,7 +194,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                     {item.badge}
                   </span>
                   <span className="text-[11px] font-mono text-stone-400">
-                    {item.creaseCount} Nếp cấn
+                    {creaseCountOf(item)} Nếp gấp
                   </span>
                 </div>
 
@@ -184,7 +230,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                 {/* Title & Description */}
                 <div>
                   <h3 className="font-serif font-bold text-stone-900 text-lg group-hover:text-vibrant-cobalt transition-colors">
-                    {item.vietnameseName}
+                    {item.apiName}
                   </h3>
                   <p className="text-[11px] text-stone-500 font-mono mt-0.5">
                     {item.name}
@@ -197,18 +243,20 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
 
               {/* Card Footer: Recommendations */}
               <div className="mt-5 pt-4 border-t border-stone-100 space-y-2.5">
-                <div className="text-[11px] text-stone-500 flex items-center gap-1.5">
-                  <Gift className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                  <span className="truncate">
-                    {item.recommendedGifts.slice(0, 2).join(", ")}...
-                  </span>
-                </div>
+                {item.recommendedGifts.length > 0 && (
+                  <div className="text-[11px] text-stone-500 flex items-center gap-1.5">
+                    <Gift className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
+                    <span className="truncate" title={item.recommendedGifts.join(", ")}>
+                      {item.recommendedGifts.slice(0, 2).join(", ")}...
+                    </span>
+                  </div>
+                )}
                 <div className="text-[11px] text-stone-500 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                  <span className="truncate font-mono">{item.recommendedPaper}</span>
+                  <span className="truncate font-mono" title={item.recommendedPaper}>{item.recommendedPaper}</span>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -222,17 +270,14 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
           <div>
             <span className="text-xs text-stone-500 block">Mẫu đã chọn:</span>
             <span className="font-serif font-bold text-stone-900 text-base">
-              {current.vietnameseName} ({current.name})
+              {current.apiName} ({current.name})
             </span>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => {
-            
-            onNext();
-          }}
+          onClick={onNext}
           className="w-full sm:w-auto px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95"
         >
           <span>Tiếp Tục Sang Nhập Kích Thước (Bước 2)</span>

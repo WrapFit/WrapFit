@@ -57,11 +57,43 @@ Quy tắc:
 - Component chỉ một tính năng dùng thì đặt trong `src/features/<tính năng>/components/`; dùng ở nhiều nơi thì đặt trong `src/components/`.
 - Thư mục chỉ có `index.ts` rỗng là khung chờ code, giữ theo mẫu.
 
-## Chạy thử nghiệm:
+## Chạy cùng backend
+
+Trình duyệt chỉ gọi `/api` trên cùng địa chỉ với trang (cookie phiên là first-party); `next.config.mjs` chuyển `/api/*`
+sang `BACKEND_INTERNAL_URL` (mặc định `http://localhost:8080`). Biến môi trường: [`.env.example`](.env.example).
+
+Từ thư mục gốc repo:
 
 ```bash
-cd fe
+docker compose up -d postgres redis seaweedfs storage-init mailpit
 npm install
-npm run dev
+npm run build:shared                          # backend đọc shared/dist
+npm --workspace=be run db:migrate && npm --workspace=be run db:seed
+npm run dev:be                                # API http://localhost:8080/api, Swagger /api/docs
+npm --workspace=be run dev:worker             # gửi email, xuất file in
+npm run dev:fe                                # http://localhost:3000
 ```
-Truy cập `http://localhost:3000` để xem giao diện.
+
+- Email (xác nhận, quên mật khẩu) nằm ở Mailpit `http://localhost:8025`; cần worker thì email mới đi.
+- Tài khoản admin seed: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` trong `be/.env`.
+- Mọi request qua proxy Next nên backend thấy cùng một IP: chạy thử liên tục có thể gặp `429` (100 request / phút / IP,
+  docs/12 R7). Trang báo "Bạn thao tác quá nhanh", đợi một phút là được.
+- Đang chạy `npm run dev:be` (`nest start --watch`) thì đừng chạy `npm --workspace=be run build`: lệnh build xoá
+  `be/dist` dưới tiến trình đang chạy và API dừng.
+- Chỉ xem giao diện, không cần backend: `/editor/demo` chạy offline; các trang khác hiện lỗi kèm mã `requestId`.
+
+## Kiểm thử trên trình duyệt
+
+Các script dưới đây chạy Chrome headless (cần FE, BE, worker, Mailpit đang chạy), ảnh và `report.json` ghi vào
+`fe/.page-shots/` (không commit):
+
+| Lệnh | Việc |
+|---|---|
+| `node fe/scripts/ui-fixtures.mjs` (`--clean` để xoá) | Dữ liệu thử cho `shots --routes` |
+| `npm --workspace=fe run shots -- /dashboard --sizes=M,X+ --login=<email>` | Chụp trang ở đủ độ phân giải, kiểm tràn ngang, ảnh lỗi, request lỗi… (docs/13) |
+| `npm --workspace=fe run shots -- --routes --group=G7 --table` | Quét danh sách route của `scripts/page-shots.routes.json` |
+| `node fe/scripts/e2e-scenario.mjs` | Kịch bản end-to-end docs/12 §7 (bước 1–14) ở 375 px và 1440 px, mỗi kích thước một tài khoản mới (xoá khi xong) |
+| `node fe/scripts/e2e-scenario.mjs --steps=15 --backend-down` | Bước 15, khi backend đã tắt |
+| `npm --workspace=fe run stitch:parity` | So pixel các màn Stitch `converted` với bản gốc (mốc ở docs/13 §2.3) |
+
+`next build` khi `next dev` đang chạy (cùng ghi `.next`): build trong một bản sao tạm của `fe/` (xem docs/12 §9.3, S9).

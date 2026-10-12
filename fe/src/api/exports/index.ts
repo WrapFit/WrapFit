@@ -1,56 +1,22 @@
-/** Print-file exports on the BullMQ queue (`be/src/modules/export`). */
+/** Print-file exports on the BullMQ queue (`be/src/export`). Flow: docs/06, section 7. */
 
 import { request } from "@/services/api";
-import type { ExportJobStatus } from "@/types/api";
-
-export async function requestExport(
-  projectId: string,
-  fileType: "PDF" | "SVG" | "DXF"
-): Promise<{ jobId: string }> {
-  try {
-    return await request<{ jobId: string }>(`/projects/${projectId}/exports`, {
-      method: "POST",
-      body: JSON.stringify({ fileType }),
-    });
-  } catch {
-    return { jobId: `mock-job-${Date.now()}` };
-  }
-}
-
-export async function getExportStatus(jobId: string): Promise<ExportJobStatus> {
-  try {
-    return await request<ExportJobStatus>(`/exports/${jobId}`);
-  } catch {
-    return {
-      jobId,
-      status: "COMPLETED",
-      progress: 100,
-      downloadUrl: "#mock-download",
-      fileName: `wrapfit-production-${jobId}.pdf`,
-    };
-  }
-}
+import type { ExportFileType, ExportJob, ExportStarted } from "@/types/api";
 
 /**
- * Poll export status every 2 seconds until COMPLETED or FAILED
+ * Queues an export (202). 422 with `fitCheck` (see `ApiError.fitCheck`) when FitCheck finds blocking errors.
+ * At most 10 requests per minute.
  */
-export async function pollExportJob(
-  jobId: string,
-  onProgress?: (status: ExportJobStatus) => void,
-  maxWaitSecs: number = 30
-): Promise<ExportJobStatus> {
-  const startTime = Date.now();
+export function requestExport(projectId: string, fileType: ExportFileType): Promise<ExportStarted> {
+  return request(`/projects/${projectId}/exports`, { method: "POST", json: { fileType } });
+}
 
-  while (Date.now() - startTime < maxWaitSecs * 1000) {
-    const status = await getExportStatus(jobId);
-    if (onProgress) onProgress(status);
+/** Poll every 2 seconds until COMPLETED or FAILED. `downloadUrl` expires: fetch the job again for a new one. */
+export function getExportJob(jobId: string): Promise<ExportJob> {
+  return request(`/exports/${jobId}`);
+}
 
-    if (status.status === "COMPLETED" || status.status === "FAILED") {
-      return status;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  }
-
-  throw new Error("Quá thời gian xuất file in. Vui lòng thử lại.");
+/** The 20 latest exports of a project. */
+export function listProjectExports(projectId: string): Promise<ExportJob[]> {
+  return request(`/projects/${projectId}/exports`);
 }

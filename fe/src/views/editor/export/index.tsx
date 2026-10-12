@@ -324,7 +324,7 @@ export default function EditorExportPage() {
           <div className="flex items-center justify-between pt-3 border-t border-stone-200">
             <div className="flex items-center gap-2.5">
               <img
-                src="/branding/mascot-hero.png"
+                src="/mascots/goi.webp"
                 alt="Mascot Bé Gói"
                 className="w-7 h-7 object-contain rounded-full bg-emerald-50 p-0.5 border border-emerald-200"
               />

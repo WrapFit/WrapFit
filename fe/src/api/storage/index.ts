@@ -1,37 +1,32 @@
-/** S3 / R2 pre-signed uploads (`be/src/storage`). */
+/** Uploads to object storage through pre-signed URLs (`be/src/storage`). Rules: docs/06, section 4. */
 
 import { request } from "@/services/api";
+import type { PresignedUpload, PresignUploadRequest, StorageUsage, UploadPurpose } from "@/types/api";
 
-export type UploadPurpose = "LOGO" | "IMAGE" | "THUMBNAIL" | "AVATAR";
+/** 400 wrong format, 413 too large, 403 quota exceeded, 503 storage not configured. */
+export function presignUpload(data: PresignUploadRequest): Promise<PresignedUpload> {
+  return request("/storage/presigned-upload", { method: "POST", json: data });
+}
 
-interface PresignedUpload {
-  fileId: string;
-  key: string;
-  uploadUrl: string;
-  method: "PUT";
-  /** Signed into the URL: the PUT must send exactly these headers. */
-  headers: Record<string, string>;
-  fileUrl: string;
-  expiresIn: number;
+export function getStorageUsage(): Promise<StorageUsage> {
+  return request("/storage/usage");
 }
 
 /**
- * Uploads a file straight to object storage and returns its public URL (to use in canvasState, thumbnailUrl...).
+ * Uploads a file straight to object storage and returns its URL (for canvasState, thumbnailUrl, avatarUrl...).
  * Throws when the API or the upload fails: the API only accepts files uploaded to WrapFit, so there is no
- * offline fallback.
+ * offline fallback (never use a data URL).
  */
 export async function uploadFileToStorage(
-  file: File,
+  file: File | Blob,
   purpose: UploadPurpose = "IMAGE",
-  projectId?: string
+  projectId?: string,
 ): Promise<{ fileUrl: string }> {
-  const presign = await request<PresignedUpload>("/storage/presigned-upload", {
-    method: "POST",
-    body: JSON.stringify({ purpose, contentType: file.type, size: file.size, projectId }),
-  });
+  const ticket = await presignUpload({ purpose, contentType: file.type, size: file.size, projectId });
 
-  const res = await fetch(presign.uploadUrl, { method: presign.method, headers: presign.headers, body: file });
+  // Signed URL of the bucket: no credentials, exactly the signed headers.
+  const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
   if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
 
-  return { fileUrl: presign.fileUrl };
+  return { fileUrl: ticket.fileUrl };
 }

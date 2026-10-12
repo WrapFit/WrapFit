@@ -42,3 +42,9 @@ export const PENDING_UPLOAD_RESERVE_MS = 60 * 60 * 1000;
 
 /** Unconfirmed uploads are checked once their URL has expired (5 min) plus a margin for a slow upload. */
 export const CONFIRM_UPLOADS_AFTER_MS = 15 * 60 * 1000;
+
+/**
+ * An upload that nothing uses (no canvas, avatar, logo, thumbnail or snapshot preview) is deleted after this long:
+ * the editor and the Brand Kit upload a file before saving it, and a user may leave without saving.
+ */
+export const UNUSED_UPLOAD_GRACE_MS = 24 * 60 * 60 * 1000;

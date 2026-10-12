@@ -8,7 +8,7 @@ export default function Auth2FaPage() {
   const [otp] = useState(['3', '0', '6', '', '', '']);
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between p-6 lg:p-10 font-['Plus_Jakarta_Sans'] select-none">
+    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between p-6 pb-28 md:pb-6 lg:p-10 font-['Plus_Jakarta_Sans'] select-none">
       <header className="flex items-center justify-between">
         <Link href="/auth/login" className="w-10 h-10 rounded-full bg-white/80 border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-white shadow-xs transition-all">
           <span className="material-symbols-outlined text-lg">arrow_back</span>
@@ -36,7 +36,7 @@ export default function Auth2FaPage() {
               className={"w-12 h-14 rounded-2xl flex items-center justify-center font-['JetBrains_Mono'] text-xl font-bold border transition-all " +
                 (val ? "bg-[#f7f2ef] border-[#122e20] text-[#122e20] shadow-xs" : "bg-white border-[#e8ded0] text-[#717971]")}
             >
-              {val || '&bull;'}
+              {val || '•'}
             </div>
           ))}
         </div>

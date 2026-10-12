@@ -269,7 +269,7 @@ export default function EditorInspectFefcoPage() {
             {/* Bé Gói Advisor Card */}
             <div className="p-3.5 rounded-3xl bg-gradient-to-br from-secondary-container/40 via-white to-surface-container-low shadow-sm flex items-center gap-3 border border-secondary/20">
               <div className="w-12 h-12 rounded-2xl bg-white shadow-xs overflow-hidden flex items-center justify-center shrink-0">
-                <img alt="Bé Gói" className="w-full h-full object-contain p-1" src="/branding/mascot-hero.png" />
+                <img alt="Bé Gói" className="w-full h-full object-contain p-1" src="/mascots/goi.webp" />
               </div>
               <div className="flex flex-col pr-1">
                 <span className="text-xs font-bold text-secondary flex items-center gap-1">

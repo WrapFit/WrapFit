@@ -74,7 +74,7 @@ describe('Unboxing (e2e)', () => {
     slug = res.body.slug;
     expect(res.body.unboxUrl).toBe(`http://frontend.e2e/unbox/${slug}`);
     qr = { png: res.body.qrCodeUrl, svg: res.body.qrCodeSvgUrl };
-    expect(qr.png).toBe(`http://localhost:8333/wrapfit/projects/${projectId}/unboxing/qr-${slug}.png`);
+    expect(qr.png).toBe(`${process.env.STORAGE_PUBLIC_URL}/projects/${projectId}/unboxing/qr-${slug}.png`);
     expect(qr.svg).toBe(qr.png.replace(/\.png$/, '.svg'));
 
     const png = await fetch(qr.png);

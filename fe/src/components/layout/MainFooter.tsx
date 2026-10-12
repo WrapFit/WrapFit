@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { BrandLogo } from './BrandLogo';
 
 export interface MainFooterProps {
@@ -14,7 +15,8 @@ export interface MainFooterProps {
 export function MainFooter({ className = '', compact = false }: MainFooterProps) {
   return (
     <footer className={`w-full bg-[#f8f5ee] border-t border-[#e8ded0]/80 text-stone-700 select-none ${className}`}>
-      <div className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+      {/* Below md the floating BottomNavBar sits over the end of the page: the bottom padding keeps the last line clear. */}
+      <div className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-28 md:pb-10 lg:py-14">
         {!compact && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-10 border-b border-[#e8ded0]/60">
             {/* Column 1 & 2: Brand & Mission Statement */}
@@ -56,7 +58,7 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
                   </Link>
                 </li>
                 <li>
-                  <Link href="/editor" className="hover:text-black hover:underline transition-colors">
+                  <Link href={ROUTES.editorDemo} className="hover:text-black hover:underline transition-colors">
                     3D Interactive WebGL Studio
                   </Link>
                 </li>

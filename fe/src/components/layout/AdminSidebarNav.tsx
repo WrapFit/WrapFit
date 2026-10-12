@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { ROUTES } from '@/constants';
 import { usePathname } from 'next/navigation';
 
 interface AdminNavItem {
@@ -48,11 +50,70 @@ const NAV_GROUPS: { title: string; items: AdminNavItem[] }[] = [
   },
 ];
 
-export function AdminSidebarNav() {
+interface AdminSidebarNavProps {
+  /**
+   * The static admin screens keep the desktop shell of their Stitch design (sidebar always shown). With this, below lg
+   * the sidebar becomes a drawer behind a menu button (CSS on `[data-admin-sidebar-nav='drawer']` and
+   * `html[data-admin-nav='open']` in globals.css). Off for a screen that has its own drawer (`/admin/accounts`).
+   */
+  mobileToggle?: boolean;
+}
+
+export function AdminSidebarNav({ mobileToggle = true }: AdminSidebarNavProps) {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (mobileToggle) setMounted(true);
+  }, [mobileToggle]);
+
+  useEffect(() => {
+    if (!open) return;
+    const root = document.documentElement;
+    root.setAttribute('data-admin-nav', 'open');
+    return () => root.removeAttribute('data-admin-nav');
+  }, [open]);
+
+  // A link inside the drawer moves to another screen: close it there.
+  useEffect(() => setOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open]);
+
+  const toggle =
+    mounted &&
+    createPortal(
+      <div data-app-tokens className="lg:hidden font-sans">
+        {open && (
+          <div aria-hidden="true" className="fixed inset-0 z-[55] bg-stone-900/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-label={open ? 'Đóng menu quản trị' : 'Mở menu quản trị'}
+          className={`fixed top-2.5 z-[70] w-11 h-11 rounded-xl border border-stone-200/80 bg-white/90 backdrop-blur-md shadow-sm flex items-center justify-center text-stone-800 transition-[left] duration-200 ${
+            open ? 'left-[calc(min(18rem,85vw)-3.5rem)]' : 'left-3'
+          }`}
+        >
+          <span className="material-symbols-outlined text-xl" aria-hidden="true">
+            {open ? 'close' : 'menu'}
+          </span>
+        </button>
+      </div>,
+      document.body,
+    );
 
   return (
-    <nav className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-250px)] pr-1 scrollbar-thin">
+    <nav data-admin-sidebar-nav={mobileToggle ? 'drawer' : 'fixed'} className="flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-250px)] pr-1 scrollbar-thin">
+      {toggle}
       {NAV_GROUPS.map((group) => (
         <div key={group.title} className="flex flex-col gap-0.5">
           <div className="px-3 py-1 font-mono text-[10px] font-semibold text-stone-400 uppercase tracking-wider">
@@ -99,7 +160,7 @@ export function AdminSidebarNav() {
           Lối Tắt Nhanh
         </div>
         <Link
-          href="/editor"
+          href={ROUTES.editorNew}
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[12px] text-blue-700 hover:bg-blue-50 font-medium transition-colors"
         >
           <span className="material-symbols-outlined text-[17px]">view_in_ar</span>

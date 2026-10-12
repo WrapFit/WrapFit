@@ -26,6 +26,7 @@ export const summarySelect = {
 
 export const detailSelect = {
   ...summarySelect,
+  template: { select: { id: true, name: true, formulaVersion: true } },
   version: true,
   formulaVersion: true,
   allowFork: true,
@@ -39,6 +40,7 @@ export const snapshotSummarySelect = {
   name: true,
   previewKey: true,
   dimensions: true,
+  formulaVersion: true,
   createdAt: true,
 } satisfies Prisma.ProjectSnapshotSelect;
 
@@ -51,8 +53,13 @@ type SnapshotRow = Prisma.ProjectSnapshotGetPayload<{ select: typeof snapshotSum
 export const toSummary = ({ thumbnailKey, ...row }: SummaryRow) =>
   ({ ...row, thumbnailUrl: assetUrl(thumbnailKey) }) as unknown as ProjectSummary;
 export const toDetail = (row: DetailRow) => {
-  const summary = toSummary(row) as unknown as DetailRow;
-  return { ...summary, canvasState: toClientCanvas(row.canvasState as never) } as unknown as ProjectDetail;
+  const { template, ...summary } = toSummary(row) as unknown as DetailRow;
+  return {
+    ...summary,
+    template: { id: template.id, name: template.name },
+    latestFormulaVersion: template.formulaVersion,
+    canvasState: toClientCanvas(row.canvasState as never),
+  } as unknown as ProjectDetail;
 };
 export const toSnapshotSummary = ({ previewKey, ...row }: SnapshotRow) =>
   ({ ...row, previewUrl: assetUrl(previewKey) }) as unknown as SnapshotSummary;

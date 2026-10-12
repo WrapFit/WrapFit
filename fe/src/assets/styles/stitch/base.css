@@ -15,3 +15,19 @@
   -webkit-font-smoothing: auto;
   -moz-osx-font-smoothing: auto;
 }
+
+/*
+ * Below md the app's BottomNavBar floats at the bottom of every screen (components/layout/BottomNavBar.tsx). A
+ * screen's own bottom dock, toast or sticky action bar (fixed / sticky + bottom-*, e.g. the checkout step bar) would
+ * sit under it: lift it above the bar. Full-height side panels (top-* and bottom-*) and decorative shapes (-bottom-*) keep their place.
+ */
+@media (max-width: 767.98px) {
+  [data-stitch] :is(.fixed, .sticky)[class*="bottom-"]:not([class*="top-"]):not([class*="inset-y-"]):not([class*="-bottom-"]) {
+    bottom: 5.25rem;
+  }
+}
+
+/* A screen with such a dock: it floats over the end of the page, so leave room for the footer's last line. */
+[data-stitch]:has(.fixed[class*="bottom-"]:not([class*="top-"]):not([class*="inset-y-"]):not([class*="-bottom-"]):not(.opacity-0)) {
+  padding-bottom: 5.5rem;
+}

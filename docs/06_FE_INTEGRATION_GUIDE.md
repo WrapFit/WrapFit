@@ -10,7 +10,7 @@ Mục lục: [1. Kết nối](#1-kết-nối-và-phiên-đăng-nhập) · [2. L�
 [5. Editor](#5-dự-án-và-editor) · [6. Phiên bản](#6-mốc-phiên-bản-snapshots) · [7. Xuất file in](#7-xuất-file-in) ·
 [8. Chia sẻ](#8-chia-sẻ-remix-thả-tim) · [9. Thư viện mẫu](#9-thư-viện-mẫu) · [10. Mở hộp](#10-mở-hộp-3d-qua-qr) ·
 [11. AI](#11-ai-sinh-hoa-văn) · [12. Hồ sơ](#12-hồ-sơ-brand-kit-bộ-sưu-tập) ·
-[13. Lệch hiện tại](#13-những-chỗ-apiclientts-hiện-tại-lệch-backend) · [14. Kiểu dữ liệu](#14-kiểu-dữ-liệu-typescript) ·
+[13. Lệch cũ (đã sửa)](#13-những-chỗ-apiclient-cũ-lệch-backend-đã-sửa) · [14. Kiểu dữ liệu](#14-kiểu-dữ-liệu-typescript) ·
 [15. Chạy local](#15-chạy-và-kiểm-thử-local) · [16. Danh mục endpoint](#16-danh-mục-đầy-đủ-endpoint-đối-chiếu-với-code)
 
 ---
@@ -32,6 +32,11 @@ Mục lục: [1. Kết nối](#1-kết-nối-và-phiên-đăng-nhập) · [2. L�
   gửi lại request cũ; refresh cũng `401` → chuyển về `/login`. Chỉ cho **một** refresh chạy cùng lúc (nhiều tab / nhiều
   request song song cùng chờ một promise). Backend chấp nhận 2 tab refresh gần như đồng thời (30 giây), nhưng dùng lại
   refresh token cũ sau đó bị coi là bị đánh cắp và **đăng xuất mọi thiết bị**.
+- **Chỉ `401` của refresh mới là hết phiên.** Refresh `429` (bị chặn trước khi token được xem: chờ `Retry-After`, tối đa
+  10 giây, rồi thử lại **một** lần), `5xx` hay mất mạng không nói gì về phiên: báo lỗi đó, **không** đăng xuất. Không thử
+  lại refresh khi mất mạng (server có thể đã đổi token). Giới hạn của refresh tính **theo phiên** (30 / phút cho một
+  cookie `wf_refresh`), không theo IP, nên nhiều người sau một IP (NAT văn phòng, mạng di động) không chia nhau; request
+  không có cookie (khách) 300 / phút / IP. Code thật: `fe/src/services/api/index.ts`.
 
 ```ts
 let refreshing: Promise<boolean> | null = null;
@@ -43,6 +48,7 @@ async function api<T>(path: string, init: RequestInit = {}, retry = true): Promi
     headers: { 'Content-Type': 'application/json', ...init.headers },
   });
   if (res.status === 401 && retry && !path.startsWith('/auth/')) {
+    // Rút gọn: bản đầy đủ chờ Retry-After khi refresh trả 429 và chỉ đăng xuất khi refresh trả 401 (xem trên).
     refreshing ??= fetch(`${API_BASE}/auth/refresh`, { method: 'POST', credentials: 'include' })
       .then((r) => r.ok)
       .finally(() => (refreshing = null));
@@ -55,7 +61,8 @@ async function api<T>(path: string, init: RequestInit = {}, retry = true): Promi
 ```
 
 - Biết ai đang đăng nhập: `GET /api/auth/me` (hoặc `/api/users/me`) → `SafeUser` (mục 14). `401` = chưa đăng nhập.
-- Đăng xuất: `POST /api/auth/logout` (204, xóa cookie). Đăng xuất mọi thiết bị: `POST /api/auth/logout-all`.
+- Đăng xuất: `POST /api/auth/logout` (204, xóa cookie). Đăng xuất mọi thiết bị: `POST /api/auth/logout-all` (có hiệu
+  lực ngay: các thiết bị khác nhận `401`, refresh cũng `401`, FE coi là phiên hết hạn).
 
 ## 2. Định dạng lỗi và mã lỗi
 
@@ -120,7 +127,8 @@ POST /api/auth/register
   "Email của bạn đã có tài khoản"). Sau `201` luôn chuyển tới `/check-email?email=…`.
 - **Không có `409`**, không đặt cookie. Đừng hiển thị "email đã tồn tại".
 - Mật khẩu: 8–72 ký tự, có ít nhất 1 chữ và 1 số. `fullName` ≤ 100 ký tự. Email được chuyển chữ thường ở backend.
-- Giới hạn 10 request / phút / IP cho các route đăng ký, đăng nhập, xác minh, đặt lại mật khẩu.
+- Giới hạn 10 request / phút / IP cho các route đăng ký, đăng nhập, xác minh, đặt lại mật khẩu. `refresh` tính theo phiên
+  (mục 1).
 
 ### 3.3. Kiểm tra hộp thư, gửi lại email
 
@@ -167,8 +175,9 @@ POST /api/auth/password/reset    { "token": "<?token=>", "password": "NewPassw0r
 
 - `forgot` luôn `202` (không lộ email). Link có hạn **30 phút**, dùng 1 lần. Tài khoản chỉ có Google cũng dùng được để
   đặt mật khẩu lần đầu.
-- `reset` dùng cho **cả** `/reset-password` và `/complete-signup`. Thành công thì **mọi phiên bị đăng xuất** và cookie
-  bị xóa → chuyển tới `/login` với thông báo "Đặt mật khẩu thành công, hãy đăng nhập". Email cũng được xác minh luôn.
+- `reset` dùng cho **cả** `/reset-password` và `/complete-signup`. Thành công thì **mọi phiên bị đăng xuất ngay** (thiết
+  bị khác nhận `401` ở request kế tiếp, không chờ access token hết hạn) và cookie bị xóa → chuyển tới `/login` với thông
+  báo "Đặt mật khẩu thành công, hãy đăng nhập". Email cũng được xác minh luôn.
 - Mật khẩu mới cùng quy tắc với đăng ký (lỗi `400` không có `code`, link vẫn còn dùng được).
 
 ## 4. Upload file và quy tắc URL ảnh
@@ -221,11 +230,25 @@ GET  /api/projects/:id   → ProjectDetail
 - `templateId`: `tuck-top` | `sleeve-drawer` | `lid-base` | `pillow`. Giới hạn kích thước từng cấu trúc:
   `GET /api/templates/structures` → `dimensionLimits` (dùng để validate form trước khi gửi).
 - `paperThickness` bỏ trống → lấy `materialSpec.caliper`. Mặc định `materialSpec = { type: "ivory", gsm: 300,
-  caliper: 0.35, finish: "matte" }`, `canvasState = { elements: [] }`.
+  caliper: 0.42, finish: "matte" }` (độ dày = GSM × 0,0014, `caliperOf` của shared), `canvasState = { elements: [] }`.
+- Ngoài min / max từng kích thước, mỗi cấu trúc có **quy tắc tỉ lệ** (`dimensionRuleErrors` của shared; API trả 400 với
+  câu tiếng Anh, editor hiện câu tiếng Việt `vi`): hộp gối dày tối đa bằng nửa chiều rộng.
 - Tìm kiếm dùng tham số **`q`** (tiêu đề hoặc đúng 1 tag), không phải `search`. Danh sách không có `canvasState`.
 - **`formulaVersion`** (trong `ProjectDetail`): phiên bản công thức dieline mà dự án được chốt khi tạo. Editor phải
   dựng dieline / 3D / FitCheck bằng `generateDielinePieces(templateId, dimensions, formulaVersion)` của
   `@wrapfit/shared`, **không** gọi thẳng `generateTuckTopDieline`…, để hình trên màn hình khớp đúng file in.
+  Các phiên bản (`shared/src/parametric/registry.ts`, tóm tắt tiếng Việt cho studio: `FORMULA_CHANGES`): **1** bản
+  đầu (hộp nắp gài: nắp trên đè mặt sau khi W > H; cả 4 cấu trúc chưa có nét cắt); **2** (2026-10-11) hộp nắp gài có
+  nắp và đáy gắn vào mặt sau, tai gài, tai chống bụi, tai dán và nét cắt, 3 cấu trúc còn lại giống bản 1; **3**
+  (2026-10-12, dự án mới) cả 4 cấu trúc có đủ nét cắt, khay / đáy / nắp có tai dán 4 góc, vỏ bao diêm quấn quanh khay
+  theo chiều rộng (khay rút theo chiều dài), bề rộng mặt hộp gối tính theo cung, mọi công thức cộng bù độ dày giấy
+  (quy ước dưới đây), mỗi mặt có bản lề `fold` để dựng 3D. Id các mặt giữ nguyên qua các phiên bản; kích thước mặt
+  đổi vài phần mm (bù `t`) hoặc nhiều hơn (mặt hộp gối, hai mặt hông vỏ bao diêm nay là L × H). Dự án cũ giữ phiên
+  bản của nó (docs/12 Phase 8, mục 8.10 để cập nhật).
+- **Quy ước kích thước** (từ công thức bản 3): `length × width × height` là **lòng trong** của hộp, món quà phải vừa;
+  `paperThickness` (`t`, mm) ≈ GSM × 0,0014 (300 GSM ≈ 0,42 mm). Nét gấp nằm giữa bề dày giấy, nên mặt nào phủ một
+  kích thước lòng trong giữa hai thành thì rộng thêm `t`; hộp âm dương và khay bao diêm còn cộng 2t theo chiều dài cho
+  tai dán nằm trong thành, nắp / vỏ rộng hơn mặt ngoài của đáy / khay 1 mm. Chi tiết từng cấu trúc: docs/14 §2.
 
 ### 5.2. `canvasState`
 
@@ -255,6 +278,13 @@ PATCH /api/projects/:id   { "version": 7, "canvasState": {...}, "dimensions"?: {
   `templateId`. Dự án trong thùng rác: `409` cho mọi thao tác sửa.
 - Mỗi lần đổi `canvasState` / `dimensions`, server chạy lại FitCheck và trả `fitcheckState`
   (`{ isValidForProduction, score, violations[] }`) + `fitcheckScore`: hiển thị theo bản của server.
+- FitCheck là **một hàm** `checkBox(pieces, elements)` của `@wrapfit/shared`, editor và server cùng gọi (từ
+  2026-10-12). Quy tắc (`code`, mức): chữ / logo / ảnh cách mép mặt ≥ 3 mm, tính theo khung đã xoay (`CUT_OVERLAP` nếu
+  mép gần nhất là nét cắt, `CREASE_OVERLAP` nếu là nếp gấp; < 1 mm hoặc tràn ra ngoài: lỗi, còn lại: cảnh báo); hoa văn
+  (`pattern`) không cần lề nhưng chạm nét cắt thì phải tràn ≥ 2 mm hoặc lùi ≥ 3 mm (`BLEED_INSUFFICIENT`, cảnh báo); lấn
+  lên tai dán (`GLUE_CONTAMINATED`, lỗi; phôi từ bản 3); mặt không có trong hộp (`NO_PANEL`, cảnh báo: không được in);
+  ảnh / hoa văn < 200 DPI (`LOW_DPI`, cảnh báo); phôi lớn hơn khổ B1 1020 × 720 mm (`DIMENSION_OUT_OF_BOUNDS`, cảnh
+  báo). Điểm = 100 − 30 × lỗi − 10 × cảnh báo; còn lỗi thì xuất file trả 422. Sửa tự động: `autoFixElements`.
 - Thumbnail: render canvas thành ảnh → upload `purpose: THUMBNAIL` (+ `projectId`) → `PATCH { thumbnailUrl }`.
 
 ### 5.4. Vòng đời
@@ -281,6 +311,25 @@ DELETE /api/projects/:id/snapshots/:snapshotId         → 204
   động mới nhất.
 - Khôi phục trả `backup` (trạng thái ngay trước khi khôi phục): nút "Hoàn tác" = khôi phục `backup.id`. Sau khôi phục
   `project.version` tăng: thay dữ liệu editor bằng `project` trả về.
+- `SnapshotSummary.formulaVersion`: phiên bản công thức của dự án lúc lưu mốc (`null` với mốc lưu trước 2026-10-12).
+  Khôi phục mốc có số này thì dự án về đúng phiên bản đó.
+
+### 6.1. Cập nhật công thức dieline (từ 2026-10-12)
+
+```http
+POST /api/projects/:id/formula-upgrade   { "version": 7 }   → 200 { "project": ProjectDetail, "backup": SnapshotSummary | null }
+```
+
+- `ProjectDetail.latestFormulaVersion` > `formulaVersion` → studio hiện banner "Phôi của dự án dùng công thức cũ (bản X)"
+  với tóm tắt thay đổi (`FORMULA_CHANGES` của shared) và nút mở hộp thoại xác nhận
+  (`features/studio/components/formula/FormulaUpgrade.tsx`). Xác nhận → gọi API qua `useProjectSync().replace` (gửi hết
+  thay đổi đang chờ, truyền `version` vừa lưu) → dựng lại editor bằng `project` → thanh "Phôi đã lên công thức bản Y ·
+  Hoàn tác" (khôi phục `backup.id`). Dự án trong thùng rác không hiện banner.
+- Backend lưu mốc tự động "Trước khi cập nhật công thức (bản X → Y)" có `formulaVersion` X, đổi `formulaVersion`, chạy
+  lại FitCheck, tăng `version`. `409` thùng rác, `409 PROJECT_VERSION_CONFLICT` khi `version` cũ, đã mới nhất →
+  `backup: null`.
+- Dự án **chưa từng xuất file in** được đưa lên bản mới bằng script `npm --workspace=be run db:upgrade-formulas`
+  (be/README.md, mục triển khai); dự án đã xuất giữ bản cũ tới khi chủ dự án bấm cập nhật.
 
 ## 7. Xuất file in
 
@@ -295,12 +344,23 @@ GET  /api/projects/:id/exports   → 20 lần xuất gần nhất
 - Hỏi trạng thái mỗi 2 giây: `PENDING` → `PROCESSING` → `COMPLETED` (có `downloadUrl`, hết hạn sau 15 phút: hết hạn
   thì GET lại để lấy link mới) hoặc `FAILED` (`error`). Không có trường `progress`.
 - Chỉ ảnh upload lên WrapFit được nhúng vào file in. Tối đa 10 yêu cầu xuất / phút.
+- Nội dung file (docs/12 Phase 9):
+  - `PDF_CMYK`: PDF 1.6, khổ thật (1 mm = 2,8346 pt), 4 lớp OCG `Artwork`, `Crease`, `CutContour`, `Dimensions`
+    (lớp cuối chỉ xem, không in). Nét cắt là màu pha `CutContour` (thay thế 100 % M), nét gấp là màu pha `Crease`
+    (100 % C, nét đứt 4 mm), cả hai overprint; mỗi đường cắt / gấp là một đường liền. `TrimBox` = vùng phôi,
+    `BleedBox` = phôi + 2 mm. Nhúng ảnh PNG / JPEG (giữ tỉ lệ trong khung) và font của chữ (bản đậm).
+  - `SVG`: cùng 4 lớp (`<g id>` + nhãn lớp Inkscape), ảnh mọi định dạng nhúng base64; chữ ghi tên font (máy mở file
+    cần có font).
+  - `DXF`: R12, mm, lớp `CUT` / `CREASE`, mỗi đường là một `POLYLINE` (đường cong tạm thay bằng dây cung).
+  - Chữ dùng cùng mô hình với canvas (`layoutTextBox` của `@wrapfit/shared`): `style.fontSize` là pt, đậm 700, dòng
+    cao 1,2, xuống dòng trong bề rộng khung, căn giữa ngang và dọc, xoay quanh tâm khung. Font in được: Be Vietnam Pro
+    (mặc định), Playfair Display, Cormorant Garamond, Big Shoulders Display, Inter; tên khác in bằng Be Vietnam Pro.
 
 ## 8. Chia sẻ, remix, thả tim
 
 ```http
 PATCH /api/projects/:id/visibility   { "visibility"?: "PRIVATE" | "UNLISTED" | "PUBLIC", "allowFork"?: boolean }
-GET   /api/public/projects/:slug              (công khai; có cookie thì biết người xem)
+GET   /api/public/projects/:slug              (công khai; có cookie thì biết người xem; ?count=false: không tính lượt xem)
 POST  /api/public/projects/:slug/fork         → 201 ProjectDetail (bản remix của tôi)
 POST  /api/public/projects/:slug/like         → { "liked": true, "likesCount": 12 }
 DELETE /api/public/projects/:slug/like        → { "liked": false, "likesCount": 11 }
@@ -309,6 +369,9 @@ DELETE /api/public/projects/:slug/like        → { "liked": false, "likesCount"
 - Trang `/p/[slug]` hiển thị `slug, title, visibility, allowFork, template, dimensions, materialSpec, canvasState,
   thumbnailUrl, tags, occasion, industry, viewsCount, likesCount, createdAt, updatedAt, author { fullName, shopName,
   avatarUrl }, forkedFrom { slug, title, author } | null, viewer { isOwner, liked }`.
+- Lượt xem: mỗi người xem (tài khoản, hoặc IP + trình duyệt) tính 1 lần / 10 phút, chủ dự án không tính. Code chạy trên
+  server Next.js (SSR, `generateMetadata`) không mang cookie phiên nên gọi với `?count=false`; request của trình duyệt
+  mới tính lượt xem (`features/showcase/server.ts`).
 - `PRIVATE` / thùng rác / slug sai → `404` (kể cả với chủ dự án). Trang `UNLISTED` nên có
   `<meta name="robots" content="noindex">`. `allowFork: false` → fork trả `403`.
 - Đưa lên Thư viện cộng đồng: `PUBLIC` + gắn `occasion` / `industry` (qua `PATCH /api/projects/:id`); chỉ thiết kế có
@@ -360,26 +423,35 @@ GET|POST /api/collections       · GET|PATCH|DELETE /api/collections/:id   (colo
 ```
 
 - Brand Kit được **thay cả bộ**: trường bỏ trống bị xóa. `avatarUrl: null` xóa ảnh đại diện (cả ảnh Google).
+- Ảnh đại diện / logo bị thay hoặc gỡ được xóa luôn khỏi storage (không còn tính vào hạn mức), nếu file đó upload với
+  purpose `AVATAR` / `LOGO` và không gắn dự án. Giữ lại: file `IMAGE` (có thể đang là thumbnail), logo còn hiện trên
+  canvas của một dự án. Đừng dùng lại `fileUrl` cũ sau khi đã thay: upload lại.
+- File upload mà **không nơi nào dùng** (canvas, mốc phiên bản, avatar, logo, thumbnail, ảnh xem trước của mốc) bị
+  xoá **24 giờ** sau khi upload (cron dọn storage mỗi 10 phút): ảnh đã gỡ khỏi canvas và mọi mốc, thumbnail cũ, logo
+  upload rồi không bấm lưu. Upload xong thì lưu (`PATCH`) trong vòng 24 giờ; quá hạn → `400 FILE_NOT_OWNED`, upload lại.
 - Thư mục: tối đa 100; xóa thư mục giữ lại dự án. Đưa dự án vào / ra: `PATCH /api/projects/:id { collectionId }`.
 
-## 13. Những chỗ `apiClient` hiện tại lệch backend
+## 13. Những chỗ `apiClient` cũ lệch backend (đã sửa)
 
-Danh sách sửa khi dựng lại FE (các module trong [`fe/src/api/`](../fe/src/api/), kiểu dữ liệu ở [`fe/src/types/api/`](../fe/src/types/api/index.ts)):
+Danh sách lập trước khi nối FE với backend ([`12`](12_FE_BE_INTEGRATION_PLAN.md)). Tất cả đã sửa trong các module
+[`fe/src/api/`](../fe/src/api/) và kiểu dữ liệu [`fe/src/types/api/`](../fe/src/types/api/index.ts); kiểm lại ở phiên S8
+(2026-10-12): không còn chỗ nào trong `fe/src` dùng tên cũ, kịch bản [`12` §7](12_FE_BE_INTEGRATION_PLAN.md#7-kịch-bản-kiểm-thử-end-to-end)
+chạy qua cả 15 bước.
 
-| Chỗ lệch | Hiện tại | Đúng theo backend |
-|---|---|---|
-| Đăng ký / đăng nhập | Chưa có trang và hàm nào | Mục 3: 7 trang, xử lý `EMAIL_NOT_VERIFIED` |
-| Làm mới phiên | Không xử lý `401` | Refresh 1 lần rồi gửi lại (mục 1) |
-| `listProjects` | Tham số `search`; đọc `{ items, total }` | Tham số `q`; response `{ items, meta: { total, page, limit, totalPages } }` |
-| `uploadFileToStorage` | `purpose: "CANVAS_IMAGE" \| "PROJECT_THUMBNAIL"` | `LOGO` \| `IMAGE` \| `THUMBNAIL` \| `AVATAR` |
-| `uploadFileToStorage` | Tự đặt header `PUT`; lỗi thì trả data URL | Dùng đúng `ticket.method` + `ticket.headers`; kiểm tra `put.ok`; **không** dùng data URL (bị từ chối khi lưu) |
-| `deleteProject` (Dashboard) | Gọi `DELETE` trực tiếp | Trước hết `PATCH .../status { DELETED }`; `DELETE` chỉ trong thùng rác |
-| `AiPatternResponse` | `{ theme, palette, svgTile }` | `{ source, themeName, description, palette, tile: { size, svg }, usage }` |
-| `ExportJobStatus` | Có `progress`, thiếu `downloadExpiresIn` | Mục 7 |
-| `SnapshotDto` | Có `projectId` | `{ id, name, previewUrl, dimensions, createdAt }` |
-| `PublicUnboxingData` | `project`, `slug`, `qrCodeUrl`; hiệu ứng `sparkles`, `stars` | `box`, `sender`; không có `slug` / `qrCodeUrl`; hiệu ứng ở mục 10 |
-| Dieline trong editor | Gọi thẳng `generateTuckTopDieline`… | `generateDielinePieces(templateId, dimensions, formulaVersion)` |
-| Dữ liệu giả khi lỗi | Nhiều hàm `catch` trả dữ liệu mẫu | Chỉ dùng cho demo offline; khi tích hợp nên hiển thị lỗi thật để không che lỗi API |
+| Chỗ lệch | Trước đây | Đúng theo backend | Sửa ở |
+|---|---|---|---|
+| Đăng ký / đăng nhập | Chưa có trang và hàm nào | Mục 3: 7 trang, xử lý `EMAIL_NOT_VERIFIED` | S4 |
+| Làm mới phiên | Không xử lý `401` | Refresh 1 lần rồi gửi lại (mục 1) | S2, S3 |
+| `listProjects` | Tham số `search`; đọc `{ items, total }` | Tham số `q`; response `{ items, meta: { total, page, limit, totalPages } }` | S2 |
+| `uploadFileToStorage` | `purpose: "CANVAS_IMAGE" \| "PROJECT_THUMBNAIL"` | `LOGO` \| `IMAGE` \| `THUMBNAIL` \| `AVATAR` | S2 |
+| `uploadFileToStorage` | Tự đặt header `PUT`; lỗi thì trả data URL | Dùng đúng `ticket.method` + `ticket.headers`; kiểm tra `put.ok`; **không** dùng data URL (bị từ chối khi lưu) | S2 |
+| `deleteProject` (Dashboard) | Gọi `DELETE` trực tiếp | Trước hết `PATCH .../status { DELETED }`; `DELETE` chỉ trong thùng rác | S5 |
+| `AiPatternResponse` | `{ theme, palette, svgTile }` | `{ source, themeName, description, palette, tile: { size, svg }, usage }` | S2, S7 |
+| `ExportJobStatus` | Có `progress`, thiếu `downloadExpiresIn` | Mục 7 | S2 |
+| `SnapshotDto` | Có `projectId` | `{ id, name, previewUrl, dimensions, createdAt }` | S2 |
+| `PublicUnboxingData` | `project`, `slug`, `qrCodeUrl`; hiệu ứng `sparkles`, `stars` | `box`, `sender`; không có `slug` / `qrCodeUrl`; hiệu ứng ở mục 10 | S2, S5 |
+| Dieline trong editor | Gọi thẳng `generateTuckTopDieline`… | `generateDielinePieces(templateId, dimensions, formulaVersion)` | S6, S10 |
+| Dữ liệu giả khi lỗi | Nhiều hàm `catch` trả dữ liệu mẫu | Hiển thị lỗi thật (`ErrorState` có mã `requestId`, toast) | S2, S3 |
 
 ## 14. Kiểu dữ liệu TypeScript
 
@@ -475,7 +547,7 @@ Toàn bộ 56 route HTTP của backend và mục tài liệu tương ứng. Rout
 | Bộ sưu tập | `GET` · `POST /api/collections`, `GET` · `PATCH` · `DELETE /api/collections/:id` | Đăng nhập | 12 |
 
 **Quản trị**: chỉ `role = ADMIN`; người khác nhận `403`. Admin không tự đổi role / tự khóa / tự xóa mình (`400`). Khóa
-tài khoản (`isActive: false`) thu hồi mọi phiên của người đó.
+tài khoản (`isActive: false`) thu hồi mọi phiên của người đó, có hiệu lực ngay: request kế tiếp của người đó nhận `401`.
 
 **Health**: `status: "degraded"` khi Redis lỗi (xuất file in và email tạm dừng); `worker: "down"` khi không có worker
 nào chạy. Dùng cho trang trạng thái / giám sát, không cần gọi từ giao diện người dùng.

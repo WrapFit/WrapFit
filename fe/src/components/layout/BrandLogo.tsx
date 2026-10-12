@@ -10,6 +10,8 @@ export interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg';
   /** Optional CAD or sub-tier badge (e.g. "CAD CADRE v4.2") */
   badge?: string;
+  /** Where the badge shows (Tailwind display classes) */
+  badgeClassName?: string;
   /** Link target, default to '/' */
   href?: string;
   /** Custom extra classes */
@@ -20,6 +22,7 @@ export function BrandLogo({
   variant = 'default',
   size = 'md',
   badge,
+  badgeClassName = 'hidden sm:inline-block',
   href = '/',
   className = '',
 }: BrandLogoProps) {
@@ -78,7 +81,7 @@ export function BrandLogo({
 
           {badge && (
             <span
-              className={`hidden sm:inline-block font-['JetBrains_Mono'] text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
+              className={`${badgeClassName} font-['JetBrains_Mono'] text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
                 isLight
                   ? 'bg-white/10 text-white/90 border-white/20'
                   : 'bg-stone-100 text-stone-600 border-stone-200/80'

@@ -27,6 +27,7 @@ import { assetUrl, configureAssetBase, PRIVATE_KEY_PREFIX, uploadKeyOf } from '.
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import {
   CONFIRM_UPLOADS_AFTER_MS,
+  UNUSED_UPLOAD_GRACE_MS,
   DOWNLOAD_ONLY_TYPES,
   PENDING_UPLOAD_RESERVE_MS,
   STORAGE_QUOTA_BYTES,
@@ -232,6 +233,19 @@ export class StorageService implements IProjectFiles {
   }
 
   /**
+   * Forgets the avatar or logo a user just replaced or removed, inside the transaction that changed it, and returns
+   * its key to delete from the bucket after the commit (`deleteObjects`); null when the file must stay. Only an
+   * upload made for that slot (AVATAR, LOGO) and owned by no project is removed: an IMAGE may also be a project
+   * thumbnail or snapshot preview, and a logo still shown on a canvas is kept by `project_file_refs`.
+   */
+  async forgetProfileUpload(db: Db, userId: string, key: string, purpose: 'AVATAR' | 'LOGO'): Promise<string | null> {
+    const { count } = await db.storedFile.deleteMany({
+      where: { key, userId, purpose, projectId: null, refs: { none: {} } },
+    });
+    return count ? key : null;
+  }
+
+  /**
    * A saved canvas may show the caller's own logos and images, and the uploads it already showed (a remix keeps the
    * images of the original author). Anything else is refused: pointing at another user's file would keep it alive
    * after its owner deleted it.
@@ -397,6 +411,37 @@ export class StorageService implements IProjectFiles {
       }
     }
     return result;
+  }
+
+  /**
+   * Called by StorageMaintenanceTask: deletes the uploads nothing uses UNUSED_UPLOAD_GRACE_MS after they were made
+   * (an image removed from every canvas and snapshot, a replaced thumbnail, a logo uploaded but never saved...), so
+   * they stop counting against the quota. Every place that stores an upload key is checked in the same statement;
+   * a canvas that starts showing the file meanwhile makes it fail on the foreign key (the next run retries). Files the
+   * backend generates (QR codes, exports) go with their project instead. Returns how many were deleted.
+   */
+  async dropUnusedUploads(now = new Date()): Promise<number> {
+    if (!this.client) return 0;
+    const before = new Date(now.getTime() - UNUSED_UPLOAD_GRACE_MS);
+    const rows = await this.prisma.$queryRaw<{ key: string }[]>`
+      DELETE FROM stored_files
+      WHERE id IN (
+        SELECT f.id FROM stored_files f
+        WHERE f.purpose IN ('LOGO', 'IMAGE', 'THUMBNAIL', 'AVATAR')
+          AND f.confirmed_at IS NOT NULL
+          AND f.created_at < ${before}
+          AND NOT EXISTS (SELECT 1 FROM project_file_refs r WHERE r.stored_file_id = f.id)
+          AND NOT EXISTS (SELECT 1 FROM users u WHERE u.avatar_key = f.key OR u.brand_kit ->> 'logoKey' = f.key)
+          AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.thumbnail_key = f.key)
+          AND NOT EXISTS (SELECT 1 FROM project_snapshots s WHERE s.preview_key = f.key)
+          AND NOT EXISTS (SELECT 1 FROM social_mockups m WHERE m.render_key = f.key)
+        ORDER BY f.created_at
+        LIMIT ${MAINTENANCE_BATCH}
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING key`;
+    if (rows.length) await this.deleteObjects(rows.map((row) => row.key));
+    return rows.length;
   }
 
   /** Called by StorageMaintenanceTask: retries deleting orphaned objects. Returns how many are gone. */

@@ -1,75 +1,68 @@
 /**
- * Parametric Dieline Engine — Lid & Base Box (Hộp âm dương / Rigid Two-Piece Gift Box)
- * Consists of 2 pieces: Bottom Base (Hộp dương) + Top Lid (Nắp âm)
+ * Parametric Dieline Engine — Lid & Base Box (Hộp âm dương), formula version 3.
  * Owned by IT 2 (Packaging Math)
+ *
+ * Two trays (tray.ts): the base holds the gift, the lid slides over it. L × W × H is the inside of the base; with the
+ * lid on, the gift has H of height (the lid rests on the rim of the base).
+ *
+ * Paper thickness t: creases sit on the paper mid-plane, so the base bottom is L + t by W + t, plus 2t along L for the
+ * corner tabs glued inside the left and right walls; the walls are H + t/2 high (the bottom adds half a thickness).
+ * The lid is sized on the outside of the base (base + t) plus LID_CLEARANCE, then the same allowances.
  */
 
-import { BoxDimensions, DielineGeometry, DielineSegment, PanelFace } from "../types/dieline";
+import { BoxDimensions, DielineGeometry } from "../types/dieline";
+import { generateTray } from "./tray";
+
+/** Gap between the outside of the base and the inside of the lid, mm. */
+export const LID_CLEARANCE_MM = 1;
+
+/** Wall height of the lid, crease to rim (mm): about 60 % of the box, at least 15 mm, never more than the base. */
+export function lidWallOf(height: number, paperThickness: number): number {
+  return Math.min(height + paperThickness / 2, Math.max(15, height * 0.6));
+}
 
 export function generateLidBaseDieline(dimensions: BoxDimensions): {
   base: DielineGeometry;
   lid: DielineGeometry;
 } {
-  const { length: L, width: W, height: H, paperThickness: t } = dimensions;
+  const { length, width, height, paperThickness: t } = dimensions;
+  const baseL = length + 3 * t;
+  const baseW = width + t;
+  const outsideL = baseL + t;
+  const outsideW = baseW + t;
 
-  // Lid height is typically 50-70% of base height, with 1.5t clearance
-  const lidH = Math.max(15, H * 0.6);
-  const lidL = L + (2 * t) + 1.2;
-  const lidW = W + (2 * t) + 1.2;
-
-  // 1. Bottom Base (Đáy)
-  const basePanels: PanelFace[] = [
-    { id: "base_bottom", name: "Đáy hộp", bounds: { x: H, y: H, width: L, height: W } },
-    { id: "base_front", name: "Thành trước", bounds: { x: H, y: 0, width: L, height: H } },
-    { id: "base_back", name: "Thành sau", bounds: { x: H, y: H + W, width: L, height: H } },
-    { id: "base_left", name: "Thành trái", bounds: { x: 0, y: H, width: H, height: W } },
-    { id: "base_right", name: "Thành phải", bounds: { x: H + L, y: H, width: H, height: W } },
-  ];
-
-  const baseSegments: DielineSegment[] = [
-    { id: "base_c1", type: "crease", start: { x: H, y: H }, end: { x: H + L, y: H } },
-    { id: "base_c2", type: "crease", start: { x: H, y: H + W }, end: { x: H + L, y: H + W } },
-    { id: "base_c3", type: "crease", start: { x: H, y: H }, end: { x: H, y: H + W } },
-    { id: "base_c4", type: "crease", start: { x: H + L, y: H }, end: { x: H + L, y: H + W } },
-  ];
-
-  const base: DielineGeometry = {
+  const base = generateTray({
     structureType: "lid-base",
     dimensions,
-    totalBoundingBox: {
-      width: L + (2 * H),
-      height: W + (2 * H)
+    length: baseL,
+    width: baseW,
+    wall: height + t / 2,
+    up: "+z",
+    panels: {
+      bottom: { id: "base_bottom", name: "Đáy hộp" },
+      front: { id: "base_front", name: "Thành trước" },
+      back: { id: "base_back", name: "Thành sau" },
+      left: { id: "base_left", name: "Thành trái" },
+      right: { id: "base_right", name: "Thành phải" },
     },
-    panels: basePanels,
-    segments: baseSegments
-  };
+  });
 
-  // 2. Top Lid (Nắp)
-  const lidPanels: PanelFace[] = [
-    { id: "lid_top", name: "Mặt nắp", bounds: { x: lidH, y: lidH, width: lidL, height: lidW } },
-    { id: "lid_front", name: "Vách nắp trước", bounds: { x: lidH, y: 0, width: lidL, height: lidH } },
-    { id: "lid_back", name: "Vách nắp sau", bounds: { x: lidH, y: lidH + lidW, width: lidL, height: lidH } },
-    { id: "lid_left", name: "Vách nắp trái", bounds: { x: 0, y: lidH, width: lidH, height: lidW } },
-    { id: "lid_right", name: "Vách nắp phải", bounds: { x: lidH + lidL, y: lidH, width: lidH, height: lidW } },
-  ];
-
-  const lidSegments: DielineSegment[] = [
-    { id: "lid_c1", type: "crease", start: { x: lidH, y: lidH }, end: { x: lidH + lidL, y: lidH } },
-    { id: "lid_c2", type: "crease", start: { x: lidH, y: lidH + lidW }, end: { x: lidH + lidL, y: lidH + lidW } },
-    { id: "lid_c3", type: "crease", start: { x: lidH, y: lidH }, end: { x: lidH, y: lidH + lidW } },
-    { id: "lid_c4", type: "crease", start: { x: lidH + lidL, y: lidH }, end: { x: lidH + lidL, y: lidH + lidW } },
-  ];
-
-  const lid: DielineGeometry = {
+  const lid = generateTray({
     structureType: "lid-base",
     dimensions,
-    totalBoundingBox: {
-      width: lidL + (2 * lidH),
-      height: lidW + (2 * lidH)
+    length: outsideL + LID_CLEARANCE_MM + 3 * t,
+    width: outsideW + LID_CLEARANCE_MM + t,
+    wall: lidWallOf(height, t),
+    up: "-z",
+    frontAtTop: false,
+    panels: {
+      bottom: { id: "lid_top", name: "Mặt nắp" },
+      front: { id: "lid_front", name: "Vách nắp trước" },
+      back: { id: "lid_back", name: "Vách nắp sau" },
+      left: { id: "lid_left", name: "Vách nắp trái" },
+      right: { id: "lid_right", name: "Vách nắp phải" },
     },
-    panels: lidPanels,
-    segments: lidSegments
-  };
+  });
 
   return { base, lid };
 }

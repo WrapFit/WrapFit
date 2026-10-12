@@ -9,12 +9,14 @@
     "start": "next start",
     "lint": "next lint",
     "stitch:sync": "node scripts/stitch/sync.mjs",
-    "stitch:parity": "node scripts/stitch/visual-parity.mjs"
+    "stitch:parity": "node scripts/stitch/visual-parity.mjs",
+    "shots": "node scripts/page-shots.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.9",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
+    "@tanstack/react-query": "^5.104.1",
     "@types/animejs": "^4.0.0",
     "@wrapfit/shared": "*",
     "animejs": "^4.5.0",

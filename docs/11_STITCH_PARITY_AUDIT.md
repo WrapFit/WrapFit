@@ -16,6 +16,15 @@
 
 Đo bằng `npm run stitch:parity` (xem §3.5). Ảnh so sánh: `fe/.visual-parity/<slug>.png` (Stitch | app | diff).
 
+> **Mốc mới (2026-10-11, S9):** từ khi các màn được sửa tay header / sidebar (`e07d23b`, `e509d8f`) và header chung đổi
+> font (S5), ngưỡng 1% không còn áp dụng: số đo từng màn trước / sau S9 ở [`13`](13_UI_VIEWPORT_AUDIT.md) §2.3. So sánh
+> với cột "Sau S9" của bảng đó.
+>
+> **Đo lại ở S8 (2026-10-12, sau khi nối xong FE ↔ BE):** 20 / 22 màn `converted` lệch đúng như cột "Sau S9" (chênh
+> ≤ 0,1 điểm %); `/intro/blueprint` (cảnh 3D tự xoay) và `/` (trang chủ, mascot động) dao động như mọi lần đo.
+> `/editor` và `/editor/export` chuyển hướng sang `/editor/new` từ S6 (`next.config.mjs`, docs/12 R3), nên
+> `stitch:parity` bỏ qua mọi route có redirect thay vì so trang đích với bản Stitch.
+
 ## 2. Đánh giá kiến trúc frontend (trước lượt 2)
 
 | # | Vấn đề | Mức | Xử lý |
@@ -70,6 +79,23 @@ fe/
 
 Quy tắc: không sửa file có banner `AUTO-GENERATED`. Muốn đổi, sửa `stitch/source`, `stitch/overrides.json` hoặc `scripts/stitch`, rồi chạy `npm run stitch:sync`.
 
+`status` trong `screens.json` (cập nhật 2026-10-11):
+
+| Status | Generator sinh | Dùng khi |
+|---|---|---|
+| `converted` | view, page, CSS, token, behavior | Màn hình tĩnh, giữ đúng bản Stitch |
+| `wired` | CSS, token, behavior; **không** ghi view / page | View viết tay bằng React và nối API ([`12`](12_FE_BE_INTEGRATION_PLAN.md)), vẫn dùng CSS và token của screen. `stitch:parity` bỏ qua, trừ khi có `--include-wired` |
+| `approximation`, `manual` | không sinh gì | Trang viết tay không có HTML Stitch; `manual` còn hiện BottomNavBar |
+
+**Component của app bên trong màn `wired`**: CSS của một screen đặt `initial` cho mọi token screen đó không định nghĩa
+(vd. `--st-c-brand-forest` ở các màn admin), nên class như `bg-brand-forest`, `font-serif` mất màu / font bên trong
+`[data-stitch]`. Bọc component đó bằng phần tử có thuộc tính `data-app-tokens` để lấy lại giá trị `:root` của app
+(`features/stitch/tailwindStitch.ts`). `ErrorState`, `EmptyState`, `PageLoader` đã mang sẵn thuộc tính này.
+
+**Chống ghi đè sửa tay**: `stitch/generated.lock.json` lưu hash mọi file generator đã ghi. Lần sync sau chỉ thay / xoá
+file còn đúng nội dung đó; file đã sửa tay (25 file lúc tạo lock: view, CSS, behavior của các màn được chỉnh header,
+sidebar, link) được giữ nguyên và liệt kê cuối output. `npm run stitch:sync -- --force` ghi đè cả những file này.
+
 ### 3.1. Trang (`src/views/**/index.tsx` + `src/app/**/page.tsx`)
 - `<body>` của Stitch thành `<div data-stitch="<slug>">` mang nguyên class và style của body.
 - Giữ khoảng trắng giữa các phần tử inline (JSX mặc định sẽ nuốt), sửa hoa/thường tag SVG filter, thuộc tính số (`tabIndex={0}`), form state không kiểm soát (`defaultValue`, `defaultChecked`).
@@ -122,8 +148,8 @@ Mỗi token mà một screen Stitch định nghĩa trở thành biến CSS (`--s
 ### Kỹ thuật, có thể làm tiếp
 - [ ] Giảm font Material Symbols (4 MB, đủ mọi trục) bằng `icon_names=` chỉ gồm icon đang dùng.
 - [ ] Gộp font: Stitch dùng tên family Google, phần app cũ dùng `next/font` (hash). Cùng họ font đang tải hai lần.
-- [ ] `/unbox/[slug]`: state `data`/`loading` lấy từ API nhưng chưa được render; trang luôn hiện nội dung tĩnh. API `/api/public/unboxing/:slug` trả 500 khi backend chưa chạy.
-- [ ] Thêm `error.tsx`, `loading.tsx` cho các nhóm route; thêm ESLint config (`next lint` hiện chưa cấu hình); thêm job `fe` vào CI chạy `tsc`, `next build`, `stitch:parity`.
+- [x] `/unbox/[slug]`: hiện dữ liệu thật của API (tên người nhận, lời chúc, hiệu ứng); backend tắt thì hiện lỗi (S5, kiểm lại ở S8).
+- [ ] Thêm `loading.tsx` cho các nhóm route (`app/error.tsx`, `ErrorState`, `PageLoader` đã có từ S3); thêm ESLint config (`next lint` hiện chưa cấu hình); thêm job `fe` vào CI chạy `tsc`, `next build`, `stitch:parity`.
 - [ ] Đồng bộ `docs/09` với code thực tế (route group `(auth)`, `dashboard/layout.tsx`, `hooks/`, `stores/` đang chỉ có trên tài liệu).
 - [ ] Nếu muốn layout chung (sidebar admin, navbar dashboard): thống nhất biến thể trên Stitch trước, rồi tách thành `layout.tsx`; làm trước sẽ phá parity từng màn.
 - [ ] Viết lại dần behavior generated sang React/Anime.js (theo AGENTS.md) khi một màn hình cần logic thật; khi đó chuyển screen sang `status: "manual"` để generator không ghi đè.
@@ -131,7 +157,7 @@ Mỗi token mà một screen Stitch định nghĩa trở thành biến CSS (`--s
 ## 6. Lệnh
 
 ```bash
-npm run stitch:sync -w fe        # sinh lại trang, CSS, behavior từ fe/stitch
+npm run stitch:sync -w fe        # sinh lại trang, CSS, behavior từ fe/stitch (giữ file đã sửa tay; -- --force để ghi đè)
 npm run stitch:parity -w fe      # so ảnh với Stitch (cần dev server ở :3000)
 npm run build -w fe              # build production
 ```

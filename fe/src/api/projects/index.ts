@@ -1,150 +1,85 @@
-/** Projects and snapshots (`be/src/modules/projects`). Reads fall back to demo data while the API is offline. */
+/** Projects, their lifecycle and version snapshots (`be/src/projects`). Rules: docs/06, sections 5 and 6. */
 
-import { BoxDimensions, CanvasState, MaterialSpecification } from "@wrapfit/shared";
 import { request } from "@/services/api";
-import type { ProjectDto, SnapshotDto } from "@/types/api";
+import type {
+  ChangeVisibilityRequest,
+  CreateProjectRequest,
+  CreateSnapshotRequest,
+  FormulaUpgradeResponse,
+  Paginated,
+  ProjectDetail,
+  ProjectListQuery,
+  ProjectStatus,
+  ProjectSummary,
+  RestoreSnapshotResponse,
+  SnapshotSummary,
+  UpdateProjectRequest,
+} from "@/types/api";
 
-export async function listProjects(query: {
-  status?: string;
-  search?: string;
-  page?: number;
-  limit?: number;
-} = {}): Promise<{ items: ProjectDto[]; total: number }> {
-  const params = new URLSearchParams();
-  if (query.status) params.set("status", query.status);
-  if (query.search) params.set("search", query.search);
-  if (query.page) params.set("page", query.page.toString());
-  if (query.limit) params.set("limit", query.limit.toString());
-
-  try {
-    const q = params.toString() ? `?${params.toString()}` : "";
-    return await request<{ items: ProjectDto[]; total: number }>(`/projects${q}`);
-  } catch {
-    // Fallback for offline development
-    return {
-      items: [
-        {
-          id: "proj-demo-1",
-          templateId: "tuck-top",
-          title: "Hũ Nến Thơm Gỗ Thông & Quế",
-          dimensions: { length: 85, width: 85, height: 105, paperThickness: 0.45 },
-          materialSpec: { type: "ivory", gsm: 350, caliper: 0.45, finish: "matte" },
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: "proj-demo-2",
-          templateId: "sleeve-drawer",
-          title: "Nước Hoa Unisex L'Automne 50ml",
-          dimensions: { length: 65, width: 40, height: 120, paperThickness: 0.45 },
-          materialSpec: { type: "duplex", gsm: 350, caliper: 0.45, finish: "matte" },
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: "proj-demo-3",
-          templateId: "lid-base",
-          title: "Bộ Trang Sức Vòng Tay Bạc Tinh Xảo",
-          dimensions: { length: 100, width: 100, height: 60, paperThickness: 0.5 },
-          materialSpec: { type: "duplex", gsm: 400, caliper: 0.5, finish: "glossy" },
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-      total: 3,
-    };
-  }
+/** My projects, without their canvas. Default: ACTIVE, most recently updated first. */
+export function listProjects(query: ProjectListQuery = {}): Promise<Paginated<ProjectSummary>> {
+  return request("/projects", { query });
 }
 
-export async function getProject(id: string): Promise<ProjectDto> {
-  try {
-    return await request<ProjectDto>(`/projects/${id}`);
-  } catch {
-    // Fallback demo project
-    return {
-      id,
-      templateId: "tuck-top",
-      title: "Bao Bì Quà Tặng Sang Trọng",
-      dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
-      materialSpec: { type: "ivory", gsm: 300, caliper: 0.38, finish: "matte" },
-      canvasState: {
-        elements: [
-          {
-            id: "logo_demo",
-            type: "logo",
-            panelId: "panel_front",
-            x: 15,
-            y: 15,
-            width: 45,
-            height: 25,
-            rotation: 0,
-            content: "WrapFit Signature",
-            dpi: 300,
-          },
-        ],
-      },
-    };
-  }
+/** 404 also for a project of another user. */
+export function getProject(id: string): Promise<ProjectDetail> {
+  return request(`/projects/${id}`);
 }
 
-export async function createProject(data: {
-  templateId: string;
-  title: string;
-  dimensions: BoxDimensions;
-  materialSpec?: any;
-  canvasState?: any;
-  tags?: string[];
-}): Promise<ProjectDto> {
-  return await request<ProjectDto>("/projects", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+export function createProject(data: CreateProjectRequest): Promise<ProjectDetail> {
+  return request("/projects", { method: "POST", json: data });
 }
 
-export async function updateProject(
-  id: string,
-  // Fields of the API's UpdateProjectDto: anything else is rejected with 400 (the box structure cannot change).
-  data: {
-    title?: string;
-    dimensions?: BoxDimensions;
-    materialSpec?: MaterialSpecification;
-    canvasState?: CanvasState;
-    tags?: string[];
-    thumbnailUrl?: string;
-    version?: number;
-  }
-): Promise<ProjectDto> {
-  return await request<ProjectDto>(`/projects/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
+/**
+ * Saves the fields sent. Send the `version` last loaded or saved: 409 PROJECT_VERSION_CONFLICT (`currentVersion`)
+ * when another tab saved since. 409 without code: the project is in the trash.
+ */
+export function updateProject(id: string, data: UpdateProjectRequest): Promise<ProjectDetail> {
+  return request(`/projects/${id}`, { method: "PATCH", json: data });
 }
 
-export async function deleteProject(id: string): Promise<void> {
-  await request(`/projects/${id}`, { method: "DELETE" });
+/** ARCHIVED, DELETED (trash, purged after 30 days) or back to ACTIVE. */
+export function changeProjectStatus(id: string, status: ProjectStatus): Promise<ProjectDetail> {
+  return request(`/projects/${id}/status`, { method: "PATCH", json: { status } });
 }
 
-export async function createSnapshot(
-  projectId: string,
-  data: { name: string; previewUrl?: string }
-): Promise<SnapshotDto> {
-  try {
-    return await request<SnapshotDto>(`/projects/${projectId}/snapshots`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  } catch {
-    return {
-      id: `snap-${Date.now()}`,
-      projectId,
-      name: data.name,
-      previewUrl: data.previewUrl,
-      createdAt: new Date().toISOString(),
-    };
-  }
+export function changeProjectVisibility(id: string, data: ChangeVisibilityRequest): Promise<ProjectDetail> {
+  return request(`/projects/${id}/visibility`, { method: "PATCH", json: data });
 }
 
-export async function listSnapshots(projectId: string): Promise<SnapshotDto[]> {
-  try {
-    return await request<SnapshotDto[]>(`/projects/${projectId}/snapshots`);
-  } catch {
-    return [];
-  }
+/** Copy "[Bản sao] <title>", without the thumbnail. */
+export function duplicateProject(id: string): Promise<ProjectDetail> {
+  return request(`/projects/${id}/duplicate`, { method: "POST" });
+}
+
+/** Permanent deletion, only from the trash (409 otherwise): move it to the trash with changeProjectStatus first. */
+export function deleteProjectPermanently(id: string): Promise<void> {
+  return request(`/projects/${id}`, { method: "DELETE" });
+}
+
+/** Newest first, without their canvas. */
+export function listSnapshots(projectId: string): Promise<SnapshotSummary[]> {
+  return request(`/projects/${projectId}/snapshots`);
+}
+
+/** At most 50 manual snapshots per project (409). */
+export function createSnapshot(projectId: string, data: CreateSnapshotRequest): Promise<SnapshotSummary> {
+  return request(`/projects/${projectId}/snapshots`, { method: "POST", json: data });
+}
+
+/** Replace the editor state with `project`; restoring `backup.id` undoes it. */
+export function restoreSnapshot(projectId: string, snapshotId: string): Promise<RestoreSnapshotResponse> {
+  return request(`/projects/${projectId}/snapshots/${snapshotId}/restore`, { method: "POST" });
+}
+
+/**
+ * Moves the project to the current dieline formulas of its structure (docs/06 §5.1). `version` as for a save: a newer
+ * save answers 409 PROJECT_VERSION_CONFLICT. Restoring `backup` undoes it.
+ */
+export function upgradeProjectFormula(projectId: string, version: number): Promise<FormulaUpgradeResponse> {
+  return request(`/projects/${projectId}/formula-upgrade`, { method: "POST", json: { version } });
+}
+
+export function deleteSnapshot(projectId: string, snapshotId: string): Promise<void> {
+  return request(`/projects/${projectId}/snapshots/${snapshotId}`, { method: "DELETE" });
 }

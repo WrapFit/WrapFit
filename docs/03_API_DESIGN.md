@@ -31,7 +31,7 @@
 | `POST` | `/api/auth/verify-email/resend` | Public | `{ email }` → luôn `202 {}` (không lộ email nào có tài khoản) |
 | `POST` | `/api/auth/password/forgot` | Public | `{ email }` → luôn `202 {}`; gửi link đặt lại mật khẩu (30 phút) |
 | `POST` | `/api/auth/password/reset` | Public | `{ token, password }` (link đặt lại mật khẩu **hoặc** link hoàn tất đăng ký) → `200 {}`, thu hồi mọi phiên, xóa cookie; rồi đăng nhập lại. Lỗi `400 code AUTH_TOKEN_INVALID \| AUTH_TOKEN_EXPIRED \| AUTH_TOKEN_CONSUMED` |
-| `POST` | `/api/auth/refresh` | Public (cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới |
+| `POST` | `/api/auth/refresh` | Public (cookie `wf_refresh`) | Xoay vòng refresh token, cấp access token mới. Giới hạn theo phiên: 30 / phút cho một cookie, 300 / phút / IP khi không có cookie; `429` không làm hết phiên |
 | `POST` | `/api/auth/logout` | Public | Thu hồi phiên hiện tại, xoá cookie |
 | `GET` | `/api/auth/google?redirect=/p/abc` | Public | Bắt đầu đăng nhập Google (điều hướng trình duyệt) |
 | `GET` | `/api/auth/google/callback` | Public | Google gọi lại → đặt cookie → chuyển về frontend |
@@ -47,8 +47,9 @@
 | `DELETE` | `/api/projects/:id` | Chủ dự án | Xóa vĩnh viễn — chỉ khi dự án đang ở thùng rác (`status = DELETED`), nếu không trả `409` |
 | `PATCH` | `/api/projects/:id/status` | Chủ dự án | `{ "status": "ARCHIVED" \| "DELETED" \| "ACTIVE" }` — lưu trữ / chuyển vào thùng rác / khôi phục |
 | `POST` | `/api/projects/:id/duplicate` | Chủ dự án | Nhân bản thành dự án mới `[Bản sao] <tên>` (201) |
+| `POST` | `/api/projects/:id/formula-upgrade` | Chủ dự án | `{ "version" }` — đưa dự án lên công thức dieline hiện tại của cấu trúc (`latestFormulaVersion` trong `ProjectDetail`): lưu mốc tự động giữ phiên bản cũ, đổi `formulaVersion`, chạy lại FitCheck → `{ project, backup }` (đã mới nhất: `backup = null`). `409` khi trong thùng rác, `409 PROJECT_VERSION_CONFLICT` khi `version` cũ |
 | `GET` · `POST` | `/api/projects/:id/snapshots` | Chủ dự án | Lịch sử phiên bản (mới nhất trước, không kèm canvas) / lưu mốc `{ "name", "previewUrl"? }` |
-| `POST` | `/api/projects/:id/snapshots/:snapshotId/restore` | Chủ dự án | Khôi phục mốc → `{ project, backup }` |
+| `POST` | `/api/projects/:id/snapshots/:snapshotId/restore` | Chủ dự án | Khôi phục mốc → `{ project, backup }`. Mốc có `formulaVersion` thì dự án về phiên bản công thức đó (hoàn tác cập nhật công thức); mốc cũ (`null`) giữ phiên bản hiện tại |
 | `DELETE` | `/api/projects/:id/snapshots/:snapshotId` | Chủ dự án | Xóa một mốc (204) |
 | `PATCH` | `/api/projects/:id/visibility` | Chủ dự án | `{ "visibility"?: "PRIVATE" \| "UNLISTED" \| "PUBLIC", "allowFork"?: boolean }` — chia sẻ & cho phép Remix |
 | `GET` | `/api/public/projects/:slug` | Public (nhận diện người xem nếu có cookie) | Trang xem 3D `/p/[slug]` / iframe nhúng; tăng `viewsCount` |
@@ -87,8 +88,8 @@
 ### Dự án: quy tắc chính (IT3-03)
 
 - **Quyền sở hữu**: `ProjectOwnerGuard` trả `404 Project not found` cho cả dự án không tồn tại lẫn dự án của người khác (không để lộ id nào có thật). Id sai định dạng trả `400`.
-- **Kích thước**: kiểm tra theo `formula_schema.params` của mẫu hộp (vd. tuck-top: L ≥ 40, W ≥ 30, H ≥ 20, tối đa 600 mm). `paperThickness` bỏ trống thì lấy `materialSpec.caliper`.
-- **Mặc định khi tạo**: `materialSpec = { type: "ivory", gsm: 300, caliper: 0.35, finish: "matte" }`, `canvasState = { elements: [] }`.
+- **Kích thước**: kiểm tra theo `formula_schema.params` của mẫu hộp (vd. tuck-top: L ≥ 40, W ≥ 30, H ≥ 20, tối đa 600 mm) và quy tắc tỉ lệ của cấu trúc (`dimensionRuleErrors` của `@wrapfit/shared`: hộp gối có `height ≤ width / 2`); sai → 400. `paperThickness` bỏ trống thì lấy `materialSpec.caliper`.
+- **Mặc định khi tạo**: `materialSpec = { type: "ivory", gsm: 300, caliper: 0.42, finish: "matte" }` (độ dày = GSM × 0,0014), `canvasState = { elements: [] }`.
 - **`canvasState`** phải đúng kiểu `CanvasElement` của `@wrapfit/shared` (tối đa 300 phần tử, ảnh là URL đã upload chứ không nhúng base64). Body JSON tối đa 1 MB.
 - **Tags** được lưu dạng chữ thường, bỏ khoảng trắng và trùng lặp (tối đa 10 tag × 30 ký tự).
 - `PATCH` chỉ đổi những trường được gửi; `null` xóa `collectionId` / `thumbnailUrl` / `occasion` / `industry`; `null` cho trường bắt buộc (`title`, `dimensions`, `materialSpec`, `canvasState`, `tags`) trả `400`. Không đổi được `templateId`. Dự án trong thùng rác không sửa được (`409`) cho tới khi khôi phục.
@@ -104,7 +105,7 @@
 - **Ai xem được `/api/public/projects/:slug`**: dự án `UNLISTED` hoặc `PUBLIC` và không nằm trong thùng rác (dự án `ARCHIVED` vẫn giữ link chia sẻ). Mọi trường hợp khác, kể cả slug sai định dạng, trả `404` — chủ dự án cũng nhận `404` cho dự án `PRIVATE` (trang công khai hiển thị đúng như người ngoài thấy; chủ dự án dùng `GET /api/projects/:id`).
 - **Dữ liệu trả về** không có `id`, `userId`, email, thư mục, FitCheck: chỉ `slug`, `title`, `visibility`, `allowFork`, `template`, `dimensions`, `materialSpec`, `canvasState`, `thumbnailUrl`, `tags`, `viewsCount`, `likesCount`, `author { fullName, shopName, avatarUrl }`, `forkedFrom` và `viewer { isOwner, liked }`.
 - **Người xem đã đăng nhập** được nhận diện qua cookie (`@OptionalAuth()`); token sai / hết hạn → coi như khách, không trả `401`.
-- **Lượt xem**: mỗi lần tải trang +1, trừ khi chính chủ xem. Bộ đếm view/like không làm đổi `updatedAt` (không xáo trộn Dashboard của chủ dự án).
+- **Lượt xem**: +1 mỗi người xem mỗi 10 phút (tài khoản, hoặc IP + trình duyệt), trừ khi chính chủ xem. `?count=false` chỉ đọc, không tính (trang `/p/[slug]` render phía server bằng request không có cookie, request của trình duyệt mới tính). Bộ đếm view/like không làm đổi `updatedAt` (không xáo trộn Dashboard của chủ dự án).
 - **`forkedFrom`** (ghi công tác giả gốc) chỉ hiện khi dự án gốc đang `PUBLIC`; gốc `UNLISTED` → `null` để không lộ link bí mật.
 - **Remix**: chép thiết kế (giữ nguyên tên) vào tài khoản người bấm, ngoài mọi thư mục, `PRIVATE`, lưu `forkedFromId`. `allowFork = false` → `403` (riêng chủ dự án vẫn tự sao chép được). Phát sự kiện nội bộ `project.forked` `{ sourceProjectId, sourceOwnerId, forkProjectId, forkedById }` cho NotificationsModule sau này (không phát khi tự remix).
 - **Thả tim**: gọi lại nhiều lần vẫn chỉ tính 1 (`@@unique([userId, projectId])`); trả `{ liked, likesCount }`.
@@ -154,6 +155,8 @@
 - Hạn mức theo gói: FREE 100 MB, STARTER 1 GB, PRO_BUSINESS 10 GB, tính từ lúc cấp URL. Vượt → `403`.
 - `projectId` (tùy chọn) gắn file vào dự án của mình (không được ở thùng rác): file bị xóa khỏi bucket khi dự án bị xóa vĩnh viễn hoặc bị cron dọn thùng rác — trừ ảnh / logo mà dự án khác (bản sao, Remix) vẫn hiển thị (`project_file_refs`): file đó được giữ lại và tách khỏi dự án đã xóa.
 - Admin xóa người dùng → file của người đó (và file sinh ra cho dự án của họ) bị xóa khỏi bucket, trừ ảnh mà dự án của người khác vẫn dùng: ảnh đó được chuyển (cả hạn mức) cho chủ dự án Remix cũ nhất.
+- Upload không còn nơi nào dùng (canvas / mốc qua `project_file_refs`, `avatar_key`, `brand_kit.logoKey`, `thumbnail_key`, `preview_key`, `render_key`) quá 24 giờ bị `StorageMaintenanceTask` xoá cả dòng lẫn object (`UNUSED_UPLOAD_GRACE_MS`). File backend sinh ra (QR, file in) không thuộc diện này.
+- Ảnh đại diện / logo Brand Kit bị thay hoặc gỡ: file `AVATAR` / `LOGO` không gắn dự án và không còn canvas nào hiển thị bị xóa cùng object trên bucket (không tính vào hạn mức nữa). File `IMAGE` dùng làm avatar / logo được giữ (có thể đang là thumbnail / preview).
 - Dùng file ở đâu cũng phải là file **của mình** đã tải lên: `thumbnailUrl`, `previewUrl` (THUMBNAIL / IMAGE), `avatarUrl` (AVATAR / IMAGE), `logoUrl` của Brand Kit (LOGO / IMAGE). URL trang khác → `400 code FILE_URL_NOT_ALLOWED`; file của người khác → `400 code FILE_NOT_OWNED`.
 - Canvas chỉ được thêm ảnh của mình (LOGO / IMAGE); ảnh mà dự án đã hiển thị từ trước (vd. ảnh của tác giả gốc trong bản Remix) được giữ nguyên. Đường dẫn tĩnh (`/branding/...`) và ảnh trang khác vẫn lưu như gửi lên, nhưng không được nhúng vào file in.
 - Chưa cấu hình storage (`STORAGE_BUCKET` trống) → `503`.

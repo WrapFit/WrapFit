@@ -1,5 +1,5 @@
 // Domain layer: plain TypeScript only (no @nestjs/*, no @prisma/client) — see docs 08, section 1.1.
-import type { BoxDimensions, CanvasState, FitCheckReport, MaterialSpecification } from '@wrapfit/shared';
+import { type BoxDimensions, caliperOf, type CanvasState, type FitCheckReport, type MaterialSpecification } from '@wrapfit/shared';
 
 /** Same values as the Prisma enums, declared here so the domain does not depend on Prisma. */
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
@@ -42,6 +42,8 @@ export interface ProjectDetail extends ProjectSummary {
   version: number;
   /** Dieline formulas the project is pinned to (`@wrapfit/shared` generateDielinePieces). */
   formulaVersion: number;
+  /** Current formulas of its box structure: when higher, POST /projects/:id/formula-upgrade can move the project. */
+  latestFormulaVersion: number;
   allowFork: boolean;
   forkedFromId: string | null;
   canvasState: CanvasState;
@@ -51,19 +53,29 @@ export interface ProjectDetail extends ProjectSummary {
 
 export const MAX_TITLE_LENGTH = 120;
 
+/**
+ * Name of the automatic snapshot saved before a project moves to newer dieline formulas (studio button and
+ * prisma/scripts/upgrade-formulas.ts, which repeats it): restoring it undoes the upgrade.
+ */
+export function formulaUpgradeSnapshotName(from: number, to: number): string {
+  return `Trước khi cập nhật công thức (bản ${from} → ${to})`;
+}
+
 /** One entry of the version history (the canvas itself is not listed). */
 export interface SnapshotSummary {
   id: string;
   name: string;
   previewUrl: string | null;
   dimensions: BoxDimensions;
+  /** Formulas of the project when the snapshot was taken; restoring puts them back. Null for older snapshots. */
+  formulaVersion: number | null;
   createdAt: Date;
 }
 
 export const DEFAULT_MATERIAL: MaterialSpecification = {
   type: 'ivory',
   gsm: 300,
-  caliper: 0.35,
+  caliper: caliperOf(300),
   finish: 'matte',
 };
 

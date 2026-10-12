@@ -24,13 +24,16 @@ RUN npm run build:shared
 COPY fe ./fe
 
 # In Next.js, NEXT_PUBLIC_* variables are inlined at build time
-ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api
+ARG NEXT_PUBLIC_API_URL=/api
 ARG NEXT_PUBLIC_APP_NAME="WrapFit Studio"
 ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+# Target of the /api/* rewrite in next.config.mjs: the standalone build fixes rewrites at build time
+ARG BACKEND_INTERNAL_URL=http://backend:8080
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
 
 # Build standalone Next.js bundle
 RUN npm --workspace=fe run build

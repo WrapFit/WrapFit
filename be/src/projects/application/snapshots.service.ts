@@ -2,11 +2,16 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import { uploadKeyOf } from '../../storage';
 import { fitCheckOf } from '../domain/project-fitcheck';
 import { canEdit } from '../domain/project.policy';
-import { MAX_TITLE_LENGTH, ProjectDetail, SnapshotSummary } from '../domain/project.types';
+import {
+  formulaUpgradeSnapshotName,
+  MAX_TITLE_LENGTH,
+  ProjectDetail,
+  SnapshotSummary,
+} from '../domain/project.types';
 import { CreateSnapshotDto } from '../presentation/dto/create-snapshot.dto';
 import { IProjectFiles, PROJECT_FILES } from './ports/project-files.port';
 import { ISnapshotRepository, SNAPSHOT_REPOSITORY } from './ports/snapshot.repository.port';
-import { ProjectsService } from './projects.service';
+import { ProjectsService, versionConflict } from './projects.service';
 
 /**
  * Manual save points per project. Automatic snapshots (export, restore backups) are not counted against it: the newest
@@ -43,12 +48,13 @@ export class SnapshotsService {
       previewKey: dto.previewUrl ? await this.files.resolveUpload(dto.previewUrl, userId, PREVIEW_PURPOSES) : null,
       canvasState: project.canvasState,
       dimensions: project.dimensions,
+      formulaVersion: project.formulaVersion,
     });
   }
 
   /**
-   * Puts the snapshot's canvas and dimensions back into the project. The current state is saved first as a
-   * new snapshot (`backup`), so a restore can always be undone.
+   * Puts the snapshot's canvas, dimensions and formula version back into the project. The current state is saved
+   * first as a new snapshot (`backup`), so a restore can always be undone.
    */
   async restore(
     projectId: string,
@@ -66,9 +72,46 @@ export class SnapshotsService {
         previewKey: project.thumbnailUrl ? uploadKeyOf(project.thumbnailUrl) : null,
         canvasState: project.canvasState,
         dimensions: project.dimensions,
+        formulaVersion: project.formulaVersion,
       },
-      fitCheckOf(project.template.id, snapshot.dimensions, snapshot.canvasState.elements, project.formulaVersion),
+      fitCheckOf(
+        project.template.id,
+        snapshot.dimensions,
+        snapshot.canvasState.elements,
+        snapshot.formulaVersion ?? project.formulaVersion,
+      ),
     );
+  }
+
+  /**
+   * Moves a project to the current formulas of its box structure (docs/12 Phase 8, 8.10b). The current state is saved
+   * first as an automatic snapshot that keeps the old formula version, so restoring it undoes the upgrade. `version`
+   * guards against overwriting a newer save, like PATCH; a project already on the current formulas is returned as is.
+   */
+  async upgradeFormula(
+    projectId: string,
+    version: number,
+  ): Promise<{ project: ProjectDetail; backup: SnapshotSummary | null }> {
+    const project = await this.editableProject(projectId);
+    if (project.version !== version) throw versionConflict(project.version);
+    const target = project.latestFormulaVersion;
+    if (project.formulaVersion >= target) return { project, backup: null };
+
+    const result = await this.snapshots.upgradeFormula(
+      projectId,
+      version,
+      target,
+      {
+        name: formulaUpgradeSnapshotName(project.formulaVersion, target),
+        previewKey: project.thumbnailUrl ? uploadKeyOf(project.thumbnailUrl) : null,
+        canvasState: project.canvasState,
+        dimensions: project.dimensions,
+        formulaVersion: project.formulaVersion,
+      },
+      fitCheckOf(project.template.id, project.dimensions, project.canvasState.elements, target),
+    );
+    if (!result) throw versionConflict((await this.projects.findOne(projectId)).version);
+    return result;
   }
 
   async remove(projectId: string, snapshotId: string): Promise<void> {

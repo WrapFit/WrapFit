@@ -51,9 +51,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         if (typeof payload.exp !== 'number') throw new Error('Token without expiry');
         const user = await this.prisma.user.findUnique({
           where: { id: payload.sub },
-          select: { id: true, email: true, role: true, isActive: true },
+          select: { id: true, email: true, role: true, isActive: true, sessionVersion: true },
         });
         if (!user || !user.isActive) throw new Error('Inactive user');
+        if (user.sessionVersion !== (payload.sv ?? 0)) throw new Error('Session revoked');
 
         const authUser: AuthUser = { id: user.id, email: user.email, role: user.role };
         socket.data.user = authUser;

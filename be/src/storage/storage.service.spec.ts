@@ -117,7 +117,44 @@ describe('StorageService', () => {
     ).resolves.toMatchObject({ fileId: 'file-1' });
   });
 
+  it('forgets a replaced avatar or logo only when it is a free upload of that slot', async () => {
+    const tx = { storedFile: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) } };
+    const service = build();
+    await expect(service.forgetProfileUpload(tx as never, 'u-1', 'users/u-1/logo/a.png', 'LOGO')).resolves.toBe(
+      'users/u-1/logo/a.png',
+    );
+    expect(tx.storedFile.deleteMany).toHaveBeenCalledWith({
+      where: { key: 'users/u-1/logo/a.png', userId: 'u-1', purpose: 'LOGO', projectId: null, refs: { none: {} } },
+    });
+
+    // Shown on a canvas, attached to a project or uploaded as IMAGE: nothing matches, the file stays.
+    tx.storedFile.deleteMany.mockResolvedValue({ count: 0 });
+    await expect(service.forgetProfileUpload(tx as never, 'u-1', 'users/u-1/logo/a.png', 'LOGO')).resolves.toBeNull();
+  });
+
   describe('maintenance', () => {
+    it('deletes the uploads nothing has used for a day, rows first, then their objects', async () => {
+      const service = build();
+      const queryRaw = jest.fn().mockResolvedValue([{ key: 'users/u-1/logo/never-saved.png' }]);
+      Object.assign(prisma, { $queryRaw: queryRaw });
+      const send = jest.fn(async () => ({}));
+      mockS3(service, send);
+      const now = new Date('2026-10-12T10:00:00Z');
+
+      await expect(service.dropUnusedUploads(now)).resolves.toBe(1);
+      const [sql, ...values] = queryRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
+      for (const place of ['project_file_refs', 'avatar_key', 'logoKey', 'thumbnail_key', 'preview_key', 'render_key']) {
+        expect(sql.join('?')).toContain(place);
+      }
+      expect(values[0]).toEqual(new Date('2026-10-11T10:00:00Z')); // made more than 24 hours ago
+      expect(send).toHaveBeenCalledTimes(1);
+
+      queryRaw.mockResolvedValue([]);
+      send.mockClear();
+      await expect(service.dropUnusedUploads(now)).resolves.toBe(0);
+      expect(send).not.toHaveBeenCalled();
+    });
+
     it('confirms uploads that exist with their real size and drops the ones never uploaded', async () => {
       const service = build();
       prisma.storedFile.findMany = jest.fn().mockResolvedValue([

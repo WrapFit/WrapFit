@@ -368,6 +368,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
 
   const dirIndex = DIRECTIONS.indexOf(direction);
   const reactIndex = REACTIONS.indexOf(reaction ?? "blink");
+  const MascotRoot = interactive ? "button" : "span";
 
   return (
     <div
@@ -387,17 +388,19 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         </div>
       )}
 
-      {/* Mascot Paper Button / Container */}
-      <button
-        type="button"
-        onClick={boop}
+      {/* Mascot Paper Button / Container. A plain image when not interactive, so it can sit inside another button. */}
+      <MascotRoot
+        {...(interactive
+          ? { type: "button" as const, onClick: boop, title: `Gói (Packaging Box Mascot) — Nhấn để tương tác!` }
+          : { role: "img" })}
         aria-label={label}
-        className="relative block flex-shrink-0 p-0 border-0 bg-transparent cursor-pointer focus:outline-none transition-transform"
+        className={`relative block flex-shrink-0 p-0 border-0 bg-transparent focus:outline-none transition-transform ${
+          interactive ? "cursor-pointer" : ""
+        }`}
         style={{
           width: size,
           height: size,
         }}
-        title={`Gói (Packaging Box Mascot) — Nhấn để tương tác!`}
       >
         <span
           ref={squashRef}
@@ -449,7 +452,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
             </span>
           </div>
         )}
-      </button>
+      </MascotRoot>
     </div>
   );
 };

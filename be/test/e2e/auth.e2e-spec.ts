@@ -225,9 +225,10 @@ describe('Account emails (e2e)', () => {
 
     it('sets a new password once, signs the account out everywhere, and needs a new sign-in', async () => {
       const session = await login(address).expect(200);
-      const refresh = (session.headers['set-cookie'] as unknown as string[])
-        .find((line) => line.startsWith('wf_refresh='))!
-        .split(';')[0];
+      const setCookie = session.headers['set-cookie'] as unknown as string[];
+      const refresh = setCookie.find((line) => line.startsWith('wf_refresh='))!.split(';')[0];
+      const access = accessCookie(setCookie);
+      await api().get('/api/auth/me').set('Cookie', access).expect(200);
 
       await api().post('/api/auth/password/forgot').send({ email: address }).expect(202, {});
       const token = await linkToken(address, 'RESET_PASSWORD');
@@ -240,6 +241,7 @@ describe('Account emails (e2e)', () => {
       expect(replay.body.code).toBe('AUTH_TOKEN_CONSUMED');
 
       await api().post('/api/auth/refresh').set('Cookie', refresh).expect(401); // old session revoked
+      await api().get('/api/auth/me').set('Cookie', access).expect(401); // its access token too, before it expires
       await login(address).expect(401);
       await login(address, 'NewPassw0rd9').expect(200);
     });
@@ -260,6 +262,26 @@ describe('Account emails (e2e)', () => {
         .send({ token: await linkToken(other, 'RESET_PASSWORD'), password: 'NewPassw0rd9' })
         .expect(200);
       await login(other, 'NewPassw0rd9').expect(200);
+    });
+  });
+
+  describe('refresh rate limit (per session, not per IP)', () => {
+    const refreshWith = (cookie?: string) => {
+      const call = api().post('/api/auth/refresh');
+      return cookie ? call.set('Cookie', `wf_refresh=${cookie}`) : call;
+    };
+
+    it('lets a guest (no refresh cookie) try on every page load: 401, never 429 at 10 a minute', async () => {
+      for (let i = 0; i < 20; i++) await refreshWith().expect(401);
+    });
+
+    it('limits one session to 30 a minute without touching another session behind the same IP', async () => {
+      const busy = `busy-session-${run}`;
+      for (let i = 0; i < 30; i++) await refreshWith(busy).expect(401);
+      const limited = await refreshWith(busy).expect(429);
+      expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
+      await refreshWith(`other-session-${run}`).expect(401);
+      await refreshWith().expect(401);
     });
   });
 

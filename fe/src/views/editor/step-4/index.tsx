@@ -319,7 +319,7 @@ export default function Step4FitCheckPage() {
             {/* Mascot Approval Card */}
             <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-start gap-3">
               <img
-                src="/branding/mascot-hero.png"
+                src="/mascots/goi.webp"
                 alt="Bé Gói"
                 className="w-10 h-10 object-contain rounded-full bg-white p-1 border border-emerald-300 shrink-0"
               />

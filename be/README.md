@@ -231,7 +231,7 @@ if (res.status === 401) {
 4. Mỗi request, `JwtStrategy` kiểm tra lại user trong database nên việc khoá tài khoản hay đổi role có hiệu lực ngay.
 5. Tài khoản chỉ đăng nhập bằng Google (`passwordHash = null`) không thể đăng nhập bằng mật khẩu.
 6. Ngoài giới hạn 10 lần / phút theo IP, mỗi **địa chỉ email** chỉ được đăng nhập sai 10 lần trong 15 phút (đếm trong Redis, kể cả địa chỉ không có tài khoản): sau đó `429 LOGIN_RATE_LIMITED` kèm `retryAfterSeconds`, kể cả khi đúng mật khẩu. Đăng nhập thành công hoặc đặt lại mật khẩu xoá bộ đếm. Redis lỗi thì bỏ qua bước này.
-7. Thu hồi phiên (`logout-all`, phát hiện refresh token bị dùng lại, đặt lại mật khẩu, admin khoá / xoá tài khoản) cũng đóng mọi kết nối WebSocket của user. Email gửi tới tài khoản chưa xác minh không chèn `fullName` (ai cũng có thể đăng ký địa chỉ của người khác với tên tuỳ ý).
+7. Thu hồi phiên (`logout-all`, phát hiện refresh token bị dùng lại, đặt lại mật khẩu, admin khoá / xoá tài khoản) có hiệu lực ngay với cả access token đã cấp: mỗi token mang `users.session_version` lúc ký (claim `sv`), thu hồi phiên thì số này tăng (`revokeUserSessions`, `src/users/user-sessions.ts`) và `JwtStrategy`, `/auth/refresh`, handshake WebSocket từ chối token mang số cũ. Thu hồi phiên cũng đóng mọi kết nối WebSocket của user. Email gửi tới tài khoản chưa xác minh không chèn `fullName` (ai cũng có thể đăng ký địa chỉ của người khác với tên tuỳ ý).
 
 ### Đăng nhập bằng Google — cách lấy Client ID
 
@@ -337,6 +337,7 @@ Handshake từ trình duyệt có `Origin` ngoài `CORS_ORIGINS` / `FRONTEND_URL
 npm --workspace=be test                 # unit test (không cần database) — CI chạy bước này
 
 # e2e cần PostgreSQL đã áp dụng migration + Redis + SeaweedFS (upload thật). CI chạy y hệt (job `e2e`).
+# SeaweedFS chạy ở cổng STORAGE_PORT của .env gốc (mặc định 8333): test/e2e-env.ts tự đọc cổng này.
 docker compose up -d postgres redis seaweedfs storage-init
 npm --workspace=be run db:deploy
 npm --workspace=be run test:e2e
@@ -374,6 +375,14 @@ npm --workspace=be run test:e2e
 5. Google OAuth: thêm `https://<APP_DOMAIN>/api/auth/google/callback` vào *Authorized redirect URIs*. R2: thêm `https://<APP_DOMAIN>` vào CORS của bucket.
 
 ## Lưu ý khi triển khai production
+
+- **Sau mỗi lần thêm phiên bản công thức dieline** (`CURRENT_FORMULA_VERSION` của `@wrapfit/shared`, docs/12 Phase 8):
+  container mới tự seed nên box template nhận phiên bản mới; sau đó chạy tay **một lần**
+  `npm run db:upgrade-formulas -- --dry-run` (xem bảng: dự án, phiên bản cũ → mới, điểm FitCheck trước / sau, cảnh báo dự
+  án PUBLIC tụt dưới 90) rồi `npm run db:upgrade-formulas` (trong container: `docker compose exec backend npm run
+  db:upgrade-formulas`). Script chỉ chuyển dự án **chưa từng có file in xuất xong**, mỗi dự án kèm một mốc tự động để
+  hoàn tác; chạy lại không đổi gì thêm. Không chạy tự động lúc khởi động. Dự án đã xuất file: chủ dự án tự bấm "Cập nhật
+  lên công thức mới" trong studio (`POST /api/projects/:id/formula-upgrade`).
 
 - Đặt `JWT_*_SECRET` bằng giá trị ngẫu nhiên riêng (`openssl rand -base64 48`), không dùng giá trị trong `.env.example`.
 - Đặt `CORS_ORIGINS` là danh sách origin cụ thể; cân nhắc `SWAGGER_ENABLED=false`.

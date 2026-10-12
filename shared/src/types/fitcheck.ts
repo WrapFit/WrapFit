@@ -9,7 +9,8 @@ export type FitCheckErrorCode =
   | "BLEED_INSUFFICIENT"
   | "LOW_DPI"
   | "GLUE_CONTAMINATED"
-  | "DIMENSION_OUT_OF_BOUNDS";
+  | "DIMENSION_OUT_OF_BOUNDS"
+  | "NO_PANEL";
 
 export type SeverityLevel = "error" | "warning" | "info";
 

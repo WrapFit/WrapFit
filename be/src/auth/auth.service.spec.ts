@@ -33,7 +33,7 @@ describe('AuthService', () => {
   };
   const prisma = {
     refreshToken: { create: jest.fn(), findUnique: jest.fn(), updateMany: jest.fn() },
-    user: { findUnique: jest.fn(), create: jest.fn() },
+    user: { findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
     // Interactive transaction: the callback receives the same mocks as its transaction client.
     $transaction: jest.fn(),
   };
@@ -186,6 +186,7 @@ describe('AuthService', () => {
         passwordHash: await bcrypt.hash('right-pass1', 4),
         googleId: 'google-sub',
         referredById: null,
+        sessionVersion: 3,
       });
 
       const result = await service.login({ email: safeUser.email, password: 'right-pass1' });
@@ -193,6 +194,10 @@ describe('AuthService', () => {
       expect(result.user).toEqual(safeUser);
       expect(result.user).not.toHaveProperty('passwordHash');
       expect(result.user).not.toHaveProperty('googleId');
+      expect(result.user).not.toHaveProperty('sessionVersion');
+      // Both tokens carry the session version: "sign out everywhere" makes them stop working at once.
+      expect(jwt.decode(result.accessToken)).toMatchObject({ sub: safeUser.id, sv: 3 });
+      expect(jwt.decode(result.refreshToken)).toMatchObject({ sub: safeUser.id, sv: 3 });
       expect(result.expiresIn).toBe(900);
       expect(result.refreshExpiresIn).toBe(604800);
       expect(loginAttempts.reset).toHaveBeenCalledWith(safeUser.email);
@@ -273,8 +278,10 @@ describe('AuthService', () => {
   });
 
   describe('refresh', () => {
-    const sign = (jti: string) =>
-      jwt.signAsync({ sub: safeUser.id, jti }, { secret: env['auth.jwt.refreshSecret'] as string, expiresIn: 60 });
+    const sign = (jti: string, sv?: number) =>
+      jwt.signAsync({ sub: safeUser.id, jti, sv }, { secret: env['auth.jwt.refreshSecret'] as string, expiresIn: 60 });
+    /** The account as `startSession` reads it. */
+    const account = (sessionVersion = 0) => ({ ...safeUser, sessionVersion });
 
     it('rejects a token that is not a valid JWT for the refresh secret', async () => {
       await expect(service.refresh('not-a-token')).rejects.toBeInstanceOf(UnauthorizedException);
@@ -295,7 +302,7 @@ describe('AuthService', () => {
       const jti = '33333333-3333-4333-8333-333333333333';
       prisma.refreshToken.findUnique.mockResolvedValue(record(jti));
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
-      prisma.user.findUnique.mockResolvedValue(safeUser);
+      prisma.user.findUnique.mockResolvedValue(account());
 
       const result = await service.refresh(await sign(jti));
 
@@ -315,7 +322,7 @@ describe('AuthService', () => {
         .mockResolvedValueOnce(record(jti))
         .mockResolvedValueOnce({ revokedAt: new Date(Date.now() - 2_000), replacedById: 'replacement-id' });
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 }); // the other tab won the claim
-      prisma.user.findUnique.mockResolvedValue(safeUser);
+      prisma.user.findUnique.mockResolvedValue(account());
 
       const result = await service.refresh(await sign(jti));
 
@@ -334,6 +341,11 @@ describe('AuthService', () => {
 
       await expect(service.refresh(await sign(jti))).rejects.toThrow('Refresh token reuse detected');
       expect(prisma.refreshToken.updateMany).toHaveBeenLastCalledWith(revokeAll);
+      // The access tokens already handed out stop working too.
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        where: { id: safeUser.id },
+        data: { sessionVersion: { increment: 1 } },
+      });
       expect(prisma.refreshToken.create).not.toHaveBeenCalled();
       // Its open WebSocket connections close too.
       expect(events.emit).toHaveBeenCalledWith(SESSIONS_REVOKED, { userId: safeUser.id });
@@ -355,9 +367,32 @@ describe('AuthService', () => {
       const jti = '66666666-6666-4666-8666-666666666666';
       prisma.refreshToken.findUnique.mockResolvedValue(record(jti));
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
-      prisma.user.findUnique.mockResolvedValue({ ...safeUser, emailVerifiedAt: null });
+      prisma.user.findUnique.mockResolvedValue({ ...account(), emailVerifiedAt: null });
 
       await expect(service.refresh(await sign(jti))).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+    });
+
+    it('keeps the session version of the presented token in the new pair', async () => {
+      const jti = '77777777-7777-4777-8777-777777777777';
+      prisma.refreshToken.findUnique.mockResolvedValue(record(jti));
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+      prisma.user.findUnique.mockResolvedValue(account(2));
+
+      const result = await service.refresh(await sign(jti, 2));
+
+      expect(result.user).not.toHaveProperty('sessionVersion');
+      expect(jwt.decode(result.accessToken)).toMatchObject({ sv: 2 });
+    });
+
+    it('opens no new session from a token older than the last "sign out everywhere"', async () => {
+      // Signed before the account's sessions were revoked (version 0 -> 1), e.g. a refresh racing a password reset.
+      const jti = '88888888-8888-4888-8888-888888888888';
+      prisma.refreshToken.findUnique.mockResolvedValue(record(jti));
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+      prisma.user.findUnique.mockResolvedValue(account(1));
+
+      await expect(service.refresh(await sign(jti, 0))).rejects.toBeInstanceOf(UnauthorizedException);
       expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
   });

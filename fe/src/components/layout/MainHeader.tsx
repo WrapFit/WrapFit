@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { ROUTES } from '@/constants';
+import { useAuth } from '@/features/auth';
+import { displayName, loginHref } from './account';
 import { BrandLogo } from './BrandLogo';
 import { UserAvatarDropdown } from './UserAvatarDropdown';
 
@@ -14,8 +17,8 @@ export interface MainHeaderProps {
 }
 
 export const MAIN_NAV_ITEMS = [
-  { href: '/editor/step-1', label: 'Thư Viện Mẫu', icon: 'grid_view' },
-  { href: '/editor/studio', label: 'Studio 3D', icon: 'view_in_ar' },
+  { href: ROUTES.templates, label: 'Thư Viện Mẫu', icon: 'grid_view' },
+  { href: ROUTES.editorNew, label: 'Studio 3D', icon: 'view_in_ar' },
   { href: '/pricing', label: 'Bảng Giá', icon: 'payments' },
   { href: '/team', label: 'Đội Ngũ & Xưởng In', icon: 'group' },
   { href: '/support', label: 'Hỗ Trợ Kỹ Thuật', icon: 'help' },
@@ -43,11 +46,11 @@ export const MEGA_MENU_DATA: MegaMenuSection[] = [
     icon: 'deployed_code',
     badge: 'Core Workflow',
     items: [
-      { title: 'Bước 1: Chọn Cấu Trúc Hộp', href: '/editor/step-1', desc: '4 kết cấu FEFCO/ECMA tiêu chuẩn', icon: 'category', badge: 'Step 1' },
-      { title: 'Bước 2: Nhập Kích Thước (mm)', href: '/editor/step-2', desc: 'L x W x H & độ dày Caliper giấy', icon: 'straighten', badge: 'Step 2' },
-      { title: 'Bước 3: Studio Thiết Kế 2D/3D', href: '/editor/step-3', desc: 'Trải phẳng dieline & ốp decal UV', icon: 'draw', badge: 'Step 3' },
-      { title: 'Bước 4: Kiểm Định FitCheck™', href: '/editor/step-4', desc: 'Báo cáo tiền kiểm dao bế ISO 12647', icon: 'verified', badge: 'Step 4' },
-      { title: 'Master Studio 3D Toàn Cảnh', href: '/editor/studio', desc: 'Không gian WebGL gập mở thời gian thực', icon: 'view_in_ar', badge: 'WebGL' },
+      { title: 'Tạo Dự Án Mới', href: ROUTES.editorNew, desc: 'Chọn cấu trúc hộp & kích thước món quà (mm)', icon: 'category', badge: 'Bước 1–2' },
+      { title: 'Dự Án Của Tôi', href: ROUTES.projects, desc: 'Mở lại bản thiết kế đã lưu trên Cloud', icon: 'folder_special' },
+      { title: 'Bắt Đầu Từ Mẫu', href: ROUTES.templates, desc: 'Mẫu hộp đạt FitCheck™, chỉnh kích thước theo quà', icon: 'verified' },
+      { title: 'Studio Dùng Thử', href: ROUTES.editorDemo, desc: 'Dieline 2D & hộp 3D gập mở, không cần đăng nhập', icon: 'view_in_ar', badge: 'Demo' },
+      { title: 'Mở Hộp Quà QR', href: ROUTES.unboxCode, desc: 'Nhập mã in kèm món quà để mở hộp 3D', icon: 'qr_code_2' },
       { title: 'Kho Vật Liệu Giấy & Hot Foil', href: '/editor/materials/backdrop', desc: 'Giấy kẹp bông, Kraft, Kurz 22K', icon: 'layers' },
     ],
   },
@@ -99,35 +102,71 @@ export const MEGA_MENU_DATA: MegaMenuSection[] = [
   },
 ];
 
+/** Menu entries that only make sense for a visitor who is not signed in. */
+const ANONYMOUS_ONLY_HREFS = new Set<string>([ROUTES.login, ROUTES.register]);
+
 export function MainHeader({ className = '', showCta = true }: MainHeaderProps) {
   const pathname = usePathname();
+  const { user, status } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleMouseEnter = () => {
+  // Signed in: no "Đăng nhập" / "Đăng ký" entries in the menus.
+  const menuSections = useMemo(
+    () =>
+      user
+        ? MEGA_MENU_DATA.map((section) => ({
+            ...section,
+            items: section.items.filter((item) => !ANONYMOUS_ONLY_HREFS.has(item.href)),
+          }))
+        : MEGA_MENU_DATA,
+    [user],
+  );
+
+  const headerRef = useRef<HTMLElement>(null);
+
+  // An open mega menu closes on Escape and on a press outside the header (touch screens have no hover to leave).
+  useEffect(() => {
+    if (!megaMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMegaMenuOpen(false);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) setMegaMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [megaMenuOpen]);
+
+  // Hover opens the mega menu for a mouse only: a tap also fires enter events, and would open it on top of the
+  // avatar menu or the mobile drawer (touch uses the trigger's click instead).
+  const handlePointerEnter = (event: React.PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setMegaMenuOpen(true);
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = (event: React.PointerEvent) => {
+    if (event.pointerType !== 'mouse') return;
     timeoutRef.current = setTimeout(() => {
       setMegaMenuOpen(false);
     }, 300);
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 pointer-events-none ${className}`}>
-      <div 
-        className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col items-center pointer-events-auto"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
+    // data-app-tokens: inside a Stitch screen the header keeps the app's fonts and colours, not the screen's.
+    <header ref={headerRef} data-app-tokens className={`fixed top-0 left-0 right-0 z-50 pointer-events-none font-sans ${className}`}>
+      <div className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4 flex flex-col items-center pointer-events-auto">
         {/* Main Floating Glass Capsule Bar */}
         <div className="w-full bg-white/90 backdrop-blur-xl rounded-full border border-stone-200/80 shadow-[0_4px_25px_rgba(28,25,23,0.08)] px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 relative z-50">
           {/* 1. Left: Brand Logo */}
           <div className="flex items-center gap-3 shrink-0">
-            <BrandLogo size="md" badge="CAD CADRE v4.2" href="/" />
+            <BrandLogo size="md" badge="CAD CADRE v4.2" badgeClassName="hidden sm:inline-block xl:hidden 2xl:inline-block" href="/" />
           </div>
 
           {/* 2. Center: Desktop Navigation Tabs & Mega Menu Trigger */}
@@ -135,12 +174,14 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             {/* Mega Menu Hover Trigger Button */}
             <div
               className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              onPointerEnter={handlePointerEnter}
+              onPointerLeave={handlePointerLeave}
             >
               <button
                 type="button"
                 onClick={() => setMegaMenuOpen(!megaMenuOpen)}
+                aria-expanded={megaMenuOpen}
+                aria-haspopup="true"
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   megaMenuOpen
                     ? 'bg-[#122e20] text-white shadow-xs'
@@ -188,13 +229,15 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             </Link>
 
             {/* Smart User Avatar Dropdown */}
-            <UserAvatarDropdown size="md" align="right" />
+            {/* The desktop nav (xl and up) fills the bar: no CTA there (its links lead to the studio), the badge and
+                the name next to the avatar come back only from 2xl, where the bar is wider. */}
+            <UserAvatarDropdown size="md" align="right" labelClassName="hidden lg:flex xl:hidden 2xl:flex" />
 
             {/* CTA: Create New Box */}
             {showCta && (
               <Link
-                href="/editor/step-1"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all"
+                href={ROUTES.editorNew}
+                className="hidden sm:inline-flex xl:hidden items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold shadow-xs active:scale-95 transition-all"
               >
                 <span>Bắt Đầu Hộp Quà</span>
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -215,12 +258,12 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
           </div>
         </div>
 
-        {/* 4. Desktop Mega Dropdown Panel (Appears on Hover) */}
+        {/* 4. Desktop Mega Dropdown Panel (Appears on Hover). Its trigger only exists from xl. */}
         {megaMenuOpen && (
           <div
-            className="w-full mt-2.5 pointer-events-auto transition-all duration-300 transform origin-top animate-in fade-in slide-in-from-top-2"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
+            className="hidden xl:block w-full mt-2.5 pointer-events-auto transition-all duration-300 transform origin-top animate-in fade-in slide-in-from-top-2"
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
           >
             <div className="w-full bg-white/95 backdrop-blur-2xl rounded-3xl border border-stone-200/90 shadow-[0_16px_50px_rgba(28,25,23,0.12)] p-6 lg:p-8">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-stone-100">
@@ -240,7 +283,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
 
               {/* 5-Column Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                {MEGA_MENU_DATA.map((section, idx) => (
+                {menuSections.map((section, idx) => (
                   <div key={idx} className="space-y-3.5">
                     <div className="flex items-center justify-between pb-2 border-b border-stone-100">
                       <div className="flex items-center gap-2">
@@ -276,8 +319,8 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                               {item.icon}
                             </span>
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-xs text-stone-800 group-hover:text-[#122e20] truncate">
+                              <div className="flex items-start justify-between gap-1.5">
+                                <span className="font-semibold text-xs leading-snug text-stone-800 group-hover:text-[#122e20]">
                                   {item.title}
                                 </span>
                                 {item.badge && (
@@ -286,7 +329,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[11px] text-stone-500 line-clamp-1 leading-tight mt-0.5">
+                              <p className="text-[11px] text-stone-500 line-clamp-2 leading-tight mt-0.5">
                                 {item.desc}
                               </p>
                             </div>
@@ -312,7 +355,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                 </div>
                 <div className="flex items-center gap-3">
                   <Link
-                    href="/editor/step-1"
+                    href={ROUTES.editorNew}
                     onClick={() => setMegaMenuOpen(false)}
                     className="inline-flex items-center gap-1.5 font-bold text-[#122e20] hover:underline"
                   >
@@ -345,7 +388,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
 
             {/* Mobile Categorized Sections */}
             <div className="space-y-4">
-              {MEGA_MENU_DATA.map((section, idx) => (
+              {menuSections.map((section, idx) => (
                 <div key={idx} className="space-y-2">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400 font-['JetBrains_Mono']">
                     {section.title}
@@ -370,15 +413,31 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
             </div>
 
             <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
+              {status === 'loading' ? (
+                // Neutral placeholder while the session is checked: no flash of the login button.
+                <span aria-hidden className="flex-1 h-[38px] rounded-full bg-stone-100 animate-pulse motion-reduce:animate-none" />
+              ) : user ? (
+                <Link
+                  href="/dashboard/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 min-w-0 py-2.5 px-3 flex items-center justify-center gap-1.5 text-xs font-semibold rounded-full bg-stone-100 text-stone-800"
+                >
+                  <span className="material-symbols-outlined text-base text-stone-500" aria-hidden>
+                    account_circle
+                  </span>
+                  <span className="truncate">{displayName(user)}</span>
+                </Link>
+              ) : (
+                <Link
+                  href={loginHref(pathname)}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex-1 py-2.5 text-center text-xs font-semibold rounded-full bg-stone-100 text-stone-800"
+                >
+                  Đăng Nhập
+                </Link>
+              )}
               <Link
-                href="/auth/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 py-2.5 text-center text-xs font-semibold rounded-full bg-stone-100 text-stone-800"
-              >
-                Đăng Nhập
-              </Link>
-              <Link
-                href="/editor/step-1"
+                href={ROUTES.editorNew}
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex-1 py-2.5 text-center text-xs font-semibold rounded-full bg-[#122e20] text-white"
               >

@@ -3,15 +3,14 @@
 import {
   type BoxDimensions,
   type CanvasElement,
+  checkBox,
   type DielinePiece,
   type FitCheckReport,
   generateDielinePieces,
-  type PanelFace,
-  runFitCheck,
   UnsupportedStructureError,
 } from '@wrapfit/shared';
 
-export { UnsupportedFormulaVersionError, UnsupportedStructureError } from '@wrapfit/shared';
+export { matchesPanel, UnsupportedFormulaVersionError, UnsupportedStructureError } from '@wrapfit/shared';
 
 /**
  * Every box is printed as one or more flat pieces (two-piece boxes: base + lid, sleeve + drawer), drawn with the
@@ -21,17 +20,12 @@ export function dielinePieces(structure: string, dimensions: BoxDimensions, form
   return generateDielinePieces(structure, dimensions, formulaVersion);
 }
 
-/** Canvas elements reference a panel by its full id (`panel_front`) or its short name (`front`). */
-export function matchesPanel(panel: PanelFace, panelId: string): boolean {
-  return panel.id === panelId || panel.id === `panel_${panelId}`;
-}
-
 /** FitCheck score a design needs to be listed in the community template hub (UC-14). */
 export const MIN_COMMUNITY_FITCHECK_SCORE = 90;
 
 /**
- * FitCheck of a whole box: one run over the panels of every piece (two-piece boxes), so each element is checked once
- * and the score counts all violations. Panel ids are resolved like the print layout ("front" = "panel_front").
+ * FitCheck of a whole box (every piece, each element once), with the same function the editor runs on every change
+ * (`checkBox` of @wrapfit/shared), so the saved score is the one the user saw.
  */
 export function checkProject(
   structure: string,
@@ -39,13 +33,7 @@ export function checkProject(
   elements: CanvasElement[],
   formulaVersion: number,
 ): FitCheckReport {
-  const pieces = dielinePieces(structure, dimensions, formulaVersion);
-  const panels = pieces.flatMap((piece) => piece.geometry.panels);
-  const resolved = elements.map((element) => {
-    const panel = panels.find((p) => matchesPanel(p, element.panelId));
-    return panel ? { ...element, panelId: panel.id } : element;
-  });
-  return runFitCheck(resolved, { ...pieces[0].geometry, panels });
+  return checkBox(dielinePieces(structure, dimensions, formulaVersion), elements);
 }
 
 /** Same as checkProject, but `null` for a structure that has no dieline generator yet (nothing to check against). */

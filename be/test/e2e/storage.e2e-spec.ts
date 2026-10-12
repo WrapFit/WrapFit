@@ -87,7 +87,7 @@ describe('Storage (e2e)', () => {
         expiresIn: 300,
       });
       expect(ticket.key).toMatch(/^users\/[0-9a-f-]{36}\/logo\/[0-9a-f-]{36}\.png$/);
-      expect(ticket.fileUrl).toBe(`http://localhost:8333/wrapfit/${ticket.key}`);
+      expect(ticket.fileUrl).toBe(`${process.env.STORAGE_PUBLIC_URL}/${ticket.key}`);
     });
 
     it('refuses a file of another size or another type than signed', async () => {

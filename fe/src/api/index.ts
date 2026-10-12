@@ -1,28 +1,48 @@
 /**
- * WrapFit API — one module per backend module (`be/src/modules/<name>`).
- * `apiClient` groups every endpoint for callers that prefer one object.
+ * WrapFit API: one module per backend module (`be/src/<module>`). Import functions by name, or use `apiClient`,
+ * which groups every endpoint. Request / response types: `@/types/api` (re-exported here).
  */
 
+import * as adminApi from "./admin";
 import * as aiApi from "./ai";
+import * as authApi from "./auth";
+import * as collectionsApi from "./collections";
+import * as commonApi from "./common";
 import * as exportsApi from "./exports";
 import * as projectsApi from "./projects";
+import * as publicApi from "./public";
 import * as storageApi from "./storage";
+import * as templatesApi from "./templates";
 import * as unboxingApi from "./unboxing";
+import * as usersApi from "./users";
+
+export * from "./admin";
+export * from "./ai";
+export * from "./auth";
+export * from "./collections";
+export * from "./common";
+export * from "./exports";
+export * from "./projects";
+export * from "./public";
+export * from "./storage";
+export * from "./templates";
+export * from "./unboxing";
+export * from "./users";
 
 export const apiClient = {
-  ...projectsApi,
+  ...adminApi,
   ...aiApi,
+  ...authApi,
+  ...collectionsApi,
+  ...commonApi,
   ...exportsApi,
+  ...projectsApi,
+  ...publicApi,
   ...storageApi,
+  ...templatesApi,
   ...unboxingApi,
+  ...usersApi,
 };
 
-export { ApiError } from "@/services/api";
-export type {
-  AiPatternResponse,
-  ExportJobStatus,
-  ProjectDto,
-  PublicUnboxingData,
-  SnapshotDto,
-  UnboxingParticleEffect,
-} from "@/types/api";
+export { ApiError, errorMessage, isApiError } from "@/services/api";
+export type * from "@/types/api";

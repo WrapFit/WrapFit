@@ -4,6 +4,7 @@ import React from "react";
 import { Layers, Check, Focus, MoveHorizontal, Square } from "lucide-react";
 
 import { DielineGeometry } from "@wrapfit/shared";
+import { formatMm } from "@/features/studio/utils/dieline";
 
 interface PanelNavigatorProps {
   dieline: DielineGeometry;
@@ -60,7 +61,7 @@ export const PanelNavigator: React.FC<PanelNavigatorProps> = ({
           >
             <span>{panel.name}</span>
             <span className="text-[10px] font-mono opacity-70">
-              {panel.bounds.width}×{panel.bounds.height}
+              {formatMm(panel.bounds.width)}×{formatMm(panel.bounds.height)}
             </span>
             {isSelected && <Check className="w-3 h-3 text-white" />}
           </button>

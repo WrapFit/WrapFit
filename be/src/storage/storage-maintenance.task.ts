@@ -4,7 +4,8 @@ import { StorageService } from './storage.service';
 
 /**
  * Every 10 minutes (API process): confirms or drops the uploads whose pre-signed URL has expired, so the quota only
- * counts files that exist, and retries deleting bucket objects that a deletion left behind.
+ * counts files that exist, deletes the uploads nothing has used for a day, and retries deleting bucket objects that
+ * a deletion left behind.
  * Running it on several instances at once is harmless.
  */
 @Injectable()
@@ -17,10 +18,11 @@ export class StorageMaintenanceTask {
   async run(): Promise<void> {
     try {
       const { confirmed, dropped } = await this.storage.confirmPendingUploads();
+      const unused = await this.storage.dropUnusedUploads();
       const deleted = await this.storage.retryOrphanedObjects();
-      if (confirmed || dropped || deleted) {
+      if (confirmed || dropped || unused || deleted) {
         this.logger.log(
-          `Uploads: ${confirmed} confirmed, ${dropped} never uploaded; orphaned objects deleted: ${deleted}`,
+          `Uploads: ${confirmed} confirmed, ${dropped} never uploaded, ${unused} unused deleted; orphaned objects deleted: ${deleted}`,
         );
       }
     } catch (error) {

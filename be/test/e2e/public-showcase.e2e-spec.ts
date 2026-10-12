@@ -90,7 +90,7 @@ describe('Public showcase (e2e)', () => {
         visibility: 'UNLISTED',
         allowFork: true,
         template: { id: 'tuck-top' },
-        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
+        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.42 },
         materialSpec: { type: 'ivory' },
         canvasState: { elements: [] },
         tags: ['nen'],
@@ -109,6 +109,8 @@ describe('Public showcase (e2e)', () => {
     it('counts views of visitors only and does not touch updatedAt', async () => {
       const before = (await as(gina).get(`/api/projects/${source.id}`).expect(200)).body.updatedAt;
 
+      // count=false only reads (server-side render of /p/[slug]) and does not use up the visitor's first view.
+      expect((await as(hank).get(`${page()}?count=false`).expect(200)).body.viewsCount).toBe(1);
       expect((await as(hank).get(page()).expect(200)).body.viewsCount).toBe(2);
       // Once per viewer: reloading (or a script) does not inflate the count that orders the community hub.
       expect((await as(hank).get(page()).expect(200)).body.viewsCount).toBe(2);

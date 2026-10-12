@@ -140,8 +140,14 @@ const scopedForms = plugin((api) => {
   });
 });
 
+/**
+ * Put on an app component rendered inside a Stitch screen (`wired` views): it gets the app's token values back
+ * instead of the screen's, where a token the screen never defined is `initial` (no colour, no font).
+ */
+export const APP_TOKENS_ATTRIBUTE = 'data-app-tokens';
+
 export function withStitchTheme(base: ThemeExtend) {
   const { extend, rootVariables } = mergeTheme(base);
-  const rootDefaults = plugin(({ addBase }) => addBase({ ':root': rootVariables }));
+  const rootDefaults = plugin(({ addBase }) => addBase({ [`:root, [${APP_TOKENS_ATTRIBUTE}]`]: rootVariables }));
   return { extend, plugins: [rootDefaults, scopedForms] };
 }

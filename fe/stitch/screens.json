@@ -83,7 +83,7 @@
       "slug": "dashboard",
       "route": "/dashboard",
       "title": "WrapFit Platform — Dashboard Quản Lý Toàn Diện (Alta Bento Style)",
-      "status": "converted",
+      "status": "wired",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -94,7 +94,7 @@
       "slug": "dashboard-projects",
       "route": "/dashboard/projects",
       "title": "WrapFit — Không Gian Dự Án Tối Giản",
-      "status": "converted",
+      "status": "wired",
       "viewport": {
         "width": 1280,
         "height": 1325
@@ -105,7 +105,7 @@
       "slug": "dashboard-brand-kit",
       "route": "/dashboard/brand-kit",
       "title": "WrapFit — Brand Kit & Vật Liệu Ký Gửi (Ultra Minimalist Studio)",
-      "status": "converted",
+      "status": "wired",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -138,7 +138,7 @@
       "slug": "dashboard-settings",
       "route": "/dashboard/settings",
       "title": "WrapFit — Dashboard Cài Đặt & Tài Khoản Chuyên Biệt (Apple Minimal)",
-      "status": "converted",
+      "status": "wired",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -182,7 +182,7 @@
       "slug": "auth-login",
       "route": "/auth/login",
       "title": "WrapFit — Xác Thực & Tài Khoản (Jobsly Mosaic Bento Style)",
-      "status": "converted",
+      "status": "wired",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -237,7 +237,7 @@
       "slug": "admin-accounts",
       "route": "/admin/accounts",
       "title": "WrapFit Admin — Danh Sách & Phân Hạng Tài Khoản (Section 1)",
-      "status": "converted",
+      "status": "wired",
       "viewport": {
         "width": 1280,
         "height": 1092
