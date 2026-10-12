@@ -15,7 +15,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
+import { autoFixElements, BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
@@ -240,7 +240,7 @@ export function StudioWorkspace({
   const fitcheckReport = useMemo(() => checkDesign(pieces, elements), [pieces, elements]);
 
   // 3. Cloud persistence: autosave, version conflicts, trash, thumbnail
-  const invalidReason = dimensionErrors(dimensions, limits)[0] ?? null;
+  const invalidReason = dimensionErrors(dimensions, limits, boxType)[0] ?? null;
   const payload = useMemo(
     () => ({
       title: projectTitle.trim() || "Dự án chưa đặt tên",
@@ -282,17 +282,10 @@ export function StudioWorkspace({
     }
   };
 
-  // 1-Click Auto-Fix Safe Margin & Bleed Breaches
+  // 1-click fix of the safe margin and bleed breaches, on every side of every panel (rules of the shared FitCheck)
   const handleAutoFix = useCallback(() => {
-    const updated = elements.map((el) => {
-      let nx = el.x;
-      let ny = el.y;
-      if (nx < 3.5) nx = 4.0;
-      if (ny < 3.5) ny = 4.0;
-      return { ...el, x: nx, y: ny };
-    });
-    setElements(updated);
-  }, [elements]);
+    setElements((prev) => autoFixElements(pieces, prev));
+  }, [pieces]);
 
   // Add Element from Sticker Bank or Image Upload
   const handleAddElement = useCallback((newEl: CanvasElement) => {
@@ -608,6 +601,8 @@ export function StudioWorkspace({
             onMaterialChange={(m) => setActiveMaterial(m as BoxMaterialTheme)}
             fitCheckReport={displayReport}
             limits={limits}
+            structure={boxType}
+            formulaVersion={project?.formulaVersion}
             onBack={isDemo ? () => setCurrentStep(1) : undefined}
             onNext={() => setCurrentStep(3)}
           />
@@ -786,6 +781,7 @@ export function StudioWorkspace({
                       <AiPatternPanel
                         projectId={project?.id ?? null}
                         panel={placementPanel}
+                        geometry={dieline}
                         colors={selectedPalette.colors}
                         onInsert={handleInsertPattern}
                       />

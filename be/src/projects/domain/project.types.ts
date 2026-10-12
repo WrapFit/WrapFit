@@ -1,5 +1,5 @@
 // Domain layer: plain TypeScript only (no @nestjs/*, no @prisma/client) — see docs 08, section 1.1.
-import type { BoxDimensions, CanvasState, FitCheckReport, MaterialSpecification } from '@wrapfit/shared';
+import { type BoxDimensions, caliperOf, type CanvasState, type FitCheckReport, type MaterialSpecification } from '@wrapfit/shared';
 
 /** Same values as the Prisma enums, declared here so the domain does not depend on Prisma. */
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
@@ -63,7 +63,7 @@ export interface SnapshotSummary {
 export const DEFAULT_MATERIAL: MaterialSpecification = {
   type: 'ivory',
   gsm: 300,
-  caliper: 0.35,
+  caliper: caliperOf(300),
   finish: 'matte',
 };
 

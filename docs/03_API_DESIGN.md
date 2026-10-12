@@ -87,8 +87,8 @@
 ### Dự án: quy tắc chính (IT3-03)
 
 - **Quyền sở hữu**: `ProjectOwnerGuard` trả `404 Project not found` cho cả dự án không tồn tại lẫn dự án của người khác (không để lộ id nào có thật). Id sai định dạng trả `400`.
-- **Kích thước**: kiểm tra theo `formula_schema.params` của mẫu hộp (vd. tuck-top: L ≥ 40, W ≥ 30, H ≥ 20, tối đa 600 mm). `paperThickness` bỏ trống thì lấy `materialSpec.caliper`.
-- **Mặc định khi tạo**: `materialSpec = { type: "ivory", gsm: 300, caliper: 0.35, finish: "matte" }`, `canvasState = { elements: [] }`.
+- **Kích thước**: kiểm tra theo `formula_schema.params` của mẫu hộp (vd. tuck-top: L ≥ 40, W ≥ 30, H ≥ 20, tối đa 600 mm) và quy tắc tỉ lệ của cấu trúc (`dimensionRuleErrors` của `@wrapfit/shared`: hộp gối có `height ≤ width / 2`); sai → 400. `paperThickness` bỏ trống thì lấy `materialSpec.caliper`.
+- **Mặc định khi tạo**: `materialSpec = { type: "ivory", gsm: 300, caliper: 0.42, finish: "matte" }` (độ dày = GSM × 0,0014), `canvasState = { elements: [] }`.
 - **`canvasState`** phải đúng kiểu `CanvasElement` của `@wrapfit/shared` (tối đa 300 phần tử, ảnh là URL đã upload chứ không nhúng base64). Body JSON tối đa 1 MB.
 - **Tags** được lưu dạng chữ thường, bỏ khoảng trắng và trùng lặp (tối đa 10 tag × 30 ký tự).
 - `PATCH` chỉ đổi những trường được gửi; `null` xóa `collectionId` / `thumbnailUrl` / `occasion` / `industry`; `null` cho trường bắt buộc (`title`, `dimensions`, `materialSpec`, `canvasState`, `tags`) trả `400`. Không đổi được `templateId`. Dự án trong thùng rác không sửa được (`409`) cho tới khi khôi phục.

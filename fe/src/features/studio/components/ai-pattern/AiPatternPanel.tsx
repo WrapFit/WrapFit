@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Wand2 } from "lucide-react";
-import type { CanvasElement, PanelFace } from "@wrapfit/shared";
+import { BLEED_MM, cutSidesOf, type CanvasElement, type DielineGeometry, type PanelFace } from "@wrapfit/shared";
 import { ApiError, generateAiPattern, getAiUsage, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
@@ -11,15 +11,14 @@ import type { AiPatternResult } from "@/types/api";
 import { renderPatternPng, tileBackground } from "./patternImage";
 
 const MAX_THEME = 200;
-/** FitCheck safe margin: the pattern stops this far inside the panel edges. */
-const SAFE_MARGIN_MM = 3;
 const SUGGESTIONS = ["Tết hoa mai", "Giáng sinh tuyết", "Lá khuynh diệp", "Hình học Art Deco"];
 
 interface AiPatternPanelProps {
   /** Null in the demo: generating needs an account. */
   projectId: string | null;
-  /** Panel that receives the pattern. */
+  /** Panel that receives the pattern, and the piece it belongs to (its cut lines get the bleed). */
   panel: PanelFace | undefined;
+  geometry: DielineGeometry;
   /** Colors of the palette in use, sent as preferred colors. */
   colors: string[];
   /** Adds the pattern under the other elements. */
@@ -27,7 +26,7 @@ interface AiPatternPanelProps {
 }
 
 /** AI pattern generator (docs/06 §11): theme → seamless tile → printed over the selected panel. */
-export function AiPatternPanel({ projectId, panel, colors, onInsert }: AiPatternPanelProps) {
+export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }: AiPatternPanelProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const usage = useQuery({ queryKey: queryKeys.aiUsage, queryFn: getAiUsage, enabled: projectId !== null, staleTime: 60_000 });
@@ -79,18 +78,23 @@ export function AiPatternPanel({ projectId, panel, colors, onInsert }: AiPattern
     if (!result || !panel) return;
     setInserting(true);
     try {
-      const width = Math.max(1, panel.bounds.width - 2 * SAFE_MARGIN_MM);
-      const height = Math.max(1, panel.bounds.height - 2 * SAFE_MARGIN_MM);
+      // A background covers the panel and runs BLEED_MM past its cut lines (FitCheck); folds need no bleed.
+      const cut = cutSidesOf(panel, geometry);
+      const bleed = (side: "top" | "right" | "bottom" | "left") => (cut.has(side) ? BLEED_MM : 0);
+      const x = -bleed("left");
+      const y = -bleed("top");
+      const width = panel.bounds.width + bleed("left") + bleed("right");
+      const height = panel.bounds.height + bleed("top") + bleed("bottom");
       const { blob, dpi } = await renderPatternPng(result.tile, width, height);
       const { fileUrl } = await uploadFileToStorage(blob, "IMAGE", projectId);
       onInsert({
         id: `pattern_${Date.now()}`,
         type: "pattern",
         panelId: panel.id,
-        x: SAFE_MARGIN_MM,
-        y: SAFE_MARGIN_MM,
-        width: Math.round(width * 10) / 10,
-        height: Math.round(height * 10) / 10,
+        x,
+        y,
+        width: Math.round(width * 100) / 100,
+        height: Math.round(height * 100) / 100,
         rotation: 0,
         content: fileUrl,
         dpi,

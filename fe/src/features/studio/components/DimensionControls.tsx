@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BoxDimensions } from "@wrapfit/shared";
+import { BoxDimensions, caliperOf } from "@wrapfit/shared";
 import { Ruler } from "lucide-react";
 import type { DimensionLimits } from "@/types/api";
 import { clampDimension } from "@/features/studio/utils/dieline";
@@ -103,10 +103,10 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
 
         <div className="grid grid-cols-3 gap-2">
           {[
-            { gsm: 250, t: 0.3, label: "250 GSM", desc: "Hộp mỏng" },
-            { gsm: 300, t: 0.38, label: "300 GSM", desc: "Chuẩn quà" },
-            { gsm: 350, t: 0.45, label: "350 GSM", desc: "Cứng cáp" },
-          ].map((item) => {
+            { gsm: 250, label: "250 GSM", desc: "Hộp mỏng" },
+            { gsm: 300, label: "300 GSM", desc: "Chuẩn quà" },
+            { gsm: 350, label: "350 GSM", desc: "Cứng cáp" },
+          ].map(({ gsm, ...item }) => ({ ...item, gsm, t: caliperOf(gsm) })).map((item) => {
             const isSelected = Math.abs(dimensions.paperThickness - item.t) < 0.03;
             return (
               <button

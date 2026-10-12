@@ -8,5 +8,6 @@ export * from "./parametric/pillow";
 export * from "./parametric/registry";
 export * from "./parametric/segments";
 export * from "./parametric/fold";
+export * from "./parametric/paper";
 export * from "./fitcheck/validator";
 export * from "./print/text-layout";

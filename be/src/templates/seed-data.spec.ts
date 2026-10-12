@@ -1,9 +1,9 @@
 import {
   type BoxDimensions,
   type CanvasElement,
+  checkBox,
   CURRENT_FORMULA_VERSION,
   generateDielinePieces,
-  runFitCheck,
 } from '@wrapfit/shared';
 import { designTemplates } from '../../prisma/seed-data';
 
@@ -27,7 +27,7 @@ describe('curated design templates of the seed', () => {
         // Exact ids: a short id ("front") only resolves on tuck-top boxes.
         expect(panels.map((panel) => panel.id)).toContain(element.panelId);
       }
-      const report = runFitCheck(elements, { ...pieces[0].geometry, panels });
+      const report = checkBox(pieces, elements);
       expect(report.violations).toEqual([]);
     },
   );

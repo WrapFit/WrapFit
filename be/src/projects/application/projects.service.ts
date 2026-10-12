@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { BoxDimensions, MaterialSpecification } from '@wrapfit/shared';
+import { type BoxDimensions, dimensionRuleErrors, type MaterialSpecification } from '@wrapfit/shared';
 import { disallowedFileContents, fileUrlNotAllowed, storedCanvasKeys, toStoredCanvas } from '../../storage';
 import { paginate, Paginated, toSkipTake } from '../../common';
 import {
@@ -69,7 +69,7 @@ export class ProjectsService {
 
     const materialSpec = dto.materialSpec ?? design?.materialSpec ?? DEFAULT_MATERIAL;
     const dimensions = this.completeDimensions(dto.dimensions, materialSpec);
-    this.assertDimensionsFit(dimensions, template.formulaSchema);
+    this.assertDimensionsFit(template.id, dimensions, template.formulaSchema);
     const canvasState = dto.canvasState ?? design?.canvasState ?? EMPTY_CANVAS;
     // A client that resized a curated design sends it back with the design's own images.
     if (dto.canvasState) {
@@ -149,7 +149,7 @@ export class ProjectsService {
     if (dto.dimensions) {
       const template = await this.projects.findTemplateRules(project.template.id);
       changes.dimensions = this.completeDimensions(dto.dimensions, dto.materialSpec ?? project.materialSpec);
-      this.assertDimensionsFit(changes.dimensions, template?.formulaSchema);
+      this.assertDimensionsFit(project.template.id, changes.dimensions, template?.formulaSchema);
     }
     // The FitCheck score on the dashboard and in the template hub always matches the saved design.
     if (changes.canvasState || changes.dimensions) {
@@ -310,8 +310,12 @@ export class ProjectsService {
     };
   }
 
-  private assertDimensionsFit(dimensions: BoxDimensions, formulaSchema: unknown): void {
-    const violations = findDimensionViolations(dimensions, readDimensionLimits(formulaSchema));
+  private assertDimensionsFit(structure: string, dimensions: BoxDimensions, formulaSchema: unknown): void {
+    const violations = [
+      ...findDimensionViolations(dimensions, readDimensionLimits(formulaSchema)),
+      // Proportions the structure needs (e.g. a pillow box at most half as thick as wide).
+      ...dimensionRuleErrors(structure, dimensions).map((rule) => rule.message),
+    ];
     if (violations.length) throw new BadRequestException(violations);
   }
 }

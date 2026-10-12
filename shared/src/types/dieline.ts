@@ -60,6 +60,11 @@ export interface DielineGeometry {
   };
   panels: PanelFace[];
   segments: DielineSegment[];
+  /**
+   * Glue flaps and glue tabs (bounding rectangles on the sheet): their printed side is glued, so it must stay free of
+   * ink (FitCheck GLUE_CONTAMINATED). Formula version 3 and later.
+   */
+  glueAreas?: { x: number; y: number; width: number; height: number }[];
   /** Sheet axes that point up and to the front of the closed piece (3D), when its panels have `fold`. */
   orientation?: { up: SheetAxis; front: SheetAxis };
 }

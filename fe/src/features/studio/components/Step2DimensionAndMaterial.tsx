@@ -13,12 +13,17 @@ import {
   Check,
   Info,
 } from "lucide-react";
-import { BoxDimensions, FitCheckReport } from "@wrapfit/shared";
+import { BoxDimensions, caliperOf, CURRENT_FORMULA_VERSION, FitCheckReport } from "@wrapfit/shared";
 
 import { GoiMascot } from "@/components/common/GoiMascot";
 import type { DimensionLimits } from "@/types/api";
 import { MmInput } from "./MmInput";
-import { clampDimension, dimensionErrors, type DimensionField } from "@/features/studio/utils/dieline";
+import {
+  clampDimension,
+  dielinePiecesOf,
+  dimensionErrors,
+  type DimensionField,
+} from "@/features/studio/utils/dieline";
 
 interface GiftPreset {
   id: string;
@@ -72,28 +77,28 @@ const PAPER_MATERIALS = [
     name: "Giấy Ivory Mộc 300 GSM",
     finish: "Cán Mờ Tự Nhiên",
     desc: "Mặt giấy đanh trắng ngà, bắt mực in rực rỡ, độ cứng tiêu chuẩn cho bán lẻ.",
-    caliper: 0.38,
+    caliper: caliperOf(300),
   },
   {
     id: "kraft",
     name: "Giấy Kraft Linen 300 GSM",
     finish: "Mộc Thủ Công",
     desc: "Màu nâu kraft mộc mạc ấm áp, 100% tái chế thân thiện môi trường.",
-    caliper: 0.42,
+    caliper: caliperOf(300),
   },
   {
     id: "forest",
     name: "Giấy Duplex Cao Cấp 350 GSM",
     finish: "Phủ Màng Nhung Soft-Touch",
     desc: "Dày dặn, bề mặt êm ái như nhung lụa, chống trầy xước.",
-    caliper: 0.45,
+    caliper: caliperOf(350),
   },
   {
     id: "gold_foil",
     name: "Carton Lạnh Bồi Mỹ Thuật 400 GSM",
     finish: "Ép Kim Vàng Champagne",
     desc: "Khối lượng đầm tay, nắp cứng cáp tuyệt đối, dành riêng cho quà VIP.",
-    caliper: 0.52,
+    caliper: caliperOf(400),
   },
 ];
 
@@ -113,6 +118,9 @@ interface Step2DimensionAndMaterialProps {
   fitCheckReport: FitCheckReport;
   /** Allowed size of each dimension for the box structure (`GET /templates/structures`). */
   limits?: DimensionLimits;
+  /** Box structure and dieline formulas (sheet size, proportion rules); a new design uses the current formulas. */
+  structure: string;
+  formulaVersion?: number;
   /** Omitted: no way back (the structure of a saved project is fixed). */
   onBack?: () => void;
   onNext: () => void;
@@ -128,6 +136,8 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   onMaterialChange,
   fitCheckReport,
   limits,
+  structure,
+  formulaVersion = CURRENT_FORMULA_VERSION,
   onBack,
   onNext,
   nextLabel = "Tiến Vào Xưởng Bản Vẽ Bế 2D (Bước 3)",
@@ -161,16 +171,19 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
     });
   };
 
-  const fitsLimits = (dims: BoxDimensions) => dimensionErrors(dims, limits).length === 0;
-  const errors = dimensionErrors(dimensions, limits);
+  const fitsLimits = (dims: BoxDimensions) => dimensionErrors(dims, limits, structure).length === 0;
+  const errors = dimensionErrors(dimensions, limits, structure);
 
   const applyPreset = (p: GiftPreset) => {
     onDimensionsChange(p.dims);
   };
 
-  // Approximate flat dieline sheet footprint
-  const estSheetW = dimensions.length * 2 + dimensions.width * 2 + 30;
-  const estSheetH = dimensions.height + dimensions.width * 2 + 40;
+  // Flat sheet of every piece, from the dieline that gets printed
+  const sheets = dielinePiecesOf(structure, dimensions, formulaVersion)
+    .map(({ geometry: { totalBoundingBox: b } }) => `${Math.round(b.width)} × ${Math.round(b.height)}`)
+    .join(" + ");
+  // Since formula version 3 the dieline adds the paper thickness to each panel (shared/README.md)
+  const addsThickness = formulaVersion >= 3;
 
   return (
     <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
@@ -184,11 +197,16 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           Đo Kích Thước Món Quà Chuẩn CAD (mm)
         </h1>
         <p className="text-sm text-stone-600 leading-relaxed">
-          Kích thước được tính theo lọt lòng của hộp. Hệ thống tự động bù trừ độ dày giấy{" "}
-          <span className="font-mono font-bold text-vibrant-cobalt">
-            +{dimensions.paperThickness * 2}mm
-          </span>{" "}
-          để đảm bảo quà vừa vặn, nắp gài đóng êm không bị cấn.
+          Kích thước được tính theo lọt lòng của hộp.{" "}
+          {addsThickness ? (
+            <>
+              Phôi tự cộng độ dày giấy{" "}
+              <span className="font-mono font-bold text-vibrant-cobalt">+{dimensions.paperThickness} mm</span> vào
+              mỗi mặt để quà vừa vặn, nắp đóng êm không bị cấn.
+            </>
+          ) : (
+            "Dự án dùng công thức cũ: phôi chưa cộng độ dày giấy."
+          )}
         </p>
       </div>
 
@@ -385,15 +403,13 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             {/* Calculations Readout */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2.5 rounded-squircle bg-stone-50 border border-stone-100">
-                <span className="text-[10px] text-stone-400 block">Ước tính khổ trải phẳng:</span>
-                <span className="font-mono font-bold text-stone-800 text-xs">
-                  {estSheetW} × {estSheetH} mm
-                </span>
+                <span className="text-[10px] text-stone-400 block">Khổ phôi trải phẳng:</span>
+                <span className="font-mono font-bold text-stone-800 text-xs">{sheets} mm</span>
               </div>
               <div className="p-2.5 rounded-squircle bg-stone-50 border border-stone-100">
-                <span className="text-[10px] text-stone-400 block">Bù trừ nếp gập (2t):</span>
+                <span className="text-[10px] text-stone-400 block">Bù độ dày giấy (t) mỗi mặt:</span>
                 <span className="font-mono font-bold text-vibrant-cobalt text-xs">
-                  +{(dimensions.paperThickness * 2).toFixed(2)} mm
+                  {addsThickness ? `+${dimensions.paperThickness.toFixed(2)} mm` : "Không (công thức cũ)"}
                 </span>
               </div>
             </div>

@@ -106,6 +106,7 @@ export function generateSleeveDrawerDieline(dimensions: BoxDimensions): {
     totalBoundingBox: { width: L, height: yEnd },
     panels,
     segments,
+    glueAreas: [{ x: 0, y: 0, width: L, height: glue }],
     orientation: { up: "+z", front: "-y" },
   };
 

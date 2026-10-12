@@ -98,6 +98,12 @@ export function generateTray(input: {
     totalBoundingBox: { width: xEnd, height: yEnd },
     panels,
     segments,
+    glueAreas: [
+      { x: x0 - tab, y: 0, width: tab, height: H },
+      { x: x1, y: 0, width: tab, height: H },
+      { x: x0 - tab, y: y1, width: tab, height: H },
+      { x: x1, y: y1, width: tab, height: H },
+    ],
     orientation: { up: input.up, front: "-y" },
   };
 }

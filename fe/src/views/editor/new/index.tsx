@@ -211,6 +211,7 @@ function NewProjectWizard({ structures, template }: { structures: BoxStructure[]
             onMaterialChange={(m) => setMaterial(m as BoxMaterialTheme)}
             fitCheckReport={report}
             limits={current?.dimensionLimits ?? template?.dimensionLimits}
+            structure={structure}
             onBack={template ? undefined : () => setStep(1)}
             onNext={() => create.mutate()}
             nextLabel={create.isPending ? "Đang tạo dự án…" : "Tạo Dự Án & Vào Xưởng Bản Vẽ 2D"}

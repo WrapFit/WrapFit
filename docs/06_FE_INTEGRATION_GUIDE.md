@@ -230,7 +230,9 @@ GET  /api/projects/:id   → ProjectDetail
 - `templateId`: `tuck-top` | `sleeve-drawer` | `lid-base` | `pillow`. Giới hạn kích thước từng cấu trúc:
   `GET /api/templates/structures` → `dimensionLimits` (dùng để validate form trước khi gửi).
 - `paperThickness` bỏ trống → lấy `materialSpec.caliper`. Mặc định `materialSpec = { type: "ivory", gsm: 300,
-  caliper: 0.35, finish: "matte" }`, `canvasState = { elements: [] }`.
+  caliper: 0.42, finish: "matte" }` (độ dày = GSM × 0,0014, `caliperOf` của shared), `canvasState = { elements: [] }`.
+- Ngoài min / max từng kích thước, mỗi cấu trúc có **quy tắc tỉ lệ** (`dimensionRuleErrors` của shared; API trả 400 với
+  câu tiếng Anh, editor hiện câu tiếng Việt `vi`): hộp gối dày tối đa bằng nửa chiều rộng.
 - Tìm kiếm dùng tham số **`q`** (tiêu đề hoặc đúng 1 tag), không phải `search`. Danh sách không có `canvasState`.
 - **`formulaVersion`** (trong `ProjectDetail`): phiên bản công thức dieline mà dự án được chốt khi tạo. Editor phải
   dựng dieline / 3D / FitCheck bằng `generateDielinePieces(templateId, dimensions, formulaVersion)` của
@@ -276,6 +278,13 @@ PATCH /api/projects/:id   { "version": 7, "canvasState": {...}, "dimensions"?: {
   `templateId`. Dự án trong thùng rác: `409` cho mọi thao tác sửa.
 - Mỗi lần đổi `canvasState` / `dimensions`, server chạy lại FitCheck và trả `fitcheckState`
   (`{ isValidForProduction, score, violations[] }`) + `fitcheckScore`: hiển thị theo bản của server.
+- FitCheck là **một hàm** `checkBox(pieces, elements)` của `@wrapfit/shared`, editor và server cùng gọi (từ
+  2026-10-12). Quy tắc (`code`, mức): chữ / logo / ảnh cách mép mặt ≥ 3 mm, tính theo khung đã xoay (`CUT_OVERLAP` nếu
+  mép gần nhất là nét cắt, `CREASE_OVERLAP` nếu là nếp gấp; < 1 mm hoặc tràn ra ngoài: lỗi, còn lại: cảnh báo); hoa văn
+  (`pattern`) không cần lề nhưng chạm nét cắt thì phải tràn ≥ 2 mm hoặc lùi ≥ 3 mm (`BLEED_INSUFFICIENT`, cảnh báo); lấn
+  lên tai dán (`GLUE_CONTAMINATED`, lỗi; phôi từ bản 3); mặt không có trong hộp (`NO_PANEL`, cảnh báo: không được in);
+  ảnh / hoa văn < 200 DPI (`LOW_DPI`, cảnh báo); phôi lớn hơn khổ B1 1020 × 720 mm (`DIMENSION_OUT_OF_BOUNDS`, cảnh
+  báo). Điểm = 100 − 30 × lỗi − 10 × cảnh báo; còn lỗi thì xuất file trả 422. Sửa tự động: `autoFixElements`.
 - Thumbnail: render canvas thành ảnh → upload `purpose: THUMBNAIL` (+ `projectId`) → `PATCH { thumbnailUrl }`.
 
 ### 5.4. Vòng đời

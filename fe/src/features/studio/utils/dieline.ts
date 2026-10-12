@@ -1,7 +1,8 @@
 import {
   CURRENT_FORMULA_VERSION,
+  checkBox,
+  dimensionRuleErrors,
   generateDielinePieces,
-  runFitCheck,
   type BoxDimensions,
   type CanvasElement,
   type DielinePiece,
@@ -22,17 +23,12 @@ export function dielinePiecesOf(
 }
 
 /**
- * FitCheck of the whole box, computed like the server does after each save (`checkProject` in
- * be/src/projects/domain/project-fitcheck.ts): one run over the panels of every piece, panel ids resolved the same
- * way ("front" = "panel_front"). Runs on every change, so the score follows a drag before the save answers.
+ * FitCheck of the whole box with the function the server runs after each save (`checkBox` of @wrapfit/shared, called
+ * by `checkProject` in be/src/projects/domain/project-fitcheck.ts). Runs on every change, so the score follows a drag
+ * before the save answers.
  */
 export function checkDesign(pieces: DielinePiece[], elements: CanvasElement[]): FitCheckReport {
-  const panels = pieces.flatMap((piece) => piece.geometry.panels);
-  const resolved = elements.map((element) => {
-    const panel = panels.find((p) => p.id === element.panelId || p.id === `panel_${element.panelId}`);
-    return panel ? { ...element, panelId: panel.id } : element;
-  });
-  return runFitCheck(resolved, { ...pieces[0].geometry, panels });
+  return checkBox(pieces, elements);
 }
 
 /** Piece that holds a panel, so the canvas shows the piece of the selected element. */
@@ -60,13 +56,20 @@ export function clampDimension(limits: DimensionLimits | undefined, field: Dimen
   return Math.min(range.max, Math.max(range.min, value));
 }
 
-/** One Vietnamese message per dimension outside the limits of the box structure (the API answers 400 for them). */
-export function dimensionErrors(dimensions: BoxDimensions, limits: DimensionLimits | undefined): string[] {
-  if (!limits) return [];
-  return (Object.keys(DIMENSION_LABELS) as DimensionField[]).flatMap((field) => {
-    const range = limits[field];
+/**
+ * One Vietnamese message per dimension outside the limits of the box structure, then the proportion rules of the
+ * structure (`dimensionRuleErrors`): the API answers 400 for both.
+ */
+export function dimensionErrors(
+  dimensions: BoxDimensions,
+  limits: DimensionLimits | undefined,
+  structure?: string
+): string[] {
+  const outside = (Object.keys(DIMENSION_LABELS) as DimensionField[]).flatMap((field) => {
+    const range = limits?.[field];
     const value = dimensions[field];
     if (!range || (value >= range.min && value <= range.max)) return [];
     return [`${DIMENSION_LABELS[field]} phải từ ${range.min} đến ${range.max} mm.`];
   });
+  return [...outside, ...(structure ? dimensionRuleErrors(structure, dimensions).map((rule) => rule.vi) : [])];
 }

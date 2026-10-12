@@ -89,5 +89,6 @@ export function generatePillowBoxDieline(dimensions: BoxDimensions): DielineGeom
     totalBoundingBox: { width: xEnd, height: yEnd },
     panels,
     segments,
+    glueAreas: [{ x: 0, y: yTip, width: glue, height: bodyLength }],
   };
 }
