@@ -10,7 +10,7 @@ Mục lục: [1. Kết nối](#1-kết-nối-và-phiên-đăng-nhập) · [2. L�
 [5. Editor](#5-dự-án-và-editor) · [6. Phiên bản](#6-mốc-phiên-bản-snapshots) · [7. Xuất file in](#7-xuất-file-in) ·
 [8. Chia sẻ](#8-chia-sẻ-remix-thả-tim) · [9. Thư viện mẫu](#9-thư-viện-mẫu) · [10. Mở hộp](#10-mở-hộp-3d-qua-qr) ·
 [11. AI](#11-ai-sinh-hoa-văn) · [12. Hồ sơ](#12-hồ-sơ-brand-kit-bộ-sưu-tập) ·
-[13. Lệch hiện tại](#13-những-chỗ-apiclientts-hiện-tại-lệch-backend) · [14. Kiểu dữ liệu](#14-kiểu-dữ-liệu-typescript) ·
+[13. Lệch cũ (đã sửa)](#13-những-chỗ-apiclient-cũ-lệch-backend-đã-sửa) · [14. Kiểu dữ liệu](#14-kiểu-dữ-liệu-typescript) ·
 [15. Chạy local](#15-chạy-và-kiểm-thử-local) · [16. Danh mục endpoint](#16-danh-mục-đầy-đủ-endpoint-đối-chiếu-với-code)
 
 ---
@@ -431,24 +431,27 @@ GET|POST /api/collections       · GET|PATCH|DELETE /api/collections/:id   (colo
   upload rồi không bấm lưu. Upload xong thì lưu (`PATCH`) trong vòng 24 giờ; quá hạn → `400 FILE_NOT_OWNED`, upload lại.
 - Thư mục: tối đa 100; xóa thư mục giữ lại dự án. Đưa dự án vào / ra: `PATCH /api/projects/:id { collectionId }`.
 
-## 13. Những chỗ `apiClient` hiện tại lệch backend
+## 13. Những chỗ `apiClient` cũ lệch backend (đã sửa)
 
-Danh sách sửa khi dựng lại FE (các module trong [`fe/src/api/`](../fe/src/api/), kiểu dữ liệu ở [`fe/src/types/api/`](../fe/src/types/api/index.ts)):
+Danh sách lập trước khi nối FE với backend ([`12`](12_FE_BE_INTEGRATION_PLAN.md)). Tất cả đã sửa trong các module
+[`fe/src/api/`](../fe/src/api/) và kiểu dữ liệu [`fe/src/types/api/`](../fe/src/types/api/index.ts); kiểm lại ở phiên S8
+(2026-10-12): không còn chỗ nào trong `fe/src` dùng tên cũ, kịch bản [`12` §7](12_FE_BE_INTEGRATION_PLAN.md#7-kịch-bản-kiểm-thử-end-to-end)
+chạy qua cả 15 bước.
 
-| Chỗ lệch | Hiện tại | Đúng theo backend |
-|---|---|---|
-| Đăng ký / đăng nhập | Chưa có trang và hàm nào | Mục 3: 7 trang, xử lý `EMAIL_NOT_VERIFIED` |
-| Làm mới phiên | Không xử lý `401` | Refresh 1 lần rồi gửi lại (mục 1) |
-| `listProjects` | Tham số `search`; đọc `{ items, total }` | Tham số `q`; response `{ items, meta: { total, page, limit, totalPages } }` |
-| `uploadFileToStorage` | `purpose: "CANVAS_IMAGE" \| "PROJECT_THUMBNAIL"` | `LOGO` \| `IMAGE` \| `THUMBNAIL` \| `AVATAR` |
-| `uploadFileToStorage` | Tự đặt header `PUT`; lỗi thì trả data URL | Dùng đúng `ticket.method` + `ticket.headers`; kiểm tra `put.ok`; **không** dùng data URL (bị từ chối khi lưu) |
-| `deleteProject` (Dashboard) | Gọi `DELETE` trực tiếp | Trước hết `PATCH .../status { DELETED }`; `DELETE` chỉ trong thùng rác |
-| `AiPatternResponse` | `{ theme, palette, svgTile }` | `{ source, themeName, description, palette, tile: { size, svg }, usage }` |
-| `ExportJobStatus` | Có `progress`, thiếu `downloadExpiresIn` | Mục 7 |
-| `SnapshotDto` | Có `projectId` | `{ id, name, previewUrl, dimensions, createdAt }` |
-| `PublicUnboxingData` | `project`, `slug`, `qrCodeUrl`; hiệu ứng `sparkles`, `stars` | `box`, `sender`; không có `slug` / `qrCodeUrl`; hiệu ứng ở mục 10 |
-| Dieline trong editor | Gọi thẳng `generateTuckTopDieline`… | `generateDielinePieces(templateId, dimensions, formulaVersion)` |
-| Dữ liệu giả khi lỗi | Nhiều hàm `catch` trả dữ liệu mẫu | Chỉ dùng cho demo offline; khi tích hợp nên hiển thị lỗi thật để không che lỗi API |
+| Chỗ lệch | Trước đây | Đúng theo backend | Sửa ở |
+|---|---|---|---|
+| Đăng ký / đăng nhập | Chưa có trang và hàm nào | Mục 3: 7 trang, xử lý `EMAIL_NOT_VERIFIED` | S4 |
+| Làm mới phiên | Không xử lý `401` | Refresh 1 lần rồi gửi lại (mục 1) | S2, S3 |
+| `listProjects` | Tham số `search`; đọc `{ items, total }` | Tham số `q`; response `{ items, meta: { total, page, limit, totalPages } }` | S2 |
+| `uploadFileToStorage` | `purpose: "CANVAS_IMAGE" \| "PROJECT_THUMBNAIL"` | `LOGO` \| `IMAGE` \| `THUMBNAIL` \| `AVATAR` | S2 |
+| `uploadFileToStorage` | Tự đặt header `PUT`; lỗi thì trả data URL | Dùng đúng `ticket.method` + `ticket.headers`; kiểm tra `put.ok`; **không** dùng data URL (bị từ chối khi lưu) | S2 |
+| `deleteProject` (Dashboard) | Gọi `DELETE` trực tiếp | Trước hết `PATCH .../status { DELETED }`; `DELETE` chỉ trong thùng rác | S5 |
+| `AiPatternResponse` | `{ theme, palette, svgTile }` | `{ source, themeName, description, palette, tile: { size, svg }, usage }` | S2, S7 |
+| `ExportJobStatus` | Có `progress`, thiếu `downloadExpiresIn` | Mục 7 | S2 |
+| `SnapshotDto` | Có `projectId` | `{ id, name, previewUrl, dimensions, createdAt }` | S2 |
+| `PublicUnboxingData` | `project`, `slug`, `qrCodeUrl`; hiệu ứng `sparkles`, `stars` | `box`, `sender`; không có `slug` / `qrCodeUrl`; hiệu ứng ở mục 10 | S2, S5 |
+| Dieline trong editor | Gọi thẳng `generateTuckTopDieline`… | `generateDielinePieces(templateId, dimensions, formulaVersion)` | S6, S10 |
+| Dữ liệu giả khi lỗi | Nhiều hàm `catch` trả dữ liệu mẫu | Hiển thị lỗi thật (`ErrorState` có mã `requestId`, toast) | S2, S3 |
 
 ## 14. Kiểu dữ liệu TypeScript
 
