@@ -16,7 +16,6 @@ export const stitchBehaviors = {
   'dashboard-settings': () => import('./dashboard-settings'),
   'checkout-step-1': () => import('./checkout-step-1'),
   'checkout-step-3': () => import('./checkout-step-3'),
-  'auth-login': () => import('./auth-login'),
   'team': () => import('./team'),
   'notifications': () => import('./notifications'),
   'admin': () => import('./admin'),

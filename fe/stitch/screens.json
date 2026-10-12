@@ -183,11 +183,12 @@
       "slug": "auth-login",
       "route": "/auth/login",
       "title": "WrapFit — Xác Thực & Tài Khoản (Jobsly Mosaic Bento Style)",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
-      }
+      },
+      "note": "Rewritten by hand in src/views/auth/login (sign in and sign up, 3D box card that swaps sides); not generated."
     },
     {
       "id": "5880d8d9915f4a66b008c59381278cd0",

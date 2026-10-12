@@ -16,7 +16,6 @@ export const STITCH_ROUTES: readonly string[] = [
   '/dashboard/settings',
   '/checkout/step-1',
   '/checkout/step-3',
-  '/auth/login',
   '/team',
   '/notifications',
   '/admin',
