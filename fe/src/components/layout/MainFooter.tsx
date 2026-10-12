@@ -1,149 +1,97 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
+import React from 'react';
+import { landingFontVariables } from '@/assets/fonts/landing';
 import { ROUTES } from '@/constants';
-import { BrandLogo } from './BrandLogo';
+import { useAuth } from '@/features/auth';
+import { useBoxStructures } from '@/features/templates/hooks';
+import { useHydrated } from '@/hooks/dom';
+import { cn } from '@/utils/helpers';
+import { LandingLogo } from './LandingLogo';
+import { INDUSTRY_LINKS, RESOURCE_LINKS, STUDIO_LINKS, structureLinks, type NavLink } from './navigation';
 
 export interface MainFooterProps {
   /** Optional custom class */
   className?: string;
-  /** Compact mode for tighter pages */
+  /** Logo and closing line only, for pages that are mostly a tool */
   compact?: boolean;
 }
 
+const ACCOUNT_SIGNED_IN: NavLink[] = [
+  { label: 'Tổng quan', href: ROUTES.dashboard },
+  { label: 'Brand kit', href: ROUTES.brandKit },
+  { label: 'Hồ sơ', href: ROUTES.profile },
+  { label: 'Cài đặt', href: ROUTES.settings },
+];
+
+const ACCOUNT_ANONYMOUS: NavLink[] = [
+  { label: 'Đăng nhập', href: ROUTES.login },
+  { label: 'Tạo tài khoản', href: ROUTES.register },
+  { label: 'Quên mật khẩu', href: ROUTES.forgotPassword },
+];
+
+/**
+ * Dark green site footer in the pack.ly manner: logo and tagline, six columns of links (the box structures from the
+ * API, the hub filters, the account pages of the visitor), then the closing line.
+ */
 export function MainFooter({ className = '', compact = false }: MainFooterProps) {
+  const { user: sessionUser } = useAuth();
+  const structures = useBoxStructures();
+  // The server knows neither the session nor the structures: show them once hydrated, so both renders match.
+  const hydrated = useHydrated();
+  const user = hydrated ? sessionUser : null;
+  const industries = INDUSTRY_LINKS.slice(0, 5);
+  const occasions = INDUSTRY_LINKS.slice(5);
+
+  const columns: { title: string; links: NavLink[] }[] = [
+    { title: 'Studio', links: STUDIO_LINKS },
+    { title: 'Mẫu hộp', links: structureLinks(hydrated ? structures.data : undefined) },
+    { title: 'Ngành hàng', links: industries },
+    { title: 'Dịp tặng quà', links: occasions },
+    { title: 'Tài nguyên', links: RESOURCE_LINKS },
+    { title: 'Tài khoản', links: user ? ACCOUNT_SIGNED_IN : ACCOUNT_ANONYMOUS },
+  ];
+
   return (
-    <footer className={`w-full bg-[#f8f5ee] border-t border-[#e8ded0]/80 text-stone-700 select-none ${className}`}>
+    <footer data-app-tokens className={cn(landingFontVariables, 'w-full bg-landing-green-night font-landing-body select-none', className)}>
       {/* Below md the floating BottomNavBar sits over the end of the page: the bottom padding keeps the last line clear. */}
-      <div className="max-w-7xl 2xl:max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-28 md:pb-10 lg:py-14">
+      <div
+        className={cn(
+          'mx-auto flex w-full max-w-screen-xl flex-col items-center gap-12 px-4 pb-28 md:pb-6 lg:gap-16 lg:px-8 lg:pb-12 2xl:max-w-screen-2xl',
+          compact ? 'pt-10' : 'pt-12 lg:pt-24'
+        )}
+      >
+        <div className="flex flex-col items-center gap-2 text-center">
+          <LandingLogo tone="light" />
+          <p className="text-sm font-medium text-landing-lime-soft xl:text-base">Nền tảng thiết kế hộp quà vừa khít</p>
+        </div>
+
         {!compact && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-10 border-b border-[#e8ded0]/60">
-            {/* Column 1 & 2: Brand & Mission Statement */}
-            <div className="lg:col-span-2 space-y-4">
-              <BrandLogo size="lg" badge="CAD CADRE v4.2" href="/" />
-              <p className="font-['Plus_Jakarta_Sans'] text-xs text-stone-600 max-w-sm leading-relaxed">
-                Nền tảng trí tuệ bao bì thông minh hàng đầu dành cho thương hiệu thủ công, nghệ nhân và quà tặng xa xỉ. Biến mọi món quà thành tác phẩm trình diễn mở hộp chuẩn xác từng milimét.
-              </p>
-              <div className="flex items-center gap-3 pt-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#e8ded0] text-[11px] font-['JetBrains_Mono'] text-[#122e20] shadow-2xs font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>CAD Engine 1:1 Active</span>
-                </span>
-                <span className="font-['JetBrains_Mono'] text-[11px] text-stone-500">
-                  ISO 12647-2 Standard
-                </span>
+          <nav aria-label="Liên kết cuối trang" className="grid w-full grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-6">
+            {columns.map((column) => (
+              <div key={column.title}>
+                <h2 className="font-landing-heading text-base font-semibold text-white lg:text-xl">{column.title}</h2>
+                <ul className="mt-1 flex flex-col">
+                  {column.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="block min-h-6 py-1 text-xs text-landing-lime-mist transition-colors hover:text-landing-lime lg:text-sm"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-
-            {/* Column 3: CAD & Dieline */}
-            <div className="space-y-3">
-              <h4 className="font-['Plus_Jakarta_Sans'] text-xs font-bold uppercase tracking-wider text-[#122e20]">
-                Bản Vẽ CAD &amp; Dieline
-              </h4>
-              <ul className="space-y-2 text-xs font-medium text-stone-600">
-                <li>
-                  <Link href="/dashboard/specs" className="hover:text-black hover:underline transition-colors">
-                    Quy Chuẩn FEFCO &amp; Caliper
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/dashboard/materials" className="hover:text-black hover:underline transition-colors">
-                    Thư Viện Giấy &amp; Ép Kim PBR
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/editor/inspect/fefco" className="hover:text-black hover:underline transition-colors">
-                    Thanh Tra Sai Số CNC Laser
-                  </Link>
-                </li>
-                <li>
-                  <Link href={ROUTES.editorDemo} className="hover:text-black hover:underline transition-colors">
-                    3D Interactive WebGL Studio
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 4: Services & Production */}
-            <div className="space-y-3">
-              <h4 className="font-['Plus_Jakarta_Sans'] text-xs font-bold uppercase tracking-wider text-[#122e20]">
-                Dịch Vụ &amp; Sản Xuất
-              </h4>
-              <ul className="space-y-2 text-xs font-medium text-stone-600">
-                <li>
-                  <Link href="/pricing" className="hover:text-black hover:underline transition-colors">
-                    Bảng Giá Studio Pass
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/checkout/step-1" className="hover:text-black hover:underline transition-colors">
-                    Cấp Phép Bản Quyền CAD
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/admin/print-shops" className="hover:text-black hover:underline transition-colors">
-                    Mạng Lưới Xưởng In Đối Tác
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/unbox/demo-order" className="hover:text-black hover:underline transition-colors">
-                    Trải Nghiệm Mở Hộp Phygital AR
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 5: Support & Administration */}
-            <div className="space-y-3">
-              <h4 className="font-['Plus_Jakarta_Sans'] text-xs font-bold uppercase tracking-wider text-[#122e20]">
-                Hệ Thống &amp; Trợ Giúp
-              </h4>
-              <ul className="space-y-2 text-xs font-medium text-stone-600">
-                <li>
-                  <Link href="/support" className="hover:text-black hover:underline transition-colors">
-                    Trung Tâm Hỗ Trợ &amp; FAQ
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/team" className="hover:text-black hover:underline transition-colors">
-                    Đội Ngũ Sáng Lập &amp; Kỹ Sư
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/notifications" className="hover:text-black hover:underline transition-colors">
-                    Bản Tin Cập Nhật Hệ Thống
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/admin/security" className="hover:text-black hover:underline transition-colors">
-                    Trung Tâm An Ninh Zero-Trust
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
+            ))}
+          </nav>
         )}
 
-        {/* Bottom Compliance & Copyright Line */}
-        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-stone-500 font-['JetBrains_Mono']">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-800 font-semibold">
-              <span className="material-symbols-outlined text-sm">workspace_premium</span>
-              <span>ISO 12647-2 Litho Offset</span>
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1.5 text-blue-800 font-semibold">
-              <span className="material-symbols-outlined text-sm">lock</span>
-              <span>PCI-DSS Tier 1 Ready</span>
-            </span>
-            <span>•</span>
-            <span className="text-stone-600">SLA 99.98% Gateway Hanoi</span>
-          </div>
-
-          <div className="text-center md:text-right">
-            © 2026 WrapFit Packaging Ltd. All millimeter calibrations verified.
-          </div>
+        <div className="flex w-full flex-col items-center gap-2 border-t border-white/10 pt-6 text-center text-xs text-landing-lime-mist/80">
+          <p>Khuôn bế · FitCheck™ · Xem trước 3D · File in PDF, SVG, DXF · Mở hộp bằng mã QR</p>
+          <p>© {new Date().getFullYear()} WrapFit · Make Every Present, Present.</p>
         </div>
       </div>
     </footer>
