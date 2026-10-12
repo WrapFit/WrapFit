@@ -59,11 +59,12 @@ export interface ProjectSync {
   /** Saves other fields of the project (e.g. occasion) in the save queue, with the current version. */
   patch: (body: Omit<UpdateProjectRequest, "version">) => Promise<ProjectDetail>;
   /**
-   * Runs a call that gives the project a new version on the server (restoring a snapshot), after the pending
-   * changes are saved. Afterwards this editor sends nothing more: mount it again with the project returned.
-   * Rejects with UnsavedChangesError when the pending changes could not be saved first.
+   * Runs a call that gives the project a new version on the server (restoring a snapshot, upgrading the formulas),
+   * after the pending changes are saved; `task` gets the version last saved. Afterwards this editor sends nothing
+   * more: mount it again with the project returned. Rejects with UnsavedChangesError when the pending changes could
+   * not be saved first.
    */
-  replace: (task: () => Promise<ProjectDetail>) => Promise<ProjectDetail>;
+  replace: (task: (version: number | undefined) => Promise<ProjectDetail>) => Promise<ProjectDetail>;
 }
 
 /** The latest changes could not be saved, so an action that reads the saved project did not run. */
@@ -283,13 +284,13 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
   );
 
   const replace = useCallback(
-    async (task: () => Promise<ProjectDetail>) => {
+    async (task: (version: number | undefined) => Promise<ProjectDetail>) => {
       if (!projectId) throw new Error("The demo has no project");
       if (!(await flush())) throw new UnsavedChangesError();
       return new Promise<ProjectDetail>((resolve, reject) => {
         void enqueue(async () => {
           try {
-            const replaced = await task();
+            const replaced = await task(versionRef.current);
             detachedRef.current = true;
             clearTimeout(thumbRef.current.timer);
             queryClient.setQueryData(queryKeys.projects.detail(projectId), replaced);

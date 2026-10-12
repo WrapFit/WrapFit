@@ -48,7 +48,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
   async findContent(projectId: string, snapshotId: string): Promise<SnapshotContent | null> {
     const row = await this.prisma.projectSnapshot.findFirst({
       where: { id: snapshotId, projectId },
-      select: { id: true, name: true, canvasState: true, dimensions: true },
+      select: { id: true, name: true, canvasState: true, dimensions: true, formulaVersion: true },
     });
     return row as unknown as SnapshotContent | null;
   }
@@ -77,6 +77,8 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
         data: {
           canvasState: json(toStoredCanvas(snapshot.canvasState)),
           dimensions: json(snapshot.dimensions),
+          // Restoring the backup of a formula upgrade undoes it; older snapshots keep the current formulas.
+          ...(snapshot.formulaVersion !== null && { formulaVersion: snapshot.formulaVersion }),
           fitcheckState: nullableJson(fitCheck),
           fitcheckScore: fitCheck?.score ?? null,
           version: { increment: 1 }, // an editor still showing the old design must reload, not save over it
@@ -90,6 +92,36 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     return { project: toDetail(projectRow), backup: toSnapshotSummary(backupRow) };
   }
 
+  async upgradeFormula(
+    projectId: string,
+    expectedVersion: number,
+    formulaVersion: number,
+    backup: NewSnapshot,
+    fitCheck: FitCheckReport | null,
+  ): Promise<{ project: ProjectDetail; backup: SnapshotSummary } | null> {
+    return this.prisma.$transaction(async (tx) => {
+      // Guarded write first: after a save of another tab it matches nothing, and nothing is written.
+      const { count } = await tx.packagingProject.updateMany({
+        where: { id: projectId, version: expectedVersion },
+        data: {
+          formulaVersion,
+          fitcheckState: nullableJson(fitCheck),
+          fitcheckScore: fitCheck?.score ?? null,
+          version: { increment: 1 }, // open editors reload the project with its new dieline
+        },
+      });
+      if (count === 0) return null;
+      const backupRow = await tx.projectSnapshot.create({
+        data: { ...this.toData(projectId, backup), isAutomatic: true },
+        select: snapshotSummarySelect,
+      });
+      await syncProjectFileRefs(tx, projectId);
+      await pruneAutomaticSnapshots(tx, projectId); // the backup is an automatic snapshot
+      const projectRow = await tx.packagingProject.findUniqueOrThrow({ where: { id: projectId }, select: detailSelect });
+      return { project: toDetail(projectRow), backup: toSnapshotSummary(backupRow) };
+    });
+  }
+
   private toData(projectId: string, snapshot: NewSnapshot) {
     return {
       projectId,
@@ -97,6 +129,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
       previewKey: snapshot.previewKey,
       canvasState: json(toStoredCanvas(snapshot.canvasState)),
       dimensions: json(snapshot.dimensions),
+      formulaVersion: snapshot.formulaVersion,
     };
   }
 }

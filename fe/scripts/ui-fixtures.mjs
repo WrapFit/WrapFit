@@ -9,12 +9,16 @@
  *
  * Creates, owned by the seed admin (SEED_ADMIN_* of be/.env, or SHOT_PASSWORD): a folder, ACTIVE projects (PUBLIC with
  * an opened QR unboxing, UNLISTED without remix, one with a long title, one in the folder), an ARCHIVED and a DELETED
- * project. Then a new MAKER account with no data, verified through the Mailpit email.
+ * project, and a project pinned to formula version 1 (studio banner "Cập nhật lên công thức mới"; set in the database,
+ * no API pins old formulas). Then a new MAKER account with no data, verified through the Mailpit email.
  * Writes ids, slugs and the MAKER credentials to fe/.page-shots/fixtures.json (git-ignored), read by page-shots.
  */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { AppSession, FIXTURES_FILE, SHOTS_DIR, seedAdmin } from './lib/app-session.mjs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+import { AppSession, backendEnv, FIXTURES_FILE, SHOTS_DIR, seedAdmin } from './lib/app-session.mjs';
+import { FE_ROOT } from './stitch/lib/paths.mjs';
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=') ?? fallback;
@@ -82,6 +86,17 @@ async function verificationToken(email, after) {
 
 const box = (length, width, height) => ({ length, width, height, paperThickness: 0.35 });
 
+/** Pins a project to older dieline formulas, straight in the database of `be/.env` (Prisma client of the backend). */
+async function pinFormulaVersion(id, formulaVersion) {
+  const { PrismaClient } = createRequire(path.join(FE_ROOT, '..', 'be', 'package.json'))('@prisma/client');
+  const prisma = new PrismaClient({ datasourceUrl: backendEnv('DATABASE_URL') });
+  try {
+    await prisma.packagingProject.update({ where: { id }, data: { formulaVersion } });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 async function project(title, templateId, dimensions, extra = {}) {
   return admin.request('/projects', { method: 'POST', json: { title: PREFIX + title, templateId, dimensions, ...extra } });
 }
@@ -108,6 +123,8 @@ async function create() {
   await admin.request(`/projects/${archived.id}/status`, { method: 'PATCH', json: { status: 'ARCHIVED' } });
   const trashed = await project('Hộp mỹ phẩm (thùng rác)', 'tuck-top', box(50, 50, 150), { industry: 'COSMETICS' });
   await admin.request(`/projects/${trashed.id}/status`, { method: 'PATCH', json: { status: 'DELETED' } });
+  const oldFormula = await project('Hộp công thức cũ', 'tuck-top', box(120, 80, 60), { industry: 'TEA_AGRI' });
+  await pinFormulaVersion(oldFormula.id, 1);
 
   // A new MAKER with no data: sign up, then follow the link of the verification email.
   const makerPassword = `Ui${crypto.randomBytes(9).toString('base64url')}7`;
@@ -129,12 +146,13 @@ async function create() {
       inFolder: { id: inFolder.id, slug: inFolder.slug },
       archived: { id: archived.id },
       trashed: { id: trashed.id },
+      oldFormula: { id: oldFormula.id },
     },
     unboxSlug: unboxing.slug,
   };
   fs.mkdirSync(SHOTS_DIR, { recursive: true });
   fs.writeFileSync(FIXTURES_FILE, JSON.stringify(fixtures, null, 2));
-  console.log(`Created 6 projects, 1 folder, 1 unboxing, MAKER ${MAKER_EMAIL}. Ids and slugs in ${FIXTURES_FILE}`);
+  console.log(`Created 7 projects, 1 folder, 1 unboxing, MAKER ${MAKER_EMAIL}. Ids and slugs in ${FIXTURES_FILE}`);
 }
 
 await clean(); // also the records of an earlier or interrupted run

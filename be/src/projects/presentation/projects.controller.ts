@@ -13,9 +13,11 @@ import {
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ACCESS_COOKIE, CurrentUser } from '../../common';
 import { ProjectsService } from '../application/projects.service';
+import { SnapshotsService } from '../application/snapshots.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
 import { ChangeVisibilityDto } from './dto/change-visibility.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { FormulaUpgradeDto } from './dto/formula-upgrade.dto';
 import { QueryProjectsDto } from './dto/query-projects.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectOwnerGuard } from './project-owner.guard';
@@ -24,7 +26,10 @@ import { ProjectOwnerGuard } from './project-owner.guard';
 @ApiCookieAuth(ACCESS_COOKIE)
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly snapshotsService: SnapshotsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a project from a box template' })
@@ -64,6 +69,20 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Share a project: PRIVATE, UNLISTED (secret link) or PUBLIC, and allow remixing' })
   changeVisibility(@Param('id') id: string, @Body() dto: ChangeVisibilityDto) {
     return this.projectsService.changeVisibility(id, dto);
+  }
+
+  @Post(':id/formula-upgrade')
+  @UseGuards(ProjectOwnerGuard)
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Move a project to the current dieline formulas of its box structure',
+    description:
+      'Saves an automatic snapshot first (it keeps the old formula version: restoring it undoes the upgrade), then ' +
+      'changes formulaVersion and recomputes FitCheck. 409 in the trash, 409 PROJECT_VERSION_CONFLICT when `version` ' +
+      'is stale. Already current: returns the project and backup null.',
+  })
+  upgradeFormula(@Param('id') id: string, @Body() dto: FormulaUpgradeDto) {
+    return this.snapshotsService.upgradeFormula(id, dto.version);
   }
 
   @Post(':id/duplicate')

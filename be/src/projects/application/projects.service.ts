@@ -332,7 +332,7 @@ function assertOwnFileContents(
 }
 
 /** 409 with a stable code: the editor reloads the project (or offers to) instead of overwriting the newer save. */
-function versionConflict(currentVersion: number): ConflictException {
+export function versionConflict(currentVersion: number): ConflictException {
   return new ConflictException({
     code: 'PROJECT_VERSION_CONFLICT',
     message: 'The project was saved from somewhere else in the meantime; reload it before saving again',

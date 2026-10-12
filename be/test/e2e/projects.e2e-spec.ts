@@ -1,5 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { CURRENT_FORMULA_VERSION } from '@wrapfit/shared';
+import { execFileSync } from 'node:child_process';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { SchedulerRegistry } from '@nestjs/schedule';
@@ -82,8 +84,8 @@ describe('Projects API (e2e)', () => {
         visibility: 'PRIVATE',
         template: { id: 'tuck-top' },
         collection: { id: carolCollection, title: 'Tết 2026' },
-        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
-        materialSpec: { type: 'ivory', gsm: 300, caliper: 0.35, finish: 'matte' },
+        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.42 },
+        materialSpec: { type: 'ivory', gsm: 300, caliper: 0.42, finish: 'matte' },
         canvasState: { elements: [] },
         tags: ['tet', 'nen-thom'],
       });
@@ -112,6 +114,8 @@ describe('Projects API (e2e)', () => {
           newProject({
             templateId: 'pillow',
             title: 'Hộp gối trang sức',
+            // A pillow box is at most half as thick as wide.
+            dimensions: { length: 120, width: 80, height: 40 },
             materialSpec: { type: 'kraft', gsm: 350, caliper: 0.45, finish: 'raw' },
             canvasState: { elements: [element] },
           }),
@@ -489,7 +493,8 @@ describe('Projects API (e2e)', () => {
         id: expect.any(String),
         name: 'Mốc 1: chữ v1',
         previewUrl: null,
-        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
+        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.42 },
+        formulaVersion: CURRENT_FORMULA_VERSION,
         createdAt: expect.any(String),
       });
       firstSnapshot = res.body.id;
@@ -508,11 +513,11 @@ describe('Projects API (e2e)', () => {
       expect(res.body.project).toMatchObject({
         id: projectId,
         canvasState: text('v1'),
-        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
+        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.42 },
       });
       expect(res.body.backup).toMatchObject({
         name: 'Trước khi khôi phục: Mốc 1: chữ v1',
-        dimensions: { length: 200, width: 100, height: 80, paperThickness: 0.35 },
+        dimensions: { length: 200, width: 100, height: 80, paperThickness: 0.42 },
       });
 
       const history = (await as(carol).get(url()).expect(200)).body;
@@ -571,6 +576,100 @@ describe('Projects API (e2e)', () => {
       await as(carol).post(url()).send({ name: 'x' }).expect(409);
       await as(carol).get(url()).expect(200);
     });
+  });
+
+  describe('formula upgrade (docs/12 Phase 8, 8.10)', () => {
+    let projectId: string;
+    const url = () => `/api/projects/${projectId}/formula-upgrade`;
+    // A text close to the right side of the front panel: 2.8 mm left in version 1, 3.22 mm with the paper thickness.
+    const canvas = {
+      elements: [{ id: 't', type: 'text', panelId: 'panel_front', x: 3, y: 10, width: 114.2, height: 10, rotation: 0, content: 'x' }],
+    };
+
+    beforeAll(async () => {
+      projectId = (
+        await as(carol)
+          .post('/api/projects')
+          .send(newProject({ title: 'Hộp công thức cũ', canvasState: canvas }))
+          .expect(201)
+      ).body.id;
+      // As if it was created before the current formulas.
+      await prisma.packagingProject.update({ where: { id: projectId }, data: { formulaVersion: 1 } });
+    });
+
+    it('tells the editor that newer formulas exist', async () => {
+      const project = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      expect(project).toMatchObject({ formulaVersion: 1, latestFormulaVersion: CURRENT_FORMULA_VERSION });
+    });
+
+    it('upgrades with a backup that undoes it, guarded by the version like a save', async () => {
+      const before = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      const stale = await as(carol).post(url()).send({ version: before.version + 1 }).expect(409);
+      expect(stale.body).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: before.version });
+      await as(carol).post(url()).send({}).expect(400);
+
+      const res = await as(carol).post(url()).send({ version: before.version }).expect(200);
+      expect(res.body.project).toMatchObject({
+        formulaVersion: CURRENT_FORMULA_VERSION,
+        version: before.version + 1,
+        fitcheckScore: 100,
+        canvasState: canvas,
+      });
+      expect(res.body.backup).toMatchObject({
+        name: `Trước khi cập nhật công thức (bản 1 → ${CURRENT_FORMULA_VERSION})`,
+        formulaVersion: 1,
+      });
+      // Already current: nothing to do.
+      const again = await as(carol).post(url()).send({ version: res.body.project.version }).expect(200);
+      expect(again.body).toMatchObject({ project: { version: res.body.project.version }, backup: null });
+
+      // Undo: restoring the backup puts version 1 back, and its FitCheck (text 2.8 mm from the fold).
+      const undo = await as(carol)
+        .post(`/api/projects/${projectId}/snapshots/${res.body.backup.id}/restore`)
+        .expect(200);
+      expect(undo.body.project).toMatchObject({ formulaVersion: 1, fitcheckScore: 90 });
+    });
+
+    it('is for the owner only, and not in the trash', async () => {
+      const { version } = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      await as(dave).post(url()).send({ version }).expect(404);
+      await as(carol).patch(`/api/projects/${projectId}/status`).send({ status: 'DELETED' }).expect(200);
+      await as(carol).post(url()).send({ version: version + 1 }).expect(409);
+      await as(carol).patch(`/api/projects/${projectId}/status`).send({ status: 'ACTIVE' }).expect(200);
+    });
+
+    it('db:upgrade-formulas moves projects never exported, and keeps exported ones', async () => {
+      const exported = (
+        await as(carol).post('/api/projects').send(newProject({ title: 'Đã in' })).expect(201)
+      ).body.id;
+      await prisma.packagingProject.updateMany({ where: { id: { in: [projectId, exported] } }, data: { formulaVersion: 1 } });
+      await prisma.exportJob.create({ data: { projectId: exported, fileType: 'PDF_CMYK', status: 'COMPLETED' } });
+
+      const script = (id: string, ...flags: string[]) =>
+        execFileSync(process.execPath, [require.resolve('ts-node/dist/bin'), 'prisma/scripts/upgrade-formulas.ts', `--project=${id}`, ...flags], {
+          cwd: `${__dirname}/../..`,
+          encoding: 'utf8',
+        });
+      const versionOf = async (id: string) =>
+        (await prisma.packagingProject.findUniqueOrThrow({ where: { id } })).formulaVersion;
+
+      expect(script(projectId, '--dry-run')).toContain('--dry-run');
+      expect(await versionOf(projectId)).toBe(1);
+
+      const output = script(projectId);
+      expect(output).toContain(`1 → ${CURRENT_FORMULA_VERSION}`);
+      expect(await versionOf(projectId)).toBe(CURRENT_FORMULA_VERSION);
+      const backup = await prisma.projectSnapshot.findFirst({
+        where: { projectId, name: `Trước khi cập nhật công thức (bản 1 → ${CURRENT_FORMULA_VERSION})`, isAutomatic: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(backup?.formulaVersion).toBe(1);
+      // Running it again changes nothing.
+      expect(script(projectId)).toContain('0 cần cập nhật');
+
+      script(exported);
+      expect(await versionOf(exported)).toBe(1);
+    }, 60_000);
   });
 
   it('scores projects saved before FitCheck scores existed, without reordering the dashboard', async () => {

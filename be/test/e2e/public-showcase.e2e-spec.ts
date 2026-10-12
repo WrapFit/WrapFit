@@ -90,7 +90,7 @@ describe('Public showcase (e2e)', () => {
         visibility: 'UNLISTED',
         allowFork: true,
         template: { id: 'tuck-top' },
-        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
+        dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.42 },
         materialSpec: { type: 'ivory' },
         canvasState: { elements: [] },
         tags: ['nen'],

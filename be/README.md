@@ -376,6 +376,14 @@ npm --workspace=be run test:e2e
 
 ## Lưu ý khi triển khai production
 
+- **Sau mỗi lần thêm phiên bản công thức dieline** (`CURRENT_FORMULA_VERSION` của `@wrapfit/shared`, docs/12 Phase 8):
+  container mới tự seed nên box template nhận phiên bản mới; sau đó chạy tay **một lần**
+  `npm run db:upgrade-formulas -- --dry-run` (xem bảng: dự án, phiên bản cũ → mới, điểm FitCheck trước / sau, cảnh báo dự
+  án PUBLIC tụt dưới 90) rồi `npm run db:upgrade-formulas` (trong container: `docker compose exec backend npm run
+  db:upgrade-formulas`). Script chỉ chuyển dự án **chưa từng có file in xuất xong**, mỗi dự án kèm một mốc tự động để
+  hoàn tác; chạy lại không đổi gì thêm. Không chạy tự động lúc khởi động. Dự án đã xuất file: chủ dự án tự bấm "Cập nhật
+  lên công thức mới" trong studio (`POST /api/projects/:id/formula-upgrade`).
+
 - Đặt `JWT_*_SECRET` bằng giá trị ngẫu nhiên riêng (`openssl rand -base64 48`), không dùng giá trị trong `.env.example`.
 - Đặt `CORS_ORIGINS` là danh sách origin cụ thể; cân nhắc `SWAGGER_ENABLED=false`.
 - Chạy sau reverse proxy / load balancer: đặt `TRUST_PROXY=true` (bản prod đã bật) để rate limit tính theo IP thật của client.

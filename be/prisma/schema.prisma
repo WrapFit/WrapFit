@@ -244,7 +244,8 @@ model PackagingProject {
   viewsCount     Int               @default(0) @map("views_count")
   likesCount     Int               @default(0) @map("likes_count")
   version        Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
-  // Chốt lúc tạo dự án (= boxTemplate.formulaVersion), không bao giờ đổi: sửa công thức không làm xê dịch dieline cũ
+  // Chốt lúc tạo dự án (= boxTemplate.formulaVersion): sửa công thức không làm xê dịch dieline cũ. Chỉ đổi khi chủ dự án
+  // bấm cập nhật công thức hoặc script db:upgrade-formulas (docs/12 Phase 8, 8.10), luôn kèm một mốc để hoàn tác
   formulaVersion Int               @map("formula_version")
   deletedAt      DateTime?         @map("deleted_at") @db.Timestamptz(3) // Thời điểm vào thùng rác
   createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -273,14 +274,17 @@ model PackagingProject {
 }
 
 model ProjectSnapshot {
-  id          String   @id @default(uuid(7)) @db.Uuid
-  projectId   String   @map("project_id") @db.Uuid
-  name        String // "Trước khi đổi màu hoa văn", "Bản xuất in lần 1"
-  canvasState Json     @map("canvas_state")
-  dimensions  Json
-  previewKey  String?  @map("preview_key") // Key trên bucket; API trả previewUrl
-  isAutomatic Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String   @id @default(uuid(7)) @db.Uuid
+  projectId      String   @map("project_id") @db.Uuid
+  name           String // "Trước khi đổi màu hoa văn", "Bản xuất in lần 1"
+  canvasState    Json     @map("canvas_state")
+  dimensions     Json
+  previewKey     String?  @map("preview_key") // Key trên bucket; API trả previewUrl
+  isAutomatic    Boolean  @default(false) @map("is_automatic") // Mốc tự động (xuất in, sao lưu trước khi khôi phục): không tính vào giới hạn 50 mốc thủ công
+  // Phiên bản công thức dieline của dự án lúc lưu mốc; khôi phục mốc thì đặt lại phiên bản đó (hoàn tác cập nhật công
+  // thức). null: mốc lưu trước khi có cột này, khôi phục giữ phiên bản hiện tại.
+  formulaVersion Int?     @map("formula_version")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

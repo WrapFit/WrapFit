@@ -167,7 +167,7 @@ describe('Print export (e2e)', () => {
       .send({
         canvasState: {
           elements: [
-            // 0.5 mm from the panel edge: would be cut off when folding.
+            // 0.5 mm from the top of the front panel, a cut line: would be cut off by the die.
             { id: 'logo', type: 'logo', panelId: 'panel_front', x: 0.5, y: 0.5, width: 20, height: 20, rotation: 0, content: '/branding/wrapfit-logo.png' },
           ],
         },
@@ -175,7 +175,7 @@ describe('Print export (e2e)', () => {
       .expect(200);
     const res = await as(pia).post(`/api/projects/${projectId}/exports`).send({ fileType: 'PDF_CMYK' }).expect(422);
     expect(res.body.message).toBe('FitCheck found errors that would ruin the print; fix them before exporting');
-    expect(res.body.fitCheck).toMatchObject({ isValidForProduction: false, violations: [expect.objectContaining({ code: 'CREASE_OVERLAP', severity: 'error' })] });
+    expect(res.body.fitCheck).toMatchObject({ isValidForProduction: false, violations: [expect.objectContaining({ code: 'CUT_OVERLAP', severity: 'error' })] });
 
     // The server result is saved on the project for the editor.
     const project = (await as(pia).get(`/api/projects/${projectId}`).expect(200)).body;

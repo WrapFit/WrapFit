@@ -27,6 +27,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:upgrade-formulas": "ts-node prisma/scripts/upgrade-formulas.ts",
     "db:studio": "prisma studio",
     "mail:test": "ts-node src/mail-test.ts"
   },

@@ -21,7 +21,7 @@ interface SnapshotsDialogProps {
   /** Saves the pending changes; false when they could not be saved (a snapshot copies the saved project). */
   flush: () => Promise<boolean>;
   /** Runs the restore in the save queue; the editor is mounted again with the project returned. */
-  replace: (task: () => Promise<ProjectDetail>) => Promise<ProjectDetail>;
+  replace: (task: (version: number | undefined) => Promise<ProjectDetail>) => Promise<ProjectDetail>;
   /** PNG of the design on screen, for the preview of a new snapshot. */
   renderPreview: () => Promise<Blob>;
   /** The restore succeeded: open `project`; restoring `backup` undoes it. */

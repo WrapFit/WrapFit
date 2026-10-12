@@ -16,7 +16,9 @@ describe('SnapshotsService', () => {
     status: 'ACTIVE',
     thumbnailUrl: `https://cdn/${thumbnailKey}`,
     template: { id: 'tuck-top', name: 'Tuck top' },
+    version: 4,
     formulaVersion: 1,
+    latestFormulaVersion: 3,
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.35 },
     canvasState: { elements: [] },
   } as unknown as ProjectDetail;
@@ -25,6 +27,7 @@ describe('SnapshotsService', () => {
     name: 'Mốc 1',
     dimensions: { length: 100, width: 70, height: 50, paperThickness: 0.35 },
     canvasState: { elements: [] },
+    formulaVersion: null as number | null,
   };
 
   let projects: { findOne: jest.Mock };
@@ -41,6 +44,7 @@ describe('SnapshotsService', () => {
       findContent: jest.fn().mockResolvedValue(saved),
       delete: jest.fn().mockResolvedValue(true),
       restore: jest.fn(),
+      upgradeFormula: jest.fn().mockResolvedValue({ project: current, backup: { id: 'snap-b' } }),
     };
     files = { resolveUpload: jest.fn().mockResolvedValue('users/u-1/thumbnail/p.png') };
     service = new SnapshotsService(projects as unknown as ProjectsService, repo, files as unknown as IProjectFiles);
@@ -53,6 +57,7 @@ describe('SnapshotsService', () => {
       previewKey: null,
       canvasState: current.canvasState,
       dimensions: current.dimensions,
+      formulaVersion: 1,
     });
   });
 
@@ -85,9 +90,62 @@ describe('SnapshotsService', () => {
         previewKey: thumbnailKey,
         canvasState: current.canvasState,
         dimensions: current.dimensions,
+        formulaVersion: 1,
       },
       expect.objectContaining({ isValidForProduction: true, score: 100 }),
     );
+  });
+
+  it('checks a restored design with the formulas of the snapshot', async () => {
+    // Front panel of the snapshot size: 100 mm wide in version 1, 100.42 mm in version 3 (paper thickness added), so
+    // 2.8 mm or 3.22 mm are left on the right of this text.
+    const element = { id: 't', type: 'text', panelId: 'panel_front', x: 3, y: 10, width: 94.2, height: 10, rotation: 0, content: 'x' };
+    const content = { ...saved, canvasState: { elements: [element] } };
+    repo.findContent.mockResolvedValueOnce({ ...content, formulaVersion: 3 } as never);
+    await service.restore('project-1', 'snap-1');
+    expect(repo.restore.mock.calls[0][3]?.violations).toEqual([]);
+    // An older snapshot keeps the project's formulas (version 1 here).
+    repo.findContent.mockResolvedValueOnce({ ...content, formulaVersion: null } as never);
+    await service.restore('project-1', 'snap-1');
+    expect(repo.restore.mock.calls[1][3]?.violations.map((v) => v.code)).toEqual(['CREASE_OVERLAP']);
+  });
+
+  describe('formula upgrade', () => {
+    it('saves the current state with its formula version, then moves to the current formulas', async () => {
+      await expect(service.upgradeFormula('project-1', 4)).resolves.toEqual({ project: current, backup: { id: 'snap-b' } });
+      expect(repo.upgradeFormula).toHaveBeenCalledWith(
+        'project-1',
+        4,
+        3,
+        {
+          name: 'Trước khi cập nhật công thức (bản 1 → 3)',
+          previewKey: thumbnailKey,
+          canvasState: current.canvasState,
+          dimensions: current.dimensions,
+          formulaVersion: 1,
+        },
+        expect.objectContaining({ isValidForProduction: true }),
+      );
+    });
+
+    it('answers 409 PROJECT_VERSION_CONFLICT for a stale version, before and during the write', async () => {
+      await expect(service.upgradeFormula('project-1', 3)).rejects.toMatchObject({
+        response: { code: 'PROJECT_VERSION_CONFLICT', currentVersion: 4 },
+      });
+      repo.upgradeFormula.mockResolvedValueOnce(null);
+      projects.findOne.mockResolvedValueOnce(current).mockResolvedValueOnce({ ...current, version: 5 });
+      await expect(service.upgradeFormula('project-1', 4)).rejects.toMatchObject({
+        response: { code: 'PROJECT_VERSION_CONFLICT', currentVersion: 5 },
+      });
+    });
+
+    it('refuses a project in the trash and leaves an up-to-date project alone', async () => {
+      projects.findOne.mockResolvedValueOnce({ ...current, status: 'DELETED' });
+      await expect(service.upgradeFormula('project-1', 4)).rejects.toThrow(ConflictException);
+      projects.findOne.mockResolvedValueOnce({ ...current, formulaVersion: 3 });
+      await expect(service.upgradeFormula('project-1', 4)).resolves.toMatchObject({ backup: null });
+      expect(repo.upgradeFormula).not.toHaveBeenCalled();
+    });
   });
 
   it('answers 404 for snapshots of other projects', async () => {

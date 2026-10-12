@@ -9,12 +9,19 @@ import { FE_ROOT } from '../stitch/lib/paths.mjs';
 export const SHOTS_DIR = path.join(FE_ROOT, '.page-shots');
 export const FIXTURES_FILE = path.join(SHOTS_DIR, 'fixtures.json');
 
-/** `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` of `be/.env` (values may end in `\r` on Windows). */
-export function seedAdmin() {
+/** A variable of `be/.env` (values may end in `\r` on Windows), or undefined. */
+export function backendEnv(name) {
   const envFile = path.join(FE_ROOT, '..', 'be', '.env');
   const env = fs.existsSync(envFile) ? fs.readFileSync(envFile, 'utf8') : '';
-  const value = (name) => env.match(new RegExp(`^${name}=(.*)$`, 'm'))?.[1].trim().replace(/^"|"$/g, '');
-  return { email: value('SEED_ADMIN_EMAIL') ?? 'admin@wrapfit.vn', password: process.env.SHOT_PASSWORD ?? value('SEED_ADMIN_PASSWORD') };
+  return env.match(new RegExp(`^${name}=(.*)$`, 'm'))?.[1].trim().replace(/^"|"$/g, '');
+}
+
+/** `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` of `be/.env`. */
+export function seedAdmin() {
+  return {
+    email: backendEnv('SEED_ADMIN_EMAIL') ?? 'admin@wrapfit.vn',
+    password: process.env.SHOT_PASSWORD ?? backendEnv('SEED_ADMIN_PASSWORD'),
+  };
 }
 
 /** Accounts and records made by `ui-fixtures.mjs`, or null when it has not run. */

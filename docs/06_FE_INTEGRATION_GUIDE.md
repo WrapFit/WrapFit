@@ -311,6 +311,25 @@ DELETE /api/projects/:id/snapshots/:snapshotId         → 204
   động mới nhất.
 - Khôi phục trả `backup` (trạng thái ngay trước khi khôi phục): nút "Hoàn tác" = khôi phục `backup.id`. Sau khôi phục
   `project.version` tăng: thay dữ liệu editor bằng `project` trả về.
+- `SnapshotSummary.formulaVersion`: phiên bản công thức của dự án lúc lưu mốc (`null` với mốc lưu trước 2026-10-12).
+  Khôi phục mốc có số này thì dự án về đúng phiên bản đó.
+
+### 6.1. Cập nhật công thức dieline (từ 2026-10-12)
+
+```http
+POST /api/projects/:id/formula-upgrade   { "version": 7 }   → 200 { "project": ProjectDetail, "backup": SnapshotSummary | null }
+```
+
+- `ProjectDetail.latestFormulaVersion` > `formulaVersion` → studio hiện banner "Phôi của dự án dùng công thức cũ (bản X)"
+  với tóm tắt thay đổi (`FORMULA_CHANGES` của shared) và nút mở hộp thoại xác nhận
+  (`features/studio/components/formula/FormulaUpgrade.tsx`). Xác nhận → gọi API qua `useProjectSync().replace` (gửi hết
+  thay đổi đang chờ, truyền `version` vừa lưu) → dựng lại editor bằng `project` → thanh "Phôi đã lên công thức bản Y ·
+  Hoàn tác" (khôi phục `backup.id`). Dự án trong thùng rác không hiện banner.
+- Backend lưu mốc tự động "Trước khi cập nhật công thức (bản X → Y)" có `formulaVersion` X, đổi `formulaVersion`, chạy
+  lại FitCheck, tăng `version`. `409` thùng rác, `409 PROJECT_VERSION_CONFLICT` khi `version` cũ, đã mới nhất →
+  `backup: null`.
+- Dự án **chưa từng xuất file in** được đưa lên bản mới bằng script `npm --workspace=be run db:upgrade-formulas`
+  (be/README.md, mục triển khai); dự án đã xuất giữ bản cũ tới khi chủ dự án bấm cập nhật.
 
 ## 7. Xuất file in
 

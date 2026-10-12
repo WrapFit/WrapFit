@@ -181,6 +181,8 @@ export interface ProjectDetail extends ProjectSummary {
   version: number;
   /** Dieline formulas of the project: build pieces with `generateDielinePieces(template.id, dimensions, formulaVersion)`. */
   formulaVersion: number;
+  /** Current formulas of the box structure: when higher, the studio offers `upgradeProjectFormula`. */
+  latestFormulaVersion: number;
   allowFork: boolean;
   forkedFromId: string | null;
   canvasState: CanvasState;
@@ -238,6 +240,8 @@ export interface SnapshotSummary {
   name: string;
   previewUrl: string | null;
   dimensions: BoxDimensions;
+  /** Formulas of the project when it was taken (restoring puts them back); null for older snapshots. */
+  formulaVersion: number | null;
   createdAt: string;
 }
 
@@ -251,6 +255,12 @@ export interface RestoreSnapshotResponse {
   project: ProjectDetail;
   /** State just before the restore: restore it to undo. */
   backup: SnapshotSummary;
+}
+
+export interface FormulaUpgradeResponse {
+  project: ProjectDetail;
+  /** State on the old formulas (restore it to undo); null when the project was already on the current ones. */
+  backup: SnapshotSummary | null;
 }
 
 export interface Collection {

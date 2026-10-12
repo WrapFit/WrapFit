@@ -51,6 +51,7 @@ import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
 import type { BoxStructure, ProjectDetail } from "@/types/api";
+import { FormulaUpgrade } from "@/features/studio/components/formula/FormulaUpgrade";
 
 /** Formats the image upload accepts: photos (purpose IMAGE) and vector logos (purpose LOGO). */
 const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -122,11 +123,13 @@ async function imageSizeOf(file: File): Promise<{ width: number; height: number 
   }
 }
 
-/** A snapshot was just restored: the editor offers to undo it. */
+/** A snapshot was just restored, or the formulas upgraded: the editor offers to undo it. */
 export interface RestoreNotice {
   snapshotName: string;
-  /** Snapshot of the design just before the restore. */
+  /** Snapshot of the design just before the restore or the upgrade. */
   backupId: string;
+  /** "formula": the dieline moved to newer formulas (FormulaUpgrade). Default: a snapshot restore. */
+  kind?: "restore" | "formula";
 }
 
 type StudioDialogId = "export" | "snapshots" | "share" | "unboxing";
@@ -392,7 +395,11 @@ export function StudioWorkspace({
     setUndoing(true);
     try {
       const undone = await sync.replace(async () => (await restoreSnapshot(project.id, restoreNotice.backupId)).project);
-      toast.show({ tone: "success", title: "Đã hoàn tác khôi phục", description: "Thiết kế quay về như trước khi khôi phục." });
+      toast.show(
+        restoreNotice.kind === "formula"
+          ? { tone: "success", title: "Đã quay lại công thức cũ", description: "Phôi và điểm FitCheck như trước khi cập nhật." }
+          : { tone: "success", title: "Đã hoàn tác khôi phục", description: "Thiết kế quay về như trước khi khôi phục." }
+      );
       onReplaced?.(undone, null);
     } catch (err) {
       if (err instanceof UnsavedChangesError) toast.show({ tone: "error", title: "Chưa hoàn tác được", description: err.message });
@@ -542,6 +549,17 @@ export function StudioWorkspace({
         </div>
       )}
 
+      {/* Dieline on older formulas than its box structure: offer the upgrade (with undo) */}
+      {project && !readOnly && !restoreNotice && (
+        <FormulaUpgrade
+          project={project}
+          replace={sync.replace}
+          onUpgraded={(upgraded, backup) =>
+            onReplaced?.(upgraded, { snapshotName: backup.name, backupId: backup.id, kind: "formula" })
+          }
+        />
+      )}
+
       {/* Snapshot just restored: undo it */}
       {restoreNotice && !readOnly && (
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
@@ -554,8 +572,17 @@ export function StudioWorkspace({
                 <RotateCcw className="w-4 h-4" aria-hidden />
               </span>
               <span className="min-w-0">
-                Đã khôi phục mốc <strong className="text-stone-900">“{restoreNotice.snapshotName}”</strong>. Bản trước đó được
-                lưu thành mốc tự động.
+                {restoreNotice.kind === "formula" ? (
+                  <>
+                    Phôi đã lên công thức bản {project?.formulaVersion}. Bản cũ được lưu thành mốc tự động{" "}
+                    <strong className="text-stone-900">“{restoreNotice.snapshotName}”</strong>.
+                  </>
+                ) : (
+                  <>
+                    Đã khôi phục mốc <strong className="text-stone-900">“{restoreNotice.snapshotName}”</strong>. Bản trước
+                    đó được lưu thành mốc tự động.
+                  </>
+                )}
               </span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">

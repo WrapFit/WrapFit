@@ -91,3 +91,25 @@ Dự án thử bản 3 (chữ trên mặt chính), worker `node be/dist/worker.j
 | Bao diêm 140 × 90 × 40 | `[56.693 56.693 1143.383 859.465]` | 2 đường khép kín (vỏ, khay) | kiểm ở unit test |
 
 Chưa làm: mở file bằng Illustrator / Inkscape / viewer DXF (máy local không có), in thử 1 : 1 và gấp tay.
+
+## 7. Dự án đã tạo bằng công thức cũ (8.10, D + B)
+
+- **B — nút trong studio**: `POST /api/projects/:id/formula-upgrade` (mốc tự động giữ phiên bản cũ → hoàn tác bằng
+  khôi phục mốc), `ProjectDetail.latestFormulaVersion`, cột `project_snapshots.formula_version` (migration
+  `20261012000100_snapshot_formula_version`; mọi mốc mới lưu phiên bản, khôi phục mốc đặt lại phiên bản). Studio:
+  banner + hộp thoại (`FormulaUpgrade.tsx`), thanh "Phôi đã lên công thức bản Y · Hoàn tác". Kiểm trên trình duyệt:
+  cập nhật bản 2 → 3 (mặt trước 120 × 60 → 120,4 × 60,4) rồi Hoàn tác (về bản 2, banner hiện lại); G7 thêm
+  `g7-studio-formula-banner`, `g7-studio-formula-dialog` (fixture `oldFormula` ở bản 1, `ui-fixtures.mjs` ghi thẳng DB).
+- **D — script** `npm --workspace=be run db:upgrade-formulas -- [--dry-run] [--project=<id>]`: chỉ dự án chưa có
+  export `COMPLETED`, mỗi dự án một transaction (cập nhật có điều kiện `version`, mốc tự động, FitCheck mới). Kết quả
+  trên DB local, 2026-10-12, sau khi seed gán bản 3 cho 4 box template:
+
+| Dự án | Trạng thái | Công thức | FitCheck |
+|---|---|---|---|
+| Hộp Nến Thơm Tinh Dầu (dự án mẫu của seed) | ACTIVE | 1 → 3 | 100 → 100 |
+| UI fixture · Hộp công thức cũ | ACTIVE | 1 → 3 | 100 → 100 |
+
+  13 dự án; 2 cập nhật; 0 dự án đã xuất file giữ bản cũ (dự án thử S10 đã ở bản 3); chạy lần hai: 0 cần cập nhật.
+  (Trước đó `ui-fixtures.mjs` đã tạo lại fixture nên các fixture bản 2 cũ không còn.) Test: unit
+  `upgrade-formulas-script.spec.ts`, e2e `projects` (cập nhật → hoàn tác, 409, script `--dry-run` / thật / chạy lại /
+  dự án đã xuất giữ nguyên).

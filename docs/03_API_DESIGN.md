@@ -47,8 +47,9 @@
 | `DELETE` | `/api/projects/:id` | Chủ dự án | Xóa vĩnh viễn — chỉ khi dự án đang ở thùng rác (`status = DELETED`), nếu không trả `409` |
 | `PATCH` | `/api/projects/:id/status` | Chủ dự án | `{ "status": "ARCHIVED" \| "DELETED" \| "ACTIVE" }` — lưu trữ / chuyển vào thùng rác / khôi phục |
 | `POST` | `/api/projects/:id/duplicate` | Chủ dự án | Nhân bản thành dự án mới `[Bản sao] <tên>` (201) |
+| `POST` | `/api/projects/:id/formula-upgrade` | Chủ dự án | `{ "version" }` — đưa dự án lên công thức dieline hiện tại của cấu trúc (`latestFormulaVersion` trong `ProjectDetail`): lưu mốc tự động giữ phiên bản cũ, đổi `formulaVersion`, chạy lại FitCheck → `{ project, backup }` (đã mới nhất: `backup = null`). `409` khi trong thùng rác, `409 PROJECT_VERSION_CONFLICT` khi `version` cũ |
 | `GET` · `POST` | `/api/projects/:id/snapshots` | Chủ dự án | Lịch sử phiên bản (mới nhất trước, không kèm canvas) / lưu mốc `{ "name", "previewUrl"? }` |
-| `POST` | `/api/projects/:id/snapshots/:snapshotId/restore` | Chủ dự án | Khôi phục mốc → `{ project, backup }` |
+| `POST` | `/api/projects/:id/snapshots/:snapshotId/restore` | Chủ dự án | Khôi phục mốc → `{ project, backup }`. Mốc có `formulaVersion` thì dự án về phiên bản công thức đó (hoàn tác cập nhật công thức); mốc cũ (`null`) giữ phiên bản hiện tại |
 | `DELETE` | `/api/projects/:id/snapshots/:snapshotId` | Chủ dự án | Xóa một mốc (204) |
 | `PATCH` | `/api/projects/:id/visibility` | Chủ dự án | `{ "visibility"?: "PRIVATE" \| "UNLISTED" \| "PUBLIC", "allowFork"?: boolean }` — chia sẻ & cho phép Remix |
 | `GET` | `/api/public/projects/:slug` | Public (nhận diện người xem nếu có cookie) | Trang xem 3D `/p/[slug]` / iframe nhúng; tăng `viewsCount` |

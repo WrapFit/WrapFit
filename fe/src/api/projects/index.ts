@@ -5,6 +5,7 @@ import type {
   ChangeVisibilityRequest,
   CreateProjectRequest,
   CreateSnapshotRequest,
+  FormulaUpgradeResponse,
   Paginated,
   ProjectDetail,
   ProjectListQuery,
@@ -69,6 +70,14 @@ export function createSnapshot(projectId: string, data: CreateSnapshotRequest): 
 /** Replace the editor state with `project`; restoring `backup.id` undoes it. */
 export function restoreSnapshot(projectId: string, snapshotId: string): Promise<RestoreSnapshotResponse> {
   return request(`/projects/${projectId}/snapshots/${snapshotId}/restore`, { method: "POST" });
+}
+
+/**
+ * Moves the project to the current dieline formulas of its structure (docs/06 §5.1). `version` as for a save: a newer
+ * save answers 409 PROJECT_VERSION_CONFLICT. Restoring `backup` undoes it.
+ */
+export function upgradeProjectFormula(projectId: string, version: number): Promise<FormulaUpgradeResponse> {
+  return request(`/projects/${projectId}/formula-upgrade`, { method: "POST", json: { version } });
 }
 
 export function deleteSnapshot(projectId: string, snapshotId: string): Promise<void> {

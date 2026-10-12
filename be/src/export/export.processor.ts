@@ -126,6 +126,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
           name: `Bản xuất in ${job.fileType} ${completedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
           canvasState: project.canvasState as object,
           dimensions: project.dimensions as object,
+          formulaVersion: project.formulaVersion,
           isAutomatic: true,
         },
       });
