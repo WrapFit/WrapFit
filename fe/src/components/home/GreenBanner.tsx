@@ -9,7 +9,7 @@ import { Container, Reveal, limeButton } from "@/components/landing";
 export function GreenBanner() {
   return (
     <section
-      className="relative isolate overflow-hidden bg-landing-green-night bg-cover bg-center bg-no-repeat py-24 animate-slow-move motion-reduce:animate-none lg:py-48"
+      className="relative isolate overflow-hidden bg-landing-green-night bg-cover bg-center bg-no-repeat py-24 lg:py-48"
       style={{ backgroundImage: `url(${BANNER.image})` }}
     >
       {/* Deep green wash over the paper, darker on the left where the text sits */}

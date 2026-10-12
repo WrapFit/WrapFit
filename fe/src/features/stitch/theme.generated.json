@@ -380,41 +380,6 @@
       "channels": true,
       "fallback": "19 48 32"
     },
-    "brand": {
-      "var": "--st-c-brand",
-      "channels": true,
-      "fallback": "0 74 198"
-    },
-    "brand-light": {
-      "var": "--st-c-brand-light",
-      "channels": true,
-      "fallback": "37 99 235"
-    },
-    "brand-emerald": {
-      "var": "--st-c-brand-emerald",
-      "channels": true,
-      "fallback": "16 185 129"
-    },
-    "brand-mint": {
-      "var": "--st-c-brand-mint",
-      "channels": true,
-      "fallback": "31 200 125"
-    },
-    "brand-coral": {
-      "var": "--st-c-brand-coral",
-      "channels": true,
-      "fallback": "249 87 56"
-    },
-    "surface-cream": {
-      "var": "--st-c-surface-cream",
-      "channels": true,
-      "fallback": "250 246 240"
-    },
-    "surface-card": {
-      "var": "--st-c-surface-card",
-      "channels": true,
-      "fallback": "255 255 255"
-    },
     "accent-orange": {
       "var": "--st-c-accent-orange",
       "channels": true,
@@ -868,7 +833,6 @@
     "dashboard-settings",
     "checkout-step-1",
     "checkout-step-3",
-    "auth-login",
     "team",
     "notifications",
     "admin-dieline-vault",

@@ -191,6 +191,10 @@ const appTheme: ThemeExtend = {
       "0%": { backgroundPosition: "50% 0%" },
       "100%": { backgroundPosition: "0% 50%" },
     },
+    marquee: {
+      "0%": { transform: "translateX(0)" },
+      "100%": { transform: "translateX(-50%)" },
+    },
   },
   animation: {
     aurora: "aurora 5s ease-in-out infinite alternate",

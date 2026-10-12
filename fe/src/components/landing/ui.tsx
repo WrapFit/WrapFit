@@ -82,7 +82,6 @@ export function Tag({ children, dot = false, className }: { children: React.Reac
     >
       {dot && (
         <span className="relative inline-flex size-2.5 shrink-0 items-center justify-center" aria-hidden>
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-landing-indigo/40 motion-reduce:animate-none" />
           <span className="relative inline-flex size-2 rounded-full bg-landing-indigo" />
         </span>
       )}

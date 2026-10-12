@@ -26,7 +26,7 @@ export function HomeHero() {
             <span
               className={cn(
                 "inline-block bg-clip-text py-1 text-[2.75rem] leading-[1.15] text-transparent md:text-6xl xl:text-7xl 2xl:text-8xl",
-                "animate-aurora bg-[length:200%_auto] motion-reduce:animate-none",
+                "bg-[length:200%_auto]",
                 "bg-[linear-gradient(135deg,#152B07,#2D5C0F,#458C17,#2D5C0F,#152B07)]"
               )}
             >
