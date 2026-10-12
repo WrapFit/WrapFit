@@ -84,7 +84,40 @@ const appTheme: ThemeExtend = {
       secondary: "#4A5568",
       muted: "#718096",
       subtle: "#A0AEC0",
-    }
+    },
+    // Home page (views/home): slate ink, lime call-to-action and deep green, after the pack.ly home page.
+    landing: {
+      ink: "#1D293D",
+      muted: "#53647D",
+      canvas: "#F1F5F9",
+      tile: "#E9EFF5",
+      accent: "#D6DFE9",
+      line: "#CAD5E2",
+      lime: "#98E665",
+      "lime-soft": "#C7F1AB",
+      "lime-mist": "#EAFAE0",
+      green: "#458C17",
+      "green-deep": "#2D5C0F",
+      "green-night": "#152B07",
+      indigo: "#432DD7",
+      star: "#FFD230",
+    },
+    // Template library and shared design page (views/templates, views/public-project): the layout of pacdora.com,
+    // with the green accents of the pack.ly palette (landing-*) in place of Pacdora's violet.
+    library: {
+      ink: "#191919",
+      text: "#333333",
+      sub: "#4C4C4C",
+      muted: "#7F7F7F",
+      tile: "#F2F2F2",
+      panel: "#F7F7F7",
+      line: "#E6E6E6",
+      canvas: "#D9D9D9",
+      accent: "#458C17",
+      "accent-mist": "#EAFAE0",
+      lime: "#98E665",
+      "lime-ink": "#152B07",
+    },
   },
   fontFamily: {
     serif: ["var(--font-playfair)", "Playfair Display", "Cormorant Garamond", "serif"],
@@ -100,6 +133,9 @@ const appTheme: ThemeExtend = {
     "label-ui": ["var(--font-jakarta)", "Plus Jakarta Sans", "sans-serif"],
     "cad-dimension": ["var(--font-jetbrains)", "JetBrains Mono", "monospace"],
     "cad-spec-micro": ["var(--font-jetbrains)", "JetBrains Mono", "monospace"],
+    // Loaded by the home page only (views/home/fonts.ts).
+    "landing-heading": ["var(--font-landing-heading)", "Be Vietnam Pro", "sans-serif"],
+    "landing-body": ["var(--font-landing-body)", "Inter", "sans-serif"],
   },
   fontSize: {
     "display-hero": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "600" }],
@@ -140,6 +176,26 @@ const appTheme: ThemeExtend = {
     "gold-glow": "0 0 24px rgba(212, 175, 55, 0.25)",
     "cobalt-glow": "0 8px 24px rgba(37, 99, 235, 0.28)",
     "coral-glow": "0 8px 24px rgba(255, 107, 107, 0.28)",
+    "soft-8": "0 0 8px 0 rgba(29, 41, 61, 0.08)",
+    "soft-16": "0 0 16px 0 rgba(29, 41, 61, 0.08)",
+    hard: "4px 4px 0 0 #191919",
+    "hard-sm": "3px 3px 0 0 #191919",
+    panel: "0 0 10px 0 rgba(0, 0, 0, 0.1)",
+  },
+  keyframes: {
+    aurora: {
+      "0%": { backgroundPosition: "0% 50%" },
+      "100%": { backgroundPosition: "100% 50%" },
+    },
+    "slow-move": {
+      "0%": { backgroundPosition: "50% 0%" },
+      "100%": { backgroundPosition: "0% 50%" },
+    },
+  },
+  animation: {
+    aurora: "aurora 5s ease-in-out infinite alternate",
+    "slow-move": "slow-move 16s ease infinite alternate",
+    marquee: "marquee 40s linear infinite",
   },
 };
 
