@@ -66,11 +66,11 @@ export function StudioDialog({
       >
         <div className="flex items-center justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-stone-100">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-10 h-10 flex-shrink-0 rounded-2xl bg-blue-50 text-vibrant-cobalt flex items-center justify-center">
+            <span className="w-10 h-10 flex-shrink-0 rounded-2xl bg-library-accent-mist text-library-accent flex items-center justify-center">
               {icon}
             </span>
             <div className="min-w-0">
-              <h2 id={titleId} className="font-serif font-bold text-stone-900 text-base leading-snug">
+              <h2 id={titleId} className="font-landing-heading font-bold text-stone-900 text-base leading-snug">
                 {title}
               </h2>
               {subtitle && (

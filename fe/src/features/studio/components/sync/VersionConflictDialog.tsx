@@ -32,7 +32,7 @@ export function VersionConflictDialog({ onReload, reloading, onOverwrite }: Vers
             <GitCompareArrows className="w-5 h-5" aria-hidden />
           </span>
           <div>
-            <h2 id="conflict-title" className="font-serif font-bold text-stone-900 text-lg leading-snug">
+            <h2 id="conflict-title" className="font-landing-heading font-bold text-stone-900 text-lg leading-snug">
               Dự án vừa được lưu ở nơi khác
             </h2>
             <p id="conflict-description" className="text-sm text-stone-600 mt-1 leading-relaxed">

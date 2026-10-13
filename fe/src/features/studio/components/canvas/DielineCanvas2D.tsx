@@ -332,7 +332,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full min-h-[560px] bg-paper-ivory rounded-squircle-lg border border-stone-200 overflow-hidden flex items-center justify-center p-4 shadow-tactile ${className}`}
+      className={`relative w-full h-full min-h-[560px] bg-library-panel rounded-squircle-lg border border-stone-200 overflow-hidden flex items-center justify-center p-4 shadow-tactile ${className}`}
     >
       {/* Background CAD Grid Texture */}
       <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#C8A882_1px,transparent_1px)] [background-size:12px_12px]" />
@@ -340,7 +340,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       {/* Top Floating Control Bar */}
       <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-200 shadow-tactile text-xs text-stone-700">
-          <span className="font-serif font-bold text-brand-forest">Bản Bế 2D Phẳng</span>
+          <span className="font-landing-heading font-bold text-brand-forest">Bản Bế 2D Phẳng</span>
           <span className="text-stone-300">|</span>
           <span className="font-mono text-[11px] text-stone-500">
             {formatMm(totalW)} × {formatMm(totalH)} mm
@@ -414,7 +414,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       {selectedEl && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center gap-2 bg-stone-900/95 text-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-tactile-lg text-xs animate-fadeIn border border-white/20">
           <div className="flex items-center gap-2 pr-2.5 border-r border-white/20">
-            <Move className="w-3.5 h-3.5 text-vibrant-cobalt animate-pulse" />
+            <Move className="w-3.5 h-3.5 text-library-accent animate-pulse" />
             <span className="font-semibold text-brand-gold truncate max-w-[110px]">
               {selectedEl.content || "Phần tử"}
             </span>
@@ -1010,7 +1010,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       {/* Bottom Right Live CAD Cursor Coordinate Badge */}
       {cursorMm && (
         <div className="absolute bottom-4 right-4 z-20 pointer-events-none bg-stone-900/90 text-white font-mono text-[10px] px-2.5 py-1 rounded-squircle-sm backdrop-blur-md shadow-tactile border border-white/20">
-          <span className="text-vibrant-cobalt font-bold">CAD:</span> X: {cursorMm.x} mm | Y:{" "}
+          <span className="text-library-accent font-bold">CAD:</span> X: {cursorMm.x} mm | Y:{" "}
           {cursorMm.y} mm
         </div>
       )}
@@ -1033,7 +1033,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             type="checkbox"
             checked={showLayers.crease}
             onChange={(e) => setShowLayers({ ...showLayers, crease: e.target.checked })}
-            className="w-3 h-3 rounded accent-blue-600 cursor-pointer"
+            className="w-3 h-3 rounded accent-library-accent cursor-pointer"
           />
           <span className="w-2.5 h-0.5 border-b border-dashed border-[#3182CE] inline-block" />
           <span>Nếp cấn gập</span>
@@ -1067,8 +1067,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 border border-stone-200 shadow-tactile-lg">
             <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-              <h3 className="font-serif font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                <Type className="w-4 h-4 text-vibrant-cobalt" />
+              <h3 className="font-landing-heading font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                <Type className="w-4 h-4 text-library-accent" />
                 <span>Thêm Văn Bản / Lời Chúc Mừng</span>
               </h3>
               <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -1103,12 +1103,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   value={newTextValue}
                   onChange={(e) => setNewTextValue(e.target.value)}
                   placeholder="Ví dụ: Chúc mừng sinh nhật Mai Anh ❤️..."
-                  className="w-full p-2.5 text-xs rounded-squircle bg-stone-50 border border-stone-200 focus:outline-none focus:border-vibrant-cobalt text-stone-900"
+                  className="w-full p-2.5 text-xs rounded-squircle bg-stone-50 border border-stone-200 focus:outline-none focus:border-library-accent text-stone-900"
                 />
               </div>
 
               <div className="text-[11px] text-stone-500 bg-stone-50 p-2.5 rounded-squircle border border-stone-100 flex items-start gap-1.5">
-                <Info className="w-3.5 h-3.5 text-vibrant-cobalt flex-shrink-0 mt-0.5" />
+                <Info className="w-3.5 h-3.5 text-library-accent flex-shrink-0 mt-0.5" />
                 <span>
                   Công nghệ <strong>Pretext Layout</strong> tự động tính toán số dòng và ngắt câu vừa vặn
                   theo milimet của mặt hộp mà không làm đơ giật trình duyệt.

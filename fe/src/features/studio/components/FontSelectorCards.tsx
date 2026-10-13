@@ -98,7 +98,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
               }}
               className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between min-h-[68px] ${
                 isSelected
-                  ? "border-vibrant-cobalt bg-blue-50/40 ring-2 ring-vibrant-cobalt/20 shadow-sm"
+                  ? "border-library-accent bg-library-accent-mist/40 ring-2 ring-library-accent/20 shadow-sm"
                   : "border-stone-200 hover:border-stone-300 hover:bg-stone-50/70 bg-white"
               }`}
             >
@@ -116,7 +116,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
 
               {isSelected && (
                 <div className="flex justify-end pt-1">
-                  <Check className="w-3 h-3 text-vibrant-cobalt" />
+                  <Check className="w-3 h-3 text-library-accent" />
                 </div>
               )}
             </button>

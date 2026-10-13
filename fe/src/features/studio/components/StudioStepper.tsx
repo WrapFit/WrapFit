@@ -6,10 +6,10 @@ import { CheckCircle2, Lock } from "lucide-react";
 export type StudioStep = 1 | 2 | 3 | 4;
 
 const STEPS: { step: StudioStep; label: string }[] = [
-  { step: 1, label: "1. Mẫu Hộp" },
-  { step: 2, label: "2. Kích Thước" },
-  { step: 3, label: "3. Bản Vẽ 2D" },
-  { step: 4, label: "4. Phối Cảnh 3D" },
+  { step: 1, label: "1. Cấu trúc" },
+  { step: 2, label: "2. Kích thước" },
+  { step: 3, label: "3. Thiết kế 2D" },
+  { step: 4, label: "4. Xem 3D" },
 ];
 
 interface StudioStepperProps {
@@ -22,7 +22,7 @@ interface StudioStepperProps {
 /** The 4 steps of the studio as a segmented pill (labels from `xl`, numbers below). */
 export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperProps) {
   return (
-    <nav aria-label="Các bước thiết kế" className="flex items-center gap-1 sm:gap-2 bg-stone-100/90 p-1 rounded-full border border-stone-200">
+    <nav aria-label="Các bước thiết kế" className="flex items-center gap-1 rounded-lg border border-library-ink bg-white p-0.5">
       {STEPS.map((s) => {
         const isActive = current === s.step;
         const isPast = current > s.step;
@@ -37,23 +37,23 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
             aria-current={isActive ? "step" : undefined}
             aria-label={s.label}
             onClick={() => onSelect(s.step)}
-            className={`min-h-[36px] px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 disabled:cursor-not-allowed ${
+            className={`min-h-[36px] px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed ${
               isActive
-                ? "bg-brand-forest text-white shadow-tactile font-bold"
+                ? "bg-library-lime-ink text-white font-medium"
                 : isPast
-                  ? "text-stone-700 hover:bg-stone-200/60 disabled:hover:bg-transparent"
-                  : "text-stone-500 hover:text-stone-700 hover:bg-stone-200/40 disabled:text-stone-400 disabled:hover:bg-transparent"
+                  ? "text-library-ink hover:bg-library-panel disabled:hover:bg-transparent"
+                  : "text-library-sub hover:text-library-ink hover:bg-library-panel disabled:text-library-muted disabled:hover:bg-transparent"
             }`}
           >
             {lockReason && !isActive ? (
               <Lock className="w-3.5 h-3.5 text-stone-400" aria-hidden />
             ) : isPast ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" aria-hidden />
+              <CheckCircle2 className="w-3.5 h-3.5 text-library-accent" aria-hidden />
             ) : (
               <span
                 aria-hidden
                 className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-mono ${
-                  isActive ? "bg-white/20 text-white" : "bg-stone-300 text-stone-700"
+                  isActive ? "bg-library-lime text-library-lime-ink" : "bg-library-tile text-library-ink"
                 }`}
               >
                 {s.step}

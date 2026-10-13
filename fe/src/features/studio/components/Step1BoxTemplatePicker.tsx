@@ -1,84 +1,13 @@
 "use client";
 
 import React from "react";
-import { Box, Sparkles, Check, ArrowRight, ShieldCheck, Layers, Gift, Feather } from "lucide-react";
+import { Check, ArrowRight, Layers } from "lucide-react";
+import { DielineSketch } from "@/features/templates/components/DielineSketch";
 import { BoxStructureType, caliperOf, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
 import type { BoxStructure } from "@/types/api";
+import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
 
-
-export interface BoxStructureOption {
-  id: BoxStructureType;
-  name: string;
-  vietnameseName: string;
-  subtitle: string;
-  description: string;
-  badge: string;
-  badgeColor: string;
-  recommendedGifts: string[];
-  recommendedPaper: string;
-  foldDifficulty: "Dễ" | "Trung bình" | "Cao cấp";
-  defaultDims: { length: number; width: number; height: number; paperThickness: number };
-  svgPath: string; // SVG visual icon
-}
-
-export const BOX_STRUCTURES: BoxStructureOption[] = [
-  {
-    id: "tuck-top",
-    name: "Tuck Top Box",
-    vietnameseName: "Hộp Nắp Gài Đáy Khóa",
-    subtitle: "Mẫu hộp bán lẻ & quà tặng quốc dân",
-    description: "Cấu trúc một mảnh tích hợp nắp gài trên và khóa đáy đan chéo chịu lực cao. Tiết kiệm keo dán, sản xuất nhanh, cực kỳ chắc chắn.",
-    badge: "Phổ Biến Nhất",
-    badgeColor: "bg-blue-50 text-vibrant-cobalt border-blue-200",
-    recommendedGifts: ["Hũ nến thơm", "Chai nước hoa", "Mỹ phẩm dưỡng da", "Cốc gốm sứ"],
-    recommendedPaper: "Ivory 300 – 350 GSM",
-    foldDifficulty: "Dễ",
-    defaultDims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) },
-    svgPath: "M10 20 L50 5 L90 20 L90 70 L50 85 L10 70 Z M50 5 L50 85 M10 20 L50 35 L90 20",
-  },
-  {
-    id: "sleeve-drawer",
-    name: "Sleeve & Drawer Box",
-    vietnameseName: "Hộp Bao Diêm (Khay Rút)",
-    subtitle: "Trải nghiệm mở quà trượt tinh tế",
-    description: "Gồm bao vỏ ngoài trượt kết hợp khay kéo bên trong. Tạo cảm giác tò mò và bất ngờ khi người nhận từ từ rút món quà ra khỏi vỏ bọc.",
-    badge: "Sang Trọng",
-    badgeColor: "bg-emerald-50 text-brand-forest border-emerald-200",
-    recommendedGifts: ["Socola thủ công", "Macaron", "Trang sức cao cấp", "Bộ tinh dầu"],
-    recommendedPaper: "Duplex cán mờ 350 GSM hoặc Carton lạnh",
-    foldDifficulty: "Trung bình",
-    defaultDims: { length: 140, width: 90, height: 45, paperThickness: caliperOf(300) },
-    svgPath: "M15 25 L85 25 L85 65 L15 65 Z M30 35 L70 35 L70 55 L30 55 Z",
-  },
-  {
-    id: "lid-base",
-    name: "Lid & Base Box",
-    vietnameseName: "Hộp Âm Dương (Nắp Rời)",
-    subtitle: "Đẳng cấp quà tặng cao cấp & VIP",
-    description: "Hai cấu trúc độc lập: Thân hộp âm và nắp hộp dương chụp khít bên ngoài. Tạo ấn tượng bề thế, vững chãi và sang trọng bậc nhất.",
-    badge: "Luxury & VIP",
-    badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
-    recommendedGifts: ["Đồng hồ cao cấp", "Vòng tay bạc", "Kỷ niệm chương", "Set quà tết"],
-    recommendedPaper: "Carton lạnh bồi giấy mỹ thuật ép kim vàng",
-    foldDifficulty: "Cao cấp",
-    defaultDims: { length: 130, width: 130, height: 55, paperThickness: caliperOf(300) },
-    svgPath: "M10 25 L50 10 L90 25 L50 40 Z M10 32 L50 47 L90 32 L90 75 L50 90 L10 75 Z",
-  },
-  {
-    id: "pillow",
-    name: "Pillow Box",
-    vietnameseName: "Hộp Gối Cánh Cung",
-    subtitle: "Đường cong mềm mại, đóng gói siêu tốc",
-    description: "Hình dáng chiếc gối duyên dáng với hai đầu uốn cong bán nguyệt. Không cần keo dán phức tạp, gấp lại trong 3 giây.",
-    badge: "Thủ Công & Duyên Dáng",
-    badgeColor: "bg-purple-50 text-purple-700 border-purple-200",
-    recommendedGifts: ["Khăn lụa tơ tằm", "Cà vạt", "Trang sức nhỏ", "Kẹo cưới thủ công"],
-    recommendedPaper: "Kraft mộc 250 – 300 GSM",
-    foldDifficulty: "Dễ",
-    defaultDims: { length: 160, width: 110, height: 35, paperThickness: caliperOf(300) },
-    svgPath: "M15 50 Q50 15 85 50 Q50 85 15 50 Z",
-  },
-];
+export { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
 
 /** Presentation of a structure: name and description from the API, the rest from BOX_STRUCTURES. */
 interface StructureCard extends BoxStructureOption {
@@ -145,143 +74,69 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   const current = cards.find((s) => s.id === selectedStructure) || cards[0];
 
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
-      {/* Step Heading */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-vibrant-cobalt">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Bước 1: Khởi Tạo Cấu Trúc Bao Bì</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-brand-forest">
-          Chọn Cấu Trúc Hộp Quà Chuẩn Vật Lý
-        </h1>
-        <p className="text-sm text-stone-600 leading-relaxed">
-          Mỗi dòng hộp tại WrapFit đều được xây dựng dựa trên công thức hình học CAD chính xác,
-          đảm bảo khả năng bế dán thực tế 100% tại xưởng in.
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-10">
+      <div className="max-w-2xl">
+        <p className="text-sm font-medium text-library-accent">Bước 1 · Cấu trúc hộp</p>
+        <h1 className="mt-1 font-landing-heading text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">Chọn cấu trúc hộp</h1>
+        <p className="mt-1.5 text-base leading-[1.6] text-library-sub">
+          Mỗi cấu trúc là một bộ công thức khuôn bế: kích thước bạn nhập ở bước sau được tính thẳng ra đường cắt và đường gấp.
         </p>
       </div>
 
-      {/* Grid 4 Box Structure Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((item) => {
           const isSelected = item.id === selectedStructure;
-
           return (
             <button
               type="button"
               key={item.id}
               aria-pressed={isSelected}
               onClick={() => onSelectStructure(item.id)}
-              className={`rounded-squircle-lg border-2 p-5 flex flex-col justify-between text-left transition-all cursor-pointer relative bg-white ${
-                isSelected
-                  ? "border-vibrant-cobalt shadow-tactile-lg ring-4 ring-blue-500/10 scale-[1.02]"
-                  : "border-stone-200 hover:border-stone-300 hover:shadow-tactile hover:scale-[1.01]"
-              }`}
+              className="group flex flex-col gap-3 text-left outline-none"
             >
-              {/* Active Checkmark Badge */}
-              {isSelected && (
-                <div className="absolute top-4 right-4 w-7 h-7 rounded-full bg-vibrant-cobalt text-white flex items-center justify-center shadow-md animate-scaleUp">
-                  <Check className="w-4 h-4 stroke-[3]" />
-                </div>
-              )}
-
-              {/* Card Header & Badge */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${item.badgeColor}`}
-                  >
-                    {item.badge}
+              <span
+                className={`relative block aspect-[321/201] w-full overflow-hidden rounded-2xl border bg-library-tile transition-shadow ${
+                  isSelected ? "border-[1.5px] border-library-ink shadow-hard" : "border-library-ink group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm"
+                }`}
+              >
+                <span className="absolute inset-0 flex items-center justify-center p-6">
+                  <DielineSketch structure={item.id} dimensions={item.defaultDims} className="h-full w-full" />
+                </span>
+                <span className={`absolute left-3 top-3 rounded-md px-1.5 py-1 text-xs ${isSelected ? "bg-library-lime text-library-lime-ink" : "bg-white text-library-sub"}`}>
+                  {item.badge}
+                </span>
+                <span className="absolute right-3 top-3 rounded-md bg-white px-1.5 py-1 font-mono text-[11px] text-library-sub">{creaseCountOf(item)} nếp gấp</span>
+                {isSelected && (
+                  <span className="absolute bottom-3 right-3 flex size-7 items-center justify-center rounded-full bg-library-lime-ink text-white">
+                    <Check className="size-4" strokeWidth={3} aria-hidden />
                   </span>
-                  <span className="text-[11px] font-mono text-stone-400">
-                    {creaseCountOf(item)} Nếp gấp
-                  </span>
-                </div>
-
-                {/* 3D Blueprint Illustration Box */}
-                <div
-                  className={`h-36 rounded-squircle flex items-center justify-center p-4 relative overflow-hidden transition-colors ${
-                    isSelected
-                      ? "bg-gradient-to-br from-blue-50/70 to-indigo-50/40 border border-blue-100"
-                      : "bg-[#FDFBF7] border border-stone-100"
-                  }`}
-                >
-                  {/* Subtle Grid */}
-                  <div className="absolute inset-0 opacity-30 bg-[radial-gradient(#C8A882_1px,transparent_1px)] [background-size:8px_8px]" />
-
-                  {/* SVG Isometric Box Wireframe */}
-                  <svg
-                    viewBox="0 0 100 100"
-                    className={`w-24 h-24 transition-transform group-hover:scale-105 ${
-                      isSelected ? "text-vibrant-cobalt drop-shadow-md" : "text-stone-400"
-                    }`}
-                  >
-                    <path
-                      d={item.svgPath}
-                      fill={isSelected ? "rgba(37, 99, 235, 0.12)" : "rgba(230, 230, 230, 0.2)"}
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-
-                {/* Title & Description */}
-                <div>
-                  <h3 className="font-serif font-bold text-stone-900 text-lg group-hover:text-vibrant-cobalt transition-colors">
-                    {item.apiName}
-                  </h3>
-                  <p className="text-[11px] text-stone-500 font-mono mt-0.5">
-                    {item.name}
-                  </p>
-                  <p className="text-xs text-stone-600 mt-2 line-clamp-3 leading-relaxed">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Card Footer: Recommendations */}
-              <div className="mt-5 pt-4 border-t border-stone-100 space-y-2.5">
-                {item.recommendedGifts.length > 0 && (
-                  <div className="text-[11px] text-stone-500 flex items-center gap-1.5">
-                    <Gift className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                    <span className="truncate" title={item.recommendedGifts.join(", ")}>
-                      {item.recommendedGifts.slice(0, 2).join(", ")}...
-                    </span>
-                  </div>
                 )}
-                <div className="text-[11px] text-stone-500 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                  <span className="truncate font-mono" title={item.recommendedPaper}>{item.recommendedPaper}</span>
-                </div>
-              </div>
+              </span>
+              <span>
+                <span className="block text-base font-medium text-library-ink">{item.apiName}</span>
+                <span className="mt-0.5 line-clamp-2 block text-sm leading-[1.5] text-library-sub">{item.description}</span>
+                <span className="mt-2 flex items-center gap-1.5 text-xs text-library-muted">
+                  <Layers className="size-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">{item.recommendedPaper}</span>
+                </span>
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-squircle-lg bg-white border border-stone-200 shadow-tactile">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-50 text-vibrant-cobalt flex items-center justify-center font-bold">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-xs text-stone-500 block">Mẫu đã chọn:</span>
-            <span className="font-serif font-bold text-stone-900 text-base">
-              {current.apiName} ({current.name})
-            </span>
-          </div>
+      <div className="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-library-line bg-white p-4 sm:flex-row sm:items-center sm:p-5">
+        <div className="min-w-0">
+          <span className="block text-xs text-library-muted">Cấu trúc đã chọn</span>
+          <span className="block truncate text-base font-medium text-library-ink">{current.apiName}</span>
         </div>
-
         <button
           type="button"
           onClick={onNext}
-          className="w-full sm:w-auto px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-library-lime px-5 text-base font-medium text-library-lime-ink transition-colors hover:bg-[#AFEC88]"
         >
-          <span>Tiếp Tục Sang Nhập Kích Thước (Bước 2)</span>
-          <ArrowRight className="w-4 h-4" />
+          Tiếp tục: nhập kích thước
+          <ArrowRight className="size-4" aria-hidden />
         </button>
       </div>
     </div>

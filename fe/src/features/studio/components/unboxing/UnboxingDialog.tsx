@@ -29,7 +29,7 @@ const EFFECTS: { value: ParticleEffect; label: string }[] = [
 ];
 
 const FIELD_CLASS =
-  "w-full px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-vibrant-cobalt";
+  "w-full px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-library-accent";
 
 interface UnboxingDialogProps {
   projectId: string;
@@ -173,7 +173,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                   key={effect.value}
                   className={`min-h-[44px] px-3 rounded-xl border text-xs font-semibold flex items-center justify-center text-center cursor-pointer transition ${
                     particleEffect === effect.value
-                      ? "border-vibrant-cobalt bg-blue-50/70 text-vibrant-cobalt"
+                      ? "border-library-accent bg-library-accent-mist/70 text-library-accent"
                       : "border-stone-200 text-stone-600 hover:border-stone-300"
                   }`}
                 >
@@ -222,7 +222,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                 />
               </div>
               <div className="min-w-0 text-sm text-stone-700 space-y-1.5 text-center sm:text-left">
-                <span className="font-serif font-bold text-stone-900 text-base block">Gửi {config.data.recipientName}</span>
+                <span className="font-landing-heading font-bold text-stone-900 text-base block">Gửi {config.data.recipientName}</span>
                 <p className="text-xs text-stone-600 line-clamp-3 whitespace-pre-line">{config.data.giftNote}</p>
                 <span className="text-[11px] text-stone-500 font-mono block">
                   {EFFECTS.find((effect) => effect.value === config.data!.particleEffect)?.label} · {config.data.viewsCount} lượt mở

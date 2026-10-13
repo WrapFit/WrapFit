@@ -38,7 +38,7 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-vibrant-coral" />
           <div>
-            <h3 className="font-serif font-bold text-stone-900 text-base leading-tight">
+            <h3 className="font-landing-heading font-bold text-stone-900 text-base leading-tight">
               FitCheck™ Engine
             </h3>
             <span className="text-[10px] font-mono text-stone-400">

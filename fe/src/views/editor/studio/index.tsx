@@ -70,7 +70,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
   if (!session && project.error) {
     if (isMissing(project.error)) {
       return (
-        <main className="min-h-screen bg-paper-grain flex items-center px-4 py-16">
+        <main className="min-h-screen bg-[#F5F6F4] flex items-center px-4 py-16">
           <ErrorState
             title="Không tìm thấy dự án"
             description="Dự án không tồn tại, đã bị xoá vĩnh viễn hoặc thuộc tài khoản khác."
@@ -92,7 +92,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
       );
     }
     return (
-      <main className="min-h-screen bg-paper-grain flex items-center px-4 py-16">
+      <main className="min-h-screen bg-[#F5F6F4] flex items-center px-4 py-16">
         <ErrorState
           error={project.error}
           title="Không mở được dự án"

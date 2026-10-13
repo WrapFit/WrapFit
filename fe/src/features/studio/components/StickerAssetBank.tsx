@@ -266,7 +266,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
               {item.category === "mascot" && item.mascotPose ? (
                 <GoiMascot pose={item.mascotPose} size={48} />
               ) : item.category === "wax_seal" ? (
-                <div className="w-10 h-10 rounded-full bg-red-700 text-amber-200 flex items-center justify-center font-serif text-[8px] font-bold text-center border-2 border-amber-300 shadow-sm leading-tight p-0.5">
+                <div className="w-10 h-10 rounded-full bg-red-700 text-amber-200 flex items-center justify-center font-landing-heading text-[8px] font-bold text-center border-2 border-amber-300 shadow-sm leading-tight p-0.5">
                   WAX SEAL
                 </div>
               ) : item.category === "qr_barcode" ? (

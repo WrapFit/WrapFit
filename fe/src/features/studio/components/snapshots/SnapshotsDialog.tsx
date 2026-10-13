@@ -139,7 +139,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
           maxLength={MAX_NAME_LENGTH}
           onChange={(event) => setName(event.target.value)}
           placeholder="Tên mốc, vd. Bản gửi khách duyệt"
-          className="flex-1 min-h-[44px] px-4 rounded-full border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-vibrant-cobalt focus:bg-white"
+          className="flex-1 min-h-[44px] px-4 rounded-full border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-library-accent focus:bg-white"
         />
         <button
           type="submit"
@@ -156,7 +156,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
       ) : snapshots.error ? (
         <p className="text-sm text-stone-500">
           Chưa tải được danh sách mốc.{" "}
-          <button type="button" onClick={() => void snapshots.refetch()} className="font-semibold text-vibrant-cobalt underline">
+          <button type="button" onClick={() => void snapshots.refetch()} className="font-semibold text-library-accent underline">
             Thử lại
           </button>
         </p>
@@ -197,7 +197,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         onClick={() => setConfirm({ kind: "restore", id: snapshot.id })}
                         aria-label={`Khôi phục mốc ${snapshot.name}`}
                         title="Khôi phục"
-                        className="w-10 h-10 rounded-full hover:bg-blue-50 text-vibrant-cobalt flex items-center justify-center transition disabled:opacity-40"
+                        className="w-10 h-10 rounded-full hover:bg-library-accent-mist text-library-accent flex items-center justify-center transition disabled:opacity-40"
                       >
                         <RotateCcw className="w-4 h-4" aria-hidden />
                       </button>
@@ -235,7 +235,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         disabled={working}
                         onClick={() => void (confirming === "restore" ? restore(snapshot) : remove(snapshot))}
                         className={`min-h-[36px] px-4 rounded-full text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-wait ${
-                          confirming === "restore" ? "bg-vibrant-cobalt hover:bg-blue-700" : "bg-stone-900 hover:bg-stone-800"
+                          confirming === "restore" ? "bg-library-accent hover:bg-[#3A7513]" : "bg-stone-900 hover:bg-stone-800"
                         }`}
                       >
                         {working
