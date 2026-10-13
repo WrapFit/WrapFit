@@ -319,106 +319,6 @@
       "var": "--st-c-forest",
       "channels": true,
       "fallback": "27 67 50"
-    },
-    "brand-50": {
-      "var": "--st-c-brand-50",
-      "channels": true,
-      "fallback": "248 250 252"
-    },
-    "brand-100": {
-      "var": "--st-c-brand-100",
-      "channels": true,
-      "fallback": "241 245 249"
-    },
-    "brand-900": {
-      "var": "--st-c-brand-900",
-      "channels": true,
-      "fallback": "15 23 42"
-    },
-    "forest-light": {
-      "var": "--st-c-forest-light",
-      "channels": true,
-      "fallback": "30 71 48"
-    },
-    "surface-brand": {
-      "var": "--st-c-surface-brand",
-      "channels": true,
-      "fallback": "255 248 245"
-    },
-    "card-bg": {
-      "var": "--st-c-card-bg",
-      "channels": false,
-      "fallback": "rgba(255, 255, 255, 0.75)"
-    },
-    "cad-dim": {
-      "var": "--st-c-cad-dim",
-      "channels": true,
-      "fallback": "115 118 134"
-    },
-    "gold-accent": {
-      "var": "--st-c-gold-accent",
-      "channels": true,
-      "fallback": "212 175 55"
-    },
-    "brand-forest": {
-      "var": "--st-c-brand-forest",
-      "channels": true,
-      "fallback": "19 48 32"
-    },
-    "forest-700": {
-      "var": "--st-c-forest-700",
-      "channels": true,
-      "fallback": "34 86 56"
-    },
-    "forest-800": {
-      "var": "--st-c-forest-800",
-      "channels": true,
-      "fallback": "25 64 42"
-    },
-    "forest-900": {
-      "var": "--st-c-forest-900",
-      "channels": true,
-      "fallback": "19 48 32"
-    },
-    "accent-orange": {
-      "var": "--st-c-accent-orange",
-      "channels": true,
-      "fallback": "255 154 98"
-    },
-    "accent-orange-light": {
-      "var": "--st-c-accent-orange-light",
-      "channels": true,
-      "fallback": "255 241 232"
-    },
-    "accent-yellow": {
-      "var": "--st-c-accent-yellow",
-      "channels": true,
-      "fallback": "230 234 59"
-    },
-    "accent-yellow-light": {
-      "var": "--st-c-accent-yellow-light",
-      "channels": true,
-      "fallback": "252 253 228"
-    },
-    "accent-blue": {
-      "var": "--st-c-accent-blue",
-      "channels": true,
-      "fallback": "123 197 243"
-    },
-    "accent-blue-light": {
-      "var": "--st-c-accent-blue-light",
-      "channels": true,
-      "fallback": "238 248 255"
-    },
-    "accent-green": {
-      "var": "--st-c-accent-green",
-      "channels": true,
-      "fallback": "167 233 47"
-    },
-    "accent-green-light": {
-      "var": "--st-c-accent-green-light",
-      "channels": true,
-      "fallback": "244 253 230"
     }
   },
   "fontFamily": {
@@ -481,10 +381,6 @@
     "display-hero": {
       "var": "--st-ff-display-hero",
       "fallback": "Playfair Display"
-    },
-    "cad-mono": {
-      "var": "--st-ff-cad-mono",
-      "fallback": "JetBrains Mono, monospace"
     }
   },
   "borderRadius": {
@@ -511,10 +407,6 @@
     "full": {
       "var": "--st-r-full",
       "fallback": "9999px"
-    },
-    "4xl": {
-      "var": "--st-r-4xl",
-      "fallback": "2rem"
     }
   },
   "spacing": {
@@ -591,14 +483,6 @@
     "dish-card": {
       "var": "--st-sh-dish-card",
       "fallback": "0 16px 40px -12px rgba(0, 0, 0, 0.06), 0 2px 12px -2px rgba(0, 0, 0, 0.03)"
-    },
-    "soft": {
-      "var": "--st-sh-soft",
-      "fallback": "0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02)"
-    },
-    "card": {
-      "var": "--st-sh-card",
-      "fallback": "0 10px 30px -4px rgba(0, 0, 0, 0.04)"
     }
   },
   "fontSize": {
@@ -826,17 +710,6 @@
     "editor",
     "editor-export",
     "editor-inspect-fefco",
-    "editor-materials-backdrop",
-    "dashboard",
-    "dashboard-brand-kit",
-    "dashboard-materials",
-    "dashboard-settings",
-    "checkout-step-1",
-    "checkout-step-3",
-    "team",
-    "notifications",
-    "admin-dieline-vault",
-    "admin-revenue",
-    "admin-media"
+    "editor-materials-backdrop"
   ]
 }
