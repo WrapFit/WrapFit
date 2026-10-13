@@ -4,7 +4,8 @@ import { ConfigService, redisConnection } from '../../common';
 
 /**
  * BullMQ root connection (Redis from REDIS_URL).
- * - `producer` (API): commands fail fast when Redis is down, so a request answers 503 instead of hanging.
+ * - `producer` (API): commands fail fast once connected, but BullMQ still waits for the first connection while Redis
+ *   is down, so call sites bound `queue.add` with `withTimeout` (common/utils) to answer instead of hanging.
  * - `worker`: keeps retrying until Redis is back.
  */
 export function queueRootModule(role: 'producer' | 'worker'): DynamicModule {

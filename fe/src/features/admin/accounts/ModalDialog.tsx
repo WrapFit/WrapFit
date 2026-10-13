@@ -97,7 +97,7 @@ export function ModalDialog({
       className={`fixed inset-0 ${layerClassName} ${variant === "center" ? "flex items-center justify-center p-4" : ""}`}
       onKeyDown={onKeyDown}
     >
-      <div className="absolute inset-0 bg-inverse-surface/20 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" aria-hidden="true" onClick={onClose} />
       <div
         ref={panelRef}
         role="dialog"

@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { formatDimensions } from "@/features/templates/labels";
-import { BOX_STRUCTURES } from "@/features/studio/components/Step1BoxTemplatePicker";
+import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { ROUTES } from "@/constants";
 import { ANCHORS, INDUSTRIES_SECTION, INDUSTRY_CARDS, STRUCTURES_SECTION } from "./content";
 import { StructureArt } from "./StructureArt";

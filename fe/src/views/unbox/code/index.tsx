@@ -44,11 +44,11 @@ export default function UnboxCodePage() {
         <div className="mb-4 flex justify-center">
           <GoiMascot pose="unboxing_pop" size={92} showPhotoBadge={false} label="Gói, trợ lý đóng gói của WrapFit" />
         </div>
-        <p className="flex items-center justify-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand-gold">
+        <p className="flex items-center justify-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-landing-lime">
           <QrCode className="h-3.5 w-3.5" aria-hidden />
           Mở hộp 3D qua mã QR
         </p>
-        <h1 id="unbox-code-title" className="mt-2 text-center font-serif text-[28px] leading-tight tracking-tight text-white sm:text-[32px]">
+        <h1 id="unbox-code-title" className="mt-2 text-center font-landing-heading text-[28px] leading-tight tracking-tight text-white sm:text-[32px]">
           Mỗi hộp quà có một lời chúc riêng
         </h1>
         <p className="mt-3 text-center text-sm leading-relaxed text-stone-300">
@@ -75,17 +75,17 @@ export default function UnboxCodePage() {
             placeholder="vd. Ab3dE9xYz012"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className="h-12 w-full rounded-full border border-white/20 bg-white/10 px-5 font-mono text-sm text-white placeholder:text-stone-400 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+            className="h-12 w-full rounded-full border border-white/20 bg-white/10 px-5 font-mono text-sm text-white placeholder:text-stone-400 focus:border-landing-lime focus:outline-none focus:ring-2 focus:ring-landing-lime/30"
           />
           {error && (
-            <p id={errorId} role="alert" className="text-xs leading-relaxed text-vibrant-coral-light">
+            <p id={errorId} role="alert" className="text-xs leading-relaxed text-red-300">
               {error}
             </p>
           )}
           <button
             type="submit"
             disabled={!value.trim()}
-            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-brand-gold px-6 text-sm font-bold text-brand-forest-dark transition hover:bg-[#e0bd4a] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-sm font-bold text-landing-green-night transition hover:bg-[#AFEC88] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Mở hộp quà
             <ArrowRight className="h-4 w-4" aria-hidden />
@@ -97,7 +97,7 @@ export default function UnboxCodePage() {
           <ol className="mt-3 space-y-2">
             {SENDER_STEPS.map((step, index) => (
               <li key={step} className="flex gap-3 text-sm text-stone-200">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-brand-gold/40 font-mono text-[11px] text-brand-gold">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-landing-lime/40 font-mono text-[11px] text-landing-lime">
                   {index + 1}
                 </span>
                 <span className="pt-0.5">{step}</span>

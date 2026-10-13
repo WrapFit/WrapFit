@@ -2,13 +2,13 @@
 
 import React, { useId, useState } from "react";
 import { useToast } from "@/components/common/Toast";
+import { outlineButton, primaryButton } from "@/components/library";
+import { WORKSPACE_INPUT } from "@/components/workspace";
+import { cn } from "@/utils/helpers";
 import type { SafeUser, UpdateProfileRequest } from "@/types/api";
 import { useUpdateProfile } from "../useAccount";
 
 const NAME_MAX = 100;
-
-const FIELD =
-  "w-full min-h-[44px] px-4 rounded-2xl border border-[#e8ded0] text-sm placeholder:text-stone-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#122e20]/30 focus-visible:border-[#122e20]/40 aria-[invalid=true]:border-[#ba1a1a]";
 
 interface Values {
   fullName: string;
@@ -57,7 +57,7 @@ export function ProfileForm({ user }: { user: SafeUser }) {
 
   const field = (key: keyof Values, id: string, label: string, placeholder: string, hint: string) => (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold text-[#122e20]">
+      <label htmlFor={id} className="text-sm font-medium text-library-ink">
         {label}
       </label>
       <input
@@ -69,9 +69,9 @@ export function ProfileForm({ user }: { user: SafeUser }) {
         autoComplete={key === "fullName" ? "name" : "organization"}
         aria-invalid={tooLong(values[key])}
         aria-describedby={`${id}-hint`}
-        className={`${FIELD} bg-[#fdfbf7] text-[#1b1c18]`}
+        className={WORKSPACE_INPUT}
       />
-      <p id={`${id}-hint`} className={`text-[11px] ${tooLong(values[key]) ? "text-[#ba1a1a]" : "text-stone-500"}`}>
+      <p id={`${id}-hint`} className={cn("text-xs", tooLong(values[key]) ? "text-red-600" : "text-library-muted")}>
         {tooLong(values[key]) ? `Tối đa ${NAME_MAX} ký tự.` : hint}
       </p>
     </div>
@@ -81,13 +81,11 @@ export function ProfileForm({ user }: { user: SafeUser }) {
     <form
       onSubmit={submit}
       noValidate
-      className="md:col-span-2 bg-white p-6 sm:p-8 rounded-3xl border border-[#e8ded0]/80 shadow-[0_4px_24px_rgba(28,25,23,0.04)] flex flex-col gap-5"
+      className="flex flex-col gap-5 rounded-2xl border border-library-line bg-white p-5 sm:p-6"
     >
       <div>
-        <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-stone-500">
-          Thông tin hiển thị
-        </span>
-        <h2 className="font-['Playfair_Display'] text-xl font-bold text-[#122e20] mt-1">Tên &amp; cửa hàng của bạn</h2>
+        <h2 className="text-lg font-medium text-library-ink">Thông tin hiển thị</h2>
+        <p className="mt-0.5 text-sm text-library-sub">Tên và cửa hàng hiện trên thanh điều hướng và trang chia sẻ.</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {field(
@@ -106,11 +104,11 @@ export function ProfileForm({ user }: { user: SafeUser }) {
         )}
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={emailId} className="text-xs font-semibold text-[#122e20]">
+        <label htmlFor={emailId} className="text-sm font-medium text-library-ink">
           Email đăng nhập
         </label>
-        <input id={emailId} value={user.email} readOnly className={`${FIELD} bg-stone-50 text-stone-600`} />
-        <p className="text-[11px] text-stone-500">Email không đổi được ở đây.</p>
+        <input id={emailId} value={user.email} readOnly className={cn(WORKSPACE_INPUT, "bg-library-panel text-library-sub")} />
+        <p className="text-xs text-library-muted">Email không đổi được ở đây.</p>
       </div>
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 pt-1">
         {dirty && (
@@ -118,7 +116,7 @@ export function ProfileForm({ user }: { user: SafeUser }) {
             type="button"
             onClick={() => setValues(baseline)}
             disabled={update.isPending}
-            className="min-h-[44px] px-5 rounded-full bg-white border border-[#e8ded0] text-stone-700 hover:bg-stone-50 text-xs font-semibold transition-colors disabled:opacity-60"
+            className={outlineButton}
           >
             Huỷ thay đổi
           </button>
@@ -127,7 +125,7 @@ export function ProfileForm({ user }: { user: SafeUser }) {
           type="submit"
           disabled={!dirty || invalid}
           aria-disabled={update.isPending}
-          className="min-h-[44px] px-6 rounded-full bg-[#122e20] enabled:hover:bg-[#1a382b] text-white text-xs font-bold shadow-md shadow-[#122e20]/20 flex items-center justify-center gap-2 transition-all enabled:active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:cursor-wait"
+          className={cn(primaryButton, "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait")}
         >
           {update.isPending ? "Đang lưu…" : "Lưu hồ sơ"}
         </button>

@@ -55,7 +55,7 @@ export const PanelNavigator: React.FC<PanelNavigatorProps> = ({
             }}
             className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
               isSelected
-                ? "bg-vibrant-cobalt text-white shadow-cobalt-glow scale-105"
+                ? "bg-library-accent text-white shadow-cobalt-glow scale-105"
                 : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-stone-200/60"
             }`}
           >

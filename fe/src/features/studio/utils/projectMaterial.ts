@@ -1,21 +1,18 @@
 import type { MaterialSpecification } from "@wrapfit/shared";
 import type { BoxMaterialTheme } from "@/features/studio/components/three/InteractiveFoldingBox3D";
+import { PAPER_STOCKS } from "./paperStocks";
 
 /**
- * Printable paper stock (`materialSpec`, validated by the API) behind each paper look of the editor.
- * Same papers as PAPER_MATERIALS in Step2DimensionAndMaterial; the caliper comes from the dimensions.
+ * Printable paper stock (`materialSpec`, validated by the API) behind each paper look of the editor (`PAPER_STOCKS`);
+ * the caliper comes from the dimensions.
  */
-const STOCK_OF_THEME: Record<BoxMaterialTheme, Omit<MaterialSpecification, "caliper">> = {
-  ivory: { type: "ivory", gsm: 300, finish: "matte" }, // Ivory 300 GSM, cán mờ
-  kraft: { type: "kraft", gsm: 300, finish: "raw" }, // Kraft 300 GSM, mộc
-  forest: { type: "duplex", gsm: 350, finish: "matte" }, // Duplex 350 GSM, soft-touch
-  gold_foil: { type: "duplex", gsm: 400, finish: "glossy" }, // Carton bồi 400 GSM, ép kim
-};
+const STOCK_OF_THEME = Object.fromEntries(PAPER_STOCKS.map(({ theme, spec }) => [theme, spec])) as Record<BoxMaterialTheme, MaterialSpecification>;
 
 const THEMES = Object.keys(STOCK_OF_THEME) as BoxMaterialTheme[];
 
 export function materialSpecFor(theme: BoxMaterialTheme, caliper: number): MaterialSpecification {
-  return { ...STOCK_OF_THEME[theme], caliper };
+  const { type, gsm, finish } = STOCK_OF_THEME[theme];
+  return { type, gsm, finish, caliper };
 }
 
 /**

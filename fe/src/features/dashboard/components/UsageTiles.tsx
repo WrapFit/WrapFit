@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight, Cloud, Sparkles } from "lucide-react";
 import Link from "next/link";
 import React, { useId } from "react";
 import { ErrorState } from "@/components/common/StatusViews";
@@ -7,13 +8,12 @@ import { ROUTES, TIER_LABELS } from "@/constants";
 import { formatBytes, formatCount } from "../format";
 import { useAiUsage, usagePercent, useStorageUsage } from "../useUsage";
 
-const TILE =
-  "p-6 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-soft flex flex-col gap-4 min-h-[220px] justify-between";
+const TILE = "flex min-h-[200px] flex-col justify-between gap-4 rounded-2xl border border-library-line bg-white p-5 sm:p-6";
 
-/** Emerald while there is room, amber past 80 %, coral past 95 %: the quota is about to block uploads. */
+/** Green while there is room, amber past 80 %, red past 95 %: the quota is about to block uploads. */
 function meterColor(percent: number): string {
-  if (percent >= 95) return "bg-[#EE5253]";
-  return percent >= 80 ? "bg-amber-500" : "bg-emerald-600";
+  if (percent >= 95) return "bg-red-500";
+  return percent >= 80 ? "bg-amber-500" : "bg-library-accent";
 }
 
 function Meter({ percent, label }: { percent: number; label: string }) {
@@ -24,7 +24,7 @@ function Meter({ percent, label }: { percent: number; label: string }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(percent)}
-      className="w-full h-2 rounded-full bg-stone-100 overflow-hidden"
+      className="h-2 w-full overflow-hidden rounded-full bg-library-panel"
     >
       <div
         className={`h-full rounded-full transition-[width] duration-700 ${meterColor(percent)}`}
@@ -37,9 +37,9 @@ function Meter({ percent, label }: { percent: number; label: string }) {
 function TileSkeleton() {
   return (
     <div aria-hidden="true" className={TILE}>
-      <div className="w-12 h-12 rounded-2xl bg-stone-100 animate-pulse motion-reduce:animate-none" />
-      <div className="h-6 w-1/2 rounded-full bg-stone-100 animate-pulse motion-reduce:animate-none" />
-      <div className="h-2 w-full rounded-full bg-stone-100 animate-pulse motion-reduce:animate-none" />
+      <div className="size-10 animate-pulse rounded-xl bg-library-tile motion-reduce:animate-none" />
+      <div className="h-6 w-1/2 animate-pulse rounded bg-library-tile motion-reduce:animate-none" />
+      <div className="h-2 w-full animate-pulse rounded-full bg-library-tile motion-reduce:animate-none" />
     </div>
   );
 }
@@ -68,37 +68,33 @@ export function StorageUsageTile() {
   return (
     <section aria-labelledby={titleId} className={TILE}>
       <div className="flex items-start justify-between gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-700">
-          <span aria-hidden="true" className="material-symbols-outlined text-[24px]">
-            cloud_done
-          </span>
+        <div className="flex size-10 items-center justify-center rounded-xl bg-library-accent-mist text-library-accent">
+          <Cloud className="size-5" aria-hidden />
         </div>
-        <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[11px] font-['JetBrains_Mono'] font-bold">
+        <span className="rounded-md bg-library-panel px-2 py-1 text-xs font-medium text-library-sub">
           {TIER_LABELS[tier]}
         </span>
       </div>
       <div className="space-y-2">
-        <h3 id={titleId} className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">
+        <h3 id={titleId} className="text-lg font-medium text-library-ink">
           Dung lượng lưu trữ
         </h3>
-        <p className="font-['JetBrains_Mono'] text-xl font-semibold text-[#122e20]">
+        <p className="text-2xl font-medium text-library-ink">
           {formatBytes(usedBytes)}{" "}
-          <span className="text-sm font-medium text-stone-500">/ {formatBytes(quotaBytes)}</span>
+          <span className="text-sm font-normal text-library-muted">/ {formatBytes(quotaBytes)}</span>
         </p>
         <Meter percent={percent} label="Dung lượng đã dùng" />
-        <div className="flex items-center justify-between text-[11px] font-['JetBrains_Mono'] text-stone-500">
+        <div className="flex items-center justify-between text-xs text-library-sub">
           <span>Đã dùng {PERCENT.format(percent)}%</span>
           <span>{formatCount(fileCount)} tệp</span>
         </div>
       </div>
       <Link
         href={ROUTES.settings}
-        className="self-start min-h-[44px] flex items-center gap-1 text-xs font-semibold text-[#122e20] hover:underline underline-offset-2"
+        className="inline-flex min-h-[44px] items-center gap-1 self-start text-sm font-medium text-library-accent underline-offset-4 hover:underline"
       >
-        <span>Quản lý dung lượng</span>
-        <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-          arrow_forward
-        </span>
+        Quản lý dung lượng
+        <ArrowRight className="size-4" aria-hidden />
       </Link>
     </section>
   );
@@ -126,40 +122,38 @@ export function AiUsageTile() {
   return (
     <section aria-labelledby={titleId} className={TILE}>
       <div className="flex items-start justify-between gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-700">
-          <span aria-hidden="true" className="material-symbols-outlined text-[24px]">
-            auto_awesome
-          </span>
+        <div className="flex size-10 items-center justify-center rounded-xl bg-library-accent-mist text-library-accent">
+          <Sparkles className="size-5" aria-hidden />
         </div>
-        <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[11px] font-['JetBrains_Mono'] font-bold">
+        <span className="rounded-md bg-library-panel px-2 py-1 text-xs font-medium text-library-sub">
           {TIER_LABELS[tier]}
         </span>
       </div>
       <div className="space-y-2">
-        <h3 id={titleId} className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">
+        <h3 id={titleId} className="text-lg font-medium text-library-ink">
           Hoa văn AI trong 24 giờ
         </h3>
         {aiEnabled ? (
           <>
-            <p className="font-['JetBrains_Mono'] text-xl font-semibold text-[#122e20]">
+            <p className="text-2xl font-medium text-library-ink">
               {formatCount(used)}{" "}
-              <span className="text-sm font-medium text-stone-500">/ {formatCount(limit)} lượt</span>
+              <span className="text-sm font-normal text-library-muted">/ {formatCount(limit)} lượt</span>
             </p>
             <Meter percent={usagePercent(used, limit)} label="Lượt AI đã dùng" />
-            <p className="text-[11px] font-['JetBrains_Mono'] text-stone-500">
+            <p className="text-xs text-library-sub">
               {left > 0 ? `Còn ${formatCount(left)} lượt` : "Đã hết lượt, thử lại sau 24 giờ"}
             </p>
           </>
         ) : (
           <>
-            <p className="font-['JetBrains_Mono'] text-xl font-semibold text-[#122e20]">Không giới hạn</p>
-            <p className="text-xs text-stone-500 leading-relaxed">
+            <p className="text-2xl font-medium text-library-ink">Không giới hạn</p>
+            <p className="text-sm leading-relaxed text-library-sub">
               Hoa văn đang được tạo bằng bộ sinh có sẵn của WrapFit, không tính lượt.
             </p>
           </>
         )}
       </div>
-      <p className="text-[11px] text-stone-500">Tạo hoa văn trong 3D Studio, mục Hoa văn AI.</p>
+      <p className="text-xs text-library-muted">Tạo hoa văn trong studio, mục Hoa văn AI.</p>
     </section>
   );
 }

@@ -262,10 +262,10 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-brand-forest tracking-tight font-serif truncate">
+                <span className="text-xs font-bold text-brand-forest tracking-tight font-landing-heading truncate">
                   Gói — AI Packaging Copilot
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-vibrant-cobalt/10 text-vibrant-cobalt">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-library-accent/10 text-library-accent">
                   BETA
                 </span>
               </div>
@@ -307,7 +307,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
             {/* AI Speech Bubble */}
             <div className="bg-[#FAF6EE] p-3 rounded-2xl border border-[#E8D8C8] relative">
               <div className="flex items-start gap-2.5">
-                <div className="w-2 h-2 rounded-full bg-vibrant-cobalt mt-1.5 flex-shrink-0 animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-library-accent mt-1.5 flex-shrink-0 animate-ping" />
                 <p className="text-xs leading-relaxed text-stone-700">{message}</p>
               </div>
 
@@ -370,12 +370,12 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                 placeholder="Hỏi Gói: 'Hộp đựng ly sứ', 'Hộp quà cưới'..."
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
-                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl bg-stone-100 border border-stone-200 focus:outline-none focus:border-vibrant-cobalt focus:bg-white text-stone-800 placeholder-stone-400 transition"
+                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl bg-stone-100 border border-stone-200 focus:outline-none focus:border-library-accent focus:bg-white text-stone-800 placeholder-stone-400 transition"
               />
               <button
                 type="submit"
                 disabled={!userQuery.trim()}
-                className="absolute right-1.5 p-1 rounded-lg bg-vibrant-cobalt text-white disabled:opacity-30 transition"
+                className="absolute right-1.5 p-1 rounded-lg bg-library-accent text-white disabled:opacity-30 transition"
               >
                 <Send className="w-3 h-3" />
               </button>

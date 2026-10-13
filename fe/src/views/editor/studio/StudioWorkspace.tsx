@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { landingFontVariables } from "@/assets/fonts/landing";
 import {
   ArrowLeft,
   Download,
@@ -436,9 +437,9 @@ export function StudioWorkspace({
   );
 
   return (
-    <div className="min-h-screen bg-paper-grain flex flex-col font-sans select-none overflow-x-hidden">
+    <div className={`${landingFontVariables} min-h-screen bg-[#F5F6F4] flex flex-col font-landing-body select-none overflow-x-hidden`}>
       {/* ================= 1. GLOBAL TOP STEPPER NAVBAR ================= */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200">
+      <header className="sticky top-0 z-40 bg-white border-b border-library-line">
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           {/* Left: Back & Project Title */}
           <div className="flex items-center gap-3 min-w-0">
@@ -460,7 +461,7 @@ export function StudioWorkspace({
                 maxLength={120}
                 disabled={readOnly}
                 onChange={(e) => setProjectTitle(e.target.value)}
-                className="font-serif font-bold text-stone-900 text-sm sm:text-base bg-transparent border-b border-transparent hover:border-stone-300 focus:border-vibrant-cobalt focus:outline-none transition max-w-[200px] truncate disabled:hover:border-transparent"
+                className="font-landing-heading font-bold text-stone-900 text-sm sm:text-base bg-transparent border-b border-transparent hover:border-stone-300 focus:border-library-accent focus:outline-none transition max-w-[200px] truncate disabled:hover:border-transparent"
               />
               <span className="text-[10px] text-stone-500 font-mono block">
                 {dimensions.length}×{dimensions.width}×{dimensions.height} mm
@@ -497,9 +498,9 @@ export function StudioWorkspace({
                 setActiveInspectorTab("fitcheck");
               }}
               title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full whitespace-nowrap bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold transition hover:bg-emerald-100"
+              className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-lg whitespace-nowrap bg-library-accent-mist text-library-accent text-sm font-medium transition-colors hover:bg-[#DDF5CC]"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <ShieldCheck className="w-4 h-4" />
               <span>FitCheck: {displayReport.score}/100</span>
             </button>
 
@@ -512,9 +513,9 @@ export function StudioWorkspace({
               onClick={() => openDialog("export")}
               disabled={readOnly}
               aria-label="Xuất File In"
-              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile transition flex items-center gap-1.5 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+              className="min-h-[40px] px-4 py-2 rounded-lg whitespace-nowrap bg-library-lime hover:bg-[#AFEC88] text-library-lime-ink text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Xuất File In</span>
             </button>
           </div>
@@ -533,7 +534,7 @@ export function StudioWorkspace({
                 <Trash2 className="w-5 h-5" aria-hidden />
               </span>
               <div className="text-sm text-stone-700">
-                <span className="font-serif font-bold text-stone-900 block">Dự án đang ở thùng rác</span>
+                <span className="font-landing-heading font-bold text-stone-900 block">Dự án đang ở thùng rác</span>
                 Chỉ xem được. Khôi phục để tiếp tục chỉnh sửa và xuất file.
               </div>
             </div>
@@ -565,10 +566,10 @@ export function StudioWorkspace({
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
           <div
             role="status"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-squircle-lg bg-white border border-blue-200 shadow-tactile"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-squircle-lg bg-white border border-library-accent/30 shadow-tactile"
           >
             <div className="flex items-center gap-3 text-sm text-stone-700 min-w-0">
-              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-blue-50 text-vibrant-cobalt flex items-center justify-center">
+              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-library-accent-mist text-library-accent flex items-center justify-center">
                 <RotateCcw className="w-4 h-4" aria-hidden />
               </span>
               <span className="min-w-0">
@@ -590,7 +591,7 @@ export function StudioWorkspace({
                 type="button"
                 onClick={() => void undoRestore()}
                 disabled={undoing}
-                className="min-h-[40px] px-4 rounded-full bg-vibrant-cobalt hover:bg-blue-700 text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
+                className="min-h-[40px] px-4 rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
               >
                 {undoing ? "Đang hoàn tác…" : "Hoàn tác"}
               </button>
@@ -677,7 +678,7 @@ export function StudioWorkspace({
               <div className="flex items-center gap-2 flex-shrink-0">
                 {!isDemo && <div className="flex sm:hidden items-center gap-2">{projectActions}</div>}
                 {uploading && (
-                  <span role="status" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-vibrant-cobalt text-xs font-semibold">
+                  <span role="status" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-library-accent-mist text-library-accent text-xs font-semibold">
                     <ImageUp className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none" aria-hidden />
                     Đang tải ảnh lên…
                   </span>
@@ -692,7 +693,7 @@ export function StudioWorkspace({
                 <button
                   type="button"
                   onClick={() => setCurrentStep(4)}
-                  className="min-h-[36px] px-4 py-1.5 rounded-full bg-vibrant-cobalt hover:bg-blue-700 text-white text-xs font-semibold whitespace-nowrap shadow-tactile flex items-center gap-1.5 transition hover:scale-105 active:scale-95"
+                  className="min-h-[36px] px-4 py-1.5 rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-xs font-semibold whitespace-nowrap shadow-tactile flex items-center gap-1.5 transition hover:scale-105 active:scale-95"
                 >
                   <span className="sm:hidden">Phối Cảnh 3D</span>
                   <span className="hidden sm:inline">Xem Phối Cảnh 3D (Bước 4)</span>
@@ -841,7 +842,7 @@ export function StudioWorkspace({
                             }}
                             className={`p-2.5 rounded-squircle text-xs font-medium border text-left transition ${
                               backgroundPatternSvg === pat.id
-                                ? "border-vibrant-cobalt bg-blue-50/80 text-vibrant-cobalt font-bold shadow-xs"
+                                ? "border-library-accent bg-library-accent-mist/80 text-library-accent font-bold shadow-xs"
                                 : "border-stone-200 hover:border-stone-300 bg-stone-50/50"
                             }`}
                           >

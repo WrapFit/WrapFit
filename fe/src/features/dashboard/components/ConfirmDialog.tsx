@@ -3,13 +3,13 @@
 import React, { useId, useRef } from "react";
 import { ModalDialog } from "./ModalDialog";
 
+/** Workspace dialog: white, black hairline and hard shadow (pacdora.com style). */
 export const DIALOG_PANEL =
-  "max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(28,25,23,0.12)] flex flex-col gap-5";
+  "flex max-w-md flex-col gap-5 rounded-2xl border-[1.5px] border-library-ink bg-white p-6 font-landing-heading text-library-text shadow-hard sm:p-8";
 export const DIALOG_CANCEL =
-  "px-4 py-2.5 min-h-[44px] rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-stone-400";
-/** Stitch's `error` colour (#BA1A1A), spelled out: some screens leave the `error` token unset. */
+  "min-h-[44px] rounded-lg border border-library-ink bg-white px-4 py-2.5 text-sm font-medium text-library-ink transition-colors hover:bg-library-panel focus-visible:ring-[3px] focus-visible:ring-library-ink/20";
 export const DIALOG_DANGER =
-  "px-5 py-2.5 min-h-[44px] rounded-xl bg-[#ba1a1a] text-white enabled:hover:bg-[#93000a] text-sm font-semibold shadow-sm enabled:active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait focus-visible:ring-2 focus-visible:ring-[#ba1a1a]/40";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-red-700 disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-red-600/30";
 
 interface ConfirmDialogProps {
   title: string;
@@ -56,18 +56,18 @@ export function ConfirmDialog({
       <div className="flex items-start gap-3">
         <span
           className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${
-            danger ? "bg-[#ffdad6] text-[#93000a]" : "bg-stone-100 text-stone-700"
+            danger ? "bg-red-50 text-red-700" : "bg-library-accent-mist text-library-accent"
           }`}
         >
           <span aria-hidden="true" className="material-symbols-outlined text-xl">
             {icon}
           </span>
         </span>
-        <h2 id={titleId} className="pt-1.5 font-['Playfair_Display'] text-xl font-semibold text-stone-900 leading-snug">
+        <h2 id={titleId} className="pt-1.5 text-xl font-medium leading-snug text-library-ink">
           {title}
         </h2>
       </div>
-      <div id={descriptionId} className="flex flex-col gap-2 text-sm leading-relaxed text-stone-600">
+      <div id={descriptionId} className="flex flex-col gap-2 text-sm leading-relaxed text-library-sub">
         {children}
       </div>
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">

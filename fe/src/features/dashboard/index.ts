@@ -25,6 +25,7 @@ export {
   daysUntilPurge,
   dimensionsLabel,
   fitCheckLabel,
+  fitCheckTone,
   formatBytes,
   formatCount,
   formatDate,

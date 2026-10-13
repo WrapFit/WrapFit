@@ -5,6 +5,8 @@ interface BoxPreviewProps {
   structure: BoxStructureType;
   dimensions: BoxDimensions;
   material?: MaterialType;
+  /** Printed colour of the paper (`#RRGGBB`), shaded per face; replaces the stock colour of `material`. */
+  color?: string;
   className?: string;
   /** Accessible name; the image is decorative without it. */
   label?: string;
@@ -16,6 +18,13 @@ const PAPER: Record<MaterialType, { top: string; left: string; right: string }> 
   kraft: { top: "#E8D3BC", left: "#D6B998", right: "#C4A27E" },
   duplex: { top: "#F4F2ED", left: "#E4DFD5", right: "#D3CCBF" },
 };
+
+/** `#RRGGBB` darkened by `amount` (0–1). */
+function shade(hex: string, amount: number): string {
+  const value = parseInt(hex.slice(1), 16);
+  const channel = (shift: number) => Math.round(((value >> shift) & 255) * (1 - amount));
+  return `#${[16, 8, 0].map((shift) => channel(shift).toString(16).padStart(2, "0")).join("")}`;
+}
 
 const INK = "#1C1917";
 const CREASE = "#3182CE"; // dieline crease layer
@@ -35,9 +44,9 @@ const iso = ([x, y, z]: P3): P2 => [(x - y) * COS30, (x + y) * 0.5 - z];
  * edges use the dieline crease colour; each structure gets its tell-tale detail (tuck crease, drawer, lid band, pillow
  * curves). Very flat or very tall boxes keep at least a quarter of the longest side so the sketch stays readable.
  */
-export function BoxPreview({ structure, dimensions, material = "ivory", className = "", label }: BoxPreviewProps) {
+export function BoxPreview({ structure, dimensions, material = "ivory", color, className = "", label }: BoxPreviewProps) {
   const gradientId = useId();
-  const paper = PAPER[material] ?? PAPER.ivory;
+  const paper = color && /^#[0-9a-f]{6}$/i.test(color) ? { top: color, left: shade(color, 0.08), right: shade(color, 0.16) } : (PAPER[material] ?? PAPER.ivory);
   const longest = Math.max(dimensions.length, dimensions.width, dimensions.height, 1);
   const L = Math.max(dimensions.length, longest * 0.25);
   const W = Math.max(dimensions.width, longest * 0.25);

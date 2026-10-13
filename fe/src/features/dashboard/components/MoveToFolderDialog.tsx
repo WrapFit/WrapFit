@@ -7,7 +7,7 @@ import { DIALOG_CANCEL, DIALOG_PANEL } from "./ConfirmDialog";
 import { ModalDialog } from "./ModalDialog";
 
 const SUBMIT =
-  "px-5 py-2.5 min-h-[44px] rounded-xl bg-[#004ac6] text-white enabled:hover:bg-[#2563eb] text-sm font-semibold shadow-sm enabled:active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed aria-disabled:cursor-wait focus-visible:ring-2 focus-visible:ring-[#2563eb]/40";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-[#AFEC88] disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
 
 interface MoveToFolderDialogProps {
   project: ProjectSummary;
@@ -56,16 +56,16 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
     >
       <form onSubmit={submit} className="flex flex-col gap-5">
         <div className="flex items-start gap-3">
-          <span className="w-10 h-10 shrink-0 rounded-2xl bg-[#dbe1ff] text-[#004ac6] flex items-center justify-center">
+          <span className="w-10 h-10 shrink-0 rounded-2xl bg-library-accent-mist text-library-accent flex items-center justify-center">
             <span aria-hidden="true" className="material-symbols-outlined text-xl">
               drive_file_move
             </span>
           </span>
           <div className="min-w-0 pt-0.5">
-            <h2 id={titleId} className="font-['Playfair_Display'] text-xl font-semibold text-stone-900 leading-snug">
+            <h2 id={titleId} className="text-xl font-medium text-library-ink leading-snug">
               Chuyển thư mục
             </h2>
-            <p id={descriptionId} className="text-sm text-stone-600 truncate">
+            <p id={descriptionId} className="text-sm text-library-sub truncate">
               {project.title}
             </p>
           </div>
@@ -82,7 +82,7 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
               <label
                 key={option.id || "none"}
                 className={`min-h-[48px] px-3 rounded-xl flex items-center gap-3 cursor-pointer transition-colors ${
-                  checked ? "bg-[#dbe1ff]/60 ring-1 ring-[#2563eb]/40" : "hover:bg-stone-50"
+                  checked ? "bg-library-accent-mist ring-1 ring-library-accent/40" : "hover:bg-library-panel"
                 } focus-within:ring-2 focus-within:ring-[#2563eb]`}
               >
                 <input
@@ -96,21 +96,21 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
                 />
                 <span
                   aria-hidden="true"
-                  className={`w-3 h-3 shrink-0 rounded-full ${option.id ? "" : "ring-1 ring-stone-400 bg-white"}`}
+                  className={`w-3 h-3 shrink-0 rounded-full ${option.id ? "" : "ring-1 ring-library-muted bg-white"}`}
                   style={option.id ? { backgroundColor: option.colorTag ?? "#D4A373" } : undefined}
                 />
-                <span className="flex-1 min-w-0 truncate text-sm font-medium text-stone-900">{option.title}</span>
+                <span className="flex-1 min-w-0 truncate text-sm font-medium text-library-ink">{option.title}</span>
                 {option.projectCount !== null && (
-                  <span className="font-['JetBrains_Mono'] text-[11px] text-stone-500">{option.projectCount}</span>
+                  <span className="font-mono text-[11px] text-library-muted">{option.projectCount}</span>
                 )}
                 {option.id === current && (
-                  <span className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-wider text-stone-500">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-library-muted">
                     Hiện tại
                   </span>
                 )}
                 <span
                   aria-hidden="true"
-                  className={`material-symbols-outlined text-lg ${checked ? "text-[#004ac6]" : "text-transparent"}`}
+                  className={`material-symbols-outlined text-lg ${checked ? "text-library-accent" : "text-transparent"}`}
                 >
                   check
                 </span>
@@ -120,12 +120,12 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
         </div>
 
         {collections.length === 0 && (
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-library-sub">
             Bạn chưa có thư mục nào.{" "}
             <button
               type="button"
               onClick={onCreateFolder}
-              className="font-semibold text-[#004ac6] underline-offset-2 hover:underline min-h-[44px]"
+              className="font-semibold text-library-accent underline-offset-2 hover:underline min-h-[44px]"
             >
               Tạo thư mục mới
             </button>

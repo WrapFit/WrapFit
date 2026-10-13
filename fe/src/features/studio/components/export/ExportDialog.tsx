@@ -133,16 +133,16 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
             type="button"
             disabled={waiting}
             onClick={() => void start(format.type)}
-            className="w-full min-h-[64px] p-3.5 rounded-2xl border border-stone-200 hover:border-vibrant-cobalt hover:bg-blue-50/40 text-left transition flex items-center justify-between gap-3 group disabled:opacity-60 disabled:hover:border-stone-200 disabled:hover:bg-transparent"
+            className="w-full min-h-[64px] p-3.5 rounded-2xl border border-stone-200 hover:border-library-accent hover:bg-library-accent-mist/40 text-left transition flex items-center justify-between gap-3 group disabled:opacity-60 disabled:hover:border-stone-200 disabled:hover:bg-transparent"
           >
             <span>
-              <span className="font-semibold text-sm text-stone-900 group-hover:text-vibrant-cobalt block">{format.title}</span>
+              <span className="font-semibold text-sm text-stone-900 group-hover:text-library-accent block">{format.title}</span>
               <span className="text-xs text-stone-500 block mt-0.5 leading-relaxed">{format.hint}</span>
             </span>
             {starting === format.type ? (
-              <RotateCw className="w-4 h-4 flex-shrink-0 text-vibrant-cobalt animate-spin motion-reduce:animate-none" aria-hidden />
+              <RotateCw className="w-4 h-4 flex-shrink-0 text-library-accent animate-spin motion-reduce:animate-none" aria-hidden />
             ) : (
-              <FileDown className="w-4 h-4 flex-shrink-0 text-stone-400 group-hover:text-vibrant-cobalt" aria-hidden />
+              <FileDown className="w-4 h-4 flex-shrink-0 text-stone-400 group-hover:text-library-accent" aria-hidden />
             )}
           </button>
         ))}
@@ -186,7 +186,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
               ? "bg-emerald-50 border-emerald-200"
               : current?.status === "FAILED" || job.error
               ? "bg-vibrant-coral/10 border-vibrant-coral/30"
-              : "bg-blue-50 border-blue-200"
+              : "bg-library-accent-mist border-library-accent/30"
           }`}
         >
           {pose && <GoiMascot pose={pose} size={56} className="flex-shrink-0" />}
@@ -207,10 +207,10 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
               <span className="text-xs text-stone-700">Chưa hỏi được trạng thái. File vẫn được dựng; xem ở lịch sử bên dưới.</span>
             ) : (
               <>
-                <span className="font-bold text-blue-900 block">
+                <span className="font-bold text-library-lime-ink block">
                   {current ? STATUS_LABELS[current.status] : "Đang chờ"}…
                 </span>
-                <span className="text-xs text-blue-800 block">Gói đang dựng file in, thường mất vài giây.</span>
+                <span className="text-xs text-library-lime-ink block">Gói đang dựng file in, thường mất vài giây.</span>
               </>
             )}
           </div>
@@ -235,7 +235,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
         ) : history.error ? (
           <p className="text-xs text-stone-500">
             Chưa tải được lịch sử.{" "}
-            <button type="button" onClick={() => void history.refetch()} className="font-semibold text-vibrant-cobalt underline">
+            <button type="button" onClick={() => void history.refetch()} className="font-semibold text-library-accent underline">
               Thử lại
             </button>
           </p>

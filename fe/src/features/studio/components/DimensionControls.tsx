@@ -50,8 +50,8 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Ruler className="w-4 h-4 text-vibrant-cobalt" />
-          <h3 className="font-serif font-bold text-stone-900 text-base">
+          <Ruler className="w-4 h-4 text-library-accent" />
+          <h3 className="font-landing-heading font-bold text-stone-900 text-base">
             Kích Thước Khối (mm)
           </h3>
         </div>

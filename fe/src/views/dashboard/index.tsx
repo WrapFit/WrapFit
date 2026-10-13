@@ -1,18 +1,19 @@
 'use client';
 
 /**
- * Stitch screen `dashboard` (status "wired": `stitch:sync` keeps this hand-edited file). Recent projects, storage and
- * AI usage come from the API (`GET /projects`, `/storage/usage`, `/ai/usage`); the ecosystem shortcuts and the Copilot
- * bar stay static (docs/12, D6). The screen's behavior script did nothing here, so there is no StitchRuntime.
+ * `/dashboard`: the workspace home of a signed-in user, in the pacdora.com style. Recent projects, project counts,
+ * storage and AI usage come from the API (`GET /projects`, `/storage/usage`, `/ai/usage`); the structures of the quick
+ * start from `GET /templates/structures`.
  */
 
-import React from 'react';
+import { ArrowRight, Box, FolderOpen, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { MainHeader, MainFooter, DashboardHeaderNav } from '@/components/layout';
-import { GoiMascot } from '@/components/common/GoiMascot';
-import { EmptyState, ErrorState, PRIMARY_BUTTON } from '@/components/common/StatusViews';
+import React from 'react';
+import { outlineButton, primaryButton } from '@/components/library';
+import { HeroPanel, Panel, PanelTitle, StatTile, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
+import { displayName } from '@/components/layout/account';
 import { ROUTES } from '@/constants';
-import { RequireAuth } from '@/features/auth';
+import { RequireAuth, useAuth } from '@/features/auth';
 import {
   AiUsageTile,
   RECENT_PROJECTS_QUERY,
@@ -20,8 +21,11 @@ import {
   RecentProjectSkeleton,
   StorageUsageTile,
   formatCount,
+  useAiUsage,
+  useProjectCount,
   useProjectList,
 } from '@/features/dashboard';
+import { DielineSketch, useBoxStructures } from '@/features/templates';
 
 export default function DashboardPage() {
   return (
@@ -31,15 +35,28 @@ export default function DashboardPage() {
   );
 }
 
+const SHORTCUTS = [
+  { href: ROUTES.brandKit, title: 'Brand kit', text: 'Logo, bảng màu, font và khẩu hiệu dùng lại trên mọi hộp.' },
+  { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Mẫu WrapFit Curated và thiết kế đạt FitCheck™ của cộng đồng.' },
+  { href: '/support', title: 'Trung tâm hỗ trợ', text: 'Kích thước, FitCheck™, file in, mã QR mở hộp.' },
+  { href: '/pricing', title: 'Gói dịch vụ', text: 'Dung lượng lưu trữ và lượt tạo hoa văn AI của từng gói.' },
+];
+
 function DashboardScreen() {
+  const { user } = useAuth();
   const recent = useProjectList(RECENT_PROJECTS_QUERY);
+  const active = useProjectCount('ACTIVE');
+  const archived = useProjectCount('ARCHIVED');
+  const trashed = useProjectCount('DELETED');
+  const ai = useAiUsage();
+  const structures = useBoxStructures();
   const projects = recent.data?.items ?? [];
   const latest = projects[0];
 
   let recentBody: React.ReactNode;
   if (recent.isPending) {
     recentBody = (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" aria-busy="true">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4" aria-busy="true">
         <span role="status" className="sr-only">
           Đang tải dự án gần đây…
         </span>
@@ -50,20 +67,17 @@ function DashboardScreen() {
     );
   } else if (recent.isError) {
     recentBody = (
-      <ErrorState
-        error={recent.error}
-        title="Không tải được dự án gần đây"
-        onRetry={() => void recent.refetch()}
-        retrying={recent.isFetching}
-      />
+      <WorkspaceError error={recent.error} title="Không tải được dự án gần đây" onRetry={() => void recent.refetch()} retrying={recent.isFetching} />
     );
   } else if (projects.length === 0) {
     recentBody = (
-      <EmptyState
+      <WorkspaceEmpty
+        icon={FolderOpen}
         title="Chưa có dự án nào"
         description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
         action={
-          <Link href={ROUTES.editorNew} className={PRIMARY_BUTTON}>
+          <Link href={ROUTES.editorNew} className={primaryButton}>
+            <Plus className="size-4" aria-hidden />
             Tạo hộp mới
           </Link>
         }
@@ -71,7 +85,7 @@ function DashboardScreen() {
     );
   } else {
     recentBody = (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {projects.map((project) => (
           <RecentProjectCard key={project.id} project={project} />
         ))}
@@ -80,219 +94,104 @@ function DashboardScreen() {
   }
 
   return (
-    <div
-      data-stitch="dashboard"
-      className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none"
+    <WorkspaceShell
+      title="Tổng quan"
+      description={user ? `Chào ${displayName(user)}, đây là các hộp bạn đang làm.` : undefined}
+      actions={
+        <>
+          {latest && (
+            <Link href={ROUTES.editor(latest.id)} className={outlineButton} title={`Mở “${latest.title}”`}>
+              <Box className="size-4" aria-hidden />
+              Tiếp tục dự án gần nhất
+            </Link>
+          )}
+          <Link href={ROUTES.editorNew} className={primaryButton}>
+            <Plus className="size-4" aria-hidden />
+            Tạo hộp mới
+          </Link>
+        </>
+      }
     >
-      {/* 1. Unified Main Header with Mega Menu */}
-      <MainHeader />
-
-      {/* 2. Main Dashboard Content Container */}
-      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 flex-1 flex flex-col gap-8">
-        {/* Top Header & Sub-Navigation Strip */}
-        <header className="flex flex-col gap-5 pb-6 border-b border-[#e8ded0]/60">
-          <DashboardHeaderNav />
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
+      <div className="flex flex-col gap-8">
+        <HeroPanel>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center">
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/60">
-                  CAD ENGINE 1:1 ACTIVE &bull; ISO 12647-2
-                </span>
-              </div>
-              <h1 className="font-['Playfair_Display'] text-3xl sm:text-4xl font-bold text-[#122e20]">
-                Không Gian Dự Án Bao Bì Của Bạn
-              </h1>
-              <p className="text-sm text-[#717971] mt-1 max-w-2xl font-normal leading-relaxed">
-                Quản lý các khuôn bế CAD, thông số dung sai nếp gấp, kết cấu bao bì FEFCO và thư viện vật liệu thực tế
-                phục vụ sản xuất.
+              <h2 className="flex gap-3 text-2xl font-medium leading-snug text-library-ink">
+                <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent" strokeWidth={2.5} aria-hidden />
+                Bắt đầu từ một cấu trúc hộp
+              </h2>
+              <p className="mt-3 text-base leading-[1.6] text-library-sub">
+                Chọn kiểu hộp gần nhất với món quà, xem các mẫu của nó rồi đổi kích thước theo từng milimét.
               </p>
             </div>
-
-            {/* Quick Action CTAs */}
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              <Link
-                href={ROUTES.editorNew}
-                className="min-h-[44px] px-5 py-2.5 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-bold shadow-md shadow-[#122e20]/20 flex items-center gap-2 transition-all active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>Tạo hộp mới</span>
-              </Link>
-              <Link
-                href={latest ? ROUTES.editor(latest.id) : ROUTES.editorNew}
-                title={latest ? `Mở “${latest.title}”` : undefined}
-                className="min-h-[44px] px-5 py-2.5 rounded-full bg-white hover:bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold shadow-2xs flex items-center gap-2 transition-all active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px] text-[#2563eb]">view_in_ar</span>
-                <span>{latest ? 'Tiếp tục dự án gần nhất' : 'Mở Master Studio 3D'}</span>
-              </Link>
-            </div>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {(structures.data ?? []).map((structure) => (
+                <li key={structure.id}>
+                  <Link
+                    href={`${ROUTES.templates}?structure=${structure.id}`}
+                    className="group flex h-full flex-col gap-2 rounded-xl border border-library-ink bg-white p-3 transition-shadow hover:shadow-hard-sm"
+                  >
+                    <span className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-library-tile p-2">
+                      <DielineSketch structure={structure.id} dimensions={{ length: 80, width: 55, height: 60, paperThickness: 0.42 }} className="h-full w-full" />
+                    </span>
+                    <span className="text-sm text-library-ink">{structure.name}</span>
+                  </Link>
+                </li>
+              ))}
+              {structures.isPending &&
+                [0, 1, 2, 3].map((index) => <li key={index} aria-hidden className="aspect-square animate-pulse rounded-xl bg-white/70" />)}
+            </ul>
           </div>
-        </header>
+        </HeroPanel>
 
-        {/* 3. Main Bento: Active Packaging Projects (Dự Án Gần Đây) */}
-        <section className="space-y-4" aria-labelledby="recent-projects-title">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-3">
-              <h2 id="recent-projects-title" className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20]">
-                Dự Án Bao Bì Gần Đây
-              </h2>
-              {recent.data && (
-                <span className="px-2.5 py-0.5 rounded-full bg-stone-200/70 text-stone-700 text-xs font-['JetBrains_Mono'] font-bold">
-                  {formatCount(recent.data.meta.total)} dự án
-                </span>
-              )}
-            </div>
-            <Link
-              href={ROUTES.projects}
-              className="min-h-[44px] text-xs font-semibold text-[#122e20] hover:underline flex items-center gap-1"
-            >
-              <span>Xem Tất Cả Dự Án</span>
-              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-            </Link>
-          </div>
+        <section aria-label="Số dự án" className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatTile label="Đang làm" value={active.data !== undefined ? formatCount(active.data) : '–'} />
+          <StatTile label="Lưu trữ" value={archived.data !== undefined ? formatCount(archived.data) : '–'} />
+          <StatTile label="Thùng rác" value={trashed.data !== undefined ? formatCount(trashed.data) : '–'} hint="Tự xoá sau 30 ngày" />
+          <StatTile
+            label="Hoa văn AI còn lại"
+            value={ai.data ? (ai.data.aiEnabled ? formatCount(Math.max(0, ai.data.limit - ai.data.used)) : 'Không giới hạn') : '–'}
+            hint="Trong 24 giờ"
+          />
+        </section>
 
+        <section aria-labelledby="recent-projects-title">
+          <PanelTitle
+            id="recent-projects-title"
+            action={
+              <Link href={ROUTES.projects} className="inline-flex min-h-[44px] items-center gap-1 text-sm text-library-ink underline-offset-4 hover:underline">
+                Xem tất cả dự án
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            }
+          >
+            Dự án gần đây
+          </PanelTitle>
           {recentBody}
         </section>
 
-        {/* Storage & AI usage of the plan */}
-        <section aria-label="Hạn mức của gói" className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <section aria-label="Hạn mức của gói" className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <StorageUsageTile />
           <AiUsageTile />
         </section>
 
-        {/* 4. Packaging Ecosystem Shortcuts (Brand Kit, Materials, Orders, Specs) */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Card 1: Brand Kit */}
-          <Link
-            href={ROUTES.brandKit}
-            className="group p-6 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-700 mb-4 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">palette</span>
-              </div>
-              <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">
-                Brand Kit &amp; Màu Pantone
-              </h3>
-              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-                Đồng bộ mã màu Spot ink, khuôn ép kim nóng 22K và font chữ khắc laser.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-xs font-semibold text-[#122e20] group-hover:translate-x-1 transition-transform">
-              <span>Mở Brand Kit</span>
-              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-            </div>
-          </Link>
-
-          {/* Card 2: Materials */}
-          <Link
-            href="/dashboard/materials"
-            className="group p-6 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-blue-700 mb-4 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">texture</span>
-              </div>
-              <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">
-                Kho Vật Liệu PBR &amp; Giấy
-              </h3>
-              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-                Giấy kẹp bông, Kraft organic, màng Velvet và cốt Greyboard sẵn có tại 4 xưởng in.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-xs font-semibold text-[#122e20] group-hover:translate-x-1 transition-transform">
-              <span>Xem Thư Viện Vật Liệu</span>
-              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-            </div>
-          </Link>
-
-          {/* Card 3: Orders & VAT */}
-          <Link
-            href="/dashboard/orders"
-            className="group p-6 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 flex items-center justify-center text-emerald-700 mb-4 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">receipt_long</span>
-              </div>
-              <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">Đơn Hàng &amp; Hóa Đơn VAT</h3>
-              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-                Theo dõi tiến độ chế bản, xuất hóa đơn điện tử CQT và quản lý bản quyền CAD.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-xs font-semibold text-[#122e20] group-hover:translate-x-1 transition-transform">
-              <span>Tra Cứu Đơn Hàng</span>
-              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-            </div>
-          </Link>
-
-          {/* Card 4: Specs CAD */}
-          <Link
-            href="/dashboard/specs"
-            className="group p-6 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-soft hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-700 mb-4 group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[24px]">architecture</span>
-              </div>
-              <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#122e20]">
-                Quy Chuẩn CAD &amp; Caliper
-              </h3>
-              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-                Bảng thông số bù co giãn nếp gấp, độ dày Caliper và tiêu chuẩn dao bế FEFCO.
-              </p>
-            </div>
-            <div className="mt-6 flex items-center justify-between text-xs font-semibold text-[#122e20] group-hover:translate-x-1 transition-transform">
-              <span>Xem Quy Chuẩn Kỹ Thuật</span>
-              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-            </div>
-          </Link>
-        </section>
-
-        {/* 5. Companion Mascot Copilot Bar */}
-        <section className="bg-white rounded-3xl p-5 border border-[#e8ded0]/80 shadow-soft flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200/60 p-1 flex items-center justify-center shrink-0">
-              {/* The Stitch image of the mascot has expired: the app's own Gói. */}
-              <GoiMascot pose="chilling" size={40} interactive={false} label="Bé Gói WrapFit Copilot" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs text-[#122e20]">Bé Gói AI Packaging Copilot</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
-                  Tự động kiểm định
-                </span>
-              </div>
-              <p className="text-xs text-stone-500 mt-0.5">
-                Các bản vẽ trong kho đồ án của bạn luôn được tiền kiểm tự động: Vùng an toàn &ge; 3mm, Bleed bù xén &ge;
-                2mm, đảm bảo không lỗi khi lên máy bế!
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/support"
-              className="min-h-[44px] px-4 py-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[16px]">help</span>
-              <span>Trợ Giúp CAD</span>
-            </Link>
-            <Link
-              href={ROUTES.editorNew}
-              className="min-h-[44px] px-4 py-2 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-xs font-semibold transition-colors flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
-              <span>Bắt Đầu Ngay</span>
-            </Link>
-          </div>
-        </section>
-      </main>
-
-      {/* 6. Unified Footer */}
-      <MainFooter />
-    </div>
+        <Panel aria-labelledby="shortcuts-title">
+          <PanelTitle id="shortcuts-title">Lối tắt</PanelTitle>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {SHORTCUTS.map((shortcut) => (
+              <li key={shortcut.href}>
+                <Link href={shortcut.href} className="group flex h-full flex-col gap-1 rounded-xl bg-library-panel p-4 transition-colors hover:bg-library-accent-mist">
+                  <span className="flex items-center justify-between text-base font-medium text-library-ink">
+                    {shortcut.title}
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  </span>
+                  <span className="text-sm text-library-sub">{shortcut.text}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
+    </WorkspaceShell>
   );
 }

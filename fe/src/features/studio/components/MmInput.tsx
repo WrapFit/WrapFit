@@ -45,7 +45,7 @@ export function MmInput({
         onKeyDown={(e) => {
           if (e.key === "Enter") commit();
         }}
-        className="w-20 min-h-[36px] px-2 py-1 text-right font-mono font-bold text-brand-forest text-sm bg-stone-100 border border-transparent rounded-lg focus:outline-none focus:border-vibrant-cobalt focus:bg-white"
+        className="w-20 min-h-[36px] px-2 py-1 text-right font-mono font-bold text-brand-forest text-sm bg-stone-100 border border-transparent rounded-lg focus:outline-none focus:border-library-accent focus:bg-white"
       />
       <span className="font-mono text-[11px] text-stone-500">mm</span>
     </span>

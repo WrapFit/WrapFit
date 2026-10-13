@@ -423,14 +423,14 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
   return (
     <div
-      className={`relative w-full h-full ${minHeight ? "min-h-[460px]" : ""} overflow-hidden ${frameless ? "" : "rounded-squircle-lg bg-paper-ivory border border-stone-200 shadow-tactile"} ${className}`}
+      className={`relative w-full h-full ${minHeight ? "min-h-[460px]" : ""} overflow-hidden ${frameless ? "" : "rounded-squircle-lg bg-library-panel border border-stone-200 shadow-tactile"} ${className}`}
     >
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Floating 3D Interaction HUD */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
         <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-stone-200 text-xs font-semibold text-brand-forest shadow-tactile">
-          <Eye className="w-3.5 h-3.5 text-vibrant-cobalt" />
+          <Eye className="w-3.5 h-3.5 text-library-accent" />
           <span>
             {boxType === "sleeve-drawer"
               ? "Hộp Bao Diêm (Khay Rút)"
@@ -468,7 +468,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           }}
           className={`px-3 py-1.5 rounded-full text-xs font-semibold transition border shadow-tactile flex items-center gap-1.5 ${
             interactiveOpenState
-              ? "bg-vibrant-cobalt text-white border-vibrant-cobalt shadow-cobalt-glow"
+              ? "bg-library-accent text-white border-library-accent shadow-cobalt-glow"
               : "bg-white/95 text-stone-700 hover:bg-white border-stone-200"
           }`}
         >
@@ -495,7 +495,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         <div className="flex items-center gap-3">
           <span className="font-semibold text-brand-forest">
             Trạng thái:{" "}
-            <span className="font-mono text-vibrant-cobalt font-bold">
+            <span className="font-mono text-library-accent font-bold">
               {Math.round(foldProgress * 100)}%
             </span>
           </span>

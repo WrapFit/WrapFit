@@ -1,174 +1,60 @@
 'use client';
 
+/** `/admin/ledger`: payment transactions. No billing API yet: example rows (SampleScreen). */
+
 import React from 'react';
-import { AdminSidebarNav } from '@/components/layout';
-import Link from 'next/link';
+import { Badge } from '@/components/workspace';
+import { formatUsd } from '@/features/pricing';
+import { SampleScreen } from '@/views/admin/shared/SampleScreen';
 
-export default function Page() {
+interface Transaction {
+  id: string;
+  date: string;
+  customer: string;
+  item: string;
+  method: string;
+  amount: number;
+  state: 'paid' | 'pending' | 'refunded';
+}
+
+const ROWS: Transaction[] = [
+  { id: 'WF-24081', date: '13/10/2026 09:42', customer: 'Tiệm nến Mộc', item: 'Starter · tháng', method: 'Thẻ quốc tế', amount: 29, state: 'paid' },
+  { id: 'WF-24080', date: '13/10/2026 08:15', customer: 'Bạc Hà Jewelry', item: 'Pro Business · năm', method: 'Chuyển khoản', amount: 948, state: 'pending' },
+  { id: 'WF-24079', date: '12/10/2026 21:03', customer: 'Minh Khoa Studio', item: 'Starter · năm', method: 'Ví MoMo', amount: 288, state: 'paid' },
+  { id: 'WF-24078', date: '12/10/2026 16:27', customer: 'Trà Shan Hà Giang', item: 'Starter · tháng', method: 'Thẻ quốc tế', amount: 29, state: 'refunded' },
+  { id: 'WF-24077', date: '11/10/2026 10:50', customer: 'Bánh quy Bơ Nhà Làm', item: 'Pro Business · tháng', method: 'Thẻ quốc tế', amount: 99, state: 'paid' },
+];
+
+const STATE = {
+  paid: { tone: 'green', label: 'Đã thanh toán' },
+  pending: { tone: 'amber', label: 'Chờ đối soát' },
+  refunded: { tone: 'grey', label: 'Đã hoàn tiền' },
+} as const;
+
+export default function AdminLedgerPage() {
   return (
-    <div className="bg-[#fff8f5] font-['Plus_Jakarta_Sans'] text-[#1b1c18] antialiased min-h-screen">
-      {/* Sidebar Navigation */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-[#f7f2ef] z-50 flex flex-col justify-between py-6 px-4 shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-r border-[#e8ded0]/50">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-3 px-3">
-            <div className="w-10 h-10 rounded-xl bg-[#122e20] flex items-center justify-center text-white shadow-sm">
-              <span className="material-symbols-outlined text-2xl">deployed_code</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-['Playfair_Display'] text-xl text-[#122e20] tracking-tight font-bold">WrapFit</span>
-                <span className="px-1.5 py-0.5 rounded bg-[#486458]/15 text-[#122e20] font-['JetBrains_Mono'] text-[10px] uppercase font-semibold">PRO CAD</span>
-              </div>
-              <span className="font-['JetBrains_Mono'] text-[10px] text-[#717971] uppercase tracking-wider block">Admin Engine v4.2</span>
-            </div>
-          </div>
-          <div className="px-3">
-            <div className="p-2.5 rounded-xl bg-white flex items-center justify-between shadow-[0_1px_3px_rgba(28,25,23,0.04)] border border-[#e8ded0]/60">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#122e20] animate-pulse"></span>
-                <span className="text-xs font-semibold text-[#1b1c18]">12/12 Cụm In Online</span>
-              </div>
-              <span className="font-['JetBrains_Mono'] text-xs text-[#486458] font-semibold">100%</span>
-            </div>
-          </div>
-          <AdminSidebarNav />
-        </div>
-
-        <div className="pt-4 border-t border-[#e8ded0]/60 flex items-center gap-3 px-3">
-          <div className="w-9 h-9 rounded-full bg-[#122e20] text-white flex items-center justify-center font-bold text-sm">EV</div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-[#1b1c18] truncate">Elena Vance</p>
-            <p className="text-xs text-[#717971] truncate">Lead CAD Architect</p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content Pane */}
-      <main className="ml-72 min-h-screen p-8 lg:p-10 max-w-[1920px]">
-        {/* Top Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between pb-6 mb-8 border-b border-[#e8ded0]/60 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#486458]/15 text-[#122e20] font-['JetBrains_Mono'] text-xs font-semibold uppercase tracking-wider">FINANCE & LEDGER</span>
-              <span className="text-xs text-[#717971] font-['JetBrains_Mono']">BUILD 2026.10</span>
-            </div>
-            <h1 className="font-['Playfair_Display'] text-3xl font-bold text-[#122e20]">Sổ Cái Giao Dịch & Đối Soát Quyết Toán</h1>
-            <p className="text-sm text-[#525a54] mt-0.5">Theo dõi dòng tiền mua bản quyền dieline, quyết toán xưởng in OEM và xuất hóa đơn VAT điện tử CQT</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="px-4 py-2 rounded-xl bg-white text-[#1b1c18] border border-[#e8ded0] text-xs font-semibold shadow-xs hover:bg-[#f7f2ef] transition-colors">
-              Về User Dashboard
-            </Link>
-            <button className="px-4 py-2 rounded-xl bg-[#122e20] text-white text-xs font-semibold shadow-sm hover:bg-[#1a382b] transition-all flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-base">refresh</span>
-              <span>Đồng Bộ Dữ Liệu</span>
-            </button>
-          </div>
-        </header>
-
-        {/* Dynamic Screen Content */}
-        
-<div className="space-y-8">
-  {/* 4 Financial KPIs */}
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-    <div className="p-5 rounded-2xl bg-white border border-[#e8ded0]/80 shadow-[0_2px_8px_rgba(28,25,23,0.03)]">
-      <span className="text-xs font-semibold text-[#717971] uppercase tracking-wider block mb-1">Tổng Doanh Thu Tháng</span>
-      <p className="font-['Playfair_Display'] text-3xl font-bold text-[#122e20]">482.500.000 VNĐ</p>
-      <p className="text-xs text-emerald-700 mt-1 font-['JetBrains_Mono']">+18.4% so với chu kỳ trước</p>
-    </div>
-    <div className="p-5 rounded-2xl bg-white border border-[#e8ded0]/80 shadow-[0_2px_8px_rgba(28,25,23,0.03)]">
-      <span className="text-xs font-semibold text-[#717971] uppercase tracking-wider block mb-1">Quyết Toán OEM / Creators</span>
-      <p className="font-['Playfair_Display'] text-3xl font-bold text-[#2563eb]">115.800.000 VNĐ</p>
-      <p className="text-xs text-[#525a54] mt-1 font-['JetBrains_Mono']">Đã đối soát 92% qua Napas</p>
-    </div>
-    <div className="p-5 rounded-2xl bg-white border border-[#e8ded0]/80 shadow-[0_2px_8px_rgba(28,25,23,0.03)]">
-      <span className="text-xs font-semibold text-[#717971] uppercase tracking-wider block mb-1">Hóa Đơn VAT Điện Tử</span>
-      <p className="font-['Playfair_Display'] text-3xl font-bold text-[#122e20]">348 Hóa Đơn</p>
-      <p className="text-xs text-emerald-700 mt-1 font-['JetBrains_Mono']">100% đồng bộ CQT có mã</p>
-    </div>
-    <div className="p-5 rounded-2xl bg-white border border-[#e8ded0]/80 shadow-[0_2px_8px_rgba(28,25,23,0.03)]">
-      <span className="text-xs font-semibold text-[#717971] uppercase tracking-wider block mb-1">Tỷ Lệ Hoàn Tiền (Refund)</span>
-      <p className="font-['Playfair_Display'] text-3xl font-bold text-emerald-700">0.12%</p>
-      <p className="text-xs text-[#486458] mt-1 font-['JetBrains_Mono']">Rất an toàn &lt; 1% ngưỡng báo động</p>
-    </div>
-  </div>
-
-  {/* Transaction Ledger Table */}
-  <div className="p-6 lg:p-8 rounded-3xl bg-white border border-[#e8ded0]/80 shadow-[0_2px_14px_rgba(28,25,23,0.04)] space-y-6">
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e8ded0]/60">
-      <div>
-        <h3 className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20]">Sổ Cái Giao Dịch Chi Tiết</h3>
-        <p className="text-xs text-[#717971] font-['JetBrains_Mono']">Tháng Này • 01/10/2026 - 31/10/2026 • VAT 8% Nghị định 44</p>
-      </div>
-      <div className="flex items-center gap-2">
-        <button className="px-3 py-1.5 rounded-xl bg-[#f7f2ef] hover:bg-[#e8ded0] text-xs font-semibold transition-colors">Xuất Excel Đối Soát</button>
-        <button className="px-3 py-1.5 rounded-xl bg-[#122e20] text-white text-xs font-semibold hover:bg-[#1a382b] transition-colors">Tải Bảng Kê Thuế GTGT</button>
-      </div>
-    </div>
-
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-[#e8ded0]/80 text-[#717971] font-['JetBrains_Mono'] text-xs uppercase tracking-wider">
-            <th className="py-3 px-4">Mã GD &amp; Thời Gian</th>
-            <th className="py-3 px-4">Khách Hàng / Đơn Vị</th>
-            <th className="py-3 px-4">Tài Nguyên / Dịch Vụ</th>
-            <th className="py-3 px-4">Cổng TT</th>
-            <th className="py-3 px-4">Số Tiền</th>
-            <th className="py-3 px-4">Chia Sẻ OEM (70/30)</th>
-            <th className="py-3 px-4">Trạng Thái</th>
-            <th className="py-3 px-4">Mã CQT</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#e8ded0]/50 text-sm">
-          <tr>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs font-bold text-[#2563eb]">#TX-98421 <span className="block font-normal text-[#717971]">10:24 Hôm nay</span></td>
-            <td className="py-3.5 px-4 font-semibold text-[#122e20]">Maison de Luxe Ltd</td>
-            <td className="py-3.5 px-4 text-xs text-[#525a54]">500 Hộp Quà Nam Châm Ép Kim</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs">VNPay QR</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] font-bold text-[#122e20]">12.850.000 VNĐ</td>
-            <td className="py-3.5 px-4 text-xs text-[#486458]">OEM Tân Giang (8.995.000 VNĐ)</td>
-            <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">Đã Quyết Toán</span></td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs text-[#717971]">CQT-2605-VAT-901</td>
-          </tr>
-          <tr>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs font-bold text-[#2563eb]">#TX-98418 <span className="block font-normal text-[#717971]">09:15 Hôm nay</span></td>
-            <td className="py-3.5 px-4 font-semibold text-[#122e20]">Elena Vance</td>
-            <td className="py-3.5 px-4 text-xs text-[#525a54]">Gia hạn Gói Solo Pro 1 Năm</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs">Stripe (••• 4242)</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] font-bold text-[#122e20]">1.890.000 VNĐ</td>
-            <td className="py-3.5 px-4 text-xs text-[#717971]">Doanh thu hệ thống (100%)</td>
-            <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">Đã Khấu Trừ</span></td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs text-[#717971]">CQT-2605-VAT-898</td>
-          </tr>
-          <tr>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs font-bold text-[#2563eb]">#TX-98402 <span className="block font-normal text-[#717971]">16:40 Hôm qua</span></td>
-            <td className="py-3.5 px-4 font-semibold text-[#122e20]">Kiri Atelier</td>
-            <td className="py-3.5 px-4 text-xs text-[#525a54]">Bản quyền Dieline FEFCO 0215 v2</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs">Napas 247</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] font-bold text-[#122e20]">499.000 VNĐ</td>
-            <td className="py-3.5 px-4 text-xs text-[#486458]">Creator Minh Long (349.300 VNĐ)</td>
-            <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold font-['JetBrains_Mono']">Chờ Đối Soát Batch</span></td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs text-[#717971]">CQT-2605-VAT-884</td>
-          </tr>
-          <tr>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs font-bold text-[#2563eb]">#TX-98390 <span className="block font-normal text-[#717971]">14:10 Hôm qua</span></td>
-            <td className="py-3.5 px-4 font-semibold text-[#122e20]">Dong Phat Kraft Print</td>
-            <td className="py-3.5 px-4 text-xs text-[#525a54]">Cấp phép 5 Máy CNC Zünd</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs">Chuyển khoản</td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] font-bold text-[#122e20]">45.000.000 VNĐ</td>
-            <td className="py-3.5 px-4 text-xs text-[#717971]">OEM License Enterprise</td>
-            <td className="py-3.5 px-4"><span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">Đã Quyết Toán</span></td>
-            <td className="py-3.5 px-4 font-['JetBrains_Mono'] text-xs text-[#717971]">CQT-2605-VAT-872</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-      </main>
-    </div>
+    <SampleScreen<Transaction>
+      title="Sổ giao dịch"
+      description="Các khoản thanh toán gói dịch vụ và trạng thái đối soát."
+      note="Chưa có cổng thanh toán nên chưa có giao dịch thật. Các dòng dưới đây là ví dụ, theo giá gói hiện hành."
+      stats={[
+        { label: 'Giao dịch tháng này', value: '312' },
+        { label: 'Chờ đối soát', value: '4' },
+        { label: 'Hoàn tiền', value: '2' },
+        { label: 'Tỉ lệ thành công', value: '98,1%' },
+      ]}
+      tableTitle="Giao dịch gần đây"
+      rows={ROWS}
+      rowKey={(row) => row.id}
+      columns={[
+        { key: 'id', label: 'Mã', render: (row) => <span className="font-mono text-xs">{row.id}</span> },
+        { key: 'date', label: 'Thời gian', render: (row) => <span className="whitespace-nowrap">{row.date}</span> },
+        { key: 'customer', label: 'Khách hàng', render: (row) => row.customer },
+        { key: 'item', label: 'Gói', render: (row) => row.item },
+        { key: 'method', label: 'Phương thức', render: (row) => row.method },
+        { key: 'amount', label: 'Số tiền', align: 'right', render: (row) => <span className="font-medium">{formatUsd(row.amount)}</span> },
+        { key: 'state', label: 'Trạng thái', align: 'right', render: (row) => <Badge tone={STATE[row.state].tone}>{STATE[row.state].label}</Badge> },
+      ]}
+    />
   );
 }

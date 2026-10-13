@@ -2,9 +2,7 @@
 
 import React from "react";
 import {
-  Ruler,
   Layers,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   ShieldCheck,
@@ -13,10 +11,12 @@ import {
   Check,
   Info,
 } from "lucide-react";
-import { BoxDimensions, caliperOf, CURRENT_FORMULA_VERSION, FitCheckReport } from "@wrapfit/shared";
+import { BoxDimensions, CURRENT_FORMULA_VERSION, FitCheckReport } from "@wrapfit/shared";
 
 import { GoiMascot } from "@/components/common/GoiMascot";
 import type { DimensionLimits } from "@/types/api";
+import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
+import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
 import { MmInput } from "./MmInput";
 import {
   clampDimension,
@@ -25,82 +25,14 @@ import {
   type DimensionField,
 } from "@/features/studio/utils/dieline";
 
-interface GiftPreset {
-  id: string;
-  name: string;
-  category: string;
-  dims: { length: number; width: number; height: number; paperThickness: number };
-}
-
-const GIFT_PRESETS: GiftPreset[] = [
-  {
-    id: "candle",
-    name: "Hũ Nến Thơm Gỗ Thông",
-    category: "Home & Craft",
-    dims: { length: 85, width: 85, height: 105, paperThickness: 0.45 },
-  },
-  {
-    id: "perfume",
-    name: "Chai Nước Hoa 50ml",
-    category: "Cosmetics",
-    dims: { length: 65, width: 40, height: 120, paperThickness: 0.42 },
-  },
-  {
-    id: "jewelry",
-    name: "Hộp Vòng Tay / Dây Chuyền",
-    category: "Luxury",
-    dims: { length: 100, width: 100, height: 60, paperThickness: 0.5 },
-  },
-  {
-    id: "lipstick",
-    name: "Thỏi Son Môi Handmade",
-    category: "Beauty",
-    dims: { length: 28, width: 28, height: 88, paperThickness: 0.35 },
-  },
-  {
-    id: "ceramic_mug",
-    name: "Cốc Gốm Mộc & Trà Hoa",
-    category: "Artisan",
-    dims: { length: 95, width: 95, height: 105, paperThickness: 0.48 },
-  },
-  {
-    id: "macaron",
-    name: "Hộp 6 Bánh Macaron",
-    category: "Pastry",
-    dims: { length: 180, width: 55, height: 50, paperThickness: 0.4 },
-  },
-];
-
-const PAPER_MATERIALS = [
-  {
-    id: "ivory",
-    name: "Giấy Ivory Mộc 300 GSM",
-    finish: "Cán Mờ Tự Nhiên",
-    desc: "Mặt giấy đanh trắng ngà, bắt mực in rực rỡ, độ cứng tiêu chuẩn cho bán lẻ.",
-    caliper: caliperOf(300),
-  },
-  {
-    id: "kraft",
-    name: "Giấy Kraft Linen 300 GSM",
-    finish: "Mộc Thủ Công",
-    desc: "Màu nâu kraft mộc mạc ấm áp, 100% tái chế thân thiện môi trường.",
-    caliper: caliperOf(300),
-  },
-  {
-    id: "forest",
-    name: "Giấy Duplex Cao Cấp 350 GSM",
-    finish: "Phủ Màng Nhung Soft-Touch",
-    desc: "Dày dặn, bề mặt êm ái như nhung lụa, chống trầy xước.",
-    caliper: caliperOf(350),
-  },
-  {
-    id: "gold_foil",
-    name: "Carton Lạnh Bồi Mỹ Thuật 400 GSM",
-    finish: "Ép Kim Vàng Champagne",
-    desc: "Khối lượng đầm tay, nắp cứng cáp tuyệt đối, dành riêng cho quà VIP.",
-    caliper: caliperOf(400),
-  },
-];
+/** Paper stocks of the editor (same list as the materials page). */
+const PAPER_MATERIALS = PAPER_STOCKS.map((paper) => ({
+  id: paper.theme,
+  name: paper.name,
+  finish: paper.finishLabel,
+  desc: paper.description,
+  caliper: paper.spec.caliper,
+}));
 
 /** Slider ranges when the structure has no limits (offline demo). */
 const DEFAULT_RANGES: Record<DimensionField, { min: number; max: number }> = {
@@ -186,22 +118,17 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const addsThickness = formulaVersion >= 3;
 
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
+    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-10">
       {/* Heading */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-brand-forest">
-          <Ruler className="w-3.5 h-3.5" />
-          <span>Bước 2: Cấu Hình Kích Thước & Vật Liệu Giấy</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-brand-forest">
-          Đo Kích Thước Món Quà Chuẩn CAD (mm)
-        </h1>
-        <p className="text-sm text-stone-600 leading-relaxed">
+      <div className="max-w-2xl">
+        <p className="text-sm font-medium text-library-accent">Bước 2 · Kích thước & giấy</p>
+        <h1 className="mt-1 font-landing-heading text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">Kích thước món quà (mm)</h1>
+        <p className="mt-1.5 text-base leading-[1.6] text-library-sub">
           Kích thước được tính theo lọt lòng của hộp.{" "}
           {addsThickness ? (
             <>
               Phôi tự cộng độ dày giấy{" "}
-              <span className="font-mono font-bold text-vibrant-cobalt">+{dimensions.paperThickness} mm</span> vào
+              <span className="font-mono font-bold text-library-accent">+{dimensions.paperThickness} mm</span> vào
               mỗi mặt để quà vừa vặn, nắp đóng êm không bị cấn.
             </>
           ) : (
@@ -217,7 +144,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           <div className="bg-white p-5 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-vibrant-cobalt" />
+                <Gift className="w-3.5 h-3.5 text-library-accent" />
                 Món Quà Mẫu Chuẩn Sẵn (1-Click Preset)
               </span>
               <span className="text-[11px] text-stone-500 font-mono">Đo chuẩn theo quà</span>
@@ -240,7 +167,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                     onClick={() => applyPreset(gp)}
                     className={`p-3 rounded-squircle text-left border transition-all flex flex-col justify-between disabled:cursor-not-allowed disabled:opacity-45 ${
                       isMatch
-                        ? "border-vibrant-cobalt bg-blue-50/70 text-vibrant-cobalt shadow-sm ring-2 ring-blue-500/20"
+                        ? "border-library-accent bg-library-accent-mist/70 text-library-accent shadow-sm ring-2 ring-library-accent/20"
                         : "border-stone-200 hover:border-stone-300 bg-stone-50/50 hover:bg-white text-stone-700"
                     }`}
                   >
@@ -310,7 +237,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   <Layers className="w-3.5 h-3.5 text-stone-400" />
                   Độ Dày Giấy (Caliper - t)
                 </span>
-                <span className="font-mono font-bold text-vibrant-cobalt text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                <span className="font-mono font-bold text-library-accent text-xs bg-library-accent-mist px-2 py-0.5 rounded border border-library-accent/30">
                   {dimensions.paperThickness} mm ({(dimensions.paperThickness * 1000).toFixed(0)}µm)
                 </span>
               </div>
@@ -322,7 +249,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 step={0.01}
                 value={dimensions.paperThickness}
                 onChange={(e) => updateThickness(Number(e.target.value))}
-                className="w-full accent-vibrant-cobalt cursor-pointer"
+                className="w-full accent-library-accent cursor-pointer"
               />
             </div>
           </div>
@@ -408,7 +335,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               </div>
               <div className="p-2.5 rounded-squircle bg-stone-50 border border-stone-100">
                 <span className="text-[10px] text-stone-400 block">Bù độ dày giấy (t) mỗi mặt:</span>
-                <span className="font-mono font-bold text-vibrant-cobalt text-xs">
+                <span className="font-mono font-bold text-library-accent text-xs">
                   {addsThickness ? `+${dimensions.paperThickness.toFixed(2)} mm` : "Không (công thức cũ)"}
                 </span>
               </div>
@@ -418,7 +345,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             <div className="flex items-center gap-3 p-3 rounded-squircle bg-[#FDFBF7] border border-[#E8D8C8]">
               <GoiMascot pose="measuring" size={44} />
               <div className="text-xs text-stone-600">
-                <span className="font-serif font-bold text-brand-forest block">
+                <span className="font-landing-heading font-bold text-brand-forest block">
                   Bé Gói thẩm định:
                 </span>
                 <span className="text-[11px] leading-snug block mt-0.5">
@@ -454,7 +381,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           type="button"
           onClick={onNext}
           disabled={busy || errors.length > 0}
-          className="w-full sm:w-auto min-h-[44px] px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto min-h-[44px] px-6 rounded-lg bg-library-lime hover:bg-[#AFEC88] text-library-lime-ink font-medium text-base flex items-center justify-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {busy ? (
             <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin motion-reduce:animate-none" />

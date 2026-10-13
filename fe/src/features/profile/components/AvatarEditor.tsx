@@ -1,14 +1,16 @@
 "use client";
 
+import { Camera, ImageOff } from "lucide-react";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useToast } from "@/components/common/Toast";
 import { displayName, initialsOf } from "@/components/layout/account";
 import { UPLOAD_RULES, formatBytes, showUploadError, uploadAccept, useFileUpload } from "@/features/dashboard";
 import type { SafeUser } from "@/types/api";
+import { cn } from "@/utils/helpers";
 import { useUpdateProfile } from "../useAccount";
 
 const BUTTON =
-  "min-h-[44px] px-4 rounded-full text-xs font-semibold transition-all flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-[#122e20]/40 disabled:opacity-60 disabled:cursor-wait";
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 disabled:cursor-wait disabled:opacity-60";
 
 /**
  * Profile photo with "Đổi ảnh" (upload purpose AVATAR, then `PATCH /users/me { avatarUrl }`) and "Gỡ ảnh"
@@ -76,12 +78,12 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
             alt={`Ảnh đại diện của ${name}`}
             referrerPolicy="no-referrer"
             onError={() => setFailedUrl(user.avatarUrl)}
-            className="w-24 h-24 rounded-full object-cover shadow-md ring-4 ring-white"
+            className="h-24 w-24 rounded-full border-[1.5px] border-library-ink object-cover"
           />
         ) : (
           <span
             aria-hidden="true"
-            className="w-24 h-24 rounded-full bg-[#122e20] text-white flex items-center justify-center font-bold text-3xl shadow-md ring-4 ring-white"
+            className="flex h-24 w-24 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-library-lime text-3xl font-medium text-library-lime-ink"
           >
             {initialsOf(name)}
           </span>
@@ -89,9 +91,9 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
         {busy && (
           <span
             role="status"
-            className="absolute inset-0 rounded-full bg-white/60 backdrop-blur-[2px] flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center rounded-full bg-white/70"
           >
-            <span className="h-7 w-7 animate-spin rounded-full border-2 border-stone-200 border-t-[#122e20] motion-reduce:animate-none" />
+            <span className="h-7 w-7 animate-spin rounded-full border-2 border-library-line border-t-library-accent motion-reduce:animate-none" />
             <span className="sr-only">{upload.isPending ? "Đang tải ảnh lên…" : "Đang lưu…"}</span>
           </span>
         )}
@@ -101,13 +103,13 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
         <label
           htmlFor={inputId}
           aria-disabled={busy}
-          className={`${BUTTON} relative bg-[#122e20] hover:bg-[#1a382b] text-white shadow-sm cursor-pointer focus-within:ring-2 focus-within:ring-[#122e20]/40 ${
-            busy ? "pointer-events-none opacity-60" : ""
-          }`}
+          className={cn(
+            BUTTON,
+            "relative cursor-pointer border-transparent bg-library-lime text-library-lime-ink hover:bg-[#AFEC88] focus-within:ring-[3px] focus-within:ring-library-accent/40",
+            busy && "pointer-events-none opacity-60",
+          )}
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-            photo_camera
-          </span>
+          <Camera className="size-4" aria-hidden />
           {user.avatarUrl ? "Đổi ảnh" : "Tải ảnh lên"}
           <input
             ref={inputRef}
@@ -124,16 +126,14 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
             type="button"
             onClick={remove}
             disabled={busy}
-            className={`${BUTTON} bg-white border border-[#e8ded0] text-stone-700 hover:bg-stone-50`}
+            className={cn(BUTTON, "border-library-ink bg-white text-library-ink hover:bg-library-panel")}
           >
-            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-              hide_image
-            </span>
+            <ImageOff className="size-4" aria-hidden />
             Gỡ ảnh
           </button>
         )}
       </div>
-      <p className="text-[11px] text-stone-500 font-['JetBrains_Mono'] text-center">
+      <p className="text-center text-xs text-library-muted">
         {UPLOAD_RULES.AVATAR.formats} · tối đa {formatBytes(UPLOAD_RULES.AVATAR.maxBytes)}
       </p>
     </div>

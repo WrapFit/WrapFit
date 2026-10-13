@@ -21,7 +21,7 @@ const VISIBILITIES: { value: ProjectVisibility; title: string; hint: string; ico
 ];
 
 const SELECT_CLASS =
-  "w-full min-h-[44px] px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 focus:outline-none focus:border-vibrant-cobalt";
+  "w-full min-h-[44px] px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 focus:outline-none focus:border-library-accent";
 
 interface ShareDialogProps {
   /** The project as the editor loaded it; the dialog reads newer values from the cache. */
@@ -116,7 +116,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
             <label
               key={option.value}
               className={`flex items-center gap-3 p-3 min-h-[56px] rounded-2xl border cursor-pointer transition ${
-                active ? "border-vibrant-cobalt bg-blue-50/60" : "border-stone-200 hover:border-stone-300"
+                active ? "border-library-accent bg-library-accent-mist/60" : "border-stone-200 hover:border-stone-300"
               }`}
             >
               <input
@@ -129,7 +129,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               />
               <span
                 className={`w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center ${
-                  active ? "bg-vibrant-cobalt text-white" : "bg-stone-100 text-stone-600"
+                  active ? "bg-library-accent text-white" : "bg-stone-100 text-stone-600"
                 }`}
               >
                 <Icon className="w-4 h-4" aria-hidden />
@@ -238,7 +238,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               type="button"
               disabled={!communityChanged || saving !== null}
               onClick={() => void saveCommunity()}
-              className="min-h-[44px] px-5 rounded-full bg-vibrant-cobalt hover:bg-blue-700 text-white text-sm font-semibold shadow-tactile transition disabled:opacity-50"
+              className="min-h-[44px] px-5 rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-sm font-semibold shadow-tactile transition disabled:opacity-50"
             >
               {saving === "community" ? "Đang lưu…" : "Lưu chủ đề"}
             </button>

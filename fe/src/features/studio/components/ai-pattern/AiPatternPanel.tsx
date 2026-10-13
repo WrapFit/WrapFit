@@ -111,7 +111,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-vibrant-cobalt" aria-hidden /> Hoa văn AI
+          <Sparkles className="w-3.5 h-3.5 text-library-accent" aria-hidden /> Hoa văn AI
         </span>
         {quota && (
           <span className={`text-[11px] font-mono ${exhausted ? "text-vibrant-coral-dark" : "text-stone-500"}`}>
@@ -131,7 +131,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
           maxLength={MAX_THEME}
           onChange={(event) => setTheme(event.target.value)}
           placeholder="Chủ đề, vd. Tết hoa mai"
-          className="w-full min-h-[44px] px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-vibrant-cobalt"
+          className="w-full min-h-[44px] px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-library-accent"
         />
         <div className="flex flex-wrap gap-1.5">
           {SUGGESTIONS.map((suggestion) => (
@@ -162,7 +162,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
         <button
           type="submit"
           disabled={!theme.trim() || generating || exhausted}
-          className="w-full min-h-[44px] rounded-full bg-vibrant-cobalt hover:bg-blue-700 text-white text-sm font-semibold shadow-tactile transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+          className="w-full min-h-[44px] rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-sm font-semibold shadow-tactile transition flex items-center justify-center gap-1.5 disabled:opacity-50"
         >
           <Wand2 className="w-4 h-4" aria-hidden />
           {generating ? "Đang tạo…" : exhausted ? "Hết lượt hôm nay" : "Tạo hoa văn"}

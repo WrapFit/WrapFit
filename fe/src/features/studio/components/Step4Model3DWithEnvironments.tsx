@@ -5,7 +5,6 @@ import {
   Box,
   Eye,
   Sliders,
-  Sparkles,
   Download,
   QrCode,
   ArrowLeft,
@@ -122,14 +121,9 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
       {/* Step Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-vibrant-cobalt">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Bước 4: Sân Khấu Mô Phỏng 3D & Phối Cảnh Thực Tế</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-brand-forest mt-1">
-            Trực Quan Hóa Hộp Quà Hoàn Chỉnh
-          </h1>
-          <p className="text-xs text-stone-500 font-mono mt-0.5">
+          <p className="text-sm font-medium text-library-accent">Bước 4 · Xem 3D</p>
+          <h1 className="mt-1 font-landing-heading text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">Hộp quà hoàn chỉnh</h1>
+          <p className="text-xs text-stone-500 font-mono mt-1">
             {dimensions.length}×{dimensions.width}×{dimensions.height} mm • Giấy:{" "}
             {activeMaterial.toUpperCase()} • Tỉ lệ 1:1
           </p>
@@ -155,7 +149,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
               
               onOpenExportModal();
             }}
-            className="px-5 py-2.5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile transition flex items-center gap-2 hover:scale-105 active:scale-95"
+            className="min-h-[40px] px-4 rounded-lg bg-library-lime hover:bg-[#AFEC88] text-library-lime-ink text-sm font-medium transition-colors flex items-center gap-2"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Xuất File In (PDF/SVG 300 DPI)</span>
@@ -171,8 +165,8 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
             {/* Box Type Badge */}
             <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-200 shadow-tactile text-xs">
-              <Box className="w-3.5 h-3.5 text-vibrant-cobalt" />
-              <span className="font-serif font-bold text-stone-800">
+              <Box className="w-3.5 h-3.5 text-library-accent" />
+              <span className="font-landing-heading font-bold text-stone-800">
                 {boxType === "tuck-top"
                   ? "Hộp Nắp Gài Đáy Khóa"
                   : boxType === "sleeve-drawer"
@@ -218,10 +212,10 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           <div className="p-4 bg-white border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5 whitespace-nowrap">
-                <Sliders className="w-3.5 h-3.5 text-vibrant-cobalt" />
+                <Sliders className="w-3.5 h-3.5 text-library-accent" />
                 Tiến Trình Gập 3D:
               </span>
-              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-vibrant-cobalt border border-blue-200">
+              <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-library-accent-mist text-library-accent border border-library-accent/30">
                 {Math.round(foldProgress * 100)}%
               </span>
               <span className="text-[11px] text-stone-500 hidden sm:inline">
@@ -243,7 +237,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
                 step={0.01}
                 value={foldProgress}
                 onChange={(e) => handleFoldChange(Number(e.target.value))}
-                className="w-full accent-vibrant-cobalt cursor-pointer"
+                className="w-full accent-library-accent cursor-pointer"
               />
               <span className="text-[10px] font-mono text-stone-400">100%</span>
             </div>
@@ -256,7 +250,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           <div className="bg-white p-5 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-vibrant-cobalt" />
+                <Palette className="w-3.5 h-3.5 text-library-accent" />
                 Phối Cảnh Môi Trường (5 Nền)
               </span>
               <span className="text-[10px] text-stone-400 font-mono">3D Scene</span>
@@ -276,7 +270,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
                     }}
                     className={`w-full p-3 rounded-squircle text-left border transition-all flex items-center justify-between ${
                       isSelected
-                        ? "border-vibrant-cobalt bg-blue-50/70 shadow-sm ring-2 ring-blue-500/20"
+                        ? "border-library-accent bg-library-accent-mist/70 shadow-sm ring-2 ring-library-accent/20"
                         : "border-stone-200 hover:border-stone-300 bg-stone-50/50 hover:bg-white"
                     }`}
                   >
@@ -295,7 +289,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
                     <span
                       className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
                         isSelected
-                          ? "bg-vibrant-cobalt text-white"
+                          ? "bg-library-accent text-white"
                           : "bg-stone-100 text-stone-600"
                       }`}
                     >
@@ -310,7 +304,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           {/* Virtual 3D QR Unboxing Card */}
           <div className="bg-white p-5 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-3">
             <div className="flex items-center gap-2 text-brand-forest">
-              <QrCode className="w-4 h-4 text-vibrant-cobalt" />
+              <QrCode className="w-4 h-4 text-library-accent" />
               <span className="text-xs font-bold uppercase tracking-wider">
                 Mã QR Mở Hộp Ảo 3D
               </span>
@@ -336,7 +330,7 @@ export const Step4Model3DWithEnvironments: React.FC<Step4Model3DWithEnvironments
           <div className="p-4 rounded-squircle-lg bg-[#FDFBF7] border border-[#E8D8C8] flex items-center gap-3">
             <GoiMascot pose="celebration" size={48} />
             <div className="text-xs text-stone-600">
-              <span className="font-serif font-bold text-brand-forest block">
+              <span className="font-landing-heading font-bold text-brand-forest block">
                 Bé Gói chúc mừng!
               </span>
               <span className="text-[11px] leading-snug block mt-0.5">
