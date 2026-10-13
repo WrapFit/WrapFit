@@ -1,17 +1,19 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { AlertTriangle, BadgeCheck, Link2Off, MailOpen } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useRef } from "react";
 import { verifyEmail } from "@/api/auth";
-import { ErrorState, PRIMARY_BUTTON } from "@/components/common/StatusViews";
 import { ROUTES } from "@/constants";
 import { isApiError } from "@/services/api";
 import {
-  AccountFrame,
   AccountLoading,
   AccountShell,
+  ApiErrorAlert,
+  PRIMARY_LINK,
+  SECONDARY_BUTTON,
   ResendSentNotice,
   ResendVerificationForm,
   TEXT_LINK,
@@ -24,7 +26,7 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <AccountShell pose="measuring" eyebrow="Xác nhận email" title="Đang xác nhận email">
+        <AccountShell icon={MailOpen} eyebrow="Xác nhận email" title="Đang xác nhận email">
           <AccountLoading label="Đang kiểm tra link…" />
         </AccountShell>
       }
@@ -60,12 +62,12 @@ function VerifyEmail({ token }: { token: string }) {
   if (verify.isSuccess) {
     return (
       <AccountShell
-        pose="celebration"
+        icon={BadgeCheck}
         eyebrow="Xác nhận email"
         title="Email đã được xác nhận"
         description="Tài khoản WrapFit của bạn đã sẵn sàng. Đăng nhập để bắt đầu thiết kế chiếc hộp đầu tiên."
       >
-        <Link href={`${ROUTES.login}?notice=email_verified`} className={`${PRIMARY_BUTTON} w-full`}>
+        <Link href={`${ROUTES.login}?notice=email_verified`} className={PRIMARY_LINK}>
           Đăng nhập
         </Link>
       </AccountShell>
@@ -80,19 +82,17 @@ function VerifyEmail({ token }: { token: string }) {
       return <VerifyLinkProblem problem="invalid" />;
     }
     return (
-      <AccountFrame>
-        <ErrorState
-          error={error}
-          title="Chưa xác nhận được email"
-          onRetry={() => mutate(token)}
-          retrying={verify.isPending}
-        />
-      </AccountFrame>
+      <AccountShell icon={AlertTriangle} tone="red" eyebrow="Xác nhận email" title="Chưa xác nhận được email">
+        <ApiErrorAlert error={error} />
+        <button type="button" onClick={() => mutate(token)} disabled={verify.isPending} className={`mt-4 ${SECONDARY_BUTTON}`}>
+          {verify.isPending ? "Đang thử lại…" : "Thử lại"}
+        </button>
+      </AccountShell>
     );
   }
 
   return (
-    <AccountShell pose="measuring" eyebrow="Xác nhận email" title="Đang xác nhận email">
+    <AccountShell icon={MailOpen} eyebrow="Xác nhận email" title="Đang xác nhận email">
       <AccountLoading label="Đang kiểm tra link…" />
     </AccountShell>
   );
@@ -114,7 +114,7 @@ function VerifyLinkProblem({ problem }: { problem: LinkProblem }) {
   const resend = useResendVerification();
   const { title, description } = PROBLEMS[problem];
   return (
-    <AccountShell pose="chilling" eyebrow="Xác nhận email" title={title} description={description}>
+    <AccountShell icon={Link2Off} tone="amber" eyebrow="Xác nhận email" title={title} description={description}>
       {resend.sentTo ? (
         <div className="space-y-3">
           <ResendSentNotice email={resend.sentTo} />

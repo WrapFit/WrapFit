@@ -5,20 +5,20 @@ import { ApiError, errorMessage } from "@/services/api";
 export type FormAlertTone = "error" | "success" | "info";
 
 const TONES: Record<FormAlertTone, { box: string; icon: string; Icon: typeof Info }> = {
-  // Coral marks the problem; the text stays dark ink so it keeps AA contrast on the tinted paper.
+  // The text stays dark ink so it keeps AA contrast on the tinted background.
   error: {
-    box: "border-vibrant-coral/40 bg-vibrant-coral/10 text-stone-800",
-    icon: "text-vibrant-coral-dark",
+    box: "border-red-200 bg-red-50 text-landing-ink",
+    icon: "text-red-600",
     Icon: AlertTriangle,
   },
   success: {
-    box: "border-brand-forest/20 bg-brand-forest/5 text-brand-forest",
-    icon: "text-brand-forest",
+    box: "border-landing-green/25 bg-landing-lime-mist text-landing-green-night",
+    icon: "text-landing-green",
     Icon: CheckCircle2,
   },
   info: {
-    box: "border-vibrant-cobalt/20 bg-vibrant-cobalt/5 text-stone-800",
-    icon: "text-vibrant-cobalt-dark",
+    box: "border-landing-line bg-white text-landing-ink",
+    icon: "text-landing-green",
     Icon: Info,
   },
 };
@@ -38,14 +38,14 @@ export function FormAlert({ tone = "error", title, children, requestId, classNam
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`flex gap-2.5 rounded-2xl border px-3.5 py-3 text-left text-xs leading-relaxed sm:text-[13px] ${box} ${className}`}
+      className={`flex gap-2.5 rounded-xl border px-4 py-3 text-left text-sm leading-6 ${box} ${className}`}
     >
       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${icon}`} aria-hidden />
       <div className="min-w-0">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div>{children}</div>}
         {requestId && (
-          <p className="mt-1 break-all font-mono text-[10px] uppercase tracking-wider opacity-75">
+          <p className="mt-1 break-all font-mono text-[11px] opacity-75">
             Mã lỗi · {requestId}
           </p>
         )}

@@ -120,7 +120,7 @@ export function ResendVerificationForm({
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-3.5">
+    <form onSubmit={onSubmit} noValidate className="space-y-4">
       <TextField
         id="resend-email"
         name="email"
