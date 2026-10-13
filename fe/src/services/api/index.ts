@@ -179,7 +179,8 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
 /** Vietnamese message for a failed call (docs/06, section 2). Validation errors keep the server's field messages. */
 export function errorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "Đã có lỗi xảy ra. Vui lòng thử lại.";
-  if (error.code) return CODE_MESSAGES[error.code];
+  // Codes without their own text (e.g. 429 LOGIN_RATE_LIMITED) fall back to the message of their status.
+  if (error.code && Object.prototype.hasOwnProperty.call(CODE_MESSAGES, error.code)) return CODE_MESSAGES[error.code];
   switch (error.status) {
     case 0:
       return "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
