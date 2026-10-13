@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import DashboardPage from '@/views/dashboard';
 
 export const metadata: Metadata = {
-  title: 'WrapFit Platform — Dashboard Quản Lý Toàn Diện',
+  title: 'Tổng quan — WrapFit',
   robots: { index: false },
 };
 

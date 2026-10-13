@@ -114,7 +114,7 @@ export function ProjectActionsMenu({ projectTitle, actions, disabled = false, cl
           role="menu"
           aria-label={`Thao tác với “${projectTitle}”`}
           onKeyDown={onMenuKeyDown}
-          className="absolute right-0 bottom-full mb-2 z-30 w-60 max-w-[calc(100vw-2rem)] p-1.5 rounded-xl bg-surface-container-lowest shadow-[0_12px_32px_-6px_rgba(28,25,23,0.18)] ring-1 ring-black/5 flex flex-col"
+          className="absolute right-0 bottom-full z-30 mb-2 flex w-60 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-library-ink bg-white p-1.5 font-landing-heading shadow-hard-sm"
         >
           {actions.map((action) => (
             <button
@@ -126,8 +126,8 @@ export function ProjectActionsMenu({ projectTitle, actions, disabled = false, cl
                 close(true);
                 action.onSelect();
               }}
-              className={`min-h-[44px] px-3 rounded-lg flex items-center gap-2.5 text-left font-label-ui text-label-ui transition-colors focus:outline-none focus-visible:bg-surface-container-low hover:bg-surface-container-low ${
-                action.tone === "danger" ? "text-error" : "text-on-surface"
+              className={`flex min-h-[44px] items-center gap-2.5 rounded-lg px-3 text-left text-sm transition-colors hover:bg-library-panel focus:outline-none focus-visible:bg-library-panel ${
+                action.tone === "danger" ? "text-red-700" : "text-library-ink"
               }`}
             >
               <span aria-hidden="true" className="material-symbols-outlined text-lg">
