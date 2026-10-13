@@ -85,8 +85,8 @@ export const PLAN_COPY: PlanCopy[] = [
   },
 ];
 
-/** Where the button of a paid plan leads (the checkout screens). */
-export const CHECKOUT_HREF = "/checkout/step-1";
+/** Where the button of a paid plan leads: the checkout, with the plan chosen. */
+export const checkoutHref = (tier: SubscriptionTier) => `/checkout/step-1?plan=${tier}`;
 
 export const FAQ: { question: string; answer: string }[] = [
   {

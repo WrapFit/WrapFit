@@ -9,7 +9,7 @@ import { formatBytes, usagePercent, useAiUsage, useStorageUsage } from "@/featur
 import { PLANS, PLAN_ORDER } from "@/features/pricing";
 import type { SubscriptionTier } from "@/types/api";
 import { cn } from "@/utils/helpers";
-import { CHECKOUT_HREF, PLAN_COPY, type PlanCopy } from "./content";
+import { PLAN_COPY, checkoutHref, type PlanCopy } from "./content";
 
 /** The three plans side by side (a carousel on small screens), with the visitor's own plan marked. */
 export function PlanCards() {
@@ -123,7 +123,7 @@ function PlanAction({
   }
   // Checkout needs an account: a visitor signs in first and comes back to it.
   return (
-    <Link href={anonymous ? loginUrl(CHECKOUT_HREF) : CHECKOUT_HREF} className={button}>
+    <Link href={anonymous ? loginUrl(checkoutHref(plan.tier)) : checkoutHref(plan.tier)} className={button}>
       {plan.cta}
     </Link>
   );
