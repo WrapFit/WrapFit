@@ -44,7 +44,7 @@ export default function UnboxView({ slug }: { slug: string }) {
   } else if (!unboxing.data) {
     content = (
       <div role="status" className="flex flex-col items-center gap-4 py-24">
-        <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-brand-gold motion-reduce:animate-none" />
+        <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-landing-lime motion-reduce:animate-none" />
         <span className="font-mono text-xs uppercase tracking-wider text-stone-300">Đang chuẩn bị hộp quà…</span>
       </div>
     );
@@ -128,11 +128,11 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
 
       <div className="flex w-full flex-col items-center gap-6">
         <div className="space-y-3 text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-brand-gold/40 bg-brand-gold/15 px-3.5 py-1 text-xs font-semibold text-brand-gold">
+          <p className="inline-flex items-center gap-2 rounded-full border border-landing-lime/40 bg-landing-lime/15 px-3.5 py-1 text-xs font-semibold text-landing-lime">
             <Gift className="h-3.5 w-3.5" aria-hidden />
             Món quà dành riêng cho bạn
           </p>
-          <h1 className="font-serif text-[32px] font-bold leading-tight tracking-tight text-white sm:text-5xl">
+          <h1 className="font-landing-heading text-[32px] font-bold leading-tight tracking-tight text-white sm:text-5xl">
             Gửi {gift.recipientName}
           </h1>
           <p className="mx-auto max-w-md text-sm text-stone-300">
@@ -156,12 +156,12 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
               type="button"
               onClick={openBox}
               aria-label="Mở hộp quà"
-              className="group absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 rounded-squircle-lg bg-black/30 backdrop-blur-[2px] transition hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+              className="group absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 rounded-squircle-lg bg-black/30 backdrop-blur-[2px] transition hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-lime"
             >
               <span className="transition-transform group-hover:scale-105 motion-reduce:transition-none">
                 <GoiMascot pose={pose} size={92} interactive={false} enableTracking={false} showPhotoBadge={false} />
               </span>
-              <span className="rounded-full border border-white/20 bg-stone-900/90 px-5 py-2.5 font-serif text-base font-bold tracking-wide text-white shadow-tactile">
+              <span className="rounded-full border border-white/20 bg-stone-900/90 px-5 py-2.5 font-landing-heading text-base font-bold tracking-wide text-white shadow-tactile">
                 Chạm để mở hộp quà
               </span>
             </button>
@@ -178,18 +178,18 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
             tabIndex={-1}
             aria-labelledby="gift-note-title"
             style={{ opacity: reducedMotion ? 1 : 0 }}
-            className="w-full max-w-md rounded-squircle-xl border-2 border-brand-gold bg-paper-cotton p-6 text-stone-900 shadow-tactile-lg focus:outline-none"
+            className="w-full max-w-md rounded-squircle-xl border-2 border-landing-lime bg-paper-cotton p-6 text-stone-900 shadow-tactile-lg focus:outline-none"
           >
             <div className="flex items-center gap-3 border-b border-paper-kraft pb-3">
               <GoiMascot pose={pose} size={44} showPhotoBadge={false} />
               <div>
-                <h2 id="gift-note-title" className="font-serif text-lg font-bold text-brand-forest">
+                <h2 id="gift-note-title" className="font-landing-heading text-lg font-bold text-landing-green-deep">
                   Lời chúc từ {sender}
                 </h2>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-stone-500">Hộp quà WrapFit</p>
               </div>
             </div>
-            <p className="mt-4 whitespace-pre-line break-words rounded-squircle border border-paper-kraft bg-white/70 p-4 font-serif text-[15px] italic leading-relaxed text-stone-800">
+            <p className="mt-4 whitespace-pre-line break-words rounded-squircle border border-paper-kraft bg-white/70 p-4 font-landing-heading text-[15px] italic leading-relaxed text-stone-800">
               {gift.giftNote}
             </p>
             <div className="mt-4 flex items-center justify-end gap-2 text-sm text-stone-600">
@@ -217,7 +217,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
               aria-pressed={musicOn}
               className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
             >
-              {musicOn ? <Music2 className="h-4 w-4 text-brand-gold" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
+              {musicOn ? <Music2 className="h-4 w-4 text-landing-lime" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
               {musicOn ? "Tắt nhạc" : "Bật nhạc"}
             </button>
           )}
@@ -234,11 +234,11 @@ function ExpiredCode() {
       <div className="mb-4 flex justify-center">
         <GoiMascot pose="chilling" size={88} showPhotoBadge={false} enableTracking={false} />
       </div>
-      <p className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand-gold">
+      <p className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-landing-lime">
         <QrCode className="h-3.5 w-3.5" aria-hidden />
         Mở hộp qua mã QR
       </p>
-      <h1 className="mt-2 font-serif text-[28px] leading-tight tracking-tight text-white">Mã QR không còn hiệu lực</h1>
+      <h1 className="mt-2 font-landing-heading text-[28px] leading-tight tracking-tight text-white">Mã QR không còn hiệu lực</h1>
       <p className="mt-3 text-sm leading-relaxed text-stone-300">
         Hộp quà gắn với mã này đã bị gỡ hoặc chưa từng tồn tại. Hãy hỏi người gửi một liên kết mới.
       </p>
