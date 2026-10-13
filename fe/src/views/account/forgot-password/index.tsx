@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { KeyRound, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
@@ -25,7 +26,7 @@ export default function ForgotPasswordPage() {
   return (
     <Suspense
       fallback={
-        <AccountShell pose="thumbs_up" eyebrow="Mật khẩu" title={TITLE}>
+        <AccountShell icon={KeyRound} eyebrow="Mật khẩu" title={TITLE}>
           <AccountLoading />
         </AccountShell>
       }
@@ -48,19 +49,19 @@ function ForgotPassword({ initialEmail }: { initialEmail: string }) {
   if (request.isSuccess) {
     const sentTo = request.variables;
     return (
-      <AccountShell pose="delivery" eyebrow="Mật khẩu" title="Kiểm tra hộp thư">
+      <AccountShell icon={MailCheck} eyebrow="Mật khẩu" title="Kiểm tra hộp thư">
         <FormAlert tone="success">
           Nếu email <strong className="break-all font-semibold">{sentTo}</strong> có tài khoản, chúng tôi đã gửi link
           đặt lại mật khẩu. Link có hiệu lực 30 phút.
         </FormAlert>
-        <p className="mt-4 text-center text-[13px] leading-relaxed text-stone-600">
+        <p className="mt-4 text-center text-sm leading-6 text-landing-muted">
           Không thấy email? Xem thư mục Spam hoặc Quảng cáo, hoặc kiểm tra lại địa chỉ.
         </p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2">
           <button type="button" onClick={() => request.reset()} className={TEXT_LINK}>
             Nhập email khác
           </button>
-          <span aria-hidden className="text-stone-300">
+          <span aria-hidden className="text-landing-line">
             ·
           </span>
           <Link href={withEmail(ROUTES.login, sentTo)} className={TEXT_LINK}>
@@ -85,12 +86,12 @@ function ForgotPassword({ initialEmail }: { initialEmail: string }) {
 
   return (
     <AccountShell
-      pose="thumbs_up"
+      icon={KeyRound}
       eyebrow="Mật khẩu"
       title={TITLE}
       description="Nhập email của tài khoản WrapFit, chúng tôi sẽ gửi link để bạn đặt mật khẩu mới."
     >
-      <form onSubmit={onSubmit} noValidate className="space-y-3.5">
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
         <TextField
           id="forgot-email"
           name="email"

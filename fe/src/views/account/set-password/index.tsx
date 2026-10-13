@@ -1,11 +1,11 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { CircleCheck, Link2Off, LockKeyhole } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
 import { resetPassword } from "@/api/auth";
-import { PRIMARY_BUTTON } from "@/components/common/StatusViews";
 import { ROUTES } from "@/constants";
 import { useAuth } from "@/features/auth";
 import { isApiError } from "@/services/api";
@@ -15,6 +15,7 @@ import {
   AccountShell,
   ApiErrorAlert,
   PASSWORD_HINT,
+  PRIMARY_LINK,
   PasswordField,
   SubmitButton,
   TEXT_LINK,
@@ -46,7 +47,7 @@ export default function SetPasswordPage({ variant }: { variant: SetPasswordVaria
   return (
     <Suspense
       fallback={
-        <AccountShell pose="measuring" eyebrow={copy.eyebrow} title={copy.title}>
+        <AccountShell icon={LockKeyhole} eyebrow={copy.eyebrow} title={copy.title}>
           <AccountLoading />
         </AccountShell>
       }
@@ -110,8 +111,8 @@ function SetPassword({ variant, token }: { variant: SetPasswordVariant; token: s
   };
 
   return (
-    <AccountShell pose="measuring" eyebrow={copy.eyebrow} title={copy.title} description={copy.description}>
-      <form onSubmit={onSubmit} noValidate className="space-y-3.5">
+    <AccountShell icon={LockKeyhole} eyebrow={copy.eyebrow} title={copy.title} description={copy.description}>
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
         <PasswordField
           id="new-password"
           name="password"
@@ -171,11 +172,17 @@ function SetPasswordLinkProblem({ variant, code }: { variant: SetPasswordVariant
   const { title, description } = PROBLEM_COPY[code];
   const consumed = code === "AUTH_TOKEN_CONSUMED";
   return (
-    <AccountShell pose="chilling" eyebrow={COPY[variant].eyebrow} title={title} description={description}>
+    <AccountShell
+      icon={consumed ? CircleCheck : Link2Off}
+      tone={consumed ? "lime" : "amber"}
+      eyebrow={COPY[variant].eyebrow}
+      title={title}
+      description={description}
+    >
       <div className="flex flex-col items-center gap-1">
         {consumed ? (
           <>
-            <Link href={ROUTES.login} className={`${PRIMARY_BUTTON} w-full`}>
+            <Link href={ROUTES.login} className={PRIMARY_LINK}>
               Đến trang đăng nhập
             </Link>
             <Link href={ROUTES.forgotPassword} className={TEXT_LINK}>
@@ -184,7 +191,7 @@ function SetPasswordLinkProblem({ variant, code }: { variant: SetPasswordVariant
           </>
         ) : (
           <>
-            <Link href={ROUTES.forgotPassword} className={`${PRIMARY_BUTTON} w-full`}>
+            <Link href={ROUTES.forgotPassword} className={PRIMARY_LINK}>
               Gửi link đặt mật khẩu mới
             </Link>
             <Link href={ROUTES.login} className={TEXT_LINK}>
