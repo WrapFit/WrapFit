@@ -1,20 +1,22 @@
 'use client';
 
 /**
- * Account profile (hand-written, not a Stitch screen): name, shop name and avatar of the signed-in user
- * (`PATCH /users/me`, avatar upload purpose AVATAR). The four preference cards have no API yet and stay static (D6).
+ * `/dashboard/profile`: the account of the signed-in user in the pacdora.com workspace style. Name, shop name and avatar
+ * are saved with `PATCH /users/me` (avatar upload purpose AVATAR); plan, storage and brand kit are read from
+ * `GET /auth/me` and `GET /storage/usage`.
  */
 
-import React from 'react';
+import { ArrowRight, BadgeCheck, KeyRound, MailWarning, Palette } from 'lucide-react';
 import Link from 'next/link';
-import { DashboardHeaderNav } from '@/components/layout';
-import { MainHeader } from '@/components/layout/MainHeader';
-import { MainFooter } from '@/components/layout/MainFooter';
+import React from 'react';
 import { displayName } from '@/components/layout/account';
+import { outlineButton } from '@/components/library';
+import { Badge, Meter, Panel, PanelTitle, WorkspaceShell } from '@/components/workspace';
 import { ROLE_LABELS, ROUTES, TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
-import { formatDate } from '@/features/dashboard';
+import { formatBytes, formatDate, usagePercent, useStorageUsage } from '@/features/dashboard';
 import { AvatarEditor, ProfileForm } from '@/features/profile';
+import type { SafeUser } from '@/types/api';
 
 export default function DashboardProfilePage() {
   return (
@@ -29,141 +31,154 @@ function DashboardProfileScreen() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] font-['Plus_Jakarta_Sans'] flex flex-col justify-between">
-      <MainHeader />
-      <div className="pt-28 pb-28 md:pb-16 px-4 sm:px-6 lg:px-8 flex-1">
-        <div className="w-full max-w-[1720px] mx-auto">
-          <header className="flex flex-col gap-5 pb-6 mb-8 border-b border-[#e8ded0]/60">
-            <DashboardHeaderNav />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <Link
-                  href={ROUTES.dashboard}
-                  aria-label="Về Tổng quan"
-                  className="w-11 h-11 shrink-0 rounded-full bg-white border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-[#f7f2ef] shadow-xs transition-all"
-                >
-                  <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                    arrow_back
-                  </span>
-                </Link>
-                <div className="min-w-0">
-                  <h1 className="font-['Playfair_Display'] text-2xl sm:text-3xl font-bold text-[#122e20]">
-                    Hồ Sơ Chuyên Gia &amp; Thiết Lập Cadence
-                  </h1>
-                  <p className="text-xs text-[#717971] font-['JetBrains_Mono']">
-                    SPLIT BENTO FOCUS &bull; PACKAGING CAD PROFILE
-                  </p>
-                </div>
-              </div>
+    <WorkspaceShell title="Hồ sơ" description="Ảnh đại diện, tên hiển thị và cửa hàng của bạn trên WrapFit.">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Panel as="div" className="h-fit lg:col-span-4">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <AvatarEditor user={user} />
+            <div className="min-w-0">
+              <h2 className="break-words text-xl font-medium text-library-ink">{displayName(user)}</h2>
+              <p className="text-sm text-library-muted">{user.shopName || ROLE_LABELS[user.role]}</p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              <Badge tone="lime">{TIER_LABELS[user.subscriptionTier]}</Badge>
+              <Badge>{ROLE_LABELS[user.role]}</Badge>
+              {user.emailVerifiedAt ? (
+                <Badge tone="green">
+                  <BadgeCheck className="size-3.5" aria-hidden />
+                  Đã xác minh
+                </Badge>
+              ) : (
+                <Badge tone="amber">Chưa xác minh email</Badge>
+              )}
+            </div>
+          </div>
 
-              <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono'] uppercase">
-                {TIER_LABELS[user.subscriptionTier]}
-                {user.emailVerifiedAt ? ' · Đã xác minh' : ''}
+          <dl className="mt-6 divide-y divide-library-line border-t border-library-line text-sm">
+            <Row label="Email">
+              <span className="truncate" title={user.email}>
+                {user.email}
               </span>
-            </div>
-          </header>
+            </Row>
+            <Row label="Cửa hàng">{user.shopName || 'Chưa đặt'}</Row>
+            <Row label="Thành viên từ">{formatDate(user.createdAt)}</Row>
+            {user.referralCode && (
+              <Row label="Mã giới thiệu">
+                <span className="font-mono">{user.referralCode}</span>
+              </Row>
+            )}
+          </dl>
+        </Panel>
 
-          {/* Split Bento Layout */}
-          <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Column: Profile Card */}
-            <div className="lg:col-span-4 bg-white p-6 sm:p-8 rounded-3xl border border-[#e8ded0]/80 shadow-[0_4px_24px_rgba(28,25,23,0.04)] space-y-6 h-fit">
-              <div className="text-center space-y-3">
-                <AvatarEditor user={user} />
-                <div>
-                  <h2 className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20] break-words">
-                    {displayName(user)}
-                  </h2>
-                  <p className="text-xs text-[#717971] font-['JetBrains_Mono']">
-                    {user.shopName || ROLE_LABELS[user.role]}
-                  </p>
-                </div>
-                <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                  {ROLE_LABELS[user.role]}
-                </span>
-              </div>
-
-              <dl className="pt-4 border-t border-[#e8ded0]/60 space-y-3 text-xs">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-[#717971] shrink-0">Email:</dt>
-                  <dd className="font-semibold truncate" title={user.email}>
-                    {user.email}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-[#717971] shrink-0">Cửa hàng:</dt>
-                  <dd className="font-semibold truncate">{user.shopName || 'Chưa đặt'}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-[#717971] shrink-0">Gói Bản Quyền:</dt>
-                  <dd className="font-semibold text-emerald-700">{TIER_LABELS[user.subscriptionTier]}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-[#717971] shrink-0">Thành viên từ:</dt>
-                  <dd className="font-semibold font-['JetBrains_Mono']">{formatDate(user.createdAt)}</dd>
-                </div>
-                {user.referralCode && (
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-[#717971] shrink-0">Mã giới thiệu:</dt>
-                    <dd className="font-semibold font-['JetBrains_Mono']">{user.referralCode}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-
-            {/* Right Column: profile form, then 4 Bento Cards with Corner Folds */}
-            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
-              <ProfileForm user={user} />
-
-              <div className="p-6 rounded-3xl bg-amber-50 border border-amber-200/80 shadow-xs space-y-3 relative overflow-hidden">
-                <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-amber-800">
-                  THẺ 1
-                </span>
-                <h4 className="font-['Playfair_Display'] text-lg font-bold text-amber-950">
-                  Cấu Hình Đo Đạc &amp; Caliper
-                </h4>
-                <p className="text-xs text-amber-800/80">
-                  Đơn vị đo mặc định: mm • Chuẩn tự động: FEFCO 0215 • Thanh trượt bù gập Caliper creep: 1.50t
-                </p>
-              </div>
-
-              <div className="p-6 rounded-3xl bg-lime-50 border border-lime-200/80 shadow-xs space-y-3 relative overflow-hidden">
-                <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-lime-800">
-                  THẺ 2
-                </span>
-                <h4 className="font-['Playfair_Display'] text-lg font-bold text-lime-950">
-                  Không Gian Màu &amp; 3D Engine
-                </h4>
-                <p className="text-xs text-lime-800/80">
-                  Không gian màu CMYK Fogra39 / ISO Coated • 300 DPI • Khử răng cưa WebGL MSAA 4X Bật
-                </p>
-              </div>
-
-              <div className="p-6 rounded-3xl bg-sky-50 border border-sky-200/80 shadow-xs space-y-3 relative overflow-hidden">
-                <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-sky-800">
-                  THẺ 3
-                </span>
-                <h4 className="font-['Playfair_Display'] text-lg font-bold text-sky-950">Hóa Đơn VAT Doanh Nghiệp</h4>
-                <p className="text-xs text-sky-800/80">
-                  Maison de Luxe Ltd • MST: 0317892341 • Tự động gửi email nhận HĐĐT sau khi xuất xưởng
-                </p>
-              </div>
-
-              <div className="p-6 rounded-3xl bg-emerald-50 border border-emerald-200/80 shadow-xs space-y-3 relative overflow-hidden">
-                <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-emerald-800">
-                  THẺ 4
-                </span>
-                <h4 className="font-['Playfair_Display'] text-lg font-bold text-emerald-950">
-                  Cloud Key &amp; Tích Hợp AI
-                </h4>
-                <p className="text-xs text-emerald-800/80">
-                  Illustrator Plugin Sync Bật • Khóa FIDO2 Touch ID kích hoạt • CAD Engine Token: wf_live_***
-                </p>
-              </div>
-            </div>
-          </main>
+        <div className="flex flex-col gap-6 lg:col-span-8">
+          <ProfileForm user={user} />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <PlanPanel user={user} />
+            <BrandKitPanel user={user} />
+          </div>
+          <SecurityPanel user={user} />
         </div>
       </div>
-      <MainFooter />
+    </WorkspaceShell>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-3">
+      <dt className="shrink-0 text-library-muted">{label}</dt>
+      <dd className="min-w-0 truncate text-right text-library-ink">{children}</dd>
     </div>
+  );
+}
+
+/** Plan of the account and the storage it leaves (`GET /storage/usage`). */
+function PlanPanel({ user }: { user: SafeUser }) {
+  const storage = useStorageUsage();
+  const percent = storage.data ? usagePercent(storage.data.usedBytes, storage.data.quotaBytes) : 0;
+  return (
+    <Panel>
+      <PanelTitle>Gói dịch vụ</PanelTitle>
+      <p className="text-2xl font-medium text-library-ink">{TIER_LABELS[user.subscriptionTier]}</p>
+      <div className="mt-4">
+        {storage.data ? (
+          <>
+            <Meter percent={percent} label="Dung lượng đã dùng" />
+            <p className="mt-2 flex justify-between text-sm text-library-sub">
+              <span>
+                {formatBytes(storage.data.usedBytes)} / {formatBytes(storage.data.quotaBytes)}
+              </span>
+              <span>{storage.data.fileCount} tệp</span>
+            </p>
+          </>
+        ) : (
+          <div aria-hidden className="h-2 animate-pulse rounded-full bg-library-panel motion-reduce:animate-none" />
+        )}
+      </div>
+      <Link href="/pricing" className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-library-accent hover:underline">
+        So sánh các gói
+        <ArrowRight className="size-4" aria-hidden />
+      </Link>
+    </Panel>
+  );
+}
+
+/** The saved brand kit at a glance; edited on its own page (`PATCH /users/me/brand-kit`). */
+function BrandKitPanel({ user }: { user: SafeUser }) {
+  const kit = user.brandKit;
+  return (
+    <Panel>
+      <PanelTitle
+        action={
+          <Link href={ROUTES.brandKit} className="text-sm font-medium text-library-accent hover:underline">
+            {kit ? 'Chỉnh sửa' : 'Thiết lập'}
+          </Link>
+        }
+      >
+        Brand kit
+      </PanelTitle>
+      {kit ? (
+        <>
+          <ul className="flex gap-2" aria-label="Màu thương hiệu">
+            {kit.colors.map((color) => (
+              <li key={color} title={color} className="h-10 flex-1 rounded-lg border border-library-line" style={{ backgroundColor: color }}>
+                <span className="sr-only">{color}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-sm text-library-sub">{kit.fonts.length > 0 ? kit.fonts.join(' · ') : 'Chưa chọn font'}</p>
+          {kit.slogan && <p className="mt-1 truncate text-sm italic text-library-ink">“{kit.slogan}”</p>}
+        </>
+      ) : (
+        <div className="flex items-start gap-3 rounded-xl bg-library-panel p-4 text-sm text-library-sub">
+          <Palette className="mt-0.5 size-4 shrink-0 text-library-ink" aria-hidden />
+          Lưu logo, 3–5 màu và font của thương hiệu để áp lên hộp chỉ với một cú nhấp trong studio.
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+/** Sign-in state of the account; the actions live in the settings. */
+function SecurityPanel({ user }: { user: SafeUser }) {
+  return (
+    <Panel>
+      <PanelTitle>Đăng nhập &amp; bảo mật</PanelTitle>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-library-ink bg-white">
+            {user.emailVerifiedAt ? <KeyRound className="size-4" aria-hidden /> : <MailWarning className="size-4 text-amber-700" aria-hidden />}
+          </span>
+          <p className="text-sm leading-[1.6] text-library-sub">
+            {user.emailVerifiedAt
+              ? `Email đã xác minh ngày ${formatDate(user.emailVerifiedAt)}. Đổi mật khẩu hoặc đăng xuất khỏi mọi thiết bị trong phần Cài đặt.`
+              : 'Email chưa được xác minh: hãy mở thư WrapFit đã gửi để kích hoạt tài khoản.'}
+          </p>
+        </div>
+        <Link href={ROUTES.settings} className={outlineButton}>
+          Mở cài đặt
+        </Link>
+      </div>
+    </Panel>
   );
 }
