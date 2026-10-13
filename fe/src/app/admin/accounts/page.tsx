@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import AdminAccountsPage from "@/views/admin/accounts";
+import type { Metadata } from 'next';
+import AdminAccountsPage from '@/views/admin/accounts';
 
 export const metadata: Metadata = {
-  title: "WrapFit Admin — Danh Sách & Phân Hạng Tài Khoản",
+  title: 'Tài khoản — Quản trị WrapFit',
   robots: { index: false },
 };
 
