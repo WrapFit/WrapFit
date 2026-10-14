@@ -5,12 +5,12 @@ import { landingFontVariables } from "@/assets/fonts/landing";
 import {
   BoxCatalog,
   BoxJourney,
+  CardsAlmanacSection,
   CustomerVoices,
   FeatureShowcase,
   GreenBanner,
   HomeHero,
   MadeInVietnam,
-  PhotoReel,
   PlansAndCopilot,
   StandardsStrip,
 } from "@/components/home";
@@ -28,7 +28,7 @@ export default function HomePage() {
         <HomeHero />
         <StandardsStrip />
         <BoxCatalog />
-        <PhotoReel />
+        <CardsAlmanacSection />
         <FeatureShowcase />
         <PlansAndCopilot />
         <BoxJourney />
