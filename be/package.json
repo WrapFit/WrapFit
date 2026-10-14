@@ -8,8 +8,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "nest start --watch",
-    "dev:worker": "nest start --watch --entryFile worker --path tsconfig.worker.json",
+    "dev": "nest start --watch --preserveWatchOutput",
+    "dev:worker": "nest start --watch --preserveWatchOutput --entryFile worker --path tsconfig.worker.json",
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",

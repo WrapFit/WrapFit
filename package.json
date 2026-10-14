@@ -9,12 +9,17 @@
     "shared"
   ],
   "scripts": {
+    "dev:all": "npm run dev:setup && concurrently --names api,worker,fe --prefix-colors blue,magenta,green \"npm:dev:be\" \"npm:dev:worker\" \"npm:dev:fe\"",
+    "dev:setup": "npm run dev:services && npm run build:shared && npm --workspace=be run db:generate && npm --workspace=be run db:deploy && npm --workspace=be run db:seed",
+    "dev:services": "docker compose up -d --wait postgres redis seaweedfs mailpit && docker compose run --rm -T storage-init",
     "dev:fe": "npm --workspace=fe run dev",
     "dev:be": "npm --workspace=be run dev",
+    "dev:worker": "npm --workspace=be run dev:worker",
     "build:shared": "npm --workspace=shared run build",
     "build": "npm run build:shared && npm --workspace=be run build && npm --workspace=fe run build"
   },
   "devDependencies": {
+    "concurrently": "^9.2.4",
     "typescript": "^5.6.2"
   },
   "overrides": {

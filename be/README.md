@@ -104,6 +104,10 @@ npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất fi
 
 Hoặc `cd be` rồi dùng trực tiếp `npm run <script>`.
 
+Gộp tất cả thành một lệnh (từ gốc repo, sau `npm install` và `cp be/.env.example be/.env`): `npm run dev:all` chạy các bước
+trên (migration bằng `db:deploy`, không hỏi tên migration) rồi API, worker, frontend trong một terminal. `npm run dev:setup`
+chỉ làm phần Docker + database.
+
 `dev` build vào `dist/`, `dev:worker` build vào `dist-worker/` (`tsconfig.worker.json`): `nest start --watch` xóa thư mục build khi khởi động, nên hai process dùng chung `dist/` thì bật process này sẽ làm process kia dừng với `Cannot find module ...dist\worker`.
 
 - API: `http://localhost:8080/api`
