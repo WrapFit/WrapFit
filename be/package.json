@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "nest start --watch",
-    "dev:worker": "nest start --watch --entryFile worker",
+    "dev:worker": "nest start --watch --entryFile worker --path tsconfig.worker.json",
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",

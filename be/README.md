@@ -94,6 +94,7 @@ docker compose up -d seaweedfs storage-init  # lưu trữ file S3 local (cổng 
 docker compose up -d redis                   # hàng đợi BullMQ (xuất file in, email)
 docker compose up -d mailpit                 # bắt mọi email (xác minh, quên mật khẩu): xem tại http://localhost:8025
 cp be/.env.example be/.env                   # nhớ đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
+npm run build:shared                         # backend đọc @wrapfit/shared từ shared/dist (chạy lại khi shared/ đổi)
 npm --workspace=be run db:generate
 npm --workspace=be run db:migrate            # áp dụng migration vào database dev
 npm --workspace=be run db:seed               # tạo 4 mẫu hộp + admin: admin@wrapfit.vn / Admin@12345 + dữ liệu mẫu
@@ -102,6 +103,8 @@ npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất fi
 ```
 
 Hoặc `cd be` rồi dùng trực tiếp `npm run <script>`.
+
+`dev` build vào `dist/`, `dev:worker` build vào `dist-worker/` (`tsconfig.worker.json`): `nest start --watch` xóa thư mục build khi khởi động, nên hai process dùng chung `dist/` thì bật process này sẽ làm process kia dừng với `Cannot find module ...dist\worker`.
 
 - API: `http://localhost:8080/api`
 - Swagger: `http://localhost:8080/api/docs`
