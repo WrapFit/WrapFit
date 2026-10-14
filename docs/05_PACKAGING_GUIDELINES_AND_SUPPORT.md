@@ -15,7 +15,7 @@ Khi tư vấn hoặc kiểm tra file thiết kế của khách hàng, đội ng�
 | **Nét Cấn / Gấp** | Crease / Score Line | Đường ấn lõm tạo nếp gấp để thợ dễ dàng gập hộp mà không làm nứt sớ giấy. | Màu xanh dương `#3182CE`, nét đứt (dashed `4,4`), stroke $0.5\text{pt}$. |
 | **Vùng Tràn Lề** | Bleed Margin | Phần màu nền/hoa văn phải phủ tràn ra ngoài nét cắt để tránh viền trắng khi máy bế lệch $1\text{mm}$. | Bắt buộc $\ge 2.0\text{mm}$ tính từ nét cắt ra ngoài. |
 | **Lề An Toàn** | Safe Area / Inner Margin | Vùng tối thiểu cách nét cắt và nếp cấn; chữ hoặc logo không được nằm ngoài vùng này. | Bắt buộc $\ge 3.0\text{mm}$ bên trong nếp cấn/nét cắt. |
-| **Độ Dày Giấy** | Caliper / Paper Thickness ($t$) | Chiều dày thực tế của tấm giấy tính bằng milimet. | $0.28\text{mm} - 0.50\text{mm}$ (tương ứng $250 - 400\text{ GSM}$). |
+| **Độ Dày Giấy** | Caliper / Paper Thickness ($t$) | Chiều dày thực tế của tấm giấy tính bằng milimet (công thức $t = \text{GSM} \times 0.0014\text{ mm}$). | $0.35\text{mm} - 0.55\text{mm}$ (tương ứng $250 - 400\text{ GSM}$). |
 | **Định Lượng Giấy** | GSM ($\text{g/m}^2$) | Khối lượng trên một mét vuông giấy, quyết định độ cứng của hộp. | Tối thiểu $250\text{ GSM}$ cho hộp nhỏ, $350 - 400\text{ GSM}$ cho hộp lớn. |
 
 ---

@@ -10,7 +10,7 @@
 ## 1. Triết Lý & Nguồn Cảm Hứng
 
 - **Insight cốt lõi**: *"The gift is personal. Why shouldn't its packaging be?"* (Món quà là thứ mang đậm dấu ấn cá nhân, tại sao bao bì của nó lại rập khuôn công nghiệp?).
-- **Vấn đề thực tế**: Khi mua quà tinh tế, người dùng hoặc shop đồ thủ công thường phải mua hộp carton sản xuất sẵn không vừa vặn, nhét đầy rơm giấy hoặc xốp vụn. Nếu muốn đặt hộp riêng, các xưởng in yêu cầu số lượng tối thiểu (MOQ) từ 500 - 1.000 hộp và chi phí làm khuôn dao bế riêng từ 1.000.000đ - 3.000.000đ.
+- **Vấn đề thực tế**: Khi mua quà tinh tế, người dùng hoặc shop đồ thủ công thường phải mua hộp carton sản xuất sẵn không vừa vặn, nhét đầy rơm giấy hoặc xốp vụn. Nếu muốn đặt hộp riêng, các xưởng in yêu cầu số lượng tối thiểu (MOQ) từ 500 - 1.000 hộp và chi phí làm khuôn dao bế riêng từ 1.500.000đ - 2.000.000đ (1,5 - 2 triệu đồng).
 - **Tuyên ngôn định vị**: WrapFit không phải là một Canva tiếp theo. WrapFit là một quy trình làm việc chuyên biệt cho ngành bao bì (*Packaging-specific workflow*).
 
 ---
