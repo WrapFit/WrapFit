@@ -1,16 +1,15 @@
 import type { SubscriptionTier } from "@/types/api";
 
-// Plans of WrapFit: the three subscription tiers of the API (prisma `SubscriptionTier`).
-//
-// The quotas are the ones the API enforces: storage in be/src/storage/storage.rules.ts (STORAGE_QUOTA_BYTES), AI
-// patterns in be/src/ai/ai-pattern.service.ts (DAILY_AI_LIMIT, over the last 24 hours). Keep them in step.
-// The API has no billing yet: the prices are the ones of the former /pricing screen, in USD.
+// Plans of WrapFit: Báo cáo chốt 19.000đ/lần xuất và 99.000đ/tháng (lợi thế giá VNĐ so với Pacdora $29 - $99).
+// Quotas: storage in be/src/storage/storage.rules.ts (STORAGE_QUOTA_BYTES), AI patterns in be/src/ai/ai-pattern.service.ts.
 
 export interface PlanPrice {
-  /** USD per month when paid monthly. */
+  /** VNĐ per month when paid monthly (or per export for PAY_PER_EXPORT). */
   monthly: number;
-  /** USD per month when paid for a year at once. */
+  /** VNĐ per month when paid for a year at once. */
   yearlyPerMonth: number;
+  /** Single export fee if pay-as-you-go. */
+  perExport?: number;
 }
 
 export interface Plan {
@@ -19,26 +18,67 @@ export interface Plan {
   price: PlanPrice;
   storageBytes: number;
   aiPatternsPerDay: number;
+  badge?: string;
+  isPerExport?: boolean;
 }
 
 const MB = 1024 * 1024;
 
+export const SINGLE_EXPORT_PRICE = 19_000; // 19.000đ / lần xuất file vector chuẩn xưởng
+
 export const PLANS: Record<SubscriptionTier, Plan> = {
-  FREE: { tier: "FREE", name: "Free", price: { monthly: 0, yearlyPerMonth: 0 }, storageBytes: 100 * MB, aiPatternsPerDay: 10 },
-  STARTER: { tier: "STARTER", name: "Starter", price: { monthly: 29, yearlyPerMonth: 24 }, storageBytes: 1024 * MB, aiPatternsPerDay: 50 },
+  FREE: {
+    tier: "FREE",
+    name: "Miễn Phí",
+    price: { monthly: 0, yearlyPerMonth: 0 },
+    storageBytes: 100 * MB,
+    aiPatternsPerDay: 10,
+    badge: "Bắt đầu miễn phí",
+  },
+  PAY_PER_EXPORT: {
+    tier: "PAY_PER_EXPORT",
+    name: "Từng Lần Xuất",
+    price: { monthly: 19_000, yearlyPerMonth: 19_000, perExport: 19_000 },
+    storageBytes: 500 * MB,
+    aiPatternsPerDay: 25,
+    badge: "19.000đ / lần xuất",
+    isPerExport: true,
+  },
+  STARTER: {
+    tier: "STARTER",
+    name: "Gói Tháng (Pro)",
+    price: { monthly: 99_000, yearlyPerMonth: 79_000 },
+    storageBytes: 1024 * MB,
+    aiPatternsPerDay: 50,
+    badge: "Phổ biến nhất",
+  },
   PRO_BUSINESS: {
     tier: "PRO_BUSINESS",
-    name: "Pro Business",
-    price: { monthly: 99, yearlyPerMonth: 79 },
+    name: "Doanh Nghiệp",
+    price: { monthly: 299_000, yearlyPerMonth: 239_000 },
     storageBytes: 10 * 1024 * MB,
     aiPatternsPerDay: 300,
+    badge: "Cho xưởng & Studio",
   },
 };
 
-export const PLAN_ORDER: SubscriptionTier[] = ["FREE", "STARTER", "PRO_BUSINESS"];
+export const PLAN_ORDER: SubscriptionTier[] = ["FREE", "PAY_PER_EXPORT", "STARTER", "PRO_BUSINESS"];
 
-/** `$29`. */
-export const formatUsd = (value: number) => `$${value.toLocaleString("en-US")}`;
+/** `19.000đ`, `99.000đ`. */
+export const formatVnd = (value: number) => {
+  if (value === 0) return "0đ";
+  return `${value.toLocaleString("vi-VN")}đ`;
+};
+
+/** Backward-compatibility alias for formatVnd */
+export const formatUsd = (value: number) => {
+  if (value === 0) return "0đ";
+  if (value < 1000) {
+    if (value === 19 || value === 29) return "19.000đ";
+    if (value === 99) return "99.000đ";
+  }
+  return formatVnd(value);
+};
 
 /** `100 MB`, `1 GB`, `10 GB`. */
 export function formatQuota(bytes: number): string {

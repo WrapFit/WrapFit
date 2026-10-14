@@ -35,7 +35,7 @@ export interface PlanCopy {
   features: PlanFeature[];
 }
 
-const { FREE, STARTER, PRO_BUSINESS } = PLANS;
+const { FREE, PAY_PER_EXPORT, STARTER, PRO_BUSINESS } = PLANS;
 
 const quotaFeatures = (tier: SubscriptionTier, note?: string): PlanFeature[] => [
   { icon: HardDrive, label: `${formatQuota(PLANS[tier].storageBytes)} lưu trữ`, note },
@@ -59,25 +59,40 @@ export const PLAN_COPY: PlanCopy[] = [
     ],
   },
   {
+    tier: "PAY_PER_EXPORT",
+    price: { amount: formatUsd(PAY_PER_EXPORT.price.monthly), unit: "/lần xuất" },
+    badge: "Linh hoạt cho shop nhỏ",
+    description: "Không phí duy trì hàng tháng. Chỉ trả 19.000đ cho mỗi lần xuất file PDF vector chuẩn xưởng hoặc in A4 tại nhà.",
+    cta: "Mua lượt xuất (19k)",
+    note: "Tiết kiệm 95% so với phần mềm quốc tế ($29–$99)",
+    features: [
+      { icon: FileDown, label: "Xuất trọn bộ file chuẩn xưởng", note: "PDF CMYK · SVG · DXF · PDF A4/A3" },
+      ...quotaFeatures("PAY_PER_EXPORT", "Lưu trữ 500 MB dự án"),
+      { icon: ShieldCheck, label: "FitCheck™ toàn diện", note: "Kiểm tra tràn lề & an toàn mm" },
+      { icon: QrCode, label: "Mã QR mở hộp 3D tương tác" },
+    ],
+  },
+  {
     tier: "STARTER",
     price: { amount: formatUsd(STARTER.price.monthly), unit: "/tháng" },
-    badge: "Cách tốt nhất để bắt đầu",
+    badge: "Phổ biến cho Maker & Shop",
     description: "Lựa chọn hợp lý cho shop handmade thỉnh thoảng làm hộp riêng cho sản phẩm của mình.",
     cta: "Chọn Starter",
     note: `${formatUsd(STARTER.price.yearlyPerMonth)}/tháng khi thanh toán theo năm`,
+    popular: true,
     features: [
+      { icon: FileDown, label: "Xuất file không giới hạn", note: "Tất cả định dạng vector & in A4" },
       ...quotaFeatures("STARTER", `Gói Free: ${formatQuota(FREE.storageBytes)}`),
       { icon: Boxes, label: "Mọi tính năng của Free" },
     ],
   },
   {
     tier: "PRO_BUSINESS",
-    price: { amount: formatUsd(PRO_BUSINESS.price.yearlyPerMonth * 12), unit: "/năm" },
+    price: { amount: formatUsd(PRO_BUSINESS.price.monthly), unit: "/tháng" },
     badge: "Chức năng chuyên nghiệp",
     description: "Gói lý tưởng cho thương hiệu và xưởng làm nhiều mẫu hộp, cần nhiều dung lượng cho ảnh và file in.",
     cta: "Chọn Pro Business",
-    note: `Hoặc ${formatUsd(PRO_BUSINESS.price.monthly)}/tháng khi thanh toán theo tháng`,
-    popular: true,
+    note: `${formatUsd(PRO_BUSINESS.price.yearlyPerMonth)}/tháng khi thanh toán theo năm`,
     features: [
       ...quotaFeatures("PRO_BUSINESS", `Gói Starter: ${formatQuota(STARTER.storageBytes)}`),
       { icon: Boxes, label: "Mọi tính năng của Starter" },
@@ -90,8 +105,12 @@ export const checkoutHref = (tier: SubscriptionTier) => `/checkout/step-1?plan=$
 
 export const FAQ: { question: string; answer: string }[] = [
   {
+    question: "WrapFit có lợi thế gì về giá so với Pacdora hay phần mềm nước ngoài?",
+    answer: "Pacdora và các công cụ nước ngoài có mức phí từ $29 đến $99/tháng (tương đương 750.000đ – 2.500.000đ/tháng), yêu cầu thẻ thanh toán quốc tế và thiết kế trên khuôn cố định. WrapFit được thiết kế riêng cho người làm quà Việt với mức giá chỉ từ 19.000đ/lần xuất hoặc 99.000đ/tháng, thanh toán thuận tiện qua VietQR/ngân hàng nội địa, hỗ trợ in thủ công A4 tại nhà (persona Chị Linh) và liên kết xưởng in mẫu thử 01 hộp.",
+  },
+  {
     question: "Có cần trả phí mới thiết kế được hộp không?",
-    answer: `Không. Gói Free có đủ studio: chọn cấu trúc hộp, nhập kích thước, thiết kế, chạy FitCheck™ và xuất file in. Gói trả phí chỉ nâng dung lượng lưu trữ (${formatQuota(FREE.storageBytes)} → ${formatQuota(STARTER.storageBytes)} → ${formatQuota(PRO_BUSINESS.storageBytes)}) và số lượt tạo hoa văn AI mỗi ngày.`,
+    answer: `Không. Gói Free có đủ studio: chọn cấu trúc hộp, nhập kích thước, thiết kế, chạy FitCheck™ và xem 3D trực quan. Gói trả phí chỉ nâng dung lượng lưu trữ (${formatQuota(FREE.storageBytes)} → ${formatQuota(PAY_PER_EXPORT.storageBytes)} → ${formatQuota(STARTER.storageBytes)} → ${formatQuota(PRO_BUSINESS.storageBytes)}) và số lượt tạo hoa văn AI mỗi ngày.`,
   },
   {
     question: "Dung lượng lưu trữ gồm những gì?",
@@ -99,7 +118,7 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "Lượt tạo hoa văn AI được tính thế nào?",
-    answer: `Mỗi lần bấm tạo hoa văn trong studio là một lượt. Hạn mức tính trên 24 giờ gần nhất, không reset lúc nửa đêm: gói Free ${FREE.aiPatternsPerDay} lượt, Starter ${STARTER.aiPatternsPerDay} lượt, Pro Business ${PRO_BUSINESS.aiPatternsPerDay} lượt.`,
+    answer: `Mỗi lần bấm tạo hoa văn trong studio là một lượt. Hạn mức tính trên 24 giờ gần nhất, không reset lúc nửa đêm: gói Free ${FREE.aiPatternsPerDay} lượt, Từng lần xuất ${PAY_PER_EXPORT.aiPatternsPerDay} lượt, Starter ${STARTER.aiPatternsPerDay} lượt, Pro Business ${PRO_BUSINESS.aiPatternsPerDay} lượt.`,
   },
   {
     question: "Có giới hạn số dự án không?",
@@ -111,7 +130,7 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "Tôi nhận được file in dạng nào?",
-    answer: "PDF CMYK tách lớp (nét cắt, nét gấp, hình in, kích thước), SVG và DXF cho máy cắt. Đường tải mỗi file có hiệu lực 15 phút; bạn có thể xuất lại bất cứ lúc nào.",
+    answer: "PDF CMYK tách lớp (nét cắt #E53E3E, nét gấp #3182CE, hình in, kích thước), PDF A4/A3 in tại nhà có dấu xén và thước chuẩn 50mm, SVG và DXF cho máy cắt bế CNC.",
   },
   {
     question: "Thiết kế của tôi có bị công khai không?",
