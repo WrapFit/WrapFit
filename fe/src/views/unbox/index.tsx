@@ -7,7 +7,7 @@ import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getPublicUnboxing } from "@/api/public";
 import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
-import { ErrorState } from "@/components/common/StatusViews";
+import { WorkspaceError } from "@/components/workspace";
 import { ROUTES } from "@/constants";
 import { BoxStage3D, isShareSlug, playParticles, usePrefersReducedMotion } from "@/features/showcase";
 import { AuthorAvatar, authorName, formatDimensions } from "@/features/templates";
@@ -34,18 +34,19 @@ export default function UnboxView({ slug }: { slug: string }) {
     content = <ExpiredCode />;
   } else if (unboxing.isError) {
     content = (
-      <ErrorState
+      <WorkspaceError
         error={unboxing.error}
         title="Chưa mở được hộp quà"
         onRetry={() => void unboxing.refetch()}
         retrying={unboxing.isFetching}
+        className="w-full max-w-md bg-white"
       />
     );
   } else if (!unboxing.data) {
     content = (
       <div role="status" className="flex flex-col items-center gap-4 py-24">
-        <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-landing-lime motion-reduce:animate-none" />
-        <span className="font-mono text-xs uppercase tracking-wider text-stone-300">Đang chuẩn bị hộp quà…</span>
+        <span className="size-9 animate-spin rounded-full border-2 border-landing-line border-t-landing-green motion-reduce:animate-none" />
+        <span className="text-sm text-landing-muted">Đang chuẩn bị hộp quà…</span>
       </div>
     );
   } else {
@@ -128,19 +129,19 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
 
       <div className="flex w-full flex-col items-center gap-6">
         <div className="space-y-3 text-center">
-          <p className="inline-flex items-center gap-2 rounded-full border border-landing-lime/40 bg-landing-lime/15 px-3.5 py-1 text-xs font-semibold text-landing-lime">
+          <p className="inline-flex items-center gap-2 rounded-full bg-landing-lime px-3.5 py-1 text-sm font-semibold text-landing-green-night">
             <Gift className="h-3.5 w-3.5" aria-hidden />
             Món quà dành riêng cho bạn
           </p>
-          <h1 className="font-landing-heading text-[32px] font-bold leading-tight tracking-tight text-white sm:text-5xl">
+          <h1 className="font-landing-heading text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
             Gửi {gift.recipientName}
           </h1>
-          <p className="mx-auto max-w-md text-sm text-stone-300">
+          <p className="mx-auto max-w-md text-base text-landing-muted">
             {opened ? `Hộp đã mở. Lời chúc của ${sender} ở ngay bên dưới.` : `${sender} đã gói một món quà cho bạn. Chạm vào hộp để mở.`}
           </p>
         </div>
 
-        <div className="relative h-[460px] w-full max-w-2xl sm:h-[520px]">
+        <div className="relative h-[460px] w-full max-w-3xl overflow-hidden rounded-[28px] bg-white sm:h-[540px]">
           <BoxStage3D
             structure={box.template.id}
             dimensions={box.dimensions}
@@ -148,7 +149,8 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
             canvasState={box.canvasState}
             title={box.title}
             open={opened}
-            environment="forest_velvet"
+            environment="studio"
+            frameless
             className="h-full"
           />
           {!opened && (
@@ -156,19 +158,19 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
               type="button"
               onClick={openBox}
               aria-label="Mở hộp quà"
-              className="group absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 rounded-squircle-lg bg-black/30 backdrop-blur-[2px] transition hover:bg-black/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-lime"
+              className="group absolute inset-0 z-30 flex flex-col items-center justify-end gap-3 pb-8 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-landing-green"
             >
               <span className="transition-transform group-hover:scale-105 motion-reduce:transition-none">
                 <GoiMascot pose={pose} size={92} interactive={false} enableTracking={false} showPhotoBadge={false} />
               </span>
-              <span className="rounded-full border border-white/20 bg-stone-900/90 px-5 py-2.5 font-landing-heading text-base font-bold tracking-wide text-white shadow-tactile">
+              <span className="rounded-full bg-landing-lime px-6 py-3 font-landing-heading text-base font-semibold text-landing-green-night transition-colors group-hover:bg-[#AFEC88]">
                 Chạm để mở hộp quà
               </span>
             </button>
           )}
         </div>
 
-        <p className="font-mono text-[11px] uppercase tracking-wider text-stone-400">
+        <p className="font-mono text-xs text-landing-muted">
           {box.template.name} · {formatDimensions(box.dimensions)}
         </p>
 
@@ -178,21 +180,21 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
             tabIndex={-1}
             aria-labelledby="gift-note-title"
             style={{ opacity: reducedMotion ? 1 : 0 }}
-            className="w-full max-w-md rounded-squircle-xl border-2 border-landing-lime bg-paper-cotton p-6 text-stone-900 shadow-tactile-lg focus:outline-none"
+            className="w-full max-w-md rounded-[28px] border-t-4 border-landing-lime bg-white p-6 text-landing-ink focus:outline-none"
           >
-            <div className="flex items-center gap-3 border-b border-paper-kraft pb-3">
+            <div className="flex items-center gap-3 border-b border-landing-line pb-3">
               <GoiMascot pose={pose} size={44} showPhotoBadge={false} />
               <div>
                 <h2 id="gift-note-title" className="font-landing-heading text-lg font-bold text-landing-green-deep">
                   Lời chúc từ {sender}
                 </h2>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-stone-500">Hộp quà WrapFit</p>
+                <p className="text-xs text-landing-muted">Hộp quà WrapFit</p>
               </div>
             </div>
-            <p className="mt-4 whitespace-pre-line break-words rounded-squircle border border-paper-kraft bg-white/70 p-4 font-landing-heading text-[15px] italic leading-relaxed text-stone-800">
+            <p className="mt-4 whitespace-pre-line break-words rounded-2xl bg-[#F5F6F4] p-4 text-base leading-7 text-landing-ink">
               {gift.giftNote}
             </p>
-            <div className="mt-4 flex items-center justify-end gap-2 text-sm text-stone-600">
+            <div className="mt-4 flex items-center justify-end gap-2 text-sm text-landing-muted">
               <span>— {sender}</span>
               <AuthorAvatar author={gift.sender} />
             </div>
@@ -204,7 +206,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
             <button
               type="button"
               onClick={closeBox}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-landing-ink ring-1 ring-landing-line transition-colors hover:bg-landing-tile/50"
             >
               <RotateCcw className="h-4 w-4" aria-hidden />
               Đóng hộp lại
@@ -215,7 +217,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
               type="button"
               onClick={toggleMusic}
               aria-pressed={musicOn}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 text-sm font-semibold text-stone-100 transition hover:bg-white/20"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-white px-5 text-sm font-medium text-landing-ink ring-1 ring-landing-line transition-colors hover:bg-landing-tile/50"
             >
               {musicOn ? <Music2 className="h-4 w-4 text-landing-lime" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
               {musicOn ? "Tắt nhạc" : "Bật nhạc"}
@@ -230,21 +232,16 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
 /** The slug does not exist any more (experience removed, project in the trash) or never did. */
 function ExpiredCode() {
   return (
-    <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/[0.06] p-8 text-center shadow-tactile-lg backdrop-blur-md">
-      <div className="mb-4 flex justify-center">
-        <GoiMascot pose="chilling" size={88} showPhotoBadge={false} enableTracking={false} />
-      </div>
-      <p className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-landing-lime">
-        <QrCode className="h-3.5 w-3.5" aria-hidden />
-        Mở hộp qua mã QR
-      </p>
-      <h1 className="mt-2 font-landing-heading text-[28px] leading-tight tracking-tight text-white">Mã QR không còn hiệu lực</h1>
-      <p className="mt-3 text-sm leading-relaxed text-stone-300">
-        Hộp quà gắn với mã này đã bị gỡ hoặc chưa từng tồn tại. Hãy hỏi người gửi một liên kết mới.
-      </p>
+    <div className="w-full max-w-[480px] rounded-[28px] border border-landing-line bg-white px-6 py-10 text-center sm:px-10">
+      <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+        <QrCode className="size-6" aria-hidden />
+      </span>
+      <p className="mt-5 text-sm font-semibold text-landing-green">Mở hộp qua mã QR</p>
+      <h1 className="mt-1 font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">Mã QR không còn hiệu lực</h1>
+      <p className="mt-3 text-base leading-7 text-landing-muted">Hộp quà gắn với mã này đã bị gỡ hoặc chưa từng tồn tại. Hãy hỏi người gửi một liên kết mới.</p>
       <Link
         href={ROUTES.unboxCode}
-        className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 bg-white/10 px-6 text-sm font-semibold text-white transition hover:bg-white/20"
+        className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
       >
         Nhập mã khác
       </Link>
