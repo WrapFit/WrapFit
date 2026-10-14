@@ -15,7 +15,7 @@ export function BoxJourney() {
   const total = String(JOURNEY.steps.length).padStart(2, "0");
 
   return (
-    <section className="bg-white py-12 lg:py-24">
+    <section className="bg-white py-10 lg:py-16">
       <Container>
         <Reveal variant="text" className="mb-8 text-center lg:mb-12">
           <Eyebrow>{JOURNEY.eyebrow}</Eyebrow>
