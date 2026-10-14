@@ -25,7 +25,7 @@ export function AuthorAvatar({ author, size = "sm" }: { author: PublicAuthor; si
     );
   }
   return (
-    <span aria-hidden className={`${box} flex items-center justify-center bg-brand-forest font-serif font-semibold text-paper-ivory`}>
+    <span aria-hidden className={`${box} flex items-center justify-center bg-landing-green-night font-landing-heading font-bold font-semibold text-paper-ivory`}>
       {name.charAt(0).toUpperCase()}
     </span>
   );

@@ -35,7 +35,7 @@ const ToastContext = createContext<ToastApi | null>(null);
 const MAX_TOASTS = 4;
 
 const TONES: Record<ToastTone, { icon: typeof Info; iconClass: string }> = {
-  success: { icon: CheckCircle2, iconClass: "bg-brand-forest/10 text-brand-forest" },
+  success: { icon: CheckCircle2, iconClass: "bg-landing-green/10 text-landing-green-deep" },
   error: { icon: AlertTriangle, iconClass: "bg-vibrant-coral/15 text-vibrant-coral-dark" },
   info: { icon: Info, iconClass: "bg-vibrant-cobalt/10 text-vibrant-cobalt-dark" },
 };

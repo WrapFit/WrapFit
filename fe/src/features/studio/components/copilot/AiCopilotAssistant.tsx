@@ -44,7 +44,7 @@ export const POPULAR_GIFT_PRESETS: GiftPreset[] = [
   },
   {
     id: "lipstick",
-    name: "Son Môi Cao Cấp / Serum",
+    name: "Son môi cao cấp / serum",
     category: "Cosmetics",
     dimensions: { length: 25, width: 25, height: 85, paperThickness: 0.38, giftWeight: 35, bottomType: "tuck" },
     boxType: "tuck-top",
@@ -64,37 +64,37 @@ export const POPULAR_GIFT_PRESETS: GiftPreset[] = [
   },
   {
     id: "perfume",
-    name: "Chai Nước Hoa (50ml)",
+    name: "Chai nước hoa (50ml)",
     category: "Fragrance",
     dimensions: { length: 65, width: 40, height: 120, paperThickness: 0.45 },
     boxType: "sleeve-drawer",
     boxTypeName: "Hộp bao diêm (Sleeve & Drawer)",
-    recommendedGsm: "350 GSM Ivory Cán Màng Mờ",
+    recommendedGsm: "350 GSM Ivory cán màng mờ",
     tip: "Khay trượt êm ái tăng trải nghiệm unboxing sang trọng.",
   },
   {
     id: "watch",
-    name: "Đồng Hồ Đeo Tay / Vòng",
+    name: "Đồng hồ đeo tay / vòng",
     category: "Jewelry",
     dimensions: { length: 100, width: 100, height: 60, paperThickness: 0.5 },
     boxType: "lid-base",
-    boxTypeName: "Hộp âm dương (Lid & Base)",
-    recommendedGsm: "Rigid Box Carton Lạnh",
+    boxTypeName: "Hộp âm dương (lid & base)",
+    recommendedGsm: "Rigid box carton lạnh",
     tip: "Kết cấu hai mảnh đẳng cấp, giữ gối đệm êm ái.",
   },
   {
     id: "scarf",
-    name: "Khăn Lụa Tơ Tằm / Cà Vạt",
+    name: "Khăn lụa tơ tằm / cà vạt",
     category: "Fashion",
     dimensions: { length: 160, width: 110, height: 35, paperThickness: 0.3 },
     boxType: "pillow",
     boxTypeName: "Hộp gối (Pillow Box)",
-    recommendedGsm: "250 GSM Kraft Tự Nhiên",
+    recommendedGsm: "250 GSM Kraft tự nhiên",
     tip: "Đường cong thanh lịch, gấp mở không cần keo dán.",
   },
   {
     id: "tea",
-    name: "Hộp Trà Thảo Mộc / Bánh Thủ Công",
+    name: "Hộp trà thảo mộc / bánh thủ công",
     category: "Gourmet",
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
     boxType: "tuck-top",
@@ -271,11 +271,11 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
       } ${className}`}
     >
       {/* Floating Dynamic Island Container */}
-      <div className="relative rounded-squircle-lg bg-white/95 backdrop-blur-md border border-[#E8D8C8] shadow-tactile-lg overflow-hidden transition-all duration-300">
+      <div className="relative rounded-3xl bg-white/95 backdrop-blur-md border border-landing-line shadow-soft-16 overflow-hidden transition-all duration-300">
         {/* Top Header Pill Bar */}
         <div
           onClick={toggleExpanded}
-          className="px-3.5 py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-stone-50/80 transition select-none"
+          className="px-3.5 py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-landing-canvas transition select-none"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             {/* Mascot Avatar with lively pose */}
@@ -283,14 +283,14 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-brand-forest tracking-tight font-landing-heading truncate">
-                  Gói — AI Packaging Copilot
+                <span className="text-xs font-bold text-landing-ink tracking-tight font-landing-heading truncate">
+                  Gói — AI packaging copilot
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-library-accent/10 text-library-accent">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-landing-green/10 text-landing-green">
                   BETA
                 </span>
               </div>
-              <p className="text-[11px] text-stone-500 truncate max-w-[190px] sm:max-w-[240px]">
+              <p className="text-[11px] text-landing-muted truncate max-w-[190px] sm:max-w-[240px]">
                 {headline}
               </p>
             </div>
@@ -301,18 +301,18 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
             <button
               type="button"
               onClick={toggleAudio}
-              className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition"
+              className="p-1.5 text-landing-muted hover:text-landing-ink rounded-lg hover:bg-landing-canvas transition"
               title={isAudioMuted ? "Bật âm thanh tactile" : "Tắt âm thanh tactile"}
             >
               {isAudioMuted ? (
                 <VolumeX className="w-3.5 h-3.5" />
               ) : (
-                <Volume2 className="w-3.5 h-3.5 text-brand-forest" />
+                <Volume2 className="w-3.5 h-3.5 text-landing-ink" />
               )}
             </button>
 
             {/* Expand / Collapse Icon */}
-            <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center text-stone-600">
+            <div className="w-6 h-6 rounded-full bg-landing-canvas flex items-center justify-center text-landing-muted">
               {isExpanded ? (
                 <ChevronDown className="w-3.5 h-3.5" />
               ) : (
@@ -326,10 +326,10 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
         {isExpanded && (
           <div ref={contentRef} className="px-4 pb-4 pt-1 space-y-3.5 border-t border-[#F2ECE3]">
             {/* AI Speech Bubble */}
-            <div className="bg-[#FAF6EE] p-3 rounded-2xl border border-[#E8D8C8] relative">
+            <div className="bg-[#FAF6EE] p-3 rounded-3xl border border-landing-line relative">
               <div className="flex items-start gap-2.5">
-                <div className="w-2 h-2 rounded-full bg-library-accent mt-1.5 flex-shrink-0 animate-ping" />
-                <p className="text-xs leading-relaxed text-stone-700">{message}</p>
+                <div className="w-2 h-2 rounded-full bg-landing-green mt-1.5 flex-shrink-0 animate-ping" />
+                <p className="text-xs leading-relaxed text-landing-ink">{message}</p>
               </div>
 
               {/* 1-Click Auto Fix Button if violations exist */}
@@ -358,10 +358,10 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
             {/* Quick Gift Heuristics Carousel / Chips */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider font-mono">
-                  Gợi Ý Kích Thước Theo Quà Tặng
+                <span className="text-[11px] font-bold text-landing-ink uppercase tracking-wider font-mono">
+                  Gợi ý kích thước theo quà tặng
                 </span>
-                <span className="text-[10px] text-stone-400">Chuẩn mm</span>
+                <span className="text-[10px] text-landing-muted">Chuẩn mm</span>
               </div>
 
               <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
@@ -370,12 +370,12 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => handleSelectPreset(item)}
-                    className="text-left p-2 rounded-xl border border-stone-200 hover:border-brand-forest hover:bg-stone-50 transition group flex flex-col justify-between"
+                    className="text-left p-2 rounded-xl border border-landing-line hover:border-landing-ink hover:bg-landing-canvas transition group flex flex-col justify-between"
                   >
-                    <span className="text-xs font-semibold text-stone-900 group-hover:text-brand-forest line-clamp-1">
+                    <span className="text-xs font-semibold text-landing-ink group-hover:text-landing-ink line-clamp-1">
                       {item.name}
                     </span>
-                    <span className="text-[10px] font-mono text-stone-500">
+                    <span className="text-[10px] font-mono text-landing-muted">
                       {item.dimensions.length}x{item.dimensions.width}x
                       {item.dimensions.height}mm
                     </span>
@@ -388,15 +388,15 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
             <form onSubmit={handleSendQuery} className="relative flex items-center">
               <input
                 type="text"
-                placeholder="Hỏi Gói: 'Hộp đựng ly sứ', 'Hộp quà cưới'..."
+                placeholder="Hỏi Gói: 'hộp đựng ly sứ', 'hộp quà cưới'..."
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
-                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl bg-stone-100 border border-stone-200 focus:outline-none focus:border-library-accent focus:bg-white text-stone-800 placeholder-stone-400 transition"
+                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl bg-landing-canvas border border-landing-line focus:outline-none focus:border-landing-green focus:bg-white text-landing-ink placeholder-landing-muted transition"
               />
               <button
                 type="submit"
                 disabled={!userQuery.trim()}
-                className="absolute right-1.5 p-1 rounded-lg bg-library-accent text-white disabled:opacity-30 transition"
+                className="absolute right-1.5 p-1 rounded-lg bg-landing-green text-white disabled:opacity-30 transition"
               >
                 <Send className="w-3 h-3" />
               </button>

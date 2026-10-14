@@ -5,10 +5,7 @@ import type { StitchBehavior } from '../runtime/types';
 export const stitchBehaviors = {
   'intro-blueprint': () => import('./intro-blueprint'),
   'intro-minimal': () => import('./intro-minimal'),
-  'not-found': () => import('./not-found'),
   'editor': () => import('./editor'),
-  'editor-export': () => import('./editor-export'),
-  'editor-materials-backdrop': () => import('./editor-materials-backdrop'),
 } satisfies Record<string, () => Promise<{ default: StitchBehavior }>>;
 
 export type StitchBehaviorScreen = keyof typeof stitchBehaviors;

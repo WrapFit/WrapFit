@@ -28,7 +28,7 @@
       "slug": "not-found",
       "route": "not-found",
       "title": "WrapFit — Khôi Phục Bản Vẽ & Trạng Thái 404 (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1224
@@ -50,7 +50,7 @@
       "slug": "editor-export",
       "route": "/editor/export",
       "title": "WrapFit — Xuất File & Chia Sẻ (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -61,7 +61,7 @@
       "slug": "editor-inspect-fefco",
       "route": "/editor/inspect/fefco",
       "title": "WrapFit — Giải Phẫu Bóc Tách Cấu Trúc Bao Bì CAD Chuẩn In FEFCO",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -72,7 +72,7 @@
       "slug": "editor-materials-backdrop",
       "route": "/editor/materials/backdrop",
       "title": "WrapFit — Chi Tiết Vật Liệu & Bộ Sưu Tập Backdrop Động (Behance Style)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1321

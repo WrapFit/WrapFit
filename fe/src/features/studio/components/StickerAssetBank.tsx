@@ -21,7 +21,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   // 1. MASCOT BÉ GÓI POSES
   {
     id: "mascot_waving",
-    name: "Bé Gói Vẫy Tay Chào",
+    name: "Bé Gói vẫy tay chào",
     category: "mascot",
     previewType: "mascot_pose",
     mascotPose: "waving",
@@ -31,7 +31,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "mascot_thumbsup",
-    name: "Bé Gói Thumbs Up",
+    name: "Bé Gói thumbs up",
     category: "mascot",
     previewType: "mascot_pose",
     mascotPose: "thumbs_up",
@@ -41,7 +41,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "mascot_celebration",
-    name: "Bé Gói Ăn Mừng",
+    name: "Bé Gói ăn mừng",
     category: "mascot",
     previewType: "mascot_pose",
     mascotPose: "celebration",
@@ -51,7 +51,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "mascot_presenting",
-    name: "Bé Gói Nâng Hộp Quà",
+    name: "Bé Gói nâng hộp quà",
     category: "mascot",
     previewType: "mascot_pose",
     mascotPose: "presenting",
@@ -61,7 +61,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "mascot_unboxing",
-    name: "Bé Gói Nhảy Bật Nắp",
+    name: "Bé Gói nhảy bật nắp",
     category: "mascot",
     previewType: "mascot_pose",
     mascotPose: "unboxing_pop",
@@ -73,7 +73,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   // 2. LUXURY WAX SEALS (CON DẤU SÁP & TEM HOÀNG GIA)
   {
     id: "wax_seal_handmade",
-    name: "Con Dấu Sáp Đỏ 'Handmade'",
+    name: "Con dấu sáp đỏ 'handmade'",
     category: "wax_seal",
     previewType: "svg",
     defaultWidthMm: 32,
@@ -82,7 +82,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "wax_seal_gold",
-    name: "Dấu Ép Kim Vàng 'Special Gift'",
+    name: "Dấu ép kim vàng 'special gift'",
     category: "wax_seal",
     previewType: "svg",
     defaultWidthMm: 32,
@@ -91,7 +91,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "wax_seal_thankyou",
-    name: "Tem Lời Cảm Ơn 'Thank You'",
+    name: "Tem lời cảm ơn 'thank you'",
     category: "wax_seal",
     previewType: "svg",
     defaultWidthMm: 32,
@@ -111,7 +111,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "badge_xmas",
-    name: "Tem Giáng Sinh & Năm Mới",
+    name: "Tem Giáng Sinh & năm mới",
     category: "gift_badge",
     previewType: "svg",
     defaultWidthMm: 38,
@@ -120,7 +120,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "badge_fragile",
-    name: "Tem 'Hàng Dễ Vỡ Xin Nhẹ Tay'",
+    name: "Tem 'hàng dễ vỡ xin nhẹ tay'",
     category: "gift_badge",
     previewType: "svg",
     defaultWidthMm: 40,
@@ -140,7 +140,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   // 4. QR CODES & BARCODES (MÃ QR MỞ QUÀ VÀ MÃ VẠCH)
   {
     id: "qr_unbox_experience",
-    name: "Mã QR Trải Nghiệm Mở Hộp 3D",
+    name: "Mã QR trải nghiệm mở hộp 3D",
     category: "qr_barcode",
     previewType: "svg",
     defaultWidthMm: 28,
@@ -149,7 +149,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
   },
   {
     id: "barcode_ean13",
-    name: "Mã Vạch Chuẩn Bán Lẻ EAN-13",
+    name: "Mã vạch chuẩn bán lẻ EAN-13",
     category: "qr_barcode",
     previewType: "svg",
     defaultWidthMm: 42,
@@ -197,18 +197,18 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-3xl border border-stone-200 shadow-tactile p-4 space-y-3.5 ${className}`}>
+    <div className={`bg-white rounded-[28px] p-4 space-y-3.5 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+      <div className="flex items-center justify-between border-b border-landing-line pb-2.5">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-full bg-amber-100 text-amber-900">
-            <Gift className="w-4 h-4 text-brand-gold" />
+            <Gift className="w-4 h-4 text-landing-green" />
           </div>
           <div>
-            <h3 className="text-xs font-bold text-stone-900">
-              Ngân Hàng Sticker & Tem Quà Tặng
+            <h3 className="text-xs font-bold text-landing-ink">
+              Ngân hàng sticker & tem quà tặng
             </h3>
-            <span className="text-[10px] text-stone-400">
+            <span className="text-[10px] text-landing-muted">
               Nhấn 1-click để chèn vào mặt hộp đang chọn
             </span>
           </div>
@@ -218,7 +218,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 transition"
+            className="p-1 text-landing-muted hover:text-landing-ink rounded-full hover:bg-landing-canvas transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -230,8 +230,8 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
         {[
           { id: "all", label: "Tất Cả" },
           { id: "mascot", label: "Bé Gói" },
-          { id: "wax_seal", label: "Con Dấu Sáp" },
-          { id: "gift_badge", label: "Tem Dịp Lễ" },
+          { id: "wax_seal", label: "Con dấu sáp" },
+          { id: "gift_badge", label: "Tem dịp lễ" },
           { id: "qr_barcode", label: "QR & Mã Vạch" },
         ].map((tab) => (
           <button
@@ -243,8 +243,8 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
             }}
             className={`px-2.5 py-1 rounded-full whitespace-nowrap transition font-medium ${
               activeCategory === tab.id
-                ? "bg-brand-forest text-white shadow-sm"
-                : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                ? "bg-landing-green-night text-white shadow-sm"
+                : "bg-landing-canvas text-landing-muted hover:bg-landing-tile"
             }`}
           >
             {tab.label}
@@ -259,21 +259,21 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
             key={item.id}
             type="button"
             onClick={() => handleApplySticker(item)}
-            className="p-3 rounded-2xl border border-stone-200 hover:border-brand-forest hover:bg-stone-50/80 transition flex flex-col items-center justify-between text-center gap-2 group bg-white shadow-xs"
+            className="p-3 rounded-3xl border border-landing-line hover:border-landing-ink hover:bg-landing-canvas transition flex flex-col items-center justify-between text-center gap-2 group bg-white shadow-xs"
           >
             {/* Visual Thumbnail */}
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-stone-50 border border-stone-100 group-hover:scale-105 transition-transform overflow-hidden">
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-landing-canvas border border-landing-line group-hover:scale-105 transition-transform overflow-hidden">
               {item.category === "mascot" && item.mascotPose ? (
-                <GoiMascot pose={item.mascotPose} size={48} />
+                <GoiMascot pose={item.mascotPose} size={48} interactive={false} enableTracking={false} />
               ) : item.category === "wax_seal" ? (
                 <div className="w-10 h-10 rounded-full bg-red-700 text-amber-200 flex items-center justify-center font-landing-heading text-[8px] font-bold text-center border-2 border-amber-300 shadow-sm leading-tight p-0.5">
                   WAX SEAL
                 </div>
               ) : item.category === "qr_barcode" ? (
                 item.id.includes("qr") ? (
-                  <QrCode className="w-8 h-8 text-stone-900" />
+                  <QrCode className="w-8 h-8 text-landing-ink" />
                 ) : (
-                  <div className="font-mono text-[9px] font-bold text-stone-700 tracking-tighter">
+                  <div className="font-mono text-[9px] font-bold text-landing-ink tracking-tighter">
                     |||||||||||||||||
                   </div>
                 )
@@ -286,10 +286,10 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
 
             {/* Sticker Info */}
             <div className="space-y-0.5 w-full">
-              <span className="text-[11px] font-semibold text-stone-800 line-clamp-1 block group-hover:text-brand-forest">
+              <span className="text-[11px] font-semibold text-landing-ink line-clamp-1 block group-hover:text-landing-ink">
                 {item.name}
               </span>
-              <span className="text-[9px] font-mono text-stone-400 block">
+              <span className="text-[9px] font-mono text-landing-muted block">
                 {item.defaultWidthMm} × {item.defaultHeightMm} mm
               </span>
             </div>
