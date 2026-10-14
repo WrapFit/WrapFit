@@ -94,11 +94,13 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     });
 
     const format = FILE_FORMATS[job.fileType];
-    // DXF holds the cutting lines only: no artwork to load.
-    const artwork = job.fileType === 'DXF' ? new Map() : await this.loadArtwork(layout, job.fileType === 'PDF_CMYK');
+    const isPdf = job.fileType === 'PDF_CMYK' || job.fileType === 'PDF_A4_PRINT';
+    const artwork = job.fileType === 'DXF' ? new Map() : await this.loadArtwork(layout, isPdf);
     const body =
       job.fileType === 'PDF_CMYK'
         ? await renderPdf(layout, artwork)
+        : job.fileType === 'PDF_A4_PRINT'
+        ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
         : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork) : renderDxf(layout));
 
     // Private bucket: the file is only handed out through the 15-minute links of ExportService.

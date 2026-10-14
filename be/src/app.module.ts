@@ -27,6 +27,8 @@ import { StorageMaintenanceModule, StorageModule } from './storage';
 import { TemplatesModule } from './templates';
 import { UnboxingModule } from './unboxing';
 import { UsersModule } from './users';
+import { PrintShopsModule } from './print-shops';
+import { OrdersModule } from './orders';
 import { PrismaModule } from './shared/prisma';
 import { RedisModule } from './shared/redis';
 
@@ -57,6 +59,8 @@ import { RedisModule } from './shared/redis';
     UnboxingModule,
     ExportModule,
     EventsModule,
+    PrintShopsModule,
+    OrdersModule,
     BaseModule,
   ],
   providers: [
