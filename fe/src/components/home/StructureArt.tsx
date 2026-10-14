@@ -77,11 +77,27 @@ function Pillow() {
   );
 }
 
+function StickerLabel() {
+  return (
+    <>
+      {/* Outer sticker decal rectangle */}
+      <rect x="30" y="55" width="140" height="90" rx="12" fill={FACE} />
+      {/* Inner safe border line */}
+      <rect x="42" y="67" width="116" height="66" rx="8" fill="none" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+      {/* Decorative label ribbon / lines */}
+      <line x1="55" y1="90" x2="145" y2="90" strokeWidth="2" opacity="0.7" />
+      <line x1="65" y1="105" x2="135" y2="105" strokeWidth="1.5" opacity="0.4" />
+      <circle cx="100" cy="76" r="4" fill={STROKE} />
+    </>
+  );
+}
+
 const ART: Record<BoxStructureType, () => React.JSX.Element> = {
   "tuck-top": TuckTop,
   "sleeve-drawer": SleeveDrawer,
   "lid-base": LidBase,
   pillow: Pillow,
+  "sticker-label": StickerLabel,
 };
 
 /** Line drawing of a box structure, scaled to its square tile. */

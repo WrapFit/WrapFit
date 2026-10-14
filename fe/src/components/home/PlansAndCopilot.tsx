@@ -2,7 +2,7 @@
 
 import { BookOpen, MessageCircle } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { cn } from "@/utils/helpers";
 import { COPILOT, PLANS } from "./content";
@@ -37,41 +37,69 @@ export function PlansAndCopilot() {
   );
 }
 
-/** Dark green card of the Gói copilot, with a photo and one of Gói's tips. */
+/** Dark green card of the Gói copilot, with a photo and Mascot Gói standing in corner. */
 export function CopilotCard() {
+  const [mascotSize, setMascotSize] = useState(128);
+
+  useEffect(() => {
+    const updateSize = () => {
+      setMascotSize(window.innerWidth < 640 ? 104 : 128);
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
   return (
     <Reveal>
       <Container>
         <FeatureCard className="bg-landing-green-night ring-white/10">
           <article id={COPILOT.id} className="grid scroll-mt-28 grid-cols-1 items-center gap-8 lg:grid-cols-2">
-            <div className="flex flex-col gap-4">
-              <Reveal variant="text">
-                <Eyebrow className="text-landing-lime-soft">{COPILOT.eyebrow}</Eyebrow>
-                <CardTitle className="text-landing-lime">{COPILOT.title}</CardTitle>
-              </Reveal>
-              <p className="text-base leading-7 text-landing-lime-mist lg:text-lg">{COPILOT.body}</p>
-              <div className="flex flex-wrap gap-2.5">
-                {COPILOT.actions.map((action) => {
-                  const Icon = action.icon === "chat" ? MessageCircle : BookOpen;
-                  return (
-                    <Link key={action.label} href={action.href} className={darkGhostButton}>
-                      <Icon className="size-4" aria-hidden />
-                      {action.label}
-                    </Link>
-                  );
-                })}
+            <div className="flex flex-col justify-between gap-6">
+              <div className="flex flex-col gap-4">
+                <Reveal variant="text">
+                  <Eyebrow className="text-landing-lime-soft">{COPILOT.eyebrow}</Eyebrow>
+                  <CardTitle className="text-landing-lime">{COPILOT.title}</CardTitle>
+                </Reveal>
+                <p className="text-base leading-7 text-landing-lime-mist lg:text-lg">{COPILOT.body}</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {COPILOT.actions.map((action) => {
+                    const Icon = action.icon === "chat" ? MessageCircle : BookOpen;
+                    return (
+                      <Link key={action.label} href={action.href} className={darkGhostButton}>
+                        <Icon className="size-4" aria-hidden />
+                        {action.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Mascot Gói standing prominently on the text side (dark green background), high contrast & distinct */}
+              <div className="pt-2 flex items-center gap-4">
+                <GoiMascot
+                  pose="measuring"
+                  size={mascotSize}
+                  bubbleText={COPILOT.bubble}
+                  bubblePlacement="top-right"
+                  showBubbleOnBoop={true}
+                  label="Bé Gói - Trợ lý AI Packaging Copilot (Bấm để trò chuyện!)"
+                />
+                <div className="hidden sm:flex flex-col text-xs text-landing-lime-mist/80 leading-relaxed max-w-[210px]">
+                  <span className="font-semibold text-landing-lime">Bé Gói luôn sẵn sàng</span>
+                  <span>Bấm vào Gói để trò chuyện và nhận gợi ý kích thước tối ưu!</span>
+                </div>
               </div>
             </div>
-            <div className="relative overflow-hidden rounded-2xl">
-              <img src={COPILOT.image.src} alt={COPILOT.image.alt} loading="lazy" className="aspect-[16/10] w-full object-cover" />
-              <div className="absolute bottom-3 left-3 flex max-w-[calc(100%-1.5rem)] items-end gap-2 sm:bottom-4 sm:left-4">
-                <div className="shrink-0 rounded-full bg-white/90 p-1 shadow-soft-16 backdrop-blur-md">
-                  <GoiMascot pose="measuring" size={52} />
-                </div>
-                <p className="mb-1 rounded-2xl rounded-bl-sm bg-white/95 px-3 py-2 text-xs font-medium text-landing-ink shadow-soft-16 backdrop-blur-md sm:text-sm">
-                  {COPILOT.bubble}
-                </p>
-              </div>
+
+            {/* Right column: Designer studio photo cleanly presented */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-soft-16">
+              <img
+                src={COPILOT.image.src}
+                alt={COPILOT.image.alt}
+                loading="lazy"
+                className="aspect-[16/10] w-full object-cover transition-transform duration-700 hover:scale-[1.02]"
+              />
             </div>
           </article>
         </FeatureCard>

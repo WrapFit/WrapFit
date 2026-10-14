@@ -11,3 +11,4 @@ export { GreenBanner } from "./GreenBanner";
 export { MadeInVietnam } from "./MadeInVietnam";
 export { BoxQuickPreviewModal } from "./BoxQuickPreviewModal";
 export { CardsAlmanacSection } from "./CardsAlmanacSection";
+export { HomeFaq } from "./HomeFaq";
