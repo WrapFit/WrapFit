@@ -11,7 +11,7 @@ import { CardTitle, Container, Eyebrow, FeatureCard, Reveal, darkGhostButton, li
 /** Lime band: the plans card with its price picker, then the dark card of the Gói copilot. */
 export function PlansAndCopilot() {
   return (
-    <section className="space-y-12 bg-landing-lime py-12 lg:space-y-24 lg:py-24">
+    <section className="space-y-8 bg-landing-lime py-10 lg:space-y-14 lg:py-16">
       <Reveal>
         <Container>
           <FeatureCard>

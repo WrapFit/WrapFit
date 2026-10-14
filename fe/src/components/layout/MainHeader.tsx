@@ -142,7 +142,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
           {showCta && (
             <Link
               href={ROUTES.editorNew}
-              className="hidden h-10 items-center gap-1.5 rounded-full bg-landing-lime px-3 text-sm font-medium text-landing-green-night transition-colors hover:bg-[#AFEC88] sm:inline-flex"
+              className="hidden h-10 items-center gap-1.5 rounded-full bg-[#F26522] px-4 text-sm font-semibold text-white shadow-soft-8 transition-all duration-200 hover:bg-[#D85314] hover:scale-105 active:scale-95 sm:inline-flex"
             >
               Bắt đầu
               <ArrowRight className="size-4" aria-hidden />

@@ -8,7 +8,7 @@ import { CardTitle, Container, Eyebrow, FeatureCard, Reveal, limeButton } from "
 export function MadeInVietnam() {
   const [first, second, wide] = MADE_IN.images;
   return (
-    <section className="py-12 lg:py-24">
+    <section className="py-10 lg:py-16">
       <Reveal>
         <Container>
           <FeatureCard>

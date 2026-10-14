@@ -17,7 +17,7 @@ const InteractiveFoldingBox3D = dynamic(
 /** The white feature cards: custom size, 3D preview, then production (export, FitCheck, QR unboxing). */
 export function FeatureShowcase() {
   return (
-    <section className="flex flex-col gap-12 py-12 lg:gap-24 lg:py-24">
+    <section className="flex flex-col gap-8 py-8 lg:gap-14 lg:py-14">
       <Reveal>
         <Container>
           <FeatureCard className="bg-gradient-to-r from-white to-white/0">

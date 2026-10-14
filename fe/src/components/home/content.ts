@@ -17,13 +17,15 @@ export const ANCHORS = {
   fitcheck: "fitcheck",
   export: "xuat-file",
   copilot: "copilot",
+  industries: "nganh-hang",
 } as const;
 
 export const HERO = {
+  slogan: "Make Every Present, Present.",
   badges: ["Đúng kích thước từng milimét", "File in CMYK 300 DPI"],
   title: "Nền tảng thiết kế",
   highlight: "hộp quà vừa khít",
-  lead: "Một nơi cho cả quy trình làm hộp quà, từ đo món quà đến file in.",
+  lead: "Nơi thiết kế chiếc hộp bao quanh món quà với 100% khả thi sản xuất, từ đo kích thước milimét đến xuất file in CMYK.",
   cta: { label: "Tất cả mẫu hộp", href: ROUTES.templates },
 };
 
@@ -86,20 +88,123 @@ export interface CatalogCard {
   kind: string;
   image: string;
   href: string;
+  recommendedStructure?: string;
+  templateCount?: string;
+  badge?: string;
+  categoryTag?: string;
 }
 
 export const INDUSTRY_CARDS: CatalogCard[] = [
-  { title: "Mỹ phẩm", kind: "Ngành hàng", image: photo("727b7e0788de4f2f"), href: byIndustry("COSMETICS") },
-  { title: "Nến thơm", kind: "Ngành hàng", image: photo("11aab61a5e6b85b3"), href: byIndustry("CANDLES") },
-  { title: "Bánh ngọt", kind: "Ngành hàng", image: photo("ceb84293f215fae7"), href: byIndustry("BAKERY") },
-  { title: "Trang sức", kind: "Ngành hàng", image: photo("d9bcf1d058bfb05b"), href: byIndustry("JEWELRY") },
-  { title: "Trà & nông sản", kind: "Ngành hàng", image: photo("d5bab56f2c79edea"), href: byIndustry("TEA_AGRI") },
-  { title: "Tết", kind: "Dịp tặng quà", image: photo("9aeea1ca61895060"), href: byOccasion("TET") },
-  { title: "Giáng sinh", kind: "Dịp tặng quà", image: photo("af8c8412c159d49a"), href: byOccasion("CHRISTMAS") },
-  { title: "Cưới hỏi", kind: "Dịp tặng quà", image: photo("1012c6f152a6d72f"), href: byOccasion("WEDDING") },
-  { title: "Valentine", kind: "Dịp tặng quà", image: photo("d274ba3b177d39f3"), href: byOccasion("VALENTINE") },
-  { title: "Sinh nhật", kind: "Dịp tặng quà", image: photo("f958a0d1ac6f013b"), href: byOccasion("BIRTHDAY") },
-  { title: "Tối giản", kind: "Phong cách", image: photo("42f41003ce34a4a9"), href: byOccasion("MINIMAL") },
+  {
+    title: "Mỹ phẩm",
+    kind: "Ngành hàng",
+    image: photo("727b7e0788de4f2f"),
+    href: byIndustry("COSMETICS"),
+    recommendedStructure: "Hộp Nắp Gài & Âm Dương",
+    templateCount: "48+ mẫu",
+    badge: "Bán chạy nhất",
+    categoryTag: "Skincare & Beauty",
+  },
+  {
+    title: "Nến thơm",
+    kind: "Ngành hàng",
+    image: photo("11aab61a5e6b85b3"),
+    href: byIndustry("CANDLES"),
+    recommendedStructure: "Hộp Nắp Gài Đáy Khóa",
+    templateCount: "32+ mẫu",
+    badge: "Thịnh hành",
+    categoryTag: "Home Fragrance",
+  },
+  {
+    title: "Bánh ngọt",
+    kind: "Ngành hàng",
+    image: photo("ceb84293f215fae7"),
+    href: byIndustry("BAKERY"),
+    recommendedStructure: "Hộp Bao Diêm Khay Rút",
+    templateCount: "28+ mẫu",
+    badge: "Food Safe",
+    categoryTag: "Pastry & Bakery",
+  },
+  {
+    title: "Trang sức",
+    kind: "Ngành hàng",
+    image: photo("d9bcf1d058bfb05b"),
+    href: byIndustry("JEWELRY"),
+    recommendedStructure: "Hộp Âm Dương Cao Cấp",
+    templateCount: "42+ mẫu",
+    badge: "Luxury & VIP",
+    categoryTag: "Fine Jewelry",
+  },
+  {
+    title: "Trà & nông sản",
+    kind: "Ngành hàng",
+    image: photo("d5bab56f2c79edea"),
+    href: byIndustry("TEA_AGRI"),
+    recommendedStructure: "Hộp Nắp Gài Giấy Kraft",
+    templateCount: "35+ mẫu",
+    badge: "Eco Kraft",
+    categoryTag: "Nông sản Việt",
+  },
+  {
+    title: "Tết",
+    kind: "Dịp tặng quà",
+    image: photo("9aeea1ca61895060"),
+    href: byOccasion("TET"),
+    recommendedStructure: "Hộp Âm Dương Sơn Mài",
+    templateCount: "64+ mẫu",
+    badge: "Lễ hội truyền thống",
+    categoryTag: "Quà Tết sum vầy",
+  },
+  {
+    title: "Giáng sinh",
+    kind: "Dịp tặng quà",
+    image: photo("af8c8412c159d49a"),
+    href: byOccasion("CHRISTMAS"),
+    recommendedStructure: "Hộp Nắp Gài Họa Tiết Thông",
+    templateCount: "30+ mẫu",
+    badge: "Winter Holiday",
+    categoryTag: "Mùa lễ hội",
+  },
+  {
+    title: "Cưới hỏi",
+    kind: "Dịp tặng quà",
+    image: photo("1012c6f152a6d72f"),
+    href: byOccasion("WEDDING"),
+    recommendedStructure: "Hộp Gối Cánh Cung",
+    templateCount: "25+ mẫu",
+    badge: "Nhã nhặn",
+    categoryTag: "Hôn lễ & Cảm ơn",
+  },
+  {
+    title: "Valentine",
+    kind: "Dịp tặng quà",
+    image: photo("d274ba3b177d39f3"),
+    href: byOccasion("VALENTINE"),
+    recommendedStructure: "Hộp Khay Rút Trái Tim",
+    templateCount: "22+ mẫu",
+    badge: "Sweet Love",
+    categoryTag: "Tình yêu & Gắn kết",
+  },
+  {
+    title: "Sinh nhật",
+    kind: "Dịp tặng quà",
+    image: photo("f958a0d1ac6f013b"),
+    href: byOccasion("BIRTHDAY"),
+    recommendedStructure: "Hộp Nắp Gài Sôi Động",
+    templateCount: "40+ mẫu",
+    badge: "Kỷ niệm tuổi mới",
+    categoryTag: "Party & Birthday",
+  },
+  {
+    title: "Tối giản",
+    kind: "Phong cách",
+    image: photo("42f41003ce34a4a9"),
+    href: byOccasion("MINIMAL"),
+    recommendedStructure: "Hộp Kraft Mộc Trơn",
+    templateCount: "50+ mẫu",
+    badge: "Aesop / Luma",
+    categoryTag: "Minimalist Craft",
+  },
 ];
 
 /** Full-width reel of product shots. */

@@ -14,9 +14,13 @@ export function Container({ className, children }: { className?: string; childre
 const PILL =
   "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25";
 
-/** Lime call to action. `size="sm"` is the 36 px button of the cards. */
+/** FPT University primary call to action (vibrant FPT Orange #F26522). `size="sm"` is the 36 px button of the cards. */
 export function limeButton(size: "md" | "sm" = "md") {
-  return cn(PILL, "bg-landing-lime text-landing-green-night hover:bg-[#AFEC88]", size === "md" ? "h-10 px-4" : "h-9 px-3");
+  return cn(
+    PILL,
+    "bg-[#F26522] text-white hover:bg-[#D85314] shadow-soft-8 font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]",
+    size === "md" ? "h-10 px-5" : "h-9 px-3.5"
+  );
 }
 
 /** Outline pill on the dark green card. */
