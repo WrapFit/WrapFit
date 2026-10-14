@@ -4,10 +4,10 @@ import { AppProviders, MainLayout } from "@/layouts/main";
 import "@/assets/styles/globals.css";
 
 export const metadata = {
-  title: "WrapFit — Packaging Personalization & Intelligence Platform",
+  title: "WrapFit",
   description: "Make Every Present, Present. Thiết kế chiếc hộp bao quanh món quà với 100% khả thi sản xuất.",
-  // Without a declared icon every first page load asks for /favicon.ico and gets 404.
-  icons: { icon: "/branding/wrapfit-logo.png" },
+  // Clean favicon using the 3D box logo with FPT colors
+  icons: { icon: "/branding/wrapfit-box-icon.svg" },
 };
 
 export default function RootLayout({
