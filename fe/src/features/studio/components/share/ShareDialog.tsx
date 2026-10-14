@@ -17,11 +17,11 @@ const COMMUNITY_MIN_SCORE = 90;
 const VISIBILITIES: { value: ProjectVisibility; title: string; hint: string; icon: typeof Lock }[] = [
   { value: "PRIVATE", title: "Riêng tư", hint: "Chỉ bạn xem được.", icon: Lock },
   { value: "UNLISTED", title: "Có link", hint: "Ai có link đều xem được; không hiện trên tìm kiếm.", icon: Link2 },
-  { value: "PUBLIC", title: "Công khai", hint: "Ai cũng xem được; có thể lên Thư viện cộng đồng.", icon: Globe2 },
+  { value: "PUBLIC", title: "Công khai", hint: "Ai cũng xem được; có thể lên thư viện cộng đồng.", icon: Globe2 },
 ];
 
 const SELECT_CLASS =
-  "w-full min-h-[44px] px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 focus:outline-none focus:border-library-accent";
+  "w-full min-h-[44px] px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink focus:outline-none focus:border-landing-green";
 
 interface ShareDialogProps {
   /** The project as the editor loaded it; the dialog reads newer values from the cache. */
@@ -79,7 +79,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
     setSaving("community");
     try {
       await patch({ occasion: occasion || null, industry: industry || null });
-      toast.show({ tone: "success", title: "Đã lưu chủ đề cho Thư viện cộng đồng" });
+      toast.show({ tone: "success", title: "Đã lưu chủ đề cho thư viện cộng đồng" });
     } catch (err) {
       toast.error(err, "Chưa lưu được chủ đề");
     } finally {
@@ -108,15 +108,15 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
       widthClass="max-w-lg"
     >
       <fieldset className="space-y-2" disabled={saving !== null}>
-        <legend className="text-xs font-bold text-stone-800 uppercase tracking-wider mb-2">Ai xem được</legend>
+        <legend className="font-landing-heading text-base font-bold text-landing-ink mb-2">Ai xem được</legend>
         {VISIBILITIES.map((option) => {
           const Icon = option.icon;
           const active = current.visibility === option.value;
           return (
             <label
               key={option.value}
-              className={`flex items-center gap-3 p-3 min-h-[56px] rounded-2xl border cursor-pointer transition ${
-                active ? "border-library-accent bg-library-accent-mist/60" : "border-stone-200 hover:border-stone-300"
+              className={`flex items-center gap-3 p-3 min-h-[56px] rounded-3xl border cursor-pointer transition ${
+                active ? "border-landing-green bg-landing-lime-mist/60" : "border-landing-line hover:border-landing-ink/30"
               }`}
             >
               <input
@@ -129,14 +129,14 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               />
               <span
                 className={`w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center ${
-                  active ? "bg-library-accent text-white" : "bg-stone-100 text-stone-600"
+                  active ? "bg-landing-green text-white" : "bg-landing-canvas text-landing-muted"
                 }`}
               >
                 <Icon className="w-4 h-4" aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="text-sm font-semibold text-stone-900 block">{option.title}</span>
-                <span className="text-xs text-stone-500 block">{option.hint}</span>
+                <span className="text-sm font-semibold text-landing-ink block">{option.title}</span>
+                <span className="text-xs text-landing-muted block">{option.hint}</span>
               </span>
             </label>
           );
@@ -154,12 +154,12 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               readOnly
               value={link}
               onFocus={(event) => event.currentTarget.select()}
-              className="flex-1 min-w-0 min-h-[44px] px-3 rounded-xl border border-stone-200 bg-stone-50 font-mono text-xs text-stone-700"
+              className="flex-1 min-w-0 min-h-[44px] px-3 rounded-xl border border-landing-line bg-landing-canvas font-mono text-xs text-landing-ink"
             />
             <button
               type="button"
               onClick={() => void copy()}
-              className="min-h-[44px] px-4 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold flex items-center gap-1.5 flex-shrink-0"
+              className="min-h-[44px] px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 flex-shrink-0"
             >
               {copied ? <Check className="w-4 h-4" aria-hidden /> : <Copy className="w-4 h-4" aria-hidden />}
               {copied ? "Đã chép" : "Sao chép"}
@@ -170,16 +170,16 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               rel="noopener noreferrer"
               aria-label="Mở trang chia sẻ trong tab mới"
               title="Mở trang chia sẻ"
-              className="w-11 h-11 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-600 flex items-center justify-center flex-shrink-0"
+              className="w-11 h-11 rounded-full border border-landing-line hover:bg-landing-canvas text-landing-muted flex items-center justify-center flex-shrink-0"
             >
               <ExternalLink className="w-4 h-4" aria-hidden />
             </a>
           </div>
 
-          <label className="flex items-center justify-between gap-3 p-3 min-h-[56px] rounded-2xl border border-stone-200 cursor-pointer">
+          <label className="flex items-center justify-between gap-3 p-3 min-h-[56px] rounded-3xl border border-landing-line cursor-pointer">
             <span>
-              <span className="text-sm font-semibold text-stone-900 block">Cho phép Remix</span>
-              <span className="text-xs text-stone-500 block">Người xem tạo được bản sao để chỉnh sửa trong tài khoản của họ.</span>
+              <span className="text-sm font-semibold text-landing-ink block">Cho phép Remix</span>
+              <span className="text-xs text-landing-muted block">Người xem tạo được bản sao để chỉnh sửa trong tài khoản của họ.</span>
             </span>
             <input
               type="checkbox"
@@ -193,24 +193,24 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
       )}
 
       {current.visibility === "PUBLIC" && (
-        <section aria-labelledby="community-title" className="space-y-3 pt-4 border-t border-stone-100">
+        <section aria-labelledby="community-title" className="space-y-3 pt-4 border-t border-landing-line">
           <div>
-            <h3 id="community-title" className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+            <h3 id="community-title" className="font-landing-heading text-base font-bold text-landing-ink">
               Thư viện cộng đồng
             </h3>
-            <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+            <p className="text-xs text-landing-muted mt-1 leading-relaxed">
               Gắn dịp và ngành hàng để thiết kế hiện ở Thư viện mẫu. Chỉ thiết kế có FitCheck từ {COMMUNITY_MIN_SCORE} điểm
               được hiện.
             </p>
           </div>
           {score !== null && score < COMMUNITY_MIN_SCORE && (
-            <p role="note" className="text-xs p-3 rounded-xl bg-vibrant-coral/10 border border-vibrant-coral/30 text-stone-800">
+            <p role="note" className="text-xs p-3 rounded-xl bg-vibrant-coral/10 border border-vibrant-coral/30 text-landing-ink">
               Điểm FitCheck hiện tại là <strong>{score}</strong>: thiết kế chưa hiện ở thư viện cộng đồng cho tới khi đạt{" "}
               {COMMUNITY_MIN_SCORE}.
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <label className="text-xs font-semibold text-stone-700 space-y-1">
+            <label className="text-xs font-semibold text-landing-ink space-y-1">
               <span className="block">Dịp tặng quà</span>
               <select value={occasion} onChange={(event) => setOccasion(event.target.value as Occasion | "")} className={SELECT_CLASS}>
                 <option value="">Chưa chọn</option>
@@ -221,7 +221,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
                 ))}
               </select>
             </label>
-            <label className="text-xs font-semibold text-stone-700 space-y-1">
+            <label className="text-xs font-semibold text-landing-ink space-y-1">
               <span className="block">Ngành hàng</span>
               <select value={industry} onChange={(event) => setIndustry(event.target.value as Industry | "")} className={SELECT_CLASS}>
                 <option value="">Chưa chọn</option>
@@ -238,7 +238,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               type="button"
               disabled={!communityChanged || saving !== null}
               onClick={() => void saveCommunity()}
-              className="min-h-[44px] px-5 rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-sm font-semibold shadow-tactile transition disabled:opacity-50"
+              className="min-h-[44px] px-5 rounded-full bg-landing-green hover:bg-landing-green-deep text-white text-sm font-semibold shadow-none transition disabled:opacity-50"
             >
               {saving === "community" ? "Đang lưu…" : "Lưu chủ đề"}
             </button>

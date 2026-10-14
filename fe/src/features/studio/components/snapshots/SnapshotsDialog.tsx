@@ -55,7 +55,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
         toast.show({
           tone: "error",
           title: "Chưa lưu được mốc",
-          description: "Thay đổi mới nhất chưa lưu được. Đợi trạng thái “Đã lưu” rồi thử lại.",
+          description: "Thay đổi mới nhất chưa lưu được. Đợi trạng thái “đã lưu” rồi thử lại.",
         });
         return;
       }
@@ -139,12 +139,12 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
           maxLength={MAX_NAME_LENGTH}
           onChange={(event) => setName(event.target.value)}
           placeholder="Tên mốc, vd. Bản gửi khách duyệt"
-          className="flex-1 min-h-[44px] px-4 rounded-full border border-stone-200 bg-stone-50/60 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-library-accent focus:bg-white"
+          className="flex-1 min-h-[44px] px-4 rounded-full border border-landing-line bg-landing-canvas text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-landing-green focus:bg-white"
         />
         <button
           type="submit"
           disabled={creating || busy}
-          className="min-h-[44px] px-5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-sm font-semibold shadow-tactile transition flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
+          className="min-h-[44px] px-5 rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold shadow-none transition flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-wait"
         >
           <Bookmark className="w-4 h-4" aria-hidden />
           {creating ? "Đang lưu…" : "Lưu mốc"}
@@ -152,16 +152,16 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
       </form>
 
       {snapshots.isPending ? (
-        <p className="text-sm text-stone-500">Đang tải các mốc…</p>
+        <p className="text-sm text-landing-muted">Đang tải các mốc…</p>
       ) : snapshots.error ? (
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-landing-muted">
           Chưa tải được danh sách mốc.{" "}
-          <button type="button" onClick={() => void snapshots.refetch()} className="font-semibold text-library-accent underline">
+          <button type="button" onClick={() => void snapshots.refetch()} className="font-semibold text-landing-green underline">
             Thử lại
           </button>
         </p>
       ) : snapshots.data.length === 0 ? (
-        <p className="text-sm text-stone-500 leading-relaxed">
+        <p className="text-sm text-landing-muted leading-relaxed">
           Chưa có mốc nào. Lưu một mốc trước khi thử hướng thiết kế mới để quay lại được bất cứ lúc nào.
         </p>
       ) : (
@@ -170,21 +170,21 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
             const confirming = confirm?.id === snapshot.id ? confirm.kind : null;
             const working = running?.id === snapshot.id;
             return (
-              <li key={snapshot.id} className="p-2.5 rounded-2xl border border-stone-200/80 bg-white">
+              <li key={snapshot.id} className="p-2.5 rounded-3xl border border-landing-line bg-white">
                 <div className="flex items-center gap-3">
-                  <span className="w-16 h-12 flex-shrink-0 rounded-xl bg-paper-linen border border-stone-200/80 overflow-hidden flex items-center justify-center">
+                  <span className="w-16 h-12 flex-shrink-0 rounded-xl bg-landing-canvas border border-landing-line overflow-hidden flex items-center justify-center">
                     {snapshot.previewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={snapshot.previewUrl} alt="" className="w-full h-full object-contain" loading="lazy" />
                     ) : (
-                      <Bookmark className="w-4 h-4 text-stone-300" aria-hidden />
+                      <Bookmark className="w-4 h-4 text-landing-line" aria-hidden />
                     )}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-stone-900 block truncate" title={snapshot.name}>
+                    <span className="text-sm font-semibold text-landing-ink block truncate" title={snapshot.name}>
                       {snapshot.name}
                     </span>
-                    <span className="text-[11px] text-stone-500 font-mono block">
+                    <span className="text-[11px] text-landing-muted font-mono block">
                       {dateTime.format(new Date(snapshot.createdAt))} · {snapshot.dimensions.length}×{snapshot.dimensions.width}×
                       {snapshot.dimensions.height} mm
                     </span>
@@ -197,7 +197,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         onClick={() => setConfirm({ kind: "restore", id: snapshot.id })}
                         aria-label={`Khôi phục mốc ${snapshot.name}`}
                         title="Khôi phục"
-                        className="w-10 h-10 rounded-full hover:bg-library-accent-mist text-library-accent flex items-center justify-center transition disabled:opacity-40"
+                        className="w-10 h-10 rounded-full hover:bg-landing-lime-mist text-landing-green flex items-center justify-center transition disabled:opacity-40"
                       >
                         <RotateCcw className="w-4 h-4" aria-hidden />
                       </button>
@@ -207,7 +207,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         onClick={() => setConfirm({ kind: "delete", id: snapshot.id })}
                         aria-label={`Xoá mốc ${snapshot.name}`}
                         title="Xoá"
-                        className="w-10 h-10 rounded-full hover:bg-stone-100 text-stone-500 flex items-center justify-center transition disabled:opacity-40"
+                        className="w-10 h-10 rounded-full hover:bg-landing-canvas text-landing-muted flex items-center justify-center transition disabled:opacity-40"
                       >
                         <Trash2 className="w-4 h-4" aria-hidden />
                       </button>
@@ -215,8 +215,8 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                   )}
                 </div>
                 {confirming && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2.5">
-                    <p className="text-xs text-stone-700 leading-relaxed">
+                  <div className="mt-2.5 p-3 rounded-xl bg-landing-canvas border border-landing-line space-y-2.5">
+                    <p className="text-xs text-landing-ink leading-relaxed">
                       {confirming === "restore"
                         ? "Thay thiết kế hiện tại bằng mốc này? Bản hiện tại được lưu thành mốc tự động, bạn có thể hoàn tác."
                         : "Xoá mốc này? Không hoàn tác được."}
@@ -226,7 +226,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         type="button"
                         disabled={working}
                         onClick={() => setConfirm(null)}
-                        className="min-h-[36px] px-4 rounded-full border border-stone-200 hover:bg-white text-stone-700 text-xs font-semibold"
+                        className="min-h-[36px] px-4 rounded-full border border-landing-line hover:bg-white text-landing-ink text-xs font-semibold"
                       >
                         Huỷ
                       </button>
@@ -235,7 +235,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         disabled={working}
                         onClick={() => void (confirming === "restore" ? restore(snapshot) : remove(snapshot))}
                         className={`min-h-[36px] px-4 rounded-full text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-wait ${
-                          confirming === "restore" ? "bg-library-accent hover:bg-[#3A7513]" : "bg-stone-900 hover:bg-stone-800"
+                          confirming === "restore" ? "bg-landing-green hover:bg-landing-green-deep" : "bg-landing-green-night hover:bg-black"
                         }`}
                       >
                         {working

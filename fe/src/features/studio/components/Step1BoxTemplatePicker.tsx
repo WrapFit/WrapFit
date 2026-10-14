@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
-import { Check, ArrowRight, Layers } from "lucide-react";
+import { ArrowRight, Box, Check, FileText, Grid3x3, Hand, Layers, Scissors } from "lucide-react";
+import { Box3DView } from "@/features/studio/components/three/Box3DView";
+import { CardTitle, MetricRow, PRIMARY_PILL, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
 import { BoxStructureType, caliperOf, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
 import type { BoxStructure } from "@/types/api";
@@ -17,7 +20,7 @@ interface StructureCard extends BoxStructureOption {
 const GENERIC_STRUCTURE: Omit<BoxStructureOption, "id" | "name" | "vietnameseName" | "description"> = {
   subtitle: "",
   badge: "Cấu trúc mới",
-  badgeColor: "bg-stone-50 text-stone-700 border-stone-200",
+  badgeColor: "bg-landing-canvas text-landing-ink border-landing-line",
   recommendedGifts: [],
   recommendedPaper: "Ivory 300 GSM",
   foldDifficulty: "Trung bình",
@@ -73,71 +76,164 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   const cards = structureCards(structures);
   const current = cards.find((s) => s.id === selectedStructure) || cards[0];
 
+  const [view, setView] = React.useState<"3d" | "2d">("3d");
+  const [fold, setFold] = React.useState(100);
+  const pieces = React.useMemo(() => {
+    try {
+      return generateDielinePieces(current.id, current.defaultDims, CURRENT_FORMULA_VERSION);
+    } catch {
+      return [];
+    }
+  }, [current.id, current.defaultDims]);
+  const dims = current.defaultDims;
+
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-10">
-      <div className="max-w-2xl">
-        <p className="text-sm font-medium text-library-accent">Bước 1 · Cấu trúc hộp</p>
-        <h1 className="mt-1 font-landing-heading text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">Chọn cấu trúc hộp</h1>
-        <p className="mt-1.5 text-base leading-[1.6] text-library-sub">
-          Mỗi cấu trúc là một bộ công thức khuôn bế: kích thước bạn nhập ở bước sau được tính thẳng ra đường cắt và đường gấp.
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6">
+      <StepHeader
+        step="Bước 1 / 6 · Cấu trúc"
+        title="Chọn cấu trúc hộp"
+        subtitle="Mỗi cấu trúc là một bộ công thức khuôn bế. Xem hộp gấp và khuôn trải phẳng trước khi nhập kích thước."
+      />
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((item) => {
-          const isSelected = item.id === selectedStructure;
-          return (
-            <button
-              type="button"
-              key={item.id}
-              aria-pressed={isSelected}
-              onClick={() => onSelectStructure(item.id)}
-              className="group flex flex-col gap-3 text-left outline-none"
-            >
-              <span
-                className={`relative block aspect-[321/201] w-full overflow-hidden rounded-2xl border bg-library-tile transition-shadow ${
-                  isSelected ? "border-[1.5px] border-library-ink shadow-hard" : "border-library-ink group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm"
-                }`}
-              >
-                <span className="absolute inset-0 flex items-center justify-center p-6">
-                  <DielineSketch structure={item.id} dimensions={item.defaultDims} className="h-full w-full" />
-                </span>
-                <span className={`absolute left-3 top-3 rounded-md px-1.5 py-1 text-xs ${isSelected ? "bg-library-lime text-library-lime-ink" : "bg-white text-library-sub"}`}>
-                  {item.badge}
-                </span>
-                <span className="absolute right-3 top-3 rounded-md bg-white px-1.5 py-1 font-mono text-[11px] text-library-sub">{creaseCountOf(item)} nếp gấp</span>
-                {isSelected && (
-                  <span className="absolute bottom-3 right-3 flex size-7 items-center justify-center rounded-full bg-library-lime-ink text-white">
-                    <Check className="size-4" strokeWidth={3} aria-hidden />
-                  </span>
-                )}
-              </span>
-              <span>
-                <span className="block text-base font-medium text-library-ink">{item.apiName}</span>
-                <span className="mt-0.5 line-clamp-2 block text-sm leading-[1.5] text-library-sub">{item.description}</span>
-                <span className="mt-2 flex items-center gap-1.5 text-xs text-library-muted">
-                  <Layers className="size-3.5 shrink-0" aria-hidden />
-                  <span className="truncate">{item.recommendedPaper}</span>
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+        {/* Structures */}
+        <StudioCard as="aside" aria-label="Cấu trúc hộp" className="h-fit p-3">
+          <p className="px-2 pb-2 pt-1 text-xs font-medium text-landing-muted">{cards.length} cấu trúc</p>
+          <ul className="flex flex-col gap-2">
+            {cards.map((item) => {
+              const isSelected = item.id === selectedStructure;
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => onSelectStructure(item.id)}
+                    className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors ${
+                      isSelected ? "bg-landing-lime-mist ring-2 ring-landing-green" : "hover:bg-landing-canvas"
+                    }`}
+                  >
+                    <span className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-landing-line/60">
+                      <BoxPreview structure={item.id} dimensions={item.defaultDims} className="h-full w-full" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-landing-ink">{item.apiName}</span>
+                      <span className="block truncate text-xs text-landing-muted">{item.badge}</span>
+                    </span>
+                    {isSelected && (
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-landing-lime text-landing-green-night">
+                        <Check className="size-3.5" strokeWidth={3} aria-hidden />
+                      </span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </StudioCard>
 
-      <div className="flex flex-col items-stretch justify-between gap-4 rounded-2xl border border-library-line bg-white p-4 sm:flex-row sm:items-center sm:p-5">
-        <div className="min-w-0">
-          <span className="block text-xs text-library-muted">Cấu trúc đã chọn</span>
-          <span className="block truncate text-base font-medium text-library-ink">{current.apiName}</span>
+        {/* Stage */}
+        <StudioCard aria-label={`Xem trước ${current.apiName}`} className="relative flex min-h-[560px] flex-col overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <ViewToggle<"3d" | "2d">
+              label="Chế độ xem"
+              value={view}
+              onChange={setView}
+              options={[
+                { value: "3d", label: "Hộp 3D", icon: Box },
+                { value: "2d", label: "Khuôn bế 2D", icon: Grid3x3 },
+              ]}
+            />
+            <span className="flex gap-1.5 font-mono text-xs">
+              <span className="rounded-full px-2.5 py-1 ring-2 ring-sky-400">
+                <span className="text-sky-600">L</span> {dims.length}
+              </span>
+              <span className="rounded-full px-2.5 py-1 ring-2 ring-orange-300">
+                <span className="text-orange-600">W</span> {dims.width}
+              </span>
+              <span className="rounded-full px-2.5 py-1 ring-2 ring-emerald-300">
+                <span className="text-emerald-600">H</span> {dims.height} mm
+              </span>
+            </span>
+          </div>
+
+          <div className={`relative mx-4 flex-1 overflow-hidden rounded-[20px] ${view === "3d" ? "bg-landing-canvas" : "bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
+            {view === "3d" ? (
+              <div className="absolute inset-0">
+                <Box3DView
+                  dimensions={dims}
+                  foldProgress={fold / 100}
+                  boxType={current.id}
+                  theme="ivory"
+                  elements={[]}
+                  showHud={false}
+                  showStatusBar={false}
+                  enableMacroZoom={false}
+                  frameless
+                  minHeight={false}
+                  className="h-full w-full"
+                />
+              </div>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center p-8">
+                <DielineSketch structure={current.id} dimensions={dims} label={`Khuôn bế ${current.apiName}`} className="h-full w-full" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+            {view === "3d" ? (
+              <label className="flex w-full items-center gap-3 text-sm text-landing-muted sm:w-auto">
+                <span className="shrink-0 font-medium text-landing-ink">Gấp hộp</span>
+                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-landing-green sm:w-64" />
+                <span className="w-10 font-mono text-xs">{fold}%</span>
+              </label>
+            ) : (
+              <span className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-landing-muted">
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="h-0.5 w-6 bg-[#E53E3E]" />
+                  Đường cắt
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="h-0 w-6 border-t-2 border-dashed border-[#3182CE]" />
+                  Đường gấp
+                </span>
+              </span>
+            )}
+            <span className="text-xs text-landing-muted">Kéo để xoay · kích thước mẫu, đổi ở bước 2</span>
+          </div>
+        </StudioCard>
+
+        {/* Specs */}
+        <div className="flex flex-col gap-4 lg:col-span-2 xl:col-span-1">
+          <StudioCard className="p-5">
+            <CardTitle>{current.apiName}</CardTitle>
+            <p className="mt-1.5 text-sm leading-6 text-landing-muted">{current.description}</p>
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <MetricRow icon={Scissors} label="Đường gấp trên khuôn" value={`${creaseCountOf(current)} nếp`} />
+              <MetricRow icon={Layers} label="Số mảnh phôi" value={pieces.length > 1 ? `${pieces.length} mảnh (${pieces.map((p) => p.name).join(" + ")})` : "1 mảnh liền"} />
+              <MetricRow icon={FileText} label="Giấy gợi ý" value={current.recommendedPaper} />
+              <MetricRow icon={Hand} label="Độ khó khi gấp" value={current.foldDifficulty} />
+            </div>
+          </StudioCard>
+
+          {current.recommendedGifts.length > 0 && (
+            <StudioCard className="p-5">
+              <CardTitle>Hợp với</CardTitle>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {current.recommendedGifts.map((gift) => (
+                  <li key={gift} className="rounded-full bg-landing-canvas px-3 py-1.5 text-sm text-landing-ink">
+                    {gift}
+                  </li>
+                ))}
+              </ul>
+            </StudioCard>
+          )}
+
+          <button type="button" onClick={onNext} className={`${PRIMARY_PILL} w-full`}>
+            Tiếp tục: kích thước
+            <ArrowRight className="size-4" aria-hidden />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onNext}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-library-lime px-5 text-base font-medium text-library-lime-ink transition-colors hover:bg-[#AFEC88]"
-        >
-          Tiếp tục: nhập kích thước
-          <ArrowRight className="size-4" aria-hidden />
-        </button>
       </div>
     </div>
   );

@@ -38,7 +38,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
 
   if (!projectId) {
     return (
-      <p className="text-xs text-stone-500 leading-relaxed p-3 rounded-2xl bg-stone-50 border border-stone-200/80">
+      <p className="text-xs text-landing-muted leading-relaxed p-3 rounded-3xl bg-landing-canvas border border-landing-line">
         Đăng nhập và tạo dự án để sinh hoa văn bằng AI.
       </p>
     );
@@ -110,11 +110,11 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-library-accent" aria-hidden /> Hoa văn AI
+        <span className="font-landing-heading text-base font-bold text-landing-ink flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-landing-green" aria-hidden /> Hoa văn AI
         </span>
         {quota && (
-          <span className={`text-[11px] font-mono ${exhausted ? "text-vibrant-coral-dark" : "text-stone-500"}`}>
+          <span className={`text-[11px] font-mono ${exhausted ? "text-vibrant-coral-dark" : "text-landing-muted"}`}>
             Còn {Math.max(0, quota.limit - quota.used)}/{quota.limit} lượt
           </span>
         )}
@@ -131,7 +131,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
           maxLength={MAX_THEME}
           onChange={(event) => setTheme(event.target.value)}
           placeholder="Chủ đề, vd. Tết hoa mai"
-          className="w-full min-h-[44px] px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-library-accent"
+          className="w-full min-h-[44px] px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-landing-green"
         />
         <div className="flex flex-wrap gap-1.5">
           {SUGGESTIONS.map((suggestion) => (
@@ -139,13 +139,13 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
               key={suggestion}
               type="button"
               onClick={() => setTheme(suggestion)}
-              className="min-h-[32px] px-2.5 rounded-full bg-stone-100 hover:bg-stone-200 text-[11px] font-medium text-stone-600"
+              className="min-h-[32px] px-2.5 rounded-full bg-landing-canvas hover:bg-landing-tile text-[11px] font-medium text-landing-muted"
             >
               {suggestion}
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-xs text-stone-600 min-h-[32px] cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-landing-muted min-h-[32px] cursor-pointer">
           <input
             type="checkbox"
             checked={useColors}
@@ -162,7 +162,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
         <button
           type="submit"
           disabled={!theme.trim() || generating || exhausted}
-          className="w-full min-h-[44px] rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-sm font-semibold shadow-tactile transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+          className="w-full min-h-[44px] rounded-full bg-landing-green hover:bg-landing-green-deep text-white text-sm font-semibold shadow-none transition flex items-center justify-center gap-1.5 disabled:opacity-50"
         >
           <Wand2 className="w-4 h-4" aria-hidden />
           {generating ? "Đang tạo…" : exhausted ? "Hết lượt hôm nay" : "Tạo hoa văn"}
@@ -170,25 +170,25 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
       </form>
 
       {result && (
-        <div className="p-3 rounded-2xl border border-stone-200 bg-white space-y-2.5">
-          <div className="h-28 rounded-xl border border-stone-200/80" style={tileBackground(result.tile.svg, 56)} role="img" aria-label={`Xem trước hoa văn ${result.themeName}`} />
+        <div className="p-3 rounded-3xl border border-landing-line bg-white space-y-2.5">
+          <div className="h-28 rounded-xl border border-landing-line" style={tileBackground(result.tile.svg, 56)} role="img" aria-label={`Xem trước hoa văn ${result.themeName}`} />
           <div>
-            <span className="text-sm font-semibold text-stone-900 block">{result.themeName}</span>
-            <span className="text-xs text-stone-500 block leading-relaxed">{result.description}</span>
+            <span className="text-sm font-semibold text-landing-ink block">{result.themeName}</span>
+            <span className="text-xs text-landing-muted block leading-relaxed">{result.description}</span>
           </div>
           <div className="flex items-center gap-1.5" aria-label="Bảng màu của hoa văn">
             {result.palette.map((color) => (
-              <span key={color} title={color} className="w-5 h-5 rounded-md border border-stone-200" style={{ backgroundColor: color }} />
+              <span key={color} title={color} className="w-5 h-5 rounded-md border border-landing-line" style={{ backgroundColor: color }} />
             ))}
             {result.source === "procedural" && (
-              <span className="ml-auto text-[10px] text-stone-400 font-mono">thuật toán</span>
+              <span className="ml-auto text-[10px] text-landing-muted font-mono">thuật toán</span>
             )}
           </div>
           <button
             type="button"
             disabled={inserting || !panel}
             onClick={() => void insert()}
-            className="w-full min-h-[44px] rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-sm font-semibold transition disabled:opacity-60 disabled:cursor-wait"
+            className="w-full min-h-[44px] rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold transition disabled:opacity-60 disabled:cursor-wait"
           >
             {inserting ? "Đang phủ hoa văn…" : `Dùng cho ${panel?.name ?? "mặt đang chọn"}`}
           </button>
