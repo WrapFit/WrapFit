@@ -14,6 +14,7 @@ import { Badge, Panel, PanelTitle, SegmentedControl, WorkspaceShell } from '@/co
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
 import { MATERIAL_FINISH_LABELS, MATERIAL_TYPE_LABELS, PAPER_STOCKS, type PaperStock } from '@/features/studio/utils/paperStocks';
+import { Box3DView } from '@/features/studio/components/three/Box3DView';
 import { BoxPreview } from '@/features/templates';
 import { cn } from '@/utils/helpers';
 
@@ -145,6 +146,8 @@ function MaterialsScreen() {
           </div>
         </div>
       </div>
+
+      <Backdrops paper={selected} />
     </WorkspaceShell>
   );
 }
@@ -171,5 +174,68 @@ function PaperSheet({ paper }: { paper: PaperStock }) {
       <path d="M10 8 H110" stroke="#E53E3E" strokeWidth="1" />
       <path d="M40 8 V82 M80 8 V70" stroke="#3182CE" strokeWidth="0.8" strokeDasharray="3 3" />
     </svg>
+  );
+}
+
+/** Scenes of the 3D preview (studio, shared pages): the chosen paper on a box in each of them. */
+const BACKDROPS = [
+  { id: 'studio', name: 'Studio', text: 'Nền trơn chụp sản phẩm', color: '#ECE8E1' },
+  { id: 'marble', name: 'Đá cẩm thạch', text: 'Mặt đá trắng bóng', color: '#F8FAFC' },
+  { id: 'kraft_wood', name: 'Gỗ mộc', text: 'Bàn gỗ sồi thủ công', color: '#C29B61' },
+  { id: 'forest_velvet', name: 'Nhung xanh', text: 'Nền nhung xanh rừng', color: '#064E3B' },
+  { id: 'festive_glow', name: 'Không khí Tết', text: 'Ánh vàng ấm', color: '#FED7AA' },
+] as const;
+
+function Backdrops({ paper }: { paper: PaperStock }) {
+  const [scene, setScene] = useState<(typeof BACKDROPS)[number]['id']>('studio');
+  return (
+    <Panel aria-labelledby="material-backdrops" className="mt-6">
+      <PanelTitle id="material-backdrops" action={<Badge>{paper.name}</Badge>}>
+        Bối cảnh 3D
+      </PanelTitle>
+      <p className="-mt-2 mb-4 text-sm text-library-sub">Nền đặt hộp khi xem 3D trong studio và trên trang chia sẻ. Kéo để xoay hộp.</p>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <ul role="radiogroup" aria-label="Bối cảnh" className="flex flex-row gap-2 overflow-x-auto lg:flex-col">
+          {BACKDROPS.map((item) => (
+            <li key={item.id} className="shrink-0">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={scene === item.id}
+                onClick={() => setScene(item.id)}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors',
+                  scene === item.id ? 'border-[1.5px] border-library-ink bg-library-accent-mist' : 'border-library-line hover:border-library-ink',
+                )}
+              >
+                <span aria-hidden className="size-9 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: item.color }} />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-library-ink">{item.name}</span>
+                  <span className="block truncate text-xs text-library-muted">{item.text}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="relative h-[380px] overflow-hidden rounded-2xl border border-library-ink bg-library-tile sm:h-[440px]">
+          <div className="absolute inset-0">
+            <Box3DView
+              dimensions={{ ...SAMPLE, paperThickness: paper.spec.caliper }}
+              foldProgress={1}
+              boxType="tuck-top"
+              theme={paper.theme}
+              elements={[]}
+              environment={scene}
+              showHud={false}
+              showStatusBar={false}
+              enableMacroZoom={false}
+              frameless
+              minHeight={false}
+              className="h-full w-full"
+            />
+          </div>
+        </div>
+      </div>
+    </Panel>
   );
 }

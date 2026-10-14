@@ -173,7 +173,9 @@ function StructureCard({ structure }: { structure: BoxStructure }) {
           ))}
         </dl>
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="text-xs text-library-muted">Đơn vị: mm</span>
+          <Link href={`/structures/${structure.id}`} className="text-sm font-medium text-library-ink hover:underline">
+            Chi tiết khuôn bế
+          </Link>
           <Link href={`${ROUTES.templates}?structure=${structure.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-library-accent hover:underline">
             Xem mẫu
             <ArrowRight className="size-4" aria-hidden />
