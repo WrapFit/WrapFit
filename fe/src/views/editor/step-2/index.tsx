@@ -10,6 +10,7 @@ export default function Step2DimensionsPage() {
   const [length, setLength] = useState<number>(180);
   const [width, setWidth] = useState<number>(120);
   const [height, setHeight] = useState<number>(65);
+  const [weight, setWeight] = useState<number>(350);
 
   // Mode: Core Product vs Finished Outer Box
   const [measurementMode, setMeasurementMode] = useState<'product' | 'box'>('product');
@@ -318,6 +319,44 @@ export default function Step2DimensionsPage() {
                 className="w-full accent-blue-600 cursor-pointer"
               />
             </div>
+
+            {/* Khối Lượng Quà Tặng (Weight / Grams) */}
+            <div className="space-y-2 pt-2 border-t border-stone-100">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-bold text-neutral-800">Khối Lượng Quà (g)</span>
+                <span className={`font-['JetBrains_Mono'] text-xs font-bold px-2 py-0.5 rounded ${weight > 300 ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-blue-600 bg-blue-50'}`}>
+                  {weight} g {weight > 300 ? '• >300g (Khóa Đáy 1-2-3)' : '• Nhẹ (Gài thẳng)'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWeight((prev) => Math.max(50, prev - 50))}
+                  className="w-10 h-10 rounded-xl bg-stone-100 hover:bg-stone-200 text-neutral-800 font-bold text-lg flex items-center justify-center transition-colors active:scale-95"
+                >
+                  −
+                </button>
+                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-['JetBrains_Mono'] text-lg font-bold text-neutral-900">
+                  {weight} <span className="text-xs font-normal text-stone-400 ml-1">g</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWeight((prev) => Math.min(2000, prev + 50))}
+                  className="w-10 h-10 rounded-xl bg-stone-100 hover:bg-stone-200 text-neutral-800 font-bold text-lg flex items-center justify-center transition-colors active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+              <input
+                type="range"
+                min="50"
+                max="1500"
+                step="50"
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+                className="w-full accent-amber-600 cursor-pointer"
+              />
+            </div>
           </div>
 
           {/* Caliper & Paper Substrate Swatches */}
@@ -402,7 +441,7 @@ export default function Step2DimensionsPage() {
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-stone-200 shadow-xs text-xs font-bold text-neutral-800">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>• MÔ HÌNH 3D THỜI GIAN THỰC</span>
-                <span className="text-[10px] font-['JetBrains_Mono'] text-stone-400">| FEFCO 0215</span>
+                <span className="text-[10px] font-['JetBrains_Mono'] text-stone-400">| {weight > 300 ? 'FEFCO 0215 (Đáy Khóa)' : 'FEFCO 0211 (Đáy Gài)'}</span>
               </div>
 
               <div className="flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-full border border-stone-200 shadow-xs text-xs">
@@ -452,6 +491,8 @@ export default function Step2DimensionsPage() {
                   width: effectiveWidth,
                   height: effectiveHeight,
                   paperThickness: paperSpec.caliper,
+                  giftWeight: weight,
+                  bottomType: weight > 300 ? 'lock' : 'tuck',
                 }}
                 foldProgress={foldProgress}
                 theme={paperSpec.theme}
@@ -474,7 +515,9 @@ export default function Step2DimensionsPage() {
                   </span>
                 </div>
                 <p className="text-[11px] text-stone-600 leading-snug">
-                  &ldquo;Kích thước {length}×{width}×{height}mm rất chuẩn tỷ lệ vàng cho hộp quà cao cấp! Trọng tâm vững, nắp gài ôm khít.&rdquo;
+                  {weight > 300
+                    ? `“Quà nặng ${weight}g (> 300g): Gói đã tự động kích hoạt Đáy khóa FEFCO 0215 (Crash-lock) và khuyên dùng giấy Kraft 350g để chống bục đáy khi vận chuyển nhé!”`
+                    : `“Kích thước ${length}×${width}×${height}mm rất chuẩn tỷ lệ vàng cho hộp quà cao cấp! Trọng tâm vững, nắp gài ôm khít.”`}
                 </p>
               </div>
             </div>
