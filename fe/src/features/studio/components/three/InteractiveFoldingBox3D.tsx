@@ -3,13 +3,13 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
+import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared";
 
 import { Sparkles, Eye, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 
 export type { BoxMaterialTheme } from "./boxModel";
-export type BoxStructureType = "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
+export type { BoxStructureType };
 
 interface InteractiveFoldingBox3DProps {
   dimensions: BoxDimensions;

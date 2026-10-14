@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Download, FileDown, RotateCw, ShieldAlert } from "lucide-react";
 import type { FitCheckReport } from "@wrapfit/shared";
@@ -14,14 +15,24 @@ import { StudioDialog } from "../dialog/StudioDialog";
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
     type: "PDF_CMYK",
-    title: "PDF in CMYK nhiều lớp",
-    hint: "Cho xưởng in: lớp Artwork, Crease, CutContour (màu pha, overprint), Dimensions (không in); nhúng font và ảnh PNG / JPG.",
+    title: "PDF in CMYK nhiều lớp (Offset / Công nghiệp)",
+    hint: "Cho xưởng in: lớp Artwork, Crease (#3182CE), CutContour (#E53E3E), Dimensions; 300 DPI nhúng font và hình in.",
+  },
+  {
+    type: "PDF_A4_PRINT",
+    title: "PDF A4/A3 In Thủ Công (Home DIY - Chị Linh)",
+    hint: "Dành cho in máy tại nhà: canh giữa khổ A4/A3, có dấu xén 4 góc (crop marks) và thước căn chuẩn 1:1 (50mm).",
   },
   { type: "SVG", title: "SVG nhiều lớp", hint: "Cho máy cắt Cricut, laser; cùng 4 lớp, mở bằng Illustrator, Inkscape, Figma." },
   { type: "DXF", title: "DXF", hint: "Cho máy bế CNC: lớp CUT và CREASE, mỗi đường là một polyline liền, không có hình in." },
 ];
 
-const FORMAT_NAMES: Record<ExportFileType, string> = { PDF_CMYK: "PDF", SVG: "SVG", DXF: "DXF" };
+const FORMAT_NAMES: Record<ExportFileType, string> = {
+  PDF_CMYK: "PDF CMYK",
+  PDF_A4_PRINT: "PDF In A4/A3",
+  SVG: "SVG",
+  DXF: "DXF",
+};
 
 const STATUS_LABELS: Record<ExportJob["status"], string> = {
   PENDING: "Đang chờ",
@@ -225,6 +236,20 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
           )}
         </div>
       )}
+
+      {/* Sample Box Order Banner (1-Unit Physical Proof) */}
+      <div className="p-3.5 rounded-2xl bg-[#FDFBF7] border border-[#E8D8C8] flex items-center justify-between gap-3">
+        <div>
+          <span className="font-semibold text-xs text-stone-900 block">Cần cầm mẫu thực tế trước khi in loạt?</span>
+          <span className="text-[11px] text-stone-500 block">WrapFit kết nối xưởng in đối tác in thử 01 hộp mẫu gửi tận tay.</span>
+        </div>
+        <Link
+          href={`/dashboard/orders?project=${projectId}&action=sample`}
+          className="px-3.5 py-1.5 rounded-full bg-[#122e20] hover:bg-[#1a3f2c] text-white text-xs font-semibold shrink-0 transition shadow-xs"
+        >
+          Đặt in mẫu 1 hộp
+        </Link>
+      </div>
 
       <section aria-labelledby="export-history" className="space-y-2 pt-1 border-t border-stone-100">
         <h3 id="export-history" className="text-xs font-bold text-stone-800 uppercase tracking-wider pt-3">

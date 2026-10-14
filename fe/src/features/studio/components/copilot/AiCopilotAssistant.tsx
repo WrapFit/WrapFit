@@ -34,23 +34,33 @@ export interface GiftPreset {
 export const POPULAR_GIFT_PRESETS: GiftPreset[] = [
   {
     id: "candle",
-    name: "Hũ Nến Thơm (200g)",
+    name: "Hũ Nến Thơm (380g)",
     category: "Home Living",
-    dimensions: { length: 85, width: 85, height: 105, paperThickness: 0.45 },
+    dimensions: { length: 85, width: 85, height: 105, paperThickness: 0.45, giftWeight: 380, bottomType: "lock" },
     boxType: "tuck-top",
-    boxTypeName: "Hộp nắp gài đáy khóa",
+    boxTypeName: "Hộp nắp gài đáy khóa FEFCO 0215",
     recommendedGsm: "350 GSM Ivory",
-    tip: "Đáy khóa chịu lực tốt cho lọ thủy tinh nặng.",
+    tip: "Quà > 300g: Đáy khóa FEFCO 0215 chịu lực chống bục khi giao hàng.",
   },
   {
     id: "lipstick",
     name: "Son Môi Cao Cấp / Serum",
     category: "Cosmetics",
-    dimensions: { length: 25, width: 25, height: 85, paperThickness: 0.38 },
+    dimensions: { length: 25, width: 25, height: 85, paperThickness: 0.38, giftWeight: 35, bottomType: "tuck" },
     boxType: "tuck-top",
     boxTypeName: "Hộp nắp gài đáy khóa",
     recommendedGsm: "300 GSM Kraft",
     tip: "Khít thân son, thêm tai gài mở êm tay.",
+  },
+  {
+    id: "sticker",
+    name: "Tem Decal / Đai Giấy (Chị Linh DIY)",
+    category: "Handmade DIY",
+    dimensions: { length: 150, width: 50, height: 2, paperThickness: 0.15 },
+    boxType: "tuck-top",
+    boxTypeName: "Tem nhãn & Đai giấy",
+    recommendedGsm: "Decal bóc dán 130 GSM",
+    tip: "Dán lên hộp có sẵn: in A4 tại nhà kèm dấu xén chuẩn xác, tiết kiệm 80% chi phí.",
   },
   {
     id: "perfume",
@@ -153,6 +163,17 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
       setMessage("Bản vẽ đạt 100% tiêu chuẩn in ấn không lỗi mép dao hay nếp gập!");
     }
   }, [fitCheckReport]);
+
+  // Watch Gift Weight and advise heavy load reinforcement
+  useEffect(() => {
+    if (currentDimensions?.giftWeight && currentDimensions.giftWeight > 300) {
+      setPose("measuring");
+      setHeadline("Quà nặng > 300g cần gia cố!");
+      setMessage(
+        `Món quà nặng ${currentDimensions.giftWeight}g (> 300g). Gói khuyên bạn dùng Đáy khóa FEFCO 0215 (Crash-lock) hoặc Hộp Âm Dương và giấy Ivory/Kraft ≥ 350 GSM để không bị bục đáy khi vận chuyển.`
+      );
+    }
+  }, [currentDimensions?.giftWeight]);
 
   // Spring animation when expanding/collapsing using Anime.js
   const toggleExpanded = () => {
