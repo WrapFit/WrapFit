@@ -10,13 +10,28 @@ export function HomeHero() {
   return (
     <header className="bg-gradient-to-b from-white to-landing-canvas pt-28 sm:pt-32">
       <Container className="flex flex-col items-center gap-3.5 text-center lg:gap-7">
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {HERO.badges.map((badge) => (
-            <span key={badge} className="inline-flex h-5 items-center gap-1 px-2 text-xs font-medium text-landing-ink">
-              <Stars className="text-xs" />
-              {badge}
+        {/* Official Slogan & FPT Identity */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4">
+          <div className="group inline-flex items-center gap-2.5 rounded-full border border-stone-200/90 bg-white/95 px-4 py-1.5 shadow-2xs backdrop-blur-md transition-all duration-300 hover:border-[#F26522]/40 hover:shadow-soft-8">
+            {/* 3 iconic FPT colored frames/dots */}
+            <span className="flex items-center gap-1.5" aria-hidden>
+              <span className="size-2 rounded-full bg-[#005CA9] ring-2 ring-[#005CA9]/25" title="FPT Blue" />
+              <span className="size-2 rounded-full bg-[#F26522] ring-2 ring-[#F26522]/25 animate-pulse" title="FPT Orange" />
+              <span className="size-2 rounded-full bg-[#6DB33F] ring-2 ring-[#6DB33F]/25" title="FPT Green" />
             </span>
-          ))}
+            <span className="font-serif italic font-semibold tracking-wide text-stone-900 text-sm sm:text-base">
+              &ldquo;{HERO.slogan}&rdquo;
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {HERO.badges.map((badge, idx) => (
+              <span key={badge} className="inline-flex h-6 items-center gap-1 rounded-full bg-stone-100/90 px-2.5 text-xs font-medium text-stone-700">
+                <Stars className={cn("text-xs", idx === 0 ? "text-[#005CA9]" : "text-[#6DB33F]")} />
+                {badge}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-col items-center gap-2.5 lg:gap-5">
@@ -27,7 +42,7 @@ export function HomeHero() {
               className={cn(
                 "inline-block bg-clip-text py-1 text-[2.75rem] leading-[1.15] text-transparent md:text-6xl xl:text-7xl 2xl:text-8xl",
                 "bg-[length:200%_auto]",
-                "bg-[linear-gradient(135deg,#152B07,#2D5C0F,#458C17,#2D5C0F,#152B07)]"
+                "bg-[linear-gradient(135deg,#005CA9_0%,#F26522_45%,#6DB33F_100%)]"
               )}
             >
               {HERO.highlight}
@@ -58,7 +73,7 @@ export function HomeHero() {
         </Link>
       </Container>
 
-      <Container className="pt-8 lg:pt-12">
+      <Container className="pt-8 pb-6 lg:pt-12 lg:pb-10">
         <section aria-label="Ngành hàng nổi bật" className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-5">
           {INDUSTRY_TILES.map((tile, index) => (
             <BentoTile key={tile.title} tile={tile} featured={index === 0} />
