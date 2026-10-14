@@ -3,17 +3,20 @@
  * Owned by IT 2 (Math & Geometry) & consumed by IT 1 (2D Canvas & 3D Web)
  */
 
-export type BoxStructureType = "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
+export type BoxStructureType = "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow" | "sticker-label";
 
 /**
  * Size of a box. L × W × H is the inside of the closed box (the gift must fit); since formula version 3 the dieline
  * adds the paper thickness `t` itself (see shared/README.md, "Quy ước kích thước").
+ * Supports giftWeight (grams) and bottomType ("tuck" = straight tuck end vs "lock" = crash-lock / FEFCO 0215 for >300g gifts).
  */
 export interface BoxDimensions {
   length: number; // L (mm)
   width: number;  // W (mm)
   height: number; // H (mm)
   paperThickness: number; // t (mm): GSM × 0.0014, e.g. 0.42 mm for 300 GSM
+  giftWeight?: number; // Khối lượng quà tặng (g) — quà > 300g khuyến nghị đáy khóa (lock bottom)
+  bottomType?: "tuck" | "lock"; // "tuck": Đáy gài thường (STE); "lock": Đáy khóa chịu lực (FEFCO 0215)
 }
 
 export type LineType = "cut" | "crease" | "bleed" | "safe-margin";

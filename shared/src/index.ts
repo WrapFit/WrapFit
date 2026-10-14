@@ -5,6 +5,7 @@ export * from "./parametric/tuck-top";
 export * from "./parametric/sleeve-drawer";
 export * from "./parametric/lid-base";
 export * from "./parametric/pillow";
+export * from "./parametric/sticker-label";
 export * from "./parametric/registry";
 export * from "./parametric/segments";
 export * from "./parametric/fold";

@@ -175,7 +175,7 @@ export interface IStorageService {
 // 7. AUTHENTICATION, IDENTITY & RBAC (IAM)
 // ============================================================================
 export type UserRole = "MAKER" | "PRO_ARTISAN" | "PRINT_SHOP" | "ADMIN";
-export type SubscriptionTierType = "FREE" | "STARTER" | "PRO_BUSINESS";
+export type SubscriptionTierType = "FREE" | "PAY_PER_EXPORT" | "STARTER" | "PRO_BUSINESS";
 
 export interface BrandKitValueObject {
   logoUrl?: string;
