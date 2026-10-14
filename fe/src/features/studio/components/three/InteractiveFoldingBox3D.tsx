@@ -114,6 +114,7 @@ const STRUCTURE_LABEL: Record<BoxStructureType, string> = {
   "sleeve-drawer": "Hộp bao diêm (khay rút)",
   "lid-base": "Hộp âm dương (nắp rời)",
   pillow: "Hộp gối cánh cung",
+  "sticker-label": "Tem nhãn / Đai giấy",
 };
 
 const OPEN_LABEL: Record<BoxStructureType, [string, string]> = {
@@ -121,6 +122,7 @@ const OPEN_LABEL: Record<BoxStructureType, [string, string]> = {
   "sleeve-drawer": ["Rút khay ra", "Đóng khay"],
   "lid-base": ["Nhấc nắp lên", "Đậy nắp"],
   pillow: ["Mở nắp", "Đóng nắp"],
+  "sticker-label": ["Xem trước", "Thu gọn"],
 };
 
 const PAPER_LABEL: Record<BoxMaterialTheme, string> = {
