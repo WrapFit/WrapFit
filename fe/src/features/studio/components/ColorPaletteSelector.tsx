@@ -87,12 +87,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-stone-900 tracking-wide">
-            Colors (Bộ Bảng Màu Phối Sẵn)
-          </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 font-mono">
-            8 Frames
-          </span>
+          <span className="font-landing-heading text-base font-bold text-landing-ink">Bảng màu</span>
         </div>
         <button
           type="button"
@@ -101,7 +96,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
             const randomIndex = Math.floor(Math.random() * CURATED_COLOR_FRAMES.length);
             onSelectPalette(CURATED_COLOR_FRAMES[randomIndex]);
           }}
-          className="text-stone-400 hover:text-stone-700 transition p-1"
+          className="text-landing-muted hover:text-landing-ink transition p-1"
           title="Ngẫu nhiên bảng màu"
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -120,10 +115,10 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
                 
                 onSelectPalette(palette);
               }}
-              className={`group p-2 rounded-2xl border text-left transition flex flex-col gap-1.5 ${
+              className={`group p-2 rounded-3xl border text-left transition flex flex-col gap-1.5 ${
                 isSelected
-                  ? "border-library-accent bg-library-accent-mist/40 ring-2 ring-library-accent/20 shadow-sm"
-                  : "border-stone-200 hover:border-stone-300 hover:bg-stone-50/70"
+                  ? "border-landing-green bg-landing-lime-mist/40 ring-2 ring-landing-green/20 shadow-sm"
+                  : "border-landing-line hover:border-landing-ink/30 hover:bg-landing-canvas"
               }`}
             >
               {/* 5-Color Horizontal Pill Swatch (Exact replica of Image 2) */}
@@ -140,10 +135,10 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
 
               {/* Title & Tag */}
               <div className="flex items-center justify-between pt-0.5">
-                <span className="text-[11px] font-semibold text-stone-800 line-clamp-1">
+                <span className="text-[11px] font-semibold text-landing-ink line-clamp-1">
                   {palette.name}
                 </span>
-                {isSelected && <Check className="w-3 h-3 text-library-accent shrink-0" />}
+                {isSelected && <Check className="w-3 h-3 text-landing-green shrink-0" />}
               </div>
             </button>
           );

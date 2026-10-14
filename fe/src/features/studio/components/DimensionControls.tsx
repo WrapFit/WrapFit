@@ -46,16 +46,16 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-squircle-lg border border-stone-200 p-5 space-y-4 shadow-tactile font-sans ${className}`}
+      className={`bg-white rounded-3xl border border-landing-line p-5 space-y-4 shadow-none font-sans ${className}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Ruler className="w-4 h-4 text-library-accent" />
-          <h3 className="font-landing-heading font-bold text-stone-900 text-base">
+          <Ruler className="w-4 h-4 text-landing-green" />
+          <h3 className="font-landing-heading font-bold text-landing-ink text-base">
             Kích Thước Khối (mm)
           </h3>
         </div>
-        <span className="text-[11px] font-mono text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
+        <span className="text-[11px] font-mono text-landing-muted bg-landing-canvas px-2 py-0.5 rounded-full">
           Dung sai ±0.5mm
         </span>
       </div>
@@ -68,7 +68,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
         const { min, max } = limits?.[field] ?? DEFAULT_RANGES[field];
         return (
           <div key={field} className="space-y-1.5">
-            <div className="flex justify-between items-center gap-2 text-xs font-semibold text-stone-700">
+            <div className="flex justify-between items-center gap-2 text-xs font-semibold text-landing-ink">
               <span>{label}</span>
               <MmInput
                 value={dimensions[field]}
@@ -93,10 +93,10 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
       })}
 
       {/* Paper GSM & Thickness preset */}
-      <div className="pt-3 border-t border-stone-100 space-y-2">
-        <div className="flex justify-between items-center text-xs font-semibold text-stone-700">
+      <div className="pt-3 border-t border-landing-line space-y-2">
+        <div className="flex justify-between items-center text-xs font-semibold text-landing-ink">
           <span>Định Lượng Giấy & Độ Dày ($t$)</span>
-          <span className="font-mono text-[11px] text-stone-500">
+          <span className="font-mono text-[11px] text-landing-muted">
             t = {dimensions.paperThickness.toFixed(2)} mm
           </span>
         </div>
@@ -113,14 +113,14 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
                 key={item.gsm}
                 type="button"
                 onClick={() => handleGsmChange(item.t)}
-                className={`py-2 px-1 text-center rounded-squircle transition border flex flex-col items-center ${
+                className={`py-2 px-1 text-center rounded-xl transition border flex flex-col items-center ${
                   isSelected
-                    ? "bg-brand-forest text-white border-brand-forest shadow-sm"
-                    : "bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100"
+                    ? "bg-landing-green-night text-white border-landing-ink shadow-sm"
+                    : "bg-landing-canvas border-landing-line text-landing-ink hover:bg-landing-canvas"
                 }`}
               >
                 <span className="text-xs font-bold font-mono">{item.label}</span>
-                <span className={`text-[9px] ${isSelected ? "text-stone-200" : "text-stone-400"}`}>
+                <span className={`text-[9px] ${isSelected ? "text-landing-line" : "text-landing-muted"}`}>
                   {item.desc}
                 </span>
               </button>

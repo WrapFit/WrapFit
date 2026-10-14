@@ -60,7 +60,8 @@ export default function NewProjectPage() {
 }
 
 function NewProject() {
-  const templateId = useSearchParams().get("template");
+  const params = useSearchParams();
+  const templateId = params.get("template");
   const structures = useQuery({ queryKey: queryKeys.templates.structures, queryFn: listBoxStructures, staleTime: 5 * 60_000 });
   const template = useQuery({
     queryKey: queryKeys.templates.detail(templateId ?? ""),
@@ -93,7 +94,7 @@ function NewProject() {
   }
   if (!structures.data || (templateId && !template.data)) return <PageLoader label="Đang chuẩn bị khuôn bế…" />;
 
-  return <NewBoxDesigner key={templateId ?? "blank"} structures={structures.data} template={template.data ?? null} />;
+  return <NewBoxDesigner key={templateId ?? "blank"} structures={structures.data} template={template.data ?? null} preset={templateId ? null : presetFrom(params)} />;
 }
 
 /** Site header and the white page of the workspace. */
@@ -108,16 +109,49 @@ function Page({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NewBoxDesigner({ structures, template }: { structures: BoxStructure[]; template: TemplateDetail | null }) {
+/** `?structure=&l=&w=&h=&paper=` from a structure page: the box to start from (kept inside its limits later). */
+interface Preset {
+  structure?: string;
+  length?: number;
+  width?: number;
+  height?: number;
+  paper?: string;
+}
+
+function presetFrom(params: Pick<URLSearchParams, "get">): Preset {
+  const num = (key: string) => {
+    const value = Number(params.get(key));
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  };
+  return { structure: params.get("structure") ?? undefined, length: num("l"), width: num("w"), height: num("h"), paper: params.get("paper") ?? undefined };
+}
+
+function NewBoxDesigner({ structures, template, preset }: { structures: BoxStructure[]; template: TemplateDetail | null; preset: Preset | null }) {
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
 
   const [structure, setStructure] = useState<BoxStructureType>(
-    () => template?.structure.id ?? (structures.find((s) => s.id === "tuck-top") ?? structures[0])?.id ?? "tuck-top",
+    () =>
+      template?.structure.id ??
+      structures.find((s) => s.id === preset?.structure)?.id ??
+      (structures.find((s) => s.id === "tuck-top") ?? structures[0])?.id ??
+      "tuck-top",
   );
-  const [dimensions, setDimensions] = useState<BoxDimensions>(() => (template ? { ...template.dimensions } : defaultDimensionsOf(structure)));
-  const [material, setMaterial] = useState<BoxMaterialTheme>(() => (template ? materialThemeOf(template.canvasState.materialTheme, template.materialSpec) : "ivory"));
+  const [material, setMaterial] = useState<BoxMaterialTheme>(() =>
+    template
+      ? materialThemeOf(template.canvasState.materialTheme, template.materialSpec)
+      : (PAPER_STOCKS.find((p) => p.theme === preset?.paper)?.theme ?? "ivory"),
+  );
+  const [dimensions, setDimensions] = useState<BoxDimensions>(() => {
+    if (template) return { ...template.dimensions };
+    const base = defaultDimensionsOf(structure);
+    const limits = structures.find((s) => s.id === structure)?.dimensionLimits;
+    const side = (field: "length" | "width" | "height", value: number | undefined) =>
+      value === undefined ? base[field] : limits ? Math.max(limits[field].min, Math.min(limits[field].max, Math.round(value))) : Math.round(value);
+    const caliper = PAPER_STOCKS.find((p) => p.theme === material)?.spec.caliper ?? base.paperThickness;
+    return { length: side("length", preset?.length), width: side("width", preset?.width), height: side("height", preset?.height), paperThickness: clampDimension(limits, "paperThickness", caliper) };
+  });
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [fold, setFold] = useState(100);
 
@@ -253,7 +287,7 @@ function NewBoxDesigner({ structures, template }: { structures: BoxStructure[]; 
             </div>
 
             {view === "2d" ? (
-              <div className="flex h-[360px] items-center justify-center bg-white p-6 sm:h-[520px] sm:p-10">
+              <div className="flex h-[360px] items-center justify-center bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px] p-6 sm:h-[520px] sm:p-10">
                 <DielineSketch
                   structure={structure}
                   dimensions={dimensions}

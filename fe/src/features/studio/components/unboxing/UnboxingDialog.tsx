@@ -29,7 +29,7 @@ const EFFECTS: { value: ParticleEffect; label: string }[] = [
 ];
 
 const FIELD_CLASS =
-  "w-full px-3 rounded-xl border border-stone-200 bg-white text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-library-accent";
+  "w-full px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-landing-green";
 
 interface UnboxingDialogProps {
   projectId: string;
@@ -121,7 +121,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
       widthClass="max-w-lg"
     >
       {config.isPending ? (
-        <p className="text-sm text-stone-500">Đang tải…</p>
+        <p className="text-sm text-landing-muted">Đang tải…</p>
       ) : config.error ? (
         <ErrorState
           error={config.error}
@@ -131,10 +131,10 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
         />
       ) : showForm ? (
         <form onSubmit={(event) => void save(event)} className="space-y-4">
-          <label className="block text-xs font-semibold text-stone-700 space-y-1">
+          <label className="block text-xs font-semibold text-landing-ink space-y-1">
             <span className="flex justify-between">
               <span>Tên người nhận</span>
-              <span className="font-mono font-normal text-stone-400">
+              <span className="font-mono font-normal text-landing-muted">
                 {recipientName.length}/{MAX_NAME}
               </span>
             </span>
@@ -148,10 +148,10 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               className={`${FIELD_CLASS} min-h-[44px]`}
             />
           </label>
-          <label className="block text-xs font-semibold text-stone-700 space-y-1">
+          <label className="block text-xs font-semibold text-landing-ink space-y-1">
             <span className="flex justify-between">
               <span>Lời chúc</span>
-              <span className="font-mono font-normal text-stone-400">
+              <span className="font-mono font-normal text-landing-muted">
                 {giftNote.length}/{MAX_NOTE}
               </span>
             </span>
@@ -166,15 +166,15 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
             />
           </label>
           <fieldset>
-            <legend className="text-xs font-semibold text-stone-700 mb-1.5">Hiệu ứng khi mở hộp</legend>
+            <legend className="text-xs font-semibold text-landing-ink mb-1.5">Hiệu ứng khi mở hộp</legend>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {EFFECTS.map((effect) => (
                 <label
                   key={effect.value}
                   className={`min-h-[44px] px-3 rounded-xl border text-xs font-semibold flex items-center justify-center text-center cursor-pointer transition ${
                     particleEffect === effect.value
-                      ? "border-library-accent bg-library-accent-mist/70 text-library-accent"
-                      : "border-stone-200 text-stone-600 hover:border-stone-300"
+                      ? "border-landing-green bg-landing-lime-mist/70 text-landing-green"
+                      : "border-landing-line text-landing-muted hover:border-landing-ink/30"
                   }`}
                 >
                   <input
@@ -195,7 +195,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                className="min-h-[44px] px-5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 text-sm font-semibold"
+                className="min-h-[44px] px-5 rounded-full border border-landing-line hover:bg-landing-canvas text-landing-ink text-sm font-semibold"
               >
                 Huỷ
               </button>
@@ -203,7 +203,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
             <button
               type="submit"
               disabled={!valid || saving}
-              className="min-h-[44px] px-5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-sm font-semibold shadow-tactile transition disabled:opacity-50"
+              className="min-h-[44px] px-5 rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold shadow-none transition disabled:opacity-50"
             >
               {saving ? "Đang lưu…" : config.data ? "Lưu thay đổi" : "Tạo mã QR"}
             </button>
@@ -213,7 +213,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
         config.data && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-tactile flex-shrink-0">
+              <div className="p-3 bg-white rounded-[28px] flex-shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={config.data.qrCodeUrl ?? unboxingQrDownloadUrl(projectId, "png")}
@@ -221,10 +221,10 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                   className="w-40 h-40 object-contain"
                 />
               </div>
-              <div className="min-w-0 text-sm text-stone-700 space-y-1.5 text-center sm:text-left">
-                <span className="font-landing-heading font-bold text-stone-900 text-base block">Gửi {config.data.recipientName}</span>
-                <p className="text-xs text-stone-600 line-clamp-3 whitespace-pre-line">{config.data.giftNote}</p>
-                <span className="text-[11px] text-stone-500 font-mono block">
+              <div className="min-w-0 text-sm text-landing-ink space-y-1.5 text-center sm:text-left">
+                <span className="font-landing-heading font-bold text-landing-ink text-base block">Gửi {config.data.recipientName}</span>
+                <p className="text-xs text-landing-muted line-clamp-3 whitespace-pre-line">{config.data.giftNote}</p>
+                <span className="text-[11px] text-landing-muted font-mono block">
                   {EFFECTS.find((effect) => effect.value === config.data!.particleEffect)?.label} · {config.data.viewsCount} lượt mở
                 </span>
               </div>
@@ -234,14 +234,14 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               <a
                 href={unboxingQrDownloadUrl(projectId, "png")}
                 download
-                className="min-h-[44px] px-4 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+                className="min-h-[44px] px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold flex items-center justify-center gap-1.5"
               >
                 <Download className="w-4 h-4" aria-hidden /> QR PNG
               </a>
               <a
                 href={unboxingQrDownloadUrl(projectId, "svg")}
                 download
-                className="min-h-[44px] px-4 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5"
+                className="min-h-[44px] px-4 rounded-full border border-landing-line hover:bg-landing-canvas text-landing-ink text-xs font-semibold flex items-center justify-center gap-1.5"
               >
                 <Download className="w-4 h-4" aria-hidden /> QR SVG (in)
               </a>
@@ -251,7 +251,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               href={config.data.unboxUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between gap-2 p-3 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-700 hover:border-stone-300"
+              className="flex items-center justify-between gap-2 p-3 rounded-xl bg-landing-canvas border border-landing-line text-xs text-landing-ink hover:border-landing-ink/30"
             >
               <span className="font-mono truncate" title={config.data.unboxUrl}>
                 {config.data.unboxUrl}
@@ -260,14 +260,14 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
             </a>
 
             {confirmDelete ? (
-              <div className="p-3 rounded-xl bg-stone-50 border border-stone-200 space-y-2.5">
-                <p className="text-xs text-stone-700">Xoá trang mở hộp? Mã QR đã in sẽ không mở được nữa.</p>
+              <div className="p-3 rounded-xl bg-landing-canvas border border-landing-line space-y-2.5">
+                <p className="text-xs text-landing-ink">Xoá trang mở hộp? Mã QR đã in sẽ không mở được nữa.</p>
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
                     disabled={deleting}
                     onClick={() => setConfirmDelete(false)}
-                    className="min-h-[36px] px-4 rounded-full border border-stone-200 hover:bg-white text-stone-700 text-xs font-semibold"
+                    className="min-h-[36px] px-4 rounded-full border border-landing-line hover:bg-white text-landing-ink text-xs font-semibold"
                   >
                     Huỷ
                   </button>
@@ -275,7 +275,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                     type="button"
                     disabled={deleting}
                     onClick={() => void remove()}
-                    className="min-h-[36px] px-4 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold disabled:opacity-60"
+                    className="min-h-[36px] px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold disabled:opacity-60"
                   >
                     {deleting ? "Đang xoá…" : "Xoá"}
                   </button>
@@ -286,14 +286,14 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  className="min-h-[44px] px-4 rounded-full text-stone-500 hover:text-stone-800 hover:bg-stone-100 text-xs font-semibold flex items-center gap-1.5"
+                  className="min-h-[44px] px-4 rounded-full text-landing-muted hover:text-landing-ink hover:bg-landing-canvas text-xs font-semibold flex items-center gap-1.5"
                 >
                   <Trash2 className="w-4 h-4" aria-hidden /> Xoá
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
-                  className="min-h-[44px] px-5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-semibold"
+                  className="min-h-[44px] px-5 rounded-full border border-landing-line hover:bg-landing-canvas text-landing-ink text-xs font-semibold"
                 >
                   Sửa lời chúc
                 </button>

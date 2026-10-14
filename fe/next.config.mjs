@@ -17,6 +17,8 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // A second dev server (e.g. a Turbopack trial) needs its own build folder: NEXT_DIST_DIR=.next-turbo.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,
   poweredByHeader: false,
   // Tối ưu hoá bundling đồ hoạ 3D & shared packages
@@ -35,9 +37,13 @@ const nextConfig = {
       },
       // The studio is /editor/<project id> (docs/12 D1): every older entry point starts a new project. Not permanent,
       // so the paths stay free for later pages. The query (e.g. ?template=) is kept.
-      ...['/editor', '/editor/studio', '/editor/step-1', '/editor/step-2', '/editor/step-3', '/editor/step-4', '/editor/export'].map(
+      ...['/editor', '/editor/studio', '/editor/step-1', '/editor/step-2', '/editor/step-3', '/editor/step-4'].map(
         (source) => ({ source, destination: '/editor/new', permanent: false }),
       ),
+      // Former Stitch screens now living elsewhere: exported print files, the structure pages, the materials.
+      { source: '/editor/export', destination: '/dashboard/orders', permanent: false },
+      { source: '/editor/inspect/fefco', destination: '/structures/tuck-top', permanent: false },
+      { source: '/editor/materials/backdrop', destination: '/dashboard/materials', permanent: false },
     ];
   },
   // The browser calls the API on this origin (/api), so the session cookies are first-party. `output: "standalone"`

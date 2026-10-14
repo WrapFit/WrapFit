@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useId, useMemo, useState, useRef } from "react";
 import { DielineGeometry, CanvasElement, matchesPanel, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
 import {
   ZoomIn,
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
 import { formatMm } from "@/features/studio/utils/dieline";
+import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
@@ -30,6 +31,8 @@ const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, 
 const NEW_TEXT_MARGIN_MM = 4;
 /** Loaded ahead, so the first text added is measured with its real font. */
 const NEW_TEXT_FONTS = [printFontOf(NEW_TEXT_STYLE.fontFamily)];
+/** FitCheck bleed: the artwork runs this far past the cut lines. */
+const BLEED_MM = 2;
 
 
 interface DielineCanvas2DProps {
@@ -85,6 +88,9 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   });
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const uid = useId().replace(/:/g, "");
+  const [hoveredPanelId, setHoveredPanelId] = useState<string | null>(null);
+  const sheet = useMemo(() => sheetPath(dieline), [dieline]);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cursorMm, setCursorMm] = useState<{ x: number; y: number } | null>(null);
   const [newTextValue, setNewTextValue] = useState<string>("");
@@ -332,46 +338,46 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full min-h-[560px] bg-library-panel rounded-squircle-lg border border-stone-200 overflow-hidden flex items-center justify-center p-4 shadow-tactile ${className}`}
+      className={`relative w-full h-full min-h-[560px] bg-[#F4F6F2] rounded-[28px] overflow-hidden flex items-center justify-center p-4 shadow-none ${className}`}
     >
-      {/* Background CAD Grid Texture */}
-      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#C8A882_1px,transparent_1px)] [background-size:12px_12px]" />
+      {/* Cutting mat: fine dot grid with a soft light in the middle */}
+      <div className="absolute inset-0 bg-[radial-gradient(#C9D2C3_1px,transparent_1px)] opacity-70 [background-size:14px_14px]" />
+      <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_45%,rgba(255,255,255,0.75),transparent_75%)]" />
 
       {/* Top Floating Control Bar */}
       <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-200 shadow-tactile text-xs text-stone-700">
-          <span className="font-landing-heading font-bold text-brand-forest">Bản Bế 2D Phẳng</span>
-          <span className="text-stone-300">|</span>
-          <span className="font-mono text-[11px] text-stone-500">
+        <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-landing-line shadow-none text-xs text-landing-ink">
+          <span className="font-landing-heading font-bold text-landing-ink">Khuôn bế phẳng</span>
+          <span className="text-landing-line">|</span>
+          <span className="font-mono text-[11px] text-landing-muted">
             {formatMm(totalW)} × {formatMm(totalH)} mm
           </span>
         </div>
 
-        {/* Add Text / Element Button */}
-        <button
-          type="button"
-          onClick={() => {
-            
-            setShowAddTextModal(true);
-          }}
-          className="px-3.5 py-1.5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile flex items-center gap-1.5 transition"
-        >
-          <Type className="w-3.5 h-3.5" />
-          <span>Thêm Chữ / Lời Chúc (Pretext)</span>
-        </button>
+        {/* Add Text / Element Button: not on a read-only canvas (no onElementsChange) */}
+        {onElementsChange && (
+          <button
+            type="button"
+            onClick={() => setShowAddTextModal(true)}
+            className="px-4 py-1.5 rounded-full bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Type className="w-3.5 h-3.5" />
+            <span>Thêm chữ</span>
+          </button>
+        )}
 
         {backgroundPatternSvg && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold shadow-tactile">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold shadow-none">
             <Sparkles className="w-3 h-3 text-amber-500 animate-spin" />
             <span className="truncate max-w-[140px]">
               {backgroundPatternSvg.includes("tet")
-                ? "Hoa Mai Tết"
+                ? "Hoa mai Tết"
                 : backgroundPatternSvg.includes("xmas")
                 ? "Giáng Sinh"
                 : backgroundPatternSvg.includes("botanical")
                 ? "Botanical"
                 : backgroundPatternSvg.includes("gold")
-                ? "Ép Kim Vàng"
+                ? "Ép kim vàng"
                 : "Hoa Văn AI"}
             </span>
           </div>
@@ -379,22 +385,22 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       </div>
 
       {/* Top Right Zoom Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-full border border-stone-200 shadow-tactile">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-full border border-landing-line shadow-none">
         <button
           type="button"
           onClick={() => handleZoom(-0.15)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-stone-600 hover:text-brand-forest hover:bg-stone-100 transition"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas transition"
           title="Thu nhỏ"
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </button>
-        <span className="text-[11px] font-mono font-bold text-stone-700 px-1 select-none">
+        <span className="text-[11px] font-mono font-bold text-landing-ink px-1 select-none">
           {Math.round(scale * 100)}%
         </span>
         <button
           type="button"
           onClick={() => handleZoom(0.15)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-stone-600 hover:text-brand-forest hover:bg-stone-100 transition"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas transition"
           title="Phóng to"
         >
           <ZoomIn className="w-3.5 h-3.5" />
@@ -402,7 +408,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <button
           type="button"
           onClick={handleResetZoom}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-stone-600 hover:text-brand-forest hover:bg-stone-100 transition"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas transition"
           title="Đặt lại 100%"
         >
           <Maximize2 className="w-3 h-3" />
@@ -412,13 +418,13 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       {/* FLOATING GIZMO TOOLBAR FOR SELECTED ELEMENT
           Placed at BOTTOM-CENTER so it NEVER blocks dieline panels, top flaps, or rulers */}
       {selectedEl && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center gap-2 bg-stone-900/95 text-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-tactile-lg text-xs animate-fadeIn border border-white/20">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center gap-2 bg-landing-green-night text-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-soft-16 text-xs animate-fadeIn border border-white/20">
           <div className="flex items-center gap-2 pr-2.5 border-r border-white/20">
-            <Move className="w-3.5 h-3.5 text-library-accent animate-pulse" />
-            <span className="font-semibold text-brand-gold truncate max-w-[110px]">
+            <Move className="w-3.5 h-3.5 text-landing-green animate-pulse" />
+            <span className="font-semibold text-landing-green truncate max-w-[110px]">
               {selectedEl.content || "Phần tử"}
             </span>
-            <span className="font-mono text-[10px] text-stone-400">
+            <span className="font-mono text-[10px] text-landing-muted">
               {formatMm(selectedEl.width)}×{formatMm(selectedEl.height)}mm
             </span>
           </div>
@@ -520,7 +526,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
-          className={`w-full h-full max-h-[85%] filter drop-shadow-sm ${
+          className={`relative w-full h-full max-h-[85%] ${
             dragState ? "cursor-grabbing" : "cursor-default"
           }`}
           onPointerMove={handleSvgPointerMove}
@@ -586,28 +592,46 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             </pattern>
           </defs>
 
-          {/* Layer 0: Bleed Area (Green boundary) */}
-          {showLayers.bleed && (
-            <rect
-              x={padding - 2}
-              y={padding - 2}
-              width={totalW + 4}
-              height={totalH + 4}
-              fill="none"
-              stroke="#38A169"
-              strokeWidth="0.5"
-              strokeDasharray="1.5 1.5"
-              className="pointer-events-none"
-            />
-          )}
+          {/* The die-cut sheet: its outline (cut lines joined), the artwork area (outline + 2 mm bleed) and a ring
+              exactly 2 mm outside it for the bleed line. */}
+          <defs>
+            <filter id={`${uid}-shadow`} x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="1.6" stdDeviation="2.4" floodColor="#0F172A" floodOpacity="0.12" />
+            </filter>
+            <mask id={`${uid}-art`} maskUnits="userSpaceOnUse">
+              <path d={sheet} transform={`translate(${padding} ${padding})`} fill="#FFFFFF" stroke="#FFFFFF" strokeWidth={BLEED_MM * 2} strokeLinejoin="round" />
+            </mask>
+            <mask id={`${uid}-ring`} maskUnits="userSpaceOnUse">
+              <g transform={`translate(${padding} ${padding})`} strokeLinejoin="round">
+                <path d={sheet} fill="none" stroke="#FFFFFF" strokeWidth={BLEED_MM * 2 + 0.9} />
+                <path d={sheet} fill="#000000" stroke="#000000" strokeWidth={BLEED_MM * 2 - 0.9} />
+              </g>
+            </mask>
+            <pattern id={`${uid}-bleed-dots`} width="2.2" height="2.2" patternUnits="userSpaceOnUse">
+              <circle cx="1.1" cy="1.1" r="0.6" fill="#38A169" />
+            </pattern>
+            <pattern id={`${uid}-glue`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="3" stroke="#94A3B8" strokeWidth="0.6" strokeOpacity="0.55" />
+            </pattern>
+          </defs>
 
-          {/* Layer 1: Background AI / Festive Pattern */}
+          {/* Layer 0: the paper itself, lifted off the cutting mat */}
+          <path
+            d={sheet}
+            transform={`translate(${padding} ${padding})`}
+            fill="#FFFFFF"
+            filter={`url(#${uid}-shadow)`}
+            className="pointer-events-none"
+          />
+
+          {/* Layer 1: Background AI / Festive Pattern, on the sheet and its bleed only */}
           {backgroundPatternSvg && (
             <rect
-              x={padding - 2}
-              y={padding - 2}
-              width={totalW + 4}
-              height={totalH + 4}
+              x={padding - BLEED_MM}
+              y={padding - BLEED_MM}
+              width={totalW + BLEED_MM * 2}
+              height={totalH + BLEED_MM * 2}
+              mask={`url(#${uid}-art)`}
               fill={
                 backgroundPatternSvg.includes("tet")
                   ? "url(#pattern-tet)"
@@ -623,6 +647,58 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             />
           )}
 
+          {/* Glue flaps: no ink there (FitCheck GLUE_CONTAMINATED), hatched like on a die maker's drawing */}
+          {dieline.glueAreas?.map((area, index) => (
+            <g key={`glue_${index}`} className="pointer-events-none">
+              <rect
+                x={area.x + padding}
+                y={area.y + padding}
+                width={area.width}
+                height={area.height}
+                fill="#F8FAFC"
+              />
+              <rect
+                x={area.x + padding}
+                y={area.y + padding}
+                width={area.width}
+                height={area.height}
+                fill={`url(#${uid}-glue)`}
+              />
+              {area.width >= 8 && area.height >= 14 && (
+                <text
+                  x={area.x + padding + area.width / 2}
+                  y={area.y + padding + area.height / 2}
+                  fontSize="3.4"
+                  fontWeight="600"
+                  fill="#64748B"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  transform={
+                    area.height > area.width
+                      ? `rotate(-90 ${area.x + padding + area.width / 2} ${area.y + padding + area.height / 2})`
+                      : undefined
+                  }
+                  style={{ fontFamily: "var(--font-landing-body), Inter, sans-serif" }}
+                >
+                  Mép dán keo
+                </text>
+              )}
+            </g>
+          ))}
+
+          {/* Bleed line, 2 mm outside the cut */}
+          {showLayers.bleed && (
+            <rect
+              x={padding - BLEED_MM - 1}
+              y={padding - BLEED_MM - 1}
+              width={totalW + BLEED_MM * 2 + 2}
+              height={totalH + BLEED_MM * 2 + 2}
+              fill={`url(#${uid}-bleed-dots)`}
+              mask={`url(#${uid}-ring)`}
+              className="pointer-events-none"
+            />
+          )}
+
           {/* Layer 2: Panels Surface & Safe Margins */}
           {dieline.panels.map((panel) => {
             const px = panel.bounds.x + padding;
@@ -631,30 +707,35 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             const ph = panel.bounds.height;
             const safeInset = 3; // 3mm safe margin
             const isPanelActive = panel.id === activePanelId;
+            const isHovered = panel.id === hoveredPanelId;
+            // Labels scale with the panel, within a readable range (mm of the sheet).
+            const labelSize = Math.min(5, Math.max(3, Math.min(pw, ph) / 9));
+            const showLabel = showLayers.dimensions && pw >= labelSize * 6 && ph >= labelSize * 3.2;
 
             return (
               <g
                 key={panel.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  
                   if (onSelectPanel) onSelectPanel(panel.id);
                 }}
-                className="cursor-pointer group"
+                onPointerEnter={() => setHoveredPanelId(panel.id)}
+                onPointerLeave={() => setHoveredPanelId((current) => (current === panel.id ? null : current))}
+                className="cursor-pointer"
               >
-                {/* Panel surface */}
+                {/* Panel surface: clear on the paper, lime tint when selected */}
                 <rect
                   x={px}
                   y={py}
                   width={pw}
                   height={ph}
-                  fill={isPanelActive ? "rgba(37, 99, 235, 0.08)" : "rgba(255, 255, 255, 0.55)"}
-                  stroke={isPanelActive ? "#2563EB" : "#CBD5E1"}
-                  strokeWidth={isPanelActive ? "0.9" : "0.3"}
-                  rx="1"
+                  fill={isPanelActive ? "rgba(152, 230, 101, 0.2)" : isHovered ? "rgba(15, 23, 42, 0.035)" : "rgba(255, 255, 255, 0)"}
+                  stroke={isPanelActive ? "#458C17" : "none"}
+                  strokeWidth="0.7"
+                  className="transition-[fill] duration-150"
                 />
 
-                {/* Safe Margin Boundary Line (Yellow dashed) */}
+                {/* Safe margin (≥ 3 mm), strongest on the selected panel */}
                 {showLayers.safeMargin && pw > 8 && ph > 8 && (
                   <rect
                     x={px + safeInset}
@@ -662,35 +743,47 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                     width={pw - 2 * safeInset}
                     height={ph - 2 * safeInset}
                     fill="none"
-                    stroke={isPanelActive ? "#D97706" : "#ECC94B"}
-                    strokeWidth="0.5"
-                    strokeDasharray="2 2"
+                    stroke="#D97706"
+                    strokeOpacity={isPanelActive ? 0.9 : isHovered ? 0.55 : 0.28}
+                    strokeWidth="0.4"
+                    strokeDasharray="1.6 1.6"
+                    className="pointer-events-none"
                   />
                 )}
 
-                {/* Panel Label & Dimensions */}
-                {showLayers.dimensions && (
-                  <>
+                {/* Panel name and size, a small tag in the corner */}
+                {showLabel && (
+                  <g className="pointer-events-none select-none" style={{ fontFamily: "var(--font-landing-body), Inter, sans-serif" }}>
+                    {/* Frosted tag behind the text, so it reads over any artwork */}
+                    <rect
+                      x={px + safeInset}
+                      y={py + safeInset}
+                      width={Math.min(pw - 2 * safeInset, Math.max(panel.name.length * labelSize * 0.56, 15 * labelSize * 0.5) + 2.4)}
+                      height={labelSize * 2.75}
+                      rx={1.4}
+                      fill="#FFFFFF"
+                      fillOpacity={isPanelActive ? 0.95 : 0.82}
+                    />
                     <text
-                      x={px + 4}
-                      y={py + 9}
-                      fontSize="5"
-                      fontFamily="sans-serif"
-                      fill={isPanelActive ? "#1E40AF" : "#475569"}
-                      fontWeight={isPanelActive ? "bold" : "600"}
+                      x={px + safeInset + 1.2}
+                      y={py + safeInset + labelSize + 0.6}
+                      fontSize={labelSize}
+                      fontWeight={isPanelActive ? 700 : 600}
+                      fill={isPanelActive ? "#152B07" : "#475569"}
+                      fillOpacity={isPanelActive || isHovered ? 1 : 0.75}
                     >
                       {panel.name}
                     </text>
                     <text
-                      x={px + 4}
-                      y={py + 15}
-                      fontSize="3.8"
-                      fontFamily="monospace"
-                      fill={isPanelActive ? "#2563EB" : "#94A3B8"}
+                      x={px + safeInset + 1.2}
+                      y={py + safeInset + labelSize * 2.15 + 0.6}
+                      fontSize={labelSize * 0.78}
+                      fill={isPanelActive ? "#458C17" : "#94A3B8"}
+                      style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace" }}
                     >
-                      {formatMm(pw)}×{formatMm(ph)}mm
+                      {formatMm(pw)} × {formatMm(ph)} mm
                     </text>
-                  </>
+                  </g>
                 )}
               </g>
             );
@@ -702,14 +795,21 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             if (isCut && !showLayers.cut) return null;
             if (!isCut && !showLayers.crease) return null;
 
+            // Hairlines of constant width on screen, whatever the zoom (the layer colours of the print file).
+            const stroke = {
+              className: `pointer-events-none ${isCut ? "dieline-cut" : "dieline-crease"}`,
+              vectorEffect: "non-scaling-stroke" as const,
+              style: isCut ? { strokeWidth: 1.6 } : { strokeWidth: 1.3, strokeDasharray: "4 4" },
+            };
+
             if (seg.pathString) {
               return (
                 <path
                   key={seg.id}
                   d={seg.pathString}
                   transform={`translate(${padding} ${padding})`}
-                  className={isCut ? "dieline-cut" : "dieline-crease"}
                   fill="none"
+                  {...stroke}
                 />
               );
             }
@@ -721,7 +821,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 y1={seg.start.y + padding}
                 x2={seg.end.x + padding}
                 y2={seg.end.y + padding}
-                className={isCut ? "dieline-cut" : "dieline-crease"}
+                {...stroke}
               />
             );
           })}
@@ -875,8 +975,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 y={padding - 14}
                 width={totalW}
                 height={10}
-                fill="rgba(253, 251, 247, 0.95)"
-                stroke="#D8C7B4"
+                fill="#FFFFFF"
+                fillOpacity="0.92"
+                rx="1.5"
+                stroke="none"
                 strokeWidth="0.4"
               />
               {/* Left Vertical Ruler */}
@@ -885,8 +987,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 y={padding}
                 width={10}
                 height={totalH}
-                fill="rgba(253, 251, 247, 0.95)"
-                stroke="#D8C7B4"
+                fill="#FFFFFF"
+                fillOpacity="0.92"
+                rx="1.5"
+                stroke="none"
                 strokeWidth="0.4"
               />
               {/* Corner Origin Indicator */}
@@ -895,13 +999,14 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 y={padding - 14}
                 width={10}
                 height={10}
-                fill="#1A362B"
+                fill="#98E665"
+                rx="1.5"
               />
               <text
                 x={padding - 9}
                 y={padding - 8}
                 fontSize="3.2"
-                fill="#FFFFFF"
+                fill="#152B07"
                 fontFamily="monospace"
                 textAnchor="middle"
                 fontWeight="bold"
@@ -920,7 +1025,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                       y1={padding - 4}
                       x2={tickX}
                       y2={isMajor ? padding - 14 : padding - 8}
-                      stroke="#A8A29E"
+                      stroke="#B6BFB1"
                       strokeWidth={isMajor ? "0.4" : "0.25"}
                     />
                     {isMajor && (
@@ -929,7 +1034,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                         y={padding - 9}
                         fontSize="2.8"
                         fontFamily="monospace"
-                        fill="#78716C"
+                        fill="#8A9486"
                         textAnchor="middle"
                       >
                         {i * 10}
@@ -950,7 +1055,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                       y1={tickY}
                       x2={isMajor ? padding - 14 : padding - 8}
                       y2={tickY}
-                      stroke="#A8A29E"
+                      stroke="#B6BFB1"
                       strokeWidth={isMajor ? "0.4" : "0.25"}
                     />
                     {isMajor && (
@@ -959,7 +1064,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                         y={tickY + 1}
                         fontSize="2.8"
                         fontFamily="monospace"
-                        fill="#78716C"
+                        fill="#8A9486"
                         textAnchor="middle"
                       >
                         {i * 10}
@@ -977,7 +1082,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                     y1={cursorMm.y + padding}
                     x2={totalW + padding}
                     y2={cursorMm.y + padding}
-                    stroke="#2563EB"
+                    stroke="#458C17"
                     strokeWidth="0.4"
                     strokeDasharray="2 2"
                     opacity="0.6"
@@ -987,18 +1092,18 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                     y1={padding}
                     x2={cursorMm.x + padding}
                     y2={totalH + padding}
-                    stroke="#2563EB"
+                    stroke="#458C17"
                     strokeWidth="0.4"
                     strokeDasharray="2 2"
                     opacity="0.6"
                   />
                   <polygon
                     points={`${cursorMm.x + padding - 2},${padding - 14} ${cursorMm.x + padding + 2},${padding - 14} ${cursorMm.x + padding},${padding - 10}`}
-                    fill="#2563EB"
+                    fill="#458C17"
                   />
                   <polygon
                     points={`${padding - 14},${cursorMm.y + padding - 2} ${padding - 14},${cursorMm.y + padding + 2} ${padding - 10},${cursorMm.y + padding}`}
-                    fill="#2563EB"
+                    fill="#458C17"
                   />
                 </>
               )}
@@ -1009,15 +1114,15 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
       {/* Bottom Right Live CAD Cursor Coordinate Badge */}
       {cursorMm && (
-        <div className="absolute bottom-4 right-4 z-20 pointer-events-none bg-stone-900/90 text-white font-mono text-[10px] px-2.5 py-1 rounded-squircle-sm backdrop-blur-md shadow-tactile border border-white/20">
-          <span className="text-library-accent font-bold">CAD:</span> X: {cursorMm.x} mm | Y:{" "}
+        <div className="absolute bottom-4 right-4 z-20 pointer-events-none bg-landing-green-night text-white font-mono text-[10px] px-2.5 py-1 rounded-squircle-sm backdrop-blur-md shadow-none border border-white/20">
+          <span className="text-landing-green font-bold">CAD:</span> X: {cursorMm.x} mm | Y:{" "}
           {cursorMm.y} mm
         </div>
       )}
 
       {/* Bottom Legend Layer Toggles */}
-      <div className="absolute bottom-4 left-4 z-20 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-stone-200 shadow-tactile text-[11px] text-stone-600">
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-stone-900">
+      <div className="absolute bottom-4 left-4 z-20 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-landing-line shadow-none text-[11px] text-landing-muted">
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
           <input
             type="checkbox"
             checked={showLayers.cut}
@@ -1028,18 +1133,18 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <span>Nét cắt dao</span>
         </label>
 
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-stone-900">
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
           <input
             type="checkbox"
             checked={showLayers.crease}
             onChange={(e) => setShowLayers({ ...showLayers, crease: e.target.checked })}
-            className="w-3 h-3 rounded accent-library-accent cursor-pointer"
+            className="w-3 h-3 rounded accent-landing-green cursor-pointer"
           />
           <span className="w-2.5 h-0.5 border-b border-dashed border-[#3182CE] inline-block" />
           <span>Nếp cấn gập</span>
         </label>
 
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-stone-900">
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
           <input
             type="checkbox"
             checked={showLayers.bleed}
@@ -1050,7 +1155,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <span>Tràn lề (Bleed ≥2mm)</span>
         </label>
 
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-stone-900">
+        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
           <input
             type="checkbox"
             checked={showLayers.safeMargin}
@@ -1065,10 +1170,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       {/* Pretext Add Text Modal */}
       {showAddTextModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 border border-stone-200 shadow-tactile-lg">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
-              <h3 className="font-landing-heading font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                <Type className="w-4 h-4 text-library-accent" />
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 border border-landing-line shadow-soft-16">
+            <div className="flex items-center justify-between border-b border-landing-line pb-2.5">
+              <h3 className="font-landing-heading font-bold text-landing-ink text-sm flex items-center gap-1.5">
+                <Type className="w-4 h-4 text-landing-green" />
                 <span>Thêm Văn Bản / Lời Chúc Mừng</span>
               </h3>
               <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -1078,13 +1183,13 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label className="block text-xs font-semibold text-landing-ink mb-1">
                   Chọn mặt hộp muốn in chữ:
                 </label>
                 <select
                   value={activePanelId}
                   onChange={(e) => onSelectPanel?.(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs rounded-squircle bg-stone-50 border border-stone-200 text-stone-800"
+                  className="w-full px-3 py-1.5 text-xs rounded-xl bg-landing-canvas border border-landing-line text-landing-ink"
                 >
                   {dieline.panels.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -1095,20 +1200,20 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                <label className="block text-xs font-semibold text-landing-ink mb-1">
                   Nội dung chữ:
                 </label>
                 <textarea
                   rows={3}
                   value={newTextValue}
                   onChange={(e) => setNewTextValue(e.target.value)}
-                  placeholder="Ví dụ: Chúc mừng sinh nhật Mai Anh ❤️..."
-                  className="w-full p-2.5 text-xs rounded-squircle bg-stone-50 border border-stone-200 focus:outline-none focus:border-library-accent text-stone-900"
+                  placeholder="Ví dụ: chúc mừng sinh nhật Mai Anh ❤️..."
+                  className="w-full p-2.5 text-xs rounded-xl bg-landing-canvas border border-landing-line focus:outline-none focus:border-landing-green text-landing-ink"
                 />
               </div>
 
-              <div className="text-[11px] text-stone-500 bg-stone-50 p-2.5 rounded-squircle border border-stone-100 flex items-start gap-1.5">
-                <Info className="w-3.5 h-3.5 text-library-accent flex-shrink-0 mt-0.5" />
+              <div className="text-[11px] text-landing-muted bg-landing-canvas p-2.5 rounded-xl border border-landing-line flex items-start gap-1.5">
+                <Info className="w-3.5 h-3.5 text-landing-green flex-shrink-0 mt-0.5" />
                 <span>
                   Công nghệ <strong>Pretext Layout</strong> tự động tính toán số dòng và ngắt câu vừa vặn
                   theo milimet của mặt hộp mà không làm đơ giật trình duyệt.
@@ -1116,20 +1221,20 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-landing-line">
               <button
                 type="button"
                 onClick={() => setShowAddTextModal(false)}
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-stone-600 hover:bg-stone-100 transition"
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold text-landing-muted hover:bg-landing-canvas transition"
               >
                 Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={handleAddText}
-                className="px-4 py-1.5 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-xs font-semibold shadow-tactile transition"
+                className="px-4 py-1.5 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold shadow-none transition"
               >
-                Chèn Vào Mặt Hộp
+                Chèn vào mặt hộp
               </button>
             </div>
           </div>

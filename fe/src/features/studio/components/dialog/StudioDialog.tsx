@@ -62,19 +62,19 @@ export function StudioDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`bg-white w-full ${widthClass} max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-t-3xl sm:rounded-3xl border border-stone-200 shadow-tactile-lg focus:outline-none`}
+        className={`bg-white w-full ${widthClass} max-h-[92vh] sm:max-h-[88vh] flex flex-col rounded-t-3xl sm:rounded-3xl border border-landing-line shadow-soft-16 focus:outline-none`}
       >
-        <div className="flex items-center justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-stone-100">
+        <div className="flex items-center justify-between gap-3 px-5 sm:px-6 pt-5 pb-3 border-b border-landing-line">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="w-10 h-10 flex-shrink-0 rounded-2xl bg-library-accent-mist text-library-accent flex items-center justify-center">
+            <span className="w-10 h-10 flex-shrink-0 rounded-3xl bg-landing-lime-mist text-landing-green flex items-center justify-center">
               {icon}
             </span>
             <div className="min-w-0">
-              <h2 id={titleId} className="font-landing-heading font-bold text-stone-900 text-base leading-snug">
+              <h2 id={titleId} className="font-landing-heading font-bold text-landing-ink text-base leading-snug">
                 {title}
               </h2>
               {subtitle && (
-                <span title={subtitle} className="text-[11px] text-stone-500 font-mono block truncate">
+                <span title={subtitle} className="text-[11px] text-landing-muted font-mono block truncate">
                   {subtitle}
                 </span>
               )}
@@ -85,7 +85,7 @@ export function StudioDialog({
             onClick={onClose}
             disabled={busy}
             aria-label="Đóng"
-            className="w-10 h-10 flex-shrink-0 rounded-full hover:bg-stone-100 flex items-center justify-center text-stone-500 hover:text-stone-700 transition disabled:opacity-40"
+            className="w-10 h-10 flex-shrink-0 rounded-full hover:bg-landing-canvas flex items-center justify-center text-landing-muted hover:text-landing-ink transition disabled:opacity-40"
           >
             <X className="w-4 h-4" aria-hidden />
           </button>

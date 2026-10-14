@@ -59,18 +59,32 @@ export interface BoxModelOptions {
   onChange?: () => void;
 }
 
-type MakePrinted = (map: THREE.Texture | null, side: THREE.Side) => THREE.MeshStandardMaterial;
+type MakePrinted = (map: THREE.Texture | null, side: THREE.Side, panelId: string) => THREE.MeshPhysicalMaterial;
+
+/** Finish of the printed side: matte paper with a soft sheen, velvet soft-touch for the forest board, foil for gold. */
+const FINISH: Record<BoxMaterialTheme, THREE.MeshPhysicalMaterialParameters & { edge: string }> = {
+  ivory: { roughness: 0.74, metalness: 0, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color("#FFFFFF"), envMapIntensity: 0.55, edge: "#B8AC98" },
+  kraft: { roughness: 0.9, metalness: 0, sheen: 0.25, sheenRoughness: 0.7, sheenColor: new THREE.Color("#FFF1DC"), envMapIntensity: 0.45, edge: "#8C6B4B" },
+  forest: { roughness: 0.62, metalness: 0, sheen: 0.8, sheenRoughness: 0.45, sheenColor: new THREE.Color("#6FA58A"), envMapIntensity: 0.5, edge: "#0B1F16" },
+  gold_foil: { roughness: 0.3, metalness: 0.88, clearcoat: 0.45, clearcoatRoughness: 0.25, envMapIntensity: 1.15, edge: "#8F6E17" },
+};
+
+/** Glow of the panel under the pointer (lime of the brand). */
+const HOVER_GLOW = new THREE.Color("#98E665");
 
 export interface BoxModel {
   group: THREE.Group;
-  /** Folds the box: 0 = flat sheet, 1 = closed; `open` opens the lid or pulls the drawer. */
-  update(progress: number, open: boolean): void;
+  /** Folds the box: 0 = flat sheet, 1 = closed; `open` (0 → 1) opens the lid or pulls the drawer. */
+  update(progress: number, open: number): void;
+  /** Lights up the panel with this mesh name (pointer over it); null clears it. */
+  highlight(panelId: string | null): void;
   /** Size of the closed box, mm (x along L, y up, z along W; the pillow box lies with L front to back). */
   size: { x: number; y: number; z: number };
   dispose(): void;
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** Pieces with hinges: those of the project, else (formula versions 1, 2) those of the current formulas. */
 export function foldablePieces(structure: string, dimensions: BoxDimensions, formulaVersion?: number): DielinePiece[] {
@@ -256,11 +270,11 @@ function panelGeometry({ x, y, width, height }: Rect): THREE.BufferGeometry {
   return geometry;
 }
 
-/** Progress of each panel: walls first, then the lid and bottom of a tuck-top box (open: lid tilted back). */
-function stagedProgress(structure: string, progress: number, open: boolean) {
+/** Progress of each panel: walls first, then the lid and bottom of a tuck-top box (open: lid swings back past upright). */
+function stagedProgress(structure: string, progress: number, open: number) {
   return (panel: PanelFace) => {
     if (structure !== "tuck-top") return progress;
-    if (panel.id === "panel_top_lid") return open ? -0.35 : clamp01((progress - 0.55) / 0.45);
+    if (panel.id === "panel_top_lid") return mix(clamp01((progress - 0.55) / 0.45), -0.32, open);
     if (panel.id === "panel_bottom") return clamp01((progress - 0.45) / 0.45);
     return clamp01(progress / 0.6);
   };
@@ -274,6 +288,7 @@ function foldedPiece(
   textures: Map<string, PanelTexture>,
   makePrinted: MakePrinted,
   inside: THREE.Material,
+  edges: THREE.LineBasicMaterial,
   disposables: { dispose(): void }[]
 ) {
   const group = new THREE.Group();
@@ -282,18 +297,24 @@ function foldedPiece(
   const rotation: Mat4 = [...frame.slice(0, 12), 0, 0, 0, 1];
   const meshes = geometry.panels.map((panel) => {
     const shape = panelGeometry(panel.bounds);
-    const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide);
+    const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
     const front = new THREE.Mesh(shape, printed);
     const back = new THREE.Mesh(shape, inside);
+    // Hairline on the panel edges: folds and cut edges read crisply, like a pressed crease.
+    const outline = new THREE.EdgesGeometry(shape);
+    const edge = new THREE.LineSegments(outline, edges);
+    edge.raycast = () => {};
     for (const mesh of [front, back]) {
-      mesh.matrixAutoUpdate = false;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.name = panel.id;
-      group.add(mesh);
     }
-    disposables.push(shape, printed);
-    return { panel, front, back };
+    for (const object of [front, back, edge]) {
+      object.matrixAutoUpdate = false;
+      group.add(object);
+    }
+    disposables.push(shape, printed, outline);
+    return { panel, front, back, edge };
   });
 
   const update = (progressOf: (panel: PanelFace) => number) => {
@@ -311,9 +332,9 @@ function foldedPiece(
     const min = [0, 1, 2].map((i) => Math.min(...corners.map((p) => p[i])));
     const max = [0, 1, 2].map((i) => Math.max(...corners.map((p) => p[i])));
     const shift: Mat4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -(min[0] + max[0]) / 2, -min[1], -(min[2] + max[2]) / 2, 1];
-    meshes.forEach(({ front, back }, i) => {
+    meshes.forEach(({ front, back, edge }, i) => {
       const matrix = toMatrix(multiply(shift, placed[i]));
-      for (const mesh of [front, back]) {
+      for (const mesh of [front, back, edge]) {
         mesh.matrix.copy(matrix);
         mesh.matrixWorldNeedsUpdate = true;
       }
@@ -363,7 +384,7 @@ function pillowModel(
     }
     shape.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     shape.setIndex(indices);
-    const material = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.DoubleSide);
+    const material = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.DoubleSide, panel.id);
     const mesh = new THREE.Mesh(shape, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -430,20 +451,50 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   const disposables: { dispose(): void }[] = [];
   const paper = PAPER[options.theme];
   // Inside of the folded panels (seen from behind), and of the pillow end flaps (seen from both sides).
-  const inside = new THREE.MeshStandardMaterial({ color: paper.inside, roughness: 0.95, metalness: 0, side: THREE.BackSide });
-  const flapPaper = new THREE.MeshStandardMaterial({ color: paper.outside, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
-  disposables.push(inside, flapPaper);
+  const inside = new THREE.MeshStandardMaterial({
+    color: paper.inside,
+    roughness: 0.92,
+    metalness: 0,
+    side: THREE.BackSide,
+    envMapIntensity: 0.5,
+    // Light bounces inside a paper box: the walls glow a little instead of turning grey in their own shadow.
+    emissive: new THREE.Color(paper.inside),
+    emissiveIntensity: 0.35,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+  });
+  const flapPaper = new THREE.MeshStandardMaterial({ color: paper.outside, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.5 });
+  const { edge: edgeColor, ...finish } = FINISH[options.theme];
+  const edges = new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: options.theme === "forest" ? 0.5 : 0.32 });
+  disposables.push(inside, flapPaper, edges);
   const foil = options.theme === "gold_foil";
-  const makePrinted: MakePrinted = (map, side) =>
-    new THREE.MeshStandardMaterial({
+  const printedOf = new Map<string, THREE.MeshPhysicalMaterial[]>();
+  const makePrinted: MakePrinted = (map, side, panelId) => {
+    const material = new THREE.MeshPhysicalMaterial({
+      ...finish,
       map,
       side,
-      roughness: foil ? 0.32 : 0.86,
-      metalness: foil ? 0.72 : 0.04,
       bumpMap: options.surface?.bumpMap ?? null,
       bumpScale: options.surface?.bumpScale ?? 0,
       roughnessMap: foil ? null : (options.surface?.roughnessMap ?? null),
+      emissive: HOVER_GLOW,
+      emissiveIntensity: 0,
+      // The edge hairlines sit exactly on the panels: the faces step back a little so the lines win the depth test.
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      polygonOffsetUnits: 1,
     });
+    printedOf.set(panelId, [...(printedOf.get(panelId) ?? []), material]);
+    return material;
+  };
+  let lit: string | null = null;
+  const highlight = (panelId: string | null) => {
+    if (panelId === lit) return;
+    printedOf.get(lit ?? "")?.forEach((material) => (material.emissiveIntensity = 0));
+    printedOf.get(panelId ?? "")?.forEach((material) => (material.emissiveIntensity = 0.14));
+    lit = panelId;
+  };
 
   // Images of the design, loaded once; textures redraw when they arrive.
   const images = new Map<string, HTMLImageElement | null>();
@@ -487,6 +538,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
       group,
       size: model.size,
       update: (progress) => model.update(progress),
+      highlight,
       dispose: () => {
         disposed = true;
         disposables.forEach((d) => d.dispose());
@@ -494,7 +546,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     };
   }
 
-  const folded = pieces.map((piece) => foldedPiece(piece.geometry, textures, makePrinted, inside, disposables));
+  const folded = pieces.map((piece) => foldedPiece(piece.geometry, textures, makePrinted, inside, edges, disposables));
   folded.forEach((piece) => group.add(piece.group));
   const sizes = pieces.map((piece) => {
     const frame = boxFrameOf(piece.geometry)!;
@@ -512,17 +564,17 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     return { x: extent(0), y: extent(1), z: extent(2) };
   });
 
-  const update = (progress: number, open: boolean) => {
+  const update = (progress: number, open: number) => {
     const progressOf = stagedProgress(structure, progress, open);
     folded.forEach((piece) => piece.update(progressOf));
     if (structure === "lid-base") {
       // The lid top rests on the rim of the base (mid-planes one thickness apart), lifted while open or folding.
       const [base, lid] = sizes;
-      const lift = open ? 0.8 : (1 - progress) * 1.4;
+      const lift = mix((1 - progress) * 1.4, 0.8, open);
       folded[1].group.position.y = base.y + t - lid.y + lift * dimensions.height;
     } else if (structure === "sleeve-drawer") {
       const [sleeve, drawer] = sizes;
-      const slide = open ? 0.75 : 1 - progress;
+      const slide = mix(1 - progress, 0.75, open);
       folded[1].group.position.set(slide * sleeve.x * 0.7, (sleeve.y - drawer.y) / 2, 0);
     }
   };
@@ -532,6 +584,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     group,
     size,
     update,
+    highlight,
     dispose: () => {
       disposed = true;
       disposables.forEach((d) => d.dispose());

@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { landingFontVariables } from "@/assets/fonts/landing";
+import { LandingLogo } from "@/components/layout/LandingLogo";
 import {
   ArrowLeft,
   Download,
@@ -36,7 +37,10 @@ import {
 import { StickerAssetBank } from "@/features/studio/components/StickerAssetBank";
 import { Step1BoxTemplatePicker } from "@/features/studio/components/Step1BoxTemplatePicker";
 import { Step2DimensionAndMaterial } from "@/features/studio/components/Step2DimensionAndMaterial";
-import { Step4Model3DWithEnvironments } from "@/features/studio/components/Step4Model3DWithEnvironments";
+import { Step3PaperFinish } from "@/features/studio/components/Step3PaperFinish";
+import { Step5Model3DWithEnvironments } from "@/features/studio/components/Step5Model3DWithEnvironments";
+import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExport";
+import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { VersionConflictDialog } from "@/features/studio/components/sync/VersionConflictDialog";
 import { AiPatternPanel } from "@/features/studio/components/ai-pattern/AiPatternPanel";
@@ -106,7 +110,7 @@ const DOT_CLASS = {
   ok: "bg-emerald-500",
   busy: "bg-amber-400 animate-pulse motion-reduce:animate-none",
   warn: "bg-vibrant-coral",
-  muted: "bg-stone-400",
+  muted: "bg-landing-muted",
 };
 
 /** Pixel size of an image file; null when the browser cannot tell (e.g. an SVG without a size). */
@@ -161,13 +165,13 @@ export function StudioWorkspace({
   const router = useRouter();
   const toast = useToast();
   const isDemo = project === null;
-  // Stepper: 1 (structure) -> 2 (dimensions) -> 3 (2D studio) -> 4 (3D environments). The structure of a saved
-  // project is fixed (it is its dieline), so step 1 only exists in the demo.
+  // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export. The structure of a saved
+  // project is fixed (it is its dieline), so step 1 only exists in the demo; a saved project opens on its artwork.
   const firstStep: StudioStep = isDemo ? 1 : 2;
-  const [currentStep, setCurrentStep] = useState<StudioStep>(isDemo ? 1 : 3);
+  const [currentStep, setCurrentStep] = useState<StudioStep>(isDemo ? 1 : 4);
 
   // Project Core State: a saved project fills it once, on mount
-  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? "Bao Bì Quà Tặng Sang Trọng");
+  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? "Bao bì quà tặng sang trọng");
   const [boxType, setBoxType] = useState<BoxStructureType>(project?.template.id ?? "tuck-top");
   const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(
     project ? materialThemeOf(project.canvasState?.materialTheme, project.materialSpec) : "ivory"
@@ -387,8 +391,7 @@ export function StudioWorkspace({
   const showBlockingReport = (report: FitCheckReport) => {
     setExportBlock({ report, key: payloadKey });
     setDialog(null);
-    setCurrentStep(3);
-    setActiveInspectorTab("fitcheck");
+    setCurrentStep(6);
   };
 
   const undoRestore = async () => {
@@ -417,7 +420,7 @@ export function StudioWorkspace({
         disabled={readOnly}
         aria-label="Mốc phiên bản"
         title="Mốc phiên bản"
-        className="min-h-[40px] min-w-[40px] px-2.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+        className="min-h-[40px] min-w-[40px] px-2.5 rounded-full border border-landing-line bg-white hover:bg-landing-canvas text-landing-ink text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
       >
         <History className="w-4 h-4" aria-hidden />
         <span className="hidden 2xl:inline">Mốc</span>
@@ -428,7 +431,7 @@ export function StudioWorkspace({
         disabled={readOnly}
         aria-label="Chia sẻ"
         title="Chia sẻ"
-        className="min-h-[40px] min-w-[40px] px-2.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+        className="min-h-[40px] min-w-[40px] px-2.5 rounded-full border border-landing-line bg-white hover:bg-landing-canvas text-landing-ink text-xs font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
       >
         <Share2 className="w-4 h-4" aria-hidden />
         <span className="hidden 2xl:inline">Chia sẻ</span>
@@ -437,18 +440,20 @@ export function StudioWorkspace({
   );
 
   return (
-    <div className={`${landingFontVariables} min-h-screen bg-[#F5F6F4] flex flex-col font-landing-body select-none overflow-x-hidden`}>
+    <div className={`${landingFontVariables} min-h-screen bg-landing-canvas flex flex-col font-landing-body select-none overflow-x-hidden`}>
       {/* ================= 1. GLOBAL TOP STEPPER NAVBAR ================= */}
-      <header className="sticky top-0 z-40 bg-white border-b border-library-line">
-        <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          {/* Left: Back & Project Title */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
+          {/* Left: logo, back & project title */}
           <div className="flex items-center gap-3 min-w-0">
+            <LandingLogo className="hidden lg:inline-flex [&_span]:text-[22px] [&_svg]:size-7" />
+            <span aria-hidden className="hidden lg:block h-7 w-px bg-landing-line" />
             <button
               type="button"
               onClick={goBack}
-              className="w-10 h-10 flex-shrink-0 rounded-full border border-stone-200 hover:bg-stone-50 flex items-center justify-center text-stone-600 transition cursor-pointer"
-              aria-label={currentStep > firstStep ? `Quay lại Bước ${currentStep - 1}` : isDemo ? "Về trang chủ" : "Về trang Dự án"}
-              title={currentStep > firstStep ? `Quay lại Bước ${currentStep - 1}` : isDemo ? "Về trang chủ" : "Về trang Dự án"}
+              className="w-10 h-10 flex-shrink-0 rounded-full bg-landing-canvas hover:bg-landing-tile flex items-center justify-center text-landing-ink transition-colors cursor-pointer"
+              aria-label={currentStep > firstStep ? `Quay lại bước ${currentStep - 1}` : isDemo ? "Về trang chủ" : "Về trang dự án"}
+              title={currentStep > firstStep ? `Quay lại bước ${currentStep - 1}` : isDemo ? "Về trang chủ" : "Về trang dự án"}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -461,10 +466,10 @@ export function StudioWorkspace({
                 maxLength={120}
                 disabled={readOnly}
                 onChange={(e) => setProjectTitle(e.target.value)}
-                className="font-landing-heading font-bold text-stone-900 text-sm sm:text-base bg-transparent border-b border-transparent hover:border-stone-300 focus:border-library-accent focus:outline-none transition max-w-[200px] truncate disabled:hover:border-transparent"
+                className="font-landing-heading font-bold text-landing-ink text-base bg-transparent border-b border-transparent hover:border-landing-ink/30 focus:border-landing-green focus:outline-none transition max-w-[220px] truncate disabled:hover:border-transparent"
               />
-              <span className="text-[10px] text-stone-500 font-mono block">
-                {dimensions.length}×{dimensions.width}×{dimensions.height} mm
+              <span className="text-xs text-landing-muted block">
+                {dimensions.length} × {dimensions.width} × {dimensions.height} mm
               </span>
             </div>
           </div>
@@ -482,7 +487,7 @@ export function StudioWorkspace({
             <div
               role="status"
               title={syncLabel}
-              className="flex items-center gap-1.5 2xl:px-3 py-1 rounded-full 2xl:bg-stone-100 text-stone-600 text-xs max-w-[220px]"
+              className="flex items-center gap-1.5 2xl:px-3 py-1 rounded-full 2xl:bg-landing-canvas text-landing-muted text-xs max-w-[220px]"
             >
               <span className={`w-2 h-2 flex-shrink-0 rounded-full ${DOT_CLASS[syncTone]}`} aria-hidden />
               <span title={syncLabel} className="sr-only 2xl:not-sr-only text-[11px] font-medium truncate whitespace-nowrap">
@@ -494,11 +499,10 @@ export function StudioWorkspace({
             <button
               type="button"
               onClick={() => {
-                if (currentStep !== 3) setCurrentStep(3);
-                setActiveInspectorTab("fitcheck");
+                setCurrentStep(6);
               }}
               title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
-              className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-lg whitespace-nowrap bg-library-accent-mist text-library-accent text-sm font-medium transition-colors hover:bg-[#DDF5CC]"
+              className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-landing-lime-mist text-landing-green-deep text-sm font-semibold transition-colors hover:bg-[#DDF5CC]"
             >
               <ShieldCheck className="w-4 h-4" />
               <span>FitCheck: {displayReport.score}/100</span>
@@ -512,11 +516,11 @@ export function StudioWorkspace({
               type="button"
               onClick={() => openDialog("export")}
               disabled={readOnly}
-              aria-label="Xuất File In"
-              className="min-h-[40px] px-4 py-2 rounded-lg whitespace-nowrap bg-library-lime hover:bg-[#AFEC88] text-library-lime-ink text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              aria-label="Xuất file in"
+              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Xuất File In</span>
+              <span className="hidden sm:inline">Xuất file in</span>
             </button>
           </div>
         </div>
@@ -527,14 +531,14 @@ export function StudioWorkspace({
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
           <div
             role="status"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-squircle-lg bg-white border border-stone-200 shadow-tactile"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[28px] bg-white"
           >
             <div className="flex items-center gap-3">
-              <span className="w-10 h-10 flex-shrink-0 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center">
+              <span className="w-10 h-10 flex-shrink-0 rounded-full bg-landing-canvas text-landing-muted flex items-center justify-center">
                 <Trash2 className="w-5 h-5" aria-hidden />
               </span>
-              <div className="text-sm text-stone-700">
-                <span className="font-landing-heading font-bold text-stone-900 block">Dự án đang ở thùng rác</span>
+              <div className="text-sm text-landing-ink">
+                <span className="font-landing-heading font-bold text-landing-ink block">Dự án đang ở thùng rác</span>
                 Chỉ xem được. Khôi phục để tiếp tục chỉnh sửa và xuất file.
               </div>
             </div>
@@ -542,7 +546,7 @@ export function StudioWorkspace({
               type="button"
               onClick={() => void restoreProject()}
               disabled={sync.restoring}
-              className="min-h-[44px] px-6 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white text-sm font-semibold shadow-tactile transition disabled:cursor-wait disabled:opacity-60"
+              className="min-h-[44px] px-6 rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold shadow-none transition disabled:cursor-wait disabled:opacity-60"
             >
               {sync.restoring ? "Đang khôi phục…" : "Khôi phục dự án"}
             </button>
@@ -566,21 +570,21 @@ export function StudioWorkspace({
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
           <div
             role="status"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-squircle-lg bg-white border border-library-accent/30 shadow-tactile"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-3xl bg-white border border-landing-green/30 shadow-none"
           >
-            <div className="flex items-center gap-3 text-sm text-stone-700 min-w-0">
-              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-library-accent-mist text-library-accent flex items-center justify-center">
+            <div className="flex items-center gap-3 text-sm text-landing-ink min-w-0">
+              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-landing-lime-mist text-landing-green flex items-center justify-center">
                 <RotateCcw className="w-4 h-4" aria-hidden />
               </span>
               <span className="min-w-0">
                 {restoreNotice.kind === "formula" ? (
                   <>
                     Phôi đã lên công thức bản {project?.formulaVersion}. Bản cũ được lưu thành mốc tự động{" "}
-                    <strong className="text-stone-900">“{restoreNotice.snapshotName}”</strong>.
+                    <strong className="text-landing-ink">“{restoreNotice.snapshotName}”</strong>.
                   </>
                 ) : (
                   <>
-                    Đã khôi phục mốc <strong className="text-stone-900">“{restoreNotice.snapshotName}”</strong>. Bản trước
+                    Đã khôi phục mốc <strong className="text-landing-ink">“{restoreNotice.snapshotName}”</strong>. Bản trước
                     đó được lưu thành mốc tự động.
                   </>
                 )}
@@ -591,7 +595,7 @@ export function StudioWorkspace({
                 type="button"
                 onClick={() => void undoRestore()}
                 disabled={undoing}
-                className="min-h-[40px] px-4 rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
+                className="min-h-[40px] px-4 rounded-full bg-landing-green hover:bg-landing-green-deep text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
               >
                 {undoing ? "Đang hoàn tác…" : "Hoàn tác"}
               </button>
@@ -600,7 +604,7 @@ export function StudioWorkspace({
                 onClick={() => setRestoreNotice(null)}
                 disabled={undoing}
                 aria-label="Ẩn thông báo"
-                className="w-10 h-10 rounded-full hover:bg-stone-100 text-stone-500 flex items-center justify-center"
+                className="w-10 h-10 rounded-full hover:bg-landing-canvas text-landing-muted flex items-center justify-center"
               >
                 <X className="w-4 h-4" aria-hidden />
               </button>
@@ -637,18 +641,44 @@ export function StudioWorkspace({
             formulaVersion={project?.formulaVersion}
             onBack={isDemo ? () => setCurrentStep(1) : undefined}
             onNext={() => setCurrentStep(3)}
+            elements={elements}
+            backgroundPatternSvg={backgroundPatternSvg}
+          />
+        )}
+
+        {/* STEP 3: GIẤY & BỀ MẶT */}
+        {currentStep === 3 && (
+          <Step3PaperFinish
+            boxType={boxType}
+            dimensions={dimensions}
+            onDimensionsChange={setDimensions}
+            activeMaterial={activeMaterial}
+            onMaterialChange={setActiveMaterial}
+            limits={limits}
+            elements={elements}
+            backgroundPatternSvg={backgroundPatternSvg}
+            formulaVersion={project?.formulaVersion}
+            onBack={() => setCurrentStep(2)}
+            onNext={() => setCurrentStep(4)}
           />
         )}
 
         {/* STEP 3: XƯỞNG BẢN VẼ BẾ 2D TOÀN MÀN HÌNH VỚI DOCK CÔNG CỤ & KÉO THẢ TỰ DO */}
-        {currentStep === 3 && (
-          <div className="flex-1 w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 py-5 flex flex-col gap-4 animate-fadeIn">
+        {currentStep === 4 && (
+          <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex flex-col gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-landing-green">Bước 4 / 6 · Thiết kế</p>
+                <h1 className="font-landing-heading text-2xl font-bold tracking-tight text-landing-ink sm:text-3xl">Hình in trên khuôn bế</h1>
+              </div>
+              <p className="text-sm text-landing-muted">Chọn một mặt hộp, thêm chữ, logo, sticker hoặc hoa văn; FitCheck™ kiểm tra ngay khi bạn sửa.</p>
+            </div>
             {/* Step 3 Subheader: Piece + Panel Navigator + Quick Navigation to Step 4 */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-2.5 rounded-squircle-lg border border-stone-200 shadow-tactile">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-2 rounded-full">
               <div className="flex flex-col md:flex-row md:items-center gap-2 min-w-0 w-full sm:w-auto">
                 {/* Two-piece boxes (base + lid, sleeve + drawer) print as two dielines */}
                 {pieces.length > 1 && (
-                  <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-full flex-shrink-0" role="group" aria-label="Mảnh phôi">
+                  <div className="flex items-center gap-1 bg-landing-canvas p-1 rounded-full flex-shrink-0" role="group" aria-label="Mảnh phôi">
                     {pieces.map((piece, index) => (
                       <button
                         key={piece.name}
@@ -659,7 +689,7 @@ export function StudioWorkspace({
                           setActivePanelId("all");
                         }}
                         className={`min-h-[32px] px-3 rounded-full text-xs font-semibold whitespace-nowrap transition ${
-                          index === pieceIndex ? "bg-white text-stone-900 shadow-xs" : "text-stone-500 hover:text-stone-800"
+                          index === pieceIndex ? "bg-white text-landing-ink shadow-xs" : "text-landing-muted hover:text-landing-ink"
                         }`}
                       >
                         {piece.name}
@@ -678,26 +708,26 @@ export function StudioWorkspace({
               <div className="flex items-center gap-2 flex-shrink-0">
                 {!isDemo && <div className="flex sm:hidden items-center gap-2">{projectActions}</div>}
                 {uploading && (
-                  <span role="status" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-library-accent-mist text-library-accent text-xs font-semibold">
+                  <span role="status" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-landing-lime-mist text-landing-green text-xs font-semibold">
                     <ImageUp className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none" aria-hidden />
                     Đang tải ảnh lên…
                   </span>
                 )}
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="min-h-[36px] px-3.5 py-1.5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-600 text-xs font-semibold whitespace-nowrap transition"
+                  onClick={() => setCurrentStep(3)}
+                  className="min-h-[40px] px-4 rounded-full bg-landing-canvas hover:bg-landing-tile text-landing-ink text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
                 >
-                  ← Kích thước
+                  <ArrowLeft className="w-4 h-4" aria-hidden />
+                  Chất liệu
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(4)}
-                  className="min-h-[36px] px-4 py-1.5 rounded-full bg-library-accent hover:bg-[#3A7513] text-white text-xs font-semibold whitespace-nowrap shadow-tactile flex items-center gap-1.5 transition hover:scale-105 active:scale-95"
+                  onClick={() => setCurrentStep(5)}
+                  className="min-h-[40px] px-4 rounded-full bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors"
                 >
-                  <span className="sm:hidden">Phối Cảnh 3D</span>
-                  <span className="hidden sm:inline">Xem Phối Cảnh 3D (Bước 4)</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  Xem 3D
+                  <ArrowRight className="w-4 h-4" aria-hidden />
                 </button>
               </div>
             </div>
@@ -735,7 +765,7 @@ export function StudioWorkspace({
               </div>
 
               {/* CENTRAL 2D CAD CANVAS (8 cols) — Equipped with FREE Pointer Drag & Drop */}
-              <div className="lg:col-span-8 flex flex-col">
+              <div className="lg:col-span-7 flex flex-col">
                 <DielineCanvas2D
                   dieline={dieline}
                   scale={zoomScale}
@@ -754,23 +784,25 @@ export function StudioWorkspace({
               </div>
 
               {/* RIGHT INSPECTOR DRAWER (3 cols) */}
-              <div className="lg:col-span-3 bg-white rounded-squircle-lg border border-stone-200 shadow-tactile p-4 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-170px)] min-h-[580px]">
+              <div className="lg:col-span-4 bg-white rounded-[28px] p-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-170px)] min-h-[580px]">
                 {/* Inspector Tabs */}
-                <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-squircle text-xs font-semibold">
+                <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 bg-landing-tile p-1 rounded-full text-[13px]">
                   {[
-                    { id: "style", label: "Màu & Font" },
+                    { id: "style", label: "Kiểu" },
                     { id: "stickers", label: "Sticker" },
-                    { id: "dimensions", label: "Kích Thước" },
+                    { id: "dimensions", label: "Kích thước" },
                     { id: "fitcheck", label: "FitCheck" },
                   ].map((tab) => (
                     <button
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveInspectorTab(tab.id as typeof activeInspectorTab)}
-                      className={`flex-1 py-1.5 rounded-squircle text-center transition ${
+                      role="tab"
+                      aria-selected={activeInspectorTab === tab.id}
+                      className={`min-h-[34px] px-1 rounded-full text-center whitespace-nowrap transition-colors ${
                         activeInspectorTab === tab.id
-                          ? "bg-white text-stone-900 shadow-xs font-bold"
-                          : "text-stone-500 hover:text-stone-800"
+                          ? "bg-white text-landing-ink shadow-sm font-semibold"
+                          : "text-landing-muted hover:text-landing-ink"
                       }`}
                     >
                       {tab.label}
@@ -810,7 +842,7 @@ export function StudioWorkspace({
                       }}
                     />
 
-                    <div className="pt-2 border-t border-stone-100">
+                    <div className="pt-2 border-t border-landing-line">
                       <AiPatternPanel
                         projectId={project?.id ?? null}
                         panel={placementPanel}
@@ -821,16 +853,16 @@ export function StudioWorkspace({
                     </div>
 
                     {/* Pattern Presets */}
-                    <div className="space-y-2 pt-2 border-t border-stone-100">
-                      <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
+                    <div className="space-y-2 pt-2 border-t border-landing-line">
+                      <span className="font-landing-heading text-base font-bold text-landing-ink block">
                         Hoa Văn Lặp (Seamless Patterns)
                       </span>
                       <div className="grid grid-cols-2 gap-2">
                         {[
-                          { id: "tet", label: "Hoa Mai Tết 2026", color: "bg-amber-100 text-amber-900" },
-                          { id: "xmas", label: "Giáng Sinh & Thông", color: "bg-emerald-100 text-emerald-900" },
-                          { id: "botanical", label: "Lá Khuynh Diệp", color: "bg-teal-100 text-teal-900" },
-                          { id: "gold", label: "Lưới Vàng Art Deco", color: "bg-yellow-100 text-yellow-900" },
+                          { id: "tet", label: "Hoa mai Tết 2026", color: "bg-amber-100 text-amber-900" },
+                          { id: "xmas", label: "Giáng Sinh & thông", color: "bg-emerald-100 text-emerald-900" },
+                          { id: "botanical", label: "Lá khuynh diệp", color: "bg-teal-100 text-teal-900" },
+                          { id: "gold", label: "Lưới vàng Art Deco", color: "bg-yellow-100 text-yellow-900" },
                         ].map((pat) => (
                           <button
                             key={pat.id}
@@ -840,10 +872,10 @@ export function StudioWorkspace({
                                 backgroundPatternSvg === pat.id ? null : pat.id
                               );
                             }}
-                            className={`p-2.5 rounded-squircle text-xs font-medium border text-left transition ${
+                            className={`p-2.5 rounded-xl text-xs font-medium border text-left transition ${
                               backgroundPatternSvg === pat.id
-                                ? "border-library-accent bg-library-accent-mist/80 text-library-accent font-bold shadow-xs"
-                                : "border-stone-200 hover:border-stone-300 bg-stone-50/50"
+                                ? "border-landing-green bg-landing-lime-mist/80 text-landing-green font-bold shadow-xs"
+                                : "border-landing-line hover:border-landing-ink/30 bg-landing-canvas"
                             }`}
                           >
                             <span className="block truncate" title={pat.label}>{pat.label}</span>
@@ -879,7 +911,7 @@ export function StudioWorkspace({
                 {activeInspectorTab === "fitcheck" && (
                   <div className="space-y-3 animate-fadeIn">
                     {!isDemo && (
-                      <p className="text-[11px] text-stone-500 leading-relaxed">
+                      <p className="text-[11px] text-landing-muted leading-relaxed">
                         {sync.dirty || !sync.serverReport
                           ? "Điểm tạm tính trên trình duyệt; máy chủ kiểm lại khi lưu."
                           : "Điểm do máy chủ kiểm ở lần lưu gần nhất, cũng là điểm dùng khi xuất file in."}
@@ -888,7 +920,7 @@ export function StudioWorkspace({
                     {blockingReport && (
                       <p
                         role="alert"
-                        className="flex gap-2 p-3 rounded-2xl bg-vibrant-coral/10 border border-vibrant-coral/30 text-xs text-stone-800"
+                        className="flex gap-2 p-3 rounded-3xl bg-vibrant-coral/10 border border-vibrant-coral/30 text-xs text-landing-ink"
                       >
                         <ShieldAlert className="w-4 h-4 flex-shrink-0 text-vibrant-coral-dark" aria-hidden />
                         Máy chủ chặn xuất file vì các lỗi dưới đây. Sửa xong thì xuất lại.
@@ -902,18 +934,38 @@ export function StudioWorkspace({
           </div>
         )}
 
-        {/* STEP 4: SÂN KHẤU 3D TOÀN DIỆN VỚI 5 PHỐI CẢNH BACKGROUND & UNBOXING */}
-        {currentStep === 4 && (
-          <Step4Model3DWithEnvironments
+        {/* STEP 5: XEM 3D, BỐI CẢNH & QUÀ TẶNG */}
+        {currentStep === 5 && (
+          <Step5Model3DWithEnvironments
             dimensions={dimensions}
             boxType={boxType}
             activeMaterial={activeMaterial}
             backgroundPatternSvg={backgroundPatternSvg}
             elements={elements}
             formulaVersion={project?.formulaVersion}
-            onBack={() => setCurrentStep(3)}
-            onOpenExportModal={() => openDialog("export")}
+            onBack={() => setCurrentStep(4)}
+            onNext={() => setCurrentStep(6)}
             onOpenQrModal={() => openDialog("unboxing")}
+          />
+        )}
+
+        {/* STEP 6: FITCHECK & XUẤT FILE */}
+        {currentStep === 6 && (
+          <Step6ReviewExport
+            structureName={structures?.find((s) => s.id === boxType)?.name ?? BOX_STRUCTURES.find((s) => s.id === boxType)?.vietnameseName ?? "Hộp"}
+            boxType={boxType}
+            dimensions={dimensions}
+            activeMaterial={activeMaterial}
+            elements={elements}
+            backgroundPatternSvg={backgroundPatternSvg}
+            formulaVersion={project?.formulaVersion}
+            pieces={pieces}
+            report={blockingReport ?? displayReport}
+            blocked={!!blockingReport}
+            onBack={() => setCurrentStep(5)}
+            onAutoFix={handleAutoFix}
+            onExport={() => openDialog("export")}
+            onOpenQr={() => openDialog("unboxing")}
           />
         )}
       </main>
