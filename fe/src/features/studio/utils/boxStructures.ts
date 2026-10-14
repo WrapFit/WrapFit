@@ -2,6 +2,13 @@ import { caliperOf, type BoxStructureType } from "@wrapfit/shared";
 
 // Presentation of the box structures (the API gives their names, descriptions and size limits) and quick gift sizes.
 
+export interface BoxSizePreset {
+  label: "S" | "M" | "L";
+  name: string;
+  description: string;
+  dims: { length: number; width: number; height: number; paperThickness: number };
+}
+
 export interface BoxStructureOption {
   id: BoxStructureType;
   name: string;
@@ -13,7 +20,10 @@ export interface BoxStructureOption {
   recommendedGifts: string[];
   recommendedPaper: string;
   foldDifficulty: "Dễ" | "Trung bình" | "Cao cấp";
+  foldTimeSec?: number;
+  feasibilityRate?: string;
   defaultDims: { length: number; width: number; height: number; paperThickness: number };
+  sizePresets?: BoxSizePreset[];
   svgPath: string; // SVG visual icon
 }
 
@@ -29,7 +39,14 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Hũ nến thơm", "Chai nước hoa", "Mỹ phẩm dưỡng da", "Cốc gốm sứ"],
     recommendedPaper: "Ivory 300 – 350 GSM",
     foldDifficulty: "Dễ",
+    foldTimeSec: 3,
+    feasibilityRate: "100% Chuẩn bế CNC",
     defaultDims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ (Mini)", description: "Mỹ phẩm, son môi, nước hoa 30ml", dims: { length: 90, width: 60, height: 45, paperThickness: caliperOf(300) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Hũ nến thơm, kem dưỡng, quà vừa", dims: { length: 120, width: 80, height: 60, paperThickness: caliperOf(300) } },
+      { label: "L", name: "Lớn", description: "Cốc gốm, set quà tặng, chai 100ml", dims: { length: 160, width: 110, height: 80, paperThickness: caliperOf(350) } },
+    ],
     svgPath: "M10 20 L50 5 L90 20 L90 70 L50 85 L10 70 Z M50 5 L50 85 M10 20 L50 35 L90 20",
   },
   {
@@ -43,7 +60,14 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Socola thủ công", "Macaron", "Trang sức cao cấp", "Bộ tinh dầu"],
     recommendedPaper: "Duplex cán mờ 350 GSM hoặc Carton lạnh",
     foldDifficulty: "Trung bình",
+    foldTimeSec: 8,
+    feasibilityRate: "100% Khay rút êm",
     defaultDims: { length: 140, width: 90, height: 45, paperThickness: caliperOf(300) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ (Mini)", description: "Nhẫn, vòng tay, macaron 3 cái", dims: { length: 110, width: 70, height: 35, paperThickness: caliperOf(300) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Socola thủ công, bộ tinh dầu", dims: { length: 140, width: 90, height: 45, paperThickness: caliperOf(300) } },
+      { label: "L", name: "Lớn", description: "Khăn lụa, ví da, set quà VIP", dims: { length: 200, width: 130, height: 55, paperThickness: caliperOf(350) } },
+    ],
     svgPath: "M15 25 L85 25 L85 65 L15 65 Z M30 35 L70 35 L70 55 L30 55 Z",
   },
   {
@@ -57,7 +81,14 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Đồng hồ cao cấp", "Vòng tay bạc", "Kỷ niệm chương", "Set quà tết"],
     recommendedPaper: "Carton lạnh bồi giấy mỹ thuật ép kim vàng",
     foldDifficulty: "Cao cấp",
+    foldTimeSec: 12,
+    feasibilityRate: "Khớp nắp âm dương",
     defaultDims: { length: 130, width: 130, height: 55, paperThickness: caliperOf(300) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ (Mini)", description: "Dây chuyền, nhẫn kim cương, trâm cài", dims: { length: 100, width: 100, height: 40, paperThickness: caliperOf(300) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Đồng hồ cao cấp, kỷ niệm chương", dims: { length: 130, width: 130, height: 55, paperThickness: caliperOf(300) } },
+      { label: "L", name: "Lớn", description: "Hộp quà tết, yến sào, set trà sen", dims: { length: 180, width: 180, height: 70, paperThickness: caliperOf(350) } },
+    ],
     svgPath: "M10 25 L50 10 L90 25 L50 40 Z M10 32 L50 47 L90 32 L90 75 L50 90 L10 75 Z",
   },
   {
@@ -71,7 +102,14 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     recommendedGifts: ["Khăn lụa tơ tằm", "Cà vạt", "Trang sức nhỏ", "Kẹo cưới thủ công"],
     recommendedPaper: "Kraft mộc 250 – 300 GSM",
     foldDifficulty: "Dễ",
+    foldTimeSec: 3,
+    feasibilityRate: "Bán nguyệt tự khóa",
     defaultDims: { length: 160, width: 110, height: 35, paperThickness: caliperOf(300) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ (Mini)", description: "Trang sức nhỏ, voucher, kẹo cưới", dims: { length: 120, width: 80, height: 25, paperThickness: caliperOf(250) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Khăn lụa, cà vạt, phụ kiện thời trang", dims: { length: 160, width: 110, height: 35, paperThickness: caliperOf(300) } },
+      { label: "L", name: "Lớn", description: "Áo sơ mi gấp, khăn choàng lụa dài", dims: { length: 220, width: 150, height: 50, paperThickness: caliperOf(350) } },
+    ],
     svgPath: "M15 50 Q50 15 85 50 Q50 85 15 50 Z",
   },
 ];
