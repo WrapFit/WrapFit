@@ -1,8 +1,9 @@
 "use client";
 
+import { FolderOpen, LifeBuoy, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { ErrorState } from "@/components/common/StatusViews";
+import { LIME_PILL, StatusScreen, WHITE_PILL } from "@/components/landing/StatusScreen";
 import { ROUTES } from "@/constants";
 
 /** A page crashed while rendering: say so instead of a blank screen, and let the user retry. */
@@ -12,17 +13,25 @@ export default function RouteError({ error, reset }: { error: Error & { digest?:
   }, [error]);
 
   return (
-    <main className="flex min-h-[70vh] items-center px-4 py-16">
-      <ErrorState
-        error={error}
-        title="Trang gặp sự cố"
-        onRetry={reset}
-        action={
-          <Link href={ROUTES.home} className="text-sm font-semibold text-brand-forest underline-offset-4 hover:underline">
+    <StatusScreen
+      code="Ôi!"
+      title="Trang gặp sự cố"
+      description={`Có lỗi khi hiển thị trang này. Thử tải lại; nếu vẫn lỗi, hãy gửi mã lỗi cho chúng tôi${error.digest ? `: ${error.digest}` : "."}`}
+      actions={
+        <>
+          <button type="button" onClick={reset} className={LIME_PILL}>
+            <RotateCw className="size-4" aria-hidden />
+            Thử lại
+          </button>
+          <Link href={ROUTES.home} className={WHITE_PILL}>
             Về trang chủ
           </Link>
-        }
-      />
-    </main>
+        </>
+      }
+      shortcuts={[
+        { href: ROUTES.projects, title: "Dự án của bạn", text: "Thiết kế đã lưu tự động không bị mất.", icon: FolderOpen },
+        { href: "/support", title: "Trung tâm hỗ trợ", text: "Báo lỗi và xem các câu hỏi thường gặp.", icon: LifeBuoy },
+      ]}
+    />
   );
 }

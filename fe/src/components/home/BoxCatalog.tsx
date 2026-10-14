@@ -21,7 +21,7 @@ export function BoxCatalog() {
             {BOX_STRUCTURES.map((structure) => (
               <CatalogTile
                 key={structure.id}
-                href={`${ROUTES.templates}?structure=${structure.id}`}
+                href={`/structures/${structure.id}`}
                 title={structure.vietnameseName}
                 meta={formatDimensions(structure.defaultDims)}
                 tag={structure.badge}

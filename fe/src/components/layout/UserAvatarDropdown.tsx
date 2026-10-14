@@ -152,10 +152,10 @@ export function UserAvatarDropdown({
 
         {/* User name on large displays */}
         <div className={`${labelClassName} flex-col items-start leading-none pr-1`}>
-          <span className="font-['Plus_Jakarta_Sans'] text-xs font-semibold text-stone-800 group-hover:text-black max-w-[140px] truncate">
+          <span className="font-landing-body text-xs font-semibold text-stone-800 group-hover:text-black max-w-[140px] truncate">
             {name}
           </span>
-          <span className="font-['JetBrains_Mono'] text-[10px] text-stone-500 mt-0.5">
+          <span className="font-mono text-[10px] text-stone-500 mt-0.5">
             {role}
           </span>
         </div>
@@ -188,10 +188,10 @@ export function UserAvatarDropdown({
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <span className="font-['Plus_Jakarta_Sans'] text-xs font-bold text-stone-900 truncate">
+                <span className="font-landing-body text-xs font-bold text-stone-900 truncate">
                   {name}
                 </span>
-                <span className="font-['JetBrains_Mono'] text-[11px] text-emerald-700 font-medium truncate">
+                <span className="font-mono text-[11px] text-emerald-700 font-medium truncate">
                   {role} · {ROLE_LABELS[user.role]}
                 </span>
                 <span className="text-[10px] text-stone-400 flex items-center gap-1 mt-0.5 min-w-0">

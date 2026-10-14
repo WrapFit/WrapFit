@@ -106,7 +106,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
           {/* Quick Info Thumb Bar */}
           <div className="w-full flex items-center justify-between text-xs pt-1">
             <div className="flex items-center gap-2">
-              <span className="font-serif font-bold text-stone-900">
+              <span className="font-landing-heading font-bold font-bold text-stone-900">
                 {dimensions.length} × {dimensions.width} × {dimensions.height} mm
               </span>
               <span

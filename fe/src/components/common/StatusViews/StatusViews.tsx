@@ -8,10 +8,10 @@ import { ApiError, errorMessage } from "@/services/api";
  * app's colours and fonts.
  */
 const CARD =
-  "mx-auto w-full max-w-md rounded-3xl border border-stone-200/80 bg-white/80 p-8 text-center shadow-[0_4px_20px_-2px_rgba(31,36,33,0.08)] backdrop-blur-md";
+  "mx-auto w-full max-w-md rounded-[28px] border border-landing-line bg-white p-8 text-center font-landing-body";
 
 export const PRIMARY_BUTTON =
-  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-brand-forest px-6 text-sm font-semibold text-white transition hover:bg-brand-forest-dark active:scale-95";
+  "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-sm font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]";
 
 interface ErrorStateProps {
   /** The failure: its Vietnamese message and request id are shown. */
@@ -43,8 +43,8 @@ export function ErrorState({
       <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-vibrant-coral/15 text-vibrant-coral-dark">
         <AlertTriangle className="h-6 w-6" aria-hidden />
       </span>
-      <h2 className="font-serif text-2xl tracking-tight text-stone-900">{title}</h2>
-      <p className="mt-2 text-sm leading-relaxed text-stone-600">{description ?? errorMessage(error)}</p>
+      <h2 className="font-landing-heading text-2xl font-bold tracking-tight text-landing-ink">{title}</h2>
+      <p className="mt-2 text-sm leading-relaxed text-landing-muted">{description ?? errorMessage(error)}</p>
       {requestId && (
         <p className="mt-3 break-all font-mono text-[10px] uppercase tracking-wider text-stone-500">Mã lỗi · {requestId}</p>
       )}
@@ -81,8 +81,8 @@ export function EmptyState({ title, description, action, className = "" }: Empty
       <div className="mb-3 flex justify-center">
         <GoiMascot pose="chilling" size={88} showPhotoBadge={false} enableTracking={false} />
       </div>
-      <h2 className="font-serif text-2xl tracking-tight text-stone-900">{title}</h2>
-      {description && <p className="mt-2 text-sm leading-relaxed text-stone-600">{description}</p>}
+      <h2 className="font-landing-heading text-2xl font-bold tracking-tight text-landing-ink">{title}</h2>
+      {description && <p className="mt-2 text-sm leading-relaxed text-landing-muted">{description}</p>}
       {action && <div className="mt-6 flex flex-wrap items-center justify-center gap-3">{action}</div>}
     </div>
   );
@@ -92,7 +92,7 @@ export function EmptyState({ title, description, action, className = "" }: Empty
 export function PageLoader({ label = "Đang tải…" }: { label?: string }) {
   return (
     <div role="status" data-app-tokens="" className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-4">
-      <span className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-brand-forest motion-reduce:animate-none" />
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-landing-green motion-reduce:animate-none" />
       <span className="font-mono text-xs uppercase tracking-wider text-stone-500">{label}</span>
     </div>
   );
