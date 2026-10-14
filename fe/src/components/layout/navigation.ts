@@ -27,8 +27,11 @@ export const STUDIO_LINKS: NavLink[] = [
 ];
 
 export const RESOURCE_LINKS: NavLink[] = [
+  { label: "Về chúng tôi", href: ROUTES.about, description: "Câu chuyện khởi nghiệp, sứ mệnh & đội ngũ EXE101" },
   { label: "Trung tâm hỗ trợ", href: "/support", description: "Câu trả lời về kích thước, FitCheck™, file in" },
+  { label: "Liên hệ & Tư vấn", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
   { label: "Bảng giá", href: "/pricing", description: "Gói Free, Starter và Pro Business" },
+  { label: "Danh sách chờ (Beta)", href: ROUTES.waitlist, description: "Đăng ký sớm nhận 01 hộp mẫu thử miễn phí" },
   { label: "Thiết kế cộng đồng", href: `${ROUTES.templates}?tab=community`, description: "Thiết kế công khai đạt FitCheck™ từ 90 điểm" },
   { label: "Đội ngũ & xưởng in", href: "/team", description: "Thành viên, quyền và xưởng in đối tác" },
 ];

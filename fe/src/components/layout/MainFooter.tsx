@@ -1,5 +1,6 @@
 'use client';
 
+import { Clock, GraduationCap, Mail, MapPin, Phone } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
 import { landingFontVariables } from '@/assets/fonts/landing';
@@ -32,8 +33,8 @@ const ACCOUNT_ANONYMOUS: NavLink[] = [
 ];
 
 /**
- * Dark green site footer in the pack.ly manner: logo and tagline, six columns of links (the box structures from the
- * API, the hub filters, the account pages of the visitor), then the closing line.
+ * Dark green site footer: Left side has brand, slogan and contact info.
+ * Right side has navigation categories organized into columns.
  */
 export function MainFooter({ className = '', compact = false }: MainFooterProps) {
   const { user: sessionUser } = useAuth();
@@ -58,35 +59,98 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
       {/* Below md the floating BottomNavBar sits over the end of the page: the bottom padding keeps the last line clear. */}
       <div
         className={cn(
-          'mx-auto flex w-full max-w-screen-xl flex-col items-center gap-12 px-4 pb-28 md:pb-6 lg:gap-16 lg:px-8 lg:pb-12 2xl:max-w-screen-2xl',
-          compact ? 'pt-10' : 'pt-12 lg:pt-24'
+          'mx-auto flex w-full max-w-screen-xl flex-col items-center gap-12 px-4 pb-28 md:pb-6 lg:gap-14 lg:px-8 lg:pb-12 2xl:max-w-screen-2xl',
+          compact ? 'pt-8' : 'pt-12 lg:pt-20'
         )}
       >
-        <div className="flex flex-col items-center gap-2 text-center">
-          <LandingLogo tone="light" />
-          <p className="text-sm font-medium text-stone-300 xl:text-base">Nền tảng thiết kế hộp quà vừa khít</p>
-        </div>
-
         {!compact && (
-          <nav aria-label="Liên kết cuối trang" className="grid w-full grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-6">
-            {columns.map((column) => (
-              <div key={column.title}>
-                <h2 className="font-landing-heading text-base font-semibold text-white lg:text-xl">{column.title}</h2>
-                <ul className="mt-1 flex flex-col">
-                  {column.links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className="block min-h-6 py-1 text-xs text-landing-lime-mist transition-colors hover:text-landing-lime lg:text-sm"
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+          <div className="grid w-full grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
+            {/* Left Column: Brand Logo, Slogan, Contact Info & University Affiliation */}
+            <div className="flex flex-col items-start gap-5 lg:col-span-4 xl:col-span-5">
+              <LandingLogo tone="light" />
+
+              <p className="max-w-md text-sm font-medium leading-relaxed text-landing-lime-soft">
+                <span className="font-serif italic font-semibold text-white">&ldquo;Make Every Present, Present.&rdquo;</span> — Nền tảng thiết kế &amp; dựng khuôn bế bao bì thông minh theo kích thước món quà, đảm bảo 100% khả thi sản xuất từ bản đo milimét.
+              </p>
+
+              {/* Contact Information */}
+              <div className="space-y-3 pt-1 text-xs text-landing-lime-mist">
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="size-4 shrink-0 text-[#F26522] mt-0.5" aria-hidden />
+                  <span>Đại học FPT · Khu Công nghệ cao Hòa Lạc, Km29 Đại lộ Thăng Long, Hà Nội</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Mail className="size-4 shrink-0 text-[#005CA9]" aria-hidden />
+                  <a href="mailto:contact@wrapfit.vn" className="hover:text-landing-lime transition-colors">
+                    contact@wrapfit.vn
+                  </a>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Phone className="size-4 shrink-0 text-[#6DB33F]" aria-hidden />
+                  <a href="tel:0901234567" className="hover:text-landing-lime transition-colors">
+                    (+84) 90 123 4567 (Tư vấn kỹ thuật &amp; in ấn)
+                  </a>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <GraduationCap className="size-4 shrink-0 text-amber-300" aria-hidden />
+                  <span>Dự án Khởi nghiệp Thực nghiệm (EXE101) — FPT University</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Clock className="size-4 shrink-0 text-stone-400" aria-hidden />
+                  <span>Giờ làm việc: 08:30 – 18:00 (Thứ 2 – Thứ 7)</span>
+                </div>
               </div>
-            ))}
-          </nav>
+
+              {/* Direct Link to Contact Page */}
+              <div>
+                <Link
+                  href={ROUTES.contact}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 px-3.5 py-1.5 text-xs font-medium text-landing-lime-mist hover:text-white border border-white/15 transition-colors"
+                >
+                  <span>Xem trang Liên hệ &amp; Gửi yêu cầu</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+
+              {/* Quality & Production Assurance Chips */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-mono text-white border border-white/15">
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  CAD Engine 1:1 Active
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-mono text-white border border-white/15">
+                  ECMA / FEFCO Standard
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-mono text-white border border-white/15">
+                  Zero MOQ Flatbed Proofing
+                </span>
+              </div>
+            </div>
+
+            {/* Right Column: Navigation Categories shifted to the right */}
+            <nav
+              aria-label="Liên kết cuối trang"
+              className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-3 xl:col-span-7 xl:grid-cols-6"
+            >
+              {columns.map((column) => (
+                <div key={column.title}>
+                  <h2 className="font-landing-heading text-base font-semibold text-white lg:text-lg">{column.title}</h2>
+                  <ul className="mt-2 flex flex-col">
+                    {column.links.map((link) => (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          className="block min-h-6 py-1 text-xs text-landing-lime-mist transition-colors hover:text-landing-lime lg:text-sm"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </nav>
+          </div>
         )}
 
         <div className="flex w-full flex-col items-center gap-2 border-t border-white/10 pt-6 text-center text-xs text-landing-lime-mist/80">

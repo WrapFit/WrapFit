@@ -23,9 +23,9 @@ export const ANCHORS = {
 export const HERO = {
   slogan: "Make Every Present, Present.",
   badges: ["Đúng kích thước từng milimét", "File in CMYK 300 DPI"],
-  title: "Nền tảng thiết kế",
-  highlight: "hộp quà vừa khít",
-  lead: "Nơi thiết kế chiếc hộp bao quanh món quà với 100% khả thi sản xuất, từ đo kích thước milimét đến xuất file in CMYK.",
+  title: "Make Every Present,",
+  highlight: "Present.",
+  lead: "Biến mỗi món quà thành một sự hiện diện trọn vẹn — nơi chiếc hộp được tạo tác vừa khít từ chính món quà, nâng niu thành ý người trao và tôn vinh khoảnh khắc gắn kết chân thành.",
   cta: { label: "Tất cả mẫu hộp", href: ROUTES.templates },
 };
 
@@ -280,12 +280,13 @@ export const PRODUCTION_ROWS: ProductionRow[] = [
 
 export const PLANS = {
   eyebrow: "Bảng giá minh bạch",
-  title: "Không tốn phí thuê vẽ khuôn",
-  body: "Khuôn bế được dựng tự động từ kích thước bạn nhập, nên bạn không phải trả tiền cho từng bản vẽ khuôn. Bắt đầu miễn phí với gói Free, nâng cấp khi cần thêm dung lượng lưu trữ và lượt tạo hoa văn AI. Thanh toán theo năm để tiết kiệm đến 20%.",
-  cta: { label: "Xem bảng giá", href: "/pricing" },
+  title: "Chỉ từ 19.000đ / lần xuất file",
+  body: "Tiết kiệm 95% so với Pacdora ($29–$99/tháng). Bắt đầu miễn phí với gói Free, chọn trả 19.000đ khi cần xuất file in đơn lẻ, hoặc đăng ký chỉ 99.000đ/tháng để xuất không giới hạn cho shop của bạn.",
+  cta: { label: "Xem bảng giá chi tiết", href: "/pricing" },
   // The plans of /pricing, paid monthly or for a year.
   options: [
     { price: formatUsd(0), unit: "Free", detail: `Miễn phí — ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
+    { price: formatUsd(TIERS.PAY_PER_EXPORT.price.monthly), unit: "Từng lần", detail: "19.000đ / lần — Không phí duy trì" },
     ...(["STARTER", "PRO_BUSINESS"] as const).flatMap((tier) => [
       { price: formatUsd(TIERS[tier].price.yearlyPerMonth), unit: `${TIERS[tier].name} · năm`, detail: "Mỗi tháng, thanh toán theo năm" },
       { price: formatUsd(TIERS[tier].price.monthly), unit: `${TIERS[tier].name} · tháng`, detail: "Mỗi tháng, thanh toán theo tháng" },
@@ -307,34 +308,83 @@ export const COPILOT = {
   bubble: "Chữ đang cách nếp gấp 1,8 mm — để mình đẩy vào 3 mm nhé?",
 };
 
-export const JOURNEY = {
-  eyebrow: "Từ ý tưởng đến tay người nhận",
+export interface JourneyStep {
+  stepNumber: string;
+  badge: string;
+  badgeColor?: string;
+  title: string;
+  body: string;
+  stat?: string;
+  image: string;
+  alt: string;
+  cta?: { label: string; href: string };
+}
+
+export const JOURNEY: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  steps: JourneyStep[];
+} = {
+  eyebrow: "Quy trình chuẩn hóa từ món quà đến xưởng in",
   title: "Hành trình một chiếc hộp",
+  subtitle:
+    "Xóa bỏ rào cản khuôn dao bế 2 triệu VNĐ và 90% lỗi đồ họa từ Canva — đưa chiếc hộp chuẩn xác từ bản đo milimét đến tay người nhận.",
   steps: [
     {
-      title: "Phác ý tưởng",
-      body: "Mọi chiếc hộp bắt đầu từ món quà. Đo chiều dài, rộng, cao, chọn loại giấy và cấu trúc hộp — Gói gợi ý kiểu hộp hợp với món đồ của bạn.",
+      stepNumber: "01",
+      badge: "Gift-to-Box Engine",
+      badgeColor: "#005CA9",
+      title: "Đo kích thước món quà (L, W, H)",
+      body: "Không cần tự tính toán kích thước hộp. Bạn chỉ cần nhập chiều dài, rộng, cao của món quà. Thuật toán của WrapFit tự động bù trừ độ dày giấy (Caliper t ≈ 0.35–0.55mm) và dung sai nắp gài, tạo khuôn bế vừa khít 100%, triệt tiêu 8–10% rủi ro va đập và bể vỡ khi giao hàng.",
+      stat: "Vừa khít 100% · Tự bù trừ Caliper (t)",
       image: photo("99a87a6ce2e2b8e8"),
+      alt: "Đo đạc kích thước sản phẩm thủ công chính xác theo milimét",
+      cta: { label: "Thử nhập kích thước", href: ROUTES.editorNew },
     },
     {
-      title: "Dựng khuôn & thiết kế",
-      body: "Khuôn bế hiện ra đúng tỉ lệ 1:1. Kéo thả hoa văn, logo và lời chúc lên từng mặt hộp, xem ngay trên mô hình 3D.",
+      stepNumber: "02",
+      badge: "3D WebGL Origami Simulation",
+      badgeColor: "#005CA9",
+      title: "Studio 2D & Mô phỏng 3D gập mở",
+      body: "Khắc phục triệt để điểm yếu của Canva khi không thể xem trước hình dạng gập. Studio WrapFit đồng bộ thời gian thực giữa bản vẽ 2D và không gian 3D: kéo thả hoa văn độc quyền (Seamless Pattern), đặt logo thương hiệu, và xoay 360° mở nắp gấp tai như đang cầm chiếc hộp trên tay.",
+      stat: "Xoay lật 360° · Trực quan hoá thời gian thực",
       image: photo("8bc6e04f24de029f"),
+      alt: "Mô phỏng gập mở 3D song song với bản vẽ trải phẳng 2D dieline",
+      cta: { label: "Khám phá Studio 3D", href: ROUTES.editorNew },
     },
     {
-      title: "Duyệt bản in",
-      body: "FitCheck™ soát vùng an toàn, tràn lề và độ phân giải. Chia sẻ đường dẫn để khách hàng duyệt mẫu trước khi in.",
+      stepNumber: "03",
+      badge: "FitCheck™ Pre-press Watchdog",
+      badgeColor: "#F26522",
+      title: "FitCheck™ soát lỗi trước khi in",
+      body: "Chấm dứt 90% lỗi in ấn phổ biến khiến xưởng từ chối: FitCheck™ tự động quét vùng an toàn (≥3mm), đường tràn lề (bleed ≥2mm), kiểm tra độ phân giải ảnh (≥200 DPI) và bảo đảm chữ/logo không đè lên nếp cấn hay tai dán keo. Trợ lý AI 'Gói' phát hiện và đề xuất sửa nhanh chỉ với 1 cú bấm.",
+      stat: "Vùng an toàn ≥3mm · Tràn lề ≥2mm · 1-Click Auto-Fix",
       image: photo("911d50c6851db5c2"),
+      alt: "Kỹ thuật viên xưởng in soi kính lúp kiểm định tờ in và mẫu bế hộp",
+      cta: { label: "Kiểm tra với FitCheck™", href: ROUTES.editorNew },
     },
     {
-      title: "In & hoàn thiện",
-      body: "File PDF tách lớp đi thẳng đến xưởng in và máy bế: in, cấn, bế, gấp — không phải vẽ lại khuôn.",
+      stepNumber: "04",
+      badge: "Zero MOQ Digital Cutting",
+      badgeColor: "#6DB33F",
+      title: "Xuất file vector & Cắt kỹ thuật số",
+      body: "Bỏ qua chi phí khuôn dao sắt đắt đỏ 1.5 – 2.0 triệu VNĐ khiến xưởng truyền thống từ chối đơn nhỏ. WrapFit xuất file vector tách lớp chuẩn in công nghiệp (Đường cắt Red #E53E3E, đường cấn Blue #3182CE, CMYK 300 DPI, DXF/SVG) kết nối trực tiếp với bàn cắt phẳng kỹ thuật số để sản xuất từ 20–50 hộp.",
+      stat: "Tiết kiệm 2 triệu tiền khuôn · Nhận in từ 20 hộp",
       image: photo("f7c292efc7189f00"),
+      alt: "Bàn cắt kỹ thuật số không cần khuôn dao bế sắt kim loại",
+      cta: { label: "Xem chuẩn file xuất", href: ROUTES.editorDemo },
     },
     {
-      title: "Trao quà",
-      body: "Món quà đến tay người nhận kèm mã QR: quét mã để mở chiếc hộp 3D cùng lời nhắn bạn gửi gắm.",
+      stepNumber: "05",
+      badge: "1-Unit Physical Proof & 3D QR",
+      badgeColor: "#F26522",
+      title: "In mẫu thử 01 hộp & Mở quà 3D QR",
+      body: "Đáp ứng mong muốn của 90.8% nhà bán hàng cần cầm mẫu thực tế trước khi in loạt. WrapFit liên kết mạng lưới xưởng in đối tác in thử 01 hộp mẫu gửi tận tay. Đồng thời, in mã QR trên nắp hộp để người nhận quà quét mã mở hộp 3D ảo và đọc lời chúc cá nhân hóa đầy cảm xúc.",
+      stat: "In thử 1 hộp thực tế · Mở quà tương tác 3D QR",
       image: photo("af8c8412c159d49a"),
+      alt: "Chiếc hộp quà hoàn thiện tinh xảo đính kèm mã QR mở quà trực tuyến",
+      cta: { label: "Trải nghiệm mở quà 3D", href: ROUTES.unboxCode },
     },
   ],
 };

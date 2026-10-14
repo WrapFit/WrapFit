@@ -27,6 +27,7 @@ export const DOWNLOAD_ONLY_TYPES: ReadonlySet<string> = new Set(['image/svg+xml'
 /** Total storage per user, by subscription tier. */
 export const STORAGE_QUOTA_BYTES: Record<SubscriptionTier, number> = {
   FREE: 100 * MB,
+  PAY_PER_EXPORT: 500 * MB,
   STARTER: 1024 * MB,
   PRO_BUSINESS: 10 * 1024 * MB,
 };

@@ -4,13 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
+import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared";
 import { Box, Gift, Pause, Play, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 
 export type { BoxMaterialTheme } from "./boxModel";
-export type BoxStructureType = "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
+export type { BoxStructureType };
 export type BoxEnvironment = "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow" | "transparent";
+
 
 interface InteractiveFoldingBox3DProps {
   dimensions: BoxDimensions;
@@ -113,6 +114,7 @@ const STRUCTURE_LABEL: Record<BoxStructureType, string> = {
   "sleeve-drawer": "Hộp bao diêm (khay rút)",
   "lid-base": "Hộp âm dương (nắp rời)",
   pillow: "Hộp gối cánh cung",
+  "sticker-label": "Tem nhãn / Đai giấy",
 };
 
 const OPEN_LABEL: Record<BoxStructureType, [string, string]> = {
@@ -120,6 +122,7 @@ const OPEN_LABEL: Record<BoxStructureType, [string, string]> = {
   "sleeve-drawer": ["Rút khay ra", "Đóng khay"],
   "lid-base": ["Nhấc nắp lên", "Đậy nắp"],
   pillow: ["Mở nắp", "Đóng nắp"],
+  "sticker-label": ["Xem trước", "Thu gọn"],
 };
 
 const PAPER_LABEL: Record<BoxMaterialTheme, string> = {

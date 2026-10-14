@@ -41,12 +41,15 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
   const xFront = xLeft + W;
   const xRight = xFront + L;
   const xEnd = xRight + W;
+  const isLockBottom = dimensions.bottomType === "lock" || (dimensions.giftWeight !== undefined && dimensions.giftWeight > 300 && dimensions.bottomType !== "tuck");
+
   // Rows: tuck | lid W | body H | bottom W | tuck
   const yLid = tuck;
   const yBody = yLid + W;
   const yBodyEnd = yBody + H;
-  const yBottomEnd = yBodyEnd + W;
-  const yEnd = yBottomEnd + tuck;
+  const lockFlapH = Math.min(W * 0.65, Math.max(25, L * 0.35));
+  const yBottomEnd = isLockBottom ? yBodyEnd + lockFlapH : yBodyEnd + W;
+  const yEnd = isLockBottom ? yBottomEnd : yBottomEnd + tuck;
 
   const panels: PanelFace[] = [
     { id: "panel_back", name: "Mặt sau (Back)", bounds: { x: xBack, y: yBody, width: L, height: H } },
@@ -76,8 +79,8 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     },
     {
       id: "panel_bottom",
-      name: "Đáy hộp (Bottom)",
-      bounds: { x: xBack, y: yBodyEnd, width: L, height: W },
+      name: isLockBottom ? "Đáy khóa chịu lực (Crash Lock Bottom)" : "Đáy hộp (Bottom)",
+      bounds: { x: xBack, y: yBodyEnd, width: L, height: isLockBottom ? lockFlapH : W },
       fold: { parent: "panel_back", edge: "top", angle: 90 },
     },
   ];
@@ -92,14 +95,10 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
   line("crease_v3", "crease", { x: xRight, y: yBody }, { x: xRight, y: yBodyEnd });
   line("crease_lid", "crease", { x: xBack, y: yBody }, { x: xLeft, y: yBody });
   line("crease_lid_tuck", "crease", { x: xBack, y: yLid }, { x: xLeft, y: yLid });
-  line("crease_bottom", "crease", { x: xBack, y: yBodyEnd }, { x: xLeft, y: yBodyEnd });
-  line("crease_bottom_tuck", "crease", { x: xBack, y: yBottomEnd }, { x: xLeft, y: yBottomEnd });
   line("crease_dust_top_left", "crease", { x: xLeft, y: yBody }, { x: xFront, y: yBody });
   line("crease_dust_top_right", "crease", { x: xRight, y: yBody }, { x: xEnd, y: yBody });
-  line("crease_dust_bottom_left", "crease", { x: xLeft, y: yBodyEnd }, { x: xFront, y: yBodyEnd });
-  line("crease_dust_bottom_right", "crease", { x: xRight, y: yBodyEnd }, { x: xEnd, y: yBodyEnd });
 
-  // Cut lines: the outline of the blank, flap by flap
+  // Top cut lines
   cutPath("cut_top_tuck", [
     { x: xBack, y: yBody },
     { x: xBack, y: tuckCorner },
@@ -117,10 +116,7 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     ]);
   dustFlap("cut_dust_top_left", xLeft, xFront, yBody, yBody - dust);
   dustFlap("cut_dust_top_right", xRight, xEnd, yBody, yBody - dust);
-  dustFlap("cut_dust_bottom_left", xLeft, xFront, yBodyEnd, yBodyEnd + dust);
-  dustFlap("cut_dust_bottom_right", xRight, xEnd, yBodyEnd, yBodyEnd + dust);
   line("cut_front_top", "cut", { x: xFront, y: yBody }, { x: xRight, y: yBody });
-  line("cut_front_bottom", "cut", { x: xFront, y: yBodyEnd }, { x: xRight, y: yBodyEnd });
   line("cut_right_edge", "cut", { x: xEnd, y: yBody }, { x: xEnd, y: yBodyEnd });
   cutPath("cut_glue", [
     { x: xBack, y: yBody },
@@ -128,14 +124,85 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     { x: 0, y: yBodyEnd - glueCorner },
     { x: xBack, y: yBodyEnd },
   ]);
-  cutPath("cut_bottom_tuck", [
-    { x: xBack, y: yBodyEnd },
-    { x: xBack, y: yEnd - tuckCorner },
-    { x: xBack + tuckCorner, y: yEnd },
-    { x: xLeft - tuckCorner, y: yEnd },
-    { x: xLeft, y: yEnd - tuckCorner },
-    { x: xLeft, y: yBodyEnd },
-  ]);
+
+  if (isLockBottom) {
+    // -------------------------------------------------------------
+    // FEFCO 0215 Crash Lock / 1-2-3 Lock Bottom (Đáy Khóa Chịu Lực > 300g)
+    // -------------------------------------------------------------
+    // All 4 panels hinge at yBodyEnd
+    line("crease_bottom_back", "crease", { x: xBack, y: yBodyEnd }, { x: xLeft, y: yBodyEnd });
+    line("crease_bottom_left", "crease", { x: xLeft, y: yBodyEnd }, { x: xFront, y: yBodyEnd });
+    line("crease_bottom_front", "crease", { x: xFront, y: yBodyEnd }, { x: xRight, y: yBodyEnd });
+    line("crease_bottom_right", "crease", { x: xRight, y: yBodyEnd }, { x: xEnd, y: yBodyEnd });
+
+    // Diagonal 45° score creases on side flaps (enables automatic collapse and interlock)
+    const diagSpan = Math.min(W * 0.5, lockFlapH * 0.7);
+    line("crease_lock_diag_left", "crease", { x: xLeft, y: yBodyEnd }, { x: xLeft + diagSpan, y: yBodyEnd + diagSpan });
+    line("crease_lock_diag_right", "crease", { x: xRight, y: yBodyEnd }, { x: xRight + diagSpan, y: yBodyEnd + diagSpan });
+
+    // Back lock flap: Tongue profile with central latch
+    const tongueW = Math.min(24, L * 0.3);
+    const tongueH = lockFlapH;
+    cutPath("cut_bottom_lock_back", [
+      { x: xBack, y: yBodyEnd },
+      { x: xBack + 4, y: yBodyEnd + tongueH - 6 },
+      { x: xBack + (L - tongueW) / 2, y: yBodyEnd + tongueH - 6 },
+      { x: xBack + (L - tongueW) / 2, y: yBodyEnd + tongueH },
+      { x: xBack + (L + tongueW) / 2, y: yBodyEnd + tongueH },
+      { x: xBack + (L + tongueW) / 2, y: yBodyEnd + tongueH - 6 },
+      { x: xLeft - 4, y: yBodyEnd + tongueH - 6 },
+      { x: xLeft, y: yBodyEnd },
+    ]);
+
+    // Left side lock flap (45° angle slope)
+    cutPath("cut_bottom_lock_left", [
+      { x: xLeft, y: yBodyEnd },
+      { x: xLeft + 3, y: yBodyEnd + lockFlapH * 0.75 },
+      { x: xFront - 5, y: yBodyEnd + lockFlapH * 0.6 },
+      { x: xFront, y: yBodyEnd },
+    ]);
+
+    // Front lock flap: with central notch to receive the tongue
+    const slotW = tongueW + 2;
+    cutPath("cut_bottom_lock_front", [
+      { x: xFront, y: yBodyEnd },
+      { x: xFront + 4, y: yBodyEnd + tongueH - 6 },
+      { x: xFront + (L - slotW) / 2, y: yBodyEnd + tongueH - 6 },
+      { x: xFront + (L - slotW) / 2, y: yBodyEnd + tongueH - 12 },
+      { x: xFront + (L + slotW) / 2, y: yBodyEnd + tongueH - 12 },
+      { x: xFront + (L + slotW) / 2, y: yBodyEnd + tongueH - 6 },
+      { x: xRight - 4, y: yBodyEnd + tongueH - 6 },
+      { x: xRight, y: yBodyEnd },
+    ]);
+
+    // Right side lock flap (45° angle slope)
+    cutPath("cut_bottom_lock_right", [
+      { x: xRight, y: yBodyEnd },
+      { x: xRight + 3, y: yBodyEnd + lockFlapH * 0.75 },
+      { x: xEnd - 5, y: yBodyEnd + lockFlapH * 0.6 },
+      { x: xEnd, y: yBodyEnd },
+    ]);
+  } else {
+    // -------------------------------------------------------------
+    // Straight Tuck End (Đáy Gài Thường cho quà <= 300g)
+    // -------------------------------------------------------------
+    line("crease_bottom", "crease", { x: xBack, y: yBodyEnd }, { x: xLeft, y: yBodyEnd });
+    line("crease_bottom_tuck", "crease", { x: xBack, y: yBottomEnd }, { x: xLeft, y: yBottomEnd });
+    line("crease_dust_bottom_left", "crease", { x: xLeft, y: yBodyEnd }, { x: xFront, y: yBodyEnd });
+    line("crease_dust_bottom_right", "crease", { x: xRight, y: yBodyEnd }, { x: xEnd, y: yBodyEnd });
+
+    dustFlap("cut_dust_bottom_left", xLeft, xFront, yBodyEnd, yBodyEnd + dust);
+    dustFlap("cut_dust_bottom_right", xRight, xEnd, yBodyEnd, yBodyEnd + dust);
+    line("cut_front_bottom", "cut", { x: xFront, y: yBodyEnd }, { x: xRight, y: yBodyEnd });
+    cutPath("cut_bottom_tuck", [
+      { x: xBack, y: yBodyEnd },
+      { x: xBack, y: yEnd - tuckCorner },
+      { x: xBack + tuckCorner, y: yEnd },
+      { x: xLeft - tuckCorner, y: yEnd },
+      { x: xLeft, y: yEnd - tuckCorner },
+      { x: xLeft, y: yBodyEnd },
+    ]);
+  }
 
   return {
     structureType: "tuck-top",
@@ -147,3 +214,4 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     orientation: { up: "-y", front: "+z" },
   };
 }
+

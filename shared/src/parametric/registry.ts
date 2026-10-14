@@ -13,6 +13,7 @@ import { generatePillowBoxDieline } from "./pillow";
 import { generatePillowBoxDielineV1 } from "./pillow.v1";
 import { generateSleeveDrawerDieline } from "./sleeve-drawer";
 import { generateSleeveDrawerDielineV1 } from "./sleeve-drawer.v1";
+import { generateStickerLabelDieline } from "./sticker-label";
 import { generateTuckTopDieline } from "./tuck-top";
 import { generateTuckTopDielineV1 } from "./tuck-top.v1";
 import { generateTuckTopDielineV2 } from "./tuck-top.v2";
@@ -66,6 +67,7 @@ const VERSION_1: Record<string, PieceGenerator> = {
       { name: "Khay kéo", geometry: drawer },
     ];
   },
+  "sticker-label": (d) => [{ name: "Nhãn dán", geometry: generateStickerLabelDieline(d) }],
 };
 
 const VERSION_3: Record<string, PieceGenerator> = {
@@ -85,6 +87,7 @@ const VERSION_3: Record<string, PieceGenerator> = {
       { name: "Khay kéo", geometry: drawer },
     ];
   },
+  "sticker-label": (d) => [{ name: "Nhãn dán", geometry: generateStickerLabelDieline(d) }],
 };
 
 const FORMULAS: Record<number, Record<string, PieceGenerator>> = {
@@ -101,7 +104,7 @@ const FORMULAS: Record<number, Record<string, PieceGenerator>> = {
 export function generateDielinePieces(
   structure: string,
   dimensions: BoxDimensions,
-  formulaVersion: number,
+  formulaVersion: number = CURRENT_FORMULA_VERSION,
 ): DielinePiece[] {
   const formulas = FORMULAS[formulaVersion];
   if (!formulas) throw new UnsupportedFormulaVersionError(`Unknown dieline formula version ${formulaVersion}`);

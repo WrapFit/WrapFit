@@ -164,14 +164,52 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): st
 type Raw = { ref(data: object): { end(): void }; _root: { data: Record<string, unknown> }; page: RawPage };
 type RawPage = { resources: { data: Record<string, unknown> }; dictionary: { data: Record<string, unknown> }; ext_gstates: Record<string, unknown> };
 
+export interface PdfRenderOptions {
+  withCropMarks?: boolean;
+  paperSize?: 'A4' | 'A3';
+}
+
 /**
  * Vector PDF 1.6 at true size (1 mm = 2.8346 pt): CMYK artwork with the editor's fonts embedded, dielines in the spot
  * colors CutContour / Crease (overprint), four layers (Dimensions does not print), TrimBox = dielines, BleedBox +2 mm.
+ * Supports A4/A3 Home Print mode with international standard crop marks (dấu xén) & 50mm calibration scale for DIY crafters.
  */
-export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map()): Promise<Buffer> {
+export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(), options?: PdfRenderOptions): Promise<Buffer> {
   return new Promise((resolve, reject) => {
+    const isA4Print = !!options?.withCropMarks;
+    let pageWidth = layout.width;
+    let pageHeight = layout.height;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (isA4Print) {
+      // Chuẩn A4: 210 x 297 mm, A3: 297 x 420 mm
+      const margin = 15;
+      const reqW = layout.width + margin * 2;
+      const reqH = layout.height + margin * 2;
+
+      if (reqW <= 210 && reqH <= 297) {
+        pageWidth = 210;
+        pageHeight = 297;
+      } else if (reqW <= 297 && reqH <= 210) {
+        pageWidth = 297;
+        pageHeight = 210;
+      } else if (reqW <= 297 && reqH <= 420) {
+        pageWidth = 297;
+        pageHeight = 420;
+      } else if (reqW <= 420 && reqH <= 297) {
+        pageWidth = 420;
+        pageHeight = 297;
+      } else {
+        pageWidth = reqW + 10;
+        pageHeight = reqH + 10;
+      }
+      offsetX = (pageWidth - layout.width) / 2;
+      offsetY = (pageHeight - layout.height) / 2;
+    }
+
     const doc = new PDFDocument({
-      size: [layout.width * PT_PER_MM, layout.height * PT_PER_MM],
+      size: [pageWidth * PT_PER_MM, pageHeight * PT_PER_MM],
       margin: 0,
       pdfVersion: '1.6',
       info: { Title: layout.title, Creator: 'WrapFit', Subject: specLine(layout) },
@@ -186,7 +224,7 @@ export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map()): Pr
     // Page boxes, in points from the bottom-left corner.
     const area = trimArea(layout);
     const box = (grow: number) =>
-      [area.left - grow, layout.height - area.bottom - grow, area.right + grow, layout.height - area.top + grow].map(
+      [offsetX + area.left - grow, pageHeight - (offsetY + area.bottom) - grow, offsetX + area.right + grow, pageHeight - (offsetY + area.top) + grow].map(
         (mm) => Number((mm * PT_PER_MM).toFixed(3)),
       );
     raw.page.dictionary.data.TrimBox = box(0);
@@ -227,6 +265,7 @@ export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map()): Pr
     for (const { name, cmyk } of Object.values(SPOT_COLORS)) spot.addSpotColor(name, cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
 
     doc.scale(PT_PER_MM); // draw in mm from here on
+    if (offsetX !== 0 || offsetY !== 0) doc.translate(offsetX, offsetY);
 
     inLayer('Artwork', () => {
       for (const image of layout.images) {
@@ -274,6 +313,39 @@ export function renderPdf(layout: PrintLayout, artwork: Artwork = new Map()): Pr
         doc.restore();
       }
       doc.text(marks.info.text, marks.info.x, marks.info.y, { lineBreak: false, baseline: 'alphabetic' });
+
+      if (isA4Print) {
+        // Dấu xén (Crop marks) chuẩn in ấn quốc tế 5mm tại 4 góc của hộp
+        const markLen = 6;
+        const markGap = 1.5;
+        const { left, top, right, bottom } = area;
+        doc.save().lineWidth(0.25).strokeColor(SPOT_COLORS.cut.name);
+        // Top-left
+        doc.moveTo(left - markGap - markLen, top).lineTo(left - markGap, top).stroke();
+        doc.moveTo(left, top - markGap - markLen).lineTo(left, top - markGap).stroke();
+        // Top-right
+        doc.moveTo(right + markGap, top).lineTo(right + markGap + markLen, top).stroke();
+        doc.moveTo(right, top - markGap - markLen).lineTo(right, top - markGap).stroke();
+        // Bottom-left
+        doc.moveTo(left - markGap - markLen, bottom).lineTo(left - markGap, bottom).stroke();
+        doc.moveTo(left, bottom + markGap).lineTo(left, bottom + markGap + markLen).stroke();
+        // Bottom-right
+        doc.moveTo(right + markGap, bottom).lineTo(right + markGap + markLen, bottom).stroke();
+        doc.moveTo(right, bottom + markGap).lineTo(right, bottom + markGap + markLen).stroke();
+        doc.restore();
+
+        // Thước chuẩn tỷ lệ 1:1 dài đúng 50mm kiểm tra độ chính xác khi in tại nhà
+        doc.save().lineWidth(0.3).strokeColor(CMYK_INFO).fillColor(CMYK_INFO);
+        const rulerX = -offsetX + 15;
+        const rulerY = pageHeight - offsetY - 12;
+        doc.moveTo(rulerX, rulerY).lineTo(rulerX + 50, rulerY).stroke();
+        doc.moveTo(rulerX, rulerY - 2).lineTo(rulerX, rulerY + 2).stroke();
+        doc.moveTo(rulerX + 50, rulerY - 2).lineTo(rulerX + 50, rulerY + 2).stroke();
+        doc.font('info').fontSize(2.8);
+        doc.text('<- Thước chuẩn 50 mm (In đúng 100% tỷ lệ thật) ->', rulerX, rulerY - 4);
+        doc.text('Cắt nét đỏ | Cấn nếp gập nét xanh — WrapFit DIY Studio', rulerX, rulerY + 2.5);
+        doc.restore();
+      }
       doc.restore();
     });
     doc.end();

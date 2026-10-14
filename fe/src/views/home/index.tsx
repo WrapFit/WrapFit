@@ -7,14 +7,15 @@ import {
   BoxJourney,
   CardsAlmanacSection,
   CustomerVoices,
-  FeatureShowcase,
   GreenBanner,
+  HomeFaq,
   HomeHero,
   MadeInVietnam,
   PlansAndCopilot,
   StandardsStrip,
 } from "@/components/home";
 import { MainFooter, MainHeader } from "@/components/layout";
+import { WaitlistSection } from "@/components/waitlist";
 
 /**
  * `/`: the home page, laid out after the pack.ly home page (slate ink on a cool grey canvas, lime calls to action,
@@ -29,10 +30,11 @@ export default function HomePage() {
         <StandardsStrip />
         <BoxCatalog />
         <CardsAlmanacSection />
-        <FeatureShowcase />
         <PlansAndCopilot />
         <BoxJourney />
         <CustomerVoices />
+        <WaitlistSection />
+        <HomeFaq />
         <GreenBanner />
         <MadeInVietnam />
       </main>

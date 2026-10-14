@@ -19,8 +19,8 @@ export function HomeHero() {
               <span className="size-2 rounded-full bg-[#F26522] ring-2 ring-[#F26522]/25 animate-pulse" title="FPT Orange" />
               <span className="size-2 rounded-full bg-[#6DB33F] ring-2 ring-[#6DB33F]/25" title="FPT Green" />
             </span>
-            <span className="font-serif italic font-semibold tracking-wide text-stone-900 text-sm sm:text-base">
-              &ldquo;{HERO.slogan}&rdquo;
+            <span className="text-xs sm:text-sm font-semibold tracking-wide text-stone-800">
+              WrapFit · Nền tảng thiết kế hộp quà thông minh
             </span>
           </div>
 

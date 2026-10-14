@@ -112,51 +112,79 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     ],
     svgPath: "M15 50 Q50 15 85 50 Q50 85 15 50 Z",
   },
+  {
+    id: "sticker-label",
+    name: "Sticker & Decal Label",
+    vietnameseName: "Tem Nhãn & Đai Giấy (Sticker / Decal)",
+    subtitle: "Giải pháp dán trang trí hộp có sẵn (Chị Linh DIY)",
+    description: "Tem decal dán nắp/miệng hộp, tem tròn niêm phong hoặc đai giấy (belly band) quấn quanh hộp trơn có sẵn. Tiết kiệm 80% chi phí làm hộp mới, in nhanh trên giấy decal A4 tại nhà.",
+    badge: "Dành Cho Hộp Có Sẵn",
+    badgeColor: "bg-teal-50 text-teal-800 border-teal-200",
+    recommendedGifts: ["Hộp kraft trơn mua sẵn", "Túi giấy kraft", "Hộp quà có sẵn", "Lọ thủy tinh"],
+    recommendedPaper: "Decal giấy / Decal nhựa bóc dán 120–160 GSM",
+    foldDifficulty: "Dễ",
+    foldTimeSec: 1,
+    feasibilityRate: "100% Khổ A4/A3",
+    defaultDims: { length: 150, width: 50, height: 2, paperThickness: 0.15 },
+    sizePresets: [
+      { label: "S", name: "Tem tròn", description: "Tem tròn niêm phong miệng hộp 40×40mm", dims: { length: 40, width: 40, height: 2, paperThickness: 0.15 } },
+      { label: "M", name: "Tem nhãn chữ nhật", description: "Tem nhãn thông tin sản phẩm 100×60mm", dims: { length: 100, width: 60, height: 2, paperThickness: 0.15 } },
+      { label: "L", name: "Đai giấy (Belly Band)", description: "Đai giấy quấn quanh hộp 280×50mm", dims: { length: 280, width: 50, height: 2, paperThickness: 0.15 } },
+    ],
+    svgPath: "M10 30 L90 30 L90 70 L10 70 Z M20 40 L80 40 M20 50 L60 50",
+  },
 ];
 
 export interface GiftPreset {
   id: string;
   name: string;
   category: string;
-  dims: { length: number; width: number; height: number; paperThickness: number };
+  weight?: number; // gift weight in grams
+  dims: { length: number; width: number; height: number; paperThickness: number; giftWeight?: number; bottomType?: "tuck" | "lock" };
 }
 
 /** Common gifts, measured inside the box (mm). */
 export const GIFT_PRESETS: GiftPreset[] = [
   {
     id: "candle",
-    name: "Hũ Nến Thơm Gỗ Thông",
+    name: "Hũ Nến Thơm Gỗ Thông (380g)",
     category: "Home & Craft",
-    dims: { length: 85, width: 85, height: 105, paperThickness: 0.45 },
+    weight: 380,
+    dims: { length: 85, width: 85, height: 105, paperThickness: 0.45, giftWeight: 380, bottomType: "lock" },
   },
   {
     id: "perfume",
-    name: "Chai Nước Hoa 50ml",
+    name: "Chai Nước Hoa 50ml (180g)",
     category: "Cosmetics",
-    dims: { length: 65, width: 40, height: 120, paperThickness: 0.42 },
+    weight: 180,
+    dims: { length: 65, width: 40, height: 120, paperThickness: 0.42, giftWeight: 180, bottomType: "tuck" },
   },
   {
     id: "jewelry",
-    name: "Hộp Vòng Tay / Dây Chuyền",
+    name: "Hộp Vòng Tay / Dây Chuyền (85g)",
     category: "Luxury",
-    dims: { length: 100, width: 100, height: 60, paperThickness: 0.5 },
+    weight: 85,
+    dims: { length: 100, width: 100, height: 60, paperThickness: 0.5, giftWeight: 85, bottomType: "tuck" },
   },
   {
     id: "lipstick",
-    name: "Thỏi Son Môi Handmade",
+    name: "Thỏi Son Môi Handmade (35g)",
     category: "Beauty",
-    dims: { length: 28, width: 28, height: 88, paperThickness: 0.35 },
+    weight: 35,
+    dims: { length: 28, width: 28, height: 88, paperThickness: 0.35, giftWeight: 35, bottomType: "tuck" },
   },
   {
     id: "ceramic_mug",
-    name: "Cốc Gốm Mộc & Trà Hoa",
+    name: "Cốc Gốm Mộc & Trà Hoa (420g)",
     category: "Artisan",
-    dims: { length: 95, width: 95, height: 105, paperThickness: 0.48 },
+    weight: 420,
+    dims: { length: 95, width: 95, height: 105, paperThickness: 0.48, giftWeight: 420, bottomType: "lock" },
   },
   {
     id: "macaron",
-    name: "Hộp 6 Bánh Macaron",
+    name: "Hộp 6 Bánh Macaron (150g)",
     category: "Pastry",
-    dims: { length: 180, width: 55, height: 50, paperThickness: 0.4 },
+    weight: 150,
+    dims: { length: 180, width: 55, height: 50, paperThickness: 0.4, giftWeight: 150, bottomType: "tuck" },
   },
 ];

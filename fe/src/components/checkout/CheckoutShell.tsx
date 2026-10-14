@@ -16,7 +16,7 @@ import { cn } from "@/utils/helpers";
 export type Billing = "monthly" | "yearly";
 export type PaidTier = Exclude<SubscriptionTier, "FREE">;
 
-const PAID: PaidTier[] = ["STARTER", "PRO_BUSINESS"];
+const PAID: PaidTier[] = ["PAY_PER_EXPORT", "STARTER", "PRO_BUSINESS"];
 
 /** Plan and billing cycle carried from step to step in the query string. */
 export function useCheckoutParams(): { tier: PaidTier; billing: Billing; query: (next?: Partial<{ tier: PaidTier; billing: Billing }>) => string } {
@@ -30,12 +30,16 @@ export function useCheckoutParams(): { tier: PaidTier; billing: Billing; query: 
 
 /** Amount billed now and per month. */
 export function priceOf(plan: Plan, billing: Billing) {
+  if (plan.tier === "PAY_PER_EXPORT") {
+    return { perMonth: plan.price.monthly, total: plan.price.monthly };
+  }
   const perMonth = billing === "yearly" ? plan.price.yearlyPerMonth : plan.price.monthly;
   return { perMonth, total: billing === "yearly" ? perMonth * 12 : perMonth };
 }
 
 /** Saving of the yearly cycle, in percent. */
 export function yearlySaving(plan: Plan): number {
+  if (plan.tier === "PAY_PER_EXPORT" || plan.price.monthly === 0) return 0;
   return Math.round((1 - plan.price.yearlyPerMonth / plan.price.monthly) * 100);
 }
 
@@ -117,11 +121,15 @@ export function CheckoutShell({ step, tier, billing, query, children }: Checkout
 function OrderSummary({ tier, billing }: { tier: PaidTier; billing: Billing }) {
   const plan = PLANS[tier];
   const { perMonth, total } = priceOf(plan, billing);
+  const isPerExport = tier === "PAY_PER_EXPORT";
+
   return (
     <aside aria-label="Tóm tắt đơn hàng" className="rounded-[28px] bg-landing-green-night p-6 text-white lg:sticky lg:top-6">
       <p className="text-sm text-landing-lime-mist/70">Đơn hàng của bạn</p>
       <p className="mt-1 font-landing-heading text-3xl font-bold">Gói {plan.name}</p>
-      <p className="mt-1 text-sm text-landing-lime-mist/80">{billing === "yearly" ? "Thanh toán theo năm" : "Thanh toán theo tháng"}</p>
+      <p className="mt-1 text-sm text-landing-lime-mist/80">
+        {isPerExport ? "Thanh toán theo từng lần xuất" : billing === "yearly" ? "Thanh toán theo năm" : "Thanh toán theo tháng"}
+      </p>
 
       <ul className="mt-6 flex flex-col gap-3 text-sm">
         <li className="flex items-center gap-3">
@@ -134,27 +142,27 @@ function OrderSummary({ tier, billing }: { tier: PaidTier; billing: Billing }) {
         </li>
         <li className="flex items-center gap-3">
           <Check className="size-4 shrink-0 text-landing-lime" aria-hidden />
-          Studio, FitCheck™, file in PDF/SVG/DXF và mã QR mở hộp
+          {isPerExport ? "Xuất trọn bộ file vector CMYK, SVG, DXF & in A4/A3" : "Studio, FitCheck™, file in PDF/SVG/DXF và mã QR mở hộp"}
         </li>
       </ul>
 
       <dl className="mt-6 flex flex-col gap-2 border-t border-white/15 pt-5 text-sm">
         <div className="flex justify-between">
-          <dt className="text-landing-lime-mist/80">Giá mỗi tháng</dt>
-          <dd>{formatUsd(perMonth)}</dd>
+          <dt className="text-landing-lime-mist/80">{isPerExport ? "Đơn giá xuất file" : "Giá mỗi tháng"}</dt>
+          <dd>{formatUsd(perMonth)}{isPerExport ? " / lần" : ""}</dd>
         </div>
-        {billing === "yearly" && (
+        {!isPerExport && billing === "yearly" && (
           <div className="flex justify-between">
             <dt className="text-landing-lime-mist/80">Tiết kiệm so với theo tháng</dt>
             <dd className="text-landing-lime">−{formatUsd((plan.price.monthly - plan.price.yearlyPerMonth) * 12)}</dd>
           </div>
         )}
         <div className="mt-2 flex items-end justify-between border-t border-white/15 pt-4">
-          <dt className="font-medium">{billing === "yearly" ? "Tổng 12 tháng" : "Tổng hôm nay"}</dt>
+          <dt className="font-medium">{isPerExport ? "Tổng thanh toán" : billing === "yearly" ? "Tổng 12 tháng" : "Tổng hôm nay"}</dt>
           <dd className="font-landing-heading text-3xl font-bold text-landing-lime">{formatUsd(total)}</dd>
         </div>
       </dl>
-      <p className="mt-3 text-xs text-landing-lime-mist/60">Giá theo USD, chưa gồm thuế.</p>
+      <p className="mt-3 text-xs text-landing-lime-mist/60">Giá theo VNĐ, đã bao gồm thuế VAT.</p>
     </aside>
   );
 }

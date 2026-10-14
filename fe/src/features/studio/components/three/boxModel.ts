@@ -38,7 +38,7 @@ const PAPER: Record<BoxMaterialTheme, { outside: string; inside: string; ink: st
 };
 
 /** Panel that carries the showcase decoration when there is no design (home page, intro). */
-const MAIN_PANEL = ["panel_front", "lid_top", "sleeve_top", "pillow_front"];
+const MAIN_PANEL = ["panel_front", "lid_top", "sleeve_top", "pillow_front", "panel_sticker"];
 const IMAGE_TYPES = new Set<CanvasElement["type"]>(["image", "logo", "pattern"]);
 const isFileUrl = (content: string) => /^(https?:\/\/|\/)/.test(content);
 

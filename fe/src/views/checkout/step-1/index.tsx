@@ -21,13 +21,13 @@ export default function CheckoutStep1Page() {
   );
 }
 
-const PAID: PaidTier[] = ['STARTER', 'PRO_BUSINESS'];
+const PAID: PaidTier[] = ['PAY_PER_EXPORT', 'STARTER', 'PRO_BUSINESS'];
 
 function ChoosePlan() {
   const { user } = useAuth();
   const { tier, billing, query } = useCheckoutParams();
   const currentIndex = user ? PLAN_ORDER.indexOf(user.subscriptionTier) : 0;
-  const owned = (item: PaidTier) => PLAN_ORDER.indexOf(item) <= currentIndex;
+  const owned = (item: PaidTier) => item !== 'PAY_PER_EXPORT' && PLAN_ORDER.indexOf(item) <= currentIndex;
   const blocked = owned(tier);
 
   return (
@@ -55,12 +55,13 @@ function ChoosePlan() {
           ))}
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2" role="radiogroup" aria-label="Gói">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3" role="radiogroup" aria-label="Gói">
           {PAID.map((item) => {
             const plan = PLANS[item];
             const { perMonth } = priceOf(plan, billing);
             const active = item === tier;
             const isOwned = owned(item);
+            const isPerExport = item === 'PAY_PER_EXPORT';
             return (
               <Link
                 key={item}
@@ -77,7 +78,7 @@ function ChoosePlan() {
                 )}
               >
                 <span className="flex items-center justify-between gap-2">
-                  <span className="font-landing-heading text-2xl font-bold">{plan.name}</span>
+                  <span className="font-landing-heading text-xl font-bold">{plan.name}</span>
                   <span
                     className={cn('flex size-6 items-center justify-center rounded-full', active ? 'bg-landing-lime text-landing-green-night' : 'ring-1 ring-landing-line')}
                     aria-hidden
@@ -87,11 +88,11 @@ function ChoosePlan() {
                 </span>
                 <span className="text-xl font-semibold">
                   {formatUsd(perMonth)}
-                  <span className="ml-1 text-sm font-normal text-landing-muted">/ tháng</span>
+                  <span className="ml-1 text-sm font-normal text-landing-muted">{isPerExport ? '/ lần' : '/ tháng'}</span>
                 </span>
                 <span className="flex flex-col gap-1.5 text-sm text-landing-muted">
                   <span>{formatQuota(plan.storageBytes)} lưu trữ</span>
-                  <span>{plan.aiPatternsPerDay} lượt hoa văn AI / 24 giờ</span>
+                  <span>{plan.aiPatternsPerDay} lượt hoa văn AI / 24h</span>
                 </span>
                 {isOwned && <span className="text-xs font-medium text-landing-green-deep">Đã có trong gói của bạn</span>}
               </Link>

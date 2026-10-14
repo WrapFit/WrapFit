@@ -427,6 +427,86 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                   </div>
                 );
               })}
+
+              {/* Gift weight input & Crash-lock intelligent recommendation */}
+              <div className="pt-2 border-t border-library-line">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-library-ink font-medium">Khối lượng quà tặng</span>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min={10}
+                      max={3000}
+                      step={10}
+                      value={dimensions.giftWeight ?? 250}
+                      onChange={(e) => {
+                        const weight = Math.max(10, Math.min(3000, Number(e.target.value) || 0));
+                        setDimensions((dims) => ({
+                          ...dims,
+                          giftWeight: weight,
+                          bottomType: weight > 300 ? "lock" : dims.bottomType ?? "tuck",
+                        }));
+                      }}
+                      className="w-20 h-8 rounded-lg border border-library-line px-2 text-right font-mono text-sm text-library-ink outline-none focus:border-library-accent"
+                    />
+                    <span className="text-xs text-library-muted">g</span>
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={50}
+                  max={1500}
+                  step={50}
+                  value={dimensions.giftWeight ?? 250}
+                  onChange={(e) => {
+                    const weight = Number(e.target.value);
+                    setDimensions((dims) => ({
+                      ...dims,
+                      giftWeight: weight,
+                      bottomType: weight > 300 ? "lock" : dims.bottomType ?? "tuck",
+                    }));
+                  }}
+                  className="mt-1.5 w-full accent-library-accent"
+                />
+                <div className="flex justify-between font-mono text-[11px] text-library-muted">
+                  <span>50g (nhẹ)</span>
+                  <span>&gt; 300g (nặng)</span>
+                  <span>1500g</span>
+                </div>
+
+                {(dimensions.giftWeight ?? 0) > 300 && structure === "tuck-top" && (
+                  <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/80 p-3 text-xs leading-relaxed text-amber-900 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="size-4 shrink-0 text-amber-700 mt-0.5" />
+                      <div>
+                        <strong className="font-semibold">Quà nặng {dimensions.giftWeight}g (&gt; 300g):</strong> Đáy gài tiêu chuẩn (Straight tuck) có nguy cơ bục đáy khi vận chuyển.
+                      </div>
+                    </div>
+                    <p className="text-amber-800">
+                      WrapFit khuyến nghị kết cấu <strong>Đáy khóa FEFCO 0215 (Crash-lock / 1-2-3 lock)</strong> và giấy GSM ≥ 350 để hộp chịu lực tốt nhất.
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setDimensions((dims) => ({ ...dims, bottomType: "lock" }))}
+                        className={cn(
+                          "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
+                          dimensions.bottomType !== "tuck" ? "bg-amber-600 text-white border-amber-700 font-semibold" : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100",
+                        )}
+                      >
+                        ✓ Đáy khóa chịu lực (Khuyên dùng)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => selectStructure("lid-base")}
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
+                      >
+                        Đổi sang Hộp Âm Dương
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </Section>
 
