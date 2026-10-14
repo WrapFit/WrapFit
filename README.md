@@ -99,7 +99,7 @@ docker compose up --build
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/ptuoof/WrapFit.git
+git clone https://github.com/WrapFit/WrapFit.git
 cd WrapFit
 
 # 2. Cài đặt các gói phụ thuộc
