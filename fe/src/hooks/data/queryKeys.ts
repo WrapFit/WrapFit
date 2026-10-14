@@ -38,6 +38,16 @@ export const queryKeys = {
   storageUsage: ["storage", "usage"] as const,
   aiUsage: ["ai", "usage"] as const,
 
+  printShops: {
+    all: ["printShops"] as const,
+    detail: (id: string) => ["printShops", id] as const,
+  },
+  orders: {
+    all: ["orders"] as const,
+    myOrders: ["orders", "my"] as const,
+    detail: (id: string) => ["orders", id] as const,
+  },
+
   admin: {
     users: (query: PageQuery = {}) => ["admin", "users", query] as const,
     user: (id: string) => ["admin", "user", id] as const,

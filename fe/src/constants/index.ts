@@ -29,6 +29,12 @@ export const ROUTES = {
   unbox: (slug: string) => `/unbox/${slug}`,
   /** Code-entry page: the recipient types or pastes the code printed with the gift. */
   unboxCode: "/unbox",
+  /** Waitlist / Early Access page */
+  waitlist: "/waitlist",
+  /** Contact Us page */
+  contact: "/contact",
+  /** About Us / Story page */
+  about: "/about",
 } as const;
 
 /** Page opened after signing in when no `?redirect=` was given. */
@@ -42,9 +48,9 @@ export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Quản trị viên",
 };
 
-/** Names of the subscription tiers. */
 export const TIER_LABELS: Record<SubscriptionTier, string> = {
   FREE: "Gói Free",
-  STARTER: "Gói Starter",
-  PRO_BUSINESS: "Gói Pro Business",
+  PAY_PER_EXPORT: "Từng lần xuất (19k)",
+  STARTER: "Gói Tháng (99k)",
+  PRO_BUSINESS: "Doanh Nghiệp",
 };
