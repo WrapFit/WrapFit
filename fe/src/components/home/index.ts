@@ -9,3 +9,5 @@ export { BoxJourney } from "./BoxJourney";
 export { CustomerVoices } from "./CustomerVoices";
 export { GreenBanner } from "./GreenBanner";
 export { MadeInVietnam } from "./MadeInVietnam";
+export { BoxQuickPreviewModal } from "./BoxQuickPreviewModal";
+export { CardsAlmanacSection } from "./CardsAlmanacSection";

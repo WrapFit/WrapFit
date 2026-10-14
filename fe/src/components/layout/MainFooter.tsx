@@ -64,7 +64,7 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
       >
         <div className="flex flex-col items-center gap-2 text-center">
           <LandingLogo tone="light" />
-          <p className="text-sm font-medium text-landing-lime-soft xl:text-base">Nền tảng thiết kế hộp quà vừa khít</p>
+          <p className="text-sm font-medium text-stone-300 xl:text-base">Nền tảng thiết kế hộp quà vừa khít</p>
         </div>
 
         {!compact && (
@@ -91,7 +91,7 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
 
         <div className="flex w-full flex-col items-center gap-2 border-t border-white/10 pt-6 text-center text-xs text-landing-lime-mist/80">
           <p>Khuôn bế · FitCheck™ · Xem trước 3D · File in PDF, SVG, DXF · Mở hộp bằng mã QR</p>
-          <p>© {new Date().getFullYear()} WrapFit · Make Every Present, Present.</p>
+          <p>© {new Date().getFullYear()} WrapFit · Make Every Present, Present. · Đại học FPT (EXE101)</p>
         </div>
       </div>
     </footer>

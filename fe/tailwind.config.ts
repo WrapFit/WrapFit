@@ -63,6 +63,18 @@ const appTheme: ThemeExtend = {
       terracotta: "#BC6C25",
       espresso: "#2B1E16",
     },
+    // FPT University Brand Frames (EXE101 Project Colors)
+    fpt: {
+      blue: "#005CA9",
+      "blue-dark": "#004785",
+      "blue-light": "#E8F2FA",
+      orange: "#F26522",
+      "orange-dark": "#D85314",
+      "orange-light": "#FEF1EA",
+      green: "#6DB33F",
+      "green-dark": "#559130",
+      "green-light": "#EFF8EA",
+    },
     vibrant: {
       cobalt: "#2563EB",
       "cobalt-dark": "#1D4ED8",
