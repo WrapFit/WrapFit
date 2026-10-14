@@ -8,7 +8,7 @@ import { Carousel, Container, Reveal, Stars } from "@/components/landing";
 /** Centred title and a full-width carousel of review cards. */
 export function CustomerVoices() {
   return (
-    <section className="overflow-x-clip py-12 lg:py-24">
+    <section className="overflow-x-clip py-10 lg:py-16">
       <Container>
         <Reveal variant="text" className="mb-10 flex flex-col items-center gap-1 text-center lg:mb-16">
           <h2 className="font-landing-heading text-3xl font-bold leading-tight tracking-tight text-landing-ink lg:text-4xl">{VOICES.title}</h2>
