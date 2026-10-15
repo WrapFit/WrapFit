@@ -1,17 +1,17 @@
 'use client';
 
 /**
- * `/dashboard/orders`: print files and print orders, in the pacdora.com workspace style. There is no order API yet:
- * the page lists the print files exported from the latest projects (`GET /projects/:id/exports`, download link from
- * `GET /exports/:jobId`) and explains the ordering steps to come.
+ * `/dashboard/orders`: print files and sample-print orders, in the pacdora.com workspace style. It lists the sample
+ * orders (`GET /orders/my-orders`) and the print files exported from the latest projects (`GET /projects/:id/exports`,
+ * download link from `GET /exports/:jobId`). Orders are placed from the sample-print cart (/cart), the one ordering flow.
  */
 
-import { useQueries, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Download, FileDown, Loader2, PackageCheck, Plus, Truck } from 'lucide-react';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { Download, FileDown, Loader2, PackageCheck, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import React, { useState } from 'react';
-import { createSampleOrder, getExportJob, listMyOrders, listPrintShops, listProjectExports } from '@/api';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { getExportJob, listMyOrders, listProjectExports } from '@/api';
 import { useToast } from '@/components/common/Toast';
 import { outlineButton, primaryButton } from '@/components/library';
 import { Badge, Panel, PanelTitle, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
@@ -20,8 +20,9 @@ import { RequireAuth } from '@/features/auth';
 import { RECENT_PROJECTS_QUERY, formatRelative, useProjectList } from '@/features/dashboard';
 import { formatVnd } from '@/features/pricing';
 import { queryKeys } from '@/hooks/data/queryKeys';
-import type { ExportFileType, ExportJob, ExportStatus, SampleOrder } from '@/types/api';
+import type { ExportFileType, ExportJob, ExportStatus } from '@/types/api';
 import { cn } from '@/utils/helpers';
+import { Alert, DataTable, DatePicker, startOfDay, type DataColumn, type DateRange } from '@/components/ui';
 
 export default function DashboardOrdersPage() {
   return (
@@ -76,7 +77,7 @@ interface Row {
 function OrdersScreen() {
   const toast = useToast();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const projects = useProjectList(PROJECTS_QUERY);
   const items = projects.data?.items ?? [];
   const exports = useQueries({
@@ -87,6 +88,8 @@ function OrdersScreen() {
     })),
   });
   const [downloading, setDownloading] = useState<string | null>(null);
+  // Export date filter (DD/MM/YYYY, weeks from Monday); empty = every export.
+  const [range, setRange] = useState<DateRange>({ from: null, to: null });
 
   // Sample orders from backend
   const sampleOrdersQuery = useQuery({
@@ -96,44 +99,22 @@ function OrdersScreen() {
   });
   const sampleOrders = sampleOrdersQuery.data ?? [];
 
-  // Partner print shops for ordering
-  const printShopsQuery = useQuery({
-    queryKey: queryKeys.printShops.all,
-    queryFn: listPrintShops,
-    staleTime: 60_000,
-  });
-  const printShops = printShopsQuery.data ?? [];
-
-  // Order modal state
+  // Former links of the studio (?project=…&action=sample) now open the sample-print cart with that project.
   const targetProjectId = searchParams.get('project');
-  const [showOrderModal, setShowOrderModal] = useState(searchParams.get('action') === 'sample' || !!targetProjectId);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(targetProjectId ?? (items[0]?.id || ''));
-  const [selectedShopId, setSelectedShopId] = useState<string>('');
-  const [recipientName, setRecipientName] = useState('');
-  const [recipientPhone, setRecipientPhone] = useState('');
-  const [shippingAddress, setShippingAddress] = useState('');
-  const [orderNotes, setOrderNotes] = useState('');
+  const wantsSample = searchParams.get('action') === 'sample';
+  useEffect(() => {
+    if (targetProjectId || wantsSample) router.replace(targetProjectId ? `/cart?add=${encodeURIComponent(targetProjectId)}` : '/cart');
+  }, [router, targetProjectId, wantsSample]);
 
-  const createOrderMutation = useMutation({
-    mutationFn: createSampleOrder,
-    onSuccess: (order) => {
-      toast.show({
-        tone: 'success',
-        title: 'Đặt in mẫu thử thành công!',
-        description: `Đơn in 01 hộp mẫu thử mã #${order.id.slice(0, 8)} đã được gửi đến xưởng ${order.printShopName}.`,
-      });
-      setShowOrderModal(false);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.orders.myOrders });
-    },
-    onError: (err) => {
-      toast.error(err, 'Chưa đặt được mẫu thử');
-    },
-  });
-
-  const rows: Row[] = items
+  const inRange = (iso: string) => {
+    const day = startOfDay(new Date(iso));
+    return (!range.from || day >= range.from) && (!range.to || day <= range.to);
+  };
+  const allRows: Row[] = items
     .flatMap((project, index) => (exports[index]?.data ?? []).map((job) => ({ job, projectId: project.id, projectTitle: project.title })))
-    .sort((a, b) => b.job.createdAt.localeCompare(a.job.createdAt))
-    .slice(0, 20);
+    .sort((a, b) => b.job.createdAt.localeCompare(a.job.createdAt));
+  const rows = allRows.filter((row) => inRange(row.job.createdAt)).slice(0, 20);
+  const filtering = Boolean(range.from || range.to);
   const loading = projects.isPending || exports.some((query) => query.isPending);
   const failed = exports.find((query) => query.isError);
 
@@ -164,6 +145,19 @@ function OrdersScreen() {
         ))}
       </div>
     );
+  } else if (rows.length === 0 && filtering && allRows.length > 0) {
+    body = (
+      <WorkspaceEmpty
+        icon={FileDown}
+        title="Không có file in trong khoảng ngày này"
+        description="Chọn khoảng ngày khác hoặc xoá bộ lọc để xem mọi file đã xuất."
+        action={
+          <button type="button" onClick={() => setRange({ from: null, to: null })} className={outlineButton}>
+            Xoá bộ lọc ngày
+          </button>
+        }
+      />
+    );
   } else if (rows.length === 0) {
     body = (
       <WorkspaceEmpty
@@ -178,87 +172,78 @@ function OrdersScreen() {
       />
     );
   } else {
-    body = (
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[620px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-library-line text-library-muted">
-              <th scope="col" className="py-2.5 pr-3 font-normal">
-                Dự án
-              </th>
-              <th scope="col" className="px-3 py-2.5 font-normal">
-                Định dạng
-              </th>
-              <th scope="col" className="px-3 py-2.5 font-normal">
-                Trạng thái
-              </th>
-              <th scope="col" className="px-3 py-2.5 font-normal">
-                Thời gian
-              </th>
-              <th scope="col" className="py-2.5 pl-3 text-right font-normal">
-                <span className="sr-only">Tải</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-library-line">
-            {rows.map(({ job, projectId, projectTitle }) => {
-              const status = STATUS_BADGES[job.status];
-              return (
-                <tr key={job.id}>
-                  <td className="max-w-[260px] py-3 pr-3">
-                    <Link href={ROUTES.editor(projectId)} className="block truncate font-medium text-library-ink hover:underline">
-                      {projectTitle}
-                    </Link>
-                    {job.fileName && <span className="block truncate font-mono text-xs text-library-muted">{job.fileName}</span>}
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="font-mono text-xs text-library-ink">{FILE_LABELS[job.fileType]}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <Badge tone={status.tone}>{status.label}</Badge>
-                    {job.status === 'FAILED' && job.error && <span className="mt-1 block max-w-[200px] truncate text-xs text-red-700">{job.error}</span>}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-3 text-library-sub">{formatRelative(job.completedAt ?? job.createdAt)}</td>
-                  <td className="py-3 pl-3 text-right">
-                    {job.status === 'COMPLETED' && (
-                      <button
-                        type="button"
-                        onClick={() => void download(job)}
-                        disabled={downloading !== null}
-                        aria-label={`Tải ${FILE_LABELS[job.fileType]} của “${projectTitle}”`}
-                        className={cn(outlineButton, 'h-9 px-3 text-sm')}
-                      >
-                        {downloading === job.id ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <Download className="size-4" aria-hidden />}
-                        Tải
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
+    // Sortable columns; on phones each export becomes a card.
+    const columns: DataColumn<Row>[] = [
+      {
+        key: 'project',
+        label: 'Dự án',
+        primary: true,
+        sortValue: (row) => row.projectTitle,
+        render: ({ job, projectId, projectTitle }) => (
+          <span className="block max-w-[260px]">
+            <Link href={ROUTES.editor(projectId)} className="block truncate font-medium text-library-ink hover:underline">
+              {projectTitle}
+            </Link>
+            {job.fileName && <span className="block truncate font-mono text-caption text-library-muted">{job.fileName}</span>}
+          </span>
+        ),
+      },
+      { key: 'format', label: 'Định dạng', sortValue: (row) => FILE_LABELS[row.job.fileType], render: ({ job }) => <span className="font-mono text-caption text-library-ink">{FILE_LABELS[job.fileType]}</span> },
+      {
+        key: 'status',
+        label: 'Trạng thái',
+        sortValue: (row) => STATUS_BADGES[row.job.status].label,
+        render: ({ job }) => (
+          <>
+            <Badge tone={STATUS_BADGES[job.status].tone}>{STATUS_BADGES[job.status].label}</Badge>
+            {job.status === 'FAILED' && job.error && <span className="mt-1 block max-w-[200px] truncate text-caption text-danger-fg">{job.error}</span>}
+          </>
+        ),
+      },
+      {
+        key: 'time',
+        label: 'Thời gian',
+        sortValue: (row) => new Date(row.job.completedAt ?? row.job.createdAt),
+        render: ({ job }) => <span className="whitespace-nowrap text-library-sub">{formatRelative(job.completedAt ?? job.createdAt)}</span>,
+      },
+      {
+        key: 'download',
+        label: 'Tải',
+        align: 'right',
+        render: ({ job, projectTitle }) =>
+          job.status === 'COMPLETED' ? (
+            <button
+              type="button"
+              onClick={() => void download(job)}
+              disabled={downloading !== null}
+              aria-label={`Tải ${FILE_LABELS[job.fileType]} của “${projectTitle}”`}
+              className={cn(outlineButton, 'h-9 px-3 text-sm')}
+            >
+              {downloading === job.id ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <Download className="size-4" aria-hidden />}
+              Tải
+            </button>
+          ) : null,
+      },
+    ];
+    body = <DataTable label="File in đã xuất" columns={columns} rows={rows} rowKey={(row) => row.job.id} mobile="cards" initialSort={{ key: 'time', direction: 'desc' }} search={{ label: 'Lọc file in', placeholder: 'Tên dự án, định dạng…', text: (row) => `${row.projectTitle} ${FILE_LABELS[row.job.fileType]} ${STATUS_BADGES[row.job.status].label}` }} />;
   }
 
   return (
-    <WorkspaceShell title="Đơn hàng & File In" description="Quản lý file in công nghiệp đã xuất và theo dõi đơn đặt in mẫu thử 01 hộp (Physical Proof).">
+    <WorkspaceShell
+      title="Đơn hàng & File In"
+      description="Quản lý file in công nghiệp đã xuất và theo dõi đơn đặt in mẫu thử 01 hộp (Physical Proof)."
+    >
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-8 flex flex-col gap-6">
+        <div className="min-w-0 xl:col-span-8 flex flex-col gap-6">
           {/* Sample Orders Panel */}
           <Panel aria-labelledby="sample-orders-heading">
             <PanelTitle
               id="sample-orders-heading"
               action={
-                <button
-                  type="button"
-                  onClick={() => setShowOrderModal(true)}
-                  className={cn(primaryButton, 'h-8 px-3 text-xs flex items-center gap-1.5')}
-                >
-                  <Plus className="size-3.5" />
-                  Đặt in mẫu 01 hộp
-                </button>
+                <Link href="/cart" className={cn(primaryButton, 'h-8 px-3 text-xs flex items-center gap-1.5')}>
+                  <Plus className="size-3.5" aria-hidden />
+                  Đặt in mẫu
+                </Link>
               }
             >
               Đơn in mẫu thử (Sample Box Proofs)
@@ -271,7 +256,7 @@ function OrdersScreen() {
                 <p className="text-xs text-library-sub mt-1">In 01 hộp thực tế gửi tận tay để kiểm định màu in và khớp nối trước khi sản xuất hàng loạt.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="relative overflow-x-auto">
                 <table className="w-full min-w-[560px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-library-line text-library-muted">
@@ -291,7 +276,7 @@ function OrdersScreen() {
                         <tr key={order.id}>
                           <td className="py-3 pr-3 font-medium text-library-ink">
                             <span className="block truncate max-w-[200px]">{order.projectTitle}</span>
-                            <span className="block font-mono text-[11px] text-library-muted">#{order.id.slice(0, 8)}</span>
+                            <span className="block font-mono text-cad-spec-micro text-library-muted">#{order.id.slice(0, 8)}</span>
                           </td>
                           <td className="px-3 py-3 text-library-sub text-xs">{shopName}</td>
                           <td className="px-3 py-3 font-mono text-xs">{order.quantity} hộp</td>
@@ -313,20 +298,35 @@ function OrdersScreen() {
             <PanelTitle id="orders-files" action={<span className="text-sm text-library-muted">Từ {items.length} dự án sửa gần nhất</span>}>
               File in đã xuất
             </PanelTitle>
+            {!loading && allRows.length > 0 && (
+              <DatePicker
+                mode="range"
+                label="Lọc theo ngày xuất"
+                hint="Gõ DD/MM/YYYY – DD/MM/YYYY hoặc chọn trên lịch."
+                value={range}
+                onChange={setRange}
+                max={new Date()}
+                className="mb-4 max-w-sm"
+              />
+            )}
             {failed && !loading && (
-              <p role="alert" className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                Một vài dự án chưa tải được danh sách file.{' '}
-                <button type="button" onClick={() => exports.forEach((query) => query.isError && void query.refetch())} className="font-medium underline">
-                  Thử lại
-                </button>
-              </p>
+              <Alert
+                tone="warning"
+                className="mb-3"
+                title="Một vài dự án chưa tải được danh sách file."
+                action={
+                  <button type="button" onClick={() => exports.forEach((query) => query.isError && void query.refetch())} className={cn(outlineButton, "h-9 px-3 text-sm")}>
+                    Thử lại
+                  </button>
+                }
+              />
             )}
             {body}
           </Panel>
         </div>
 
         {/* Steps Sidebar */}
-        <section aria-labelledby="orders-steps" className="rounded-[20px] border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard xl:col-span-4 h-fit">
+        <section aria-labelledby="orders-steps" className="rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard xl:col-span-4 h-fit">
           <h2 id="orders-steps" className="text-lg font-medium text-library-ink">
             Quy trình in cùng WrapFit
           </h2>
@@ -343,7 +343,7 @@ function OrdersScreen() {
                   {index + 1}
                 </span>
                 <span className="min-w-0">
-                  <span className="flex flex-wrap items-center gap-2 text-[15px] font-medium text-library-ink">
+                  <span className="flex flex-wrap items-center gap-2 text-body font-medium text-library-ink">
                     {step.title}
                   </span>
                   <span className="block text-sm text-library-sub">{step.text}</span>
@@ -354,147 +354,6 @@ function OrdersScreen() {
         </section>
       </div>
 
-      {/* Modal: Order Sample Box */}
-      {showOrderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-library-line space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-library-ink flex items-center gap-2">
-                <Truck className="size-5 text-library-accent" />
-                Đặt in mẫu thử 01 hộp
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowOrderModal(false)}
-                className="text-stone-400 hover:text-stone-600 text-sm font-semibold"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-xs text-library-sub">
-              Xưởng đối tác sẽ dùng file PDF vector CMYK của bạn để in thử 01 hộp thực tế bằng bàn cắt kỹ thuật số.
-            </p>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!selectedProjectId || !recipientName || !recipientPhone || !shippingAddress) {
-                  toast.show({ tone: 'error', title: 'Vui lòng điền đủ thông tin giao hàng' });
-                  return;
-                }
-                createOrderMutation.mutate({
-                  projectId: selectedProjectId,
-                  printShopId: selectedShopId || undefined,
-                  recipientName,
-                  recipientPhone,
-                  phone: recipientPhone,
-                  shippingAddress,
-                  notes: orderNotes,
-                  quantity: 1,
-                });
-              }}
-              className="space-y-3 text-xs"
-            >
-              <div>
-                <label className="block font-medium text-library-ink mb-1">Dự án muốn in mẫu</label>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-library-line px-2.5 bg-white text-library-ink"
-                >
-                  {items.map((p) => (
-                    <option key={p.id} value={p.id}>{p.title}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-medium text-library-ink mb-1">Xưởng in đối tác</label>
-                <select
-                  value={selectedShopId}
-                  onChange={(e) => setSelectedShopId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-library-line px-2.5 bg-white text-library-ink"
-                >
-                  <option value="">Tự động chọn xưởng gần nhất (Hồ Chí Minh / Hà Nội)</option>
-                  {printShops.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.city})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-medium text-library-ink mb-1">Tên người nhận</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Nguyễn Văn A"
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-library-line px-2.5"
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium text-library-ink mb-1">Số điện thoại</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="0912 345 678"
-                  value={recipientPhone}
-                  onChange={(e) => setRecipientPhone(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-library-line px-2.5"
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium text-library-ink mb-1">Địa chỉ giao hàng</label>
-                <textarea
-                  required
-                  rows={2}
-                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  className="w-full rounded-lg border border-library-line p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium text-library-ink mb-1">Ghi chú cho xưởng</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Dùng giấy Ivory 350 GSM cán màng mờ"
-                  value={orderNotes}
-                  onChange={(e) => setOrderNotes(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-library-line px-2.5"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-library-line flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] text-library-muted block">Phí in mẫu &amp; vận chuyển</span>
-                  <span className="text-base font-bold text-library-ink">49.000đ</span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowOrderModal(false)}
-                    className="px-3.5 py-2 rounded-full border border-library-line text-xs font-medium"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createOrderMutation.isPending}
-                    className={cn(primaryButton, 'px-4 py-2 text-xs font-semibold')}
-                  >
-                    {createOrderMutation.isPending ? 'Đang gửi...' : 'Xác nhận đặt mẫu'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </WorkspaceShell>
   );
 }

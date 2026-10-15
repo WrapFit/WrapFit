@@ -1,0 +1,58 @@
+/* Motion of the sign-in panel. Everything stops for visitors who asked for reduced motion. */
+
+/* Gói floats above the disc (keeps the centring translate of the image). */
+.float {
+  animation: float 4.5s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 10px)) rotate(-1.5deg);
+  }
+}
+
+.drift {
+  animation: drift 6s ease-in-out infinite;
+}
+
+.driftSlow {
+  animation: drift 8s ease-in-out -3s infinite;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(8deg);
+  }
+}
+
+/* The size chip bobs without turning, so its text stays level. */
+.chip {
+  animation: chip 7s ease-in-out -2s infinite;
+}
+
+@keyframes chip {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .float,
+  .drift,
+  .driftSlow {
+    animation: none;
+  }
+}

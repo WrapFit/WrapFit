@@ -99,17 +99,17 @@ const TRACTION_STATS = [
 
 export function AboutMilestones() {
   return (
-    <section className="bg-white py-14 lg:py-24 border-t border-stone-200/70">
+    <section className="bg-white py-14 lg:py-24 border-t border-line/70">
       <Container>
         {/* Header */}
         <div className="mx-auto max-w-4xl text-center mb-14">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#F26522]">
+          <span className="text-xs font-bold uppercase tracking-wider text-fpt-orange-ink">
             Dấu ấn tăng trưởng (Milestones & Traction)
           </span>
-          <h2 className="font-landing-heading text-2xl sm:text-4xl lg:text-5xl font-bold text-stone-900 mt-2">
+          <h2 className="font-landing-heading text-2xl sm:text-4xl lg:text-5xl font-bold text-fg mt-2">
             Hành Trình Hiện Thực Hóa Từng Chiếc Hộp
           </h2>
-          <p className="mt-3 text-sm sm:text-base text-stone-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-3 text-sm sm:text-base text-fg-muted max-w-2xl mx-auto leading-relaxed">
             Từ ý tưởng trên giảng đường Đại học FPT đến nền tảng thiết kế bao bì thông minh được đón nhận bởi hàng trăm người sáng tạo độc lập.
           </p>
         </div>
@@ -119,15 +119,15 @@ export function AboutMilestones() {
           {TRACTION_STATS.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-stone-200/90 bg-stone-50/70 p-5 text-center shadow-soft-4 transition-all hover:bg-white hover:shadow-soft-12"
+              className="rounded-2xl border border-line/90 bg-surface-sunken/70 p-5 text-center shadow-soft-4 transition-all hover:bg-white hover:shadow-soft-12"
             >
-              <span className="block font-mono text-2xl sm:text-3xl font-bold text-stone-900 text-[#005CA9]">
+              <span className="block font-mono text-2xl sm:text-3xl font-bold text-fg text-fpt-blue">
                 {stat.value}
               </span>
-              <span className="mt-1 block text-xs sm:text-sm font-bold text-stone-800">
+              <span className="mt-1 block text-xs sm:text-sm font-bold text-fg">
                 {stat.label}
               </span>
-              <span className="text-[11px] text-stone-500 block mt-0.5">
+              <span className="text-caption text-fg-muted block mt-0.5">
                 {stat.sub}
               </span>
             </div>
@@ -137,7 +137,7 @@ export function AboutMilestones() {
         {/* Timeline */}
         <div className="mx-auto max-w-4xl relative">
           {/* Vertical Center Line for desktop */}
-          <div className="hidden md:block absolute left-1/2 top-4 bottom-4 -translate-x-1/2 w-0.5 bg-stone-200" />
+          <div className="hidden md:block absolute left-1/2 top-4 bottom-4 -translate-x-1/2 w-0.5 bg-line/60" />
 
           <div className="space-y-8 sm:space-y-12">
             {MILESTONES.map((m, index) => {
@@ -152,7 +152,7 @@ export function AboutMilestones() {
                   }`}
                 >
                   {/* Center Node Icon */}
-                  <div className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 size-10 items-center justify-center rounded-full bg-white border-2 border-[#F26522] shadow-soft-8 z-10 text-[#F26522]">
+                  <div className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 size-10 items-center justify-center rounded-full bg-white border-2 border-fpt-orange shadow-soft-8 z-10 text-fpt-orange-ink">
                     <Icon className="size-4" />
                   </div>
 
@@ -161,37 +161,37 @@ export function AboutMilestones() {
                     <div
                       className={`rounded-3xl border p-6 sm:p-7 shadow-soft-8 transition-all hover:shadow-soft-16 ${
                         m.highlight
-                          ? "border-[#F26522] bg-gradient-to-br from-orange-50/40 via-white to-amber-50/30 ring-1 ring-[#F26522]/30"
-                          : "border-stone-200/90 bg-white"
+                          ? "border-fpt-orange bg-gradient-to-br from-fpt-orange-light/40 via-white to-warning-bg/30 ring-1 ring-fpt-orange/30"
+                          : "border-line/90 bg-white"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-[#F26522]">
+                          <span className="font-mono text-xs font-bold text-fpt-orange-ink">
                             {m.time}
                           </span>
-                          <span className="text-stone-300">•</span>
-                          <span className="text-xs font-medium text-stone-500">
+                          <span className="text-white/75">•</span>
+                          <span className="text-xs font-medium text-fg-muted">
                             {m.quarter}
                           </span>
                         </div>
-                        <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-bold text-stone-700 uppercase">
+                        <span className="rounded-full bg-surface-sunken px-2.5 py-0.5 text-caption font-bold text-fg-muted uppercase">
                           {m.badge}
                         </span>
                       </div>
 
-                      <h3 className="font-landing-heading text-lg sm:text-xl font-bold text-stone-900 mb-2">
+                      <h3 className="font-landing-heading text-lg sm:text-xl font-bold text-fg mb-2">
                         {m.title}
                       </h3>
 
-                      <p className="text-xs sm:text-sm text-stone-600 leading-relaxed mb-4">
+                      <p className="text-xs sm:text-sm text-fg-muted leading-relaxed mb-4">
                         {m.description}
                       </p>
 
-                      <div className="space-y-1.5 pt-3 border-t border-stone-100">
+                      <div className="space-y-1.5 pt-3 border-t border-line/60">
                         {m.achievements.map((item) => (
-                          <div key={item} className="flex items-start gap-2 text-xs text-stone-700">
-                            <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <div key={item} className="flex items-start gap-2 text-xs text-fg-muted">
+                            <CheckCircle2 className="size-3.5 text-success-fg shrink-0 mt-0.5" />
                             <span>{item}</span>
                           </div>
                         ))}

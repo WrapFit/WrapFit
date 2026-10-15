@@ -3,6 +3,7 @@
 import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import { buttonClass, cardClass } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 import { useInView } from "@/hooks/dom";
 
@@ -11,54 +12,47 @@ export function Container({ className, children }: { className?: string; childre
   return <div className={cn("mx-auto w-full max-w-screen-xl px-4 lg:px-8 2xl:max-w-screen-2xl", className)}>{children}</div>;
 }
 
-const PILL =
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25";
-
-/** FPT University primary call to action (vibrant FPT Orange #F26522). `size="sm"` is the 36 px button of the cards. */
+/**
+ * Primary call to action of pack.ly: lime pill, dark green text (10:1). `size="sm"` is the 36 px button of the cards.
+ * The shared Button (components/ui) in its primary variant.
+ */
 export function limeButton(size: "md" | "sm" = "md") {
-  return cn(
-    PILL,
-    "bg-[#F26522] text-white hover:bg-[#D85314] shadow-soft-8 font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]",
-    size === "md" ? "h-10 px-5" : "h-9 px-3.5"
-  );
+  return buttonClass({ variant: "primary", size });
 }
 
 /** Outline pill on the dark green card. */
-export const darkGhostButton = cn(
-  PILL,
-  "h-9 border border-landing-lime/40 px-3.5 text-landing-lime-mist hover:bg-landing-lime/10 focus-visible:ring-landing-lime/40"
-);
+export const darkGhostButton = buttonClass({ variant: "ghost-dark", size: "sm" });
 
 /** Round white arrow button of the carousels. */
 export const roundButton =
-  "inline-flex size-11 items-center justify-center rounded-full border-2 border-[#CBD3E3]/25 bg-white text-landing-ink shadow-soft-8 transition-[opacity,transform] hover:scale-105 outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25 disabled:pointer-events-none";
+  "inline-flex size-11 items-center justify-center rounded-full border-2 border-line/25 bg-white text-fg shadow-soft-8 transition-[opacity,transform] hover:scale-105 outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:pointer-events-none";
 
 /** Title of a section that links to its full list, with the arrow chip of pack.ly, and its subtitle. */
 export function SectionHeading({ title, subtitle, href }: { title: string; subtitle?: string; href: string }) {
   return (
     <div className="flex flex-col gap-1">
       <Link href={href} className="group flex w-fit items-center gap-2 text-landing-ink">
-        <h2 className="relative font-landing-heading text-3xl font-bold leading-10 tracking-tight after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-landing-ink after:transition-all after:duration-300 group-hover:after:w-full lg:text-4xl">
+        <h2 className="relative font-landing-heading text-heading-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-landing-ink after:transition-all after:duration-300 group-hover:after:w-full">
           {title}
         </h2>
-        <span className="inline-flex size-8 items-center justify-center rounded-full bg-landing-tile transition-transform group-hover:translate-x-1">
+        <span className="inline-flex size-8 items-center justify-center rounded-full bg-surface-sunken transition-transform group-hover:translate-x-1">
           <ArrowRight className="size-5" aria-hidden />
         </span>
       </Link>
-      {subtitle && <p className="text-base text-landing-muted">{subtitle}</p>}
+      {subtitle && <p className="text-body text-fg-muted">{subtitle}</p>}
     </div>
   );
 }
 
 /** Small grey line above a card title. */
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cn("font-landing-heading text-lg font-semibold leading-7 text-landing-muted lg:text-xl", className)}>{children}</p>;
+  return <p className={cn("font-landing-heading text-title text-fg-muted lg:text-heading-sm", className)}>{children}</p>;
 }
 
 /** Big title of a feature card. */
 export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <h2 className={cn("font-landing-heading text-3xl font-bold leading-tight tracking-tight text-landing-ink lg:text-4xl", className)}>
+    <h2 className={cn("font-landing-heading text-heading-lg text-fg", className)}>
       {children}
     </h2>
   );
@@ -68,7 +62,7 @@ export function Stars({ count = 5, className }: { count?: number; className?: st
   return (
     <span className={cn("inline-flex items-center gap-0.5 text-landing-star", className)} aria-hidden>
       {Array.from({ length: count }, (_, i) => (
-        <Star key={i} className="size-[1em] fill-current" strokeWidth={1.5} />
+        <Star key={i} className="size-[1em] fill-current" strokeWidth={1.75} />
       ))}
     </span>
   );
@@ -79,7 +73,7 @@ export function Tag({ children, dot = false, className }: { children: React.Reac
   return (
     <span
       className={cn(
-        "inline-flex h-5 w-fit shrink-0 items-center gap-1 rounded-full border px-2 text-xs font-medium whitespace-nowrap text-landing-indigo",
+        "inline-flex h-5 w-fit shrink-0 items-center gap-1 rounded-full border px-2 text-caption font-medium whitespace-nowrap text-landing-indigo",
         dot ? "border-landing-indigo/20 bg-landing-indigo/[0.04]" : "border-landing-indigo bg-white",
         className
       )}
@@ -125,10 +119,10 @@ export function Reveal({
   );
 }
 
-/** White card of the feature blocks: 48 px corners, hairline ring. */
+/** White card of the feature blocks: the shared Card, soft variant, large (32 → 48 px corners). */
 export function FeatureCard({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("overflow-hidden rounded-[2rem] bg-white p-5 ring-1 ring-landing-ink/10 sm:p-8 lg:rounded-[3rem]", className)}>
+    <div className={cardClass({ variant: "soft", padding: "lg", className: cn("overflow-hidden", className) })}>
       {children}
     </div>
   );

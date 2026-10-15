@@ -32,13 +32,13 @@ function ChoosePlan() {
 
   return (
     <CheckoutShell step={1} tier={tier} billing={billing} query={query()}>
-      <section aria-labelledby="checkout-title" className="rounded-[28px] bg-white p-6 sm:p-8">
+      <section aria-labelledby="checkout-title" className="rounded-sheet bg-white p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Chọn gói của bạn
         </h1>
         <p className="mt-2 text-base leading-7 text-landing-muted">Mọi gói đều có đủ studio; gói trả phí nâng dung lượng lưu trữ và lượt tạo hoa văn AI.</p>
 
-        <div className="mt-6 inline-flex rounded-full bg-[#EBEDEF] p-1" role="radiogroup" aria-label="Chu kỳ thanh toán">
+        <div className="mt-6 inline-flex rounded-full bg-mist-200 p-1" role="radiogroup" aria-label="Chu kỳ thanh toán">
           {(['monthly', 'yearly'] as Billing[]).map((cycle) => (
             <Link
               key={cycle}
@@ -105,11 +105,11 @@ function ChoosePlan() {
             So sánh đủ các gói
           </Link>
           {blocked ? (
-            <span className="inline-flex h-12 items-center justify-center rounded-full bg-[#EBEDEF] px-6 text-base font-medium text-landing-muted">Bạn đã có gói này</span>
+            <span className="inline-flex h-12 items-center justify-center rounded-full bg-mist-200 px-6 text-base font-medium text-landing-muted">Bạn đã có gói này</span>
           ) : (
             <Link
               href={`/checkout/step-2${query()}`}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
             >
               Tiếp tục
               <ArrowRight className="size-4" aria-hidden />

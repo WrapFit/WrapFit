@@ -13,9 +13,10 @@ import {
 } from "@/components/pricing";
 
 /**
- * `/pricing`: Pricing page designed strictly matching the VisualSpark layout:
- * - Top: "Plans that fit your scale" with 3 3D-illustrated pastel cards (Basic, Premium, Enterprise)
- * - Middle: 2 side-by-side verified Testimonial cards (Kelly Williams & Maxine Bunton)
+ * `/pricing`: Pricing page in the VisualSpark layout:
+ * - Top: the paid plans of features/pricing on 3 3D-illustrated pastel cards (monthly or yearly, free way in,
+ *   payment methods, refund rule)
+ * - Middle: 2 reviews of the trial sessions (sample copy, labelled)
  * - Bottom: Plan FAQ, Why WrapFit, AI Copilot Bé Gói, and Call-to-action banner.
  */
 export default function PricingPage() {
@@ -32,7 +33,7 @@ export default function PricingPage() {
         <PricingTestimonials />
 
         {/* Comprehensive Packaging FAQ & WrapFit Guarantees */}
-        <div className="bg-landing-canvas border-t border-stone-200/70">
+        <div className="bg-landing-canvas border-t border-line/70">
           <PlanFaq />
           <WhyWrapFit />
           <section className="bg-landing-lime py-12 lg:py-24">

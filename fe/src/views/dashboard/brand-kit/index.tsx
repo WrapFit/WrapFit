@@ -113,7 +113,7 @@ function DashboardBrandKitScreen() {
                 </button>
               )}
             </div>
-            <p role={problems.colors ? 'alert' : undefined} className={cn('mt-3 text-sm', problems.colors ? 'text-red-700' : 'text-library-muted')}>
+            <p role={problems.colors ? 'alert' : undefined} className={cn('mt-3 text-sm', problems.colors ? 'text-danger-fg' : 'text-library-muted')}>
               {problems.colors ?? 'Mã HEX 6 ký tự, ví dụ #2D5C0F.'}
             </p>
           </Panel>
@@ -133,7 +133,7 @@ function DashboardBrandKitScreen() {
                 <label htmlFor="bk-slogan" className="text-sm font-medium text-library-ink">
                   Slogan
                 </label>
-                <span className={cn('font-mono text-xs', problems.slogan ? 'text-red-700' : 'text-library-muted')}>
+                <span className={cn('font-mono text-xs', problems.slogan ? 'text-danger-fg' : 'text-library-muted')}>
                   {sloganLength}/{SLOGAN_MAX_LENGTH}
                 </span>
               </div>
@@ -148,7 +148,7 @@ function DashboardBrandKitScreen() {
                 className={WORKSPACE_INPUT}
               />
               {problems.slogan && (
-                <p id="bk-slogan-error" className="text-sm text-red-700">
+                <p id="bk-slogan-error" className="text-sm text-danger-fg">
                   {problems.slogan}
                 </p>
               )}
@@ -160,7 +160,7 @@ function DashboardBrandKitScreen() {
           <div className="flex flex-col gap-4 lg:sticky lg:top-24">
             <BrandPreview draft={draft} shopName={user?.shopName ?? null} />
             <p aria-live="polite" className="flex items-center gap-2 text-sm text-library-sub">
-              <span aria-hidden className={cn('size-2 rounded-full', dirty || !kit ? 'bg-amber-500' : 'bg-library-accent')} />
+              <span aria-hidden className={cn('size-2 rounded-full', dirty || !kit ? 'bg-warning' : 'bg-library-accent')} />
               {status} · {draft.colors.length} màu · {draft.fonts.length} font{draft.logoUrl ? ' · có logo' : ''}
             </p>
           </div>
@@ -185,7 +185,7 @@ function BrandPreview({ draft, shopName }: { draft: BrandKitDraft; shopName: str
   const showLogo = draft.logoUrl && !isPdfUrl(draft.logoUrl);
 
   return (
-    <section aria-label="Xem trước" className="rounded-[20px] border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard">
+    <section aria-label="Xem trước" className="rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard">
       <p className="text-sm font-medium text-library-ink">Xem trước trên hộp</p>
       <div className="mt-4 flex items-end justify-center gap-5">
         <div className="relative flex aspect-[4/5] w-[58%] max-w-[240px] flex-col overflow-hidden rounded-md border border-black/15 shadow-soft-16" style={{ backgroundColor: background }}>
@@ -203,12 +203,13 @@ function BrandPreview({ draft, shopName }: { draft: BrandKitDraft; shopName: str
               {draft.slogan.trim() || 'Gói trọn yêu thương'}
             </span>
           </div>
+          {/* ds-allow: band of the miniature box preview, scaled with the box (artwork, not reading text). */}
           <div className="flex h-[10%] items-center justify-center text-[9px] uppercase tracking-[0.2em]" style={{ backgroundColor: accent, color: readableInk(accent), fontFamily: body }}>
             Handmade · Gift box
           </div>
         </div>
         <div
-          className="mb-2 flex size-20 shrink-0 items-center justify-center rounded-full border-4 text-center text-[10px] uppercase leading-tight tracking-wider"
+          className="mb-2 flex size-20 shrink-0 items-center justify-center rounded-full border-4 text-center text-overline uppercase leading-tight tracking-wider"
           style={{ backgroundColor: primary, borderColor: accent, color: readableInk(primary), fontFamily: body }}
         >
           Thank

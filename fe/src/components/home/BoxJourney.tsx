@@ -17,7 +17,7 @@ export function BoxJourney() {
   const total = String(JOURNEY.steps.length).padStart(2, "0");
 
   return (
-    <section id="hanh-trinh" className="relative scroll-mt-24 bg-white py-12 lg:py-20 border-y border-stone-100">
+    <section id="hanh-trinh" className="relative scroll-mt-24 bg-white py-12 lg:py-20 border-y border-line/60">
       {/* Invisible anchor hooks for header links */}
       <div id={ANCHORS.fitcheck} className="absolute -top-28" />
       <div id={ANCHORS.export} className="absolute -top-28" />
@@ -27,7 +27,7 @@ export function BoxJourney() {
           <Eyebrow>{JOURNEY.eyebrow}</Eyebrow>
           <CardTitle className="mt-1">{JOURNEY.title}</CardTitle>
           {JOURNEY.subtitle && (
-            <p className="mt-2 text-sm sm:text-base text-stone-600 leading-relaxed">
+            <p className="mt-2 text-sm sm:text-base text-fg-muted leading-relaxed">
               {JOURNEY.subtitle}
             </p>
           )}
@@ -35,19 +35,19 @@ export function BoxJourney() {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.95fr)] lg:gap-12 items-center">
           {/* Left: Step Description Card */}
-          <div className="flex flex-col justify-center gap-3.5 rounded-3xl border border-stone-200/80 bg-stone-50/60 p-6 sm:p-8 lg:p-10 shadow-2xs" aria-live="polite">
+          <div className="flex flex-col justify-center gap-3.5 rounded-3xl border border-line/80 bg-surface-sunken/60 p-6 sm:p-8 lg:p-10 shadow-2xs" aria-live="polite">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs sm:text-sm font-bold text-stone-500 tracking-wider">
+              <span className="font-mono text-xs sm:text-sm font-bold text-fg-muted tracking-wider">
                 BƯỚC {step.stepNumber} / {total}
               </span>
               <span
                 className={cn(
-                  "rounded-full px-3 py-1 font-mono text-[11px] font-bold shadow-2xs border",
+                  "rounded-full px-3 py-1 font-mono text-cad-spec-micro font-bold shadow-2xs border",
                   active === 2
-                    ? "bg-[#FEF1EA] text-[#F26522] border-[#F26522]/30"
+                    ? "bg-fg text-fg-inverse border-fg"
                     : active === 3
-                    ? "bg-[#EBF7E7] text-[#6DB33F] border-[#6DB33F]/30"
-                    : "bg-[#E8F2FA] text-[#005CA9] border-[#005CA9]/30"
+                    ? "bg-fpt-green-light text-success-fg border-fpt-green/30"
+                    : "bg-fpt-blue-light text-fpt-blue border-fpt-blue/30"
                 )}
               >
                 {step.badge}
@@ -58,24 +58,24 @@ export function BoxJourney() {
               {step.title}
             </h3>
 
-            <p className="text-sm sm:text-base leading-relaxed text-stone-600">
+            <p className="text-sm sm:text-base leading-relaxed text-fg-muted">
               {step.body}
             </p>
 
             {/* Key Engineering Metric / Value Chip */}
             {step.stat && (
-              <div className="mt-1 flex items-center gap-2 rounded-xl border border-stone-200/80 bg-white px-3.5 py-2.5 text-xs font-semibold text-stone-800 shadow-2xs">
-                <CheckCircle2 className="size-4 shrink-0 text-[#6DB33F]" />
+              <div className="mt-1 flex items-center gap-2 rounded-xl border border-line/80 bg-white px-3.5 py-2.5 text-xs font-semibold text-fg shadow-2xs">
+                <CheckCircle2 className="size-4 shrink-0 text-success" />
                 <span>{step.stat}</span>
               </div>
             )}
 
             {/* CTA & Step Indicator */}
-            <div className="mt-2 flex items-center justify-between border-t border-stone-200/70 pt-4">
+            <div className="mt-2 flex items-center justify-between border-t border-line/70 pt-4">
               {step.cta && (
                 <Link
                   href={step.cta.href}
-                  className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#F26522] transition-colors hover:text-[#D85314]"
+                  className="group inline-flex items-center gap-1.5 text-label-sm font-bold text-success-fg underline-offset-4 transition-colors hover:underline"
                 >
                   <span>{step.cta.label}</span>
                   <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -83,18 +83,24 @@ export function BoxJourney() {
               )}
 
               {/* Step indicator bar dots */}
-              <div className="flex gap-1.5" aria-hidden>
+              <div className="flex gap-0.5" role="group" aria-label="Các bước">
                 {JOURNEY.steps.map((item, index) => (
                   <button
                     key={item.title}
                     type="button"
                     onClick={() => setActive(index)}
-                    aria-label={`Chuyển đến bước ${index + 1}`}
-                    className={cn(
-                      "h-1.5 rounded-full transition-all duration-300",
-                      index === active ? "w-7 bg-[#F26522]" : "w-2.5 bg-stone-300 hover:bg-stone-400"
-                    )}
-                  />
+                    aria-label={`Bước ${index + 1}: ${item.title}`}
+                    aria-current={index === active ? "step" : undefined}
+                    className="group/dot flex h-6 min-w-6 items-center justify-center rounded-full px-1"
+                  >
+                    {/* The dot stays small; the button around it is the 24 px target. */}
+                    <span
+                      className={cn(
+                        "h-1.5 rounded-full transition-all duration-300",
+                        index === active ? "w-7 bg-fg" : "w-2.5 bg-line-strong/50 group-hover/dot:bg-line-strong"
+                      )}
+                    />
+                  </button>
                 ))}
               </div>
             </div>
@@ -114,7 +120,7 @@ export function BoxJourney() {
                   onMouseEnter={() => setActive(index)}
                   onFocus={() => setActive(index)}
                   className={cn(
-                    "group relative min-w-0 overflow-hidden rounded-2xl bg-stone-100 text-left outline-none transition-[flex-grow] duration-500 ease-out focus-visible:ring-[3px] focus-visible:ring-landing-ink/30 motion-reduce:transition-none shadow-sm",
+                    "group relative min-w-0 overflow-hidden rounded-2xl bg-surface-sunken text-left outline-none transition-[flex-grow] duration-500 ease-out focus-visible:ring-[3px] focus-visible:ring-landing-ink/30 motion-reduce:transition-none shadow-sm",
                     open ? "grow-[5]" : "grow hover:grow-[1.5]"
                   )}
                   style={{ flexBasis: 0 }}
@@ -122,7 +128,7 @@ export function BoxJourney() {
                   <img src={item.image} alt={item.alt} loading="lazy" className="absolute inset-0 size-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   <span
                     className={cn(
-                      "absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent transition-opacity duration-500",
+                      "absolute inset-0 bg-gradient-to-t from-fg/80 via-fg/20 to-transparent transition-opacity duration-500",
                       open ? "opacity-100" : "opacity-60"
                     )}
                   />
@@ -132,8 +138,8 @@ export function BoxJourney() {
                     className={cn(
                       "absolute bottom-3 inline-flex size-7 items-center justify-center rounded-full font-mono text-xs font-bold transition-all lg:size-8 lg:text-sm shadow-md",
                       open
-                        ? "left-3 lg:left-4 bg-[#F26522] text-white"
-                        : "left-1/2 -translate-x-1/2 bg-white/90 text-stone-900"
+                        ? "left-3 lg:left-4 bg-action text-action-fg"
+                        : "left-1/2 -translate-x-1/2 bg-white/90 text-fg"
                     )}
                   >
                     {index + 1}
@@ -149,7 +155,7 @@ export function BoxJourney() {
                     <p className="font-landing-heading text-base lg:text-lg font-bold drop-shadow-sm truncate">
                       {item.title}
                     </p>
-                    <p className="text-[11px] font-medium text-stone-300 truncate">
+                    <p className="text-caption font-medium text-white/75 truncate">
                       {item.badge}
                     </p>
                   </div>

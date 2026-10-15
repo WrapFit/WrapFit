@@ -236,7 +236,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
       </p>
       <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">{template ? template.title : `${current?.name ?? "Hộp"} theo kích thước của bạn`}</h1>
+          <h1 className="text-2xl font-medium text-library-ink sm:text-heading-lg sm:leading-tight">{template ? template.title : `${current?.name ?? "Hộp"} theo kích thước của bạn`}</h1>
           <p className="mt-1.5 max-w-2xl text-base leading-[1.6] text-library-sub">
             Nhập kích thước lọt lòng theo milimét và chọn giấy: khuôn bế và hộp 3D cập nhật ngay, đúng công thức của file in.
           </p>
@@ -266,7 +266,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Stage: stays in view while the settings on the right scroll. */}
         <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
-          <section aria-label="Xem trước" className="overflow-hidden rounded-[20px] border-[1.5px] border-library-ink bg-library-tile shadow-hard">
+          <section aria-label="Xem trước" className="overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-library-ink/15 px-4 py-3">
               <SegmentedControl<"2d" | "3d">
                 label="Chế độ xem"
@@ -287,7 +287,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
             </div>
 
             {view === "2d" ? (
-              <div className="flex h-[360px] items-center justify-center bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px] p-6 sm:h-[520px] sm:p-10">
+              <div className="flex h-[360px] items-center justify-center bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px] p-6 sm:h-[520px] sm:p-10">
                 <DielineSketch
                   structure={structure}
                   dimensions={dimensions}
@@ -420,7 +420,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                       onChange={(event) => setSide(field, Number(event.target.value))}
                       className="mt-1.5 w-full accent-library-accent"
                     />
-                    <div className="flex justify-between font-mono text-[11px] text-library-muted">
+                    <div className="flex justify-between font-mono text-cad-spec-micro text-library-muted">
                       <span>{min}</span>
                       <span>{max}</span>
                     </div>
@@ -468,21 +468,21 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                   }}
                   className="mt-1.5 w-full accent-library-accent"
                 />
-                <div className="flex justify-between font-mono text-[11px] text-library-muted">
+                <div className="flex justify-between font-mono text-cad-spec-micro text-library-muted">
                   <span>50g (nhẹ)</span>
                   <span>&gt; 300g (nặng)</span>
                   <span>1500g</span>
                 </div>
 
                 {(dimensions.giftWeight ?? 0) > 300 && structure === "tuck-top" && (
-                  <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/80 p-3 text-xs leading-relaxed text-amber-900 space-y-2">
+                  <div className="mt-3 rounded-xl border border-warning/30 bg-warning-bg/80 p-3 text-xs leading-relaxed text-warning-fg space-y-2">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="size-4 shrink-0 text-amber-700 mt-0.5" />
+                      <AlertTriangle className="size-4 shrink-0 text-warning-fg mt-0.5" />
                       <div>
                         <strong className="font-semibold">Quà nặng {dimensions.giftWeight}g (&gt; 300g):</strong> Đáy gài tiêu chuẩn (Straight tuck) có nguy cơ bục đáy khi vận chuyển.
                       </div>
                     </div>
-                    <p className="text-amber-800">
+                    <p className="text-warning-fg">
                       WrapFit khuyến nghị kết cấu <strong>Đáy khóa FEFCO 0215 (Crash-lock / 1-2-3 lock)</strong> và giấy GSM ≥ 350 để hộp chịu lực tốt nhất.
                     </p>
                     <div className="flex items-center gap-2 pt-1">
@@ -491,7 +491,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                         onClick={() => setDimensions((dims) => ({ ...dims, bottomType: "lock" }))}
                         className={cn(
                           "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
-                          dimensions.bottomType !== "tuck" ? "bg-amber-600 text-white border-amber-700 font-semibold" : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100",
+                          dimensions.bottomType !== "tuck" ? "bg-warning text-white border-warning font-semibold" : "bg-white text-warning-fg border-warning/30 hover:bg-warning-bg",
                         )}
                       >
                         ✓ Đáy khóa chịu lực (Khuyên dùng)
@@ -499,7 +499,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                       <button
                         type="button"
                         onClick={() => selectStructure("lid-base")}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-fg-muted border border-line hover:bg-surface-sunken/50"
                       >
                         Đổi sang Hộp Âm Dương
                       </button>
@@ -558,7 +558,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
 
           <div className="flex flex-col gap-3 p-5">
             {errors.length > 0 && (
-              <p role="alert" className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+              <p role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
                 {errors.join(" ")}
               </p>

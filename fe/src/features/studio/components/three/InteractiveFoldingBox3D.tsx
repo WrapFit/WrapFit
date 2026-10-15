@@ -40,6 +40,8 @@ interface InteractiveFoldingBox3DProps {
   showHud?: boolean;
   /** Camera dock (3/4, front, side, top, turntable); default: on unless the box turns by itself. */
   viewControls?: boolean;
+  /** Camera preset driven by the page (a slider of views); the camera glides there whenever it changes. */
+  cameraView?: "angle" | "front" | "side" | "top";
   /** 460 px minimum height; false lets the parent decide (e.g. a square stage on a phone). */
   minHeight?: boolean;
   /** No frame of its own (border, corners): the stage fills the parent's card. */
@@ -265,6 +267,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   showStatusBar = true,
   showHud = true,
   viewControls,
+  cameraView,
   minHeight = true,
   frameless = false,
 }) => {
@@ -682,6 +685,21 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     stageRef.current?.goTo(next);
   };
 
+  // Views asked by the page; the first one waits for the entrance of the box (it ends on the 3/4 view).
+  const firstView = useRef(true);
+  useEffect(() => {
+    if (!cameraView) return;
+    if (firstView.current) {
+      firstView.current = false;
+      if (cameraView === "angle") return;
+      const timer = setTimeout(() => goTo(cameraView), 1400);
+      return () => clearTimeout(timer);
+    }
+    goTo(cameraView);
+    // goTo only reads refs and setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraView]);
+
   const dark = backdrop?.dark ?? false;
   const pill = dark
     ? "bg-white/10 text-white ring-1 ring-white/15 backdrop-blur-md"
@@ -698,7 +716,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   return (
     <div
       className={`relative h-full w-full overflow-hidden ${minHeight ? "min-h-[460px]" : ""} ${
-        frameless ? "" : "rounded-[28px] ring-1 ring-landing-line"
+        frameless ? "" : "rounded-sheet ring-1 ring-landing-line"
       } ${className}`}
       style={backdrop ? { background: backdrop.css } : undefined}
     >
@@ -728,7 +746,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       )}
 
       {showStatusBar && (
-        <div className={`pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] ${pill}`}>
+        <div className={`pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-caption ${pill}`}>
           <span className="font-mono font-semibold text-landing-green">{Math.round(foldProgress * 100)}%</span>
           <span className="opacity-40">·</span>
           <span className="font-mono">
@@ -755,8 +773,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
               title={`Góc nhìn ${item.label.toLowerCase()}`}
             >
               {item.view === "angle" && <Box className="size-3.5" aria-hidden />}
-              <span className={item.view === "angle" ? "" : "hidden sm:inline"}>{item.label}</span>
-              {item.view !== "angle" && <span className="sm:hidden">{item.label.slice(0, 1)}</span>}
+              <span>{item.label}</span>
             </button>
           ))}
           <span className={`mx-0.5 h-4 w-px ${dark ? "bg-white/20" : "bg-landing-line"}`} aria-hidden />

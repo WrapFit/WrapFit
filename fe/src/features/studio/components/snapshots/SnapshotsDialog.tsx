@@ -184,7 +184,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                     <span className="text-sm font-semibold text-landing-ink block truncate" title={snapshot.name}>
                       {snapshot.name}
                     </span>
-                    <span className="text-[11px] text-landing-muted font-mono block">
+                    <span className="text-cad-spec-micro text-landing-muted font-mono block">
                       {dateTime.format(new Date(snapshot.createdAt))} · {snapshot.dimensions.length}×{snapshot.dimensions.width}×
                       {snapshot.dimensions.height} mm
                     </span>

@@ -6,6 +6,7 @@ import { COLLECTION_COLORS, HEX_COLOR, readableInk } from "../format";
 import { useCreateCollection, useUpdateCollection } from "../useCollections";
 import { DIALOG_CANCEL, DIALOG_PANEL } from "./ConfirmDialog";
 import { ModalDialog } from "./ModalDialog";
+import { Icon } from "@/components/ui";
 
 const TITLE_MAX = 100;
 const DESCRIPTION_MAX = 500;
@@ -13,7 +14,7 @@ const DESCRIPTION_MAX = 500;
 const FIELD =
   "min-h-[44px] w-full rounded-lg border border-library-line bg-white px-3.5 py-2.5 text-sm text-library-ink placeholder:text-library-muted focus:border-library-accent focus:outline-none focus:ring-[3px] focus:ring-library-accent/20";
 const SUBMIT =
-  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-[#AFEC88] disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-action-hover disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
 
 interface CollectionDialogProps {
   /** Edits this folder; creates a new one when omitted. */
@@ -85,9 +86,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center shadow-sm"
             style={{ backgroundColor: HEX_COLOR.test(color) ? color : "#D4A373", color: readableInk(color) }}
           >
-            <span className="material-symbols-outlined text-xl">
-              {collection ? "folder_open" : "create_new_folder"}
-            </span>
+            <Icon name={collection ? "folder_open" : "create_new_folder"} className="size-5" />
           </span>
           <h2
             id={titleId}
@@ -113,7 +112,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             className={FIELD}
           />
           {submitted && titleError && (
-            <p id={nameErrorId} className="text-xs text-red-700">
+            <p id={nameErrorId} className="text-xs text-danger-fg">
               {titleError}
             </p>
           )}
@@ -141,13 +140,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
                     style={{ backgroundColor: option.value }}
                   >
                     {selected && (
-                      <span
-                        aria-hidden="true"
-                        className="material-symbols-outlined text-base"
-                        style={{ color: readableInk(option.value) }}
-                      >
-                        check
-                      </span>
+                      <Icon name="check" className="size-4" style={{ color: readableInk(option.value) }} />
                     )}
                   </span>
                 </button>
@@ -176,7 +169,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
               />
             </label>
           </div>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-library-muted">{color}</p>
+          <p className="font-mono text-cad-spec-micro uppercase tracking-wider text-library-muted">{color}</p>
         </fieldset>
 
         <div className="flex flex-col gap-1.5">
@@ -192,8 +185,8 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             className={`${FIELD} resize-none`}
           />
           <p
-            className={`text-right font-mono text-[11px] ${
-              description.length > DESCRIPTION_MAX ? "text-red-700" : "text-library-muted"
+            className={`text-right font-mono text-cad-spec-micro ${
+              description.length > DESCRIPTION_MAX ? "text-danger-fg" : "text-library-muted"
             }`}
           >
             {description.length}/{DESCRIPTION_MAX}
@@ -206,12 +199,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
           </button>
           <button type="submit" disabled={saving} className={SUBMIT}>
             {saving && (
-              <span
-                aria-hidden="true"
-                className="material-symbols-outlined text-lg animate-spin motion-reduce:animate-none"
-              >
-                progress_activity
-              </span>
+              <Icon name="progress_activity" className="size-[18px] animate-spin motion-reduce:animate-none" />
             )}
             {saving ? "Đang lưu…" : collection ? "Lưu thay đổi" : "Tạo thư mục"}
           </button>

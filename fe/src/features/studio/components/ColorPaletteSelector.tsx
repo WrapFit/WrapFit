@@ -135,7 +135,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
 
               {/* Title & Tag */}
               <div className="flex items-center justify-between pt-0.5">
-                <span className="text-[11px] font-semibold text-landing-ink line-clamp-1">
+                <span className="text-caption font-semibold text-landing-ink line-clamp-1">
                   {palette.name}
                 </span>
                 {isSelected && <Check className="w-3 h-3 text-landing-green shrink-0" />}

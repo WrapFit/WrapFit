@@ -88,7 +88,7 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
             <span className="font-serif font-bold text-lg tracking-wide text-white">
               WrapFit CAD
             </span>
-            <span className="block text-[11px] font-mono text-cyan-400">
+            <span className="block text-cad-spec-micro font-mono text-cyan-400">
               Parametric Dieline Engine v2.4
             </span>
           </div>
@@ -306,7 +306,7 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
             <span className="text-xs font-bold text-white block">
               {phase === "blueprint" ? "Bé Gói đang canh dao bế..." : "Tadaaa! Hộp quà đã gập xong!"}
             </span>
-            <p className="text-[11px] text-stone-300">
+            <p className="text-caption text-stone-300">
               {phase === "blueprint"
                 ? "Mọi chiếc hộp bắt đầu từ tọa độ dao bế chính xác tuyệt đối."
                 : "Chiếc hộp 3D sẵn sàng mở ra bước vào không gian thiết kế."}

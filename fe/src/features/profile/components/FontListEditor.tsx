@@ -57,7 +57,7 @@ export function FontListEditor({ fonts, onChange }: FontListEditorProps) {
                     <ArrowUpToLine className="size-4" aria-hidden />
                   </button>
                 )}
-                <button type="button" onClick={() => onChange(fonts.filter((item) => item !== font))} aria-label={`Bỏ font “${font}”`} className={cn(ROW_BUTTON, "hover:text-red-700")}>
+                <button type="button" onClick={() => onChange(fonts.filter((item) => item !== font))} aria-label={`Bỏ font “${font}”`} className={cn(ROW_BUTTON, "hover:text-danger-fg")}>
                   <X className="size-4" aria-hidden />
                 </button>
               </span>
@@ -109,7 +109,7 @@ export function FontListEditor({ fonts, onChange }: FontListEditorProps) {
         </div>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-sm text-red-700">
+        <p id={errorId} role="alert" className="text-sm text-danger-fg">
           {error}
         </p>
       )}

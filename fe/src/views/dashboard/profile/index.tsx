@@ -167,7 +167,7 @@ function SecurityPanel({ user }: { user: SafeUser }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-library-ink bg-white">
-            {user.emailVerifiedAt ? <KeyRound className="size-4" aria-hidden /> : <MailWarning className="size-4 text-amber-700" aria-hidden />}
+            {user.emailVerifiedAt ? <KeyRound className="size-4" aria-hidden /> : <MailWarning className="size-4 text-warning-fg" aria-hidden />}
           </span>
           <p className="text-sm leading-[1.6] text-library-sub">
             {user.emailVerifiedAt

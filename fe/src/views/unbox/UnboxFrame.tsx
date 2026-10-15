@@ -8,12 +8,12 @@ import { ROUTES } from "@/constants";
 /** Page of the unboxing screens in the pack.ly style: logo bar, the content, then the WrapFit links. */
 export function UnboxFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-[#F5F6F4] font-landing-body text-landing-ink antialiased`}>
+    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-mist-100 font-landing-body text-landing-ink antialiased`}>
       <header className="flex h-16 shrink-0 items-center justify-between gap-3 px-5 lg:px-8">
         <LandingLogo />
         <Link
           href={ROUTES.editorNew}
-          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-landing-lime px-4 text-sm font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
+          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-landing-lime px-4 text-sm font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
         >
           Tự thiết kế hộp quà
           <ArrowRight className="size-4" aria-hidden />

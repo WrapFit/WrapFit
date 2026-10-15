@@ -26,6 +26,7 @@ import {
   useProjectList,
 } from '@/features/dashboard';
 import { DielineSketch, useBoxStructures } from '@/features/templates';
+import { Banner } from '@/components/ui';
 
 export default function DashboardPage() {
   return (
@@ -113,11 +114,23 @@ function DashboardScreen() {
       }
     >
       <div className="flex flex-col gap-8">
+        {user && !user.emailVerifiedAt && (
+          <Banner
+            tone="warning"
+            title="Email của bạn chưa được xác minh"
+            description="Xác minh để nhận hoá đơn, link tải file in và thông báo đơn in mẫu. Hãy mở thư WrapFit gửi tới hộp thư của bạn."
+            action={
+              <Link href={ROUTES.profile} className={outlineButton}>
+                Xem hồ sơ
+              </Link>
+            }
+          />
+        )}
         <HeroPanel>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center">
             <div>
               <h2 className="flex gap-3 text-2xl font-medium leading-snug text-library-ink">
-                <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent" strokeWidth={2.5} aria-hidden />
+                <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent" strokeWidth={1.75} aria-hidden />
                 Bắt đầu từ một cấu trúc hộp
               </h2>
               <p className="mt-3 text-base leading-[1.6] text-library-sub">

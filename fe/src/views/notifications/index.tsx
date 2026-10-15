@@ -56,8 +56,8 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 const ICON_TONES: Record<Notice['tone'], string> = {
-  red: 'bg-red-50 text-red-700',
-  amber: 'bg-amber-50 text-amber-800',
+  red: 'bg-danger-bg text-danger-fg',
+  amber: 'bg-warning-bg text-warning-fg',
   green: 'bg-library-accent-mist text-library-accent',
   grey: 'bg-library-panel text-library-ink',
 };
@@ -194,7 +194,7 @@ function NotificationsScreen() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-[15px] font-medium text-library-ink">{notice.title}</span>
+                  <span className="text-body font-medium text-library-ink">{notice.title}</span>
                   <Badge>{notice.category === 'project' ? 'Dự án' : 'Tài khoản'}</Badge>
                 </span>
                 <span className="mt-0.5 block text-sm leading-[1.6] text-library-sub">{notice.text}</span>

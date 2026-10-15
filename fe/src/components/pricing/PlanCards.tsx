@@ -63,7 +63,7 @@ function PlanCard({
         {plan.price.amount}
         {plan.price.unit && <span className="ml-1 font-normal text-landing-muted">{plan.price.unit}</span>}
       </p>
-      <span className="inline-flex h-5 w-fit items-center rounded-full border border-landing-line bg-[#CAD4E1]/30 px-2 text-xs font-medium">
+      <span className="inline-flex h-5 w-fit items-center rounded-full border border-landing-line bg-line/30 px-2 text-xs font-medium">
         {plan.badge}
       </span>
       <p className="min-h-20 text-sm leading-5 text-landing-muted lg:min-h-24">{plan.description}</p>
@@ -78,12 +78,12 @@ function PlanCard({
       <ul className="mt-2 flex flex-col gap-3">
         {plan.features.map(({ icon: Icon, label, note, badge }) => (
           <li key={label} className="flex gap-2.5">
-            <Icon className="mt-0.5 size-5 shrink-0 text-landing-muted" strokeWidth={1.5} aria-hidden />
+            <Icon className="mt-0.5 size-5 shrink-0 text-landing-muted" strokeWidth={1.75} aria-hidden />
             <div className="min-w-0">
               <p className="text-base text-landing-ink">
                 {label}
                 {badge && (
-                  <span className="ml-1.5 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-[10px] font-medium text-amber-700">
+                  <span className="ml-1.5 rounded-full border border-warning/30 bg-warning-bg px-1.5 text-caption font-medium text-warning-fg">
                     {badge}
                   </span>
                 )}
@@ -163,7 +163,7 @@ function UsageBar({ label, value, percent }: { label: string; value: string; per
         <span className="font-medium">{value}</span>
       </div>
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-landing-line" role="progressbar" aria-valuenow={Math.round(percent)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-        <div className={cn("h-full rounded-full", percent >= 90 ? "bg-red-500" : "bg-landing-green")} style={{ width: `${percent}%` }} />
+        <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-landing-green")} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

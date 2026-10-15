@@ -74,7 +74,7 @@ function MaterialsScreen() {
                     <span
                       className={cn(
                         'relative block aspect-[321/201] overflow-hidden rounded-2xl border bg-library-tile transition-shadow',
-                        active ? 'border-[1.5px] border-library-ink shadow-hard-sm' : 'border-library-ink group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm',
+                        active ? 'border-[1.5px] border-library-ink shadow-hard-sm' : 'border-library-ink group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50',
                       )}
                     >
                       <span className="absolute inset-0 grid grid-cols-2">
@@ -86,7 +86,7 @@ function MaterialsScreen() {
                         </span>
                       </span>
                       <span className="absolute right-3 top-3 rounded-md bg-white px-1.5 py-1 text-xs text-library-sub">{paper.finishLabel}</span>
-                      <span className="absolute bottom-3 left-3 rounded-md bg-white px-1.5 py-1 font-mono text-[11px] text-library-sub">t = {paper.spec.caliper.toFixed(2)} mm</span>
+                      <span className="absolute bottom-3 left-3 rounded-md bg-white px-1.5 py-1 font-mono text-cad-spec-micro text-library-sub">t = {paper.spec.caliper.toFixed(2)} mm</span>
                     </span>
                     <span className="mt-3 block text-base font-medium text-library-ink">{paper.name}</span>
                     <span className="block text-sm text-library-muted">{paper.bestFor}</span>

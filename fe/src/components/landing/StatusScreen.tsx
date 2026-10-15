@@ -3,6 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
+import { buttonClass } from "@/components/ui";
 
 interface Shortcut {
   href: string;
@@ -23,7 +24,7 @@ interface StatusScreenProps {
 /** Full page for a missing page or a crash, in the pack.ly style: big code, bold title, lime action, shortcuts. */
 export function StatusScreen({ code, title, description, actions, shortcuts = [] }: StatusScreenProps) {
   return (
-    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-[#F5F6F4] font-landing-body text-landing-ink antialiased`}>
+    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-mist-100 font-landing-body text-landing-ink antialiased`}>
       <header className="flex h-16 items-center px-5 lg:px-8">
         <LandingLogo />
       </header>
@@ -51,7 +52,7 @@ export function StatusScreen({ code, title, description, actions, shortcuts = []
           <ul className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {shortcuts.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="flex h-full items-start gap-3 rounded-[28px] bg-white p-5 transition-shadow hover:ring-2 hover:ring-landing-ink/10">
+                <Link href={item.href} className="flex h-full items-start gap-3 rounded-sheet bg-white p-5 transition-shadow hover:ring-2 hover:ring-landing-ink/10">
                   <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-landing-lime text-landing-green-night">
                     <item.icon className="size-5" aria-hidden />
                   </span>
@@ -69,7 +70,5 @@ export function StatusScreen({ code, title, description, actions, shortcuts = []
   );
 }
 
-export const LIME_PILL =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]";
-export const WHITE_PILL =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-medium text-landing-ink ring-1 ring-landing-line transition-colors hover:bg-landing-tile/50";
+export const LIME_PILL = buttonClass({ variant: "primary", size: "xl" });
+export const WHITE_PILL = buttonClass({ variant: "secondary", size: "xl", className: "font-medium" });

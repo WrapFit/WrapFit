@@ -194,7 +194,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
           role="status"
           className={`p-4 rounded-3xl border flex items-center gap-3 ${
             current?.status === "COMPLETED"
-              ? "bg-emerald-50 border-emerald-200"
+              ? "bg-success-bg border-success/30"
               : current?.status === "FAILED" || job.error
               ? "bg-vibrant-coral/10 border-vibrant-coral/30"
               : "bg-landing-lime-mist border-landing-green/30"
@@ -204,10 +204,10 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
           <div className="flex-1 min-w-0 text-sm">
             {current?.status === "COMPLETED" ? (
               <>
-                <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                <span className="font-bold text-success-fg flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" aria-hidden /> File {FORMAT_NAMES[current.fileType]} đã sẵn sàng
                 </span>
-                <span className="text-xs text-emerald-800 block truncate">{current.fileName}</span>
+                <span className="text-xs text-success-fg block truncate">{current.fileName}</span>
               </>
             ) : current?.status === "FAILED" ? (
               <>
@@ -229,7 +229,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
             <button
               type="button"
               onClick={() => void download(current, job.dataUpdatedAt)}
-              className="min-h-[40px] px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition flex-shrink-0"
+              className="min-h-[40px] px-4 rounded-full bg-success hover:bg-success text-white text-xs font-semibold transition flex-shrink-0"
             >
               Tải về
             </button>
@@ -238,14 +238,14 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
       )}
 
       {/* Sample Box Order Banner (1-Unit Physical Proof) */}
-      <div className="p-3.5 rounded-2xl bg-[#FDFBF7] border border-[#E8D8C8] flex items-center justify-between gap-3">
+      <div className="p-3.5 rounded-2xl bg-paper-ivory border border-paper-kraft flex items-center justify-between gap-3">
         <div>
-          <span className="font-semibold text-xs text-stone-900 block">Cần cầm mẫu thực tế trước khi in loạt?</span>
-          <span className="text-[11px] text-stone-500 block">WrapFit kết nối xưởng in đối tác in thử 01 hộp mẫu gửi tận tay.</span>
+          <span className="font-semibold text-xs text-fg block">Cần cầm mẫu thực tế trước khi in loạt?</span>
+          <span className="text-caption text-fg-muted block">WrapFit kết nối xưởng in đối tác in thử 01 hộp mẫu gửi tận tay.</span>
         </div>
         <Link
-          href={`/dashboard/orders?project=${projectId}&action=sample`}
-          className="px-3.5 py-1.5 rounded-full bg-[#122e20] hover:bg-[#1a3f2c] text-white text-xs font-semibold shrink-0 transition shadow-xs"
+          href={`/cart?add=${encodeURIComponent(projectId)}`}
+          className="px-3.5 py-1.5 rounded-full bg-brand-forest-deep hover:bg-brand-forest text-white text-xs font-semibold shrink-0 transition shadow-xs"
         >
           Đặt in mẫu 1 hộp
         </Link>
@@ -289,7 +289,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
                   </button>
                 ) : (
                   <span
-                    className={`text-[11px] font-semibold flex-shrink-0 ${
+                    className={`text-caption font-semibold flex-shrink-0 ${
                       item.status === "FAILED" ? "text-vibrant-coral-dark" : "text-landing-muted"
                     }`}
                   >

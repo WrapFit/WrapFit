@@ -89,9 +89,9 @@ function TextBlock({
 }
 
 const DIMENSIONS = [
-  { key: "length", letter: "L", name: "Chiều dài", ring: "border-blue-600", text: "text-blue-600" },
-  { key: "width", letter: "W", name: "Chiều rộng", ring: "border-orange-500", text: "text-orange-500" },
-  { key: "height", letter: "H", name: "Chiều cao", ring: "border-teal-500", text: "text-teal-500" },
+  { key: "length", letter: "L", name: "Chiều dài", ring: "border-info", text: "text-info-fg" },
+  { key: "width", letter: "W", name: "Chiều rộng", ring: "border-fpt-orange", text: "text-fpt-orange" },
+  { key: "height", letter: "H", name: "Chiều cao", ring: "border-success", text: "text-success" },
 ] as const;
 
 const PAPERS = [
@@ -110,7 +110,7 @@ function SizeAndPaper() {
 
   return (
     <div className="w-full max-w-[520px] -space-y-6">
-      <div className="relative rounded-[1.75rem] bg-white p-4 pb-8 shadow-soft-8 ring-1 ring-landing-ink/10">
+      <div className="relative rounded-sheet bg-white p-4 pb-8 shadow-soft-8 ring-1 ring-landing-ink/10">
         <p className="mb-3 text-sm font-medium text-landing-ink">Kích thước món quà</p>
         <div className="flex min-w-full gap-1.5 md:gap-3">
           {DIMENSIONS.map((dim) => (
@@ -132,7 +132,7 @@ function SizeAndPaper() {
                 value={size[dim.key]}
                 onChange={(event) => setSize((prev) => ({ ...prev, [dim.key]: event.target.value }))}
                 aria-label={`${dim.name} (mm)`}
-                className="w-full min-w-0 bg-transparent font-mono text-sm font-medium text-landing-ink outline-none [appearance:textfield] md:text-lg [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="w-full min-w-0 bg-transparent font-mono text-sm font-medium text-landing-ink [appearance:textfield] focus-visible:outline-offset-4 md:text-lg [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <span className="hidden text-xs text-landing-muted md:block lg:text-base">mm</span>
             </label>
@@ -154,7 +154,7 @@ function SizeAndPaper() {
                 onClick={() => setPaper(item.id)}
                 className={cn(
                   "flex w-full items-center justify-between gap-3 rounded-xl border p-3 text-left text-sm text-landing-ink transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25",
-                  active ? "border-landing-ink bg-[#CAD4E1]/30" : "border-landing-line bg-[#C9D7E4]/15 hover:bg-[#C9D7E4]/30"
+                  active ? "border-landing-ink bg-line/30" : "border-landing-line bg-line/15 hover:bg-line/30"
                 )}
               >
                 <span>{item.label}</span>

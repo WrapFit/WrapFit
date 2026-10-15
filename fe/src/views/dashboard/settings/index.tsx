@@ -103,7 +103,7 @@ function SettingRow({ icon: Icon, title, text, children }: { icon: LucideIcon; t
           <Icon className="size-[18px]" strokeWidth={1.75} aria-hidden />
         </span>
         <div className="min-w-0">
-          <p className="text-[15px] font-medium text-library-ink">{title}</p>
+          <p className="text-body font-medium text-library-ink">{title}</p>
           {text && <p className="text-sm text-library-sub">{text}</p>}
         </div>
       </div>
@@ -162,7 +162,7 @@ function SecurityPanel({ user, onLogoutAll }: { user: SafeUser; onLogoutAll(): v
           <Badge>Sắp ra mắt</Badge>
         </SettingRow>
         <SettingRow icon={LogOut} title="Phiên đăng nhập" text="Kết thúc mọi phiên, kể cả trình duyệt này.">
-          <button type="button" onClick={onLogoutAll} className={cn(outlineButton, 'border-red-300 text-red-700 hover:bg-red-50')}>
+          <button type="button" onClick={onLogoutAll} className={cn(outlineButton, 'border-danger/30 text-danger-fg hover:bg-danger-bg')}>
             Đăng xuất mọi thiết bị
           </button>
         </SettingRow>
@@ -243,7 +243,7 @@ function StudioPanel() {
         </button>
         <button type="button" onClick={save} disabled={!dirty} className={cn(primaryButton, 'disabled:cursor-not-allowed disabled:opacity-50')}>
           Lưu cài đặt
-          <kbd className="hidden rounded bg-white/60 px-1.5 py-0.5 font-mono text-[11px] leading-none sm:inline">Ctrl S</kbd>
+          <kbd className="hidden rounded bg-white/60 px-1.5 py-0.5 font-mono text-cad-spec-micro leading-none sm:inline">Ctrl S</kbd>
         </button>
       </div>
     </Panel>

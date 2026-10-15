@@ -131,24 +131,24 @@ export function CardsAlmanacSection() {
       <section className="relative overflow-visible py-8 lg:py-14" aria-label="Bộ sưu tập bao bì Cards Almanac">
         <Container>
           {/* Section Header */}
-          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200/70 pb-6">
+          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-line/70 pb-6">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="inline-block size-2 rounded-full bg-landing-ink" />
-                <span className="font-mono text-xs uppercase tracking-widest text-stone-500 font-semibold">
+                <span className="font-mono text-xs uppercase tracking-widest text-fg-muted font-semibold">
                   WRAPFIT SHOWCASE · STICKY CARDS ALMANAC
                 </span>
               </div>
               <h2 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink lg:text-4xl">
                 Bộ Sưu Tập Bao Bì Chuẩn Bế
               </h2>
-              <p className="mt-1.5 max-w-2xl text-sm sm:text-base text-stone-600">
+              <p className="mt-1.5 max-w-2xl text-sm sm:text-base text-fg-muted">
                 Mỗi hộp quà đều được may đo chính xác theo milimét món quà của bạn, tích hợp công nghệ xem trước 3D và bảo đảm 100% khả thi in ấn.
               </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1 font-mono text-xs text-stone-600 backdrop-blur-md">
+              <span className="rounded-full border border-line bg-white/80 px-3 py-1 font-mono text-xs text-fg-muted backdrop-blur-md">
                 5 Dòng Hộp Tiêu Biểu
               </span>
             </div>
@@ -225,10 +225,10 @@ function AlmanacCard({
   const templatesUrl = `${ROUTES.templates}?structure=${item.structureId}`;
 
   return (
-    <article className="group relative overflow-hidden rounded-[26px] sm:rounded-[30px] border border-stone-200/90 bg-white p-3.5 sm:p-5 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.07)] transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12)]">
+    <article className="group relative overflow-hidden rounded-sheet sm:rounded-stitch-30 border border-line/90 bg-white p-3.5 sm:p-5 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.07)] transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12)]">
       <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 lg:gap-8">
         {/* Cover Photo (Left) */}
-        <div className="relative aspect-[4/3] sm:aspect-square w-full sm:w-[42%] lg:w-[44%] shrink-0 overflow-hidden rounded-2xl bg-stone-100">
+        <div className="relative aspect-[4/3] sm:aspect-square w-full sm:w-[42%] lg:w-[44%] shrink-0 overflow-hidden rounded-2xl bg-surface-sunken">
           <img
             src={item.image}
             alt={item.alt}
@@ -237,8 +237,8 @@ function AlmanacCard({
           />
 
           {/* Quick 3D Peek Badge on Image */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full border border-white/40 bg-stone-900/60 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">
-            <span className="size-2 rounded-full bg-[#6DB33F] animate-pulse" />
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full border border-white/40 bg-fg/60 px-2.5 py-1 text-caption font-medium text-white backdrop-blur-md">
+            <span className="size-2 rounded-full bg-fpt-green animate-pulse" />
             <span>FitCheck™ 100/100</span>
           </div>
 
@@ -249,10 +249,10 @@ function AlmanacCard({
               e.preventDefault();
               onQuickPreview();
             }}
-            className="absolute inset-0 flex items-center justify-center bg-stone-950/20 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100"
+            className="absolute inset-0 flex items-center justify-center bg-fg/20 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100"
             aria-label="Xem trước 3D hộp"
           >
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-stone-900 shadow-lg hover:scale-105 transition-transform">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-fg shadow-lg hover:scale-105 transition-transform">
               <Eye className="size-3.5 text-landing-indigo" />
               <span>Xoay 3D & Xem Gập</span>
             </span>
@@ -263,48 +263,48 @@ function AlmanacCard({
         <div className="flex flex-1 flex-col justify-between py-1">
           <div>
             {/* Top Metadata Line */}
-            <div className="flex items-center justify-between text-stone-400">
-              <span className="font-mono text-[11px] uppercase tracking-wider font-medium text-stone-500">
+            <div className="flex items-center justify-between text-fg-muted">
+              <span className="font-mono text-cad-spec-micro uppercase tracking-wider font-medium text-fg-muted">
                 {item.publishedMeta}
               </span>
-              <span className="font-mono text-[11px] text-stone-400">
+              <span className="font-mono text-cad-spec-micro text-fg-muted">
                 {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
               </span>
             </div>
 
             {/* Headline Title */}
-            <h3 className="mt-2 font-landing-heading text-xl sm:text-2xl font-bold tracking-tight text-stone-900 leading-snug">
+            <h3 className="mt-2 font-landing-heading text-xl sm:text-2xl font-bold tracking-tight text-fg leading-snug">
               {item.title}
             </h3>
 
             {/* Description */}
-            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-stone-600 line-clamp-3">
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-fg-muted line-clamp-3">
               {item.description}
             </p>
 
             {/* CAD Specs Readout Bar */}
-            <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl border border-stone-100 bg-stone-50/70 p-2.5 text-xs">
+            <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl border border-line/60 bg-surface-sunken/70 p-2.5 text-xs">
               <div className="flex items-center gap-1.5 truncate">
-                <Ruler className="size-3.5 text-stone-400 shrink-0" />
-                <span className="font-mono font-medium text-stone-800">
+                <Ruler className="size-3.5 text-fg-muted shrink-0" />
+                <span className="font-mono font-medium text-fg">
                   {item.dims.length} × {item.dims.width} × {item.dims.height} mm
                 </span>
               </div>
-              <div className="flex items-center justify-end gap-1.5 text-right text-stone-600 truncate">
-                <span className="text-stone-400">Giấy:</span>
-                <span className="font-medium text-stone-800 truncate">{item.paper.split(" ")[0]}</span>
+              <div className="flex items-center justify-end gap-1.5 text-right text-fg-muted truncate">
+                <span className="text-fg-muted">Giấy:</span>
+                <span className="font-medium text-fg truncate">{item.paper.split(" ")[0]}</span>
               </div>
             </div>
           </div>
 
           {/* Bottom Bar: Tag Pill (Left) and Round Black "+" Button (Right) */}
-          <div className="relative mt-4 flex items-center justify-between border-t border-stone-100 pt-3">
+          <div className="relative mt-4 flex items-center justify-between border-t border-line/60 pt-3">
             {/* Tag Pill (matching 'radial' tag in getlayers.ai screenshot) */}
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 font-mono text-[11px] font-semibold text-stone-700">
+              <span className="inline-flex items-center rounded-full bg-surface-sunken px-3 py-1 font-mono text-cad-spec-micro font-semibold text-fg-muted">
                 {item.tag}
               </span>
-              <span className="hidden sm:inline-block text-[11px] text-stone-400">
+              <span className="hidden sm:inline-block text-caption text-fg-muted">
                 ⚡ Gập {item.foldTimeSec}s ({item.foldDifficulty})
               </span>
             </div>
@@ -319,8 +319,8 @@ function AlmanacCard({
                 className={cn(
                   "inline-flex size-9 sm:size-10 items-center justify-center rounded-full text-white shadow-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-landing-lime active:scale-95",
                   isActionsOpen
-                    ? "bg-stone-900 rotate-45"
-                    : "bg-stone-900 hover:bg-[#F26522] hover:text-white"
+                    ? "bg-fg rotate-45"
+                    : "bg-fg hover:bg-action hover:text-action-fg"
                 )}
               >
                 <Plus className="size-5 transition-transform" />
@@ -328,14 +328,14 @@ function AlmanacCard({
 
               {/* Multitasking Popover Menu (Expands from "+" button) */}
               {isActionsOpen && (
-                <div className="absolute right-0 bottom-12 z-30 flex w-56 flex-col gap-1 rounded-2xl border border-stone-200 bg-white p-2 text-xs shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 bottom-12 z-30 flex w-56 flex-col gap-1 rounded-2xl border border-line bg-white p-2 text-xs shadow-xl animate-pop-in">
                   <button
                     type="button"
                     onClick={() => {
                       setIsActionsOpen(false);
                       onQuickPreview();
                     }}
-                    className="flex w-full items-center gap-2 rounded-xl p-2 text-left font-medium text-stone-800 transition hover:bg-stone-100"
+                    className="flex w-full items-center gap-2 rounded-xl p-2 text-left font-medium text-fg transition hover:bg-surface-sunken"
                   >
                     <Eye className="size-4 text-landing-indigo" />
                     <span>Xem 3D Nhanh (Xoay 360°)</span>
@@ -343,17 +343,17 @@ function AlmanacCard({
                   <Link
                     href={studioUrl}
                     onClick={() => setIsActionsOpen(false)}
-                    className="flex w-full items-center gap-2 rounded-xl bg-landing-lime/20 p-2 font-bold text-stone-950 transition hover:bg-landing-lime"
+                    className="flex w-full items-center gap-2 rounded-xl bg-landing-lime/20 p-2 font-bold text-fg transition hover:bg-landing-lime"
                   >
-                    <Wand2 className="size-4 text-emerald-800" />
+                    <Wand2 className="size-4 text-success-fg" />
                     <span>Tùy biến trong Studio</span>
                   </Link>
                   <Link
                     href={templatesUrl}
                     onClick={() => setIsActionsOpen(false)}
-                    className="flex w-full items-center gap-2 rounded-xl p-2 text-stone-600 transition hover:bg-stone-100"
+                    className="flex w-full items-center gap-2 rounded-xl p-2 text-fg-muted transition hover:bg-surface-sunken"
                   >
-                    <ArrowRight className="size-4 text-stone-400" />
+                    <ArrowRight className="size-4 text-fg-muted" />
                     <span>Xem các mẫu tương tự</span>
                   </Link>
                   <button
@@ -362,9 +362,9 @@ function AlmanacCard({
                       handleBookmark(e);
                       setIsActionsOpen(false);
                     }}
-                    className="flex w-full items-center gap-2 rounded-xl p-2 text-stone-600 transition hover:bg-stone-100"
+                    className="flex w-full items-center gap-2 rounded-xl p-2 text-fg-muted transition hover:bg-surface-sunken"
                   >
-                    <Bookmark className={cn("size-4 text-amber-500", bookmarked && "fill-amber-500")} />
+                    <Bookmark className={cn("size-4 text-warning", bookmarked && "fill-warning")} />
                     <span>{bookmarked ? "Đã lưu vào bộ sưu tập" : "Lưu mẫu vào yêu thích"}</span>
                   </button>
                 </div>

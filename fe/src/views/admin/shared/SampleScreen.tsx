@@ -24,7 +24,7 @@ export function SampleScreen<Row>({ title, description, note, stats, tableTitle,
     <RequireAuth role="ADMIN">
       <AdminShell title={title} description={description} actions={<SampleBadge />}>
         <div className="flex flex-col gap-6">
-          <p className="flex items-start gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 p-4 text-sm leading-[1.6] text-amber-900">
+          <p className="flex items-start gap-3 rounded-xl border border-dashed border-warning/30 bg-warning-bg/60 p-4 text-sm leading-[1.6] text-warning-fg">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
             {note}
           </p>

@@ -1,4 +1,5 @@
 "use client";
+/* ds-artwork: sticker artwork thumbnails, printed at their own size. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
 
 import React, { useState } from "react";
 import { Sparkles, QrCode, Tag, Award, Heart, Check, X, ShieldAlert, Gift } from "lucide-react";
@@ -197,7 +198,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-[28px] p-4 space-y-3.5 ${className}`}>
+    <div className={`bg-white rounded-sheet p-4 space-y-3.5 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-landing-line pb-2.5">
         <div className="flex items-center gap-2">
@@ -208,7 +209,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
             <h3 className="text-xs font-bold text-landing-ink">
               Ngân hàng sticker & tem quà tặng
             </h3>
-            <span className="text-[10px] text-landing-muted">
+            <span className="text-caption text-landing-muted">
               Nhấn 1-click để chèn vào mặt hộp đang chọn
             </span>
           </div>
@@ -226,7 +227,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
       </div>
 
       {/* Category Pills */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-[11px]">
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar text-caption">
         {[
           { id: "all", label: "Tất Cả" },
           { id: "mascot", label: "Bé Gói" },
@@ -273,7 +274,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
                 item.id.includes("qr") ? (
                   <QrCode className="w-8 h-8 text-landing-ink" />
                 ) : (
-                  <div className="font-mono text-[9px] font-bold text-landing-ink tracking-tighter">
+                  <div className="font-mono text-cad-spec-micro font-bold text-landing-ink tracking-tighter">
                     |||||||||||||||||
                   </div>
                 )
@@ -286,10 +287,10 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
 
             {/* Sticker Info */}
             <div className="space-y-0.5 w-full">
-              <span className="text-[11px] font-semibold text-landing-ink line-clamp-1 block group-hover:text-landing-ink">
+              <span className="text-caption font-semibold text-landing-ink line-clamp-1 block group-hover:text-landing-ink">
                 {item.name}
               </span>
-              <span className="text-[9px] font-mono text-landing-muted block">
+              <span className="text-cad-spec-micro font-mono text-landing-muted block">
                 {item.defaultWidthMm} × {item.defaultHeightMm} mm
               </span>
             </div>

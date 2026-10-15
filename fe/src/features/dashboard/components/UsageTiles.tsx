@@ -12,8 +12,8 @@ const TILE = "flex min-h-[200px] flex-col justify-between gap-4 rounded-2xl bord
 
 /** Green while there is room, amber past 80 %, red past 95 %: the quota is about to block uploads. */
 function meterColor(percent: number): string {
-  if (percent >= 95) return "bg-red-500";
-  return percent >= 80 ? "bg-amber-500" : "bg-library-accent";
+  if (percent >= 95) return "bg-danger";
+  return percent >= 80 ? "bg-warning" : "bg-library-accent";
 }
 
 function Meter({ percent, label }: { percent: number; label: string }) {

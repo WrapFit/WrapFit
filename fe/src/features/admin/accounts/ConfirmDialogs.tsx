@@ -5,6 +5,7 @@ import type { SafeUser } from "@/types/api";
 import { displayName } from "./accountFormat";
 import { ModalDialog } from "./ModalDialog";
 import { useDeleteAccount } from "./useAccounts";
+import { Icon } from "@/components/ui";
 
 const PANEL =
   "relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(28,25,23,0.12)] flex flex-col gap-5 max-h-[calc(100dvh-2rem)] overflow-y-auto";
@@ -34,16 +35,14 @@ export function ConfirmLockDialog({ user, onCancel, onConfirm }: ConfirmLockDial
       panelClassName={PANEL}
     >
       <div className="flex items-start gap-3">
-        <span className="w-10 h-10 shrink-0 rounded-2xl bg-amber-50/40 text-amber-700 flex items-center justify-center">
-          <span aria-hidden="true" className="material-symbols-outlined text-xl">
-            lock
-          </span>
+        <span className="w-10 h-10 shrink-0 rounded-2xl bg-warning-bg/40 text-warning-fg flex items-center justify-center">
+          <Icon name="lock" className="size-5" />
         </span>
         <div className="min-w-0">
           <h2 id={titleId} className="font-medium text-lg font-semibold text-library-ink">
             Khoá tài khoản này?
           </h2>
-          <p className="font-mono text-[11px] text-library-sub truncate">{user.email}</p>
+          <p className="font-mono text-cad-spec-micro text-library-sub truncate">{user.email}</p>
         </div>
       </div>
       <div id={descriptionId} className="flex flex-col gap-2 text-sm text-library-sub">
@@ -62,9 +61,7 @@ export function ConfirmLockDialog({ user, onCancel, onConfirm }: ConfirmLockDial
           onClick={onConfirm}
           className="px-5 py-2.5 min-h-[44px] rounded-xl bg-library-lime-ink text-white hover:bg-black font-medium text-sm shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-lg">
-            lock
-          </span>
+          <Icon name="lock" className="size-[18px]" />
           Khoá tài khoản
         </button>
       </div>
@@ -108,16 +105,14 @@ export function ConfirmDeleteDialog({ user, onClose }: ConfirmDeleteDialogProps)
     >
       <form onSubmit={submit} className="flex flex-col gap-5">
         <div className="flex items-start gap-3">
-          <span className="w-10 h-10 shrink-0 rounded-2xl bg-red-50 text-red-800 flex items-center justify-center">
-            <span aria-hidden="true" className="material-symbols-outlined text-xl">
-              delete_forever
-            </span>
+          <span className="w-10 h-10 shrink-0 rounded-2xl bg-danger-bg text-danger-fg flex items-center justify-center">
+            <Icon name="delete_forever" className="size-5" />
           </span>
           <div className="min-w-0">
             <h2 id={titleId} className="font-medium text-lg font-semibold text-library-ink">
               Xoá vĩnh viễn tài khoản?
             </h2>
-            <p className="font-mono text-[11px] text-library-sub truncate">
+            <p className="font-mono text-cad-spec-micro text-library-sub truncate">
               {displayName(user)}
             </p>
           </div>
@@ -126,7 +121,7 @@ export function ConfirmDeleteDialog({ user, onClose }: ConfirmDeleteDialogProps)
         <div id={descriptionId} className="flex flex-col gap-2 text-sm text-library-sub">
           <p>
             Tài khoản <strong className="font-semibold text-library-ink break-all">{user.email}</strong> sẽ bị xoá cùng{" "}
-            <strong className="font-semibold text-red-700">toàn bộ dự án, bộ sưu tập và tệp của người này</strong> (ảnh đã
+            <strong className="font-semibold text-danger-fg">toàn bộ dự án, bộ sưu tập và tệp của người này</strong> (ảnh đã
             tải lên, file in đã xuất, mốc phiên bản). Không thể hoàn tác.
           </p>
           <p className="text-sm">
@@ -148,7 +143,7 @@ export function ConfirmDeleteDialog({ user, onClose }: ConfirmDeleteDialogProps)
             spellCheck={false}
             placeholder={user.email}
             readOnly={remove.isPending}
-            className="w-full px-3.5 py-2.5 rounded-xl bg-library-panel text-library-ink placeholder:text-library-sub/50 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-red-400"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-library-panel text-library-ink placeholder:text-library-sub/50 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-danger"
           />
         </div>
 
@@ -160,14 +155,9 @@ export function ConfirmDeleteDialog({ user, onClose }: ConfirmDeleteDialogProps)
             type="submit"
             disabled={!confirmed}
             aria-disabled={remove.isPending}
-            className="px-5 py-2.5 min-h-[44px] rounded-xl bg-red-600 text-white enabled:hover:opacity-90 font-medium text-sm shadow-sm enabled:active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:cursor-wait aria-disabled:opacity-70"
+            className="px-5 py-2.5 min-h-[44px] rounded-xl bg-danger text-white enabled:hover:opacity-90 font-medium text-sm shadow-sm enabled:active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:cursor-wait aria-disabled:opacity-70"
           >
-            <span
-              aria-hidden="true"
-              className={`material-symbols-outlined text-lg ${remove.isPending ? "animate-spin motion-reduce:animate-none" : ""}`}
-            >
-              {remove.isPending ? "progress_activity" : "delete_forever"}
-            </span>
+            <Icon name={remove.isPending ? "progress_activity" : "delete_forever"} className={`size-[18px] ${remove.isPending ? "animate-spin motion-reduce:animate-none" : ""}`} />
             {remove.isPending ? "Đang xoá…" : "Xoá vĩnh viễn"}
           </button>
         </div>

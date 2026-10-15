@@ -11,6 +11,7 @@ import { landingFontVariables } from "@/assets/fonts/landing";
 import { EmptyState, ErrorState, PageLoader } from "@/components/common/StatusViews";
 import { MainFooter, MainHeader } from "@/components/layout";
 import { HowItWorks, LibraryCard, LibraryCardSkeleton, Pagination, StartBar } from "@/components/library";
+import { Breadcrumb, Tab, TabList, TabPanel, Tabs } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import {
   DielineSketch,
@@ -167,6 +168,7 @@ function TemplateLibrary() {
           </details>
 
           <div ref={gridRef} className="scroll-mt-28">
+            <Tabs value={tab} onValueChange={(next) => update({ tab: next === "curated" ? null : next })} variant="segmented">
             <div ref={grid.ref}>
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-base text-library-sub" aria-live="polite">
@@ -180,13 +182,18 @@ function TemplateLibrary() {
                     </button>
                   )}
                 </p>
-                <div className="inline-flex rounded-lg border border-library-ink p-0.5" role="tablist" aria-label="Nguồn mẫu">
-                  <TabButton active={tab === "curated"} onClick={() => update({ tab: null })} label="WrapFit Curated" count={curated.data?.meta.total} />
-                  <TabButton active={tab === "community"} onClick={() => update({ tab: "community" })} label="Cộng đồng" count={community.data?.meta.total} />
-                </div>
+                {/* Curated first: most visitors start from a ready-made template. */}
+                <TabList label="Nguồn mẫu">
+                  <Tab value="curated" count={curated.data?.meta.total}>
+                    WrapFit Curated
+                  </Tab>
+                  <Tab value="community" count={community.data?.meta.total}>
+                    Cộng đồng
+                  </Tab>
+                </TabList>
               </div>
 
-              {tab === "curated" ? (
+              <TabPanel value="curated">
                 <LibraryGrid
                   query={curated}
                   hasFilters={hasFilters}
@@ -210,7 +217,8 @@ function TemplateLibrary() {
                     />
                   )}
                 />
-              ) : (
+              </TabPanel>
+              <TabPanel value="community">
                 <LibraryGrid
                   query={community}
                   hasFilters={hasFilters}
@@ -239,8 +247,9 @@ function TemplateLibrary() {
                     />
                   )}
                 />
-              )}
+              </TabPanel>
             </div>
+            </Tabs>
           </div>
         </div>
       </div>
@@ -248,24 +257,6 @@ function TemplateLibrary() {
       <HowItWorks />
       <StartBar visible={grid.inView} onStart={scrollToGrid} />
     </>
-  );
-}
-
-function TabButton({ active, onClick, label, count }: { active: boolean; onClick(): void; label: string; count?: number }) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={cn(
-        "h-9 rounded-md px-3 text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20",
-        active ? "bg-library-lime-ink text-white" : "text-library-ink hover:bg-library-panel"
-      )}
-    >
-      {label}
-      {count !== undefined && <span className={cn("ml-1.5 text-xs", active ? "text-white/70" : "text-library-muted")}>{count}</span>}
-    </button>
   );
 }
 
@@ -296,17 +287,11 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
   }, [search, onChange]);
 
   return (
-    <section className="grid grid-cols-1 overflow-hidden rounded-[20px] border-[1.5px] border-library-ink bg-library-tile shadow-hard md:grid-cols-[minmax(0,575fr)_minmax(0,435fr)]">
+    <section className="grid grid-cols-1 overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard md:grid-cols-[minmax(0,575fr)_minmax(0,435fr)]">
       <div className="px-5 pb-8 pt-5 sm:pl-8">
-        <nav aria-label="Vị trí" className="text-sm">
-          <Link href={ROUTES.home} className="text-library-ink hover:underline">
-            Trang chủ
-          </Link>
-          <span className="mx-2 text-library-muted">/</span>
-          <span className="text-library-muted">Thư viện mẫu</span>
-        </nav>
-        <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-[32px] sm:leading-[1.3]">
-          <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent sm:size-8" strokeWidth={2.5} aria-hidden />
+        <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
+        <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-heading-lg sm:leading-[1.3]">
+          <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent sm:size-8" strokeWidth={1.75} aria-hidden />
           <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} in được & tuỳ chỉnh theo từng milimét</span>
         </h1>
         <p className="mt-4 text-base leading-[1.6] text-library-sub">
@@ -323,7 +308,7 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
           }}
           className="mt-6"
         >
-          <label className="flex h-12 items-center gap-2 rounded-[10px] border-[0.8px] border-library-ink bg-white px-3 focus-within:shadow-hard-sm">
+          <label className="flex h-12 items-center gap-2 rounded-control border-[0.8px] border-library-ink bg-white px-3 focus-within:shadow-hard-sm">
             <ScanSearch className="size-5 shrink-0 text-library-muted" aria-hidden />
             <span className="sr-only">Tìm mẫu</span>
             <input
@@ -367,7 +352,7 @@ function ParametricPreview() {
               aria-label={`${letter} (mm)`}
               onChange={(event) => setSize((prev) => ({ ...prev, [key]: Number(event.target.value) }))}
               onBlur={() => setSize((prev) => ({ ...prev, [key]: clamp(prev[key]) }))}
-              className="w-10 bg-transparent text-center text-sm outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              className="w-10 rounded-sm bg-transparent text-center text-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
             />
             <span className="text-library-muted">mm</span>
           </label>

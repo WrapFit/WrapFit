@@ -1,19 +1,26 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Eye, EyeOff, KeyRound, Mail, PlayCircle, User } from "lucide-react";
+import { Eye, EyeOff, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { googleSignInUrl, login, register } from "@/api/auth";
 import { landingFontVariables } from "@/assets/fonts/landing";
-import { PackagingSpecSheet } from "@/components/auth/PackagingSpecSheet";
+import { AuthIllustration } from "@/components/auth/AuthIllustration";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import { ROUTES } from "@/constants";
 import { safeRedirect, useAuth } from "@/features/auth";
 import { isApiError } from "@/services/api";
 import type { LoginRequest, RegisterRequest } from "@/types/api";
 import { cn } from "@/utils/helpers";
+import { buttonClass } from "@/components/ui";
 import {
   ApiErrorAlert,
   FULL_NAME_MAX_LENGTH,
@@ -33,9 +40,21 @@ const NO_PARAMS: Params = new URLSearchParams();
 
 // What the API offers (be/src/auth): register with email, password and an optional full name, then a verification
 // email; login with email and password; Google sign-in; password reset by email. No Apple sign-in.
-const COPY: Record<AuthMode, { title: string; submit: string; busy: string; switchLabel: string; switchAction: string; path: string }> = {
+const COPY: Record<
+  AuthMode,
+  {
+    title: string;
+    subtitle: string;
+    submit: string;
+    busy: string;
+    switchLabel: string;
+    switchAction: string;
+    path: string;
+  }
+> = {
   login: {
-    title: "Đăng nhập",
+    title: "Chào mừng trở lại",
+    subtitle: "Đăng nhập để mở lại dự án hộp quà và khuôn in của bạn.",
     submit: "Đăng nhập",
     busy: "Đang đăng nhập…",
     switchLabel: "Chưa có tài khoản?",
@@ -43,7 +62,9 @@ const COPY: Record<AuthMode, { title: string; submit: string; busy: string; swit
     path: ROUTES.login,
   },
   register: {
-    title: "Tạo tài khoản",
+    title: "Tạo tài khoản WrapFit",
+    subtitle:
+      "Thiết kế hộp vừa khít món quà, miễn phí, không cần thẻ thanh toán.",
     submit: "Tạo tài khoản miễn phí",
     busy: "Đang tạo tài khoản…",
     switchLabel: "Đã có tài khoản?",
@@ -54,7 +75,8 @@ const COPY: Record<AuthMode, { title: string; submit: string; busy: string; swit
 
 /** `?error=` set by the backend when "Sign in with Google" fails (`be/src/auth/auth.controller.ts`). */
 const GOOGLE_ERRORS: Record<string, string> = {
-  google_auth_failed: "Đăng nhập bằng Google chưa thành công. Vui lòng thử lại.",
+  google_auth_failed:
+    "Đăng nhập bằng Google chưa thành công. Vui lòng thử lại.",
   google_account_rejected:
     "Không đăng nhập được bằng tài khoản Google này: email Google chưa được xác minh, email đã gắn với một tài khoản Google khác, hoặc tài khoản đã bị khoá.",
 };
@@ -66,8 +88,13 @@ const NOTICES: Record<string, string> = {
 };
 
 /** Own keys only: `?error=constructor` must not reach Object.prototype. */
-function messageFor(table: Record<string, string>, key: string | null): string | undefined {
-  return key && Object.prototype.hasOwnProperty.call(table, key) ? table[key] : undefined;
+function messageFor(
+  table: Record<string, string>,
+  key: string | null,
+): string | undefined {
+  return key && Object.prototype.hasOwnProperty.call(table, key)
+    ? table[key]
+    : undefined;
 }
 
 type FieldName = "fullName" | "email" | "password";
@@ -84,14 +111,20 @@ interface AuthLoginPageProps {
 }
 
 /**
- * Sign-in and sign-up of `/auth/login` and `/auth/register` (docs/06, 3.2 and 3.5): a packaging spec-sheet card next
- * to the form, on the left to sign in and on the right to sign up. Static: no WebGL, no animation.
+ * Sign-in and sign-up of `/auth/login` and `/auth/register` (docs/06, 3.2 and 3.5): the brand panel (blue, Gói on
+ * its disc) on the left half and the form in a white card on the right, after the BeeWise sign-in. No WebGL.
  */
-export default function AuthLoginPage({ initialMode = "login" }: AuthLoginPageProps) {
+export default function AuthLoginPage({
+  initialMode = "login",
+}: AuthLoginPageProps) {
   // useSearchParams needs a Suspense boundary on a static page: the prerendered HTML shows the form without the
   // query-string banners, the client then renders it with them.
   return (
-    <Suspense fallback={<AuthLoginScreen initialMode={initialMode} params={NO_PARAMS} />}>
+    <Suspense
+      fallback={
+        <AuthLoginScreen initialMode={initialMode} params={NO_PARAMS} />
+      }
+    >
       <AuthLoginWithParams initialMode={initialMode} />
     </Suspense>
   );
@@ -102,7 +135,13 @@ function AuthLoginWithParams({ initialMode }: { initialMode: AuthMode }) {
   return <AuthLoginScreen initialMode={initialMode} params={params} />;
 }
 
-function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; params: Params }) {
+function AuthLoginScreen({
+  initialMode,
+  params,
+}: {
+  initialMode: AuthMode;
+  params: Params;
+}) {
   const router = useRouter();
   const { status, signedIn } = useAuth();
   const redirectTarget = safeRedirect(params.get("redirect"));
@@ -148,14 +187,16 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
     },
     onError: (error, data) => {
       // Right password, address not verified yet: the "check your inbox" page offers to resend the email.
-      if (isApiError(error, "EMAIL_NOT_VERIFIED")) router.push(withEmail(ROUTES.checkEmail, data.email));
+      if (isApiError(error, "EMAIL_NOT_VERIFIED"))
+        router.push(withEmail(ROUTES.checkEmail, data.email));
     },
   });
 
   const registerMutation = useMutation({
     mutationFn: (data: RegisterRequest) => register(data),
     // Always 201, also for an address that already has an account: the email tells the owner what to do next.
-    onSuccess: (result, data) => router.push(withEmail(ROUTES.checkEmail, result.email || data.email)),
+    onSuccess: (result, data) =>
+      router.push(withEmail(ROUTES.checkEmail, result.email || data.email)),
   });
 
   const copy = COPY[mode];
@@ -164,7 +205,10 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
   // Busy until the next page opens, so a second click cannot send the form again.
   const busy = activeMutation.isPending || activeMutation.isSuccess;
   const formError =
-    activeMutation.error != null && !isApiError(activeMutation.error, "EMAIL_NOT_VERIFIED") ? activeMutation.error : null;
+    activeMutation.error != null &&
+    !isApiError(activeMutation.error, "EMAIL_NOT_VERIFIED")
+      ? activeMutation.error
+      : null;
 
   const switchMode = () => {
     const next: AuthMode = isRegister ? "login" : "register";
@@ -173,13 +217,19 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
     loginMutation.reset();
     registerMutation.reset();
     // The address follows the mode without reloading the page (the typed email stays).
-    window.history.replaceState(window.history.state, "", `${COPY[next].path}${window.location.search}`);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${COPY[next].path}${window.location.search}`,
+    );
   };
 
   const updateField =
-    (field: FieldName, setter: (value: string) => void) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: FieldName, setter: (value: string) => void) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       setter(event.target.value);
-      if (fieldErrors[field]) setFieldErrors((current) => ({ ...current, [field]: undefined }));
+      if (fieldErrors[field])
+        setFieldErrors((current) => ({ ...current, [field]: undefined }));
     };
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -188,16 +238,29 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
     setSubmitted(true);
     const address = email.trim();
     const errors: FieldErrors = isRegister
-      ? { fullName: fullNameError(fullName), email: emailError(address), password: passwordError(password) }
-      : { email: emailError(address), password: password ? undefined : "Vui lòng nhập mật khẩu." };
+      ? {
+          fullName: fullNameError(fullName),
+          email: emailError(address),
+          password: passwordError(password),
+        }
+      : {
+          email: emailError(address),
+          password: password ? undefined : "Vui lòng nhập mật khẩu.",
+        };
     setFieldErrors(errors);
-    const firstInvalid = (Object.keys(FIELD_IDS) as FieldName[]).find((field) => errors[field]);
+    const firstInvalid = (Object.keys(FIELD_IDS) as FieldName[]).find(
+      (field) => errors[field],
+    );
     if (firstInvalid) {
       document.getElementById(FIELD_IDS[firstInvalid])?.focus();
       return;
     }
     if (isRegister) {
-      registerMutation.mutate({ email: address, password, fullName: fullName.trim() || undefined });
+      registerMutation.mutate({
+        email: address,
+        password,
+        fullName: fullName.trim() || undefined,
+      });
     } else {
       loginMutation.mutate({ email: address, password });
     }
@@ -209,195 +272,229 @@ function AuthLoginScreen({ initialMode, params }: { initialMode: AuthMode; param
     window.location.assign(googleSignInUrl(redirectTarget));
   };
 
-
   return (
-    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-[#F5F6F4] font-landing-body text-landing-ink antialiased`}>
-      <header className="flex h-16 shrink-0 items-center px-5 lg:px-8">
-        <LandingLogo />
-      </header>
+    <div
+      className={`${landingFontVariables} min-h-screen bg-white font-landing-body text-landing-ink antialiased lg:grid lg:grid-cols-2`}
+    >
+      {/* Brand panel; it stays in view while a long form scrolls. */}
+      <AuthIllustration className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen" />
 
-      {/* Bottom padding below md clears the floating mobile navigation bar. */}
-      <main className="flex flex-1 px-4 pb-24 md:pb-6 lg:px-8">
-        {/* Sign in: sheet on the left, form on the right (as in the reference); sign up: the other way round. */}
-        <div className="mx-auto grid w-full max-w-[1280px] grid-cols-1 gap-6 lg:h-[calc(100vh-5.5rem)] lg:min-h-[640px] lg:grid-cols-2">
+      <div className="flex min-h-screen min-w-0 flex-col bg-mist-50">
+        <header className="flex h-16 shrink-0 items-center px-5 lg:hidden">
+          <LandingLogo size="sm" />
+        </header>
+
+        {/* Bottom padding below md clears the floating mobile navigation bar. */}
+        <main className="flex flex-1 items-center justify-center px-4 pb-24 pt-4 md:pb-10 lg:px-10">
           <section
-            aria-label="Bản vẽ kỹ thuật một chiếc hộp WrapFit"
-            className={cn("hidden min-h-0 flex-col overflow-hidden rounded-[28px] border border-landing-line bg-[#F4F6F1] lg:flex", isRegister && "lg:order-2")}
+            aria-labelledby="auth-title"
+            className="w-full max-w-[480px] rounded-sheet border border-landing-line/70 bg-white px-6 py-8 shadow-[0_24px_60px_-28px_rgba(29,41,61,0.18)] sm:px-10 sm:py-10"
           >
-            <PackagingSpecSheet className="min-h-0 w-full flex-1 px-4 pt-4" />
-            <div className="border-t border-landing-line/70 bg-white/60 px-7 py-5">
-              <p className="font-landing-heading text-lg font-semibold text-landing-ink">
-                {isRegister ? "Bản vẽ đầu tiên của bạn đang chờ." : "Hồ sơ hộp của bạn vẫn ở đây."}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-landing-muted">
-                {isRegister
-                  ? "Nhập kích thước món quà, WrapFit dựng khuôn bế, kiểm tra FitCheck™ và cho bạn xem hộp 3D."
-                  : "Dự án, phiên bản và file in đều được lưu, sẵn sàng để bạn mở lại."}
-              </p>
-            </div>
-          </section>
+            <h1
+              id="auth-title"
+              className="font-landing-heading text-heading-lg font-bold leading-tight tracking-tight"
+            >
+              {copy.title}
+            </h1>
+            <p className="mt-1.5 text-sm text-landing-muted">{copy.subtitle}</p>
 
-          <section aria-labelledby="auth-title" className="flex min-w-0 items-center justify-center">
-            <div className="w-full max-w-[440px] py-8">
-              <h1 id="auth-title" className="font-landing-heading text-4xl font-bold tracking-tight sm:text-5xl">
-                {copy.title}
-              </h1>
+            {status === "authenticated" ? (
+              <div
+                role="status"
+                className="mt-8 flex items-center gap-3 rounded-xl border border-landing-line bg-mist-50 px-4 py-3.5 text-sm"
+              >
+                <span
+                  aria-hidden
+                  className="size-4 shrink-0 animate-spin rounded-full border-2 border-landing-ink/20 border-t-landing-ink motion-reduce:animate-none"
+                />
+                Bạn đã đăng nhập. Đang mở không gian làm việc…
+              </div>
+            ) : (
+              <>
+                {!submitted && (googleError || notice) && (
+                  <div className="mt-6 space-y-2.5">
+                    {googleError && (
+                      <FormAlert tone="error">{googleError}</FormAlert>
+                    )}
+                    {notice && <FormAlert tone="success">{notice}</FormAlert>}
+                  </div>
+                )}
 
-              {status === "authenticated" ? (
-                <div role="status" className="mt-8 flex items-center gap-3 rounded-xl bg-white px-4 py-3.5 text-sm text-landing-muted ring-1 ring-landing-ink/10">
-                  <span aria-hidden className="size-4 shrink-0 animate-spin rounded-full border-2 border-landing-line border-t-landing-green motion-reduce:animate-none" />
-                  Bạn đã đăng nhập. Đang mở không gian làm việc…
-                </div>
-              ) : (
-                <>
-                  {!submitted && (googleError || notice) && (
-                    <div className="mt-6 space-y-2.5">
-                      {googleError && <FormAlert tone="error">{googleError}</FormAlert>}
-                      {notice && <FormAlert tone="success">{notice}</FormAlert>}
+                <form
+                  className="mt-7 space-y-4"
+                  onSubmit={onSubmit}
+                  aria-labelledby="auth-title"
+                  noValidate
+                >
+                  {isRegister && (
+                    <Field
+                      id={FIELD_IDS.fullName}
+                      label="Họ và tên"
+                      optional
+                      placeholder="Nguyễn Văn A"
+                      error={fieldErrors.fullName}
+                      inputProps={{
+                        name: "name",
+                        autoComplete: "name",
+                        maxLength: FULL_NAME_MAX_LENGTH,
+                        value: fullName,
+                        onChange: updateField("fullName", setFullName),
+                      }}
+                    />
+                  )}
+                  <Field
+                    id={FIELD_IDS.email}
+                    label="Email"
+                    placeholder="ban@vidu.com"
+                    error={fieldErrors.email}
+                    inputProps={{
+                      name: "email",
+                      type: "email",
+                      autoComplete: "email",
+                      inputMode: "email",
+                      required: true,
+                      value: email,
+                      onChange: updateField("email", setEmail),
+                    }}
+                  />
+                  <Field
+                    id={FIELD_IDS.password}
+                    label="Mật khẩu"
+                    placeholder={
+                      isRegister ? "Tối thiểu 8 ký tự" : "Nhập mật khẩu"
+                    }
+                    error={fieldErrors.password}
+                    hint={isRegister ? PASSWORD_HINT : undefined}
+                    inputProps={{
+                      name: "password",
+                      type: showPassword ? "text" : "password",
+                      autoComplete: isRegister
+                        ? "new-password"
+                        : "current-password",
+                      maxLength: isRegister ? PASSWORD_MAX_LENGTH : undefined,
+                      required: true,
+                      value: password,
+                      onChange: updateField("password", setPassword),
+                    }}
+                    trailing={
+                      <button
+                        type="button"
+                        aria-label={
+                          showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                        }
+                        aria-pressed={showPassword}
+                        aria-controls={FIELD_IDS.password}
+                        onClick={() => setShowPassword((visible) => !visible)}
+                        className="flex size-11 shrink-0 items-center justify-center rounded-lg text-landing-muted hover:text-landing-ink"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-[18px]" aria-hidden />
+                        ) : (
+                          <Eye className="size-[18px]" aria-hidden />
+                        )}
+                      </button>
+                    }
+                  />
+                  {!isRegister && (
+                    <div className="-mt-1 flex justify-end">
+                      <Link
+                        href={withEmail(ROUTES.forgotPassword, email)}
+                        className="py-1 text-sm font-semibold text-fpt-blue hover:underline"
+                      >
+                        Quên mật khẩu?
+                      </Link>
                     </div>
                   )}
-
-                  <p className="mt-6 text-base font-medium">Tiếp tục nhanh</p>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={signInWithGoogle}
-                      disabled={leavingForGoogle}
-                      aria-busy={leavingForGoogle || undefined}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-landing-line bg-white text-base font-medium transition-colors hover:bg-landing-tile/50 disabled:cursor-wait disabled:opacity-70"
-                    >
-                      <GoogleIcon />
-                      {leavingForGoogle ? "Đang mở…" : "Google"}
-                    </button>
-                    <Link
-                      href={ROUTES.editorDemo}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-landing-line bg-white text-base font-medium transition-colors hover:bg-landing-tile/50"
-                    >
-                      <PlayCircle className="size-5 text-landing-green" aria-hidden />
-                      Dùng thử
-                    </Link>
-                  </div>
-
-                  <div className="relative my-6 flex items-center" aria-hidden>
-                    <span className="h-px flex-1 bg-landing-line" />
-                    <span className="px-4 text-xs text-landing-muted">Hoặc</span>
-                    <span className="h-px flex-1 bg-landing-line" />
-                  </div>
-
-                  <form className="space-y-3" onSubmit={onSubmit} aria-labelledby="auth-title" noValidate>
-                    <p className="text-base font-medium">{isRegister ? "Đăng ký bằng email" : "Hoặc tiếp tục với email"}</p>
-                    {isRegister && (
-                      <Field
-                        id={FIELD_IDS.fullName}
-                        icon={<User className="size-5" aria-hidden />}
-                        label="Họ và tên (không bắt buộc)"
-                        error={fieldErrors.fullName}
-                        inputProps={{
-                          name: "name",
-                          autoComplete: "name",
-                          maxLength: FULL_NAME_MAX_LENGTH,
-                          value: fullName,
-                          onChange: updateField("fullName", setFullName),
-                        }}
+                  {formError != null && <ApiErrorAlert error={formError} />}
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    aria-busy={busy || undefined}
+                    className={buttonClass({ size: "xl", shape: "rounded", block: true, className: "!mt-6 disabled:cursor-wait" })}
+                  >
+                    {busy && (
+                      <span
+                        aria-hidden
+                        className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white motion-reduce:animate-none"
                       />
                     )}
-                    <Field
-                      id={FIELD_IDS.email}
-                      icon={<Mail className="size-5" aria-hidden />}
-                      label="Địa chỉ email"
-                      error={fieldErrors.email}
-                      inputProps={{
-                        name: "email",
-                        type: "email",
-                        autoComplete: "email",
-                        inputMode: "email",
-                        required: true,
-                        value: email,
-                        onChange: updateField("email", setEmail),
-                      }}
-                    />
-                    <Field
-                      id={FIELD_IDS.password}
-                      icon={<KeyRound className="size-5" aria-hidden />}
-                      label="Mật khẩu"
-                      error={fieldErrors.password}
-                      hint={isRegister ? PASSWORD_HINT : undefined}
-                      inputProps={{
-                        name: "password",
-                        type: showPassword ? "text" : "password",
-                        autoComplete: isRegister ? "new-password" : "current-password",
-                        maxLength: isRegister ? PASSWORD_MAX_LENGTH : undefined,
-                        required: true,
-                        value: password,
-                        onChange: updateField("password", setPassword),
-                      }}
-                      trailing={
-                        <button
-                          type="button"
-                          aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                          aria-pressed={showPassword}
-                          aria-controls={FIELD_IDS.password}
-                          onClick={() => setShowPassword((visible) => !visible)}
-                          className="flex size-11 items-center justify-center rounded-lg text-landing-muted hover:text-landing-ink"
-                        >
-                          {showPassword ? <EyeOff className="size-5" aria-hidden /> : <Eye className="size-5" aria-hidden />}
-                        </button>
-                      }
-                    />
-                    {!isRegister && (
-                      <div className="flex justify-end">
-                        <Link href={withEmail(ROUTES.forgotPassword, email)} className="py-1 text-sm font-medium text-landing-green-deep hover:underline">
-                          Quên mật khẩu?
-                        </Link>
-                      </div>
-                    )}
-                    {formError != null && <ApiErrorAlert error={formError} />}
-                    <button
-                      type="submit"
-                      disabled={busy}
-                      aria-busy={busy || undefined}
-                      className="!mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-landing-lime text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88] disabled:cursor-wait disabled:opacity-70"
-                    >
-                      {busy && (
-                        <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-landing-green-night/30 border-t-landing-green-night motion-reduce:animate-none" />
-                      )}
-                      {busy ? copy.busy : copy.submit}
-                    </button>
-                  </form>
+                    {busy ? copy.busy : copy.submit}
+                  </button>
+                </form>
 
-                  <p className="mt-5 text-center text-sm text-landing-muted">
-                    {copy.switchLabel}{" "}
-                    <button type="button" onClick={switchMode} className="py-2 font-semibold text-landing-ink hover:underline">
-                      {copy.switchAction}
-                    </button>
+                <div className="my-6 flex items-center gap-4" aria-hidden>
+                  <span className="h-px flex-1 bg-landing-line" />
+                  <span className="text-xs text-landing-muted">
+                    {isRegister ? "hoặc đăng ký bằng" : "hoặc tiếp tục với"}
+                  </span>
+                  <span className="h-px flex-1 bg-landing-line" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={signInWithGoogle}
+                  disabled={leavingForGoogle}
+                  aria-busy={leavingForGoogle || undefined}
+                  className="relative inline-flex h-12 w-full items-center justify-center rounded-xl border border-landing-line bg-white text-sm font-semibold transition-colors hover:border-landing-ink/30 hover:bg-mist-50 disabled:cursor-wait disabled:opacity-70"
+                >
+                  <span className="absolute left-4">
+                    <GoogleIcon />
+                  </span>
+                  {leavingForGoogle
+                    ? "Đang mở Google…"
+                    : isRegister
+                      ? "Đăng ký bằng Google"
+                      : "Đăng nhập bằng Google"}
+                </button>
+
+                <p className="mt-6 text-center text-sm text-landing-muted">
+                  {copy.switchLabel}{" "}
+                  <button
+                    type="button"
+                    onClick={switchMode}
+                    className="py-2 font-semibold text-fpt-blue hover:underline"
+                  >
+                    {copy.switchAction}
+                  </button>
+                </p>
+                <p className="text-center text-sm text-landing-muted">
+                  <Link
+                    href={ROUTES.editorDemo}
+                    className="inline-flex items-center gap-1.5 py-1 font-medium hover:text-landing-ink"
+                  >
+                    <PlayCircle className="size-4 text-fpt-blue" aria-hidden />
+                    Dùng thử Studio, không cần tài khoản
+                  </Link>
+                </p>
+                {isRegister && (
+                  <p className="mt-3 text-center text-xs leading-5 text-landing-muted">
+                    Sau khi đăng ký, WrapFit gửi một liên kết xác nhận vào email
+                    của bạn.
                   </p>
-                  {isRegister && (
-                    <p className="mt-2 text-center text-xs leading-5 text-landing-muted">
-                      Sau khi đăng ký, WrapFit gửi một liên kết xác nhận vào email của bạn.
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
+                )}
+              </>
+            )}
           </section>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
 
 function Field({
   id,
-  icon,
   label,
+  optional,
+  placeholder,
   error,
   hint,
   inputProps,
   trailing,
 }: {
   id: string;
-  icon: React.ReactNode;
   label: string;
+  optional?: boolean;
+  placeholder?: string;
   error?: string;
   hint?: string;
   inputProps: React.InputHTMLAttributes<HTMLInputElement>;
@@ -406,32 +503,40 @@ function Field({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div>
-      <label htmlFor={id} className="sr-only">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium">
         {label}
+        {optional && (
+          <span className="font-normal text-landing-muted">
+            {" "}
+            (không bắt buộc)
+          </span>
+        )}
       </label>
       <div
         className={cn(
-          "flex h-12 items-center rounded-lg bg-[#EBEDEF] pl-4 ring-1 ring-transparent transition-shadow focus-within:bg-white focus-within:ring-landing-green/60",
-          error && "ring-red-400"
+          "flex h-12 items-center rounded-xl border border-landing-line bg-white transition-[border-color,box-shadow] focus-within:border-fpt-blue focus-within:ring-4 focus-within:ring-fpt-blue/10",
+          error && "border-danger-fg",
         )}
       >
-        <span className="shrink-0 text-landing-muted">{icon}</span>
         <input
           id={id}
-          placeholder={label}
+          placeholder={placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm text-landing-ink outline-none placeholder:text-landing-muted"
+          className="h-full min-w-0 flex-1 rounded-xl bg-transparent px-4 text-body text-landing-ink outline-none placeholder:text-landing-muted/70"
           {...inputProps}
         />
         {trailing}
       </div>
       {error ? (
-        <p id={`${id}-error`} className="mt-1.5 px-1 text-xs text-red-700">
+        <p
+          id={`${id}-error`}
+          className="mt-1.5 text-xs font-medium text-danger-fg"
+        >
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 px-1 text-xs text-landing-muted">
+        <p id={`${id}-hint`} className="mt-1.5 text-xs text-landing-muted">
           {hint}
         </p>
       ) : null}
@@ -442,10 +547,22 @@ function Field({
 function GoogleIcon() {
   return (
     <svg className="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.4 8.9 5 12 5z" fill="#EA4335" />
-      <path d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5.1 3.7-8.9z" fill="#4285F4" />
-      <path d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.1-2 .4-2.7L1.6 6.4C.6 8.3 0 10.1 0 12s.6 3.7 1.6 5.6l3.7-2.9z" fill="#FBBC05" />
-      <path d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.4-6.7-5.3L1.6 15.9C3.5 19.7 7.4 23 12 23z" fill="#34A853" />
+      <path
+        d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.4 8.9 5 12 5z"
+        fill="#EA4335"
+      />
+      <path
+        d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5.1 3.7-8.9z"
+        fill="#4285F4"
+      />
+      <path
+        d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.1-2 .4-2.7L1.6 6.4C.6 8.3 0 10.1 0 12s.6 3.7 1.6 5.6l3.7-2.9z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.4-6.7-5.3L1.6 15.9C3.5 19.7 7.4 23 12 23z"
+        fill="#34A853"
+      />
     </svg>
   );
 }
