@@ -34,36 +34,36 @@ export function WaitlistSkeleton({ className, rowCount = 5 }: WaitlistSkeletonPr
         {/* Row with Icon + Title Bar */}
         <div className="flex items-center gap-3">
           {/* Squircle Icon placeholder */}
-          <div className="size-11 sm:size-12 shrink-0 rounded-2xl bg-stone-200/90 animate-shimmer" />
+          <div className="size-11 sm:size-12 shrink-0 rounded-2xl bg-line/90 animate-shimmer" />
           {/* Title Bar placeholder */}
-          <div className="h-7 w-44 sm:w-56 rounded-xl bg-stone-200/90 animate-shimmer" />
+          <div className="h-7 w-44 sm:w-56 rounded-xl bg-line/90 animate-shimmer" />
         </div>
 
         {/* Subtitle / Divider Line placeholder */}
-        <div className="h-3.5 sm:h-4 w-60 sm:w-80 rounded-md bg-stone-200/70 animate-shimmer" />
+        <div className="h-3.5 sm:h-4 w-60 sm:w-80 rounded-md bg-line/70 animate-shimmer" />
 
         {/* Action Pill Button placeholder */}
-        <div className="mt-1 h-9 sm:h-10 w-32 sm:w-36 rounded-full bg-stone-200/90 animate-shimmer" />
+        <div className="mt-1 h-9 sm:h-10 w-32 sm:w-36 rounded-full bg-line/90 animate-shimmer" />
       </div>
 
       {/* Main Card with 5 Rows */}
-      <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-stone-200/80 bg-white shadow-soft-8 divide-y divide-stone-100">
+      <div className="overflow-hidden rounded-2xl sm:rounded-3xl border border-line/80 bg-white shadow-soft-8 divide-y divide-line/60">
         {Array.from({ length: rowCount }).map((_, idx) => (
           <div key={idx} className="flex items-center gap-3.5 p-3.5 sm:p-4">
             {/* Left squircle avatar/checkbox placeholder */}
-            <div className="size-8 shrink-0 rounded-lg bg-stone-200/90 animate-shimmer" />
+            <div className="size-8 shrink-0 rounded-lg bg-line/90 animate-shimmer" />
 
             {/* Right text lines placeholder */}
             <div className="flex flex-1 flex-col gap-2">
               <div
                 className={cn(
-                  "h-3.5 rounded bg-stone-200/90 animate-shimmer",
+                  "h-3.5 rounded bg-line/90 animate-shimmer",
                   idx % 2 === 0 ? "w-3/5" : "w-4/6"
                 )}
               />
               <div
                 className={cn(
-                  "h-2.5 rounded bg-stone-200/60 animate-shimmer",
+                  "h-2.5 rounded bg-line/60 animate-shimmer",
                   idx % 2 === 0 ? "w-2/5" : "w-1/3"
                 )}
               />
