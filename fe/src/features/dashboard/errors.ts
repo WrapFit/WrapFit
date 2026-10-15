@@ -9,7 +9,7 @@ import { isApiError } from "@/services/api";
  */
 export function showActionError(toast: ToastApi, error: unknown, title: string, conflict?: string): void {
   if (conflict && isApiError(error) && error.status === 409 && !error.code) {
-    toast.show({ tone: "error", title, description: conflict, requestId: error.requestId });
+    toast.show({ tone: "error", title, description: conflict });
     return;
   }
   toast.error(error, title);
