@@ -1,8 +1,7 @@
 "use client";
 
-import { Box, Compass, HeartHandshake, Sparkles } from "lucide-react";
 import React from "react";
-import { Container, Eyebrow, Reveal } from "@/components/landing";
+import { Container, Reveal } from "@/components/landing";
 
 export function AboutHero() {
   return (
@@ -10,11 +9,6 @@ export function AboutHero() {
       <Container>
         <div className="mx-auto max-w-4xl text-center">
           <Reveal variant="text" className="flex flex-col items-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-success-bg px-3.5 py-1 text-xs font-semibold text-success-fg mb-4 border border-success/60">
-              <Sparkles className="size-3.5 text-success-fg" />
-              Câu chuyện khởi nghiệp WrapFit
-            </span>
-
             <h1 className="font-landing-heading text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-landing-ink leading-[1.15]">
               Chiếc hộp được thiết kế <br className="hidden sm:inline" />
               <span className="text-fpt-orange-ink">ôm trọn món quà</span> từ milimét.
@@ -74,7 +68,7 @@ export function AboutHero() {
                   <span className="text-caption text-fg-muted">Khả thi sản xuất</span>
                 </div>
                 <div className="rounded-xl bg-surface-sunken/50 p-3 border border-line/60">
-                  <span className="block font-mono text-xl font-bold text-success-fg">Zero MOQ</span>
+                  <span className="block font-mono text-xl font-bold text-fpt-orange-ink">Zero MOQ</span>
                   <span className="text-caption text-fg-muted">Sản xuất từ 20 hộp</span>
                 </div>
               </div>

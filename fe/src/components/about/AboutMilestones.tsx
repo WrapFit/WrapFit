@@ -1,8 +1,8 @@
 "use client";
 
-import { Calendar, CheckCircle2, Flag, Layers, Rocket, Sparkles, TrendingUp, Users } from "lucide-react";
+import { CheckCircle2, Flag, Layers, Rocket, Sparkles, TrendingUp } from "lucide-react";
 import React from "react";
-import { Container, Reveal } from "@/components/landing";
+import { Container } from "@/components/landing";
 
 interface Milestone {
   time: string;
@@ -76,10 +76,10 @@ const MILESTONES: Milestone[] = [
   {
     time: "Tháng 10/2026",
     quarter: "Q4 2026",
-    title: "Vượt mốc 427+ Waitlist & Mở rộng 3D QR Unboxing",
+    title: "Vượt mốc 427+ đăng ký sớm & Mở rộng 3D QR Unboxing",
     badge: "Traction",
     description:
-      "Cộng đồng nhà sáng tạo đón nhận nồng nhiệt với 427+ lượt đăng ký Waitlist sớm. Bổ sung tính năng QR thông minh trên nắp hộp để người nhận mở hộp 3D ảo và nghe lời chúc âm thanh.",
+      "Cộng đồng nhà sáng tạo đón nhận nồng nhiệt với 427+ lượt đăng ký dùng thử sớm. Bổ sung tính năng QR thông minh trên nắp hộp để người nhận mở hộp 3D ảo và nghe lời chúc âm thanh.",
     achievements: [
       "Hơn 427+ boutique & nghệ nhân tham gia hàng chờ",
       "Trải nghiệm 3D Virtual Unboxing qua mã QR độc bản",
@@ -91,7 +91,7 @@ const MILESTONES: Milestone[] = [
 ];
 
 const TRACTION_STATS = [
-  { value: "427+", label: "Nhà sáng tạo trong Waitlist", sub: "Boutique & nghệ nhân toàn quốc" },
+  { value: "427+", label: "Nhà sáng tạo đăng ký sớm", sub: "Boutique & nghệ nhân toàn quốc" },
   { value: "Zero MOQ", label: "Sản xuất từ 20 chiếc", sub: "Không mất 2 triệu tiền khuôn bế" },
   { value: "100%", label: "Khả thi sản xuất", sub: "FitCheck™ rà soát tự động" },
   { value: "300 DPI", label: "Vector CMYK chuẩn in", sub: "Tách lớp CutContour & Crease" },
@@ -191,7 +191,7 @@ export function AboutMilestones() {
                       <div className="space-y-1.5 pt-3 border-t border-line/60">
                         {m.achievements.map((item) => (
                           <div key={item} className="flex items-start gap-2 text-xs text-fg-muted">
-                            <CheckCircle2 className="size-3.5 text-success-fg shrink-0 mt-0.5" />
+                            <CheckCircle2 className="size-3.5 text-fpt-orange shrink-0 mt-0.5" />
                             <span>{item}</span>
                           </div>
                         ))}
