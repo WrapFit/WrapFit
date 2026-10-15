@@ -390,7 +390,7 @@ export const JOURNEY: {
 };
 
 export const VOICES = {
-  title: "Tiếng nói khách hàng",
+  title: "Đánh giá khách hàng",
   subtitle: "Cảm nhận từ những người dùng đầu tiên",
   // Sample feedback for the demo: replace it with real reviews before launch.
   reviews: [
