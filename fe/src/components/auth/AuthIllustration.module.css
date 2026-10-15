@@ -1,20 +1,136 @@
-/* Motion of the sign-in panel. Everything stops for visitors who asked for reduced motion. */
+/*
+ * Brand panel of the sign-in and sign-up pages. The hero is a small 3D scene (perspective, layers at different
+ * depths), after the BeeWise sign-in: hovering the panel moves Gói, differently on each page.
+ *   - sign in: Gói turns towards the form and comes forward, as if greeting a returning user;
+ *   - sign up: Gói hops on the spot, the orbit spins and the little boxes jump, as if celebrating a new one.
+ * Everything stays still for visitors who asked for reduced motion.
+ */
 
-/* Gói floats above the disc (keeps the centring translate of the image). */
-.float {
-  animation: float 4.5s ease-in-out infinite;
+.scene {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Back layers: halos and disc sit behind, the orbit tilted further back. */
+.disc {
+  transform: translateZ(0);
+  transition: filter 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.orbit {
+  transform: translateZ(-30px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Gói: centred, raised towards the viewer, turned slightly left at rest. */
+.goi {
+  transform: translate(-50%, -50%) translateZ(75px) rotateY(-6deg) rotateX(3deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Livelier colours than the flat kraft of the file: warmer, a touch brighter. */
+.goi img {
+  filter: saturate(1.3) brightness(1.03) drop-shadow(0 26px 22px rgba(0, 30, 70, 0.38));
+  animation: enter 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both, float 4.5s ease-in-out 0.55s infinite;
+}
+
+.spark {
+  transform: translateZ(100px) rotate(26deg);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dot {
+  transform: translateZ(40px);
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* --- Sign in: Gói turns towards the form (on the right) and comes forward. */
+.panel[data-mode="login"]:hover .goi {
+  transform: translate(-50%, -50%) translateZ(110px) rotateY(9deg) rotateX(-2deg) translateY(-10px);
+}
+.panel[data-mode="login"]:hover .disc {
+  filter: brightness(1.08) saturate(1.1);
+}
+.panel[data-mode="login"]:hover .spark {
+  transform: translateZ(140px) translate(-6px, -6px) rotate(40deg);
+}
+
+/* --- Sign up: Gói hops and grows a little, the orbit spins, the little boxes jump. */
+.panel[data-mode="register"]:hover .goi {
+  transform: translate(-50%, -50%) translateZ(95px) rotateY(-10deg) rotateX(4deg) scale(1.05);
+}
+.panel[data-mode="register"]:hover .goi img {
+  animation: hop 0.9s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.panel[data-mode="register"]:hover .orbit {
+  transform: translateZ(-30px) rotate(-18deg);
+}
+.panel[data-mode="register"]:hover .orbit svg {
+  animation: spin 6s linear infinite;
+}
+.panel[data-mode="register"]:hover .spark,
+.panel[data-mode="register"]:hover .dot {
+  animation: jump 0.9s cubic-bezier(0.3, 0, 0.3, 1) infinite;
+}
+.panel[data-mode="register"]:hover .dot {
+  animation-delay: 0.15s;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes float {
   0%,
   100% {
-    transform: translate(-50%, -50%);
+    transform: translateY(0);
   }
   50% {
-    transform: translate(-50%, calc(-50% - 10px)) rotate(-1.5deg);
+    transform: translateY(-10px) rotate(-1.5deg);
   }
 }
 
+/* A hop with a squash on landing. */
+@keyframes hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  12% {
+    transform: translateY(2px) scale(1.06, 0.94);
+  }
+  45% {
+    transform: translateY(-22px) scale(0.97, 1.04) rotate(-3deg);
+  }
+  70% {
+    transform: translateY(0) scale(1.04, 0.96);
+  }
+}
+
+@keyframes jump {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  45% {
+    translate: 0 -12px;
+  }
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Floating bits of the panel at rest. */
 .drift {
   animation: drift 6s ease-in-out infinite;
 }
@@ -26,33 +142,31 @@
 @keyframes drift {
   0%,
   100% {
-    transform: translateY(0) rotate(0deg);
+    translate: 0 0;
   }
   50% {
-    transform: translateY(-8px) rotate(8deg);
-  }
-}
-
-/* The size chip bobs without turning, so its text stays level. */
-.chip {
-  animation: chip 7s ease-in-out -2s infinite;
-}
-
-@keyframes chip {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
+    translate: 0 -8px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chip,
-  .float,
+  .goi,
+  .orbit,
+  .spark,
+  .dot,
+  .disc {
+    transition: none;
+  }
+  .goi img,
   .drift,
-  .driftSlow {
+  .driftSlow,
+  .panel:hover .goi img,
+  .panel:hover .orbit svg,
+  .panel:hover .spark,
+  .panel:hover .dot {
     animation: none;
+  }
+  .panel[data-mode]:hover .goi {
+    transform: translate(-50%, -50%) translateZ(75px) rotateY(-6deg) rotateX(3deg);
   }
 }
