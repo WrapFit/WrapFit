@@ -65,7 +65,7 @@ function Team() {
       }
     >
       <div className="flex flex-col gap-6">
-        <p className="flex items-start gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 p-4 text-sm leading-[1.6] text-amber-900">
+        <p className="flex items-start gap-3 rounded-xl border border-dashed border-warning/30 bg-warning-bg/60 p-4 text-sm leading-[1.6] text-warning-fg">
           <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
           Làm việc nhóm chưa có ở API: mỗi tài khoản WrapFit hiện chỉ thấy dự án của chính mình. Danh sách dưới đây là ví dụ cho cách chia quyền sắp tới.
         </p>
