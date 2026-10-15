@@ -399,7 +399,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         >
           <div
             className={cn(
-              "flex items-center gap-1.5 font-['Plus_Jakarta_Sans']",
+              "flex items-center gap-1.5 font-landing-body",
               bubblePlacement === "top-right"
                 ? "justify-start"
                 : bubblePlacement === "top-left"
