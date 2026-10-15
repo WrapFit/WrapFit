@@ -30,7 +30,7 @@ export function AccountFrame({ children }: { children: React.ReactNode }) {
 }
 
 const ICON_TONES = {
-  lime: "bg-landing-lime text-landing-green-night",
+  lime: "bg-fpt-orange text-white",
   amber: "bg-warning-bg text-warning-fg",
   red: "bg-danger-bg text-danger-fg",
 } as const;
@@ -56,7 +56,7 @@ export function AccountShell({ icon: Icon, tone = "lime", eyebrow, title, descri
           <span className={cn("mx-auto flex size-14 items-center justify-center rounded-2xl", ICON_TONES[tone])}>
             <Icon className="size-6" strokeWidth={2} aria-hidden />
           </span>
-          {eyebrow && <p className="mt-5 text-sm font-semibold text-landing-green">{eyebrow}</p>}
+          {eyebrow && <p className="mt-5 text-sm font-semibold text-fpt-orange-ink">{eyebrow}</p>}
           <h1 id="account-title" className={cn("font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl", eyebrow ? "mt-1" : "mt-5")}>
             {title}
           </h1>
@@ -72,7 +72,7 @@ export function AccountShell({ icon: Icon, tone = "lime", eyebrow, title, descri
 export function AccountLoading({ label = "Đang tải…" }: { label?: string }) {
   return (
     <div role="status" className="flex items-center gap-3 rounded-xl bg-white px-4 py-3.5 text-sm text-landing-muted ring-1 ring-landing-ink/10">
-      <span aria-hidden className="size-4 shrink-0 animate-spin rounded-full border-2 border-landing-line border-t-landing-green motion-reduce:animate-none" />
+      <span aria-hidden className="size-4 shrink-0 animate-spin rounded-full border-2 border-landing-line border-t-fpt-orange motion-reduce:animate-none" />
       {label}
     </div>
   );
@@ -80,7 +80,7 @@ export function AccountLoading({ label = "Đang tải…" }: { label?: string })
 
 /** Secondary text link of the account pages. */
 export const TEXT_LINK =
-  "inline-flex min-h-[44px] items-center justify-center rounded-lg px-1 text-sm font-semibold text-landing-green-deep underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-green/40";
+  "inline-flex min-h-[44px] items-center justify-center rounded-lg px-1 text-sm font-semibold text-fpt-orange-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange/40";
 
 /** Main action as a link (same pill as the submit button). */
 export const PRIMARY_LINK = buttonClass({ variant: "primary", size: "xl", block: true });

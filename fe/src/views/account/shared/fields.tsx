@@ -6,7 +6,7 @@ import { cn } from "@/utils/helpers";
 
 /** Same grey field as the login screen: 48 px high, white with a green ring on focus, red ring when invalid. */
 export const INPUT_CLASS =
-  "h-12 w-full rounded-lg border-0 bg-mist-200 px-4 text-base text-landing-ink outline-none ring-1 ring-transparent transition-shadow placeholder:text-landing-muted/70 focus:bg-white focus:ring-landing-green/60 disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:ring-danger";
+  "h-12 w-full rounded-lg border-0 bg-mist-200 px-4 text-base text-landing-ink outline-none ring-1 ring-transparent transition-shadow placeholder:text-landing-muted/70 focus:bg-white focus:ring-fpt-orange/60 disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:ring-danger";
 
 interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "id"> {
   id: string;
@@ -57,7 +57,7 @@ export function PasswordField(props: Omit<TextFieldProps, "type" | "trailing">) 
           aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
           aria-pressed={visible}
           aria-controls={props.id}
-          className="absolute right-0.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-landing-muted transition-colors hover:text-landing-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-green/40"
+          className="absolute right-0.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-landing-muted transition-colors hover:text-landing-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange/40"
         >
           <Icon className="size-5" aria-hidden />
         </button>
@@ -86,7 +86,7 @@ export function SubmitButton({
       disabled={busy || disabled}
       aria-busy={busy || undefined}
       className={cn(
-        "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-green/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
         className,
       )}
     >

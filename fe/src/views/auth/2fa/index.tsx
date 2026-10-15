@@ -122,7 +122,7 @@ export default function Auth2FaPage() {
             type="checkbox"
             checked={remember}
             onChange={(event) => setRemember(event.target.checked)}
-            className="size-5 rounded border-landing-line accent-landing-green text-landing-green focus:ring-landing-green/40"
+            className="size-5 rounded border-landing-line accent-fpt-orange text-fpt-orange-ink focus:ring-fpt-orange/40"
           />
           Ghi nhớ thiết bị này trong 30 ngày
         </label>
