@@ -26,14 +26,14 @@ const STEPS = [
 /** Introduction and the three steps, under the grid of the template library. */
 export function HowItWorks() {
   return (
-    <section className="mt-16 bg-[#F4F7FB] py-16 lg:mt-24 lg:py-20">
+    <section className="mt-16 bg-canvas py-16 lg:mt-24 lg:py-20">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-4 sm:px-6 lg:px-10">
         <div className="grid grid-cols-1 gap-8 rounded-3xl bg-white p-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:p-12">
           <div>
             <span className="text-4xl" aria-hidden>
               👋
             </span>
-            <h2 className="mt-4 text-2xl font-medium leading-snug text-library-ink lg:text-[28px]">
+            <h2 className="mt-4 text-2xl font-medium leading-snug text-library-ink lg:text-heading-lg">
               Tạo một chiếc hộp quà ấn tượng thật dễ dàng với WrapFit!
             </h2>
           </div>
@@ -49,11 +49,11 @@ export function HowItWorks() {
           </div>
         </div>
 
-        <h2 className="text-center text-2xl font-medium text-library-ink lg:text-[32px]">Làm một chiếc hộp với WrapFit thế nào?</h2>
+        <h2 className="text-center text-2xl font-medium text-library-ink lg:text-heading-lg">Làm một chiếc hộp với WrapFit thế nào?</h2>
         <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {STEPS.map((step) => (
             <li key={step.title} className="flex flex-col gap-4">
-              <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-[#DCE6F2] bg-[#E8F0FA] p-6">
+              <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-line bg-info-bg p-6">
                 <StepArt art={step.art} />
               </div>
               <h3 className="text-lg font-medium text-library-ink">{step.title}</h3>

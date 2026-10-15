@@ -5,18 +5,17 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { DesignThumb, DielineSketch } from "@/features/templates";
+import { buttonClass, Skeleton } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 
 // Building blocks of the template library and the shared design page, after pacdora.com (grey tiles with a black
 // hairline, the flat dieline next to the box, small white tags, numbered pages) in the green of pack.ly.
 
-/** Main call to action: Pacdora's button shape in the lime of pack.ly. */
-export const primaryButton =
-  "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-library-lime px-4 text-base font-medium text-library-lime-ink transition-colors hover:bg-[#AFEC88] outline-none focus-visible:ring-[3px] focus-visible:ring-library-accent/40 disabled:cursor-wait disabled:opacity-60";
+/** Main call to action: Pacdora's button shape in the lime of pack.ly (shared Button, rounded shape). */
+export const primaryButton = buttonClass({ variant: "primary", shape: "rounded", className: "px-4 text-body font-medium" });
 
-/** White button with a black hairline (Pacdora's secondary button). */
-export const outlineButton =
-  "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-library-ink bg-white px-4 text-base font-medium text-library-ink transition-colors hover:bg-library-panel outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 disabled:cursor-wait disabled:opacity-60";
+/** White button with a black hairline (Pacdora's secondary button; shared Button, outline variant). */
+export const outlineButton = buttonClass({ variant: "outline", shape: "rounded", className: "px-4 text-body font-medium" });
 
 export interface LibraryCardProps {
   href: string;
@@ -34,7 +33,7 @@ export interface LibraryCardProps {
 export function LibraryCard({ href, title, structure, dimensions, materialSpec, thumbnailUrl, tags, label }: LibraryCardProps) {
   return (
     <Link href={href} aria-label={label ?? title} className="group block outline-none">
-      <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-library-ink bg-library-tile transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm motion-reduce:transition-none">
+      <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-library-ink bg-library-tile transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50 motion-reduce:transition-none">
         <div className="absolute inset-0 grid grid-cols-2">
           <div className="flex items-center justify-center p-4 pr-2">
             <DielineSketch structure={structure} dimensions={dimensions} className="max-h-full w-full" />
@@ -53,14 +52,14 @@ export function LibraryCard({ href, title, structure, dimensions, materialSpec, 
         {tags.length > 0 && (
           <ul className="absolute top-3 right-3 flex gap-1.5">
             {tags.map((tag) => (
-              <li key={tag} className="rounded-md bg-white px-1.5 py-1.5 text-xs leading-3 text-library-muted">
+              <li key={tag} className="rounded-md bg-white px-1.5 py-1.5 text-caption leading-3 text-library-muted">
                 {tag}
               </li>
             ))}
           </ul>
         )}
       </div>
-      <p className="mt-3 line-clamp-2 text-base leading-5 text-library-muted transition-colors group-hover:text-library-ink">{title}</p>
+      <p className="mt-3 line-clamp-2 text-body leading-5 text-library-muted transition-colors group-hover:text-library-ink">{title}</p>
     </Link>
   );
 }
@@ -68,8 +67,8 @@ export function LibraryCard({ href, title, structure, dimensions, materialSpec, 
 export function LibraryCardSkeleton() {
   return (
     <div aria-hidden>
-      <div className="aspect-[321/201] animate-pulse rounded-2xl bg-library-tile motion-reduce:animate-none" />
-      <div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-library-tile motion-reduce:animate-none" />
+      <Skeleton className="aspect-[321/201] rounded-2xl" />
+      <Skeleton shape="text" className="mt-3 h-4 w-2/3" />
     </div>
   );
 }
@@ -96,7 +95,7 @@ export function Pagination({
 }) {
   if (totalPages <= 1) return null;
   const box =
-    "inline-flex size-9 items-center justify-center rounded-md border border-library-ink text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 disabled:cursor-not-allowed disabled:opacity-40";
+    "inline-flex size-9 items-center justify-center rounded-md border border-library-ink text-body-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:cursor-not-allowed disabled:opacity-40";
   return (
     <nav aria-label="Phân trang" className="mt-10 flex flex-wrap items-center justify-center gap-2">
       <button type="button" className={cn(box, "bg-white hover:bg-library-panel")} disabled={page <= 1 || busy} onClick={() => onPage(page - 1)} aria-label="Trang trước">

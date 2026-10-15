@@ -226,9 +226,9 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
             aria-busy={!viewerKnown || like.isPending}
             disabled={!viewerKnown}
             onClick={toggleLike}
-            className={cn(outlineButton, liked && "border-[#E53E3E] text-[#C53030]")}
+            className={cn(outlineButton, liked && "border-dieline-cut text-danger-fg")}
           >
-            <Heart className={cn("size-4", liked && "fill-[#E53E3E] text-[#E53E3E]")} aria-hidden />
+            <Heart className={cn("size-4", liked && "fill-dieline-cut text-dieline-cut")} aria-hidden />
             {liked ? "Đã thích" : "Thả tim"}
             <span className="text-sm text-library-muted">{formatCount(project.likesCount)}</span>
           </button>
@@ -257,7 +257,7 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
       </span>
 
       {/* Workspace: grey surface, 3D stage, side panel, fold toolbar */}
-      <div className="relative flex flex-col bg-gradient-to-b from-[#E9E9E9] to-library-canvas lg:h-[calc(100vh-9.5rem)] lg:min-h-[640px] lg:flex-row">
+      <div className="relative flex flex-col bg-gradient-to-b from-library-line to-library-canvas lg:h-[calc(100vh-9.5rem)] lg:min-h-[640px] lg:flex-row">
         <div className="relative z-10 flex gap-2 p-4 lg:p-5">
           <Rail tab={tab} onTab={setTab} pose={pose} />
           <aside className="min-w-0 flex-1 rounded-2xl bg-white px-4 py-5 shadow-panel lg:w-[320px] lg:flex-none lg:overflow-y-auto">
@@ -283,7 +283,7 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
           </div>
 
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 sm:bottom-6">
-            <div className="flex h-11 items-center gap-3 rounded-full bg-white px-4 text-xs text-[#60656C] shadow-[0_0_4px_rgba(0,0,0,0.1)]">
+            <div className="flex h-11 items-center gap-3 rounded-full bg-white px-4 text-xs text-fg-muted shadow-[0_0_4px_rgba(0,0,0,0.1)]">
               <label htmlFor="fold" className="whitespace-nowrap">
                 Trải phẳng
               </label>
@@ -339,7 +339,7 @@ function Rail({ tab, onTab, pose }: { tab: PanelTab; onTab(tab: PanelTab): void;
             aria-selected={tab === id}
             onClick={() => onTab(id)}
             className={cn(
-              "flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors",
+              "flex flex-col items-center gap-1 py-2.5 text-caption transition-colors",
               tab === id ? "text-library-accent" : "text-library-ink hover:text-library-accent"
             )}
           >
@@ -348,7 +348,7 @@ function Rail({ tab, onTab, pose }: { tab: PanelTab; onTab(tab: PanelTab): void;
           </button>
         ))}
       </div>
-      <div className="flex flex-col items-center gap-1 rounded-2xl bg-white py-2 text-[11px] text-library-ink shadow-panel">
+      <div className="flex flex-col items-center gap-1 rounded-2xl bg-white py-2 text-caption text-library-ink shadow-panel">
         <GoiMascot pose={pose} size={44} showPhotoBadge={false} label="Gói, trợ lý đóng gói của WrapFit" />
         Gói
       </div>
@@ -447,11 +447,11 @@ function DielinePanel({ project }: { project: PublicProject }) {
       </div>
       <p className="flex gap-4 text-xs text-library-muted">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-0.5 w-4 bg-[#E53E3E]" aria-hidden />
+          <span className="h-0.5 w-4 bg-dieline-cut" aria-hidden />
           Nét cắt
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="w-4 border-t-2 border-dashed border-[#3182CE]" aria-hidden />
+          <span className="w-4 border-t-2 border-dashed border-dieline-crease" aria-hidden />
           Nét gấp
         </span>
       </p>
@@ -477,8 +477,8 @@ function Row({ label, value }: { label: string; value: string }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-lg bg-library-panel px-1 py-2">
-      <dt className="text-[11px] text-library-muted">{label}</dt>
-      <dd className="truncate text-[13px] text-library-ink" title={value}>
+      <dt className="text-caption text-library-muted">{label}</dt>
+      <dd className="truncate text-body-sm text-library-ink" title={value}>
         {value}
       </dd>
     </div>

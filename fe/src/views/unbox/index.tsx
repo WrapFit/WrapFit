@@ -141,7 +141,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
           </p>
         </div>
 
-        <div className="relative h-[460px] w-full max-w-3xl overflow-hidden rounded-[28px] bg-white sm:h-[540px]">
+        <div className="relative h-[460px] w-full max-w-3xl overflow-hidden rounded-sheet bg-white sm:h-[540px]">
           <BoxStage3D
             structure={box.template.id}
             dimensions={box.dimensions}
@@ -163,7 +163,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
               <span className="transition-transform group-hover:scale-105 motion-reduce:transition-none">
                 <GoiMascot pose={pose} size={92} interactive={false} enableTracking={false} showPhotoBadge={false} />
               </span>
-              <span className="rounded-full bg-landing-lime px-6 py-3 font-landing-heading text-base font-semibold text-landing-green-night transition-colors group-hover:bg-[#AFEC88]">
+              <span className="rounded-full bg-landing-lime px-6 py-3 font-landing-heading text-base font-semibold text-landing-green-night transition-colors group-hover:bg-action-hover">
                 Chạm để mở hộp quà
               </span>
             </button>
@@ -180,7 +180,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
             tabIndex={-1}
             aria-labelledby="gift-note-title"
             style={{ opacity: reducedMotion ? 1 : 0 }}
-            className="w-full max-w-md rounded-[28px] border-t-4 border-landing-lime bg-white p-6 text-landing-ink focus:outline-none"
+            className="w-full max-w-md rounded-sheet border-t-4 border-landing-lime bg-white p-6 text-landing-ink focus:outline-none"
           >
             <div className="flex items-center gap-3 border-b border-landing-line pb-3">
               <GoiMascot pose={pose} size={44} showPhotoBadge={false} />
@@ -191,7 +191,7 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
                 <p className="text-xs text-landing-muted">Hộp quà WrapFit</p>
               </div>
             </div>
-            <p className="mt-4 whitespace-pre-line break-words rounded-2xl bg-[#F5F6F4] p-4 text-base leading-7 text-landing-ink">
+            <p className="mt-4 whitespace-pre-line break-words rounded-2xl bg-mist-100 p-4 text-base leading-7 text-landing-ink">
               {gift.giftNote}
             </p>
             <div className="mt-4 flex items-center justify-end gap-2 text-sm text-landing-muted">
@@ -232,8 +232,8 @@ function GiftExperience({ gift }: { gift: PublicUnboxing }) {
 /** The slug does not exist any more (experience removed, project in the trash) or never did. */
 function ExpiredCode() {
   return (
-    <div className="w-full max-w-[480px] rounded-[28px] border border-landing-line bg-white px-6 py-10 text-center sm:px-10">
-      <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+    <div className="w-full max-w-[480px] rounded-sheet border border-landing-line bg-white px-6 py-10 text-center sm:px-10">
+      <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-warning-bg text-warning-fg">
         <QrCode className="size-6" aria-hidden />
       </span>
       <p className="mt-5 text-sm font-semibold text-landing-green">Mở hộp qua mã QR</p>
@@ -241,7 +241,7 @@ function ExpiredCode() {
       <p className="mt-3 text-base leading-7 text-landing-muted">Hộp quà gắn với mã này đã bị gỡ hoặc chưa từng tồn tại. Hãy hỏi người gửi một liên kết mới.</p>
       <Link
         href={ROUTES.unboxCode}
-        className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
+        className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
       >
         Nhập mã khác
       </Link>

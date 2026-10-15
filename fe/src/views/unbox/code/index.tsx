@@ -38,7 +38,7 @@ export default function UnboxCodePage() {
   return (
     <UnboxFrame>
       <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
-        <section aria-labelledby="unbox-code-title" className="flex flex-col justify-center rounded-[28px] bg-white p-6 sm:p-10">
+        <section aria-labelledby="unbox-code-title" className="flex flex-col justify-center rounded-sheet bg-white p-6 sm:p-10">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-landing-lime text-landing-green-night">
             <QrCode className="size-6" aria-hidden />
           </span>
@@ -70,10 +70,10 @@ export default function UnboxCodePage() {
                 placeholder="Mã mở hộp, vd. Ab3dE9xYz012"
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? errorId : undefined}
-                className="h-12 w-full rounded-lg bg-[#EBEDEF] px-4 font-mono text-base text-landing-ink outline-none ring-1 ring-transparent transition-shadow placeholder:font-landing-body placeholder:text-landing-muted/80 focus:bg-white focus:ring-landing-green/60 aria-[invalid=true]:ring-red-400"
+                className="h-12 w-full rounded-lg bg-mist-200 px-4 font-mono text-base text-landing-ink outline-none ring-1 ring-transparent transition-shadow placeholder:font-landing-body placeholder:text-landing-muted/80 focus:bg-white focus:ring-landing-green/60 aria-[invalid=true]:ring-danger"
               />
               {error && (
-                <p id={errorId} role="alert" className="mt-1.5 text-sm text-red-600">
+                <p id={errorId} role="alert" className="mt-1.5 text-sm text-danger-fg">
                   {error}
                 </p>
               )}
@@ -81,7 +81,7 @@ export default function UnboxCodePage() {
             <button
               type="submit"
               disabled={!value.trim()}
-              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               Mở hộp quà
               <ArrowRight className="size-4" aria-hidden />
@@ -89,7 +89,7 @@ export default function UnboxCodePage() {
           </form>
         </section>
 
-        <aside aria-labelledby="unbox-sender-title" className="flex flex-col rounded-[28px] bg-landing-green-night p-6 text-white sm:p-10">
+        <aside aria-labelledby="unbox-sender-title" className="flex flex-col rounded-sheet bg-landing-green-night p-6 text-white sm:p-10">
           <h2 id="unbox-sender-title" className="font-landing-heading text-2xl font-bold sm:text-3xl">
             Bạn muốn gửi quà?
           </h2>
@@ -109,7 +109,7 @@ export default function UnboxCodePage() {
           </ol>
           <Link
             href={ROUTES.editorNew}
-            className="mt-6 inline-flex h-12 items-center justify-center gap-2 self-start rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88] lg:mt-auto"
+            className="mt-6 inline-flex h-12 items-center justify-center gap-2 self-start rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover lg:mt-auto"
           >
             Bắt đầu thiết kế
             <ArrowRight className="size-4" aria-hidden />
