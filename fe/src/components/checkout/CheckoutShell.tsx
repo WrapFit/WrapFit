@@ -59,7 +59,7 @@ interface CheckoutShellProps {
 
 export function CheckoutShell({ step, tier, billing, query, children }: CheckoutShellProps) {
   return (
-    <div className={`${landingFontVariables} min-h-screen bg-[#F5F6F4] font-landing-body text-landing-ink antialiased`}>
+    <div className={`${landingFontVariables} min-h-screen bg-mist-100 font-landing-body text-landing-ink antialiased`}>
       <header className="flex h-16 items-center justify-between px-5 lg:px-8">
         <LandingLogo />
         <Link href="/pricing" className="py-2 text-sm font-medium text-landing-muted hover:text-landing-ink">
@@ -124,7 +124,7 @@ function OrderSummary({ tier, billing }: { tier: PaidTier; billing: Billing }) {
   const isPerExport = tier === "PAY_PER_EXPORT";
 
   return (
-    <aside aria-label="Tóm tắt đơn hàng" className="rounded-[28px] bg-landing-green-night p-6 text-white lg:sticky lg:top-6">
+    <aside aria-label="Tóm tắt đơn hàng" className="rounded-sheet bg-landing-green-night p-6 text-white lg:sticky lg:top-6">
       <p className="text-sm text-landing-lime-mist/70">Đơn hàng của bạn</p>
       <p className="mt-1 font-landing-heading text-3xl font-bold">Gói {plan.name}</p>
       <p className="mt-1 text-sm text-landing-lime-mist/80">

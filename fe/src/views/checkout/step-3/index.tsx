@@ -37,7 +37,7 @@ function Review() {
 
   return (
     <CheckoutShell step={3} tier={tier} billing={billing} query={query()}>
-      <section aria-labelledby="checkout-title" className="rounded-[28px] bg-white p-6 sm:p-8">
+      <section aria-labelledby="checkout-title" className="rounded-sheet bg-white p-6 sm:p-8">
         <span className="flex size-14 items-center justify-center rounded-2xl bg-landing-lime text-landing-green-night">
           <Clock className="size-6" aria-hidden />
         </span>
@@ -50,7 +50,7 @@ function Review() {
 
         <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-landing-ink/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[#F5F6F4] text-landing-muted">
+            <thead className="bg-mist-100 text-landing-muted">
               <tr>
                 <th scope="col" className="px-4 py-3 font-medium">
                   <span className="sr-only">Mục</span>
@@ -85,12 +85,12 @@ function Review() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
             href={ROUTES.dashboard}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
           >
             Về không gian làm việc
             <ArrowRight className="size-4" aria-hidden />
           </Link>
-          <Link href={`/checkout/step-2${query()}`} className="inline-flex h-12 items-center justify-center rounded-full px-6 text-base font-medium text-landing-ink ring-1 ring-landing-line hover:bg-[#F5F6F4]">
+          <Link href={`/checkout/step-2${query()}`} className="inline-flex h-12 items-center justify-center rounded-full px-6 text-base font-medium text-landing-ink ring-1 ring-landing-line hover:bg-mist-100">
             Sửa thông tin thanh toán
           </Link>
         </div>
