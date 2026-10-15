@@ -79,7 +79,7 @@ function DashboardSettingsScreen() {
   return (
     <WorkspaceShell title="Cài đặt" description="Mật khẩu, phiên đăng nhập, tuỳ chọn studio và dung lượng lưu trữ.">
       <div className="flex flex-col gap-6">
-        <SegmentedControl<Tab> label="Nhóm cài đặt" value={tab} onChange={setTab} options={TABS} />
+        <SegmentedControl<Tab> tone="ink" label="Nhóm cài đặt" value={tab} onChange={setTab} options={TABS} />
         {tab === 'account' && (
           <>
             <AccountPanel user={user} />
@@ -127,7 +127,7 @@ function AccountPanel({ user }: { user: SafeUser }) {
             className="size-16 shrink-0 rounded-full border-[1.5px] border-library-ink object-cover"
           />
         ) : (
-          <span aria-hidden className="flex size-16 shrink-0 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-library-lime text-xl font-medium text-library-lime-ink">
+          <span aria-hidden className="flex size-16 shrink-0 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-fpt-orange text-xl font-medium text-white">
             {initialsOf(name)}
           </span>
         )}
@@ -216,26 +216,26 @@ function StudioPanel() {
       <PanelTitle action={<Badge>Lưu trên trình duyệt này</Badge>}>Tuỳ chọn studio</PanelTitle>
       <div className="divide-y divide-library-line border-t border-library-line">
         <SettingRow icon={RulerIcon} title="Đơn vị đo" text="Đơn vị của ô nhập kích thước và thước đo trên khuôn bế.">
-          <SegmentedControl label="Đơn vị đo" value={preferences.unit} onChange={(value) => set('unit', value)} options={['mm', 'cm', 'inch'].map((v) => ({ value: v as Preferences['unit'], label: v }))} />
+          <SegmentedControl tone="ink" label="Đơn vị đo" value={preferences.unit} onChange={(value) => set('unit', value)} options={['mm', 'cm', 'inch'].map((v) => ({ value: v as Preferences['unit'], label: v }))} />
         </SettingRow>
         <SettingRow icon={GridIcon} title="Lưới khuôn bế" text="Hiện lưới milimét sau bản vẽ 2D.">
-          <Toggle checked={preferences.cadGrid} onChange={(value) => set('cadGrid', value)} label="Hiện lưới khuôn bế" />
+          <Toggle tone="ink" checked={preferences.cadGrid} onChange={(value) => set('cadGrid', value)} label="Hiện lưới khuôn bế" />
         </SettingRow>
         <SettingRow icon={FoldIcon} title="Bù độ dày nếp gấp (K-factor)" text="Khoảng bù tại nếp cấn theo độ dày giấy.">
-          <SegmentedControl label="K-factor" value={preferences.kFactor} onChange={(value) => set('kFactor', value)} options={['K-0.45', 'K-0.68'].map((v) => ({ value: v as Preferences['kFactor'], label: v }))} />
+          <SegmentedControl tone="ink" label="K-factor" value={preferences.kFactor} onChange={(value) => set('kFactor', value)} options={['K-0.45', 'K-0.68'].map((v) => ({ value: v as Preferences['kFactor'], label: v }))} />
         </SettingRow>
         <SettingRow icon={BoxIcon} title="Mở nắp khi xem 3D" text="Hộp 3D mở nắp sẵn khi vào studio.">
-          <Toggle checked={preferences.unbox} onChange={(value) => set('unbox', value)} label="Mở nắp khi xem 3D" />
+          <Toggle tone="ink" checked={preferences.unbox} onChange={(value) => set('unbox', value)} label="Mở nắp khi xem 3D" />
         </SettingRow>
         <SettingRow icon={HistoryIcon} title="Tự động lưu mốc phiên bản" text="Tạo một mốc khi bạn rời studio.">
-          <Toggle checked={preferences.snapshot} onChange={(value) => set('snapshot', value)} label="Tự động lưu mốc phiên bản" />
+          <Toggle tone="ink" checked={preferences.snapshot} onChange={(value) => set('snapshot', value)} label="Tự động lưu mốc phiên bản" />
         </SettingRow>
         <SettingRow icon={FileIcon} title="Định dạng xuất mặc định" text="PDF CMYK 300 DPI cho nhà in, SVG để chỉnh sửa, DXF cho máy cắt.">
-          <SegmentedControl label="Định dạng xuất mặc định" value={preferences.format} onChange={(value) => set('format', value)} options={['PDF', 'SVG', 'DXF'].map((v) => ({ value: v as Preferences['format'], label: v }))} />
+          <SegmentedControl tone="ink" label="Định dạng xuất mặc định" value={preferences.format} onChange={(value) => set('format', value)} options={['PDF', 'SVG', 'DXF'].map((v) => ({ value: v as Preferences['format'], label: v }))} />
         </SettingRow>
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-end gap-2 border-t border-library-line pt-4">
-        <span aria-live="polite" className="mr-auto text-sm text-library-accent">
+        <span aria-live="polite" className="mr-auto text-sm text-fpt-orange-ink">
           {flash ? 'Đã lưu trên trình duyệt này.' : ''}
         </span>
         <button type="button" onClick={() => setPreferences(DEFAULT_PREFERENCES)} className={outlineButton}>
