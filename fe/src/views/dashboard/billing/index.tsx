@@ -8,11 +8,12 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Building2, CalendarClock, CreditCard, Landmark, QrCode, Receipt, Tag, Wallet } from 'lucide-react';
+import { ArrowRight, Building2, CalendarClock, Landmark, Receipt, Tag } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { listMyOrders } from '@/api/orders';
 import { outlineButton, primaryButton } from '@/components/library';
+import { PaymentMark } from '@/components/layout/PaymentLogos';
 import { Badge, DataTable, Meter, Panel, PanelTitle, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
@@ -35,9 +36,10 @@ export default function BillingPage() {
 const PAID = new Set(['delivered', 'DELIVERED']);
 
 const METHODS = [
-  { icon: QrCode, title: 'VietQR / chuyển khoản', text: 'Mọi ngân hàng Việt Nam, xác nhận trong vài phút' },
-  { icon: Wallet, title: 'Ví MoMo', text: 'Quét mã trong ứng dụng MoMo' },
-  { icon: CreditCard, title: 'Thẻ ATM nội địa (Napas)', text: 'Qua cổng thanh toán của ngân hàng' },
+  // Each method shows the same brand mark as the footer.
+  { mark: 'vietqr' as const, title: 'VietQR / chuyển khoản', text: 'Mọi ngân hàng Việt Nam, xác nhận trong vài phút' },
+  { mark: 'momo' as const, title: 'Ví MoMo', text: 'Quét mã trong ứng dụng MoMo' },
+  { mark: 'napas' as const, title: 'Thẻ ATM nội địa (Napas)', text: 'Qua cổng thanh toán của ngân hàng' },
 ];
 
 const BILLING_KEY = 'wrapfit:billing-details';
@@ -128,7 +130,7 @@ function BillingScreen() {
 
           {/* History */}
           <Panel>
-            <PanelTitle action={<Link href="/dashboard/orders" className="text-sm font-medium text-library-accent hover:underline">Theo dõi sản xuất</Link>}>Lịch sử thanh toán</PanelTitle>
+            <PanelTitle action={<Link href="/dashboard/orders" className="text-sm font-medium text-fpt-orange-ink hover:underline">Theo dõi sản xuất</Link>}>Lịch sử thanh toán</PanelTitle>
             <div className="mt-4">
               {orders.isError ? (
                 <WorkspaceError error={orders.error} onRetry={() => orders.refetch()} retrying={orders.isFetching} />
@@ -161,8 +163,8 @@ function BillingScreen() {
             <p className="mt-2 text-sm text-library-sub">Chưa lưu phương thức nào. WrapFit không lưu số thẻ; bạn chọn cách trả ở bước thanh toán.</p>
             <ul className="mt-4 flex flex-col gap-2">
               {METHODS.map((method) => (
-                <li key={method.title} className="flex items-start gap-3 rounded-xl border border-library-line p-3">
-                  <method.icon className="mt-0.5 size-5 shrink-0 text-library-ink" aria-hidden />
+                <li key={method.title} className="flex items-center gap-3 rounded-xl border border-library-line p-3">
+                  <PaymentMark method={method.mark} className="shrink-0" />
                   <span>
                     <span className="block text-sm font-medium text-library-ink">{method.title}</span>
                     <span className="block text-xs text-library-sub">{method.text}</span>
@@ -220,7 +222,7 @@ function PromoPanel() {
           <Tag className="size-4" aria-hidden /> Kiểm tra
         </button>
       </div>
-      {result && <p className={cn('mt-2 text-xs', result.ok ? 'text-library-accent' : 'text-danger-fg')}>{result.text}</p>}
+      {result && <p className={cn('mt-2 text-xs', result.ok ? 'text-fpt-orange-ink' : 'text-danger-fg')}>{result.text}</p>}
     </Panel>
   );
 }
