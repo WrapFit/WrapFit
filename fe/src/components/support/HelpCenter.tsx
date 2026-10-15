@@ -44,6 +44,13 @@ export function HelpCenter() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // /support?a=<article id> opens that article (links from the site search and the blog).
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("a");
+    const article = id ? ALL_ARTICLES.find((item) => item.id === id) : undefined;
+    if (article) setOpen(article);
+  }, []);
+
   const results = useMemo(() => {
     const words = fold(query).split(/\s+/).filter(Boolean);
     if (!words.length) return null;
@@ -69,7 +76,7 @@ export function HelpCenter() {
           </p>
           <form role="search" onSubmit={(event) => event.preventDefault()} className="mx-auto mt-8 max-w-2xl lg:mt-10">
             <div className="rounded-full bg-white/60 p-2 shadow-soft-8 ring-1 ring-landing-ink/5">
-              <label className="flex h-12 items-center gap-2.5 rounded-full border border-landing-line bg-white px-4 focus-within:border-landing-ink/40">
+              <label className="flex h-12 items-center gap-2.5 rounded-full border border-landing-line bg-white px-4 focus-within:border-focus focus-within:ring-[3px] focus-within:ring-focus/30">
                 <Search className="size-5 shrink-0 text-landing-muted" aria-hidden />
                 <span className="sr-only">Tìm trong trung tâm hỗ trợ</span>
                 <input
@@ -92,6 +99,19 @@ export function HelpCenter() {
               </label>
             </div>
           </form>
+          {/* Table of contents: jump to a topic */}
+          <nav aria-label="Chủ đề hỗ trợ" className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2">
+            {CATEGORIES.map((category) => (
+              <a
+                key={category.id}
+                href={`#${category.id}`}
+                onClick={() => setQuery("")}
+                className="inline-flex h-9 items-center rounded-full bg-white px-4 text-sm font-medium text-landing-ink ring-1 ring-landing-line transition-colors hover:bg-landing-tile/60"
+              >
+                {category.title}
+              </a>
+            ))}
+          </nav>
         </Container>
       </header>
 
@@ -227,7 +247,8 @@ function NeedSupport() {
   return (
     <section className="pb-12 lg:pb-24">
       <Container>
-        <div className="relative flex flex-col items-center gap-4 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#FFF7ED] via-[#FFE9D2] to-[#FFD5A8] px-6 py-20 text-center lg:rounded-[3rem] lg:py-40">
+        {/* ds-allow: peach hero gradient of the help centre (illustration). */}
+        <div className="relative flex flex-col items-center gap-4 overflow-hidden rounded-card bg-gradient-to-br from-[#FFF7ED] via-[#FFE9D2] to-[#FFD5A8] px-6 py-20 text-center lg:rounded-card-lg lg:py-40">
           <GoiMascot pose="waving" size={72} label="Gói" />
           <h2 className="font-landing-heading text-3xl font-bold text-landing-green-night lg:text-4xl">Cần hỗ trợ thêm?</h2>
           <p className="max-w-xl text-base text-landing-green-night lg:text-lg">
