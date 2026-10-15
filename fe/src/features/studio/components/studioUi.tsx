@@ -8,12 +8,22 @@ import { cn } from "@/utils/helpers";
 // Building blocks of the four studio steps, in the pack.ly style: slate canvas, white 28 px cards, bold headings,
 // lime pill actions.
 
+/**
+ * Flat tool button of the toolbars attached to the 3D stage and the dieline canvas: no fill until hovered, grey when
+ * on. Nothing floats over the model; controls live in one bar at its edge.
+ */
+export const stageBarButton = (on = false) =>
+  cn(
+    "inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-md px-2.5 text-label-sm outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:opacity-40",
+    on ? "bg-surface-sunken text-fg" : "text-fg-muted hover:bg-surface-sunken/70 hover:text-fg",
+  );
+
 /** Eyebrow, big bold title and a muted line, as on pack.ly's tool pages. */
-export function StepHeader({ step, title, subtitle, actions }: { step: string; title: string; subtitle?: string; actions?: React.ReactNode }) {
+export function StepHeader({ step, title, subtitle, actions }: { step?: string; title: string; subtitle?: string; actions?: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-label font-semibold text-success-fg">{step}</p>
+        {step && <p className="text-label font-semibold text-success-fg">{step}</p>}
         <h1 className="mt-1 font-landing-heading text-heading-lg text-fg">{title}</h1>
         {subtitle && <p className="mt-1.5 max-w-2xl text-body text-fg-muted">{subtitle}</p>}
       </div>
@@ -75,7 +85,7 @@ export function ViewToggle<T extends string>({
 export function MetricRow({ icon: Icon, label, value, hint }: { icon: LucideIcon; label: string; value: React.ReactNode; hint?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-landing-canvas p-3">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-landing-green">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-fpt-orange">
         <Icon className="size-5" strokeWidth={1.75} aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
@@ -87,8 +97,8 @@ export function MetricRow({ icon: Icon, label, value, hint }: { icon: LucideIcon
   );
 }
 
-/** Lime main action (shared Button, xl). */
-export const PRIMARY_PILL = buttonClass({ variant: "primary", size: "xl" });
+/** Orange main action (shared Button, xl). */
+export const PRIMARY_PILL = buttonClass({ variant: "brand", size: "xl" });
 /** White secondary action (shared Button, xl). */
 export const SECONDARY_PILL = buttonClass({ variant: "secondary", size: "xl", className: "ring-0 font-medium" });
 
