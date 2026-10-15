@@ -1,3 +1,4 @@
+/* ds-artwork: logo lockup: its sizes and the FPT orange are part of the mark. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
 import Link from "next/link";
 import React from "react";
 import { cn } from "@/utils/helpers";
@@ -26,6 +27,7 @@ export function LandingLogo({ tone = "dark", className, size = "md" }: LandingLo
     <Link
       href="/"
       aria-label="WrapFit — trang chủ"
+      data-logo=""
       className={cn("group inline-flex shrink-0 items-center gap-2.5 select-none", className)}
       style={{ textDecoration: "none" }}
     >
@@ -70,7 +72,7 @@ export function LandingLogo({ tone = "dark", className, size = "md" }: LandingLo
 
       <span className={cn("font-landing-heading font-bold leading-none tracking-tight", textClass)}>
         <span className={tone === "dark" ? "text-stone-900" : "text-white"}>Wrap</span>
-        <span className="text-[#F26522]">Fit</span>
+        <span className="text-fpt-orange">Fit</span>
       </span>
     </Link>
   );
