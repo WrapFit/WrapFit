@@ -4,7 +4,7 @@ import { animate } from "animejs";
 import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from "lucide-react";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { mediaUp } from "@/assets/styles/tokens";
-import { ApiError, errorMessage } from "@/services/api";
+import { errorMessage } from "@/services/api";
 
 export type ToastTone = "success" | "error" | "warning" | "info";
 
@@ -12,8 +12,6 @@ export interface ToastInput {
   tone?: ToastTone;
   title: string;
   description?: string;
-  /** Shown small so the user can quote it when reporting a bug. */
-  requestId?: string;
   durationMs?: number;
 }
 
@@ -74,7 +72,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         tone: "error",
         title,
         description: errorMessage(cause),
-        requestId: cause instanceof ApiError ? cause.requestId : undefined,
       }),
     [show],
   );
@@ -148,11 +145,6 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
       <div className="min-w-0 flex-1 pt-0.5">
         <p className="text-body-sm font-semibold text-fg">{toast.title}</p>
         {toast.description && <p className="mt-0.5 text-body-sm leading-snug text-fg-muted">{toast.description}</p>}
-        {toast.requestId && (
-          <p className="mt-1.5 break-all font-mono text-cad-spec-micro uppercase tracking-wider text-fg-muted">
-            Mã lỗi · {toast.requestId}
-          </p>
-        )}
       </div>
       <button
         type="button"
