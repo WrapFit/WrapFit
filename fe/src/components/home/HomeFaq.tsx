@@ -34,7 +34,7 @@ const HOME_FAQS: FaqItem[] = [
   {
     question: "Làm sao để tôi được cầm mẫu hộp thực tế trên tay trước khi quyết định in số lượng lớn?",
     answer:
-      "WrapFit liên kết với mạng lưới xưởng in đối tác hỗ trợ in thử đúng 01 hộp mẫu thực tế gửi tận tay bạn kiểm định trước khi in loạt. Ngoài ra, bạn có thể tham gia Danh sách chờ (Waitlist) đợt 1 ngay trên trang để nhận gói tài trợ in 01 hộp mẫu hoàn toàn miễn phí.",
+      "WrapFit liên kết với mạng lưới xưởng in đối tác hỗ trợ in thử đúng 01 hộp mẫu thực tế gửi tận tay bạn kiểm định trước khi in loạt. Bạn đặt hộp mẫu ngay từ dự án của mình qua Giỏ in mẫu, không cần đặt số lượng tối thiểu.",
     highlight: "In mẫu thử 01 hộp tận tay",
   },
   {
@@ -53,7 +53,7 @@ export function HomeFaq() {
           <div className="mb-10 flex flex-col items-center text-center lg:mb-14">
             <Reveal variant="text" className="flex flex-col items-center">
               <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-line/80 bg-white/90 px-3.5 py-1.5 shadow-soft-8 backdrop-blur-md">
-                <HelpCircle className="size-3.5 text-fpt-orange-ink" aria-hidden />
+                <HelpCircle className="size-3.5 text-fpt-orange" aria-hidden />
                 <span className="text-overline uppercase text-fg-muted">Giải đáp thắc mắc thường gặp</span>
               </div>
               <h2 className="font-landing-heading text-heading-lg text-fg">Những Câu Hỏi Phổ Biến Nhất</h2>
@@ -82,7 +82,7 @@ export function HomeFaq() {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-body-sm text-fg-muted">
             <MessageCircleQuestion className="size-4" aria-hidden />
             <span>Bạn còn thắc mắc khác? Ghé thăm</span>
-            <Link href="/support" className="font-semibold text-fg underline underline-offset-4 transition-colors hover:text-success-fg">
+            <Link href="/support" className="font-semibold text-fg underline underline-offset-4 transition-colors hover:text-fpt-orange-ink">
               Trung tâm hỗ trợ
             </Link>
             <span>hoặc nhắn tin trực tiếp với Trợ lý Gói!</span>
