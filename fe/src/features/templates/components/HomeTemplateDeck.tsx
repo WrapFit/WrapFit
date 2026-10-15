@@ -67,10 +67,10 @@ export function HomeTemplateDeck() {
             <span className="inline-block w-2 h-2 rounded-full bg-[#133020]"></span>
             <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">WRAPFIT CURATED · 3D STACKED DECK</span>
           </div>
-          <h2 className="font-headline-lg text-[32px] md:text-[40px] text-brand-forest-deep font-['Playfair_Display'] font-medium tracking-tight">
+          <h2 className="font-headline-lg text-[32px] md:text-[40px] text-brand-forest-deep font-landing-heading font-medium tracking-tight">
             Thư Viện Cấu Trúc Mẫu
           </h2>
-          <p className="font-body-md text-sm md:text-base text-[#485950] mt-1 font-['Plus_Jakarta_Sans']">
+          <p className="font-body-md text-sm md:text-base text-[#485950] mt-1 font-landing-body">
             Mẫu hộp dựng sẵn trên 4 cấu trúc chuẩn ECMA/FEFCO. Chọn một mẫu, đổi kích thước theo món quà và xuất dieline vector sẵn sàng sản xuất.
           </p>
         </div>
@@ -249,7 +249,7 @@ function DeckCard({
         </div>
 
         <div className="card-caption w-full pt-4 flex flex-col items-center">
-          <h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-brand-forest-deep font-semibold text-center font-['Playfair_Display']">
+          <h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-brand-forest-deep font-semibold text-center font-landing-heading">
             {card.title}
           </h3>
           <div
