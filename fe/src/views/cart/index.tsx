@@ -123,7 +123,7 @@ function CartScreen() {
     return (
       <Container className="max-w-3xl pb-16 pt-28 sm:pt-32">
         <Card className="text-center sm:p-10">
-          <CheckCircle2 className="mx-auto size-12 text-landing-green" aria-hidden />
+          <CheckCircle2 className="mx-auto size-12 text-fpt-orange-ink" aria-hidden />
           <h1 className="mt-4 font-landing-heading text-3xl font-bold">Đã gửi {placed.length} đơn in mẫu</h1>
           <p className="mt-2 text-sm text-landing-muted">Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in.</p>
           <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left">
@@ -158,7 +158,7 @@ function CartScreen() {
           <h1 className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">Giỏ in mẫu</h1>
           <p className="mt-1 text-sm text-landing-muted">In 1–{MAX_QUANTITY} hộp mỗi thiết kế để kiểm tra màu và độ vừa trước khi in số lượng.</p>
         </div>
-        <Link href="/support?a=dinh-dang-xuat" className="inline-flex items-center gap-1.5 text-sm font-semibold text-landing-green-deep">
+        <Link href="/support?a=dinh-dang-xuat" className="inline-flex items-center gap-1.5 text-sm font-semibold text-fpt-orange-ink">
           <LifeBuoy className="size-4" aria-hidden /> Cần giúp chọn giấy?
         </Link>
       </div>
@@ -230,7 +230,7 @@ function CartScreen() {
                 <dd className="font-semibold">{formatVnd(subtotal)}</dd>
               </div>
               {applied && (
-                <div className="flex justify-between text-landing-green-deep">
+                <div className="flex justify-between text-fpt-orange-ink">
                   <dt>{PROMO_CODES[applied].label}</dt>
                   <dd className="font-semibold">−{formatVnd(discount)}</dd>
                 </div>
@@ -251,7 +251,7 @@ function CartScreen() {
                 <Tag className="size-4" aria-hidden /> Mã ưu đãi
               </label>
               <div className="mt-1 flex gap-2">
-                <input id="promo" value={promo} onChange={(event) => setPromo(event.target.value)} placeholder="WORKSHOPTET" className="h-10 min-w-0 flex-1 rounded-full bg-landing-canvas px-4 font-mono text-sm uppercase outline-none ring-1 ring-landing-line focus-visible:ring-landing-green" />
+                <input id="promo" value={promo} onChange={(event) => setPromo(event.target.value)} placeholder="WORKSHOPTET" className="h-10 min-w-0 flex-1 rounded-full bg-landing-canvas px-4 font-mono text-sm uppercase outline-none ring-1 ring-landing-line focus-visible:ring-fpt-orange" />
                 <button type="button" onClick={applyPromo} className="h-10 rounded-full bg-landing-ink px-4 text-sm font-semibold text-white">
                   Áp dụng
                 </button>
@@ -288,12 +288,12 @@ function CartScreen() {
             ).map(([key, label, autoComplete, placeholder]) => (
               <label key={key} className="text-sm font-medium">
                 {label}
-                <input value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} autoComplete={autoComplete} placeholder={placeholder} className="mt-1 h-11 w-full rounded-xl bg-landing-canvas px-3 text-sm outline-none ring-1 ring-landing-line focus-visible:ring-landing-green" />
+                <input value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} autoComplete={autoComplete} placeholder={placeholder} className="mt-1 h-11 w-full rounded-xl bg-landing-canvas px-3 text-sm outline-none ring-1 ring-landing-line focus-visible:ring-fpt-orange" />
               </label>
             ))}
             <label className="text-sm font-medium">
               Ghi chú cho xưởng
-              <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} rows={2} placeholder="Cán mờ, giao giờ hành chính…" className="mt-1 w-full rounded-xl bg-landing-canvas p-3 text-sm outline-none ring-1 ring-landing-line focus-visible:ring-landing-green" />
+              <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} rows={2} placeholder="Cán mờ, giao giờ hành chính…" className="mt-1 w-full rounded-xl bg-landing-canvas p-3 text-sm outline-none ring-1 ring-landing-line focus-visible:ring-fpt-orange" />
             </label>
 
             {(formError || order.error) && (
