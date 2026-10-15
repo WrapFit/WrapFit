@@ -7,8 +7,8 @@ export type FormAlertTone = "error" | "success" | "info";
 const TONES: Record<FormAlertTone, { box: string; icon: string; Icon: typeof Info }> = {
   // The text stays dark ink so it keeps AA contrast on the tinted background.
   error: {
-    box: "border-red-200 bg-red-50 text-landing-ink",
-    icon: "text-red-600",
+    box: "border-danger/30 bg-danger-bg text-landing-ink",
+    icon: "text-danger-fg",
     Icon: AlertTriangle,
   },
   success: {
@@ -45,7 +45,7 @@ export function FormAlert({ tone = "error", title, children, requestId, classNam
         {title && <p className="font-semibold">{title}</p>}
         {children && <div>{children}</div>}
         {requestId && (
-          <p className="mt-1 break-all font-mono text-[11px] opacity-75">
+          <p className="mt-1 break-all font-mono text-cad-spec-micro opacity-75">
             Mã lỗi · {requestId}
           </p>
         )}
