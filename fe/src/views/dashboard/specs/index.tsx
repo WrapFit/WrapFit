@@ -89,7 +89,7 @@ function SpecsScreen() {
                     <line x1="0" y1="6" x2="48" y2="6" stroke={layer.stroke} strokeWidth="2" strokeDasharray={layer.dash} strokeLinecap="round" />
                   </svg>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-medium text-library-ink">{layer.name}</span>
+                    <span className="block text-body font-medium text-library-ink">{layer.name}</span>
                     <span className="block text-sm text-library-sub">{layer.text}</span>
                   </span>
                 </li>
@@ -108,7 +108,7 @@ function SpecsScreen() {
               {RULES.map((rule) => (
                 <li key={rule.title} className="flex items-start justify-between gap-4 py-3">
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-medium text-library-ink">{rule.title}</span>
+                    <span className="block text-body font-medium text-library-ink">{rule.title}</span>
                     <span className="block text-sm text-library-sub">{rule.text}</span>
                   </span>
                   {rule.severity === 'error' ? <Badge tone="red">Lỗi −30</Badge> : <Badge tone="amber">Cảnh báo −10</Badge>}
@@ -130,8 +130,8 @@ function SpecsScreen() {
             <dl className="grid grid-cols-3 gap-2 text-center">
               {[
                 { label: 'Đạt', value: '90–100', className: 'bg-library-accent-mist text-library-accent' },
-                { label: 'Cần xem', value: '70–89', className: 'bg-amber-50 text-amber-800' },
-                { label: 'Chưa đạt', value: '< 70', className: 'bg-red-50 text-red-700' },
+                { label: 'Cần xem', value: '70–89', className: 'bg-warning-bg text-warning-fg' },
+                { label: 'Chưa đạt', value: '< 70', className: 'bg-danger-bg text-danger-fg' },
               ].map((band) => (
                 <div key={band.label} className={`rounded-xl px-4 py-3 ${band.className}`}>
                   <dt className="text-xs">{band.label}</dt>

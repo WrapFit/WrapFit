@@ -4,6 +4,7 @@ import React from "react";
 import { errorMessage } from "@/services/api";
 import type { Collection } from "@/types/api";
 import { MAX_COLLECTIONS } from "../format";
+import { Icon } from "@/components/ui";
 
 /** `undefined` = every project, `"none"` = outside any folder, otherwise a collection id (`GET /projects?collectionId=`). */
 export type FolderFilter = string | undefined;
@@ -65,9 +66,7 @@ export function FolderBar({
     <div className="flex w-full flex-col gap-2 pb-5">
       <div className="flex items-center gap-2">
         <span className="hidden shrink-0 items-center gap-1.5 text-sm text-library-muted sm:flex">
-          <span aria-hidden="true" className="material-symbols-outlined text-base">
-            folder
-          </span>
+          <Icon name="folder" className="size-4" />
           Thư mục
         </span>
         <div
@@ -110,9 +109,7 @@ export function FolderBar({
           title={full ? `Tối đa ${MAX_COLLECTIONS} thư mục` : "Tạo thư mục mới"}
           className={`${TOOL} min-w-[44px] shrink-0 justify-center border border-library-ink bg-white text-library-ink enabled:hover:bg-library-panel disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-lg">
-            create_new_folder
-          </span>
+          <Icon name="create_new_folder" className="size-[18px]" />
           <span className="hidden sm:inline">Thư mục mới</span>
         </button>
       </div>
@@ -120,11 +117,9 @@ export function FolderBar({
       {Boolean(error) && !collections && (
         <div
           role="alert"
-          className="flex flex-wrap items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm text-red-800"
+          className="flex flex-wrap items-center gap-2 rounded-xl bg-danger-bg px-4 py-2 text-sm text-danger-fg"
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-base">
-            error
-          </span>
+          <Icon name="error" className="size-4" />
           <span>Không tải được thư mục: {errorMessage(error)}</span>
           <button
             type="button"
@@ -163,19 +158,15 @@ export function FolderBar({
               onClick={() => onEdit(active)}
               className={`${TOOL} text-library-ink hover:bg-library-panel`}
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                edit
-              </span>
+              <Icon name="edit" className="size-[18px]" />
               Sửa
             </button>
             <button
               type="button"
               onClick={() => onDelete(active)}
-              className={`${TOOL} text-red-700 hover:bg-red-50`}
+              className={`${TOOL} text-danger-fg hover:bg-danger-bg`}
             >
-              <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                folder_delete
-              </span>
+              <Icon name="folder_delete" className="size-[18px]" />
               Xoá thư mục
             </button>
           </div>

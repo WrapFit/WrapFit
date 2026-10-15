@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CreditCard,
   Bell,
   FolderOpen,
   Layers,
@@ -59,6 +60,7 @@ export const WORKSPACE_NAV: NavGroup[] = [
     title: "Tài khoản",
     items: [
       { href: ROUTES.profile, label: "Hồ sơ", icon: UserRound },
+      { href: "/dashboard/billing", label: "Thanh toán & gói", icon: CreditCard },
       { href: ROUTES.settings, label: "Cài đặt", icon: Settings },
     ],
   },
@@ -156,7 +158,7 @@ export function ShellLayout({ title, description, actions, children, nav, root, 
                   <span className="mx-2">/</span>
                   <span>{title}</span>
                 </p>
-                <h1 className="mt-1 text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">{title}</h1>
+                <h1 className="mt-1 text-2xl font-medium text-library-ink sm:text-heading-lg sm:leading-tight">{title}</h1>
                 {description && <div className="mt-1.5 max-w-2xl text-base leading-[1.6] text-library-sub">{description}</div>}
               </div>
               {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -178,7 +180,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex h-10 items-center gap-2.5 rounded-lg border-[1.5px] px-3 text-[15px] text-library-ink transition-colors",
+        "flex h-10 items-center gap-2.5 rounded-lg border-[1.5px] px-3 text-body text-library-ink transition-colors",
         active ? "border-library-ink bg-white shadow-hard-sm" : "border-transparent hover:bg-library-panel"
       )}
     >
@@ -201,7 +203,7 @@ function PlanCard() {
       {storage.data && (
         <>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white" aria-hidden>
-            <div className={cn("h-full rounded-full", percent >= 90 ? "bg-red-500" : "bg-library-accent")} style={{ width: `${percent}%` }} />
+            <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-library-accent")} style={{ width: `${percent}%` }} />
           </div>
           <p className="mt-1.5 text-xs text-library-sub">
             {formatBytes(storage.data.usedBytes)} / {formatBytes(storage.data.quotaBytes)}

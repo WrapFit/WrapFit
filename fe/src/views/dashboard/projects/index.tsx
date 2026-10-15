@@ -289,7 +289,7 @@ function DashboardProjectsScreen() {
         />
 
         {status === 'DELETED' && (
-          <p className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm leading-[1.6] text-red-800">
+          <p className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-bg/60 px-4 py-3 text-sm leading-[1.6] text-danger-fg">
             <Trash2 className="mt-0.5 size-4 shrink-0" aria-hidden />
             Dự án trong thùng rác tự xoá vĩnh viễn sau {TRASH_RETENTION_DAYS} ngày, cùng các tệp gắn với dự án. Khôi phục để tiếp tục chỉnh sửa.
           </p>
