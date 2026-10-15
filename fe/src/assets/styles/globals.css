@@ -5,6 +5,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Semantic colour variables (--ds-fg, --ds-action, --ds-success…) are generated from src/assets/styles/tokens.ts by
+ * the Tailwind config; the variables below are the older primitive palette, kept for CSS that is not Tailwind.
+ */
 :root {
   /* Surface & Papers */
   --color-paper-ivory: #FDFBF7;
@@ -56,6 +60,31 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+@layer base {
+  /*
+   * One focus indicator for the whole app: a 2 px cobalt outline for keyboard users. Components that draw their own
+   * ring (focus-visible:ring-*) remove the outline with outline-none; nothing else should.
+   */
+  :focus-visible {
+    outline: 2px solid rgb(var(--ds-focus));
+    outline-offset: 2px;
+  }
+
+  /* Visitors who asked for less motion get no smooth scrolling and near-instant transitions everywhere. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
 /* Luxury Paper Texture Gradient Overlay */
 .bg-paper-grain {
   background-color: #FDFBF7;
@@ -95,7 +124,7 @@ body {
 .dieline-crease {
   stroke: #3182CE;
   stroke-width: 1.5;
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 4 4; /* AGENTS.md §1 */
 }
 
 .dieline-bleed {
@@ -152,6 +181,31 @@ input[type="range"]::-webkit-slider-thumb:hover {
 input[type="range"]::-webkit-slider-thumb:active {
   transform: scale(1.25);
   background: #2563EB;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #1A362B;
+  cursor: pointer;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(26, 54, 43, 0.35);
+}
+
+input[type="range"]::-moz-range-thumb:hover,
+input[type="range"]::-moz-range-thumb:active {
+  background: #2563EB;
+}
+
+input[type="range"]:focus-visible {
+  outline: 2px solid rgb(var(--ds-focus));
+  outline-offset: 4px;
+}
+
+input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Custom Scrollbar for Studio */
