@@ -47,11 +47,11 @@ export const BottomNavBar: React.FC = () => {
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isHome
             ? "bg-landing-green-night text-white shadow-tactile scale-105"
-            : "text-stone-500 hover:text-landing-green-deep"
+            : "text-fg-muted hover:text-landing-green-deep"
         }`}
       >
         <Home className="w-4 h-4" />
-        <span className="text-[10px] font-semibold">Trang Chủ</span>
+        <span className="text-caption font-semibold">Trang Chủ</span>
       </Link>
 
       {/* 2. Projects Dashboard */}
@@ -61,11 +61,11 @@ export const BottomNavBar: React.FC = () => {
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isDashboard
             ? "bg-landing-green-night text-white shadow-tactile scale-105"
-            : "text-stone-500 hover:text-landing-green-deep"
+            : "text-fg-muted hover:text-landing-green-deep"
         }`}
       >
         <FolderHeart className="w-4 h-4" />
-        <span className="text-[10px] font-semibold">Dự Án</span>
+        <span className="text-caption font-semibold">Dự Án</span>
       </Link>
 
       {/* 3. 2D/3D Studio */}
@@ -75,11 +75,11 @@ export const BottomNavBar: React.FC = () => {
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isStudio
             ? "bg-vibrant-cobalt text-white shadow-cobalt-glow scale-105"
-            : "text-stone-500 hover:text-vibrant-cobalt"
+            : "text-fg-muted hover:text-vibrant-cobalt"
         }`}
       >
         <Box className="w-4 h-4" />
-        <span className="text-[10px] font-semibold">Studio 3D</span>
+        <span className="text-caption font-semibold">Studio 3D</span>
       </Link>
 
       {/* 4. Mascot Copilot Quick Action */}
@@ -92,11 +92,11 @@ export const BottomNavBar: React.FC = () => {
             window.dispatchEvent(new CustomEvent("wrapfit_toggle_copilot"));
           }
         }}
-        className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-full text-stone-600 hover:text-landing-green-deep transition"
+        className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-full text-fg-muted hover:text-landing-green-deep transition"
         title="Trợ lý AI Gói"
       >
         <GoiMascot pose="waving" size={26} showPhotoBadge={false} interactive={false} />
-        <span className="text-[10px] font-bold text-landing-green-deep">Bé Gói</span>
+        <span className="text-caption font-bold text-landing-green-deep">Bé Gói</span>
       </button>
     </nav>
   );
