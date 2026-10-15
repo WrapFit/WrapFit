@@ -13,7 +13,7 @@ export function UnboxFrame({ children }: { children: React.ReactNode }) {
         <LandingLogo />
         <Link
           href={ROUTES.editorNew}
-          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-landing-lime px-4 text-sm font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
+          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-fpt-orange px-4 text-sm font-semibold text-white transition-colors hover:bg-action-hover"
         >
           Tự thiết kế hộp quà
           <ArrowRight className="size-4" aria-hidden />
