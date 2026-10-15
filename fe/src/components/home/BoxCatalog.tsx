@@ -11,6 +11,7 @@ import { BoxQuickPreviewModal } from "./BoxQuickPreviewModal";
 import { Carousel, Container, Reveal, SectionHeading, Tag } from "@/components/landing";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
+import { buttonClass } from "@/components/ui";
 
 const SLIDE = "w-[85vw] sm:w-[340px] md:w-[380px] lg:w-[400px] xl:w-[420px]";
 
@@ -121,14 +122,14 @@ function StructureSmartCard({
   const templatesUrl = `${ROUTES.templates}?structure=${structure.id}`;
 
   return (
-    <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-landing-ink/20 hover:shadow-soft-16">
+    <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-line/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-landing-ink/20 hover:shadow-soft-16">
       {/* Card Header: Badges only (no size switcher) */}
-        <div className="flex items-center justify-between border-b border-stone-100 bg-stone-50/70 p-3.5">
+        <div className="flex items-center justify-between border-b border-line/60 bg-surface-sunken/70 p-3.5">
           <div className="flex items-center gap-1.5">
-            <span className="rounded-full border border-[#005CA9]/25 bg-[#E8F2FA] px-2.5 py-0.5 text-[11px] font-semibold text-[#005CA9] shadow-xs">
+            <span className="rounded-full border border-fpt-blue/25 bg-fpt-blue-light px-2.5 py-0.5 text-caption font-semibold text-fpt-blue shadow-xs">
               {structure.badge}
             </span>
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-[#6DB33F]">
+            <span className="flex items-center gap-1 text-caption font-semibold text-success-fg">
               <CheckCircle2 className="size-3" />
               CNC Ready
             </span>
@@ -142,8 +143,8 @@ function StructureSmartCard({
             className={cn(
               "inline-flex size-7 items-center justify-center rounded-full border transition-all duration-200",
               bookmarked
-                ? "border-[#F26522] bg-[#FEF1EA] text-[#F26522] shadow-xs"
-                : "border-stone-200/80 bg-white text-stone-400 hover:text-stone-800"
+                ? "border-fg bg-fg text-fg-inverse shadow-xs"
+                : "border-line/80 bg-white text-fg-muted hover:text-fg"
             )}
           >
             <Bookmark className={cn("size-3.5", bookmarked && "fill-current")} />
@@ -151,25 +152,25 @@ function StructureSmartCard({
         </div>
 
         {/* Blueprint Visual Area with CAD Grid & Hover Action Overlay */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:12px_12px] bg-slate-50/50">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:12px_12px] bg-surface-sunken/50">
           {/* Structure CAD Illustration */}
           <div className="flex size-full items-center justify-center p-6 transition-transform duration-300 group-hover:scale-105">
             <StructureArt structure={structure.id} className="size-full max-h-[160px] drop-shadow-sm" />
           </div>
 
           {/* Quick Action Overlay (Reveals on Hover: FPT Blue 3D button + FPT Orange Customize button) */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center gap-2.5 bg-stone-950/20 backdrop-blur-[3px] opacity-0 transition-all duration-200 group-hover:opacity-100 p-3">
+          <div className="absolute inset-0 z-20 flex items-center justify-center gap-2.5 bg-fg/20 backdrop-blur-[3px] opacity-0 transition-all duration-200 group-hover:opacity-100 p-3">
             <button
               type="button"
               onClick={handlePreviewClick}
-              className="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 px-3.5 text-xs font-bold text-stone-900 shadow-soft-8 backdrop-blur-md transition-all duration-200 hover:border-[#005CA9] hover:text-[#005CA9] hover:scale-105 active:scale-95"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line/90 bg-white/95 px-3.5 text-xs font-bold text-fg shadow-soft-8 backdrop-blur-md transition-all duration-200 hover:border-fpt-blue hover:text-fpt-blue hover:scale-105 active:scale-95"
             >
-              <Eye className="size-3.5 text-[#005CA9]" />
+              <Eye className="size-3.5 text-fpt-blue" />
               <span>Xem 3D nhanh</span>
             </button>
             <Link
               href={studioUrl}
-              className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-[#F26522] px-3.5 text-xs font-bold text-white shadow-soft-8 transition-all duration-200 hover:bg-[#D85314] hover:scale-105 active:scale-95"
+              className={buttonClass({ size: "sm", shape: "rounded" })}
             >
               <span>Tùy chỉnh ngay</span>
               <ArrowRight className="size-3.5" />
@@ -192,7 +193,7 @@ function StructureSmartCard({
               {structure.recommendedGifts.slice(0, 3).map((gift) => (
                 <span
                   key={gift}
-                  className="rounded-md border border-stone-200/70 bg-white px-2 py-0.5 text-[10px] text-stone-600 shadow-2xs"
+                  className="rounded-md border border-line/70 bg-white px-2 py-0.5 text-caption text-fg-muted shadow-2xs"
                 >
                   {gift}
                 </span>
@@ -201,10 +202,10 @@ function StructureSmartCard({
           </div>
 
           {/* Card Footer */}
-          <div className="mt-3.5 flex items-center justify-between border-t border-stone-100 pt-3">
+          <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-3">
             <Link
               href={templatesUrl}
-              className="text-xs font-medium text-landing-muted transition-colors hover:text-[#F26522] hover:underline"
+              className="text-caption font-medium text-fg-muted transition-colors hover:text-fg hover:underline"
             >
               Xem mẫu có sẵn →
             </Link>
@@ -214,14 +215,14 @@ function StructureSmartCard({
               <button
                 type="button"
                 onClick={handlePreviewClick}
-                className="inline-flex h-7 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 text-[11px] font-semibold text-stone-800 shadow-2xs"
+                className="inline-flex h-7 items-center gap-1 rounded-lg border border-line bg-white px-2 text-caption font-semibold text-fg shadow-2xs"
               >
-                <Eye className="size-3 text-[#005CA9]" />
+                <Eye className="size-3 text-fpt-blue" />
                 <span>3D</span>
               </button>
               <Link
                 href={studioUrl}
-                className="inline-flex h-7 items-center gap-1 rounded-lg bg-[#F26522] px-2 text-[11px] font-semibold text-white shadow-2xs"
+                className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange-ink px-2 text-label-sm text-white shadow-2xs"
               >
                 <span>Tùy chỉnh</span>
                 <ArrowRight className="size-3" />
@@ -275,7 +276,7 @@ function IndustrySmartCard({
   };
 
   return (
-    <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-landing-ink/20 hover:shadow-soft-16">
+    <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-line/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-landing-ink/20 hover:shadow-soft-16">
       {/* Cover Image & Hover Quick Action Overlay */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-landing-tile">
         <img
@@ -288,25 +289,25 @@ function IndustrySmartCard({
         {/* Top Badge: Safe inside top-3.5 right-3.5, never clipped */}
         {card.badge && (
           <div className="absolute top-3.5 right-3.5 z-10">
-            <span className="rounded-full bg-[#F26522] px-2.5 py-1 text-[11px] font-bold text-white shadow-soft-8 backdrop-blur-md">
+            <span className="rounded-full bg-fpt-orange-ink px-2.5 py-1 text-label-sm text-white shadow-soft-8 backdrop-blur-md">
               {card.badge}
             </span>
           </div>
         )}
 
         {/* Quick Action Overlay (Reveals on Hover: FPT Blue 3D button + FPT Orange Customize button) */}
-        <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-stone-950/25 p-3 opacity-0 backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100">
+        <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-fg/25 p-3 opacity-0 backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100">
           <button
             type="button"
             onClick={handlePreviewClick}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-200/90 bg-white/95 px-3 text-xs font-bold text-stone-900 shadow-soft-8 backdrop-blur-md transition-all duration-200 hover:border-[#005CA9] hover:text-[#005CA9] hover:scale-105 active:scale-95"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line/90 bg-white/95 px-3 text-xs font-bold text-fg shadow-soft-8 backdrop-blur-md transition-all duration-200 hover:border-fpt-blue hover:text-fpt-blue hover:scale-105 active:scale-95"
           >
-            <Eye className="size-3.5 text-[#005CA9]" />
+            <Eye className="size-3.5 text-fpt-blue" />
             <span>Xem 3D nhanh</span>
           </button>
           <Link
             href={studioUrl}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#F26522] px-3 text-xs font-bold text-white shadow-soft-8 transition-all duration-200 hover:bg-[#D85314] hover:scale-105 active:scale-95"
+            className={buttonClass({ size: "sm", shape: "rounded" })}
           >
             <span>Tùy chỉnh ngay</span>
             <ArrowRight className="size-3.5" />
@@ -318,7 +319,7 @@ function IndustrySmartCard({
       <div className="flex flex-1 flex-col justify-between p-4 pt-3.5">
         <div className="flex flex-col gap-2.5">
           <div>
-            <h3 className="font-landing-heading text-lg font-bold text-landing-ink transition-colors group-hover:text-[#F26522]">
+            <h3 className="font-landing-heading text-lg font-bold text-landing-ink transition-colors group-hover:text-success-fg">
               {card.title}
             </h3>
             {card.categoryTag && (
@@ -328,11 +329,11 @@ function IndustrySmartCard({
 
           {/* Recommended Packaging Structure */}
           {card.recommendedStructure && (
-            <div className="rounded-xl border border-stone-100 bg-stone-50/80 p-2.5 text-xs">
-              <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+            <div className="rounded-xl border border-line/60 bg-surface-sunken/80 p-2.5 text-xs">
+              <span className="block font-mono text-cad-spec-micro font-semibold uppercase tracking-wider text-fg-muted">
                 Cấu trúc khuyên dùng
               </span>
-              <span className="mt-0.5 block font-semibold text-stone-800">
+              <span className="mt-0.5 block font-semibold text-fg">
                 {card.recommendedStructure}
               </span>
             </div>
@@ -340,10 +341,10 @@ function IndustrySmartCard({
         </div>
 
         {/* Footer: Template Count Link & Mobile Buttons */}
-        <div className="mt-3.5 flex items-center justify-between border-t border-stone-100 pt-3">
+        <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-3">
           <Link
             href={card.href}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-700 transition-colors hover:text-[#F26522]"
+            className="inline-flex items-center gap-1.5 text-caption font-semibold text-fg-muted transition-colors hover:text-fg"
           >
             <span>Xem bộ mẫu ({card.templateCount ?? "30+"})</span>
             <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -354,14 +355,14 @@ function IndustrySmartCard({
             <button
               type="button"
               onClick={handlePreviewClick}
-              className="inline-flex h-7 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 text-[11px] font-semibold text-stone-800 shadow-2xs"
+              className="inline-flex h-7 items-center gap-1 rounded-lg border border-line bg-white px-2 text-caption font-semibold text-fg shadow-2xs"
             >
-              <Eye className="size-3 text-[#005CA9]" />
+              <Eye className="size-3 text-fpt-blue" />
               <span>3D</span>
             </button>
             <Link
               href={studioUrl}
-              className="inline-flex h-7 items-center gap-1 rounded-lg bg-[#F26522] px-2 text-[11px] font-semibold text-white shadow-2xs"
+              className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange-ink px-2 text-label-sm text-white shadow-2xs"
             >
               <span>Tùy chỉnh</span>
               <ArrowRight className="size-3" />
