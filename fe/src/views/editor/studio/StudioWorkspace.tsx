@@ -107,8 +107,8 @@ const SYNC_LABELS: Record<SyncState, { label: string; tone: "ok" | "busy" | "war
 };
 
 const DOT_CLASS = {
-  ok: "bg-emerald-500",
-  busy: "bg-amber-400 animate-pulse motion-reduce:animate-none",
+  ok: "bg-success",
+  busy: "bg-warning animate-pulse motion-reduce:animate-none",
   warn: "bg-vibrant-coral",
   muted: "bg-landing-muted",
 };
@@ -446,6 +446,7 @@ export function StudioWorkspace({
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
           {/* Left: logo, back & project title */}
           <div className="flex items-center gap-3 min-w-0">
+            {/* ds-allow: compact logo size in the studio bar. */}
             <LandingLogo className="hidden lg:inline-flex [&_span]:text-[22px] [&_svg]:size-7" />
             <span aria-hidden className="hidden lg:block h-7 w-px bg-landing-line" />
             <button
@@ -490,7 +491,7 @@ export function StudioWorkspace({
               className="flex items-center gap-1.5 2xl:px-3 py-1 rounded-full 2xl:bg-landing-canvas text-landing-muted text-xs max-w-[220px]"
             >
               <span className={`w-2 h-2 flex-shrink-0 rounded-full ${DOT_CLASS[syncTone]}`} aria-hidden />
-              <span title={syncLabel} className="sr-only 2xl:not-sr-only text-[11px] font-medium truncate whitespace-nowrap">
+              <span title={syncLabel} className="sr-only 2xl:not-sr-only text-caption font-medium truncate whitespace-nowrap">
                 {syncLabel}
               </span>
             </div>
@@ -502,7 +503,7 @@ export function StudioWorkspace({
                 setCurrentStep(6);
               }}
               title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
-              className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-landing-lime-mist text-landing-green-deep text-sm font-semibold transition-colors hover:bg-[#DDF5CC]"
+              className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-landing-lime-mist text-landing-green-deep text-sm font-semibold transition-colors hover:bg-landing-lime-soft/60"
             >
               <ShieldCheck className="w-4 h-4" />
               <span>FitCheck: {displayReport.score}/100</span>
@@ -517,7 +518,7 @@ export function StudioWorkspace({
               onClick={() => openDialog("export")}
               disabled={readOnly}
               aria-label="Xuất file in"
-              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-landing-lime hover:bg-action-hover text-landing-green-night text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Xuất file in</span>
@@ -531,7 +532,7 @@ export function StudioWorkspace({
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
           <div
             role="status"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[28px] bg-white"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-sheet bg-white"
           >
             <div className="flex items-center gap-3">
               <span className="w-10 h-10 flex-shrink-0 rounded-full bg-landing-canvas text-landing-muted flex items-center justify-center">
@@ -724,7 +725,7 @@ export function StudioWorkspace({
                 <button
                   type="button"
                   onClick={() => setCurrentStep(5)}
-                  className="min-h-[40px] px-4 rounded-full bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors"
+                  className="min-h-[40px] px-4 rounded-full bg-landing-lime hover:bg-action-hover text-landing-green-night text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors"
                 >
                   Xem 3D
                   <ArrowRight className="w-4 h-4" aria-hidden />
@@ -784,9 +785,9 @@ export function StudioWorkspace({
               </div>
 
               {/* RIGHT INSPECTOR DRAWER (3 cols) */}
-              <div className="lg:col-span-4 bg-white rounded-[28px] p-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-170px)] min-h-[580px]">
+              <div className="lg:col-span-4 bg-white rounded-sheet p-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-170px)] min-h-[580px]">
                 {/* Inspector Tabs */}
-                <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 bg-landing-tile p-1 rounded-full text-[13px]">
+                <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 bg-landing-tile p-1 rounded-full text-body-sm">
                   {[
                     { id: "style", label: "Kiểu" },
                     { id: "stickers", label: "Sticker" },
@@ -859,10 +860,10 @@ export function StudioWorkspace({
                       </span>
                       <div className="grid grid-cols-2 gap-2">
                         {[
-                          { id: "tet", label: "Hoa mai Tết 2026", color: "bg-amber-100 text-amber-900" },
-                          { id: "xmas", label: "Giáng Sinh & thông", color: "bg-emerald-100 text-emerald-900" },
-                          { id: "botanical", label: "Lá khuynh diệp", color: "bg-teal-100 text-teal-900" },
-                          { id: "gold", label: "Lưới vàng Art Deco", color: "bg-yellow-100 text-yellow-900" },
+                          { id: "tet", label: "Hoa mai Tết 2026", color: "bg-warning-bg text-warning-fg" },
+                          { id: "xmas", label: "Giáng Sinh & thông", color: "bg-success-bg text-success-fg" },
+                          { id: "botanical", label: "Lá khuynh diệp", color: "bg-success-bg text-success-fg" },
+                          { id: "gold", label: "Lưới vàng Art Deco", color: "bg-warning-bg text-warning-fg" },
                         ].map((pat) => (
                           <button
                             key={pat.id}
@@ -911,7 +912,7 @@ export function StudioWorkspace({
                 {activeInspectorTab === "fitcheck" && (
                   <div className="space-y-3 animate-fadeIn">
                     {!isDemo && (
-                      <p className="text-[11px] text-landing-muted leading-relaxed">
+                      <p className="text-caption text-landing-muted leading-relaxed">
                         {sync.dirty || !sync.serverReport
                           ? "Điểm tạm tính trên trình duyệt; máy chủ kiểm lại khi lưu."
                           : "Điểm do máy chủ kiểm ở lần lưu gần nhất, cũng là điểm dùng khi xuất file in."}

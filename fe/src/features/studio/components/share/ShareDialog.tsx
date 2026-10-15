@@ -186,7 +186,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               checked={current.allowFork}
               disabled={saving !== null}
               onChange={(event) => void changeVisibility({ allowFork: event.target.checked })}
-              className="w-5 h-5 flex-shrink-0 accent-[#2563EB]"
+              className="w-5 h-5 flex-shrink-0 accent-vibrant-cobalt"
             />
           </label>
         </div>

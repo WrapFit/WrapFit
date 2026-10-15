@@ -286,11 +286,11 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                 <span className="text-xs font-bold text-landing-ink tracking-tight font-landing-heading truncate">
                   Gói — AI packaging copilot
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-landing-green/10 text-landing-green">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-caption font-bold bg-landing-green/10 text-landing-green">
                   BETA
                 </span>
               </div>
-              <p className="text-[11px] text-landing-muted truncate max-w-[190px] sm:max-w-[240px]">
+              <p className="text-caption text-landing-muted truncate max-w-[190px] sm:max-w-[240px]">
                 {headline}
               </p>
             </div>
@@ -324,9 +324,9 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
 
         {/* Expanded Intelligence Body */}
         {isExpanded && (
-          <div ref={contentRef} className="px-4 pb-4 pt-1 space-y-3.5 border-t border-[#F2ECE3]">
+          <div ref={contentRef} className="px-4 pb-4 pt-1 space-y-3.5 border-t border-paper-linen">
             {/* AI Speech Bubble */}
-            <div className="bg-[#FAF6EE] p-3 rounded-3xl border border-landing-line relative">
+            <div className="bg-paper-cotton p-3 rounded-3xl border border-landing-line relative">
               <div className="flex items-start gap-2.5">
                 <div className="w-2 h-2 rounded-full bg-landing-green mt-1.5 flex-shrink-0 animate-ping" />
                 <p className="text-xs leading-relaxed text-landing-ink">{message}</p>
@@ -358,10 +358,10 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
             {/* Quick Gift Heuristics Carousel / Chips */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-landing-ink uppercase tracking-wider font-mono">
+                <span className="text-cad-spec-micro font-bold text-landing-ink uppercase tracking-wider font-mono">
                   Gợi ý kích thước theo quà tặng
                 </span>
-                <span className="text-[10px] text-landing-muted">Chuẩn mm</span>
+                <span className="text-caption text-landing-muted">Chuẩn mm</span>
               </div>
 
               <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
@@ -375,7 +375,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                     <span className="text-xs font-semibold text-landing-ink group-hover:text-landing-ink line-clamp-1">
                       {item.name}
                     </span>
-                    <span className="text-[10px] font-mono text-landing-muted">
+                    <span className="text-cad-spec-micro font-mono text-landing-muted">
                       {item.dimensions.length}x{item.dimensions.width}x
                       {item.dimensions.height}mm
                     </span>

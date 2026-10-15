@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Tooltip } from "@/components/ui";
 import {
   MousePointer,
   Type,
@@ -70,29 +71,27 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
           const Icon = t.icon;
           const isActive = activeTool === t.id;
           return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => {
-                
-                onSelectTool(t.id as StudioToolId);
-              }}
-              className={`relative group w-16 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 transition-colors ${
-                isActive
-                  ? "bg-landing-lime text-landing-green-night"
-                  : "text-landing-muted hover:text-landing-ink hover:bg-landing-canvas"
-              }`}
-              title={`${t.label} (${t.shortcut})`}
-            >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium leading-none">{t.label}</span>
-              {t.badge && !isActive && (
-                <span className="absolute top-0.5 right-0.5 px-1.5 py-0.5 rounded-full bg-landing-green-night text-landing-lime text-[8px] font-bold leading-none">
-                  {t.badge}
-                </span>
-              )}
-
-            </button>
+            <Tooltip key={t.id} side="right" content={`${t.label} · phím tắt ${t.shortcut}`} className="hidden lg:block">
+              <button
+                type="button"
+                aria-pressed={isActive}
+                aria-keyshortcuts={t.shortcut}
+                onClick={() => onSelectTool(t.id as StudioToolId)}
+                className={`relative group w-16 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+                  isActive
+                    ? "bg-landing-lime text-landing-green-night"
+                    : "text-landing-muted hover:text-landing-ink hover:bg-landing-canvas"
+                }`}
+              >
+                <Icon className="w-5 h-5" aria-hidden />
+                <span className="text-caption font-medium leading-none">{t.label}</span>
+                {t.badge && !isActive && (
+                  <span className="absolute top-0.5 right-0.5 px-1.5 py-0.5 rounded-full bg-landing-green-night text-landing-lime text-caption font-bold leading-none">
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
           );
         })}
       </div>

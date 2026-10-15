@@ -114,7 +114,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
           <Sparkles className="w-3.5 h-3.5 text-landing-green" aria-hidden /> Hoa văn AI
         </span>
         {quota && (
-          <span className={`text-[11px] font-mono ${exhausted ? "text-vibrant-coral-dark" : "text-landing-muted"}`}>
+          <span className={`text-cad-spec-micro font-mono ${exhausted ? "text-vibrant-coral-dark" : "text-landing-muted"}`}>
             Còn {Math.max(0, quota.limit - quota.used)}/{quota.limit} lượt
           </span>
         )}
@@ -139,7 +139,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
               key={suggestion}
               type="button"
               onClick={() => setTheme(suggestion)}
-              className="min-h-[32px] px-2.5 rounded-full bg-landing-canvas hover:bg-landing-tile text-[11px] font-medium text-landing-muted"
+              className="min-h-[32px] px-2.5 rounded-full bg-landing-canvas hover:bg-landing-tile text-caption font-medium text-landing-muted"
             >
               {suggestion}
             </button>
@@ -150,7 +150,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
             type="checkbox"
             checked={useColors}
             onChange={(event) => setUseColors(event.target.checked)}
-            className="w-4 h-4 accent-[#2563EB]"
+            className="w-4 h-4 accent-vibrant-cobalt"
           />
           Dùng màu của bảng màu đang chọn
           <span className="flex -space-x-1" aria-hidden>
@@ -181,7 +181,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
               <span key={color} title={color} className="w-5 h-5 rounded-md border border-landing-line" style={{ backgroundColor: color }} />
             ))}
             {result.source === "procedural" && (
-              <span className="ml-auto text-[10px] text-landing-muted font-mono">thuật toán</span>
+              <span className="ml-auto text-cad-spec-micro text-landing-muted font-mono">thuật toán</span>
             )}
           </div>
           <button

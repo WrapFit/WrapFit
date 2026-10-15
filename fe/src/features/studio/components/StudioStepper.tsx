@@ -26,7 +26,7 @@ interface StudioStepperProps {
 /** The 6 steps of the studio as pack.ly menu pills (labels from `xl`, numbers below). */
 export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperProps) {
   return (
-    <nav aria-label="Các bước thiết kế" className="flex items-center gap-0.5">
+    <nav aria-label="Các bước thiết kế" className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
       {STEPS.map((s) => {
         const isActive = current === s.step;
         const isPast = current > s.step;
@@ -41,7 +41,7 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
             aria-current={isActive ? "step" : undefined}
             aria-label={`Bước ${s.step}: ${s.label}`}
             onClick={() => onSelect(s.step)}
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed ${
+            className={`min-h-[36px] shrink-0 px-2 sm:px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed ${
               isActive
                 ? "bg-landing-tile text-landing-ink font-semibold"
                 : isPast
@@ -56,7 +56,7 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
             ) : (
               <span
                 aria-hidden
-                className={`size-5 rounded-full text-[11px] font-semibold flex items-center justify-center ${
+                className={`size-5 rounded-full text-caption font-semibold flex items-center justify-center ${
                   isActive ? "bg-landing-lime text-landing-green-night" : "bg-landing-tile text-landing-muted"
                 }`}
               >

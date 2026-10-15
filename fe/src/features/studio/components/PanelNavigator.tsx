@@ -60,7 +60,7 @@ export const PanelNavigator: React.FC<PanelNavigatorProps> = ({
             }`}
           >
             <span>{panel.name}</span>
-            <span className="text-[10px] font-mono opacity-70">
+            <span className="text-cad-spec-micro font-mono opacity-70">
               {formatMm(panel.bounds.width)}×{formatMm(panel.bounds.height)}
             </span>
             {isSelected && <Check className="w-3 h-3 text-white" />}

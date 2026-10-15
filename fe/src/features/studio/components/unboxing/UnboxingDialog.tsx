@@ -213,7 +213,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
         config.data && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="p-3 bg-white rounded-[28px] flex-shrink-0">
+              <div className="p-3 bg-white rounded-sheet flex-shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={config.data.qrCodeUrl ?? unboxingQrDownloadUrl(projectId, "png")}
@@ -224,7 +224,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               <div className="min-w-0 text-sm text-landing-ink space-y-1.5 text-center sm:text-left">
                 <span className="font-landing-heading font-bold text-landing-ink text-base block">Gửi {config.data.recipientName}</span>
                 <p className="text-xs text-landing-muted line-clamp-3 whitespace-pre-line">{config.data.giftNote}</p>
-                <span className="text-[11px] text-landing-muted font-mono block">
+                <span className="text-cad-spec-micro text-landing-muted font-mono block">
                   {EFFECTS.find((effect) => effect.value === config.data!.particleEffect)?.label} · {config.data.viewsCount} lượt mở
                 </span>
               </div>

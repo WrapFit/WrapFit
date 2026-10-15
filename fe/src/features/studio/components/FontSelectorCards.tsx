@@ -104,7 +104,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
                 >
                   {font.name}
                 </span>
-                <span className="block text-[10px] text-landing-muted pt-0.5 font-sans">
+                <span className="block text-caption text-landing-muted pt-0.5 font-sans">
                   {font.subtitle}
                 </span>
               </div>
