@@ -21,12 +21,13 @@ export interface NumberStepperProps {
   buttons?: boolean;
   disabled?: boolean;
   className?: string;
+  inputClassName?: string;
 }
 
 const SIZE = {
-  sm: { button: "size-8", input: "w-12 text-body-sm", gap: "gap-0.5" },
-  md: { button: "size-9", input: "w-14 text-body", gap: "gap-1" },
-  lg: { button: "size-11", input: "w-16 text-heading-sm", gap: "gap-1" },
+  sm: { button: "size-7", input: "w-11 text-xs", gap: "gap-0.5", icon: "size-3.5" },
+  md: { button: "size-8", input: "w-13 text-sm font-bold", gap: "gap-1", icon: "size-3.5" },
+  lg: { button: "size-9", input: "w-14 text-base font-bold", gap: "gap-1", icon: "size-4" },
 } as const;
 
 const decimals = (step: number) => (String(step).split(".")[1] ?? "").length;
@@ -48,6 +49,7 @@ export function NumberStepper({
   buttons = true,
   disabled = false,
   className,
+  inputClassName,
 }: NumberStepperProps) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
@@ -69,15 +71,15 @@ export function NumberStepper({
 
   const s = SIZE[size];
   const buttonClass = cn(
-    "flex shrink-0 items-center justify-center rounded-full bg-surface-raised text-fg outline-none transition-colors hover:bg-surface-sunken focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:cursor-not-allowed disabled:opacity-40",
+    "flex shrink-0 items-center justify-center rounded-full bg-white text-landing-ink shadow-2xs outline-none transition-all hover:bg-slate-50 hover:text-fpt-orange active:scale-95 focus-visible:ring-[2px] focus-visible:ring-fpt-orange/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-landing-ink disabled:active:scale-100",
     s.button,
   );
 
   return (
-    <div className={cn("inline-flex items-center rounded-full bg-surface-sunken p-1", s.gap, disabled && "opacity-50", className)}>
+    <div className={cn("inline-flex items-center rounded-full bg-slate-100/90 border border-slate-200/60 p-0.5 sm:p-1", s.gap, disabled && "opacity-50", className)}>
       {buttons && (
         <button type="button" className={buttonClass} disabled={disabled || value <= min} onClick={() => set(value - step)} aria-label={`Giảm ${label.toLowerCase()} ${step}${unit ? ` ${unit}` : ""}`}>
-          <Minus className="size-4" aria-hidden />
+          <Minus className={s.icon} aria-hidden />
         </button>
       )}
       <label className="flex items-baseline gap-1 px-1.5">
@@ -107,13 +109,13 @@ export function NumberStepper({
               set(max);
             }
           }}
-          className={cn("bg-transparent text-right font-mono font-semibold tabular-nums text-fg outline-none focus-visible:underline focus-visible:decoration-focus focus-visible:decoration-2 focus-visible:underline-offset-4", s.input)}
+          className={cn("bg-transparent text-right font-sans font-bold tabular-nums text-landing-ink outline-none focus-visible:underline focus-visible:decoration-fpt-orange focus-visible:decoration-2 focus-visible:underline-offset-4", s.input, inputClassName)}
         />
-        {unit && <span className="text-caption text-fg-muted">{unit}</span>}
+        {unit && <span className="font-sans text-xs font-semibold text-slate-500">{unit}</span>}
       </label>
       {buttons && (
         <button type="button" className={buttonClass} disabled={disabled || value >= max} onClick={() => set(value + step)} aria-label={`Tăng ${label.toLowerCase()} ${step}${unit ? ` ${unit}` : ""}`}>
-          <Plus className="size-4" aria-hidden />
+          <Plus className={s.icon} aria-hidden />
         </button>
       )}
     </div>
