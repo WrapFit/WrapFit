@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDown, HelpCircle, MessageCircleQuestion, Sparkles } from "lucide-react";
+import { HelpCircle, MessageCircleQuestion } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
-import { Container, Eyebrow, FeatureCard, Reveal } from "@/components/landing";
-import { cn } from "@/utils/helpers";
+import React from "react";
+import { Container, Reveal } from "@/components/landing";
+import { Accordion, Badge } from "@/components/ui";
 
 interface FaqItem {
   question: string;
@@ -46,96 +46,43 @@ const HOME_FAQS: FaqItem[] = [
 ];
 
 export function HomeFaq() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0); // Open first item by default
-
-  const toggleItem = (index: number) => {
-    setOpenIndex((current) => (current === index ? null : index));
-  };
-
   return (
     <section id="faq" className="bg-landing-canvas py-14 lg:py-24">
       <Container>
         <div className="mx-auto max-w-4xl">
-          {/* Header */}
-          <div className="flex flex-col items-center text-center mb-10 lg:mb-14">
+          <div className="mb-10 flex flex-col items-center text-center lg:mb-14">
             <Reveal variant="text" className="flex flex-col items-center">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-stone-200/90 bg-white/90 px-3.5 py-1.5 shadow-soft-8 backdrop-blur-md mb-3">
-                <HelpCircle className="size-3.5 text-[#F26522]" />
-                <span className="text-xs font-semibold tracking-wide text-stone-700 uppercase">
-                  Giải đáp thắc mắc thường gặp
-                </span>
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-line/80 bg-white/90 px-3.5 py-1.5 shadow-soft-8 backdrop-blur-md">
+                <HelpCircle className="size-3.5 text-fpt-orange-ink" aria-hidden />
+                <span className="text-overline uppercase text-fg-muted">Giải đáp thắc mắc thường gặp</span>
               </div>
-
-              <h2 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink lg:text-4xl">
-                Những Câu Hỏi Phổ Biến Nhất
-              </h2>
-              <p className="mt-3 max-w-2xl text-base leading-7 text-landing-muted lg:text-lg">
+              <h2 className="font-landing-heading text-heading-lg text-fg">Những Câu Hỏi Phổ Biến Nhất</h2>
+              <p className="mt-3 max-w-2xl text-body text-fg-muted lg:text-body-lg">
                 Mọi điều bạn cần biết về quy trình làm hộp quà, kiểm định FitCheck™ và chuẩn in ấn cùng WrapFit.
               </p>
             </Reveal>
           </div>
 
-          {/* Accordion List */}
-          <div className="space-y-3.5">
-            {HOME_FAQS.map((faq, index) => {
-              const isOpen = openIndex === index;
-              return (
-                <div
-                  key={faq.question}
-                  className={cn(
-                    "overflow-hidden rounded-2xl border transition-all duration-200",
-                    isOpen
-                      ? "border-stone-300 bg-white shadow-soft-8"
-                      : "border-stone-200/80 bg-white/80 hover:bg-white hover:border-stone-300"
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleItem(index)}
-                    aria-expanded={isOpen}
-                    className="flex w-full items-center justify-between gap-4 p-4 sm:p-5 text-left outline-none"
-                  >
-                    <div className="flex items-center gap-3 pr-2">
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-stone-100 font-mono text-xs font-bold text-stone-600">
-                        0{index + 1}
-                      </span>
-                      <span className="font-landing-heading text-base sm:text-lg font-semibold text-landing-ink">
-                        {faq.question}
-                      </span>
-                    </div>
+          {/* One answer open at a time, the first one to start with. */}
+          <Accordion
+            type="single"
+            defaultOpen={["faq-0"]}
+            items={HOME_FAQS.map((faq, index) => ({
+              id: `faq-${index}`,
+              title: faq.question,
+              meta: faq.highlight ? (
+                <Badge tone="success" className="hidden md:inline-flex">
+                  {faq.highlight}
+                </Badge>
+              ) : undefined,
+              content: <p>{faq.answer}</p>,
+            }))}
+          />
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {faq.highlight && (
-                        <span className="hidden md:inline-block rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-200/60">
-                          {faq.highlight}
-                        </span>
-                      )}
-                      <div
-                        className={cn(
-                          "flex size-7 items-center justify-center rounded-full bg-stone-100 text-stone-500 transition-transform duration-300",
-                          isOpen && "rotate-180 bg-stone-900 text-white"
-                        )}
-                      >
-                        <ChevronDown className="size-4" />
-                      </div>
-                    </div>
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-sm sm:text-base leading-relaxed text-landing-muted border-t border-stone-100 mt-1">
-                      <p>{faq.answer}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Contact help prompt */}
-          <div className="mt-8 text-center text-xs sm:text-sm text-landing-muted flex items-center justify-center gap-2">
-            <MessageCircleQuestion className="size-4 text-stone-400" />
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-body-sm text-fg-muted">
+            <MessageCircleQuestion className="size-4" aria-hidden />
             <span>Bạn còn thắc mắc khác? Ghé thăm</span>
-            <Link href="/support" className="font-semibold text-stone-900 underline hover:text-[#F26522] transition-colors">
+            <Link href="/support" className="font-semibold text-fg underline underline-offset-4 transition-colors hover:text-success-fg">
               Trung tâm hỗ trợ
             </Link>
             <span>hoặc nhắn tin trực tiếp với Trợ lý Gói!</span>

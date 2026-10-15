@@ -13,7 +13,7 @@ export function CustomerVoices() {
         <Reveal variant="text" className="mb-10 flex flex-col items-center gap-1 text-center lg:mb-16">
           <h2 className="font-landing-heading text-3xl font-bold leading-tight tracking-tight text-landing-ink lg:text-4xl">{VOICES.title}</h2>
           <p className="font-landing-heading text-lg font-semibold text-landing-muted lg:text-xl">{VOICES.subtitle}</p>
-          <Stars className="mt-2 text-2xl text-[#FFB900]" />
+          <Stars className="mt-2 text-2xl text-landing-star" />
         </Reveal>
       </Container>
       <Carousel label={VOICES.title} bleed="full" slideClassName="w-[88vw] sm:w-[400px] 2xl:w-[520px]">

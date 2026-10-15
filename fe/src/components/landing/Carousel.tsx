@@ -18,6 +18,8 @@ interface CarouselProps {
    * "full": the whole window (photo reel, reviews).
    */
   bleed?: "none" | "right" | "full";
+  /** Position under the track: a progress bar with "3 / 8" (default), or nothing for very short lists. */
+  indicator?: "progress" | "none";
 }
 
 const FADE = 48;
@@ -26,15 +28,23 @@ const FADE = 48;
  * Horizontal list scrolled by touch, wheel or the two arrow buttons, snapping to the slides. The edge where more
  * slides wait fades out, and its arrow appears only then.
  */
-export function Carousel({ label, children, slideClassName, bleed = "none" }: CarouselProps) {
+export function Carousel({ label, children, slideClassName, bleed = "none", indicator = "progress" }: CarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: false, end: false });
+  /** First and last fully visible slides (1-based). */
+  const [position, setPosition] = useState({ first: 1, last: 1 });
 
   const measure = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
     const max = track.scrollWidth - track.clientWidth;
     setEdges({ start: track.scrollLeft > 4, end: track.scrollLeft < max - 4 });
+    const slides = Array.from(track.children) as HTMLElement[];
+    const left = track.scrollLeft;
+    const right = left + track.clientWidth;
+    const visible = slides.map((slide, i) => ({ i, start: slide.offsetLeft - track.offsetLeft, end: slide.offsetLeft - track.offsetLeft + slide.offsetWidth }))
+      .filter((s) => s.start >= left - 8 && s.end <= right + 8);
+    setPosition({ first: (visible[0]?.i ?? 0) + 1, last: (visible[visible.length - 1]?.i ?? 0) + 1 });
   }, []);
 
   useEffect(() => {
@@ -73,7 +83,7 @@ export function Carousel({ label, children, slideClassName, bleed = "none" }: Ca
         tabIndex={0}
         className={cn(
           "flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain py-4 sm:py-5 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          "focus-visible:ring-2 focus-visible:ring-landing-ink/20",
+          "focus-visible:ring-[3px] focus-visible:ring-focus/40",
           bleed === "right" ? "-ml-4 pr-6" : bleed === "full" ? "pr-4" : "-mx-2 px-2"
         )}
         style={{ maskImage: mask, WebkitMaskImage: mask }}
@@ -120,6 +130,21 @@ export function Carousel({ label, children, slideClassName, bleed = "none" }: Ca
       >
         <ChevronRight className="size-5" aria-hidden />
       </button>
+
+      {indicator === "progress" && children.length > 1 && (
+        <div className="mt-1 flex items-center gap-3 px-2" aria-live="polite">
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-line/70" aria-hidden>
+            <div
+              className="h-full rounded-full bg-fg transition-[width] duration-200 motion-reduce:transition-none"
+              style={{ width: `${(position.last / children.length) * 100}%` }}
+            />
+          </div>
+          <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">
+            <span className="sr-only">Đang xem mục </span>
+            {position.first === position.last ? position.first : `${position.first}–${position.last}`} / {children.length}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
