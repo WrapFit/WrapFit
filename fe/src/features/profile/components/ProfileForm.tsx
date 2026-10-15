@@ -71,7 +71,7 @@ export function ProfileForm({ user }: { user: SafeUser }) {
         aria-describedby={`${id}-hint`}
         className={WORKSPACE_INPUT}
       />
-      <p id={`${id}-hint`} className={cn("text-xs", tooLong(values[key]) ? "text-red-600" : "text-library-muted")}>
+      <p id={`${id}-hint`} className={cn("text-xs", tooLong(values[key]) ? "text-danger-fg" : "text-library-muted")}>
         {tooLong(values[key]) ? `Tối đa ${NAME_MAX} ký tự.` : hint}
       </p>
     </div>

@@ -223,7 +223,7 @@ function AdminAccountsScreen() {
                   if (event.key === "Escape" && search) setSearch("");
                 }}
               />
-              <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded bg-library-panel px-1.5 py-0.5 font-mono text-[11px] text-library-sub sm:inline">{shortcut}</kbd>
+              <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded bg-library-panel px-1.5 py-0.5 font-mono text-cad-spec-micro text-library-sub sm:inline">{shortcut}</kbd>
             </div>
           </div>
 
