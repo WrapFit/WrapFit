@@ -5,7 +5,7 @@ import React from "react";
 import { outlineButton } from "@/components/library";
 import { Badge as UiBadge, cardClass, INPUT_BASE, INPUT_SIZES, Switch, type DataColumn as UiDataColumn } from "@/components/ui";
 import { DataTable as UiDataTable } from "@/components/ui";
-import { ApiError, errorMessage } from "@/services/api";
+import { errorMessage } from "@/services/api";
 import { cn } from "@/utils/helpers";
 
 // Building blocks of the workspace pages (pacdora.com style, WrapFit greens).
@@ -58,7 +58,7 @@ const BADGE_TONES = {
 /** Status label of the workspace: the shared Badge with the pacdora 6 px corners. */
 export function Badge({ tone = "grey", children, className }: { tone?: keyof typeof BADGE_TONES; children: React.ReactNode; className?: string }) {
   return (
-    <UiBadge tone={BADGE_TONES[tone]} variant={tone === "lime" ? "solid" : "soft"} className={cn("rounded-md", tone === "lime" && "bg-library-lime text-library-lime-ink", className)}>
+    <UiBadge tone={BADGE_TONES[tone]} variant={tone === "lime" ? "solid" : "soft"} className={cn("rounded-md", tone === "lime" && "bg-fpt-orange text-white", className)}>
       {children}
     </UiBadge>
   );
@@ -70,11 +70,14 @@ export function SegmentedControl<T extends string>({
   options,
   onChange,
   label,
+  tone = "ink",
 }: {
   value: T;
   options: { value: T; label: React.ReactNode }[];
   onChange(value: T): void;
   label: string;
+  /** Colour of the chosen option: black ink (default in the workspace) or orange. */
+  tone?: "brand" | "ink";
 }) {
   // Radio group keyboard: one tab stop, arrows move and select.
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -100,7 +103,7 @@ export function SegmentedControl<T extends string>({
           onClick={() => onChange(option.value)}
           className={cn(
             "h-9 shrink-0 whitespace-nowrap rounded-md px-3 text-body-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
-            value === option.value ? "bg-library-lime-ink text-white" : "text-library-ink hover:bg-library-panel"
+            value === option.value ? (tone === "ink" ? "bg-fg text-fg-inverse" : "bg-fpt-orange text-white") : "text-library-ink hover:bg-library-panel"
           )}
         >
           {option.label}
@@ -114,8 +117,8 @@ export function SegmentedControl<T extends string>({
  * On / off switch without a visible label (the row around it names it): the shared Switch. Use `<Switch>` with its
  * label and description for new settings.
  */
-export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange(value: boolean): void; label: string; disabled?: boolean }) {
-  return <Switch checked={checked} onChange={onChange} label={label} hideLabel disabled={disabled} />;
+export function Toggle({ checked, onChange, label, disabled, tone }: { checked: boolean; onChange(value: boolean): void; label: string; disabled?: boolean; tone?: "brand" | "ink" }) {
+  return <Switch checked={checked} onChange={onChange} label={label} hideLabel disabled={disabled} tone={tone} />;
 }
 
 /** Field input of the workspace forms: the shared input look (strong border, cobalt focus, red when invalid). */
@@ -170,7 +173,6 @@ export function WorkspaceError({
   retrying?: boolean;
   className?: string;
 }) {
-  const requestId = error instanceof ApiError ? error.requestId : undefined;
   return (
     <div role="alert" className={cn("flex flex-col items-center rounded-2xl border border-danger/25 bg-danger-bg/60 px-6 py-10 text-center", className)}>
       <span className="flex size-12 items-center justify-center rounded-xl bg-white text-danger">
@@ -178,7 +180,6 @@ export function WorkspaceError({
       </span>
       <h2 className="mt-4 text-title font-medium text-library-ink">{title}</h2>
       <p className="mt-1.5 max-w-md text-body-sm leading-[1.6] text-library-sub">{errorMessage(error)}</p>
-      {requestId && <p className="mt-2 break-all font-mono text-caption text-library-muted">Mã lỗi · {requestId}</p>}
       {onRetry && (
         <button type="button" onClick={onRetry} disabled={retrying} className={cn(outlineButton, "mt-5")}>
           <RotateCw className={cn("size-4", retrying && "animate-spin motion-reduce:animate-none")} aria-hidden />

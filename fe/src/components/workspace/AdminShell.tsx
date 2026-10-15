@@ -69,7 +69,7 @@ export function AdminShell(props: AdminShellProps) {
   return <ShellLayout {...props} nav={ADMIN_NAV} root={{ label: "Quản trị", href: "/admin" }} sidebarBottom={<HealthCard />} />;
 }
 
-const DOT: Record<string, string> = { up: "bg-library-accent", down: "bg-danger", unknown: "bg-library-muted" };
+const DOT: Record<string, string> = { up: "bg-fpt-orange", down: "bg-danger", unknown: "bg-library-muted" };
 
 /** Database, Redis and export worker at a glance (`GET /health/details`). */
 function HealthCard() {
