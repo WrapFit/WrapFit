@@ -1,0 +1,914 @@
+{
+  "$description": "WrapFit design tokens 1.1.0. Generated from fe/src/assets/styles/tokens.ts; do not edit by hand.",
+  "color": {
+    "palette": {
+      "neutral": {
+        "50": {
+          "$type": "color",
+          "$value": "#F8FAFC"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#F1F5F9"
+        },
+        "150": {
+          "$type": "color",
+          "$value": "#E9EFF5"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#E2E8F0"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#CAD5E2"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#90A1B9"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#7C8BA1"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#53647D"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#314158"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#1D293D"
+        },
+        "850": {
+          "$type": "color",
+          "$value": "#1B2638"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#131C2E"
+        },
+        "950": {
+          "$type": "color",
+          "$value": "#0B1220"
+        }
+      },
+      "green": {
+        "50": {
+          "$type": "color",
+          "$value": "#F3FCEC"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#EAFAE0"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#C7F1AB"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#AFEC88"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#98E665"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#86D652"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#458C17"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#2D5C0F"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#1F420A"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#152B07"
+        },
+        "950": {
+          "$type": "color",
+          "$value": "#0C1A04"
+        }
+      },
+      "orange": {
+        "50": {
+          "$type": "color",
+          "$value": "#FEF1EA"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#FDE0CF"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#FBC09F"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#F89A68"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#F57E42"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#F26522"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#D85314"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#B93F0A"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#8F310B"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#6B250A"
+        },
+        "950": {
+          "$type": "color",
+          "$value": "#3A1405"
+        }
+      },
+      "red": {
+        "50": {
+          "$type": "color",
+          "$value": "#FEF3F2"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#FEE4E2"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#FECDCA"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#FDA29B"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#F97066"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#F04438"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#D92D20"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#B42318"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#912018"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#7A271A"
+        },
+        "950": {
+          "$type": "color",
+          "$value": "#55160C"
+        }
+      },
+      "amber": {
+        "50": {
+          "$type": "color",
+          "$value": "#FFFBEB"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#FEF3C7"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#FDE68A"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#FCD34D"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#FBBF24"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#F59E0B"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#D97706"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#B45309"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#92400E"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#78350F"
+        },
+        "950": {
+          "$type": "color",
+          "$value": "#451A03"
+        }
+      },
+      "blue": {
+        "50": {
+          "$type": "color",
+          "$value": "#EFF6FF"
+        },
+        "100": {
+          "$type": "color",
+          "$value": "#E8F0FE"
+        },
+        "200": {
+          "$type": "color",
+          "$value": "#BFDBFE"
+        },
+        "300": {
+          "$type": "color",
+          "$value": "#93C5FD"
+        },
+        "400": {
+          "$type": "color",
+          "$value": "#60A5FA"
+        },
+        "500": {
+          "$type": "color",
+          "$value": "#3B82F6"
+        },
+        "600": {
+          "$type": "color",
+          "$value": "#2563EB"
+        },
+        "700": {
+          "$type": "color",
+          "$value": "#1E4FB8"
+        },
+        "800": {
+          "$type": "color",
+          "$value": "#1E3A8A"
+        },
+        "900": {
+          "$type": "color",
+          "$value": "#172554"
+        },
+        "950": {
+          "$type": "color",
+          "$value": "#0F1A3D"
+        }
+      }
+    },
+    "light": {
+      "fg": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.800}",
+        "$description": "Chữ chính, tiêu đề, icon (14.6:1 sáng · 15.5:1 tối)."
+      },
+      "fg-muted": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.600}",
+        "$description": "Chữ phụ, mô tả, nhãn (6.0:1 sáng · 6.5:1 tối; 5.5 / 7.1 trên canvas). Không dùng: Chữ trên nền tối cố định (dải xanh đêm)."
+      },
+      "fg-inverse": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Chữ trên nền fg (nút tối, tab đang chọn kiểu Pacdora)."
+      },
+      "canvas": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.100}",
+        "$description": "Nền trang."
+      },
+      "surface-raised": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Thẻ, panel, popover, dialog."
+      },
+      "surface-sunken": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.150}",
+        "$description": "Ô nền xám, skeleton, chip icon."
+      },
+      "line": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.300}",
+        "$description": "Đường kẻ trang trí, viền thẻ. Không dùng: Viền duy nhất của input (chỉ 1.5:1)."
+      },
+      "line-strong": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.500}",
+        "$description": "Viền input, checkbox, toggle tắt (3.5:1 sáng · 4.9:1 tối, đạt 1.4.11)."
+      },
+      "action": {
+        "$type": "color",
+        "$value": "{color.palette.green.400}",
+        "$description": "Nền nút chính (lime pack.ly), luôn đi với action-fg. Không dùng: Chữ hoặc icon trên nền sáng (1.5:1)."
+      },
+      "action-hover": {
+        "$type": "color",
+        "$value": "{color.palette.green.300}",
+        "$description": "Hover của nút chính."
+      },
+      "action-pressed": {
+        "$type": "color",
+        "$value": "{color.palette.green.500}",
+        "$description": "Nhấn giữ nút chính."
+      },
+      "action-fg": {
+        "$type": "color",
+        "$value": "{color.palette.green.900}",
+        "$description": "Chữ trên action (10:1), giữ nguyên ở cả hai theme."
+      },
+      "accent": {
+        "$type": "color",
+        "$value": "{color.palette.green.700}",
+        "$description": "Ô đã chọn: checkbox, radio, ngày được chọn, switch bật."
+      },
+      "accent-contrast": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Dấu tích, chữ trên accent (7.9:1 sáng · 10:1 tối)."
+      },
+      "accent-bg": {
+        "$type": "color",
+        "$value": "{color.palette.green.100}",
+        "$description": "Nền hàng/thẻ đang chọn."
+      },
+      "accent-fg": {
+        "$type": "color",
+        "$value": "{color.palette.green.700}",
+        "$description": "Chữ trên accent-bg (7.3:1 sáng · 12:1 tối)."
+      },
+      "focus": {
+        "$type": "color",
+        "$value": "{color.palette.blue.600}",
+        "$description": "Vòng focus của mọi phần tử tương tác (5.2:1 sáng · 6.7:1 tối)."
+      },
+      "success": {
+        "$type": "color",
+        "$value": "{color.palette.green.600}",
+        "$description": "Icon, chấm trạng thái thành công."
+      },
+      "success-fg": {
+        "$type": "color",
+        "$value": "{color.palette.green.700}",
+        "$description": "Chữ trên success-bg (7.3:1 sáng · 12:1 tối)."
+      },
+      "success-bg": {
+        "$type": "color",
+        "$value": "{color.palette.green.100}",
+        "$description": "Nền alert/badge thành công."
+      },
+      "success-solid": {
+        "$type": "color",
+        "$value": "{color.palette.green.700}",
+        "$description": "Badge đặc, chữ trắng (7.9:1)."
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "{color.palette.amber.600}",
+        "$description": "Icon cảnh báo."
+      },
+      "warning-fg": {
+        "$type": "color",
+        "$value": "{color.palette.amber.800}",
+        "$description": "Chữ trên warning-bg (6.4:1 sáng · 12:1 tối)."
+      },
+      "warning-bg": {
+        "$type": "color",
+        "$value": "{color.palette.amber.100}",
+        "$description": "Nền alert/badge cảnh báo."
+      },
+      "warning-solid": {
+        "$type": "color",
+        "$value": "{color.palette.amber.800}",
+        "$description": "Badge đặc, chữ trắng (7.1:1)."
+      },
+      "danger": {
+        "$type": "color",
+        "$value": "{color.palette.red.600}",
+        "$description": "Icon lỗi, nút xoá (chữ trắng 4.8:1)."
+      },
+      "danger-fg": {
+        "$type": "color",
+        "$value": "{color.palette.red.700}",
+        "$description": "Chữ lỗi, chữ trên danger-bg (5.5:1 sáng · 7.2:1 tối)."
+      },
+      "danger-bg": {
+        "$type": "color",
+        "$value": "{color.palette.red.100}",
+        "$description": "Nền alert/badge lỗi."
+      },
+      "danger-solid": {
+        "$type": "color",
+        "$value": "{color.palette.red.600}",
+        "$description": "Badge đặc, chữ trắng (4.8:1)."
+      },
+      "info": {
+        "$type": "color",
+        "$value": "{color.palette.blue.600}",
+        "$description": "Icon thông tin."
+      },
+      "info-fg": {
+        "$type": "color",
+        "$value": "{color.palette.blue.700}",
+        "$description": "Chữ trên info-bg (6.4:1 sáng · 9.4:1 tối)."
+      },
+      "info-bg": {
+        "$type": "color",
+        "$value": "{color.palette.blue.100}",
+        "$description": "Nền alert/badge thông tin."
+      },
+      "info-solid": {
+        "$type": "color",
+        "$value": "{color.palette.blue.600}",
+        "$description": "Badge đặc, chữ trắng (5.2:1)."
+      }
+    },
+    "dark": {
+      "fg": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.100}",
+        "$description": "Chữ chính, tiêu đề, icon (14.6:1 sáng · 15.5:1 tối)."
+      },
+      "fg-muted": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.400}",
+        "$description": "Chữ phụ, mô tả, nhãn (6.0:1 sáng · 6.5:1 tối; 5.5 / 7.1 trên canvas). Không dùng: Chữ trên nền tối cố định (dải xanh đêm)."
+      },
+      "fg-inverse": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.950}",
+        "$description": "Chữ trên nền fg (nút tối, tab đang chọn kiểu Pacdora)."
+      },
+      "canvas": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.950}",
+        "$description": "Nền trang."
+      },
+      "surface-raised": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.900}",
+        "$description": "Thẻ, panel, popover, dialog."
+      },
+      "surface-sunken": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.850}",
+        "$description": "Ô nền xám, skeleton, chip icon."
+      },
+      "line": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.700}",
+        "$description": "Đường kẻ trang trí, viền thẻ. Không dùng: Viền duy nhất của input (chỉ 1.5:1)."
+      },
+      "line-strong": {
+        "$type": "color",
+        "$value": "{color.palette.neutral.500}",
+        "$description": "Viền input, checkbox, toggle tắt (3.5:1 sáng · 4.9:1 tối, đạt 1.4.11)."
+      },
+      "action": {
+        "$type": "color",
+        "$value": "{color.palette.green.400}",
+        "$description": "Nền nút chính (lime pack.ly), luôn đi với action-fg. Không dùng: Chữ hoặc icon trên nền sáng (1.5:1)."
+      },
+      "action-hover": {
+        "$type": "color",
+        "$value": "{color.palette.green.300}",
+        "$description": "Hover của nút chính."
+      },
+      "action-pressed": {
+        "$type": "color",
+        "$value": "{color.palette.green.500}",
+        "$description": "Nhấn giữ nút chính."
+      },
+      "action-fg": {
+        "$type": "color",
+        "$value": "{color.palette.green.900}",
+        "$description": "Chữ trên action (10:1), giữ nguyên ở cả hai theme."
+      },
+      "accent": {
+        "$type": "color",
+        "$value": "{color.palette.green.400}",
+        "$description": "Ô đã chọn: checkbox, radio, ngày được chọn, switch bật."
+      },
+      "accent-contrast": {
+        "$type": "color",
+        "$value": "{color.palette.green.900}",
+        "$description": "Dấu tích, chữ trên accent (7.9:1 sáng · 10:1 tối)."
+      },
+      "accent-bg": {
+        "$type": "color",
+        "$value": "{color.palette.green.900}",
+        "$description": "Nền hàng/thẻ đang chọn."
+      },
+      "accent-fg": {
+        "$type": "color",
+        "$value": "{color.palette.green.200}",
+        "$description": "Chữ trên accent-bg (7.3:1 sáng · 12:1 tối)."
+      },
+      "focus": {
+        "$type": "color",
+        "$value": "{color.palette.blue.400}",
+        "$description": "Vòng focus của mọi phần tử tương tác (5.2:1 sáng · 6.7:1 tối)."
+      },
+      "success": {
+        "$type": "color",
+        "$value": "{color.palette.green.500}",
+        "$description": "Icon, chấm trạng thái thành công."
+      },
+      "success-fg": {
+        "$type": "color",
+        "$value": "{color.palette.green.200}",
+        "$description": "Chữ trên success-bg (7.3:1 sáng · 12:1 tối)."
+      },
+      "success-bg": {
+        "$type": "color",
+        "$value": "{color.palette.green.900}",
+        "$description": "Nền alert/badge thành công."
+      },
+      "success-solid": {
+        "$type": "color",
+        "$value": "{color.palette.green.700}",
+        "$description": "Badge đặc, chữ trắng (7.9:1)."
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "{color.palette.amber.500}",
+        "$description": "Icon cảnh báo."
+      },
+      "warning-fg": {
+        "$type": "color",
+        "$value": "{color.palette.amber.200}",
+        "$description": "Chữ trên warning-bg (6.4:1 sáng · 12:1 tối)."
+      },
+      "warning-bg": {
+        "$type": "color",
+        "$value": "{color.palette.amber.950}",
+        "$description": "Nền alert/badge cảnh báo."
+      },
+      "warning-solid": {
+        "$type": "color",
+        "$value": "{color.palette.amber.800}",
+        "$description": "Badge đặc, chữ trắng (7.1:1)."
+      },
+      "danger": {
+        "$type": "color",
+        "$value": "{color.palette.red.600}",
+        "$description": "Icon lỗi, nút xoá (chữ trắng 4.8:1)."
+      },
+      "danger-fg": {
+        "$type": "color",
+        "$value": "{color.palette.red.300}",
+        "$description": "Chữ lỗi, chữ trên danger-bg (5.5:1 sáng · 7.2:1 tối)."
+      },
+      "danger-bg": {
+        "$type": "color",
+        "$value": "{color.palette.red.950}",
+        "$description": "Nền alert/badge lỗi."
+      },
+      "danger-solid": {
+        "$type": "color",
+        "$value": "{color.palette.red.600}",
+        "$description": "Badge đặc, chữ trắng (4.8:1)."
+      },
+      "info": {
+        "$type": "color",
+        "$value": "{color.palette.blue.400}",
+        "$description": "Icon thông tin."
+      },
+      "info-fg": {
+        "$type": "color",
+        "$value": "{color.palette.blue.300}",
+        "$description": "Chữ trên info-bg (6.4:1 sáng · 9.4:1 tối)."
+      },
+      "info-bg": {
+        "$type": "color",
+        "$value": "{color.palette.blue.950}",
+        "$description": "Nền alert/badge thông tin."
+      },
+      "info-solid": {
+        "$type": "color",
+        "$value": "{color.palette.blue.600}",
+        "$description": "Badge đặc, chữ trắng (5.2:1)."
+      }
+    }
+  },
+  "typography": {
+    "display-xl": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Be Vietnam Pro",
+        "fontSize": "clamp(2.5rem, 1.75rem + 3vw, 3.75rem)",
+        "lineHeight": "1.08",
+        "fontWeight": 700,
+        "letterSpacing": "-0.025em"
+      },
+      "$description": "H1 của hero (40 → 60 px)."
+    },
+    "display": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Be Vietnam Pro",
+        "fontSize": "clamp(2rem, 1.5rem + 2vw, 3rem)",
+        "lineHeight": "1.1",
+        "fontWeight": 700,
+        "letterSpacing": "-0.02em"
+      },
+      "$description": "Tiêu đề dải CTA, số liệu lớn (32 → 48 px)."
+    },
+    "heading-lg": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Be Vietnam Pro",
+        "fontSize": "clamp(1.875rem, 1.65rem + 0.9vw, 2.25rem)",
+        "lineHeight": "1.2",
+        "fontWeight": 700,
+        "letterSpacing": "-0.015em"
+      },
+      "$description": "H2 của section (30 → 36 px)."
+    },
+    "heading-md": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Be Vietnam Pro",
+        "fontSize": "1.5rem",
+        "lineHeight": "1.25",
+        "fontWeight": 700,
+        "letterSpacing": "-0.01em"
+      },
+      "$description": "H2 trong trang con, tiêu đề dialog lớn (24 px)."
+    },
+    "heading-sm": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Be Vietnam Pro",
+        "fontSize": "1.25rem",
+        "lineHeight": "1.3",
+        "fontWeight": 600
+      },
+      "$description": "H3, tiêu đề panel (20 px)."
+    },
+    "title": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Be Vietnam Pro",
+        "fontSize": "1.125rem",
+        "lineHeight": "1.4",
+        "fontWeight": 600
+      },
+      "$description": "Tiêu đề thẻ, eyebrow lớn (18 px)."
+    },
+    "body-lg": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "1.125rem",
+        "lineHeight": "1.6"
+      },
+      "$description": "Đoạn dẫn (lead) (18 px)."
+    },
+    "body": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "1rem",
+        "lineHeight": "1.6"
+      },
+      "$description": "Đoạn văn (16 px)."
+    },
+    "body-sm": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "0.875rem",
+        "lineHeight": "1.55"
+      },
+      "$description": "Mô tả trong thẻ, bảng (14 px)."
+    },
+    "label": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "0.875rem",
+        "lineHeight": "1.25",
+        "fontWeight": 500
+      },
+      "$description": "Chữ trên nút, nhãn field (14 px)."
+    },
+    "label-sm": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "0.75rem",
+        "lineHeight": "1.3",
+        "fontWeight": 600,
+        "letterSpacing": "0.01em"
+      },
+      "$description": "Badge, tab nhỏ (12 px)."
+    },
+    "caption": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "0.75rem",
+        "lineHeight": "1.45"
+      },
+      "$description": "Chú thích, hint, thời gian (12 px). Cỡ nhỏ nhất cho chữ đọc."
+    },
+    "overline": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "Inter",
+        "fontSize": "0.75rem",
+        "lineHeight": "1.3",
+        "fontWeight": 700,
+        "letterSpacing": "0.12em"
+      },
+      "$description": "Nhãn VIẾT HOA trên tiêu đề (12 px)."
+    },
+    "cad-dimension": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "JetBrains Mono",
+        "fontSize": "0.75rem",
+        "lineHeight": "1rem",
+        "fontWeight": 500,
+        "letterSpacing": "0.02em"
+      },
+      "$description": "Số đo mm L·W·H·t, JetBrains Mono (12 px)."
+    },
+    "cad-spec-micro": {
+      "$type": "typography",
+      "$value": {
+        "fontFamily": "JetBrains Mono",
+        "fontSize": "0.6875rem",
+        "lineHeight": "0.875rem",
+        "fontWeight": 500,
+        "letterSpacing": "0.04em"
+      },
+      "$description": "Nhãn kỹ thuật mono trên canvas (11 px). Sàn của cả hệ."
+    }
+  },
+  "spacing": {
+    "control-sm": {
+      "$type": "dimension",
+      "$value": "2.25rem",
+      "$description": "Chiều cao control nhỏ (36 px)."
+    },
+    "control": {
+      "$type": "dimension",
+      "$value": "2.5rem",
+      "$description": "Chiều cao control chuẩn (40 px)."
+    },
+    "control-lg": {
+      "$type": "dimension",
+      "$value": "2.75rem",
+      "$description": "Control lớn, vùng chạm tối thiểu (44 px)."
+    },
+    "stack-xs": {
+      "$type": "dimension",
+      "$value": "0.25rem",
+      "$description": "Nhãn ↔ field, icon ↔ chữ (4 px)."
+    },
+    "stack-sm": {
+      "$type": "dimension",
+      "$value": "0.5rem",
+      "$description": "Các dòng trong một khối (8 px)."
+    },
+    "stack": {
+      "$type": "dimension",
+      "$value": "1rem",
+      "$description": "Các khối trong thẻ (16 px)."
+    },
+    "stack-lg": {
+      "$type": "dimension",
+      "$value": "1.5rem",
+      "$description": "Các nhóm trong section (24 px)."
+    },
+    "card-sm": {
+      "$type": "dimension",
+      "$value": "1.25rem",
+      "$description": "Padding thẻ nhỏ, panel workspace mobile (20 px)."
+    },
+    "card": {
+      "$type": "dimension",
+      "$value": "1.5rem",
+      "$description": "Padding thẻ (24 px)."
+    },
+    "card-lg": {
+      "$type": "dimension",
+      "$value": "2rem",
+      "$description": "Padding thẻ lớn từ sm (32 px)."
+    },
+    "section": {
+      "$type": "dimension",
+      "$value": "2.5rem",
+      "$description": "Khoảng dọc section trên mobile (40 px)."
+    },
+    "section-lg": {
+      "$type": "dimension",
+      "$value": "3.5rem",
+      "$description": "Khoảng dọc section từ lg (56 px)."
+    },
+    "section-xl": {
+      "$type": "dimension",
+      "$value": "6rem",
+      "$description": "Dải CTA, hero (96 px)."
+    }
+  },
+  "radius": {
+    "control": {
+      "$type": "dimension",
+      "$value": "0.75rem",
+      "$description": "Input, select, nút workspace (12 px)."
+    },
+    "panel": {
+      "$type": "dimension",
+      "$value": "1rem",
+      "$description": "Panel workspace, menu, toast (16 px)."
+    },
+    "sheet": {
+      "$type": "dimension",
+      "$value": "1.75rem",
+      "$description": "Dialog, bottom sheet (28 px)."
+    },
+    "card": {
+      "$type": "dimension",
+      "$value": "2rem",
+      "$description": "Thẻ marketing pack.ly (32 px)."
+    },
+    "card-lg": {
+      "$type": "dimension",
+      "$value": "3rem",
+      "$description": "Thẻ lớn / ảnh từ lg (48 px)."
+    }
+  },
+  "breakpoint": {
+    "sm": {
+      "$type": "dimension",
+      "$value": "640px"
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "768px"
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "1024px"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "1280px"
+    },
+    "2xl": {
+      "$type": "dimension",
+      "$value": "1536px"
+    }
+  },
+  "iconStroke": {
+    "small": {
+      "$type": "number",
+      "$value": 2,
+      "$description": "Icon ≤ 16 px trong nút, badge, field (mặc định của lucide)."
+    },
+    "large": {
+      "$type": "number",
+      "$value": 1.75,
+      "$description": "Icon ≥ 20 px: tiêu đề thẻ, mũi tên lớn, minh hoạ trạng thái."
+    },
+    "mark": {
+      "$type": "number",
+      "$value": 3,
+      "$description": "Dấu tích/gạch trong ô 12–16 px (checkbox, bảng so sánh) để không nhoè."
+    }
+  }
+}
