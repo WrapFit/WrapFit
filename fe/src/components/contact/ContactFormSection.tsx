@@ -88,6 +88,34 @@ export function ContactFormSection() {
               </p>
             </div>
 
+            {/* Quick Zalo Hotline Bar for Vietnamese Artisans */}
+            <a
+              href="https://zalo.me"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center justify-between rounded-2xl bg-gradient-to-r from-blue-600 via-[#005CA9] to-indigo-700 p-4 text-white shadow-soft-12 hover:shadow-soft-16 transition-all hover:scale-[1.01]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md text-white font-bold text-sm">
+                  Zalo
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold uppercase tracking-wider text-blue-100">
+                    Hỗ trợ nhanh 24/7
+                  </span>
+                  <span className="font-landing-heading text-sm sm:text-base font-bold text-white block">
+                    Chat Trực Tiếp Với Kỹ Thuật Viên
+                  </span>
+                  <span className="text-[11px] text-blue-100/90 block">
+                    Tư vấn kích thước mm & xem mẫu in trong 5 phút
+                  </span>
+                </div>
+              </div>
+              <div className="hidden sm:flex size-8 shrink-0 items-center justify-center rounded-full bg-white/15 group-hover:translate-x-1 transition-transform">
+                <ArrowRight className="size-4 text-white" />
+              </div>
+            </a>
+
             {/* Direct Info List */}
             <div className="space-y-4 rounded-3xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-soft-8">
               {/* Address */}

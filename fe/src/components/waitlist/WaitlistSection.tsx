@@ -303,25 +303,35 @@ export function WaitlistSection({ className, isStandalone = false }: WaitlistSec
                     </p>
 
                     {/* Referral link card */}
-                    <div className="mt-6 w-full rounded-2xl border border-stone-200 bg-stone-50 p-4 text-left">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                        Link giới thiệu nhận ưu tiên
-                      </label>
-                      <p className="text-xs text-stone-500 mt-0.5">
-                        Mỗi bạn bè tham gia qua link của bạn giúp bạn nhảy vọt 10 bậc!
+                    <div className="mt-6 w-full rounded-2xl border border-stone-200 bg-stone-50/90 p-4 text-left shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-stone-700">
+                          Tiến Độ Nhận 01 Hộp Mẫu Thật
+                        </label>
+                        <span className="font-mono text-xs font-bold text-[#F26522]">0 / 2 bạn bè</span>
+                      </div>
+                      
+                      {/* Milestone progress bar */}
+                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-stone-200">
+                        <div className="h-full w-[12%] rounded-full bg-gradient-to-r from-[#005CA9] via-[#F26522] to-[#6DB33F]" />
+                      </div>
+
+                      <p className="mt-2.5 text-xs text-stone-600 leading-relaxed">
+                        Mời <strong>2 người bạn</strong> cùng làm đồ thủ công đăng ký qua link riêng của bạn để nhận ngay <strong>01 hộp mẫu in thật miễn phí</strong> gửi tận nơi.
                       </p>
-                      <div className="mt-2.5 flex items-center gap-2">
+
+                      <div className="mt-3 flex items-center gap-2">
                         <input
                           type="text"
                           readOnly
                           value="https://wrapfit.vn/waitlist?ref=WF-428"
                           aria-label="Link giới thiệu nhận ưu tiên"
-                          className="flex-1 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-mono text-stone-700 outline-none"
+                          className="flex-1 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-mono text-stone-700 outline-none select-all"
                         />
                         <button
                           type="button"
                           onClick={handleCopyLink}
-                          className="inline-flex items-center gap-1 rounded-xl bg-landing-ink px-3 py-2 text-xs font-medium text-white hover:bg-stone-800 transition-colors"
+                          className="inline-flex items-center gap-1 rounded-xl bg-landing-ink px-3 py-2 text-xs font-medium text-white hover:bg-stone-800 transition-colors shrink-0 shadow-xs"
                         >
                           {copied ? (
                             <>
@@ -335,6 +345,33 @@ export function WaitlistSection({ className, isStandalone = false }: WaitlistSec
                             </>
                           )}
                         </button>
+                      </div>
+
+                      {/* 1-Click Social Sharing */}
+                      <div className="mt-3.5 pt-3 border-t border-stone-200/80 flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-medium text-stone-500">Chia sẻ nhanh:</span>
+                        <a
+                          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://wrapfit.vn/waitlist?ref=WF-428")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#1877F2] px-2.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#0c63d4] transition-colors"
+                          title="Chia sẻ lên Facebook cá nhân hoặc nhóm"
+                        >
+                          <svg className="size-3.5 fill-current" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                          </svg>
+                          Facebook
+                        </a>
+                        <a
+                          href={`https://zalo.me/share?url=${encodeURIComponent("https://wrapfit.vn/waitlist?ref=WF-428")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#0068FF] px-2.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#0054cc] transition-colors"
+                          title="Gửi bạn bè qua Zalo"
+                        >
+                          <Share2 className="size-3.5" />
+                          Zalo
+                        </a>
                       </div>
                     </div>
 
@@ -359,6 +396,14 @@ export function WaitlistSection({ className, isStandalone = false }: WaitlistSec
                     <h3 className="font-landing-heading text-xl sm:text-2xl font-bold text-stone-900">
                       Gia Nhập Danh Sách Chờ Ngay
                     </h3>
+
+                    {/* Upfront Referral Incentive Highlight */}
+                    <div className="rounded-2xl border border-amber-300/80 bg-amber-50/80 p-3 text-xs text-amber-950 flex items-start gap-2.5 shadow-2xs">
+                      <Gift className="size-4 shrink-0 text-[#F26522] mt-0.5" />
+                      <div>
+                        <span className="font-bold text-[#F26522]">Đặc quyền giới thiệu:</span> Mời 2 người bạn làm đồ thủ công cùng đăng ký — Nhận ngay <strong>01 hộp mẫu in thật theo kích thước tùy chỉnh</strong> gửi miễn phí tận tay.
+                      </div>
+                    </div>
 
                     <ul className="space-y-2 text-xs sm:text-sm text-stone-600 mb-1">
                       <li className="flex items-center gap-2">

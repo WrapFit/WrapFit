@@ -193,10 +193,16 @@ export function BoxQuickPreviewModal({
           {/* Interactive Folding Slider Dock */}
           <div className="absolute inset-x-4 bottom-4 z-10 flex flex-col gap-2 rounded-2xl border border-stone-700/50 bg-stone-900/85 p-3 backdrop-blur-lg">
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 font-medium text-stone-300">
-                <Layers className="size-3.5 text-[#F26522]" />
-                Độ gập mô hình: <span className="font-mono text-[#F26522] font-semibold">{Math.round(foldProgress * 100)}%</span>
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 font-medium text-stone-300">
+                  <Layers className="size-3.5 text-[#F26522]" />
+                  Độ gập mô hình: <span className="font-mono text-[#F26522] font-semibold">{Math.round(foldProgress * 100)}%</span>
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300 border border-amber-500/20">
+                  <Sparkles className="size-2.5 animate-pulse text-amber-400" />
+                  Kéo trượt hoặc xoay 360°
+                </span>
+              </div>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"

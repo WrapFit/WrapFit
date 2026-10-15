@@ -136,8 +136,8 @@ export function AboutMilestones() {
 
         {/* Timeline */}
         <div className="mx-auto max-w-4xl relative">
-          {/* Vertical Center Line for desktop */}
-          <div className="hidden md:block absolute left-1/2 top-4 bottom-4 -translate-x-1/2 w-0.5 bg-stone-200" />
+          {/* Vertical Center Line for desktop with vibrant gradient */}
+          <div className="hidden md:block absolute left-1/2 top-4 bottom-4 -translate-x-1/2 w-1 bg-gradient-to-b from-[#005CA9] via-[#F26522] to-emerald-500 rounded-full opacity-60" />
 
           <div className="space-y-8 sm:space-y-12">
             {MILESTONES.map((m, index) => {
@@ -151,9 +151,9 @@ export function AboutMilestones() {
                     isEven ? "md:flex-row-reverse" : ""
                   }`}
                 >
-                  {/* Center Node Icon */}
-                  <div className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 size-10 items-center justify-center rounded-full bg-white border-2 border-[#F26522] shadow-soft-8 z-10 text-[#F26522]">
-                    <Icon className="size-4" />
+                  {/* Center Node Icon with Glow */}
+                  <div className="hidden md:flex absolute left-1/2 top-6 -translate-x-1/2 size-11 items-center justify-center rounded-full bg-white border-2 border-[#F26522] shadow-[0_0_16px_rgba(242,101,34,0.35)] z-10 text-[#F26522] transition-transform hover:scale-110">
+                    <Icon className="size-4.5" />
                   </div>
 
                   {/* Content Card */}

@@ -113,6 +113,7 @@ Whenever working on any task relating to WrapFit Frontend, UI/UX, 3D Canvas, CAD
      - `wrapfit-design-system`: Palette tokens, squircle rules, anti-AI-slop.
      - `scroll-storytelling`: ScrollTrigger storytelling structure.
      - `insforge-backend-flow`: Backend NestJS API contracts and storage flows.
+     - `checklist-design`: Automated UI/UX audits & critiques across 120+ checklists for websites, web apps, and design systems.
 
 2. **Tier 2 — Deep Source Code Inspection (Library Source & Project Source)**:
    - Do NOT stop at summary text in `SKILL.md`. When implementing specific functionality, proactively open, inspect, and extract logic from the actual source files:
