@@ -1,5 +1,5 @@
 {
-  "$description": "WrapFit design tokens 1.1.0. Generated from fe/src/assets/styles/tokens.ts; do not edit by hand.",
+  "$description": "WrapFit design tokens 1.2.0. Generated from fe/src/assets/styles/tokens.ts; do not edit by hand.",
   "color": {
     "palette": {
       "neutral": {
@@ -330,43 +330,43 @@
       },
       "action": {
         "$type": "color",
-        "$value": "{color.palette.green.400}",
-        "$description": "Nền nút chính (lime pack.ly), luôn đi với action-fg. Không dùng: Chữ hoặc icon trên nền sáng (1.5:1)."
+        "$value": "{color.palette.orange.500}",
+        "$description": "Nền nút chính: cam FPT, màu chủ đạo, luôn đi với action-fg. Không dùng: Chữ nhỏ trên nền sáng (3.2:1): dùng accent-fg."
       },
       "action-hover": {
         "$type": "color",
-        "$value": "{color.palette.green.300}",
+        "$value": "{color.palette.orange.600}",
         "$description": "Hover của nút chính."
       },
       "action-pressed": {
         "$type": "color",
-        "$value": "{color.palette.green.500}",
+        "$value": "{color.palette.orange.700}",
         "$description": "Nhấn giữ nút chính."
       },
       "action-fg": {
         "$type": "color",
-        "$value": "{color.palette.green.900}",
-        "$description": "Chữ trên action (10:1), giữ nguyên ở cả hai theme."
+        "$value": "#FFFFFF",
+        "$description": "Chữ trắng trên action (3.2:1, lựa chọn thương hiệu; chữ nút luôn semibold)."
       },
       "accent": {
         "$type": "color",
-        "$value": "{color.palette.green.700}",
+        "$value": "{color.palette.orange.700}",
         "$description": "Ô đã chọn: checkbox, radio, ngày được chọn, switch bật."
       },
       "accent-contrast": {
         "$type": "color",
         "$value": "#FFFFFF",
-        "$description": "Dấu tích, chữ trên accent (7.9:1 sáng · 10:1 tối)."
+        "$description": "Dấu tích, chữ trên accent (5.6:1 sáng · 6.2:1 tối)."
       },
       "accent-bg": {
         "$type": "color",
-        "$value": "{color.palette.green.100}",
+        "$value": "{color.palette.orange.50}",
         "$description": "Nền hàng/thẻ đang chọn."
       },
       "accent-fg": {
         "$type": "color",
-        "$value": "{color.palette.green.700}",
-        "$description": "Chữ trên accent-bg (7.3:1 sáng · 12:1 tối)."
+        "$value": "{color.palette.orange.700}",
+        "$description": "Chữ cam trên nền sáng (5.6:1) và trên accent-bg (5.0:1 sáng · 10:1 tối)."
       },
       "focus": {
         "$type": "color",
@@ -497,43 +497,43 @@
       },
       "action": {
         "$type": "color",
-        "$value": "{color.palette.green.400}",
-        "$description": "Nền nút chính (lime pack.ly), luôn đi với action-fg. Không dùng: Chữ hoặc icon trên nền sáng (1.5:1)."
+        "$value": "{color.palette.orange.500}",
+        "$description": "Nền nút chính: cam FPT, màu chủ đạo, luôn đi với action-fg. Không dùng: Chữ nhỏ trên nền sáng (3.2:1): dùng accent-fg."
       },
       "action-hover": {
         "$type": "color",
-        "$value": "{color.palette.green.300}",
+        "$value": "{color.palette.orange.600}",
         "$description": "Hover của nút chính."
       },
       "action-pressed": {
         "$type": "color",
-        "$value": "{color.palette.green.500}",
+        "$value": "{color.palette.orange.700}",
         "$description": "Nhấn giữ nút chính."
       },
       "action-fg": {
         "$type": "color",
-        "$value": "{color.palette.green.900}",
-        "$description": "Chữ trên action (10:1), giữ nguyên ở cả hai theme."
+        "$value": "#FFFFFF",
+        "$description": "Chữ trắng trên action (3.2:1, lựa chọn thương hiệu; chữ nút luôn semibold)."
       },
       "accent": {
         "$type": "color",
-        "$value": "{color.palette.green.400}",
+        "$value": "{color.palette.orange.400}",
         "$description": "Ô đã chọn: checkbox, radio, ngày được chọn, switch bật."
       },
       "accent-contrast": {
         "$type": "color",
-        "$value": "{color.palette.green.900}",
-        "$description": "Dấu tích, chữ trên accent (7.9:1 sáng · 10:1 tối)."
+        "$value": "{color.palette.orange.950}",
+        "$description": "Dấu tích, chữ trên accent (5.6:1 sáng · 6.2:1 tối)."
       },
       "accent-bg": {
         "$type": "color",
-        "$value": "{color.palette.green.900}",
+        "$value": "{color.palette.orange.950}",
         "$description": "Nền hàng/thẻ đang chọn."
       },
       "accent-fg": {
         "$type": "color",
-        "$value": "{color.palette.green.200}",
-        "$description": "Chữ trên accent-bg (7.3:1 sáng · 12:1 tối)."
+        "$value": "{color.palette.orange.200}",
+        "$description": "Chữ cam trên nền sáng (5.6:1) và trên accent-bg (5.0:1 sáng · 10:1 tối)."
       },
       "focus": {
         "$type": "color",
@@ -758,7 +758,7 @@
     "cad-dimension": {
       "$type": "typography",
       "$value": {
-        "fontFamily": "JetBrains Mono",
+        "fontFamily": "Inter",
         "fontSize": "0.75rem",
         "lineHeight": "1rem",
         "fontWeight": 500,
@@ -769,7 +769,7 @@
     "cad-spec-micro": {
       "$type": "typography",
       "$value": {
-        "fontFamily": "JetBrains Mono",
+        "fontFamily": "Inter",
         "fontSize": "0.6875rem",
         "lineHeight": "0.875rem",
         "fontWeight": 500,

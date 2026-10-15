@@ -78,7 +78,7 @@ export function CheckoutShell({ step, tier, billing, query, children }: Checkout
                 <span
                   className={cn(
                     "flex size-7 items-center justify-center rounded-full text-sm font-semibold",
-                    active ? "bg-landing-lime text-landing-green-night" : done ? "bg-landing-green text-white" : "bg-white text-landing-muted ring-1 ring-landing-line",
+                    active ? "bg-fpt-orange text-white" : done ? "bg-fpt-orange text-white" : "bg-white text-landing-muted ring-1 ring-landing-line",
                   )}
                 >
                   {done ? <Check className="size-4" aria-hidden /> : item.step}
@@ -104,11 +104,12 @@ export function CheckoutShell({ step, tier, billing, query, children }: Checkout
         </ol>
 
         <p role="note" className="mt-5 flex items-start gap-2.5 rounded-xl border border-landing-line bg-white px-4 py-3 text-sm leading-6 text-landing-muted">
-          <Info className="mt-1 size-4 shrink-0 text-landing-green" aria-hidden />
+          <Info className="mt-1 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />
           Bản xem trước: WrapFit chưa mở thanh toán trực tuyến. Không có khoản phí nào được trừ và gói của bạn chưa thay đổi.
         </p>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        {/* One card: the step on the left, the order on the right (below on phones), split by a hairline. */}
+        <div className="mt-6 grid grid-cols-1 overflow-hidden rounded-sheet bg-white ring-1 ring-line lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">{children}</div>
           <OrderSummary tier={tier} billing={billing} />
         </div>
@@ -117,52 +118,56 @@ export function CheckoutShell({ step, tier, billing, query, children }: Checkout
   );
 }
 
-/** The plan, its quotas and the amount, beside every step. */
+/** The plan, its quotas and the amount: the right column of the checkout card, beside every step. */
 function OrderSummary({ tier, billing }: { tier: PaidTier; billing: Billing }) {
   const plan = PLANS[tier];
   const { perMonth, total } = priceOf(plan, billing);
   const isPerExport = tier === "PAY_PER_EXPORT";
+  // Plan names already start with "Gói" for some tiers.
+  const title = /^gói\b/i.test(plan.name) ? plan.name : `Gói ${plan.name}`;
 
   return (
-    <aside aria-label="Tóm tắt đơn hàng" className="rounded-sheet bg-landing-green-night p-6 text-white lg:sticky lg:top-6">
-      <p className="text-sm text-landing-lime-mist/70">Đơn hàng của bạn</p>
-      <p className="mt-1 font-landing-heading text-3xl font-bold">Gói {plan.name}</p>
-      <p className="mt-1 text-sm text-landing-lime-mist/80">
-        {isPerExport ? "Thanh toán theo từng lần xuất" : billing === "yearly" ? "Thanh toán theo năm" : "Thanh toán theo tháng"}
-      </p>
+    <aside aria-label="Tóm tắt đơn hàng" className="flex flex-col border-t border-line bg-surface-sunken/40 p-6 sm:p-8 lg:border-l lg:border-t-0">
+      <p className="text-overline uppercase text-fg-muted">Đơn hàng của bạn</p>
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <p className="font-landing-heading text-heading-sm font-bold text-fg">{title}</p>
+        <span className="mt-0.5 shrink-0 rounded-full bg-fpt-orange-light px-2.5 py-0.5 text-label-sm text-fpt-orange-ink">
+          {isPerExport ? "Theo lần" : billing === "yearly" ? "Theo năm" : "Theo tháng"}
+        </span>
+      </div>
 
-      <ul className="mt-6 flex flex-col gap-3 text-sm">
-        <li className="flex items-center gap-3">
-          <HardDrive className="size-4 shrink-0 text-landing-lime" aria-hidden />
+      <ul className="mt-5 flex flex-col gap-3 text-body-sm text-fg">
+        <li className="flex items-start gap-3">
+          <HardDrive className="mt-0.5 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />
           {formatQuota(plan.storageBytes)} lưu trữ cho ảnh, logo và file in
         </li>
-        <li className="flex items-center gap-3">
-          <Sparkles className="size-4 shrink-0 text-landing-lime" aria-hidden />
+        <li className="flex items-start gap-3">
+          <Sparkles className="mt-0.5 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />
           {plan.aiPatternsPerDay} lượt tạo hoa văn AI mỗi 24 giờ
         </li>
-        <li className="flex items-center gap-3">
-          <Check className="size-4 shrink-0 text-landing-lime" aria-hidden />
+        <li className="flex items-start gap-3">
+          <Check className="mt-0.5 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />
           {isPerExport ? "Xuất trọn bộ file vector CMYK, SVG, DXF & in A4/A3" : "Studio, FitCheck™, file in PDF/SVG/DXF và mã QR mở hộp"}
         </li>
       </ul>
 
-      <dl className="mt-6 flex flex-col gap-2 border-t border-white/15 pt-5 text-sm">
-        <div className="flex justify-between">
-          <dt className="text-landing-lime-mist/80">{isPerExport ? "Đơn giá xuất file" : "Giá mỗi tháng"}</dt>
-          <dd>{formatUsd(perMonth)}{isPerExport ? " / lần" : ""}</dd>
+      <dl className="mt-6 flex flex-col gap-2.5 border-t border-line pt-5 text-body-sm">
+        <div className="flex justify-between gap-3">
+          <dt className="text-fg-muted">{isPerExport ? "Đơn giá xuất file" : "Giá mỗi tháng"}</dt>
+          <dd className="tabular-nums text-fg">{formatUsd(perMonth)}{isPerExport ? " / lần" : ""}</dd>
         </div>
         {!isPerExport && billing === "yearly" && (
-          <div className="flex justify-between">
-            <dt className="text-landing-lime-mist/80">Tiết kiệm so với theo tháng</dt>
-            <dd className="text-landing-lime">−{formatUsd((plan.price.monthly - plan.price.yearlyPerMonth) * 12)}</dd>
+          <div className="flex justify-between gap-3">
+            <dt className="text-fg-muted">Tiết kiệm so với theo tháng</dt>
+            <dd className="tabular-nums font-medium text-success-fg">−{formatUsd((plan.price.monthly - plan.price.yearlyPerMonth) * 12)}</dd>
           </div>
         )}
-        <div className="mt-2 flex items-end justify-between border-t border-white/15 pt-4">
-          <dt className="font-medium">{isPerExport ? "Tổng thanh toán" : billing === "yearly" ? "Tổng 12 tháng" : "Tổng hôm nay"}</dt>
-          <dd className="font-landing-heading text-3xl font-bold text-landing-lime">{formatUsd(total)}</dd>
+        <div className="mt-2 flex items-end justify-between gap-3 border-t border-line pt-4">
+          <dt className="font-semibold text-fg">{isPerExport ? "Tổng thanh toán" : billing === "yearly" ? "Tổng 12 tháng" : "Tổng thanh toán"}</dt>
+          <dd className="font-landing-heading text-heading-md font-bold tabular-nums text-fg">{formatUsd(total)}</dd>
         </div>
       </dl>
-      <p className="mt-3 text-xs text-landing-lime-mist/60">Giá theo VNĐ, đã bao gồm thuế VAT.</p>
+      <p className="mt-3 text-caption text-fg-muted">Giá theo VNĐ, đã bao gồm thuế VAT.</p>
     </aside>
   );
 }

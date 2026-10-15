@@ -24,3 +24,4 @@ export * from "./slider";
 export * from "./search-bar";
 export * from "./date-picker";
 export * from "./data-table";
+export * from "./select-menu";

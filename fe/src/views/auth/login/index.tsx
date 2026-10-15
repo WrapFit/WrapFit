@@ -13,8 +13,7 @@ import React, {
 } from "react";
 import { googleSignInUrl, login, register } from "@/api/auth";
 import { landingFontVariables } from "@/assets/fonts/landing";
-import { AuthIllustration } from "@/components/auth/AuthIllustration";
-import { LandingLogo } from "@/components/layout/LandingLogo";
+import { WrapFitMark } from "@/components/layout/WrapFitMark";
 import { ROUTES } from "@/constants";
 import { safeRedirect, useAuth } from "@/features/auth";
 import { isApiError } from "@/services/api";
@@ -44,7 +43,7 @@ const COPY: Record<
   AuthMode,
   {
     title: string;
-    subtitle: string;
+    subtitle?: string;
     submit: string;
     busy: string;
     switchLabel: string;
@@ -54,7 +53,6 @@ const COPY: Record<
 > = {
   login: {
     title: "Chào mừng trở lại",
-    subtitle: "Đăng nhập để mở lại dự án hộp quà và khuôn in của bạn.",
     submit: "Đăng nhập",
     busy: "Đang đăng nhập…",
     switchLabel: "Chưa có tài khoản?",
@@ -63,9 +61,7 @@ const COPY: Record<
   },
   register: {
     title: "Tạo tài khoản WrapFit",
-    subtitle:
-      "Thiết kế hộp vừa khít món quà, miễn phí, không cần thẻ thanh toán.",
-    submit: "Tạo tài khoản miễn phí",
+    submit: "Đăng ký",
     busy: "Đang tạo tài khoản…",
     switchLabel: "Đã có tài khoản?",
     switchAction: "Đăng nhập",
@@ -111,8 +107,8 @@ interface AuthLoginPageProps {
 }
 
 /**
- * Sign-in and sign-up of `/auth/login` and `/auth/register` (docs/06, 3.2 and 3.5): the brand panel (blue, Gói on
- * its disc) on the left half and the form in a white card on the right, after the BeeWise sign-in. No WebGL.
+ * Sign-in and sign-up of `/auth/login` and `/auth/register` (docs/06, 3.2 and 3.5): the logo at the top and the form
+ * in a white card centred on the page. No WebGL.
  */
 export default function AuthLoginPage({
   initialMode = "login",
@@ -206,7 +202,7 @@ function AuthLoginScreen({
   const busy = activeMutation.isPending || activeMutation.isSuccess;
   const formError =
     activeMutation.error != null &&
-    !isApiError(activeMutation.error, "EMAIL_NOT_VERIFIED")
+      !isApiError(activeMutation.error, "EMAIL_NOT_VERIFIED")
       ? activeMutation.error
       : null;
 
@@ -226,11 +222,11 @@ function AuthLoginScreen({
 
   const updateField =
     (field: FieldName, setter: (value: string) => void) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setter(event.target.value);
-      if (fieldErrors[field])
-        setFieldErrors((current) => ({ ...current, [field]: undefined }));
-    };
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        setter(event.target.value);
+        if (fieldErrors[field])
+          setFieldErrors((current) => ({ ...current, [field]: undefined }));
+      };
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -239,14 +235,14 @@ function AuthLoginScreen({
     const address = email.trim();
     const errors: FieldErrors = isRegister
       ? {
-          fullName: fullNameError(fullName),
-          email: emailError(address),
-          password: passwordError(password),
-        }
+        fullName: fullNameError(fullName),
+        email: emailError(address),
+        password: passwordError(password),
+      }
       : {
-          email: emailError(address),
-          password: password ? undefined : "Vui lòng nhập mật khẩu.",
-        };
+        email: emailError(address),
+        password: password ? undefined : "Vui lòng nhập mật khẩu.",
+      };
     setFieldErrors(errors);
     const firstInvalid = (Object.keys(FIELD_IDS) as FieldName[]).find(
       (field) => errors[field],
@@ -274,29 +270,27 @@ function AuthLoginScreen({
 
   return (
     <div
-      className={`${landingFontVariables} min-h-screen bg-white font-landing-body text-landing-ink antialiased lg:grid lg:grid-cols-2`}
+      className={`${landingFontVariables} min-h-screen bg-white font-landing-body text-landing-ink antialiased`}
     >
-      {/* Brand panel; it stays in view while a long form scrolls. */}
-      <AuthIllustration className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen" />
-
       <div className="flex min-h-screen min-w-0 flex-col bg-mist-50">
-        <header className="flex h-16 shrink-0 items-center px-5 lg:hidden">
-          <LandingLogo size="sm" />
-        </header>
-
         {/* Bottom padding below md clears the floating mobile navigation bar. */}
-        <main className="flex flex-1 items-center justify-center px-4 pb-24 pt-4 md:pb-10 lg:px-10">
+        <main className="flex flex-1 items-center justify-center px-4 pb-24 pt-8 md:pb-10 lg:px-10">
           <section
             aria-labelledby="auth-title"
-            className="w-full max-w-[480px] rounded-sheet border border-landing-line/70 bg-white px-6 py-8 shadow-[0_24px_60px_-28px_rgba(29,41,61,0.18)] sm:px-10 sm:py-10"
+            className="relative mt-10 w-full max-w-[480px] rounded-sheet border border-landing-line/70 bg-white px-6 pb-8 pt-14 shadow-[0_24px_60px_-28px_rgba(29,41,61,0.18)] sm:px-10 sm:pb-10"
           >
+            <AuthCardLid />
             <h1
               id="auth-title"
-              className="font-landing-heading text-heading-lg font-bold leading-tight tracking-tight"
+              className="text-center font-landing-heading text-heading-lg font-bold leading-tight tracking-tight"
             >
               {copy.title}
             </h1>
-            <p className="mt-1.5 text-sm text-landing-muted">{copy.subtitle}</p>
+            {copy.subtitle && (
+              <p className="mx-auto mt-1.5 max-w-[34ch] text-center text-sm text-landing-muted">
+                {copy.subtitle}
+              </p>
+            )}
 
             {status === "authenticated" ? (
               <div
@@ -331,7 +325,7 @@ function AuthLoginScreen({
                       id={FIELD_IDS.fullName}
                       label="Họ và tên"
                       optional
-                      placeholder="Nguyễn Văn A"
+                      placeholder="Nguyễn Văn An"
                       error={fieldErrors.fullName}
                       inputProps={{
                         name: "name",
@@ -345,13 +339,16 @@ function AuthLoginScreen({
                   <Field
                     id={FIELD_IDS.email}
                     label="Email"
-                    placeholder="ban@vidu.com"
+                    placeholder="name@example.com"
                     error={fieldErrors.email}
                     inputProps={{
                       name: "email",
                       type: "email",
-                      autoComplete: "email",
+                      // Login: "username" lets password managers pair it with the password field.
+                      autoComplete: isRegister ? "email" : "username",
                       inputMode: "email",
+                      autoCapitalize: "none",
+                      spellCheck: false,
                       required: true,
                       value: email,
                       onChange: updateField("email", setEmail),
@@ -360,9 +357,7 @@ function AuthLoginScreen({
                   <Field
                     id={FIELD_IDS.password}
                     label="Mật khẩu"
-                    placeholder={
-                      isRegister ? "Tối thiểu 8 ký tự" : "Nhập mật khẩu"
-                    }
+                    placeholder={isRegister ? "Tạo mật khẩu" : "Nhập mật khẩu"}
                     error={fieldErrors.password}
                     hint={isRegister ? PASSWORD_HINT : undefined}
                     inputProps={{
@@ -410,7 +405,7 @@ function AuthLoginScreen({
                     type="submit"
                     disabled={busy}
                     aria-busy={busy || undefined}
-                    className={buttonClass({ size: "xl", shape: "rounded", block: true, className: "!mt-6 disabled:cursor-wait" })}
+                    className={buttonClass({ variant: "brand", size: "xl", shape: "rounded", block: true, className: "!mt-6 disabled:cursor-wait" })}
                   >
                     {busy && (
                       <span
@@ -481,6 +476,50 @@ function AuthLoginScreen({
   );
 }
 
+/**
+ * The card's lid, drawn from the WrapFit "W" (components/layout/WrapFitMark.tsx): the box opened flat along the top
+ * edge (blue side panel, orange front Λ, green side panel), the mark itself on a tab above it, and a dashed crease
+ * line just inside the card edge, as on a dieline. The mark is the page's only logo and links home.
+ */
+function AuthCardLid() {
+  return (
+    <>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-2.5 overflow-hidden rounded-t-sheet">
+        <svg className="block size-full" viewBox="0 0 100 6" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="auth-lid-blue" x1="0" x2="1">
+              <stop offset="0" stopColor="#3FA2EE" />
+              <stop offset="1" stopColor="#005CA9" />
+            </linearGradient>
+            <linearGradient id="auth-lid-green" x1="0" x2="1">
+              <stop offset="0" stopColor="#2F8F6A" />
+              <stop offset="1" stopColor="#9BD36A" />
+            </linearGradient>
+            <linearGradient id="auth-lid-orange" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#F9A54A" />
+              <stop offset="1" stopColor="#F26522" />
+            </linearGradient>
+          </defs>
+          <polygon points="0,0 45,0 41,6 0,6" fill="url(#auth-lid-blue)" />
+          <polygon points="45,0 55,0 59,6 41,6" fill="url(#auth-lid-orange)" />
+          <polygon points="55,0 100,0 100,6 59,6" fill="url(#auth-lid-green)" />
+        </svg>
+      </div>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-2.5 top-5 rounded-squircle-md border border-dashed border-fpt-blue/15"
+      />
+      <Link
+        href={ROUTES.home}
+        aria-label="WrapFit, về trang chủ"
+        className="absolute left-1/2 top-0 flex size-[72px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-panel border border-landing-line/70 bg-white shadow-[0_12px_28px_-14px_rgba(242,101,34,0.45)] transition-transform hover:-translate-y-[54%] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus/40 motion-reduce:transition-none"
+      >
+        <WrapFitMark height={40} />
+      </Link>
+    </>
+  );
+}
+
 function Field({
   id,
   label,
@@ -523,7 +562,7 @@ function Field({
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-full min-w-0 flex-1 rounded-xl bg-transparent px-4 text-body text-landing-ink outline-none placeholder:text-landing-muted/70"
+          className="h-full min-w-0 flex-1 rounded-xl bg-transparent px-4 text-body text-landing-ink outline-none placeholder:text-landing-muted"
           {...inputProps}
         />
         {trailing}

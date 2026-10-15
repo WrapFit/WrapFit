@@ -40,7 +40,7 @@ export const SECONDARY_CTA = buttonClass({ variant: "secondary" });
 /** Grey line above a title (the eyebrow of pack.ly), with an optional icon. */
 export function Kicker({ icon: Icon, children, tone = "light" }: { icon?: LucideIcon; children: React.ReactNode; tone?: "light" | "dark" }) {
   return (
-    <p className={cn("inline-flex items-center gap-2 font-landing-heading text-title", tone === "light" ? "text-fg-muted" : "text-landing-lime-soft")}>
+    <p className={cn("inline-flex items-center gap-2 font-landing-heading text-title", tone === "light" ? "text-fg-muted" : "text-wf-orange-200")}>
       {Icon && <Icon className="size-5" aria-hidden />}
       {children}
     </p>
@@ -177,7 +177,7 @@ export function Card({ className, children, as: Tag = "div" }: { className?: str
 /** Icon in a rounded lime tile. */
 export function IconTile({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
   return (
-    <span className={cn("inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-success-bg text-success-fg", className)}>
+    <span className={cn("inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-fpt-orange-light text-fpt-orange-ink", className)}>
       <Icon className="size-5" aria-hidden />
     </span>
   );
@@ -210,8 +210,8 @@ export function CheckList({ items, className, tone = "light" }: { items: React.R
   return (
     <ul className={cn("flex flex-col gap-2.5", className)}>
       {items.map((item, index) => (
-        <li key={index} className={cn("flex items-start gap-2.5 text-body-sm leading-relaxed", tone === "light" ? "text-fg" : "text-landing-lime-mist")}>
-          <span className={cn("mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full", tone === "light" ? "bg-landing-lime text-landing-green-night" : "bg-landing-lime/20 text-landing-lime")}>
+        <li key={index} className={cn("flex items-start gap-2.5 text-body-sm leading-relaxed", tone === "light" ? "text-fg" : "text-white/90")}>
+          <span className={cn("mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full", tone === "light" ? "bg-fpt-orange text-white" : "bg-fpt-orange/20 text-fpt-orange")}>
             <Check className="size-3" strokeWidth={3} aria-hidden />
           </span>
           <span>{item}</span>
@@ -224,7 +224,7 @@ export function CheckList({ items, className, tone = "light" }: { items: React.R
 /** Closing band of pack.ly: lime gradient over a big isometric box, centred title, one or two pill actions. */
 export function CtaPanel({ title, body, actions }: { title: React.ReactNode; body?: React.ReactNode; actions: React.ReactNode }) {
   return (
-    <section className="relative isolate mt-6 overflow-hidden bg-gradient-to-b from-landing-lime-mist to-landing-lime-soft py-20 lg:py-32">
+    <section className="relative isolate mt-6 overflow-hidden bg-gradient-to-b from-fpt-orange-light to-wf-orange-100 py-20 lg:py-32">
       <svg viewBox="0 0 200 200" className="absolute left-1/2 top-1/2 -z-10 size-[420px] -translate-x-1/2 -translate-y-1/2 opacity-60 lg:size-[560px]" aria-hidden>
         <path d="M100 18 L172 58 L100 98 L28 58 Z" fill="#AFEC88" />
         <path d="M28 58 L100 98 L100 182 L28 142 Z" fill="#98E665" />
@@ -232,8 +232,8 @@ export function CtaPanel({ title, body, actions }: { title: React.ReactNode; bod
       </svg>
       <Container>
         <Reveal variant="text" className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center">
-          <h2 className="font-landing-heading text-display text-landing-green-night">{title}</h2>
-          {body && <div className="text-body text-landing-green-night/85 lg:text-body-lg">{body}</div>}
+          <h2 className="font-landing-heading text-display text-fg">{title}</h2>
+          {body && <div className="text-body text-fg/85 lg:text-body-lg">{body}</div>}
           <div className="mt-2 flex flex-wrap justify-center gap-3">{actions}</div>
         </Reveal>
       </Container>
@@ -247,7 +247,7 @@ export const WHITE_PILL = buttonClass({ variant: "white" });
 /** Link with an arrow, for "Xem thêm". */
 export function ArrowLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <Link href={href} className={cn("group inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-success-fg underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-focus/40", className)}>
+    <Link href={href} className={cn("group inline-flex items-center gap-1.5 rounded-md text-label font-semibold text-fpt-orange-ink underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-focus/40", className)}>
       {children}
       <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
     </Link>
@@ -298,7 +298,7 @@ export function EmailCapture({ list, cta, placeholder = "email@cuahang.vn", note
 
   if (saved) {
     return (
-      <p role="status" className={cn("rounded-2xl px-4 py-3 text-body-sm font-medium", tone === "light" ? "bg-landing-lime-mist text-landing-green-deep" : "bg-white/10 text-landing-lime-soft", className)}>
+      <p role="status" className={cn("rounded-2xl px-4 py-3 text-body-sm font-medium", tone === "light" ? "bg-fpt-orange-light text-fpt-orange-ink" : "bg-white/10 text-wf-orange-200", className)}>
         {done}
       </p>
     );
@@ -324,7 +324,7 @@ export function EmailCapture({ list, cta, placeholder = "email@cuahang.vn", note
             "h-11 min-w-0 flex-1 rounded-full px-4 text-body-sm outline-none transition focus-visible:ring-[3px]",
             tone === "light"
               ? "bg-surface-raised text-fg ring-1 ring-line-strong/70 placeholder:text-fg-muted focus-visible:ring-focus/30 aria-[invalid=true]:ring-danger"
-              : "bg-white/10 text-white ring-1 ring-white/20 placeholder:text-white/50 focus-visible:ring-landing-lime/40"
+              : "bg-white/10 text-white ring-1 ring-white/20 placeholder:text-white/50 focus-visible:ring-fpt-orange/40"
           )}
         />
         <button type="submit" className={cn(limeButton("md"), "h-11")}>
@@ -336,7 +336,7 @@ export function EmailCapture({ list, cta, placeholder = "email@cuahang.vn", note
           {error}
         </p>
       )}
-      {note && <p className={cn("text-caption", tone === "light" ? "text-fg-muted" : "text-landing-lime-mist/70")}>{note}</p>}
+      {note && <p className={cn("text-caption", tone === "light" ? "text-fg-muted" : "text-white/70")}>{note}</p>}
     </form>
   );
 }

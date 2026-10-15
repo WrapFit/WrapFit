@@ -98,7 +98,7 @@ function AdminOverview() {
                 .filter((item) => item.href !== '/admin')
                 .map((item) => (
                   <li key={item.href}>
-                    <Link href={item.href} className="group flex h-full flex-col gap-2 rounded-xl bg-library-panel p-4 transition-colors hover:bg-library-accent-mist">
+                    <Link href={item.href} className="group flex h-full flex-col gap-2 rounded-xl bg-library-panel p-4 transition-colors hover:bg-fpt-orange-light">
                       <span className="flex items-center justify-between">
                         <item.icon className="size-5 text-library-ink" strokeWidth={1.75} aria-hidden />
                         {WIRED.has(item.href) ? <Badge tone="green">Dữ liệu thật</Badge> : <Badge>Dữ liệu mẫu</Badge>}

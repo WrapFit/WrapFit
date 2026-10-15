@@ -26,6 +26,8 @@ interface BoxStage3DProps {
   open?: boolean;
   /** 0 flat sheet → 1 folded box (default). */
   foldProgress?: number;
+  /** Size while a slider moves: the built box is scaled to it, `dimensions` rebuilds it once the move settles. */
+  liveDimensions?: BoxDimensions;
   /** No frame of its own: the box sits on the parent's surface. */
   frameless?: boolean;
   environment?: Environment;
@@ -45,6 +47,7 @@ export function BoxStage3D({
   title,
   open,
   foldProgress = 1,
+  liveDimensions,
   frameless = false,
   environment = "studio",
   className = "",
@@ -73,6 +76,7 @@ export function BoxStage3D({
         <InteractiveFoldingBox3D
           dimensions={dims}
           foldProgress={foldProgress}
+          liveDimensions={liveDimensions}
           boxType={structure}
           theme={theme}
           elements={elements}

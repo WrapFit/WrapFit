@@ -30,7 +30,7 @@ interface LegalDoc {
 const DOCS: LegalDoc[] = [];
 const P = ({ children }: { children: React.ReactNode }) => <p>{children}</p>;
 const UL = ({ items }: { items: React.ReactNode[] }) => (
-  <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-landing-green">
+  <ul className="flex list-disc flex-col gap-1.5 pl-5 marker:text-fpt-orange-ink">
     {items.map((item, index) => (
       <li key={index}>{item}</li>
     ))}
@@ -299,7 +299,7 @@ function LegalPage({ doc }: { doc: LegalDoc }) {
                 <h2 id="lien-he" className="scroll-mt-28 font-landing-heading text-xl font-bold">
                   Câu hỏi về pháp lý hoặc dữ liệu?
                 </h2>
-                <p className="mt-1 text-sm text-landing-lime-mist/90">Chúng tôi trả lời trong 3 ngày làm việc.</p>
+                <p className="mt-1 text-sm text-white/90">Chúng tôi trả lời trong 3 ngày làm việc.</p>
               </div>
               <a href="mailto:legal@wrapfit.vn" className="inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-landing-ink">
                 <Mail className="size-4" aria-hidden /> legal@wrapfit.vn

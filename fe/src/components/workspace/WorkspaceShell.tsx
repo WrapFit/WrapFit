@@ -140,7 +140,7 @@ export function ShellLayout({ title, description, actions, children, nav, root, 
                   aria-current={pathname === item.href ? "page" : undefined}
                   className={cn(
                     "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm",
-                    pathname === item.href ? "border-library-ink bg-library-lime-ink text-white" : "border-library-line text-library-ink"
+                    pathname === item.href ? "border-library-ink bg-fpt-orange text-white" : "border-library-line text-library-ink"
                   )}
                 >
                   <item.icon className="size-4" aria-hidden />
@@ -203,14 +203,14 @@ function PlanCard() {
       {storage.data && (
         <>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white" aria-hidden>
-            <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-library-accent")} style={{ width: `${percent}%` }} />
+            <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-fpt-orange")} style={{ width: `${percent}%` }} />
           </div>
           <p className="mt-1.5 text-xs text-library-sub">
             {formatBytes(storage.data.usedBytes)} / {formatBytes(storage.data.quotaBytes)}
           </p>
         </>
       )}
-      <Link href="/pricing" className="mt-3 inline-block text-sm font-medium text-library-accent hover:underline">
+      <Link href="/pricing" className="mt-3 inline-block text-sm font-medium text-fpt-orange-ink hover:underline">
         Xem các gói
       </Link>
     </div>

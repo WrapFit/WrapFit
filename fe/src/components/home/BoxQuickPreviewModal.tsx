@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import React, { useEffect, useState, useCallback } from "react";
-import { ArrowRight, CheckCircle2, Eye, Layers, Maximize2, RotateCcw, ShieldCheck, Sparkles, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2, Layers, X } from "lucide-react";
 import { ROUTES } from "@/constants";
 import type { BoxStructureOption, BoxSizePreset } from "@/features/studio/utils/boxStructures";
 import { formatDimensions } from "@/features/templates/labels";
@@ -156,7 +156,7 @@ export function BoxQuickPreviewModal({
             tactileAudio.playSquishyTap();
             onClose();
           }}
-          className="absolute right-4 top-4 z-20 inline-flex size-10 items-center justify-center rounded-full bg-fg/80 text-white/75 backdrop-blur-md transition hover:bg-fg hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-lime"
+          className="absolute right-4 top-4 z-20 inline-flex size-10 items-center justify-center rounded-full bg-fg/80 text-white/75 backdrop-blur-md transition hover:bg-fg hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
           aria-label="Đóng cửa sổ xem nhanh"
         >
           <X className="size-5" />
@@ -170,7 +170,7 @@ export function BoxQuickPreviewModal({
               <span className="size-2 animate-pulse rounded-full bg-success" />
               Live 3D Fold
             </span>
-            <span className="hidden rounded-full border border-fg-muted/60 bg-fg/60 px-2.5 py-1 font-mono text-xs text-white/75 backdrop-blur-md sm:inline-block">
+            <span className="hidden rounded-full border border-white/20/60 bg-white/5 px-2.5 py-1 font-mono text-xs text-white/75 backdrop-blur-md sm:inline-block">
               {formatDimensions(currentPreset.dims)}
             </span>
           </div>
@@ -192,11 +192,11 @@ export function BoxQuickPreviewModal({
           </div>
 
           {/* Interactive Folding Slider Dock */}
-          <div className="absolute inset-x-4 bottom-4 z-10 flex flex-col gap-2 rounded-2xl border border-fg-muted/50 bg-fg/85 p-3 backdrop-blur-lg">
+          <div className="absolute inset-x-4 bottom-4 z-10 flex flex-col gap-2 rounded-2xl border border-white/20/50 bg-fg/85 p-3 backdrop-blur-lg">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5 font-medium text-white/75">
-                <Layers className="size-3.5 text-landing-lime" />
-                Độ gập mô hình: <span className="font-mono text-landing-lime font-semibold">{Math.round(foldProgress * 100)}%</span>
+                <Layers className="size-3.5 text-fpt-orange" />
+                Độ gập mô hình: <span className="font-mono text-fpt-orange font-semibold">{Math.round(foldProgress * 100)}%</span>
               </span>
               <div className="flex items-center gap-1.5">
                 <button
@@ -204,7 +204,7 @@ export function BoxQuickPreviewModal({
                   onClick={() => handleFoldChange(0.0)}
                   className={cn(
                     "rounded px-2 py-0.5 text-caption transition",
-                    foldProgress === 0.0 ? "bg-action text-action-fg font-bold" : "bg-fg text-fg-muted hover:text-white/85"
+                    foldProgress === 0.0 ? "bg-fpt-orange text-white font-bold" : "bg-fg text-white/70 hover:text-white/85"
                   )}
                 >
                   Phẳng (0%)
@@ -214,7 +214,7 @@ export function BoxQuickPreviewModal({
                   onClick={() => handleFoldChange(0.5)}
                   className={cn(
                     "rounded px-2 py-0.5 text-caption transition",
-                    foldProgress === 0.5 ? "bg-action text-action-fg font-bold" : "bg-fg text-fg-muted hover:text-white/85"
+                    foldProgress === 0.5 ? "bg-fpt-orange text-white font-bold" : "bg-fg text-white/70 hover:text-white/85"
                   )}
                 >
                   Bán gập (50%)
@@ -224,7 +224,7 @@ export function BoxQuickPreviewModal({
                   onClick={() => handleFoldChange(1.0)}
                   className={cn(
                     "rounded px-2 py-0.5 text-caption transition",
-                    foldProgress === 1.0 ? "bg-action text-action-fg font-bold" : "bg-fg text-fg-muted hover:text-white/85"
+                    foldProgress === 1.0 ? "bg-fpt-orange text-white font-bold" : "bg-fg text-white/70 hover:text-white/85"
                   )}
                 >
                   Đóng (100%)
@@ -239,7 +239,7 @@ export function BoxQuickPreviewModal({
               value={foldProgress}
               onChange={(e) => handleFoldChange(parseFloat(e.target.value))}
               aria-label="Điều chỉnh độ gập hộp 3D"
-              className="h-1.5 w-full cursor-ew-resize appearance-none rounded-lg bg-fg accent-landing-lime"
+              className="h-1.5 w-full cursor-ew-resize appearance-none rounded-lg bg-fg accent-fpt-orange"
             />
           </div>
         </div>
@@ -249,10 +249,10 @@ export function BoxQuickPreviewModal({
           <div className="flex flex-col gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-fg-muted bg-fg px-2.5 py-0.5 font-mono text-cad-spec-micro uppercase tracking-wider text-fg-muted">
+                <span className="rounded-full border border-white/20 bg-fg px-2.5 py-0.5 font-mono text-cad-spec-micro uppercase tracking-wider text-white/70">
                   {structure.name}
                 </span>
-                <span className="rounded-full border border-landing-lime/30 bg-landing-lime/10 px-2.5 py-0.5 text-caption font-medium text-landing-lime">
+                <span className="rounded-full border border-fpt-orange/30 bg-fpt-orange/10 px-2.5 py-0.5 text-caption font-medium text-fpt-orange">
                   {structure.badge}
                 </span>
                 <span className="flex items-center gap-1 rounded-full border border-success/30 bg-emerald-950/40 px-2 py-0.5 text-caption text-success">
@@ -263,14 +263,14 @@ export function BoxQuickPreviewModal({
               <h2 id="quick-preview-title" className="mt-2 text-2xl font-bold tracking-tight text-white lg:text-3xl">
                 {structure.vietnameseName}
               </h2>
-              <p className="mt-1 text-sm leading-relaxed text-fg-muted">{structure.description}</p>
+              <p className="mt-1 text-sm leading-relaxed text-white/70">{structure.description}</p>
             </div>
 
             {/* Size Selector Switcher (S / M / L) */}
-            <div className="rounded-2xl border border-fg bg-fg/60 p-3.5">
+            <div className="rounded-2xl border border-fg bg-white/5 p-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white/75">Chọn kích thước chuẩn:</span>
-                <span className="font-mono text-xs text-landing-lime font-medium">
+                <span className="font-mono text-xs text-fpt-orange font-medium">
                   {formatDimensions(currentPreset.dims)}
                 </span>
               </div>
@@ -285,24 +285,24 @@ export function BoxQuickPreviewModal({
                       className={cn(
                         "flex flex-col items-center rounded-xl border p-2 text-center transition",
                         isActive
-                          ? "border-landing-lime bg-landing-lime/10 text-landing-lime shadow-sm"
-                          : "border-fg bg-fg/60 text-fg-muted hover:border-fg-muted hover:text-white/85"
+                          ? "border-fpt-orange bg-fpt-orange/10 text-fpt-orange shadow-sm"
+                          : "border-white/15 bg-white/5 text-white/70 hover:border-white/40 hover:text-white/85"
                       )}
                     >
                       <span className="text-xs font-bold uppercase">{preset.label} · {preset.name}</span>
-                      <span className="mt-0.5 font-mono text-cad-spec-micro text-fg-muted">{preset.dims.length}×{preset.dims.width} mm</span>
+                      <span className="mt-0.5 font-mono text-cad-spec-micro text-white/70">{preset.dims.length}×{preset.dims.width} mm</span>
                     </button>
                   );
                 })}
               </div>
-              <p className="mt-2 text-caption text-fg-muted">
+              <p className="mt-2 text-caption text-white/70">
                 <span className="font-medium text-white/75">Phù hợp:</span> {currentPreset.description}
               </p>
             </div>
 
             {/* Material Theme Swatches */}
             <div className="flex items-center justify-between rounded-xl border border-fg bg-fg/40 px-3.5 py-2.5 text-xs">
-              <span className="text-fg-muted">Chất liệu giấy:</span>
+              <span className="text-white/70">Chất liệu giấy:</span>
               <div className="flex items-center gap-1.5">
                 {(
                   [
@@ -318,11 +318,11 @@ export function BoxQuickPreviewModal({
                     className={cn(
                       "flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption transition",
                       theme === mat.id
-                        ? "border-landing-lime bg-fg text-landing-lime font-medium"
-                        : "border-fg text-fg-muted hover:border-fg-muted"
+                        ? "border-fpt-orange bg-fg text-fpt-orange font-medium"
+                        : "border-fg text-white/70 hover:border-white/40"
                     )}
                   >
-                    <span className="size-2 rounded-full border border-fg-muted" style={{ backgroundColor: mat.color }} />
+                    <span className="size-2 rounded-full border border-white/20" style={{ backgroundColor: mat.color }} />
                     {mat.label}
                   </button>
                 ))}
@@ -332,11 +332,11 @@ export function BoxQuickPreviewModal({
             {/* Packaging Technical Specs */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="rounded-xl border border-fg/80 bg-fg/30 p-2.5">
-                <span className="text-fg-muted block text-caption">Định lượng khuyên dùng</span>
+                <span className="text-white/70 block text-caption">Định lượng khuyên dùng</span>
                 <span className="font-medium text-white/85 mt-0.5 block">{structure.recommendedPaper}</span>
               </div>
               <div className="rounded-xl border border-fg/80 bg-fg/30 p-2.5">
-                <span className="text-fg-muted block text-caption">Thời gian gập hộp</span>
+                <span className="text-white/70 block text-caption">Thời gian gập hộp</span>
                 <span className="font-medium text-white/85 mt-0.5 block">⚡ {structure.foldTimeSec} giây ({structure.foldDifficulty})</span>
               </div>
             </div>
@@ -350,20 +350,20 @@ export function BoxQuickPreviewModal({
                 tactileAudio.playCreaseSnap();
                 onClose();
               }}
-              className={buttonClass({ size: "lg", shape: "rounded", block: true })}
+              className={buttonClass({ variant: "brand", size: "lg", shape: "rounded", block: true })}
             >
               <span>Mở trong Studio 3D</span>
               <ArrowRight className="size-4" />
             </Link>
-            <div className="flex items-center justify-between text-xs text-fg-muted px-1">
+            <div className="flex items-center justify-between text-xs text-white/70 px-1">
               <Link
                 href={`${ROUTES.templates}?structure=${structure.id}`}
                 onClick={onClose}
-                className="hover:text-landing-lime underline underline-offset-2 transition"
+                className="hover:text-fpt-orange underline underline-offset-2 transition"
               >
                 Xem 30+ mẫu thiết kế có sẵn →
               </Link>
-              <span className="font-mono text-cad-spec-micro text-fg-muted">CAD v2.4 · FEFCO</span>
+              <span className="font-mono text-cad-spec-micro text-white/70">CAD v2.4 · FEFCO</span>
             </div>
           </div>
         </div>

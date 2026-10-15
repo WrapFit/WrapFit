@@ -337,7 +337,7 @@ function OrdersScreen() {
                 <span
                   className={cn(
                     'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-medium',
-                    step.ready ? 'bg-library-lime text-library-lime-ink' : 'border border-library-line text-library-muted',
+                    step.ready ? 'bg-fpt-orange text-white' : 'border border-library-line text-library-muted',
                   )}
                 >
                   {index + 1}

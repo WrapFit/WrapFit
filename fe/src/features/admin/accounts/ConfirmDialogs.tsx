@@ -59,7 +59,7 @@ export function ConfirmLockDialog({ user, onCancel, onConfirm }: ConfirmLockDial
         <button
           type="button"
           onClick={onConfirm}
-          className="px-5 py-2.5 min-h-[44px] rounded-xl bg-library-lime-ink text-white hover:bg-black font-medium text-sm shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          className="px-5 py-2.5 min-h-[44px] rounded-xl bg-fpt-orange text-white hover:bg-black font-medium text-sm shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
           <Icon name="lock" className="size-[18px]" />
           Khoá tài khoản

@@ -11,7 +11,7 @@ import { CardTitle, Container, Eyebrow, FeatureCard, Reveal, darkGhostButton, li
 /** Lime band: the plans card with its price picker, then the dark card of the Gói copilot. */
 export function PlansAndCopilot() {
   return (
-    <section className="space-y-8 bg-landing-lime py-10 lg:space-y-14 lg:py-16">
+    <section className="space-y-8 bg-fpt-orange py-10 lg:space-y-14 lg:py-16">
       <Reveal>
         <Container>
           <FeatureCard>
@@ -37,13 +37,13 @@ export function PlansAndCopilot() {
   );
 }
 
-/** Dark green card of the Gói copilot, with a photo and Mascot Gói standing in corner. */
+/** Dark green card of the Gói copilot, with Mascot Gói showcased on the right. */
 export function CopilotCard() {
-  const [mascotSize, setMascotSize] = useState(128);
+  const [mascotSize, setMascotSize] = useState(190);
 
   useEffect(() => {
     const updateSize = () => {
-      setMascotSize(window.innerWidth < 640 ? 104 : 128);
+      setMascotSize(window.innerWidth < 640 ? 140 : 190);
     };
     updateSize();
     window.addEventListener("resize", updateSize);
@@ -55,13 +55,14 @@ export function CopilotCard() {
       <Container>
         <FeatureCard className="bg-landing-green-night ring-white/10">
           <article id={COPILOT.id} className="grid scroll-mt-28 grid-cols-1 items-center gap-8 lg:grid-cols-2">
-            <div className="flex flex-col justify-between gap-6">
+            {/* Left column: Text & action buttons */}
+            <div className="flex flex-col justify-center gap-6">
               <div className="flex flex-col gap-4">
                 <Reveal variant="text">
-                  <Eyebrow className="text-landing-lime-soft">{COPILOT.eyebrow}</Eyebrow>
-                  <CardTitle className="text-landing-lime">{COPILOT.title}</CardTitle>
+                  <Eyebrow className="text-wf-orange-200">{COPILOT.eyebrow}</Eyebrow>
+                  <CardTitle className="text-fpt-orange">{COPILOT.title}</CardTitle>
                 </Reveal>
-                <p className="text-base leading-7 text-landing-lime-mist lg:text-lg">{COPILOT.body}</p>
+                <p className="text-base leading-7 text-white/90 lg:text-lg">{COPILOT.body}</p>
                 <div className="flex flex-wrap gap-2.5">
                   {COPILOT.actions.map((action) => {
                     const Icon = action.icon === "chat" ? MessageCircle : BookOpen;
@@ -74,32 +75,33 @@ export function CopilotCard() {
                   })}
                 </div>
               </div>
+            </div>
 
-              {/* Mascot Gói standing prominently on the text side (dark green background), high contrast & distinct */}
-              <div className="pt-2 flex items-center gap-4">
+            {/* Right column: Bé Gói Mascot Showcase */}
+            <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-8 sm:p-12 text-center shadow-soft-16">
+              {/* Subtle ambient glow behind Bé Gói */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-48 rounded-full bg-fpt-orange/10 blur-3xl"
+              />
+              <div className="relative z-10 py-2">
                 <GoiMascot
                   pose="measuring"
                   size={mascotSize}
                   bubbleText={COPILOT.bubble}
-                  bubblePlacement="top-right"
+                  bubblePlacement="top"
                   showBubbleOnBoop={true}
-                  label="Bé Gói - Trợ lý AI Packaging Copilot (Bấm để trò chuyện!)"
+                  label="Bé Gói - Trợ lý AI Packaging Copilot (Bấm để tương tác!)"
                 />
-                <div className="hidden sm:flex flex-col text-xs text-landing-lime-mist/80 leading-relaxed max-w-[210px]">
-                  <span className="font-semibold text-landing-lime">Bé Gói luôn sẵn sàng</span>
-                  <span>Bấm vào Gói để trò chuyện và nhận gợi ý kích thước tối ưu!</span>
-                </div>
               </div>
-            </div>
-
-            {/* Right column: Designer studio photo cleanly presented */}
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-soft-16">
-              <img
-                src={COPILOT.image.src}
-                alt={COPILOT.image.alt}
-                loading="lazy"
-                className="aspect-[16/10] w-full object-cover transition-transform duration-700 hover:scale-[1.02]"
-              />
+              <div className="relative z-10 mt-5 flex flex-col items-center text-center">
+                <span className="font-landing-heading text-base font-bold text-fpt-orange">
+                  Bé Gói luôn sẵn sàng
+                </span>
+                <span className="mt-1 max-w-[280px] text-xs leading-relaxed text-white/80">
+                  Bấm vào Gói để trò chuyện và nhận gợi ý kích thước tối ưu!
+                </span>
+              </div>
             </div>
           </article>
         </FeatureCard>

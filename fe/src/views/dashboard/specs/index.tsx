@@ -10,7 +10,7 @@ import { BLEED_MM, MAX_SHEET_MM, MIN_DPI, SAFE_MARGIN_MM } from '@wrapfit/shared
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
-import { primaryButton } from '@/components/library';
+import { primaryButton, createBoxButton } from '@/components/library';
 import { Badge, HeroPanel, Panel, PanelTitle, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
@@ -55,7 +55,7 @@ function SpecsScreen() {
       title="Quy chuẩn hộp"
       description="Cấu trúc hộp, giới hạn kích thước và các quy tắc FitCheck™ mà mọi khuôn bế WrapFit phải đạt trước khi xuất file in."
       actions={
-        <Link href={ROUTES.editorNew} className={primaryButton}>
+        <Link href={ROUTES.editorNew} className={createBoxButton}>
           Tạo hộp mới
           <ArrowRight className="size-4" aria-hidden />
         </Link>
@@ -129,7 +129,7 @@ function SpecsScreen() {
             </div>
             <dl className="grid grid-cols-3 gap-2 text-center">
               {[
-                { label: 'Đạt', value: '90–100', className: 'bg-library-accent-mist text-library-accent' },
+                { label: 'Đạt', value: '90–100', className: 'bg-fpt-orange-light text-fpt-orange-ink' },
                 { label: 'Cần xem', value: '70–89', className: 'bg-warning-bg text-warning-fg' },
                 { label: 'Chưa đạt', value: '< 70', className: 'bg-danger-bg text-danger-fg' },
               ].map((band) => (
@@ -176,7 +176,7 @@ function StructureCard({ structure }: { structure: BoxStructure }) {
           <Link href={`/structures/${structure.id}`} className="text-sm font-medium text-library-ink hover:underline">
             Chi tiết khuôn bế
           </Link>
-          <Link href={`${ROUTES.templates}?structure=${structure.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-library-accent hover:underline">
+          <Link href={`${ROUTES.templates}?structure=${structure.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-fpt-orange-ink hover:underline">
             Xem mẫu
             <ArrowRight className="size-4" aria-hidden />
           </Link>

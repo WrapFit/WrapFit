@@ -129,6 +129,8 @@ export function RadioGroup<T extends string>({ label, hideLabel, value, onChange
 }
 
 export interface SwitchProps {
+  /** Colour when on: orange accent (default) or black ink. */
+  tone?: "brand" | "ink";
   checked: boolean;
   onChange(value: boolean): void;
   /** Says what turns on. Shown next to the switch unless `hideLabel` (then still read). */
@@ -141,7 +143,7 @@ export interface SwitchProps {
 }
 
 /** On / off setting that applies at once (no Save button). */
-export function Switch({ checked, onChange, label, description, hideLabel = false, disabled = false, id: givenId, className }: SwitchProps) {
+export function Switch({ tone = "brand", checked, onChange, label, description, hideLabel = false, disabled = false, id: givenId, className }: SwitchProps) {
   const autoId = useId();
   const id = givenId ?? autoId;
   const descriptionId = description ? `${id}-desc` : undefined;
@@ -158,7 +160,7 @@ export function Switch({ checked, onChange, label, description, hideLabel = fals
       onClick={() => onChange(!checked)}
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-[1.5px] p-0.5 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:cursor-not-allowed disabled:opacity-50",
-        checked ? "border-accent bg-accent" : "border-line-strong bg-surface-sunken",
+        checked ? (tone === "ink" ? "border-fg bg-fg" : "border-accent bg-accent") : "border-line-strong bg-surface-sunken",
       )}
     >
       <span

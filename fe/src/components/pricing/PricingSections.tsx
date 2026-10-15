@@ -107,7 +107,7 @@ export function WhyWrapFit() {
 /** Light green band with a large translucent box behind the closing call to action. */
 export function CtaBand() {
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-b from-landing-lime-mist to-landing-lime-soft py-28 lg:py-40">
+    <section className="relative isolate overflow-hidden bg-gradient-to-b from-fpt-orange-light to-wf-orange-100 py-28 lg:py-40">
       <svg
         viewBox="0 0 200 200"
         className="absolute top-1/2 left-1/2 -z-10 size-[420px] -translate-x-1/2 -translate-y-1/2 opacity-70 lg:size-[560px]"
@@ -118,11 +118,11 @@ export function CtaBand() {
         <path d="M100 98 L172 58 L172 142 L100 182 Z" fill="#7BCB4A" />
       </svg>
       <Container className="flex flex-col items-center gap-4 text-center">
-        <h2 className="font-landing-heading text-2xl font-bold text-landing-green-night lg:text-4xl">{CTA_BAND.title}</h2>
-        <p className="max-w-xl text-base text-landing-green-night/80">{CTA_BAND.body}</p>
+        <h2 className="font-landing-heading text-2xl font-bold text-fg lg:text-4xl">{CTA_BAND.title}</h2>
+        <p className="max-w-xl text-base text-fg/80">{CTA_BAND.body}</p>
         <Link
           href={CTA_BAND.cta.href}
-          className="inline-flex h-9 items-center rounded-full bg-white px-4 text-sm font-medium text-landing-ink shadow-soft-8 transition-colors hover:bg-landing-lime-mist"
+          className="inline-flex h-9 items-center rounded-full bg-white px-4 text-sm font-medium text-landing-ink shadow-soft-8 transition-colors hover:bg-fpt-orange-light"
         >
           {CTA_BAND.cta.label}
         </Link>

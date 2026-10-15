@@ -98,7 +98,7 @@ export function ContactHero() {
                     </div>
 
                     {channel.badge && (
-                      <span className="absolute top-5 right-5 rounded-full bg-success-bg px-2 py-0.5 text-caption font-semibold text-success-fg border border-success/60">
+                      <span className="absolute top-5 right-5 rounded-full bg-fpt-orange-light px-2 py-0.5 text-caption font-semibold text-fpt-orange-ink border border-fpt-orange/40">
                         {channel.badge}
                       </span>
                     )}

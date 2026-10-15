@@ -146,11 +146,11 @@ export function VisualSparkPricingCards() {
               <Reveal key={item.tier} className="h-full">
                 <div
                   className={`relative flex h-full flex-col justify-between rounded-card sm:rounded-squircle-xl p-7 sm:p-9 border shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_12px_36px_rgba(0,0,0,0.08)] hover:-translate-y-1 ${item.bgClass} ${
-                    item.popular ? "border-landing-green ring-2 ring-action" : item.borderClass
+                    item.popular ? "border-fpt-orange ring-2 ring-action" : item.borderClass
                   }`}
                 >
                   {item.popular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-action px-3 py-1 text-label-sm text-action-fg shadow-soft-4">Khuyên dùng</span>
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-fpt-orange px-3 py-1 text-label-sm text-white shadow-soft-4">Khuyên dùng</span>
                   )}
                   <div>
                     <div className="flex justify-center mb-6 pt-2">
@@ -185,7 +185,7 @@ export function VisualSparkPricingCards() {
                   <div className="pt-2">
                     <Link
                       href={perExport ? item.href : `${item.href}&billing=${cycle}`}
-                      className={buttonClass({ variant: item.popular ? "primary" : "dark", size: "lg", shape: "rounded", block: true, className: "text-label" })}
+                      className={buttonClass({ variant: item.popular ? "brand" : "dark", size: "lg", shape: "rounded", block: true, className: "text-label" })}
                     >
                       {item.cta}
                     </Link>

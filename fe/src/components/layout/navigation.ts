@@ -28,13 +28,10 @@ export const STUDIO_LINKS: NavLink[] = [
 
 export const RESOURCE_LINKS: NavLink[] = [
   { label: "Tính năng", href: "/features", description: "Khuôn bế, hộp 3D, FitCheck™, file in tách lớp" },
-  { label: "Blog", href: "/blog", description: "Thuật ngữ in, chọn giấy, lỗi thường gặp ở xưởng" },
-  { label: "So sánh", href: "/compare", description: "WrapFit khác gì Pacdora, Canva và xưởng offset" },
-  { label: "Về chúng tôi", href: ROUTES.about, description: "Câu chuyện khởi nghiệp, sứ mệnh & đội ngũ EXE101" },
+  { label: "Về chúng tôi", href: ROUTES.about, description: "Hành trình và đội ngũ EXE101 đứng sau WrapFit" },
   { label: "Trung tâm hỗ trợ", href: "/support", description: "Câu trả lời về kích thước, FitCheck™, file in" },
   { label: "Liên hệ & Tư vấn", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
   { label: "Bảng giá", href: "/pricing", description: "Gói Free, Starter và Pro Business" },
-  { label: "Danh sách chờ (Beta)", href: ROUTES.waitlist, description: "Đăng ký sớm nhận 01 hộp mẫu thử miễn phí" },
   { label: "Thiết kế cộng đồng", href: `${ROUTES.templates}?tab=community`, description: "Thiết kế công khai đạt FitCheck™ từ 90 điểm" },
   { label: "Đội ngũ & xưởng in", href: "/team", description: "Thành viên, quyền và xưởng in đối tác" },
 ];
@@ -43,11 +40,8 @@ export const RESOURCE_LINKS: NavLink[] = [
 export const COMPANY_LINKS: NavLink[] = [
   { label: "Về chúng tôi", href: ROUTES.about },
   { label: "Đội ngũ", href: "/about#doi-ngu" },
-  { label: "Tuyển dụng", href: "/careers" },
-  { label: "Báo chí", href: "/press" },
   { label: "Khách hàng nói gì", href: "/testimonials" },
   { label: "Đối tác giới thiệu", href: "/affiliate" },
-  { label: "Sự kiện", href: "/events" },
 ];
 
 /** Legal and trust pages, in the bottom row of the footer. */

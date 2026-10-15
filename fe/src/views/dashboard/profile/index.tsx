@@ -115,7 +115,7 @@ function PlanPanel({ user }: { user: SafeUser }) {
           <div aria-hidden className="h-2 animate-pulse rounded-full bg-library-panel motion-reduce:animate-none" />
         )}
       </div>
-      <Link href="/pricing" className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-library-accent hover:underline">
+      <Link href="/pricing" className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-fpt-orange-ink hover:underline">
         So sánh các gói
         <ArrowRight className="size-4" aria-hidden />
       </Link>
@@ -130,7 +130,7 @@ function BrandKitPanel({ user }: { user: SafeUser }) {
     <Panel>
       <PanelTitle
         action={
-          <Link href={ROUTES.brandKit} className="text-sm font-medium text-library-accent hover:underline">
+          <Link href={ROUTES.brandKit} className="text-sm font-medium text-fpt-orange-ink hover:underline">
             {kit ? 'Chỉnh sửa' : 'Thiết lập'}
           </Link>
         }

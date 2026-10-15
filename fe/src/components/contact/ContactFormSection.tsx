@@ -136,13 +136,13 @@ export function ContactFormSection() {
                   <span className="text-xs font-semibold uppercase text-fg-muted">Hòm thư điện tử</span>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
                     <span className="text-fg-muted">Hỗ trợ người dùng:</span>
-                    <a href="mailto:contact@wrapfit.vn" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-success-fg">
+                    <a href="mailto:contact@wrapfit.vn" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-fpt-orange-ink">
                       contact@wrapfit.vn
                     </a>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
                     <span className="text-fg-muted">Hợp tác & Đối tác:</span>
-                    <a href="mailto:partner@wrapfit.vn" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-success-fg">
+                    <a href="mailto:partner@wrapfit.vn" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-fpt-orange-ink">
                       partner@wrapfit.vn
                     </a>
                   </div>
@@ -263,7 +263,7 @@ export function ContactFormSection() {
                   {/* Email */}
                   <Field label="Email nhận phản hồi" required>
                     {(props) => (
-                      <Input {...props} type="email" required autoComplete="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="tenban@gmail.com hoặc shop@domain.com" />
+                      <Input {...props} type="email" required autoComplete="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="name@example.com" />
                     )}
                   </Field>
 

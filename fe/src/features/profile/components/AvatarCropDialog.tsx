@@ -72,7 +72,7 @@ export function IllustrationSwatch({ art, selected, onSelect }: { art: Illustrat
       aria-label={art.label}
       className={cn(
         "relative size-14 overflow-hidden rounded-full outline-none ring-2 ring-offset-2 transition focus-visible:ring-focus",
-        selected ? "ring-landing-green-deep" : "ring-transparent hover:ring-line-strong",
+        selected ? "ring-fpt-orange-ink" : "ring-transparent hover:ring-line-strong",
       )}
     >
       <canvas ref={ref} width={96} height={96} className="size-full" aria-hidden />

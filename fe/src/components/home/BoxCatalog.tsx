@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Bookmark, Box, Check, CheckCircle2, ChevronRight, Eye, Layers, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, Bookmark, CheckCircle2, Eye } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
@@ -8,7 +8,7 @@ import { ROUTES } from "@/constants";
 import { ANCHORS, INDUSTRIES_SECTION, INDUSTRY_CARDS, STRUCTURES_SECTION, type CatalogCard } from "./content";
 import { StructureArt } from "./StructureArt";
 import { BoxQuickPreviewModal } from "./BoxQuickPreviewModal";
-import { Carousel, Container, Reveal, SectionHeading, Tag } from "@/components/landing";
+import { Carousel, Container, SectionHeading } from "@/components/landing";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
 import { buttonClass } from "@/components/ui";
@@ -36,8 +36,8 @@ export function BoxCatalog() {
         <Container>
           <div id={ANCHORS.structures} className="flex scroll-mt-28 flex-col gap-5 sm:gap-6">
             <SectionHeading {...STRUCTURES_SECTION} />
-            {/* Desktop: perfectly balanced 4-column grid spanning the container */}
-            <div className="hidden lg:grid lg:grid-cols-4 lg:gap-5">
+            {/* Desktop: one row with every structure (five today); narrower screens scroll the carousel below */}
+            <div className={BOX_STRUCTURES.length > 4 ? "hidden xl:grid xl:grid-cols-5 xl:gap-4" : "hidden lg:grid lg:grid-cols-4 lg:gap-5"}>
               {BOX_STRUCTURES.map((structure) => (
                 <StructureSmartCard
                   key={structure.id}
@@ -47,7 +47,7 @@ export function BoxCatalog() {
               ))}
             </div>
             {/* Mobile / Tablet: smooth container-bounded horizontal carousel */}
-            <div className="block lg:hidden">
+            <div className={BOX_STRUCTURES.length > 4 ? "block xl:hidden" : "block lg:hidden"}>
               <Carousel label={STRUCTURES_SECTION.title} bleed="none" slideClassName="w-[85vw] sm:w-[340px]">
                 {BOX_STRUCTURES.map((structure) => (
                   <StructureSmartCard
@@ -129,7 +129,7 @@ function StructureSmartCard({
             <span className="rounded-full border border-fpt-blue/25 bg-fpt-blue-light px-2.5 py-0.5 text-caption font-semibold text-fpt-blue shadow-xs">
               {structure.badge}
             </span>
-            <span className="flex items-center gap-1 text-caption font-semibold text-success-fg">
+            <span className="flex items-center gap-1 text-caption font-semibold text-fpt-orange-ink">
               <CheckCircle2 className="size-3" />
               CNC Ready
             </span>
@@ -143,7 +143,7 @@ function StructureSmartCard({
             className={cn(
               "inline-flex size-7 items-center justify-center rounded-full border transition-all duration-200",
               bookmarked
-                ? "border-fg bg-fg text-fg-inverse shadow-xs"
+                ? "border-fpt-orange bg-fpt-orange-light text-fpt-orange-ink shadow-xs"
                 : "border-line/80 bg-white text-fg-muted hover:text-fg"
             )}
           >
@@ -170,7 +170,7 @@ function StructureSmartCard({
             </button>
             <Link
               href={studioUrl}
-              className={buttonClass({ size: "sm", shape: "rounded" })}
+              className={buttonClass({ variant: "brand", size: "sm", shape: "rounded" })}
             >
               <span>Tùy chỉnh ngay</span>
               <ArrowRight className="size-3.5" />
@@ -205,7 +205,7 @@ function StructureSmartCard({
           <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-3">
             <Link
               href={templatesUrl}
-              className="text-caption font-medium text-fg-muted transition-colors hover:text-fg hover:underline"
+              className="text-caption font-medium text-fg-muted transition-colors hover:text-fpt-orange-ink hover:underline"
             >
               Xem mẫu có sẵn →
             </Link>
@@ -222,7 +222,7 @@ function StructureSmartCard({
               </button>
               <Link
                 href={studioUrl}
-                className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange-ink px-2 text-label-sm text-white shadow-2xs"
+                className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange px-2 text-label-sm text-white shadow-2xs"
               >
                 <span>Tùy chỉnh</span>
                 <ArrowRight className="size-3" />
@@ -289,7 +289,7 @@ function IndustrySmartCard({
         {/* Top Badge: Safe inside top-3.5 right-3.5, never clipped */}
         {card.badge && (
           <div className="absolute top-3.5 right-3.5 z-10">
-            <span className="rounded-full bg-fpt-orange-ink px-2.5 py-1 text-label-sm text-white shadow-soft-8 backdrop-blur-md">
+            <span className="rounded-full bg-fpt-orange px-2.5 py-1 text-label-sm text-white shadow-soft-8 backdrop-blur-md">
               {card.badge}
             </span>
           </div>
@@ -307,7 +307,7 @@ function IndustrySmartCard({
           </button>
           <Link
             href={studioUrl}
-            className={buttonClass({ size: "sm", shape: "rounded" })}
+            className={buttonClass({ variant: "brand", size: "sm", shape: "rounded" })}
           >
             <span>Tùy chỉnh ngay</span>
             <ArrowRight className="size-3.5" />
@@ -319,7 +319,7 @@ function IndustrySmartCard({
       <div className="flex flex-1 flex-col justify-between p-4 pt-3.5">
         <div className="flex flex-col gap-2.5">
           <div>
-            <h3 className="font-landing-heading text-lg font-bold text-landing-ink transition-colors group-hover:text-success-fg">
+            <h3 className="font-landing-heading text-lg font-bold text-landing-ink transition-colors group-hover:text-fpt-orange-ink">
               {card.title}
             </h3>
             {card.categoryTag && (
@@ -344,7 +344,7 @@ function IndustrySmartCard({
         <div className="mt-3.5 flex items-center justify-between border-t border-line/60 pt-3">
           <Link
             href={card.href}
-            className="inline-flex items-center gap-1.5 text-caption font-semibold text-fg-muted transition-colors hover:text-fg"
+            className="inline-flex items-center gap-1.5 text-caption font-semibold text-fg-muted transition-colors hover:text-fpt-orange-ink"
           >
             <span>Xem bộ mẫu ({card.templateCount ?? "30+"})</span>
             <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -362,7 +362,7 @@ function IndustrySmartCard({
             </button>
             <Link
               href={studioUrl}
-              className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange-ink px-2 text-label-sm text-white shadow-2xs"
+              className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange px-2 text-label-sm text-white shadow-2xs"
             >
               <span>Tùy chỉnh</span>
               <ArrowRight className="size-3" />

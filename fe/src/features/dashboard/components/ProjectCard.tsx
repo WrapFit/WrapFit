@@ -34,7 +34,7 @@ interface ProjectCardProps extends ProjectCardActions {
 
 /** FitCheck tag colours. */
 export const FITCHECK_TAG: Record<FitCheckTone, string> = {
-  pass: "bg-library-accent-mist text-library-accent",
+  pass: "bg-fpt-orange-light text-fpt-orange-ink",
   warn: "bg-warning-bg text-warning-fg",
   fail: "bg-danger-bg text-danger-fg",
   unchecked: "bg-white text-library-muted",
@@ -84,7 +84,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
   ];
 
   return (
-    <article aria-busy={busy} className={cn("flex flex-col gap-3", busy && "opacity-60")}>
+    <article aria-busy={busy} className={cn("flex h-full flex-col gap-3", busy && "opacity-60")}>
       {inTrash ? (
         <ProjectTile project={project} />
       ) : (
@@ -118,7 +118,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="mt-auto flex items-center gap-2">
         {inTrash ? (
           <>
             <button type="button" disabled={busy} onClick={() => onChangeStatus(project, "ACTIVE")} className={cn(BUTTON, "flex-1")}>
@@ -142,7 +142,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
               href={ROUTES.editor(project.id)}
               aria-disabled={busy}
               tabIndex={busy ? -1 : undefined}
-              className={cn(BUTTON, "flex-1 border-transparent bg-library-lime text-library-lime-ink hover:bg-action-hover", busy && "pointer-events-none")}
+              className={cn(BUTTON, "flex-1 border-transparent bg-fpt-orange text-white hover:bg-action-hover", busy && "pointer-events-none")}
             >
               <Box className="size-4" aria-hidden />
               Mở studio

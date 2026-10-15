@@ -286,7 +286,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                 <span className="text-xs font-bold text-landing-ink tracking-tight font-landing-heading truncate">
                   Gói — AI packaging copilot
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-caption font-bold bg-landing-green/10 text-landing-green">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-caption font-bold bg-fpt-orange/10 text-fpt-orange-ink">
                   BETA
                 </span>
               </div>
@@ -328,7 +328,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
             {/* AI Speech Bubble */}
             <div className="bg-paper-cotton p-3 rounded-3xl border border-landing-line relative">
               <div className="flex items-start gap-2.5">
-                <div className="w-2 h-2 rounded-full bg-landing-green mt-1.5 flex-shrink-0 animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-fpt-orange mt-1.5 flex-shrink-0 animate-ping" />
                 <p className="text-xs leading-relaxed text-landing-ink">{message}</p>
               </div>
 
@@ -391,12 +391,12 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                 placeholder="Hỏi Gói: 'hộp đựng ly sứ', 'hộp quà cưới'..."
                 value={userQuery}
                 onChange={(e) => setUserQuery(e.target.value)}
-                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl bg-landing-canvas border border-landing-line focus:outline-none focus:border-landing-green focus:bg-white text-landing-ink placeholder-landing-muted transition"
+                className="w-full pl-3 pr-9 py-2 text-xs rounded-xl bg-landing-canvas border border-landing-line focus:outline-none focus:border-fpt-orange focus:bg-white text-landing-ink placeholder-landing-muted transition"
               />
               <button
                 type="submit"
                 disabled={!userQuery.trim()}
-                className="absolute right-1.5 p-1 rounded-lg bg-landing-green text-white disabled:opacity-30 transition"
+                className="absolute right-1.5 p-1 rounded-lg bg-fpt-orange text-white disabled:opacity-30 transition"
               >
                 <Send className="w-3 h-3" />
               </button>

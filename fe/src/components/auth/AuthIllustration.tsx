@@ -6,6 +6,8 @@ import styles from "./AuthIllustration.module.css";
 
 interface AuthIllustrationProps {
   className?: string;
+  /** Page shown beside the panel: Gói answers the pointer differently on each (see the CSS module). */
+  mode?: "login" | "register";
 }
 
 /**
@@ -13,11 +15,13 @@ interface AuthIllustrationProps {
  * Gói standing on a kraft-to-orange disc ringed by halos and an orbit in the middle, and the brand line at the bottom
  * (second line in the light orange accent). CSS motion only, none for visitors who asked for reduced motion.
  */
-export function AuthIllustration({ className }: AuthIllustrationProps) {
+export function AuthIllustration({ className, mode = "login" }: AuthIllustrationProps) {
   return (
     <div
+      data-mode={mode}
       className={cn(
         "relative isolate flex flex-col overflow-hidden bg-[#0057A3] text-white",
+        styles.panel,
         className,
       )}
     >
@@ -32,7 +36,7 @@ export function AuthIllustration({ className }: AuthIllustrationProps) {
       </div>
 
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-12 py-6">
-        <Hero />
+        <Hero mode={mode} />
       </div>
 
       <div className="px-12 pb-12 xl:px-14">
@@ -46,63 +50,46 @@ export function AuthIllustration({ className }: AuthIllustrationProps) {
   );
 }
 
-/** Gói on its disc. The square follows the height left between the mark and the brand line. */
-function Hero() {
+/**
+ * Gói on its disc, as a small 3D scene: halos and disc at the back, the orbit tilted behind, Gói raised towards the
+ * viewer, the orange block in front. The square follows the height left between the mark and the brand line.
+ */
+function Hero({ mode }: { mode: "login" | "register" }) {
   return (
-    <div
-      aria-hidden
-      className="relative aspect-square w-[min(440px,100%,calc(100svh-380px))]"
-    >
+    <div aria-hidden className={cn("relative aspect-square w-[min(440px,100%,calc(100svh-380px))]", styles.scene)}>
       {/* Halos */}
       <div className="absolute -inset-[16%] rounded-full bg-white/[0.04]" />
       <div className="absolute -inset-[4%] rounded-full bg-white/[0.06]" />
 
       {/* Disc: orange, light only at the top left, so the kraft of Gói stands out */}
-      <div className="absolute inset-[8%] rounded-full bg-[radial-gradient(circle_at_30%_20%,#FFE3CC_0%,#FFA36B_30%,#F47A3A_62%,#DE5016_100%)] shadow-[inset_-18px_-24px_50px_rgba(180,70,10,0.35),0_40px_80px_-30px_rgba(0,20,50,0.8)]" />
-
-      {/* Orbit, with the dimensions of the box riding on it */}
-      <svg
-        viewBox="0 0 100 100"
-        className="absolute inset-0 h-full w-full overflow-visible"
-      >
-        <ellipse
-          cx="50"
-          cy="56"
-          rx="54"
-          ry="15"
-          fill="none"
-          stroke="#FFFFFF"
-          strokeOpacity="0.45"
-          strokeWidth="0.35"
-          transform="rotate(-10 50 56)"
-        />
-        <circle cx="5" cy="62" r="1.3" fill="#FFFFFF" />
-        <circle cx="96" cy="44" r="1" fill="#6DB33F" />
-      </svg>
-
-      {/* Gói */}
-      <img
-        src="/mascots/goi.webp"
-        alt=""
+      <div
         className={cn(
-          "absolute left-1/2 top-[48%] w-[74%] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_24px_24px_rgba(0,30,70,0.35)]",
-          styles.float,
+          "absolute inset-[8%] rounded-full bg-[radial-gradient(circle_at_30%_20%,#FFE3CC_0%,#FFA36B_30%,#F47A3A_62%,#DE5016_100%)] shadow-[inset_-18px_-24px_50px_rgba(180,70,10,0.35),0_40px_80px_-30px_rgba(0,20,50,0.8)]",
+          styles.disc,
         )}
       />
 
-      {/* Floating bits */}
-      <span
-        className={cn(
-          "absolute right-[4%] top-[6%] size-[9%] rounded-[30%] bg-fpt-orange shadow-[0_10px_24px_-8px_rgba(242,101,34,0.8)]",
-          styles.drift,
-        )}
-      />
-      <span
-        className={cn(
-          "absolute left-[2%] top-[22%] size-[4.5%] rounded-full bg-fpt-green",
-          styles.driftSlow,
-        )}
-      />
+      {/* Orbit */}
+      <div className={cn("absolute inset-0", styles.orbit)}>
+        <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+          <ellipse cx="50" cy="56" rx="54" ry="15" fill="none" stroke="#FFFFFF" strokeOpacity="0.45" strokeWidth="0.35" transform="rotate(-10 50 56)" />
+          <circle cx="5" cy="62" r="1.3" fill="#FFFFFF" />
+          <circle cx="96" cy="44" r="1" fill="#6DB33F" />
+        </svg>
+      </div>
+
+      {/* Gói; a new key on each page replays its entrance when the form switches in place */}
+      <div key={mode} className={cn("absolute left-1/2 top-[48%] w-[74%]", styles.goi)}>
+        <img src="/mascots/goi.webp" alt="" className="w-full select-none" draggable={false} />
+      </div>
+
+      {/* Floating bits, in front of the disc */}
+      <span className={cn("absolute right-[4%] top-[6%] size-[9%]", styles.spark)}>
+        <span className={cn("block size-full rounded-[30%] bg-fpt-orange shadow-[0_10px_24px_-8px_rgba(242,101,34,0.8)]", styles.drift)} />
+      </span>
+      <span className={cn("absolute left-[2%] top-[22%] size-[4.5%]", styles.dot)}>
+        <span className={cn("block size-full rounded-full bg-fpt-green", styles.driftSlow)} />
+      </span>
     </div>
   );
 }

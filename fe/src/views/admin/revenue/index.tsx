@@ -61,7 +61,7 @@ export default function AdminRevenuePage() {
             <li key={item.month} className="grid grid-cols-[40px_minmax(0,1fr)_80px] items-center gap-3 text-sm">
               <span className="text-library-muted">{item.month}</span>
               <span aria-hidden className="h-2.5 overflow-hidden rounded-full bg-library-panel">
-                <span className="block h-full rounded-full bg-library-accent" style={{ width: `${(item.value / peak) * 100}%` }} />
+                <span className="block h-full rounded-full bg-fpt-orange" style={{ width: `${(item.value / peak) * 100}%` }} />
               </span>
               <span className="text-right font-mono text-xs">{formatUsd(item.value)}</span>
             </li>

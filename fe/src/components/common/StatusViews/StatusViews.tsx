@@ -3,7 +3,7 @@ import React from "react";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { buttonClass } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/feedback";
-import { ApiError, errorMessage } from "@/services/api";
+import { errorMessage } from "@/services/api";
 
 /**
  * The views below carry `data-app-tokens` (see features/stitch/tailwindStitch.ts): inside a Stitch screen they keep the
@@ -39,7 +39,6 @@ export function ErrorState({
   action,
   className = "",
 }: ErrorStateProps) {
-  const requestId = error instanceof ApiError ? error.requestId : undefined;
   return (
     <div role="alert" data-app-tokens="" className={`${CARD} ${className}`}>
       <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger-bg text-danger">
@@ -47,7 +46,6 @@ export function ErrorState({
       </span>
       <h2 className="font-landing-heading text-heading-md text-fg">{title}</h2>
       <p className="mt-2 text-body-sm text-fg-muted">{description ?? errorMessage(error)}</p>
-      {requestId && <p className="mt-3 break-all font-mono text-cad-spec-micro uppercase tracking-wider text-fg-muted">Mã lỗi · {requestId}</p>}
       {(onRetry || action) && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           {onRetry && (

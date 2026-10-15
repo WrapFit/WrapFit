@@ -139,7 +139,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
           maxLength={MAX_NAME_LENGTH}
           onChange={(event) => setName(event.target.value)}
           placeholder="Tên mốc, vd. Bản gửi khách duyệt"
-          className="flex-1 min-h-[44px] px-4 rounded-full border border-landing-line bg-landing-canvas text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-landing-green focus:bg-white"
+          className="flex-1 min-h-[44px] px-4 rounded-full border border-landing-line bg-landing-canvas text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-fpt-orange focus:bg-white"
         />
         <button
           type="submit"
@@ -156,7 +156,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
       ) : snapshots.error ? (
         <p className="text-sm text-landing-muted">
           Chưa tải được danh sách mốc.{" "}
-          <button type="button" onClick={() => void snapshots.refetch()} className="font-semibold text-landing-green underline">
+          <button type="button" onClick={() => void snapshots.refetch()} className="font-semibold text-fpt-orange-ink underline">
             Thử lại
           </button>
         </p>
@@ -197,7 +197,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         onClick={() => setConfirm({ kind: "restore", id: snapshot.id })}
                         aria-label={`Khôi phục mốc ${snapshot.name}`}
                         title="Khôi phục"
-                        className="w-10 h-10 rounded-full hover:bg-landing-lime-mist text-landing-green flex items-center justify-center transition disabled:opacity-40"
+                        className="w-10 h-10 rounded-full hover:bg-orange-50 text-fpt-orange flex items-center justify-center transition disabled:opacity-40"
                       >
                         <RotateCcw className="w-4 h-4" aria-hidden />
                       </button>
@@ -235,7 +235,7 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
                         disabled={working}
                         onClick={() => void (confirming === "restore" ? restore(snapshot) : remove(snapshot))}
                         className={`min-h-[36px] px-4 rounded-full text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-wait ${
-                          confirming === "restore" ? "bg-landing-green hover:bg-landing-green-deep" : "bg-landing-green-night hover:bg-black"
+                          confirming === "restore" ? "bg-fpt-orange hover:bg-fpt-orange-ink" : "bg-landing-green-night hover:bg-black"
                         }`}
                       >
                         {working

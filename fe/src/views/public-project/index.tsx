@@ -174,7 +174,6 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
           tone: "error",
           title: "Không remix được",
           description: "Tác giả không cho phép remix thiết kế này.",
-          requestId: error.requestId,
         });
       } else {
         toast.error(error, "Không remix được");
@@ -234,7 +233,7 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
           </button>
           <span className="hidden h-6 w-px bg-library-line sm:block" aria-hidden />
           <button type="button" onClick={() => void copyLink()} className={cn(outlineButton, "w-10 px-0")} aria-label={copied ? "Đã sao chép liên kết" : "Sao chép liên kết"} title="Sao chép liên kết">
-            {copied ? <Check className="size-4 text-library-accent" aria-hidden /> : <Link2 className="size-4" aria-hidden />}
+            {copied ? <Check className="size-4 text-fpt-orange-ink" aria-hidden /> : <Link2 className="size-4" aria-hidden />}
           </button>
           {project.allowFork && (
             <button
@@ -340,7 +339,7 @@ function Rail({ tab, onTab, pose }: { tab: PanelTab; onTab(tab: PanelTab): void;
             onClick={() => onTab(id)}
             className={cn(
               "flex flex-col items-center gap-1 py-2.5 text-caption transition-colors",
-              tab === id ? "text-library-accent" : "text-library-ink hover:text-library-accent"
+              tab === id ? "text-fpt-orange-ink" : "text-library-ink hover:text-fpt-orange-ink"
             )}
           >
             <Icon className="size-6" strokeWidth={1.75} aria-hidden />
@@ -392,7 +391,7 @@ function InfoPanel({ project }: { project: PublicProject }) {
           <GitFork className="mt-0.5 size-4 shrink-0 text-library-muted" aria-hidden />
           <span>
             Remix từ{" "}
-            <Link href={ROUTES.publicProject(project.forkedFrom.slug)} className="font-medium text-library-accent underline-offset-4 hover:underline">
+            <Link href={ROUTES.publicProject(project.forkedFrom.slug)} className="font-medium text-fpt-orange-ink underline-offset-4 hover:underline">
               {project.forkedFrom.title}
             </Link>{" "}
             của {authorName(project.forkedFrom.author)}
@@ -420,7 +419,7 @@ function InfoPanel({ project }: { project: PublicProject }) {
       )}
 
       {project.viewer.isOwner ? (
-        <p className="rounded-lg bg-library-accent-mist px-4 py-3 text-sm text-library-accent">
+        <p className="rounded-lg bg-fpt-orange-light px-4 py-3 text-sm text-fpt-orange-ink">
           Đây là thiết kế của bạn.{" "}
           <Link href={ROUTES.projects} className="font-medium underline-offset-4 hover:underline">
             Quản lý trong Dự án
@@ -437,7 +436,7 @@ function DielinePanel({ project }: { project: PublicProject }) {
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-base font-medium text-library-ink">Khuôn bế trải phẳng</h2>
-      <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-library-accent bg-library-accent-mist p-4">
+      <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-dashed border-fpt-orange bg-fpt-orange-light p-4">
         <DielineSketch
           structure={project.template.id}
           dimensions={project.dimensions}

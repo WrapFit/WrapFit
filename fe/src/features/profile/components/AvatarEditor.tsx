@@ -88,7 +88,7 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
         ) : (
           <span
             aria-hidden="true"
-            className="flex h-24 w-24 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-library-lime text-3xl font-medium text-library-lime-ink"
+            className="flex h-24 w-24 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-fpt-orange text-3xl font-medium text-white"
           >
             {initialsOf(name)}
           </span>
@@ -98,7 +98,7 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
             role="status"
             className="absolute inset-0 flex items-center justify-center rounded-full bg-white/70"
           >
-            <span className="h-7 w-7 animate-spin rounded-full border-2 border-library-line border-t-library-accent motion-reduce:animate-none" />
+            <span className="h-7 w-7 animate-spin rounded-full border-2 border-library-line border-t-fpt-orange motion-reduce:animate-none" />
             <span className="sr-only">{upload.isPending ? "Đang tải ảnh lên…" : "Đang lưu…"}</span>
           </span>
         )}
@@ -110,7 +110,7 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
           aria-disabled={busy}
           className={cn(
             BUTTON,
-            "relative cursor-pointer border-transparent bg-library-lime text-library-lime-ink hover:bg-action-hover focus-within:ring-[3px] focus-within:ring-library-accent/40",
+            "relative cursor-pointer border-transparent bg-fpt-orange text-white hover:bg-action-hover focus-within:ring-[3px] focus-within:ring-fpt-orange/40",
             busy && "pointer-events-none opacity-60",
           )}
         >

@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRight, Bookmark, Box, Check, CheckCircle2, Eye, Layers, Maximize2, Plus, Ruler, Sparkles, Wand2, X } from "lucide-react";
+import { ArrowRight, Bookmark, Eye, Plus, Ruler, Wand2 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
 import { ROUTES } from "@/constants";
-import { Container, SectionHeading } from "@/components/landing";
+import { Container } from "@/components/landing";
 import { BoxQuickPreviewModal } from "./BoxQuickPreviewModal";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
@@ -317,10 +317,10 @@ function AlmanacCard({
                 aria-expanded={isActionsOpen}
                 aria-label={isActionsOpen ? "Đóng tùy chọn" : "Mở menu thao tác đa nhiệm"}
                 className={cn(
-                  "inline-flex size-9 sm:size-10 items-center justify-center rounded-full text-white shadow-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-landing-lime active:scale-95",
+                  "inline-flex size-9 sm:size-10 items-center justify-center rounded-full text-white shadow-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange active:scale-95",
                   isActionsOpen
                     ? "bg-fg rotate-45"
-                    : "bg-fg hover:bg-action hover:text-action-fg"
+                    : "bg-fg hover:bg-fpt-orange hover:text-white"
                 )}
               >
                 <Plus className="size-5 transition-transform" />
@@ -343,9 +343,9 @@ function AlmanacCard({
                   <Link
                     href={studioUrl}
                     onClick={() => setIsActionsOpen(false)}
-                    className="flex w-full items-center gap-2 rounded-xl bg-landing-lime/20 p-2 font-bold text-fg transition hover:bg-landing-lime"
+                    className="flex w-full items-center gap-2 rounded-xl bg-fpt-orange/20 p-2 font-bold text-fg transition hover:bg-fpt-orange"
                   >
-                    <Wand2 className="size-4 text-success-fg" />
+                    <Wand2 className="size-4 text-fpt-orange-ink" />
                     <span>Tùy biến trong Studio</span>
                   </Link>
                   <Link

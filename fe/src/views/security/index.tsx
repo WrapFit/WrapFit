@@ -69,7 +69,7 @@ export default function SecurityPage() {
           <Block id="luu-tru" icon={MapPin} title="Nơi lưu dữ liệu">
             <p className="text-sm leading-relaxed text-landing-muted">
               Máy chủ ứng dụng và cơ sở dữ liệu PostgreSQL chạy trên máy chủ riêng (VPS) do đội WrapFit quản lý; tệp tải lên và file in nằm trên dịch vụ lưu trữ tương thích S3 (Cloudflare R2). Dự án bị xoá ở thùng rác quá 30 ngày được xoá hẳn cùng các tệp của nó. Chi tiết trong{" "}
-              <Link href="/legal/privacy" className="font-semibold text-landing-green-deep">
+              <Link href="/legal/privacy" className="font-semibold text-fpt-orange-ink">
                 Chính sách quyền riêng tư
               </Link>
               .
@@ -98,7 +98,7 @@ export default function SecurityPage() {
           <Block id="su-co" icon={ShieldCheck} title="Lịch sử sự cố">
             <p className="text-sm leading-relaxed text-landing-muted">
               Chưa có sự cố bảo mật nào được ghi nhận. Nếu có sự cố ảnh hưởng đến dữ liệu của bạn, chúng tôi thông báo qua email trong vòng 72 giờ kể từ khi phát hiện, kèm những gì bị ảnh hưởng và việc bạn nên làm. Tình trạng vận hành xem tại{" "}
-              <Link href="/status" className="font-semibold text-landing-green-deep">
+              <Link href="/status" className="font-semibold text-fpt-orange-ink">
                 trang trạng thái
               </Link>
               .
@@ -109,7 +109,7 @@ export default function SecurityPage() {
             <h2 id="bao-cao" className="scroll-mt-28 font-landing-heading text-2xl font-bold">
               Báo cáo lỗ hổng
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-landing-lime-mist/90">
+            <p className="mt-2 text-sm leading-relaxed text-white/90">
               Bạn tìm thấy lỗ hổng? Cảm ơn bạn. Hãy gửi mô tả, các bước tái hiện và mức ảnh hưởng. Chúng tôi phản hồi trong 3 ngày làm việc và ghi tên bạn trong danh sách cảm ơn (nếu bạn muốn).
             </p>
             <CheckList
@@ -146,7 +146,7 @@ function Badge({ title, status, text, muted }: { title: string; status: string; 
     <div className="rounded-2xl bg-landing-canvas p-4">
       <div className="flex items-center justify-between gap-2">
         <p className="font-semibold">{title}</p>
-        <span className={muted ? "rounded-full bg-white px-2 py-0.5 text-caption font-semibold text-landing-muted" : "rounded-full bg-landing-lime px-2 py-0.5 text-caption font-semibold text-landing-green-night"}>{status}</span>
+        <span className={muted ? "rounded-full bg-white px-2 py-0.5 text-caption font-semibold text-landing-muted" : "rounded-full bg-fpt-orange px-2 py-0.5 text-caption font-semibold text-white"}>{status}</span>
       </div>
       <p className="mt-1 text-sm text-landing-muted">{text}</p>
     </div>

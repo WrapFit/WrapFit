@@ -7,11 +7,14 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared";
 import { Box, Gift, Pause, Play, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, type BoxMaterialTheme, type BoxModel } from "./boxModel";
+import { stageBarButton } from "../studioUi";
+import { AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, type DimensionAxis, type DimensionGuides } from "./guides";
 
 export type { BoxMaterialTheme } from "./boxModel";
 export type { BoxStructureType };
 export type BoxEnvironment = "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow" | "transparent";
 
+export type { DimensionAxis, DimensionGuides } from "./guides";
 
 interface InteractiveFoldingBox3DProps {
   dimensions: BoxDimensions;
@@ -46,6 +49,20 @@ interface InteractiveFoldingBox3DProps {
   minHeight?: boolean;
   /** No frame of its own (border, corners): the stage fills the parent's card. */
   frameless?: boolean;
+  /**
+   * Size being dragged, shown at once by stretching the current model; the model is rebuilt from `dimensions` when
+   * the page commits the size. Keeps sliders at 60 fps (a rebuild redraws every panel texture).
+   */
+  liveDimensions?: BoxDimensions;
+  /** Dimension lines with labels on the model. */
+  guides?: DimensionGuides | null;
+  /**
+   * Where the controls go. `overlay` (default, marketing pages): floating pills over the model. `bar` (studio): one
+   * flat toolbar under the model, nothing floats over it; the page puts its own info in `barStart` / `barEnd`.
+   */
+  chrome?: "overlay" | "bar";
+  barStart?: React.ReactNode;
+  barEnd?: React.ReactNode;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -238,7 +255,9 @@ const approach = (value: number, target: number, rate: number, dt: number) => {
 };
 
 interface StageApi {
-  setModel(model: BoxModel, pop: boolean): void;
+  setModel(model: BoxModel, pop: boolean, dimensions: BoxDimensions): void;
+  setPreview(dimensions: BoxDimensions | null): void;
+  setGuides(on: boolean, active: DimensionAxis | null): void;
   setTargets(progress: number, open: number): void;
   setBackdrop(backdrop: Backdrop | null): void;
   setAutoRotate(on: boolean): void;
@@ -270,8 +289,15 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   cameraView,
   minHeight = true,
   frameless = false,
+  liveDimensions,
+  guides = null,
+  chrome = "overlay",
+  barStart,
+  barEnd,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  /** Labels of the dimension guides, placed by the render loop. */
+  const labelRefs = useRef<Partial<Record<DimensionAxis, HTMLDivElement | null>>>({});
   const stageRef = useRef<StageApi | null>(null);
   const [open, setOpen] = useState(false);
   /** Preset the camera sits on; null once the user turned the box by hand. */
@@ -351,6 +377,89 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const root = new THREE.Group();
     scene.add(root);
 
+    // Dimension guides: a shaft, two extension lines and a label anchor per measure, drawn over the box.
+    const unitCylinder = new THREE.CylinderGeometry(1, 1, 1, 10);
+    const up = new THREE.Vector3(0, 1, 0);
+    const guideGroup = new THREE.Group();
+    guideGroup.visible = false;
+    scene.add(guideGroup);
+    const guideParts = DIMENSION_AXES.map((axis) => {
+      const material = new THREE.MeshBasicMaterial({ color: AXIS_COLORS[axis], transparent: true, depthTest: false, depthWrite: false });
+      const meshes = [0, 1, 2].map(() => {
+        const mesh = new THREE.Mesh(unitCylinder, material);
+        mesh.renderOrder = 20;
+        guideGroup.add(mesh);
+        return mesh;
+      });
+      return { axis, material, meshes, anchor: new THREE.Vector3() };
+    });
+    const segment = (mesh: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3, radius: number) => {
+      const along = b.clone().sub(a);
+      const length = along.length();
+      mesh.position.copy(a).addScaledVector(along, 0.5);
+      mesh.scale.set(radius, Math.max(length, 0.001), radius);
+      mesh.quaternion.setFromUnitVectors(up, length > 0 ? along.divideScalar(length) : up);
+    };
+    let guidesOn = false;
+    let activeAxis: DimensionAxis | null = null;
+    /** Which world axis carries the length: x for most structures, z when the model lies the other way. */
+    let lengthOnX = true;
+    let builtDims: BoxDimensions | null = null;
+    let previewDims: BoxDimensions | null = null;
+
+    const placeGuides = (box: THREE.Box3) => {
+      const size = box.getSize(new THREE.Vector3());
+      const reach = Math.max(size.x, size.y, size.z);
+      const pad = reach * 0.16;
+      const radius = reach * 0.0045;
+      const y = box.min.y + radius;
+      // Seen from the 3/4 view (+x, +z): length on the front bottom edge, width on the right one, height on the left corner.
+      const xGuide = { from: new THREE.Vector3(box.min.x, y, box.max.z + pad), to: new THREE.Vector3(box.max.x, y, box.max.z + pad), ext: new THREE.Vector3(0, 0, -pad) };
+      const zGuide = { from: new THREE.Vector3(box.max.x + pad, y, box.min.z), to: new THREE.Vector3(box.max.x + pad, y, box.max.z), ext: new THREE.Vector3(-pad, 0, 0) };
+      const yGuide = { from: new THREE.Vector3(box.min.x - pad, box.min.y, box.max.z), to: new THREE.Vector3(box.min.x - pad, box.max.y, box.max.z), ext: new THREE.Vector3(pad, 0, 0) };
+      const byAxis: Record<DimensionAxis, typeof xGuide> = { length: lengthOnX ? xGuide : zGuide, width: lengthOnX ? zGuide : xGuide, height: yGuide };
+      for (const part of guideParts) {
+        const guide = byAxis[part.axis];
+        const strong = activeAxis === null || activeAxis === part.axis;
+        const r = radius * (activeAxis === part.axis ? 1.8 : 1);
+        segment(part.meshes[0], guide.from, guide.to, r);
+        segment(part.meshes[1], guide.from, guide.from.clone().add(guide.ext), r * 0.6);
+        segment(part.meshes[2], guide.to, guide.to.clone().add(guide.ext), r * 0.6);
+        part.material.opacity = strong ? 1 : 0.3;
+        part.anchor.copy(guide.from).add(guide.to).multiplyScalar(0.5).addScaledVector(guide.ext, -0.35);
+      }
+    };
+
+    /** Stretches the built model to the size being dragged (no rebuild). */
+    const applyPreview = () => {
+      if (!model) return;
+      if (!builtDims || !previewDims) {
+        model.group.scale.set(1, 1, 1);
+      } else {
+        const ratio = (field: DimensionAxis) => (builtDims![field] > 0 ? previewDims![field] / builtDims![field] : 1);
+        model.group.scale.set(lengthOnX ? ratio("length") : ratio("width"), ratio("height"), lengthOnX ? ratio("width") : ratio("length"));
+      }
+      boundsDirty = true;
+      dirty = true;
+    };
+
+    const placeLabels = () => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      for (const part of guideParts) {
+        const label = labelRefs.current[part.axis];
+        if (!label) continue;
+        if (!guidesOn) {
+          label.style.opacity = "0";
+          continue;
+        }
+        const point = part.anchor.clone().project(camera);
+        const shown = point.z < 1;
+        label.style.opacity = shown ? (activeAxis === null || activeAxis === part.axis ? "1" : "0.55") : "0";
+        label.style.transform = `translate(${((point.x + 1) / 2) * width}px, ${((1 - point.y) / 2) * height}px) translate(-50%, -50%)`;
+      }
+    };
+
     // --- state of the loop
     let model: BoxModel | null = null;
     let progress = 1;
@@ -379,7 +488,9 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       const box = new THREE.Box3().setFromObject(model.group);
       if (box.isEmpty()) return;
       const sphere = box.getBoundingSphere(new THREE.Sphere());
-      fit.radius = sphere.radius / Math.max(scale, 0.5);
+      // The guides sit outside the box: frame them too.
+      fit.radius = (sphere.radius / Math.max(scale, 0.5)) * (guidesOn ? 1.22 : 1);
+      if (guidesOn) placeGuides(box);
       fit.center.copy(sphere.center);
       // Floor shadows follow the footprint of the box.
       const footprint = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
@@ -555,12 +666,13 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
       if (dirty) {
         renderer.render(scene, camera);
+        placeLabels();
         dirty = false;
       }
     };
 
     const api: StageApi = {
-      setModel(next, pop) {
+      setModel(next, pop, dims) {
         if (model) {
           root.remove(model.group);
           model.dispose();
@@ -569,6 +681,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         model = next;
         root.add(next.group);
         next.update(progress, openness);
+        builtDims = dims;
+        // Which way the model lies: the horizontal extent closest to the length carries it.
+        const extent = new THREE.Box3().setFromObject(next.group).getSize(new THREE.Vector3());
+        lengthOnX = Math.abs(extent.x - dims.length) + Math.abs(extent.z - dims.width) <= Math.abs(extent.x - dims.width) + Math.abs(extent.z - dims.length);
+        applyPreview();
         measure();
         if (first) {
           // Entrance: the box turns in from the side while the camera settles on the 3/4 view.
@@ -613,6 +730,17 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       invalidate() {
         dirty = true;
       },
+      setPreview(dims) {
+        previewDims = dims;
+        applyPreview();
+      },
+      setGuides(on, active) {
+        guidesOn = on;
+        activeAxis = active;
+        guideGroup.visible = on;
+        boundsDirty = true;
+        dirty = true;
+      },
     };
     stageRef.current = api;
     loop();
@@ -628,6 +756,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       el.removeEventListener("pointerleave", onPointerLeave);
       controls.dispose();
       model?.dispose();
+      unitCylinder.dispose();
+      guideParts.forEach((part) => part.material.dispose());
       groundGeometry.dispose();
       groundMaterial.dispose();
       blobMaterial.dispose();
@@ -666,13 +796,23 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       },
       onChange: () => stageRef.current?.invalidate(),
     });
-    stage.setModel(model, lastStructure.current !== null && lastStructure.current !== boxType);
+    stage.setModel(model, lastStructure.current !== null && lastStructure.current !== boxType, dimensions);
     lastStructure.current = boxType;
   }, [dimensions, boxType, formulaVersion, theme, customLogoText, elements, backgroundPatternSvg]);
 
   useEffect(() => {
     stageRef.current?.setBackdrop(backdrop);
   }, [backdrop]);
+  // Live size while a slider moves; cleared (null) when it equals the built one.
+  const live = liveDimensions && (liveDimensions.length !== dimensions.length || liveDimensions.width !== dimensions.width || liveDimensions.height !== dimensions.height) ? liveDimensions : null;
+  useEffect(() => {
+    stageRef.current?.setPreview(live);
+    // The object changes every render; its three numbers are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live?.length, live?.width, live?.height]);
+  useEffect(() => {
+    stageRef.current?.setGuides(Boolean(guides), guides?.active ?? null);
+  }, [guides === null, guides?.active]);
   useEffect(() => {
     stageRef.current?.setAutoRotate(spinning);
   }, [spinning]);
@@ -707,11 +847,113 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   const dockButton = (active: boolean) =>
     `inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors ${
       active
-        ? "bg-landing-lime text-landing-green-night"
+        ? "bg-fpt-orange text-white shadow-xs"
         : dark
           ? "text-white/80 hover:bg-white/10 hover:text-white"
           : "text-landing-muted hover:bg-landing-ink/5 hover:text-landing-ink"
     }`;
+
+  const bar = chrome === "bar";
+  const barButton = stageBarButton;
+  const button = bar ? barButton : dockButton;
+
+  const dockButtons = (
+    <>
+      {DOCK.map((item) => (
+        <button
+          key={item.view}
+          type="button"
+          onClick={() => goTo(item.view)}
+          aria-pressed={view === item.view}
+          className={button(view === item.view)}
+          title={`Góc nhìn ${item.label.toLowerCase()}`}
+        >
+          {item.view === "angle" && <Box className="size-3.5" aria-hidden />}
+          <span>{item.label}</span>
+        </button>
+      ))}
+      <span className={`mx-0.5 h-4 w-px ${bar ? "bg-line" : dark ? "bg-white/20" : "bg-landing-line"}`} aria-hidden />
+      <button
+        type="button"
+        onClick={() => setSpinning((value) => !value)}
+        aria-pressed={spinning}
+        className={button(spinning)}
+        title={spinning ? "Dừng xoay" : "Xoay tròn"}
+        aria-label={spinning ? "Dừng xoay" : "Xoay tròn"}
+      >
+        {spinning ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
+      </button>
+      {enableMacroZoom && (
+        <button
+          type="button"
+          onClick={() => goTo(view === "macro" ? "angle" : "macro")}
+          aria-pressed={view === "macro"}
+          className={button(view === "macro")}
+          title="Soi cận cảnh thớ giấy"
+        >
+          {view === "macro" ? <ZoomOut className="size-3.5" aria-hidden /> : <ZoomIn className="size-3.5" aria-hidden />}
+          <span className="hidden md:inline">{view === "macro" ? "Thu nhỏ" : "Cận cảnh"}</span>
+        </button>
+      )}
+    </>
+  );
+
+  const stage = (
+    <>
+      <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
+
+      {guides && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          {DIMENSION_AXES.map((axis) => {
+            const active = guides.active === axis;
+            return (
+              <div
+                key={axis}
+                ref={(node) => {
+                  labelRefs.current[axis] = node;
+                }}
+                className="absolute left-0 top-0 inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-caption font-semibold tabular-nums transition-[opacity,background-color,color] duration-150"
+                style={{
+                  opacity: 0,
+                  backgroundColor: active ? AXIS_COLORS[axis] : "rgba(255,255,255,0.92)",
+                  color: active ? "#FFFFFF" : AXIS_COLORS[axis],
+                  boxShadow: `inset 0 0 0 1px ${AXIS_COLORS[axis]}`,
+                }}
+              >
+                <span className="font-bold">{AXIS_LETTER[axis]}</span>
+                {guides.labels[axis]}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+
+  if (bar) {
+    return (
+      <div
+        className={`flex h-full w-full flex-col overflow-hidden ${minHeight ? "min-h-[460px]" : ""} ${frameless ? "" : "rounded-sheet ring-1 ring-line"} ${className}`}
+      >
+        <div className="relative min-h-0 flex-1" style={backdrop ? { background: backdrop.css } : undefined}>
+          {stage}
+        </div>
+        <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line bg-surface-raised px-3 py-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">{barStart}</div>
+          <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="flex flex-wrap items-center gap-0.5">
+            {barEnd}
+            {showHud && boxType !== "pillow" && (
+              <button type="button" onClick={() => setOpen((value) => !value)} aria-pressed={open} className={barButton(open)}>
+                <Gift className="size-3.5" aria-hidden />
+                {OPEN_LABEL[boxType][open ? 1 : 0]}
+              </button>
+            )}
+            {showDock && dockButtons}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -720,12 +962,12 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       } ${className}`}
       style={backdrop ? { background: backdrop.css } : undefined}
     >
-      <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
+      {stage}
 
       {showHud && (
         <div className="pointer-events-none absolute left-4 top-4">
           <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${pill}`}>
-            <span className="size-1.5 rounded-full bg-landing-green" aria-hidden />
+            <span className="size-1.5 rounded-full bg-fpt-orange" aria-hidden />
             {STRUCTURE_LABEL[boxType]}
           </span>
         </div>
@@ -737,7 +979,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           onClick={() => setOpen((value) => !value)}
           aria-pressed={open}
           className={`absolute right-4 top-4 inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors ${
-            open ? "bg-landing-lime text-landing-green-night" : pill
+            open ? "bg-fpt-orange text-white shadow-xs" : pill
           }`}
         >
           <Gift className="size-3.5" aria-hidden />
@@ -747,7 +989,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
       {showStatusBar && (
         <div className={`pointer-events-none absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-caption ${pill}`}>
-          <span className="font-mono font-semibold text-landing-green">{Math.round(foldProgress * 100)}%</span>
+          <span className="font-mono font-semibold text-fpt-orange-ink">{Math.round(foldProgress * 100)}%</span>
           <span className="opacity-40">·</span>
           <span className="font-mono">
             {dimensions.length} × {dimensions.width} × {dimensions.height} mm
@@ -758,47 +1000,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       )}
 
       {showDock && (
-        <div
-          role="toolbar"
-          aria-label="Góc nhìn hộp 3D"
-          className={`absolute bottom-4 right-4 flex items-center gap-0.5 rounded-full p-1 ${pill}`}
-        >
-          {DOCK.map((item) => (
-            <button
-              key={item.view}
-              type="button"
-              onClick={() => goTo(item.view)}
-              aria-pressed={view === item.view}
-              className={dockButton(view === item.view)}
-              title={`Góc nhìn ${item.label.toLowerCase()}`}
-            >
-              {item.view === "angle" && <Box className="size-3.5" aria-hidden />}
-              <span>{item.label}</span>
-            </button>
-          ))}
-          <span className={`mx-0.5 h-4 w-px ${dark ? "bg-white/20" : "bg-landing-line"}`} aria-hidden />
-          <button
-            type="button"
-            onClick={() => setSpinning((value) => !value)}
-            aria-pressed={spinning}
-            className={dockButton(spinning)}
-            title={spinning ? "Dừng xoay" : "Xoay tròn"}
-            aria-label={spinning ? "Dừng xoay" : "Xoay tròn"}
-          >
-            {spinning ? <Pause className="size-3.5" aria-hidden /> : <Play className="size-3.5" aria-hidden />}
-          </button>
-          {enableMacroZoom && (
-            <button
-              type="button"
-              onClick={() => goTo(view === "macro" ? "angle" : "macro")}
-              aria-pressed={view === "macro"}
-              className={dockButton(view === "macro")}
-              title="Soi cận cảnh thớ giấy"
-            >
-              {view === "macro" ? <ZoomOut className="size-3.5" aria-hidden /> : <ZoomIn className="size-3.5" aria-hidden />}
-              <span className="hidden md:inline">{view === "macro" ? "Thu nhỏ" : "Cận cảnh"}</span>
-            </button>
-          )}
+        <div role="toolbar" aria-label="Góc nhìn hộp 3D" className={`absolute bottom-4 right-4 flex items-center gap-0.5 rounded-full p-1 ${pill}`}>
+          {dockButtons}
         </div>
       )}
     </div>
