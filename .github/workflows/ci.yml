@@ -39,6 +39,9 @@ jobs:
       - name: Generate Prisma Client
         run: npm --workspace=be run db:generate
 
+      - name: Design Tokens Check (no raw hex, radius or px font sizes outside marked artwork)
+        run: npm --workspace=fe run tokens:check
+
       - name: Lint Backend
         run: npm --workspace=be run lint
 
