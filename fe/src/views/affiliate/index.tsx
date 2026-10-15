@@ -111,7 +111,7 @@ export default function AffiliatePage() {
                         {tier.unit}
                       </p>
                     </td>
-                    <td className="px-5 py-4 text-right font-mono font-semibold text-landing-green-deep">
+                    <td className="px-5 py-4 text-right font-mono font-semibold text-fpt-orange-ink">
                       {formatVnd(Math.round(tier.base * RATE))}
                       {tier.unit}
                     </td>
@@ -136,7 +136,7 @@ export default function AffiliatePage() {
         <ol className="grid grid-cols-1 gap-5 md:grid-cols-4">
           {STEPS.map((step, index) => (
             <li key={step.title} className="rounded-card bg-white p-6 ring-1 ring-landing-ink/10">
-              <span className="inline-flex size-9 items-center justify-center rounded-full bg-landing-lime font-landing-heading font-bold text-landing-green-night">{index + 1}</span>
+              <span className="inline-flex size-9 items-center justify-center rounded-full bg-fpt-orange font-landing-heading font-bold text-white">{index + 1}</span>
               <p className="mt-4 font-landing-heading text-lg font-bold">{step.title}</p>
               <p className="mt-1 text-sm leading-relaxed text-landing-muted">{step.text}</p>
             </li>
@@ -176,9 +176,9 @@ export default function AffiliatePage() {
         <Card className="grid grid-cols-1 gap-6 bg-landing-green-night text-white ring-0 lg:grid-cols-2 lg:items-center lg:p-10">
           <div>
             <p className="font-landing-heading text-2xl font-bold">Để lại email, chúng tôi gửi hồ sơ đối tác</p>
-            <p className="mt-2 text-sm text-landing-lime-mist/90">
+            <p className="mt-2 text-sm text-white/90">
               Kèm điều khoản chương trình và bộ tài nguyên. Muốn trao đổi trước?{" "}
-              <Link href="/contact" className="font-semibold text-landing-lime underline">
+              <Link href="/contact" className="font-semibold text-fpt-orange underline">
                 Liên hệ đội ngũ
               </Link>
               .
