@@ -139,7 +139,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* 3D stage */}
-        <div className="relative flex flex-col overflow-hidden rounded-[28px] bg-white lg:col-span-9">
+        <div className="relative flex flex-col overflow-hidden rounded-sheet bg-white lg:col-span-9">
           <div className="absolute left-4 top-4 z-20 flex items-center gap-2">
             <span className="inline-flex h-9 items-center gap-2 rounded-full bg-white/95 px-4 text-sm font-semibold text-landing-ink shadow-sm">
               <Box className="h-4 w-4 text-landing-green" aria-hidden />
@@ -150,7 +150,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               onClick={handleToggleLid}
               aria-pressed={isLidOpen}
               className={`inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors ${
-                isLidOpen ? "bg-landing-green-night text-white" : "bg-landing-lime text-landing-green-night hover:bg-[#AFEC88]"
+                isLidOpen ? "bg-landing-green-night text-white" : "bg-landing-lime text-landing-green-night hover:bg-action-hover"
               }`}
             >
               <Gift className="h-4 w-4" aria-hidden />
@@ -201,7 +201,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
 
         {/* Right panel */}
         <div className="space-y-5 lg:col-span-3">
-          <section aria-labelledby="step4-scenes" className="space-y-3 rounded-[28px] bg-white p-5">
+          <section aria-labelledby="step4-scenes" className="space-y-3 rounded-sheet bg-white p-5">
             <h2 id="step4-scenes" className="flex items-center gap-2 font-landing-heading text-base font-bold text-landing-ink">
               <Palette className="h-4 w-4 text-landing-green" aria-hidden />
               Bối cảnh
@@ -230,7 +230,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             </div>
           </section>
 
-          <section aria-labelledby="step4-qr" className="space-y-3 rounded-[28px] bg-landing-green-night p-5 text-white">
+          <section aria-labelledby="step4-qr" className="space-y-3 rounded-sheet bg-landing-green-night p-5 text-white">
             <h2 id="step4-qr" className="flex items-center gap-2 font-landing-heading text-base font-bold">
               <QrCode className="h-4 w-4 text-landing-lime" aria-hidden />
               Mã QR mở hộp
@@ -239,14 +239,14 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             <button
               type="button"
               onClick={() => onOpenQrModal?.()}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-landing-lime text-sm font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-landing-lime text-sm font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
             >
               <QrCode className="h-4 w-4" aria-hidden />
               Tạo mã QR
             </button>
           </section>
 
-          <section className="flex items-center gap-3 rounded-[28px] bg-white p-4">
+          <section className="flex items-center gap-3 rounded-sheet bg-white p-4">
             <GoiMascot pose="celebration" size={48} />
             <p className="text-sm leading-6 text-landing-muted">
               <span className="block font-semibold text-landing-ink">Sẵn sàng in</span>

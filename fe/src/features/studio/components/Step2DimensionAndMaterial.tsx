@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Minus, Plus } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { BoxDimensions, BoxStructureType, CanvasElement, CURRENT_FORMULA_VERSION, FitCheckReport } from "@wrapfit/shared";
 
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
@@ -10,6 +10,7 @@ import { formatNumber, innerVolumeMl, outerSize, sheetFits } from "@/features/st
 import type { DimensionLimits } from "@/types/api";
 import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
 import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
+import { NumberStepper } from "@/components/ui";
 import {
   clampDimension,
   dielinePiecesOf,
@@ -115,7 +116,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const fits = sheetFits(pieces);
   const t = dimensions.paperThickness;
   const fitTone =
-    fitCheckReport.score >= 90 ? "bg-landing-lime-mist text-landing-green-deep" : fitCheckReport.score >= 70 ? "bg-amber-50 text-amber-800" : "bg-red-50 text-red-700";
+    fitCheckReport.score >= 90 ? "bg-landing-lime-mist text-landing-green-deep" : fitCheckReport.score >= 70 ? "bg-warning-bg text-warning-fg" : "bg-danger-bg text-danger-fg";
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
@@ -147,27 +148,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                       Phủ bì ≈ {outerSize(value, t)} mm · {min}–{max}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 rounded-full bg-landing-canvas p-1">
-                    <button
-                      type="button"
-                      onClick={() => updateDim(side.field, value - 1)}
-                      disabled={value <= min}
-                      aria-label={`Giảm ${side.label.toLowerCase()} 1 mm`}
-                      className="flex size-9 items-center justify-center rounded-full bg-white text-landing-ink transition-colors hover:bg-landing-tile disabled:opacity-40"
-                    >
-                      <Minus className="size-4" aria-hidden />
-                    </button>
-                    <NumberField value={value} min={min} max={max} label={side.label} onCommit={(next) => updateDim(side.field, next)} />
-                    <button
-                      type="button"
-                      onClick={() => updateDim(side.field, value + 1)}
-                      disabled={value >= max}
-                      aria-label={`Tăng ${side.label.toLowerCase()} 1 mm`}
-                      className="flex size-9 items-center justify-center rounded-full bg-white text-landing-ink transition-colors hover:bg-landing-tile disabled:opacity-40"
-                    >
-                      <Plus className="size-4" aria-hidden />
-                    </button>
-                  </div>
+                  <NumberStepper value={value} min={min} max={max} step={1} unit="mm" label={side.label} size="lg" onChange={(next) => updateDim(side.field, next)} />
                 </div>
                 <input
                   type="range"
@@ -246,7 +227,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
       </div>
 
       {errors.length > 0 && (
-        <p role="alert" className="mt-4 flex items-start gap-2 rounded-2xl bg-red-50 p-4 text-sm text-red-800">
+        <p role="alert" className="mt-4 flex items-start gap-2 rounded-2xl bg-danger-bg p-4 text-sm text-danger-fg">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
           {errors.join(" ")}
         </p>
@@ -283,47 +264,18 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
 
 /** L, W, H with the axis colours of the dimension pills. */
 const SIDES = [
-  { field: "length", letter: "L", label: "Dài", dot: "bg-sky-500" },
-  { field: "width", letter: "W", label: "Rộng", dot: "bg-orange-400" },
-  { field: "height", letter: "H", label: "Cao", dot: "bg-emerald-500" },
+  { field: "length", letter: "L", label: "Dài", dot: "bg-info" },
+  { field: "width", letter: "W", label: "Rộng", dot: "bg-fpt-orange" },
+  { field: "height", letter: "H", label: "Cao", dot: "bg-success" },
 ] as const;
 
 function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   return (
-    <div className="rounded-[20px] bg-white px-4 py-3">
+    <div className="rounded-squircle-md bg-white px-4 py-3">
       <dt className="text-xs text-landing-muted">{label}</dt>
       <dd className="mt-0.5 font-mono text-base text-landing-ink">{value}</dd>
-      {hint && <dd className="text-[11px] text-landing-muted">{hint}</dd>}
+      {hint && <dd className="text-caption text-landing-muted">{hint}</dd>}
     </div>
   );
 }
 
-/** A size in mm: typed freely, applied (and kept in range) on blur or Enter. */
-function NumberField({ value, min, max, label, onCommit }: { value: number; min: number; max: number; label: string; onCommit(value: number): void }) {
-  const [draft, setDraft] = React.useState(String(value));
-  React.useEffect(() => setDraft(String(value)), [value]);
-  const commit = () => {
-    const parsed = Number(draft.replace(",", "."));
-    if (draft.trim() === "" || !Number.isFinite(parsed)) setDraft(String(value));
-    else onCommit(parsed);
-  };
-  return (
-    <label className="flex items-baseline gap-1 px-2">
-      <input
-        type="number"
-        inputMode="decimal"
-        aria-label={`${label} (mm)`}
-        min={min}
-        max={max}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
-        }}
-        className="w-14 bg-transparent text-right font-mono text-xl font-semibold text-landing-ink outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-      />
-      <span className="text-xs text-landing-muted">mm</span>
-    </label>
-  );
-}

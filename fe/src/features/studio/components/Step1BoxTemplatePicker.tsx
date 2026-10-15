@@ -144,19 +144,19 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
               ]}
             />
             <span className="flex gap-1.5 font-mono text-xs">
-              <span className="rounded-full px-2.5 py-1 ring-2 ring-sky-400">
-                <span className="text-sky-600">L</span> {dims.length}
+              <span className="rounded-full px-2.5 py-1 ring-2 ring-info">
+                <span className="text-info-fg">L</span> {dims.length}
               </span>
-              <span className="rounded-full px-2.5 py-1 ring-2 ring-orange-300">
-                <span className="text-orange-600">W</span> {dims.width}
+              <span className="rounded-full px-2.5 py-1 ring-2 ring-fpt-orange/30">
+                <span className="text-fpt-orange-ink">W</span> {dims.width}
               </span>
-              <span className="rounded-full px-2.5 py-1 ring-2 ring-emerald-300">
-                <span className="text-emerald-600">H</span> {dims.height} mm
+              <span className="rounded-full px-2.5 py-1 ring-2 ring-success/30">
+                <span className="text-success-fg">H</span> {dims.height} mm
               </span>
             </span>
           </div>
 
-          <div className={`relative mx-4 flex-1 overflow-hidden rounded-[20px] ${view === "3d" ? "bg-landing-canvas" : "bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
+          <div className={`relative mx-4 flex-1 overflow-hidden rounded-squircle-md ${view === "3d" ? "bg-landing-canvas" : "bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
             {view === "3d" ? (
               <div className="absolute inset-0">
                 <Box3DView
@@ -190,11 +190,11 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             ) : (
               <span className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-landing-muted">
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0.5 w-6 bg-[#E53E3E]" />
+                  <span aria-hidden className="h-0.5 w-6 bg-dieline-cut" />
                   Đường cắt
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0 w-6 border-t-2 border-dashed border-[#3182CE]" />
+                  <span aria-hidden className="h-0 w-6 border-t-2 border-dashed border-dieline-crease" />
                   Đường gấp
                 </span>
               </span>

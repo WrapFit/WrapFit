@@ -55,7 +55,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
             Kích Thước Khối (mm)
           </h3>
         </div>
-        <span className="text-[11px] font-mono text-landing-muted bg-landing-canvas px-2 py-0.5 rounded-full">
+        <span className="text-cad-spec-micro font-mono text-landing-muted bg-landing-canvas px-2 py-0.5 rounded-full">
           Dung sai ±0.5mm
         </span>
       </div>
@@ -96,7 +96,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
       <div className="pt-3 border-t border-landing-line space-y-2">
         <div className="flex justify-between items-center text-xs font-semibold text-landing-ink">
           <span>Định Lượng Giấy & Độ Dày ($t$)</span>
-          <span className="font-mono text-[11px] text-landing-muted">
+          <span className="font-mono text-cad-spec-micro text-landing-muted">
             t = {dimensions.paperThickness.toFixed(2)} mm
           </span>
         </div>
@@ -120,7 +120,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
                 }`}
               >
                 <span className="text-xs font-bold font-mono">{item.label}</span>
-                <span className={`text-[9px] ${isSelected ? "text-landing-line" : "text-landing-muted"}`}>
+                <span className={`text-caption ${isSelected ? "text-landing-line" : "text-landing-muted"}`}>
                   {item.desc}
                 </span>
               </button>
