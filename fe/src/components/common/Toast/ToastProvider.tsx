@@ -1,11 +1,12 @@
 "use client";
 
 import { animate } from "animejs";
-import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from "lucide-react";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { mediaUp } from "@/assets/styles/tokens";
 import { ApiError, errorMessage } from "@/services/api";
 
-export type ToastTone = "success" | "error" | "info";
+export type ToastTone = "success" | "error" | "warning" | "info";
 
 export interface ToastInput {
   tone?: ToastTone;
@@ -34,15 +35,17 @@ const ToastContext = createContext<ToastApi | null>(null);
 /** At most this many toasts at once: a new one pushes the oldest out. */
 const MAX_TOASTS = 4;
 
+/** Feedback tokens shared with Alert and Badge (assets/styles/tokens.ts). */
 const TONES: Record<ToastTone, { icon: typeof Info; iconClass: string }> = {
-  success: { icon: CheckCircle2, iconClass: "bg-landing-green/10 text-landing-green-deep" },
-  error: { icon: AlertTriangle, iconClass: "bg-vibrant-coral/15 text-vibrant-coral-dark" },
-  info: { icon: Info, iconClass: "bg-vibrant-cobalt/10 text-vibrant-cobalt-dark" },
+  success: { icon: CheckCircle2, iconClass: "bg-success-bg text-success-fg" },
+  error: { icon: OctagonAlert, iconClass: "bg-danger-bg text-danger-fg" },
+  warning: { icon: AlertTriangle, iconClass: "bg-warning-bg text-warning-fg" },
+  info: { icon: Info, iconClass: "bg-info-bg text-info-fg" },
 };
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 /** Toasts sit at the top on phones and slide down from there; from md up they rise from the bottom corner. */
-const slide = (distance: number) => (window.matchMedia("(min-width: 768px)").matches ? distance : -distance);
+const slide = (distance: number) => (window.matchMedia(mediaUp("md")).matches ? distance : -distance);
 
 export function useToast(): ToastApi {
   const api = useContext(ToastContext);
@@ -59,7 +62,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const show = useCallback((input: ToastInput) => {
     const id = nextId.current++;
     const tone = input.tone ?? "info";
-    const durationMs = input.durationMs ?? (tone === "error" ? 8000 : 4500);
+    // Long enough to read (≈ 4.5 s), longer for problems the reader may need to act on.
+    const durationMs = input.durationMs ?? (tone === "error" ? 8000 : tone === "warning" ? 6500 : 4500);
     setToasts((list) => [...list.slice(-(MAX_TOASTS - 1)), { ...input, id, tone, durationMs }]);
     return id;
   }, []);
@@ -113,24 +117,39 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
     if (ref.current && !reducedMotion()) {
       animate(ref.current, { opacity: [0, 1], translateY: [slide(16), 0], scale: [0.96, 1], duration: 420, ease: "outBack" });
     }
-    const timer = window.setTimeout(leave, toast.durationMs);
-    return () => window.clearTimeout(timer);
-  }, [leave, toast.durationMs]);
+  }, []);
+
+  // The countdown pauses while the pointer is over the toast or focus is inside it, so it never vanishes mid-read.
+  const [paused, setPaused] = useState(false);
+  const remaining = useRef(toast.durationMs);
+  useEffect(() => {
+    if (paused) return;
+    const started = Date.now();
+    const timer = window.setTimeout(leave, remaining.current);
+    return () => {
+      window.clearTimeout(timer);
+      remaining.current = Math.max(1200, remaining.current - (Date.now() - started));
+    };
+  }, [leave, paused]);
 
   return (
     <div
       ref={ref}
-      role={toast.tone === "error" ? "alert" : "status"}
-      className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-stone-200/80 bg-white/90 p-4 pr-2 shadow-[0_4px_20px_-2px_rgba(31,36,33,0.08)] backdrop-blur-md"
+      role={toast.tone === "error" || toast.tone === "warning" ? "alert" : "status"}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-line/80 bg-white/90 p-4 pr-2 shadow-[0_4px_20px_-2px_rgba(31,36,33,0.08)] backdrop-blur-md"
     >
       <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
         <Icon className="h-[18px] w-[18px]" aria-hidden />
       </span>
       <div className="min-w-0 flex-1 pt-0.5">
-        <p className="text-sm font-semibold text-stone-900">{toast.title}</p>
-        {toast.description && <p className="mt-0.5 text-[13px] leading-snug text-stone-600">{toast.description}</p>}
+        <p className="text-body-sm font-semibold text-fg">{toast.title}</p>
+        {toast.description && <p className="mt-0.5 text-body-sm leading-snug text-fg-muted">{toast.description}</p>}
         {toast.requestId && (
-          <p className="mt-1.5 break-all font-mono text-[10px] uppercase tracking-wider text-stone-500">
+          <p className="mt-1.5 break-all font-mono text-cad-spec-micro uppercase tracking-wider text-fg-muted">
             Mã lỗi · {toast.requestId}
           </p>
         )}
@@ -139,7 +158,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: num
         type="button"
         onClick={leave}
         aria-label="Đóng thông báo"
-        className="-my-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+        className="-my-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-fg-muted outline-none transition hover:bg-surface-sunken hover:text-fg focus-visible:ring-[3px] focus-visible:ring-focus/40"
       >
         <X className="h-4 w-4" aria-hidden />
       </button>
