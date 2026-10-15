@@ -1,109 +1,359 @@
 'use client';
 
-import React from 'react';
+/**
+ * `/dashboard/orders`: print files and sample-print orders, in the pacdora.com workspace style. It lists the sample
+ * orders (`GET /orders/my-orders`) and the print files exported from the latest projects (`GET /projects/:id/exports`,
+ * download link from `GET /exports/:jobId`). Orders are placed from the sample-print cart (/cart), the one ordering flow.
+ */
+
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { Download, FileDown, Loader2, PackageCheck, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { DashboardHeaderNav } from '@/components/layout';
-import { MainHeader } from '@/components/layout/MainHeader';
-import { MainFooter } from '@/components/layout/MainFooter';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { getExportJob, listMyOrders, listProjectExports } from '@/api';
+import { useToast } from '@/components/common/Toast';
+import { outlineButton, primaryButton } from '@/components/library';
+import { Badge, Panel, PanelTitle, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
+import { ROUTES } from '@/constants';
+import { RequireAuth } from '@/features/auth';
+import { RECENT_PROJECTS_QUERY, formatRelative, useProjectList } from '@/features/dashboard';
+import { formatVnd } from '@/features/pricing';
+import { queryKeys } from '@/hooks/data/queryKeys';
+import type { ExportFileType, ExportJob, ExportStatus } from '@/types/api';
+import { cn } from '@/utils/helpers';
+import { Alert, DataTable, DatePicker, startOfDay, type DataColumn, type DateRange } from '@/components/ui';
 
 export default function DashboardOrdersPage() {
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] font-['Plus_Jakarta_Sans'] select-none flex flex-col justify-between">
-      <MainHeader />
-      <div className="pt-28 pb-16 px-4 sm:px-6 lg:px-8 flex-1">
-      <div className="w-full max-w-[1720px] mx-auto">
-        <header className="flex flex-col gap-5 pb-6 mb-8 border-b border-[#e8ded0]/60">
-        <DashboardHeaderNav />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="w-10 h-10 rounded-full bg-white border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-[#f7f2ef] shadow-xs transition-all">
-              <span className="material-symbols-outlined text-lg">arrow_back</span>
+    <RequireAuth>
+      <OrdersScreen />
+    </RequireAuth>
+  );
+}
+
+const FILE_LABELS: Record<ExportFileType, string> = {
+  PDF_CMYK: 'PDF CMYK',
+  PDF_A4_PRINT: 'PDF A4/A3 In Thủ Công',
+  SVG: 'SVG',
+  DXF: 'DXF',
+};
+
+const STATUS_BADGES: Record<ExportStatus, { tone: 'green' | 'grey' | 'red'; label: string }> = {
+  COMPLETED: { tone: 'green', label: 'Sẵn sàng' },
+  PROCESSING: { tone: 'grey', label: 'Đang xử lý' },
+  PENDING: { tone: 'grey', label: 'Đang chờ' },
+  FAILED: { tone: 'red', label: 'Lỗi' },
+};
+
+const ORDER_STATUS_MAP: Record<string, { tone: 'green' | 'grey' | 'amber'; label: string }> = {
+  pending: { tone: 'amber', label: 'Chờ xưởng duyệt' },
+  confirmed: { tone: 'green', label: 'Đã xác nhận' },
+  in_production: { tone: 'amber', label: 'Đang in mẫu thử' },
+  shipped: { tone: 'green', label: 'Đang giao hàng' },
+  delivered: { tone: 'green', label: 'Đã giao' },
+  SUBMITTED: { tone: 'amber', label: 'Chờ xưởng duyệt' },
+  IN_PRODUCTION: { tone: 'amber', label: 'Đang in mẫu thử' },
+  SHIPPED: { tone: 'green', label: 'Đang giao hàng' },
+  DELIVERED: { tone: 'green', label: 'Đã giao' },
+};
+
+/** Projects whose exports are listed. */
+const PROJECTS_QUERY = { ...RECENT_PROJECTS_QUERY, limit: 8 };
+
+const STEPS = [
+  { title: 'Thiết kế & đạt FitCheck™', text: 'Khuôn bế, hình in và điểm kiểm tra trong studio.', ready: true },
+  { title: 'Xuất file in', text: 'PDF CMYK, PDF A4/A3 in tại nhà, SVG hoặc DXF cho máy cắt.', ready: true },
+  { title: 'Đặt in mẫu thử 01 hộp', text: 'In mẫu 01 chiếc gửi tận tay trước khi in loạt.', ready: true },
+  { title: 'Sản xuất loạt & giao hàng', text: 'Kết nối xưởng đối tác bế cắt CNC không cần khuôn sắt 2 triệu.', ready: true },
+];
+
+interface Row {
+  job: ExportJob;
+  projectId: string;
+  projectTitle: string;
+}
+
+function OrdersScreen() {
+  const toast = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const projects = useProjectList(PROJECTS_QUERY);
+  const items = projects.data?.items ?? [];
+  const exports = useQueries({
+    queries: items.map((project) => ({
+      queryKey: queryKeys.projects.exports(project.id),
+      queryFn: () => listProjectExports(project.id),
+      staleTime: 30_000,
+    })),
+  });
+  const [downloading, setDownloading] = useState<string | null>(null);
+  // Export date filter (DD/MM/YYYY, weeks from Monday); empty = every export.
+  const [range, setRange] = useState<DateRange>({ from: null, to: null });
+
+  // Sample orders from backend
+  const sampleOrdersQuery = useQuery({
+    queryKey: queryKeys.orders.myOrders,
+    queryFn: listMyOrders,
+    staleTime: 30_000,
+  });
+  const sampleOrders = sampleOrdersQuery.data ?? [];
+
+  // Former links of the studio (?project=…&action=sample) now open the sample-print cart with that project.
+  const targetProjectId = searchParams.get('project');
+  const wantsSample = searchParams.get('action') === 'sample';
+  useEffect(() => {
+    if (targetProjectId || wantsSample) router.replace(targetProjectId ? `/cart?add=${encodeURIComponent(targetProjectId)}` : '/cart');
+  }, [router, targetProjectId, wantsSample]);
+
+  const inRange = (iso: string) => {
+    const day = startOfDay(new Date(iso));
+    return (!range.from || day >= range.from) && (!range.to || day <= range.to);
+  };
+  const allRows: Row[] = items
+    .flatMap((project, index) => (exports[index]?.data ?? []).map((job) => ({ job, projectId: project.id, projectTitle: project.title })))
+    .sort((a, b) => b.job.createdAt.localeCompare(a.job.createdAt));
+  const rows = allRows.filter((row) => inRange(row.job.createdAt)).slice(0, 20);
+  const filtering = Boolean(range.from || range.to);
+  const loading = projects.isPending || exports.some((query) => query.isPending);
+  const failed = exports.find((query) => query.isError);
+
+  // The link of a finished job expires after 15 minutes: always ask for a fresh one.
+  const download = async (job: ExportJob) => {
+    setDownloading(job.id);
+    try {
+      const fresh = await getExportJob(job.id);
+      if (fresh.downloadUrl) window.location.assign(fresh.downloadUrl);
+    } catch (error) {
+      toast.error(error, 'Chưa lấy được link tải');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  let body: React.ReactNode;
+  if (projects.isError) {
+    body = <WorkspaceError error={projects.error} title="Không tải được dự án" onRetry={() => void projects.refetch()} retrying={projects.isFetching} />;
+  } else if (loading) {
+    body = (
+      <div aria-busy="true" className="flex flex-col gap-2">
+        <span role="status" className="sr-only">
+          Đang tải file in…
+        </span>
+        {[0, 1, 2].map((index) => (
+          <div key={index} aria-hidden className="h-14 animate-pulse rounded-xl bg-library-panel motion-reduce:animate-none" />
+        ))}
+      </div>
+    );
+  } else if (rows.length === 0 && filtering && allRows.length > 0) {
+    body = (
+      <WorkspaceEmpty
+        icon={FileDown}
+        title="Không có file in trong khoảng ngày này"
+        description="Chọn khoảng ngày khác hoặc xoá bộ lọc để xem mọi file đã xuất."
+        action={
+          <button type="button" onClick={() => setRange({ from: null, to: null })} className={outlineButton}>
+            Xoá bộ lọc ngày
+          </button>
+        }
+      />
+    );
+  } else if (rows.length === 0) {
+    body = (
+      <WorkspaceEmpty
+        icon={FileDown}
+        title="Chưa có file in nào"
+        description="Mở một dự án trong studio, chạy FitCheck™ rồi chọn Xuất file in: file sẽ hiện ở đây."
+        action={
+          <Link href={ROUTES.projects} className={outlineButton}>
+            Xem dự án
+          </Link>
+        }
+      />
+    );
+  } else {
+    // Sortable columns; on phones each export becomes a card.
+    const columns: DataColumn<Row>[] = [
+      {
+        key: 'project',
+        label: 'Dự án',
+        primary: true,
+        sortValue: (row) => row.projectTitle,
+        render: ({ job, projectId, projectTitle }) => (
+          <span className="block max-w-[260px]">
+            <Link href={ROUTES.editor(projectId)} className="block truncate font-medium text-library-ink hover:underline">
+              {projectTitle}
             </Link>
-            <div>
-              <h1 className="font-['Playfair_Display'] text-3xl font-bold text-[#122e20]">Lịch Sử Đơn Hàng &amp; Hóa Đơn Điện Tử VAT</h1>
-              <p className="text-xs text-[#717971] font-['JetBrains_Mono']">INTERACTIVE BENTO FOCUS &bull; CQT COMPLIANT</p>
-            </div>
-          </div>
-
-          <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">
-            TỔNG CHI TIÊU: 48.250.000 VNĐ
+            {job.fileName && <span className="block truncate font-mono text-caption text-library-muted">{job.fileName}</span>}
           </span>
-        </div>
-      </header>
-
-      {/* Split Bento Layout */}
-      <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: 4 Bento Blocks */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="p-6 rounded-3xl bg-amber-50 border border-amber-200/80 shadow-xs cursor-pointer hover:shadow-md transition-shadow">
-            <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-amber-800">KHỐI 1</span>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-amber-950 mt-1">3+ Đơn Hàng Hoàn Tất</h3>
-            <p className="text-xs text-amber-800/80 mt-1">Đơn hộp quà nắp gập Maison de Luxe &bull; Đã giao thành công</p>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-lime-50 border border-lime-200/80 shadow-xs cursor-pointer hover:shadow-md transition-shadow">
-            <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-lime-800">KHỐI 2</span>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-lime-950 mt-1">14 Hóa Đơn VAT CQT</h3>
-            <p className="text-xs text-lime-800/80 mt-1">100% đồng bộ mã xác thực Tổng cục Thuế hợp lệ</p>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-sky-50 border border-sky-200/80 shadow-xs cursor-pointer hover:shadow-md transition-shadow">
-            <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-sky-800">KHỐI 3</span>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-sky-950 mt-1">1 Đang Cắt Bế CNC</h3>
-            <p className="text-xs text-sky-800/80 mt-1">Xưởng In Tân Giang tiến độ 68% &bull; Dự kiến giao 12/10</p>
-          </div>
-
-          <div className="p-6 rounded-3xl bg-emerald-50 border border-emerald-200/80 shadow-xs cursor-pointer hover:shadow-md transition-shadow">
-            <span className="text-[10px] font-['JetBrains_Mono'] uppercase tracking-widest font-bold text-emerald-800">KHỐI 4</span>
-            <h3 className="font-['Playfair_Display'] text-xl font-bold text-emerald-950 mt-1">Bản Quyền CAD Vault</h3>
-            <p className="text-xs text-emerald-800/80 mt-1">Gói Solo Pro 1 năm &bull; Không giới hạn tải vector DXF</p>
-          </div>
-        </div>
-
-        {/* Right Column: Order Detail Slide-Over Card */}
-        <div className="lg:col-span-7 bg-white p-8 rounded-3xl border border-[#e8ded0]/80 shadow-[0_4px_24px_rgba(28,25,23,0.04)] space-y-6">
-          <div className="flex justify-between items-start pb-4 border-b border-[#e8ded0]/60">
-            <div>
-              <span className="text-xs font-['JetBrains_Mono'] text-[#717971]">HÓA ĐƠN ĐIỆN TỬ CHI TIẾT</span>
-              <h3 className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20] mt-1">#HD-2026-10-901</h3>
-              <p className="text-xs text-[#525a54] mt-0.5">Mã tra cứu CQT: <strong>CQT-2605-VAT-901</strong> &bull; Thuế suất GTGT 8%</p>
-            </div>
-            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">HỢP LỆ</span>
-          </div>
-
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-[#f7f2ef] flex justify-between items-center text-sm">
-              <span className="font-semibold text-[#122e20]">500x Hộp Quà Nam Châm Ép Kim (Custom CAD)</span>
-              <span className="font-['JetBrains_Mono'] font-bold text-[#122e20]">12.850.000 VNĐ</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-[#f7f2ef] flex justify-between items-center text-sm">
-              <span className="text-[#525a54]">Thuế Giá Trị Gia Tăng (VAT 8%)</span>
-              <span className="font-['JetBrains_Mono'] font-bold text-[#122e20]">1.028.000 VNĐ</span>
-            </div>
-            <div className="p-4 rounded-2xl bg-white border border-[#e8ded0] flex justify-between items-center text-base font-bold">
-              <span className="text-[#122e20]">Tổng Cộng Đã Thanh Toán</span>
-              <span className="font-['JetBrains_Mono'] text-[#2563eb]">13.878.000 VNĐ</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
-            <button className="py-3 px-4 rounded-2xl bg-[#f7f2ef] hover:bg-[#e8ded0] text-xs font-semibold text-[#122e20] flex items-center justify-center gap-1.5 transition-colors">
-              <span className="material-symbols-outlined text-base">picture_as_pdf</span>
-              <span>Tải PDF Hóa Đơn</span>
+        ),
+      },
+      { key: 'format', label: 'Định dạng', sortValue: (row) => FILE_LABELS[row.job.fileType], render: ({ job }) => <span className="font-mono text-caption text-library-ink">{FILE_LABELS[job.fileType]}</span> },
+      {
+        key: 'status',
+        label: 'Trạng thái',
+        sortValue: (row) => STATUS_BADGES[row.job.status].label,
+        render: ({ job }) => (
+          <>
+            <Badge tone={STATUS_BADGES[job.status].tone}>{STATUS_BADGES[job.status].label}</Badge>
+            {job.status === 'FAILED' && job.error && <span className="mt-1 block max-w-[200px] truncate text-caption text-danger-fg">{job.error}</span>}
+          </>
+        ),
+      },
+      {
+        key: 'time',
+        label: 'Thời gian',
+        sortValue: (row) => new Date(row.job.completedAt ?? row.job.createdAt),
+        render: ({ job }) => <span className="whitespace-nowrap text-library-sub">{formatRelative(job.completedAt ?? job.createdAt)}</span>,
+      },
+      {
+        key: 'download',
+        label: 'Tải',
+        align: 'right',
+        render: ({ job, projectTitle }) =>
+          job.status === 'COMPLETED' ? (
+            <button
+              type="button"
+              onClick={() => void download(job)}
+              disabled={downloading !== null}
+              aria-label={`Tải ${FILE_LABELS[job.fileType]} của “${projectTitle}”`}
+              className={cn(outlineButton, 'h-9 px-3 text-sm')}
+            >
+              {downloading === job.id ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden /> : <Download className="size-4" aria-hidden />}
+              Tải
             </button>
-            <button className="py-3 px-4 rounded-2xl bg-[#f7f2ef] hover:bg-[#e8ded0] text-xs font-semibold text-[#122e20] flex items-center justify-center gap-1.5 transition-colors">
-              <span className="material-symbols-outlined text-base">download</span>
-              <span>Tải Hồ Sơ CAD</span>
-            </button>
-            <button className="py-3 px-4 rounded-2xl bg-[#122e20] text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[#1a382b] transition-colors">
-              <span className="material-symbols-outlined text-base">qr_code</span>
-              <span>Đối Soát QR CQT</span>
-            </button>
-          </div>
+          ) : null,
+      },
+    ];
+    body = <DataTable label="File in đã xuất" columns={columns} rows={rows} rowKey={(row) => row.job.id} mobile="cards" initialSort={{ key: 'time', direction: 'desc' }} search={{ label: 'Lọc file in', placeholder: 'Tên dự án, định dạng…', text: (row) => `${row.projectTitle} ${FILE_LABELS[row.job.fileType]} ${STATUS_BADGES[row.job.status].label}` }} />;
+  }
+
+  return (
+    <WorkspaceShell
+      title="Đơn hàng & File In"
+      description="Quản lý file in công nghiệp đã xuất và theo dõi đơn đặt in mẫu thử 01 hộp (Physical Proof)."
+    >
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="min-w-0 xl:col-span-8 flex flex-col gap-6">
+          {/* Sample Orders Panel */}
+          <Panel aria-labelledby="sample-orders-heading">
+            <PanelTitle
+              id="sample-orders-heading"
+              action={
+                <Link href="/cart" className={cn(primaryButton, 'h-8 px-3 text-xs flex items-center gap-1.5')}>
+                  <Plus className="size-3.5" aria-hidden />
+                  Đặt in mẫu
+                </Link>
+              }
+            >
+              Đơn in mẫu thử (Sample Box Proofs)
+            </PanelTitle>
+
+            {sampleOrders.length === 0 ? (
+              <div className="py-6 text-center text-sm text-library-muted">
+                <PackageCheck className="size-8 mx-auto mb-2 text-library-sub opacity-60" />
+                <p>Bạn chưa có đơn đặt in mẫu thử nào.</p>
+                <p className="text-xs text-library-sub mt-1">In 01 hộp thực tế gửi tận tay để kiểm định màu in và khớp nối trước khi sản xuất hàng loạt.</p>
+              </div>
+            ) : (
+              <div className="relative overflow-x-auto">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-library-line text-library-muted">
+                      <th scope="col" className="py-2.5 pr-3 font-normal">Dự án</th>
+                      <th scope="col" className="px-3 py-2.5 font-normal">Xưởng in</th>
+                      <th scope="col" className="px-3 py-2.5 font-normal">Số lượng</th>
+                      <th scope="col" className="px-3 py-2.5 font-normal">Tổng phí</th>
+                      <th scope="col" className="px-3 py-2.5 font-normal">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-library-line">
+                    {sampleOrders.map((order) => {
+                      const st = ORDER_STATUS_MAP[order.status] ?? { tone: 'grey', label: order.status };
+                      const shopName = order.printShopName || order.partnerShop?.name || 'Xưởng đối tác WrapFit';
+                      const fee = order.totalVnd ?? order.sampleFeeVnd ?? 49_000;
+                      return (
+                        <tr key={order.id}>
+                          <td className="py-3 pr-3 font-medium text-library-ink">
+                            <span className="block truncate max-w-[200px]">{order.projectTitle}</span>
+                            <span className="block font-mono text-cad-spec-micro text-library-muted">#{order.id.slice(0, 8)}</span>
+                          </td>
+                          <td className="px-3 py-3 text-library-sub text-xs">{shopName}</td>
+                          <td className="px-3 py-3 font-mono text-xs">{order.quantity} hộp</td>
+                          <td className="px-3 py-3 font-semibold text-library-ink">{formatVnd(fee)}</td>
+                          <td className="px-3 py-3">
+                            <Badge tone={st.tone}>{st.label}</Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+
+          {/* Exported Files Panel */}
+          <Panel aria-labelledby="orders-files">
+            <PanelTitle id="orders-files" action={<span className="text-sm text-library-muted">Từ {items.length} dự án sửa gần nhất</span>}>
+              File in đã xuất
+            </PanelTitle>
+            {!loading && allRows.length > 0 && (
+              <DatePicker
+                mode="range"
+                label="Lọc theo ngày xuất"
+                hint="Gõ DD/MM/YYYY – DD/MM/YYYY hoặc chọn trên lịch."
+                value={range}
+                onChange={setRange}
+                max={new Date()}
+                className="mb-4 max-w-sm"
+              />
+            )}
+            {failed && !loading && (
+              <Alert
+                tone="warning"
+                className="mb-3"
+                title="Một vài dự án chưa tải được danh sách file."
+                action={
+                  <button type="button" onClick={() => exports.forEach((query) => query.isError && void query.refetch())} className={cn(outlineButton, "h-9 px-3 text-sm")}>
+                    Thử lại
+                  </button>
+                }
+              />
+            )}
+            {body}
+          </Panel>
         </div>
-      </main>
-      </div></div>
-      <MainFooter />
-    </div>
+
+        {/* Steps Sidebar */}
+        <section aria-labelledby="orders-steps" className="rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard xl:col-span-4 h-fit">
+          <h2 id="orders-steps" className="text-lg font-medium text-library-ink">
+            Quy trình in cùng WrapFit
+          </h2>
+          <p className="mt-1 text-sm text-library-sub">Liên kết mạng lưới xưởng in offset &amp; bàn cắt kỹ thuật số không cần tiền khuôn 2 triệu VNĐ.</p>
+          <ol className="mt-5 flex flex-col gap-3">
+            {STEPS.map((step, index) => (
+              <li key={step.title} className="flex gap-3 rounded-xl bg-white p-3">
+                <span
+                  className={cn(
+                    'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-medium',
+                    step.ready ? 'bg-library-lime text-library-lime-ink' : 'border border-library-line text-library-muted',
+                  )}
+                >
+                  {index + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2 text-body font-medium text-library-ink">
+                    {step.title}
+                  </span>
+                  <span className="block text-sm text-library-sub">{step.text}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+
+    </WorkspaceShell>
   );
 }

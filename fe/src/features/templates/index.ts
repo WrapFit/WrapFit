@@ -2,6 +2,7 @@
 export { AuthorAvatar } from "./components/AuthorAvatar";
 export { BoxPreview } from "./components/BoxPreview";
 export { DesignThumb } from "./components/DesignThumb";
+export { DielineSketch } from "./components/DielineSketch";
 export { HomeTemplateDeck } from "./components/HomeTemplateDeck";
 export {
   CommunityTemplateCard,

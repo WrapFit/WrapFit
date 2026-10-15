@@ -70,7 +70,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
   if (!session && project.error) {
     if (isMissing(project.error)) {
       return (
-        <main className="min-h-screen bg-paper-grain flex items-center px-4 py-16">
+        <main className="min-h-screen bg-landing-canvas flex items-center px-4 py-16">
           <ErrorState
             title="Không tìm thấy dự án"
             description="Dự án không tồn tại, đã bị xoá vĩnh viễn hoặc thuộc tài khoản khác."
@@ -81,7 +81,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
                 </Link>
                 <Link
                   href={ROUTES.editorNew}
-                  className="text-sm font-semibold text-brand-forest underline-offset-4 hover:underline"
+                  className="text-sm font-semibold text-landing-ink underline-offset-4 hover:underline"
                 >
                   Tạo dự án mới
                 </Link>
@@ -92,7 +92,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
       );
     }
     return (
-      <main className="min-h-screen bg-paper-grain flex items-center px-4 py-16">
+      <main className="min-h-screen bg-landing-canvas flex items-center px-4 py-16">
         <ErrorState
           error={project.error}
           title="Không mở được dự án"

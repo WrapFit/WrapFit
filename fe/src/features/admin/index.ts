@@ -22,3 +22,4 @@ export {
   useUpdateAccount,
 } from "./accounts/useAccounts";
 export type { AccountUpdate } from "./accounts/useAccounts";
+export { formatUptime, useHealthDetails } from "./useHealth";

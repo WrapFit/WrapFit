@@ -1,68 +1,158 @@
 'use client';
 
-import React, { useState } from 'react';
+/**
+ * `/auth/2fa`: second sign-in step with a 6-digit code, in the pack.ly style of the login screen. The API has no
+ * two-factor authentication yet (be/src/auth): the page is a preview, nothing typed here is sent.
+ */
+
+import { ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { GoiMascot } from '@/components/common/GoiMascot';
+import React, { useRef, useState } from 'react';
+import { ROUTES } from '@/constants';
+import { cn } from '@/utils/helpers';
+import { AccountShell, FormAlert, INPUT_CLASS, SubmitButton, TEXT_LINK, TextField } from '@/views/account/shared';
+
+const LENGTH = 6;
 
 export default function Auth2FaPage() {
-  const [otp] = useState(['3', '0', '6', '', '', '']);
+  const [digits, setDigits] = useState<string[]>(() => Array(LENGTH).fill(''));
+  const [recovery, setRecovery] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [remember, setRemember] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const code = digits.join('');
+  const complete = recovery ? recoveryCode.trim().length >= 8 : code.length === LENGTH;
+
+  const fill = (from: number, text: string) => {
+    const chars = text.replace(/\D/g, '').slice(0, LENGTH - from).split('');
+    if (chars.length === 0) return;
+    setDigits((current) => current.map((digit, index) => (index >= from && index < from + chars.length ? chars[index - from] : digit)));
+    setSubmitted(false);
+    inputs.current[Math.min(from + chars.length, LENGTH - 1)]?.focus();
+  };
+
+  const onKeyDown = (index: number) => (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Backspace' && !digits[index] && index > 0) {
+      event.preventDefault();
+      setDigits((current) => current.map((digit, position) => (position === index - 1 ? '' : digit)));
+      inputs.current[index - 1]?.focus();
+    } else if (event.key === 'ArrowLeft' && index > 0) {
+      inputs.current[index - 1]?.focus();
+    } else if (event.key === 'ArrowRight' && index < LENGTH - 1) {
+      inputs.current[index + 1]?.focus();
+    }
+  };
+
+  const onSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (complete) setSubmitted(true);
+  };
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between p-6 pb-28 md:pb-6 lg:p-10 font-['Plus_Jakarta_Sans'] select-none">
-      <header className="flex items-center justify-between">
-        <Link href="/auth/login" className="w-10 h-10 rounded-full bg-white/80 border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-white shadow-xs transition-all">
-          <span className="material-symbols-outlined text-lg">arrow_back</span>
-        </Link>
-        <span className="font-['JetBrains_Mono'] text-xs text-[#717971] uppercase tracking-wider font-semibold">BKLIT ZERO-TRUST PERIMETER</span>
-        <div className="w-10"></div>
-      </header>
+    <AccountShell
+      icon={ShieldCheck}
+      eyebrow="Xác thực hai bước"
+      title={recovery ? 'Nhập mã khôi phục' : 'Nhập mã xác thực'}
+      description={
+        recovery
+          ? 'Dùng một trong các mã khôi phục bạn đã lưu khi bật xác thực hai bước. Mỗi mã chỉ dùng được một lần.'
+          : 'Mở ứng dụng xác thực (Google Authenticator, Authy, Microsoft Authenticator…) và nhập mã 6 số của WrapFit.'
+      }
+    >
+      <FormAlert tone="info" className="mb-5">
+        Bản xem trước: WrapFit chưa bật xác thực hai bước, mã nhập ở đây không được gửi đi.
+      </FormAlert>
 
-      {/* Main Authenticator Apple Card */}
-      <main className="max-w-md mx-auto w-full bg-white p-8 lg:p-10 rounded-3xl border border-[#e8ded0]/80 shadow-[0_8px_32px_rgba(28,25,23,0.05)] text-center space-y-6 my-auto">
-        <div className="w-16 h-16 rounded-3xl bg-[#f7f2ef] border border-[#e8ded0] text-[#122e20] flex items-center justify-center mx-auto shadow-sm">
-          <span className="material-symbols-outlined text-3xl">qr_code_scanner</span>
-        </div>
-
-        <div>
-          <h2 className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20]">Xác Thực Bảo Mật 2FA &amp; OTP</h2>
-          <p className="text-xs text-[#717971] mt-1 font-['JetBrains_Mono']">Quét mã bằng Google Authenticator hoặc Touch ID</p>
-        </div>
-
-        {/* 6 OTP Boxes */}
-        <div className="flex justify-center gap-2.5 my-4">
-          {otp.map((val, idx) => (
-            <div
-              key={idx}
-              className={"w-12 h-14 rounded-2xl flex items-center justify-center font-['JetBrains_Mono'] text-xl font-bold border transition-all " +
-                (val ? "bg-[#f7f2ef] border-[#122e20] text-[#122e20] shadow-xs" : "bg-white border-[#e8ded0] text-[#717971]")}
-            >
-              {val || '•'}
+      <form onSubmit={onSubmit} noValidate className="space-y-5">
+        {recovery ? (
+          <TextField
+            id="recovery-code"
+            label="Mã khôi phục"
+            placeholder="xxxx-xxxx"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={20}
+            value={recoveryCode}
+            onChange={(event) => {
+              setRecoveryCode(event.target.value);
+              setSubmitted(false);
+            }}
+            className="[&_input]:font-mono [&_input]:tracking-widest"
+          />
+        ) : (
+          <fieldset>
+            <legend className="mb-1.5 text-sm font-medium text-landing-ink">Mã 6 số</legend>
+            <div className="grid grid-cols-6 gap-2 sm:gap-3">
+              {digits.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => {
+                    inputs.current[index] = element;
+                  }}
+                  value={digit}
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                  aria-label={`Chữ số ${index + 1} trên ${LENGTH}`}
+                  maxLength={LENGTH}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === '') {
+                      setDigits((current) => current.map((item, position) => (position === index ? '' : item)));
+                      return;
+                    }
+                    fill(index, value.slice(-LENGTH + index));
+                  }}
+                  onPaste={(event) => {
+                    event.preventDefault();
+                    fill(index, event.clipboardData.getData('text'));
+                  }}
+                  onKeyDown={onKeyDown(index)}
+                  onFocus={(event) => event.target.select()}
+                  className={cn(INPUT_CLASS, 'h-14 px-0 text-center font-mono text-2xl font-semibold', digit && 'bg-white ring-landing-ink/20')}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </fieldset>
+        )}
 
-        {/* Fallback Email Block */}
-        <div className="p-4 rounded-2xl bg-[#f7f2ef] border border-[#e8ded0]/60 text-xs text-[#525a54] flex items-center justify-between">
-          <div className="flex items-center gap-2 text-left">
-            <span className="material-symbols-outlined text-lg text-[#122e20]">mail</span>
-            <span>Mã OTP gửi đến <strong>el***@wrapfit.io</strong></span>
-          </div>
-          <span className="px-2 py-0.5 rounded-full bg-white text-[10px] font-['JetBrains_Mono'] font-bold text-[#717971]">Gửi lại (45s)</span>
-        </div>
+        <label className="flex cursor-pointer items-center gap-3 text-sm text-landing-muted">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(event) => setRemember(event.target.checked)}
+            className="size-5 rounded border-landing-line accent-landing-green text-landing-green focus:ring-landing-green/40"
+          />
+          Ghi nhớ thiết bị này trong 30 ngày
+        </label>
 
-        <Link
-          href="/dashboard"
-          className="w-full py-4 rounded-full bg-[#122e20] hover:bg-[#1a382b] text-white text-center text-sm font-semibold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+        {submitted && (
+          <FormAlert tone="info" title="Chưa thể xác minh">
+            Xác thực hai bước đang được phát triển. Hiện tại bạn chỉ cần email và mật khẩu để đăng nhập.
+          </FormAlert>
+        )}
+
+        <SubmitButton busy={false} busyLabel="" disabled={!complete}>
+          Xác minh
+        </SubmitButton>
+      </form>
+
+      <div className="mt-4 flex flex-col items-center gap-1 text-center">
+        <button
+          type="button"
+          onClick={() => {
+            setRecovery((value) => !value);
+            setSubmitted(false);
+          }}
+          className={TEXT_LINK}
         >
-          <span>Xác Thực &amp; Kích Hoạt Bản Quyền</span>
-          <span className="material-symbols-outlined text-base">arrow_forward</span>
+          {recovery ? 'Dùng mã từ ứng dụng xác thực' : 'Không mở được ứng dụng? Dùng mã khôi phục'}
+        </button>
+        <Link href={ROUTES.login} className="py-2 text-sm text-landing-muted hover:text-landing-ink hover:underline">
+          Quay lại đăng nhập
         </Link>
-      </main>
-
-      <footer className="flex items-center justify-center gap-3 text-xs text-[#717971]">
-        <GoiMascot pose="thumbs_up" size={36} />
-        <span>Bé Gói Zero-Trust chứng thực bảo mật phiên làm việc FIDO2.</span>
-      </footer>
-    </div>
+      </div>
+    </AccountShell>
   );
 }

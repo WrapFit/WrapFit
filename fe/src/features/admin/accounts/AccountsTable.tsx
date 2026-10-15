@@ -5,6 +5,7 @@ import type { Role, SafeUser } from "@/types/api";
 import { AccountAvatar } from "./AccountAvatar";
 import { displayName, formatDate, formatDateTime, ROLE_LABELS, SELF_EDIT_HINT, TIER_LABELS } from "./accountFormat";
 import { RoleSelect } from "./RoleSelect";
+import { Icon } from "@/components/ui";
 
 export interface AccountActions {
   onOpen(user: SafeUser): void;
@@ -35,7 +36,7 @@ export function AccountsTable({ users, loading, stale, selfId, busyIds, ...actio
       <table className="w-full min-w-[880px] text-left">
         <caption className="sr-only">Danh sách tài khoản, mới tạo trước</caption>
         <thead>
-          <tr className="bg-surface-container-low/30 text-on-surface-variant font-cad-spec-micro text-cad-spec-micro uppercase tracking-wider">
+          <tr className="bg-library-panel/30 text-library-sub font-mono text-cad-spec-micro uppercase tracking-wider">
             <th scope="col" className="py-3.5 px-6 font-semibold">
               Tài Khoản
             </th>
@@ -58,7 +59,7 @@ export function AccountsTable({ users, loading, stale, selfId, busyIds, ...actio
         </thead>
         <tbody
           aria-busy={loading || stale}
-          className={`divide-y divide-surface-container-low text-on-surface transition-opacity ${
+          className={`divide-y divide-library-line text-library-ink transition-opacity ${
             loading ? "animate-pulse motion-reduce:animate-none" : ""
           } ${stale ? "opacity-60" : ""}`}
         >
@@ -100,7 +101,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
   return (
     <tr
       aria-busy={busy}
-      className="hover:bg-surface-container-low/60 transition-colors group cursor-pointer"
+      className="hover:bg-library-panel/60 transition-colors group cursor-pointer"
       onClick={(event) => {
         // Controls of the row do their own thing; anywhere else opens the detail drawer.
         if (!(event.target as HTMLElement).closest("button, select, a, input, label")) onOpen(user);
@@ -110,19 +111,19 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
         <div className="flex items-center gap-3.5">
           <AccountAvatar
             user={user}
-            className="w-10 h-10 shrink-0 rounded-2xl font-cad-dimension font-semibold shadow-sm"
+            className="w-10 h-10 shrink-0 rounded-2xl font-mono font-semibold shadow-sm"
           />
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-headline-sm text-label-ui font-semibold truncate max-w-[160px]">{name}</span>
+              <span className="font-medium text-sm font-semibold truncate max-w-[160px]">{name}</span>
               {isSelf && (
-                <span className="px-2 py-0.5 rounded-full bg-primary-fixed/40 text-primary font-cad-spec-micro text-cad-spec-micro font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-library-accent-mist/40 text-library-accent font-mono text-cad-spec-micro font-medium">
                   Bạn
                 </span>
               )}
             </div>
             {user.fullName?.trim() && (
-              <span className="font-cad-dimension text-cad-spec-micro text-on-surface-variant truncate max-w-[180px]">
+              <span className="font-mono text-cad-spec-micro text-library-sub truncate max-w-[180px]">
                 {user.email}
               </span>
             )}
@@ -146,25 +147,25 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
                 onClick={saveRole}
                 aria-label={`Lưu vai trò ${ROLE_LABELS[draft]} cho ${name}`}
                 title="Lưu vai trò"
-                className="w-7 h-7 rounded-full bg-primary-container text-on-primary hover:bg-primary shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
+                className="w-7 h-7 rounded-full bg-library-lime-ink text-white hover:bg-black shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
               >
-                <span className="material-symbols-outlined text-sm">check</span>
+                <Icon name="check" className="size-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => setDraft(null)}
                 aria-label="Huỷ đổi vai trò"
                 title="Huỷ"
-                className="w-7 h-7 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface inline-flex items-center justify-center transition-all"
+                className="w-7 h-7 rounded-full bg-library-line text-library-sub hover:text-library-ink inline-flex items-center justify-center transition-all"
               >
-                <span className="material-symbols-outlined text-sm">close</span>
+                <Icon name="close" className="size-3.5" />
               </button>
             </>
           )}
         </div>
       </td>
       <td className="py-4 px-3">
-        <span className="font-cad-dimension text-cad-dimension font-semibold text-on-surface whitespace-nowrap">
+        <span className="font-mono text-xs font-semibold text-library-ink whitespace-nowrap">
           {TIER_LABELS[user.subscriptionTier]}
         </span>
       </td>
@@ -176,7 +177,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
       </td>
       <td className="py-4 px-3">
         <span
-          className="font-cad-dimension text-cad-dimension text-on-surface-variant whitespace-nowrap"
+          className="font-mono text-xs text-library-sub whitespace-nowrap"
           title={formatDateTime(user.createdAt)}
         >
           {formatDate(user.createdAt)}
@@ -185,13 +186,8 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
       <td className="py-4 px-6">
         <div className="flex items-center justify-end gap-1.5">
           {busy && (
-            <span role="status" className="inline-flex text-primary">
-              <span
-                aria-hidden="true"
-                className="material-symbols-outlined text-base animate-spin motion-reduce:animate-none"
-              >
-                progress_activity
-              </span>
+            <span role="status" className="inline-flex text-library-accent">
+              <Icon name="progress_activity" className="size-4 animate-spin motion-reduce:animate-none" />
               <span className="sr-only">Đang cập nhật {name}</span>
             </span>
           )}
@@ -202,9 +198,9 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
               onClick={() => onToggleLock(user)}
               aria-label={user.isActive ? `Khoá tài khoản ${name}` : `Mở khoá tài khoản ${name}`}
               title={isSelf ? undefined : user.isActive ? "Khoá tài khoản" : "Mở khoá tài khoản"}
-              className={`${ICON_BUTTON} bg-surface-container-low text-on-surface-variant enabled:hover:bg-surface-container enabled:hover:text-on-surface`}
+              className={`${ICON_BUTTON} bg-library-panel text-library-sub enabled:hover:bg-library-tile enabled:hover:text-library-ink`}
             >
-              <span className="material-symbols-outlined text-sm">{user.isActive ? "lock" : "lock_open"}</span>
+              <Icon name={user.isActive ? "lock" : "lock_open"} className="size-3.5" />
             </button>
             <button
               type="button"
@@ -212,9 +208,9 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
               onClick={() => onDelete(user)}
               aria-label={`Xoá tài khoản ${name}`}
               title={isSelf ? undefined : "Xoá tài khoản"}
-              className={`${ICON_BUTTON} bg-surface-container-low text-on-surface-variant enabled:hover:bg-error-container enabled:hover:text-on-error-container`}
+              className={`${ICON_BUTTON} bg-library-panel text-library-sub enabled:hover:bg-danger-bg enabled:hover:text-danger-fg`}
             >
-              <span className="material-symbols-outlined text-sm">delete</span>
+              <Icon name="delete" className="size-3.5" />
             </button>
             {isSelf && <span className="sr-only">{SELF_EDIT_HINT}</span>}
           </span>
@@ -223,9 +219,9 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
             onClick={() => onOpen(user)}
             aria-label={`Xem chi tiết ${name}`}
             title="Xem chi tiết"
-            className={`${ICON_BUTTON} bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-on-surface`}
+            className={`${ICON_BUTTON} bg-library-line group-hover:bg-black group-hover:text-white text-library-ink`}
           >
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <Icon name="arrow_forward" className="size-3.5" />
           </button>
         </div>
       </td>
@@ -235,13 +231,13 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
 
 export function ActiveBadge({ active }: { active: boolean }) {
   return active ? (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container/50 text-secondary font-cad-spec-micro text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
-      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-secondary" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-library-accent-mist/50 text-library-accent font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-library-accent" />
       Hoạt động
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-cad-spec-micro text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
-      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-error" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-danger-bg text-danger-fg font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-danger" />
       Đã khoá
     </span>
   );
@@ -251,21 +247,17 @@ export function EmailBadge({ verifiedAt }: { verifiedAt: string | null }) {
   return verifiedAt ? (
     <span
       title={`Email xác minh lúc ${formatDateTime(verifiedAt)}`}
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-cad-dimension text-cad-spec-micro font-semibold whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-library-accent-mist text-library-accent font-mono text-cad-spec-micro font-semibold whitespace-nowrap"
     >
-      <span aria-hidden="true" className="material-symbols-outlined text-xs">
-        mark_email_read
-      </span>
+      <Icon name="mark_email_read" className="size-3" />
       <span className="sr-only">Email </span>Đã xác minh
     </span>
   ) : (
     <span
       title="Email chưa được xác minh"
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-cad-dimension text-cad-spec-micro whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-library-line text-library-sub font-mono text-cad-spec-micro whitespace-nowrap"
     >
-      <span aria-hidden="true" className="material-symbols-outlined text-xs">
-        mail
-      </span>
+      <Icon name="mail" className="size-3" />
       <span className="sr-only">Email </span>Chưa xác minh
     </span>
   );
@@ -276,30 +268,30 @@ function SkeletonRow() {
     <tr aria-hidden="true">
       <td className="py-4 px-6">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-surface-container" />
+          <div className="w-10 h-10 rounded-2xl bg-library-tile" />
           <div className="flex flex-col gap-1.5">
-            <div className="h-3 w-36 rounded-full bg-surface-container" />
-            <div className="h-2.5 w-44 rounded-full bg-surface-container-low" />
+            <div className="h-3 w-36 rounded-full bg-library-tile" />
+            <div className="h-2.5 w-44 rounded-full bg-library-panel" />
           </div>
         </div>
       </td>
       <td className="py-4 px-3">
-        <div className="h-6 w-28 rounded-full bg-surface-container" />
+        <div className="h-6 w-28 rounded-full bg-library-tile" />
       </td>
       <td className="py-4 px-3">
-        <div className="h-3 w-20 rounded-full bg-surface-container" />
+        <div className="h-3 w-20 rounded-full bg-library-tile" />
       </td>
       <td className="py-4 px-3">
         <div className="flex flex-col gap-1.5">
-          <div className="h-5 w-24 rounded-full bg-surface-container" />
-          <div className="h-5 w-32 rounded-full bg-surface-container-low" />
+          <div className="h-5 w-24 rounded-full bg-library-tile" />
+          <div className="h-5 w-32 rounded-full bg-library-panel" />
         </div>
       </td>
       <td className="py-4 px-3">
-        <div className="h-3 w-20 rounded-full bg-surface-container" />
+        <div className="h-3 w-20 rounded-full bg-library-tile" />
       </td>
       <td className="py-4 px-6">
-        <div className="ml-auto h-8 w-28 rounded-full bg-surface-container" />
+        <div className="ml-auto h-8 w-28 rounded-full bg-library-tile" />
       </td>
     </tr>
   );

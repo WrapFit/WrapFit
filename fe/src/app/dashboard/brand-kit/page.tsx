@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import DashboardBrandKitPage from '@/views/dashboard/brand-kit';
 
 export const metadata: Metadata = {
-  title: 'WrapFit — Brand Kit & Vật Liệu Ký Gửi',
+  title: 'Brand kit — WrapFit',
   robots: { index: false },
 };
 

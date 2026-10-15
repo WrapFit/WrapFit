@@ -1,115 +1,132 @@
 'use client';
 
-import React, { useState } from 'react';
+/**
+ * `/checkout/step-2?plan=&billing=`: invoice details and payment method. There is no billing API yet: the details are
+ * prefilled from the account (`GET /auth/me`), checked here and never sent; no card number is asked.
+ */
+
+import { ArrowLeft, ArrowRight, Building2, CreditCard, Wallet } from 'lucide-react';
 import Link from 'next/link';
-import { MainHeader, MainFooter } from '@/components/layout';
-import { GoiMascot } from '@/components/common/GoiMascot';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { CheckoutShell, useCheckoutParams } from '@/components/checkout/CheckoutShell';
+import { RequireAuth, useAuth } from '@/features/auth';
+import { cn } from '@/utils/helpers';
+import { TextField } from '@/views/account/shared';
 
 export default function CheckoutStep2Page() {
-  const [method, setMethod] = useState('card');
+  return (
+    <RequireAuth>
+      <Payment />
+    </RequireAuth>
+  );
+}
+
+const METHODS = [
+  { id: 'card', label: 'Thẻ quốc tế', text: 'Visa, Mastercard, JCB', icon: CreditCard },
+  { id: 'bank', label: 'Chuyển khoản ngân hàng', text: 'Mã QR VietQR, kích hoạt khi nhận tiền', icon: Building2 },
+  { id: 'wallet', label: 'Ví điện tử', text: 'MoMo, ZaloPay', icon: Wallet },
+] as const;
+
+function Payment() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { tier, billing, query } = useCheckoutParams();
+  const [name, setName] = useState(user?.fullName ?? '');
+  const [company, setCompany] = useState(user?.shopName ?? '');
+  const [taxCode, setTaxCode] = useState('');
+  const [method, setMethod] = useState<(typeof METHODS)[number]['id']>('card');
+  const [errors, setErrors] = useState<{ name?: string; taxCode?: string }>({});
+
+  const onSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const next = {
+      name: name.trim() ? undefined : 'Vui lòng nhập tên người mua.',
+      taxCode: taxCode.trim() && !/^\d{10}(-\d{3})?$/.test(taxCode.trim()) ? 'Mã số thuế gồm 10 số, hoặc 10 số kèm -3 số của chi nhánh.' : undefined,
+    };
+    setErrors(next);
+    if (next.name || next.taxCode) {
+      document.getElementById(next.name ? 'buyer-name' : 'tax-code')?.focus();
+      return;
+    }
+    router.push(`/checkout/step-3${query()}`);
+  };
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
-      <MainHeader />
-      <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10 flex-1 flex flex-col justify-between">
-      <header className="w-full max-w-6xl 2xl:max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/checkout/step-1" className="w-10 h-10 rounded-full bg-white/80 border border-[#e8ded0] flex items-center justify-center text-[#122e20] hover:bg-white shadow-xs transition-all">
-            <span className="material-symbols-outlined text-lg">arrow_back</span>
+    <CheckoutShell step={2} tier={tier} billing={billing} query={query()}>
+      <form onSubmit={onSubmit} noValidate aria-labelledby="checkout-title" className="rounded-sheet bg-white p-6 sm:p-8">
+        <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
+          Thông tin thanh toán
+        </h1>
+        <p className="mt-2 text-base leading-7 text-landing-muted">Hoá đơn được gửi tới email của tài khoản.</p>
+
+        <fieldset className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <legend className="mb-3 text-base font-semibold">Thông tin xuất hoá đơn</legend>
+          <TextField
+            id="buyer-name"
+            label="Họ và tên người mua"
+            autoComplete="name"
+            maxLength={100}
+            value={name}
+            error={errors.name}
+            onChange={(event) => {
+              setName(event.target.value);
+              setErrors((current) => ({ ...current, name: undefined }));
+            }}
+          />
+          <TextField id="buyer-email" label="Email nhận hoá đơn" value={user?.email ?? ''} readOnly hint="Email của tài khoản WrapFit." />
+          <TextField id="company" label="Cửa hàng / công ty (không bắt buộc)" autoComplete="organization" maxLength={100} value={company} onChange={(event) => setCompany(event.target.value)} />
+          <TextField
+            id="tax-code"
+            label="Mã số thuế (không bắt buộc)"
+            inputMode="numeric"
+            maxLength={14}
+            value={taxCode}
+            error={errors.taxCode}
+            onChange={(event) => {
+              setTaxCode(event.target.value);
+              setErrors((current) => ({ ...current, taxCode: undefined }));
+            }}
+          />
+        </fieldset>
+
+        <fieldset className="mt-8">
+          <legend className="mb-3 text-base font-semibold">Phương thức thanh toán</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Phương thức thanh toán">
+            {METHODS.map((item) => {
+              const active = item.id === method;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setMethod(item.id)}
+                  className={cn('flex flex-col items-start gap-2 rounded-2xl p-4 text-left transition-shadow', active ? 'ring-2 ring-landing-ink' : 'ring-1 ring-landing-ink/10 hover:ring-landing-ink/40')}
+                >
+                  <span className={cn('flex size-9 items-center justify-center rounded-xl', active ? 'bg-landing-lime text-landing-green-night' : 'bg-mist-200 text-landing-ink')}>
+                    <item.icon className="size-5" aria-hidden />
+                  </span>
+                  <span className="text-sm font-semibold">{item.label}</span>
+                  <span className="text-xs leading-5 text-landing-muted">{item.text}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-sm text-landing-muted">Bạn sẽ thanh toán trên trang của cổng thanh toán; WrapFit không lưu số thẻ.</p>
+        </fieldset>
+
+        <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Link href={`/checkout/step-1${query()}`} className="inline-flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-landing-muted hover:text-landing-ink">
+            <ArrowLeft className="size-4" aria-hidden />
+            Đổi gói
           </Link>
-          <div>
-            <h1 className="font-['Playfair_Display'] text-2xl lg:text-3xl font-bold text-[#122e20]">Phương Thức Thanh Toán</h1>
-            <p className="text-xs text-[#717971] font-['JetBrains_Mono']">VISUAL-FIRST CHECKOUT • ZERO-CLUTTER</p>
-          </div>
+          <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover">
+            Xem lại đơn hàng
+            <ArrowRight className="size-4" aria-hidden />
+          </button>
         </div>
-
-        <div className="flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-md rounded-full border border-[#e8ded0] shadow-xs text-xs font-semibold">
-          <Link href="/checkout/step-1" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors">1. Chọn Gói</Link>
-          <span className="px-4 py-1.5 rounded-full bg-[#122e20] text-white">2. Thanh Toán</span>
-          <Link href="/checkout/step-3" className="px-3 py-1.5 rounded-full text-[#717971] hover:text-[#122e20] transition-colors">3. Cấp Phép</Link>
-        </div>
-      </header>
-
-      {/* Main Payment Stage with 3D Holographic Card */}
-      <main className="max-w-6xl 2xl:max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-8 my-auto py-6 items-center">
-        {/* Holographic 3D Card Display */}
-        <div className="md:col-span-5 flex flex-col items-center">
-          <div className="w-80 h-52 rounded-3xl bg-gradient-to-tr from-[#122e20] via-[#1c422d] to-[#2563eb] p-6 text-white shadow-[0_20px_40px_rgba(18,46,32,0.25)] flex flex-col justify-between relative overflow-hidden transform hover:scale-105 transition-transform duration-500">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="font-['Playfair_Display'] text-lg font-bold tracking-wider">WrapFit</span>
-                <span className="block text-[10px] font-['JetBrains_Mono'] text-white/70 uppercase">Studio Pass Enterprise</span>
-              </div>
-              <div className="w-10 h-7 rounded-md bg-amber-400/80 flex items-center justify-center font-bold text-[10px] text-black">
-                CHIP
-              </div>
-            </div>
-
-            <div className="space-y-1 font-['JetBrains_Mono']">
-              <p className="text-lg tracking-widest font-bold">4242 &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 8894</p>
-              <div className="flex justify-between text-[11px] text-white/80">
-                <span>ELENA VANCE</span>
-                <span>10/28</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Visual Slip Total */}
-          <div className="w-80 mt-6 p-4 rounded-2xl bg-white border border-[#e8ded0] shadow-xs text-center space-y-1">
-            <p className="text-xs text-[#717971] uppercase font-['JetBrains_Mono']">Tổng Thanh Toán Đã Khấu Trừ VAT</p>
-            <p className="font-['Playfair_Display'] text-2xl font-bold text-[#122e20]">2.990.000 VNĐ ($583.20)</p>
-            <span className="inline-block px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-              ĐÃ ÁP DỤNG MÃ GIẢM 20%
-            </span>
-          </div>
-        </div>
-
-        {/* Soft Minimal Form */}
-        <div className="md:col-span-7 bg-white p-8 rounded-3xl border border-[#e8ded0]/80 shadow-[0_4px_24px_rgba(28,25,23,0.04)] space-y-5">
-          <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#122e20]">Thông Tin Thẻ Bảo Mật</h3>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-[#525a54] mb-1">Tên Chủ Thẻ</label>
-              <input type="text" defaultValue="Elena Vance" className="w-full px-4 py-3 rounded-2xl bg-[#f7f2ef] border-none text-sm font-semibold text-[#122e20] focus:ring-2 focus:ring-[#2563eb]" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#525a54] mb-1">Số Thẻ Tín Dụng</label>
-              <input type="text" defaultValue="4242 8821 9012 8894" className="w-full px-4 py-3 rounded-2xl bg-[#f7f2ef] border-none text-sm font-['JetBrains_Mono'] font-semibold text-[#122e20] focus:ring-2 focus:ring-[#2563eb]" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-[#525a54] mb-1">Hạn Thẻ (MM/YY)</label>
-                <input type="text" defaultValue="10/28" className="w-full px-4 py-3 rounded-2xl bg-[#f7f2ef] border-none text-sm font-['JetBrains_Mono'] font-semibold text-[#122e20] focus:ring-2 focus:ring-[#2563eb]" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[#525a54] mb-1">Mã Bảo Mật CVV</label>
-                <input type="password" defaultValue="888" className="w-full px-4 py-3 rounded-2xl bg-[#f7f2ef] border-none text-sm font-['JetBrains_Mono'] font-semibold text-[#122e20] focus:ring-2 focus:ring-[#2563eb]" />
-              </div>
-            </div>
-          </div>
-
-          <Link
-            href="/checkout/step-3"
-            className="w-full py-4 rounded-full bg-[#2563eb] hover:bg-blue-700 text-white text-center text-sm font-semibold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 mt-2"
-          >
-            <span>Xác Nhận &amp; Tiếp Tục Bảo Mật</span>
-            <span className="material-symbols-outlined text-base">arrow_forward</span>
-          </Link>
-        </div>
-      </main>
-
-      <footer className="w-full max-w-6xl 2xl:max-w-7xl mx-auto flex items-center justify-between p-4 px-6 rounded-3xl bg-white/90 backdrop-blur-lg border border-[#e8ded0] shadow-sm">
-        <div className="flex items-center gap-3">
-          <GoiMascot pose="delivery" size={48} />
-          <span className="text-xs font-semibold text-[#122e20]">Bảo chứng thanh toán ngân hàng chuẩn PCI-DSS Level 1.</span>
-        </div>
-        <span className="text-xs text-[#717971] font-['JetBrains_Mono']">Stripe B2B &bull; Napas 24/7 Verified</span>
-      </footer>
-      </div>
-      <MainFooter />
-    </div>
+      </form>
+    </CheckoutShell>
   );
 }

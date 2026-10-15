@@ -43,6 +43,7 @@ export const DOWNLOAD_URL_TTL_SECONDS = 15 * 60;
 
 export const FILE_FORMATS = {
   PDF_CMYK: { extension: 'pdf', contentType: 'application/pdf' },
+  PDF_A4_PRINT: { extension: 'pdf', contentType: 'application/pdf' },
   SVG: { extension: 'svg', contentType: 'image/svg+xml' },
   DXF: { extension: 'dxf', contentType: 'application/dxf' },
 } as const;

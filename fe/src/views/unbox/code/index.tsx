@@ -1,22 +1,22 @@
 "use client";
 
 import { ArrowRight, QrCode } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useId, useState } from "react";
-import { GoiMascot } from "@/components/common/GoiMascot";
 import { ROUTES } from "@/constants";
 import { unboxSlugFrom } from "@/features/showcase/slug";
 import { UnboxFrame } from "@/views/unbox/UnboxFrame";
 
 const SENDER_STEPS = [
-  "Thiết kế hộp quà trong Studio WrapFit.",
-  "Viết lời chúc, chọn hiệu ứng và nhạc mở hộp.",
-  "In mã QR dưới đáy hộp, người nhận quét là mở.",
+  { title: "Thiết kế hộp", text: "Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D." },
+  { title: "Viết lời chúc", text: "Chọn hiệu ứng và nhạc khi người nhận mở hộp." },
+  { title: "In mã QR", text: "Mã in dưới đáy hộp, người nhận quét là mở." },
 ];
 
 /**
- * `/unbox` without a code: recipients who cannot scan the QR code type the code or paste the link printed with the
- * gift; senders learn how to make one.
+ * `/unbox` without a code, in the pack.ly style: recipients who cannot scan the QR code type the code or paste the
+ * link printed with the gift; senders learn how to make one.
  */
 export default function UnboxCodePage() {
   const router = useRouter();
@@ -37,75 +37,85 @@ export default function UnboxCodePage() {
 
   return (
     <UnboxFrame>
-      <section
-        aria-labelledby="unbox-code-title"
-        className="w-full max-w-md rounded-3xl border border-white/15 bg-white/[0.06] p-6 shadow-tactile-lg backdrop-blur-md sm:p-8"
-      >
-        <div className="mb-4 flex justify-center">
-          <GoiMascot pose="unboxing_pop" size={92} showPhotoBadge={false} label="Gói, trợ lý đóng gói của WrapFit" />
-        </div>
-        <p className="flex items-center justify-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-brand-gold">
-          <QrCode className="h-3.5 w-3.5" aria-hidden />
-          Mở hộp 3D qua mã QR
-        </p>
-        <h1 id="unbox-code-title" className="mt-2 text-center font-serif text-[28px] leading-tight tracking-tight text-white sm:text-[32px]">
-          Mỗi hộp quà có một lời chúc riêng
-        </h1>
-        <p className="mt-3 text-center text-sm leading-relaxed text-stone-300">
-          Quét mã QR dưới đáy hộp bằng camera điện thoại để mở hộp quà 3D. Không quét được? Nhập mã hoặc dán liên kết in
-          kèm hộp.
-        </p>
+      <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-stretch">
+        <section aria-labelledby="unbox-code-title" className="flex flex-col justify-center rounded-sheet bg-white p-6 sm:p-10">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-landing-lime text-landing-green-night">
+            <QrCode className="size-6" aria-hidden />
+          </span>
+          <p className="mt-6 text-sm font-semibold text-landing-green">Mở hộp quà 3D</p>
+          <h1 id="unbox-code-title" className="mt-1 font-landing-heading text-4xl font-bold tracking-tight sm:text-5xl">
+            Mỗi hộp quà có một lời chúc riêng
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-landing-muted">
+            Quét mã QR dưới đáy hộp bằng camera điện thoại để mở hộp quà 3D. Không quét được? Nhập mã hoặc dán liên kết in kèm hộp.
+          </p>
 
-        <form onSubmit={submit} noValidate className="mt-6 space-y-3">
-          <label htmlFor={inputId} className="block text-xs font-semibold text-stone-200">
-            Mã mở hộp hoặc liên kết
-          </label>
-          <input
-            id={inputId}
-            value={value}
-            onChange={(event) => {
-              setValue(event.target.value);
-              setError(null);
-            }}
-            maxLength={2048}
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            enterKeyHint="go"
-            placeholder="vd. Ab3dE9xYz012"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
-            className="h-12 w-full rounded-full border border-white/20 bg-white/10 px-5 font-mono text-sm text-white placeholder:text-stone-400 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
-          />
-          {error && (
-            <p id={errorId} role="alert" className="text-xs leading-relaxed text-vibrant-coral-light">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={!value.trim()}
-            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-brand-gold px-6 text-sm font-bold text-brand-forest-dark transition hover:bg-[#e0bd4a] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Mở hộp quà
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </button>
-        </form>
+          <form onSubmit={submit} noValidate className="mt-8 flex max-w-xl flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex-1">
+              <label htmlFor={inputId} className="sr-only">
+                Mã mở hộp hoặc liên kết
+              </label>
+              <input
+                id={inputId}
+                value={value}
+                onChange={(event) => {
+                  setValue(event.target.value);
+                  setError(null);
+                }}
+                maxLength={2048}
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint="go"
+                placeholder="Mã mở hộp, vd. Ab3dE9xYz012"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
+                className="h-12 w-full rounded-lg bg-mist-200 px-4 font-mono text-base text-landing-ink outline-none ring-1 ring-transparent transition-shadow placeholder:font-landing-body placeholder:text-landing-muted/80 focus:bg-white focus:ring-landing-green/60 aria-[invalid=true]:ring-danger"
+              />
+              {error && (
+                <p id={errorId} role="alert" className="mt-1.5 text-sm text-danger-fg">
+                  {error}
+                </p>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={!value.trim()}
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Mở hộp quà
+              <ArrowRight className="size-4" aria-hidden />
+            </button>
+          </form>
+        </section>
 
-        <div className="mt-7 border-t border-white/10 pt-5">
-          <h2 className="font-mono text-[11px] uppercase tracking-wider text-stone-400">Bạn muốn gửi quà?</h2>
-          <ol className="mt-3 space-y-2">
+        <aside aria-labelledby="unbox-sender-title" className="flex flex-col rounded-sheet bg-landing-green-night p-6 text-white sm:p-10">
+          <h2 id="unbox-sender-title" className="font-landing-heading text-2xl font-bold sm:text-3xl">
+            Bạn muốn gửi quà?
+          </h2>
+          <p className="mt-2 text-base leading-7 text-landing-lime-mist/80">Tạo một hộp quà có lời chúc 3D trong vài phút.</p>
+          <ol className="mt-6 flex flex-col gap-3">
             {SENDER_STEPS.map((step, index) => (
-              <li key={step} className="flex gap-3 text-sm text-stone-200">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-brand-gold/40 font-mono text-[11px] text-brand-gold">
+              <li key={step.title} className="flex gap-4 rounded-2xl bg-white/[0.06] p-4">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-landing-lime text-sm font-semibold text-landing-green-night">
                   {index + 1}
                 </span>
-                <span className="pt-0.5">{step}</span>
+                <span>
+                  <span className="block font-semibold">{step.title}</span>
+                  <span className="block text-sm leading-6 text-landing-lime-mist/75">{step.text}</span>
+                </span>
               </li>
             ))}
           </ol>
-        </div>
-      </section>
+          <Link
+            href={ROUTES.editorNew}
+            className="mt-6 inline-flex h-12 items-center justify-center gap-2 self-start rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover lg:mt-auto"
+          >
+            Bắt đầu thiết kế
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </aside>
+      </div>
     </UnboxFrame>
   );
 }

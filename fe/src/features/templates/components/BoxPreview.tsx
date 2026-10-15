@@ -5,23 +5,35 @@ interface BoxPreviewProps {
   structure: BoxStructureType;
   dimensions: BoxDimensions;
   material?: MaterialType;
+  /** Printed colour of the paper (`#RRGGBB`), shaded per face; replaces the stock colour of `material`. */
+  color?: string;
   className?: string;
   /** Accessible name; the image is decorative without it. */
   label?: string;
 }
 
-/** Lit faces of each paper stock: top, front-left, front-right. */
-const PAPER: Record<MaterialType, { top: string; left: string; right: string }> = {
-  ivory: { top: "#FBF8F1", left: "#EFE8DC", right: "#E2D8C7" },
-  kraft: { top: "#E8D3BC", left: "#D6B998", right: "#C4A27E" },
-  duplex: { top: "#F4F2ED", left: "#E4DFD5", right: "#D3CCBF" },
+/** Base colour of each paper stock, lit per face below. */
+const PAPER: Record<MaterialType, string> = {
+  ivory: "#F8F3E8",
+  kraft: "#DCBE9C",
+  duplex: "#F1EEE7",
 };
+
+/** `#RRGGBB` mixed towards black (amount > 0) or white (amount < 0). */
+function shade(hex: string, amount: number): string {
+  const value = parseInt(hex.slice(1), 16);
+  const channel = (shift: number) => {
+    const c = (value >> shift) & 255;
+    return Math.round(amount >= 0 ? c * (1 - amount) : c + (255 - c) * -amount);
+  };
+  return `#${[16, 8, 0].map((shift) => channel(shift).toString(16).padStart(2, "0")).join("")}`;
+}
 
 const INK = "#1C1917";
 const CREASE = "#3182CE"; // dieline crease layer
 const VIEW_W = 240;
 const VIEW_H = 160;
-const PAD = 18;
+const PAD = 20;
 
 type P3 = readonly [number, number, number];
 type P2 = readonly [number, number];
@@ -31,45 +43,71 @@ const COS30 = Math.cos(Math.PI / 6);
 const iso = ([x, y, z]: P3): P2 => [(x - y) * COS30, (x + y) * 0.5 - z];
 
 /**
- * Parametric isometric sketch of a box drawn from its real L × W × H, used when a design has no thumbnail. Crease
- * edges use the dieline crease colour; each structure gets its tell-tale detail (tuck crease, drawer, lid band, pillow
- * curves). Very flat or very tall boxes keep at least a quarter of the longest side so the sketch stays readable.
+ * Parametric isometric render of a box drawn from its real L × W × H, used when a design has no thumbnail: light
+ * from the upper left (bright lid, mid front, darker side, each face graded towards the floor), a paper edge that
+ * catches the light and a soft shadow on the floor. Each structure gets its tell-tale detail (tuck crease, drawer,
+ * lid band, pillow curves). Very flat or very tall boxes keep at least a quarter of the longest side.
  */
-export function BoxPreview({ structure, dimensions, material = "ivory", className = "", label }: BoxPreviewProps) {
-  const gradientId = useId();
-  const paper = PAPER[material] ?? PAPER.ivory;
+export function BoxPreview({ structure, dimensions, material = "ivory", color, className = "", label }: BoxPreviewProps) {
+  const uid = useId().replace(/:/g, "");
+  const base = color && /^#[0-9a-f]{6}$/i.test(color) ? color : (PAPER[material] ?? PAPER.ivory);
+  const tone = {
+    top: shade(base, -0.35),
+    topFar: shade(base, -0.12),
+    left: shade(base, 0.02),
+    leftLow: shade(base, 0.12),
+    right: shade(base, 0.14),
+    rightLow: shade(base, 0.24),
+  };
   const longest = Math.max(dimensions.length, dimensions.width, dimensions.height, 1);
   const L = Math.max(dimensions.length, longest * 0.25);
   const W = Math.max(dimensions.width, longest * 0.25);
   const H = Math.max(dimensions.height, longest * 0.25);
 
   const a11y = label ? { role: "img", "aria-label": label } : { "aria-hidden": true };
+  const defs = (
+    <defs>
+      <filter id={`${uid}-blur`} x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="6" />
+      </filter>
+      <linearGradient id={`${uid}-top`} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stopColor={tone.top} />
+        <stop offset="100%" stopColor={tone.topFar} />
+      </linearGradient>
+      <linearGradient id={`${uid}-left`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={tone.left} />
+        <stop offset="100%" stopColor={tone.leftLow} />
+      </linearGradient>
+      <linearGradient id={`${uid}-right`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={tone.right} />
+        <stop offset="100%" stopColor={tone.rightLow} />
+      </linearGradient>
+    </defs>
+  );
 
   if (structure === "pillow") {
     const cx = VIEW_W / 2;
-    const cy = VIEW_H / 2 - 4;
-    const halfW = 92;
-    const halfH = Math.min(46, Math.max(22, (W / L) * 70));
+    const cy = VIEW_H / 2 - 6;
+    const halfW = 88;
+    const halfH = Math.min(44, Math.max(22, (W / L) * 70));
     const body = `M ${cx - halfW} ${cy} C ${cx - halfW * 0.5} ${cy - halfH * 1.35}, ${cx + halfW * 0.5} ${cy - halfH * 1.35}, ${
       cx + halfW
     } ${cy} C ${cx + halfW * 0.5} ${cy + halfH * 1.35}, ${cx - halfW * 0.5} ${cy + halfH * 1.35}, ${cx - halfW} ${cy} Z`;
+    const upper = `M ${cx - halfW} ${cy} C ${cx - halfW * 0.5} ${cy - halfH * 1.35}, ${cx + halfW * 0.5} ${cy - halfH * 1.35}, ${cx + halfW} ${cy} Z`;
     const endFold = (side: 1 | -1) =>
       `M ${cx + side * halfW * 0.74} ${cy - halfH * 0.74} Q ${cx + side * halfW * 0.5} ${cy}, ${cx + side * halfW * 0.74} ${
         cy + halfH * 0.74
       }`;
     return (
       <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className={className} {...a11y}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={paper.top} />
-            <stop offset="100%" stopColor={paper.right} />
-          </linearGradient>
-        </defs>
-        <ellipse cx={cx} cy={cy + halfH + 16} rx={halfW * 0.8} ry={7} fill={INK} opacity={0.07} />
-        <path d={body} fill={`url(#${gradientId})`} stroke={INK} strokeOpacity={0.7} strokeWidth={1.2} />
-        <path d={endFold(-1)} fill="none" stroke={CREASE} strokeWidth={1} strokeDasharray="4 4" />
-        <path d={endFold(1)} fill="none" stroke={CREASE} strokeWidth={1} strokeDasharray="4 4" />
-        <path d={`M ${cx - halfW * 0.5} ${cy} L ${cx + halfW * 0.5} ${cy}`} stroke={INK} strokeOpacity={0.08} strokeWidth={6} />
+        {defs}
+        <ellipse cx={cx + 6} cy={cy + halfH + 18} rx={halfW * 0.78} ry={8} fill={INK} opacity={0.16} filter={`url(#${uid}-blur)`} />
+        <path d={body} fill={`url(#${uid}-right)`} />
+        <path d={upper} fill={`url(#${uid}-top)`} />
+        <path d={endFold(-1)} fill="none" stroke={INK} strokeOpacity={0.14} strokeWidth={1.2} />
+        <path d={endFold(1)} fill="none" stroke={INK} strokeOpacity={0.14} strokeWidth={1.2} />
+        <path d={`M ${cx - halfW * 0.62} ${cy - halfH * 0.42} Q ${cx} ${cy - halfH * 0.9}, ${cx + halfW * 0.62} ${cy - halfH * 0.42}`} fill="none" stroke="#FFFFFF" strokeOpacity={0.7} strokeWidth={2} strokeLinecap="round" />
+        <path d={body} fill="none" stroke={INK} strokeOpacity={0.12} strokeWidth={1} />
       </svg>
     );
   }
@@ -90,36 +128,33 @@ export function BoxPreview({ structure, dimensions, material = "ivory", classNam
   const minX = Math.min(...xs);
   const minY = Math.min(...ys);
   const spanX = Math.max(...xs) - minX;
-  const spanY = Math.max(...ys) - minY + 14; // room for the ground shadow
+  const spanY = Math.max(...ys) - minY + 16; // room for the floor shadow
   const scale = Math.min((VIEW_W - PAD * 2) / spanX, (VIEW_H - PAD * 2) / spanY);
   const offsetX = (VIEW_W - spanX * scale) / 2;
   const offsetY = (VIEW_H - spanY * scale) / 2;
 
-  const pt = (p: P3): string => {
+  const xy = (p: P3): P2 => {
     const [x, y] = iso(p);
-    return `${((x - minX) * scale + offsetX).toFixed(1)},${((y - minY) * scale + offsetY).toFixed(1)}`;
+    return [(x - minX) * scale + offsetX, (y - minY) * scale + offsetY];
   };
+  const pt = (p: P3) => xy(p).map((v) => v.toFixed(1)).join(",");
   const poly = (...points: P3[]) => points.map(pt).join(" ");
   const { a, b, c, d, e, f, g } = corners;
-  // Soft contact shadow under the front corner, centred on the box.
-  const shadowY = Number(pt(f).split(",")[1]);
+  // Floor shadow: the footprint of the box, pushed away from the light and blurred.
+  const footprint = poly([0, 0, 0], [L, 0, 0], [L, W, 0], [0, W, 0]);
 
   return (
     <svg viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className={className} {...a11y}>
-      <ellipse cx={VIEW_W / 2} cy={shadowY + 2} rx={spanX * scale * 0.46} ry={7} fill={INK} opacity={0.07} />
-      <polygon points={poly(a, b, c, d)} fill={paper.top} />
-      <polygon points={poly(d, c, f, g)} fill={paper.left} />
-      <polygon points={poly(b, e, f, c)} fill={paper.right} />
+      {defs}
+      <polygon points={footprint} transform="translate(7 5)" fill={INK} opacity={0.2} filter={`url(#${uid}-blur)`} />
+      <polygon points={poly(e, f, g, [0, 0, 0])} transform="translate(1 1.5)" fill={INK} opacity={0.18} />
+      <polygon points={poly(a, b, c, d)} fill={`url(#${uid}-top)`} />
+      <polygon points={poly(d, c, f, g)} fill={`url(#${uid}-left)`} />
+      <polygon points={poly(b, e, f, c)} fill={`url(#${uid}-right)`} />
 
       {structure === "tuck-top" && (
         // Crease of the tuck flap, just behind the front edge of the lid.
-        <polyline
-          points={poly([0, W * 0.8, H], [L, W * 0.8, H])}
-          fill="none"
-          stroke={CREASE}
-          strokeWidth={1}
-          strokeDasharray="4 4"
-        />
+        <polyline points={poly([0, W * 0.82, H], [L, W * 0.82, H])} fill="none" stroke={CREASE} strokeOpacity={0.55} strokeWidth={1} strokeDasharray="4 4" />
       )}
       {structure === "sleeve-drawer" && (
         <>
@@ -127,31 +162,32 @@ export function BoxPreview({ structure, dimensions, material = "ivory", classNam
           <polygon
             points={poly([L, W * 0.1, H * 0.88], [L, W * 0.9, H * 0.88], [L, W * 0.9, H * 0.12], [L, W * 0.1, H * 0.12])}
             fill={INK}
-            fillOpacity={0.06}
-            stroke={INK}
-            strokeOpacity={0.45}
-            strokeWidth={1}
+            fillOpacity={0.08}
           />
+          <polyline points={poly([L, W * 0.1, H * 0.12], [L, W * 0.9, H * 0.12])} fill="none" stroke="#FFFFFF" strokeOpacity={0.6} strokeWidth={1.2} />
           <polyline
             points={poly([L, W * 0.4, H * 0.88], [L, W * 0.5, H * 0.72], [L, W * 0.6, H * 0.88])}
             fill="none"
             stroke={INK}
-            strokeOpacity={0.45}
-            strokeWidth={1}
+            strokeOpacity={0.3}
+            strokeWidth={1.1}
+            strokeLinecap="round"
           />
         </>
       )}
       {structure === "lid-base" && (
-        // Bottom edge of the lid around the base.
+        // The lid overhangs the base: a shadow band under its bottom edge, the edge itself catching the light.
         <>
-          <polyline points={poly([0, W, H * 0.66], [L, W, H * 0.66], [L, 0, H * 0.66])} fill="none" stroke={INK} strokeOpacity={0.6} strokeWidth={1.2} />
-          <polyline points={poly([0, W, H * 0.63], [L, W, H * 0.63], [L, 0, H * 0.63])} fill="none" stroke={INK} strokeOpacity={0.1} strokeWidth={2} />
+          <polygon points={poly([0, W, H * 0.66], [L, W, H * 0.66], [L, W, H * 0.58], [0, W, H * 0.58])} fill={INK} fillOpacity={0.1} />
+          <polygon points={poly([L, W, H * 0.66], [L, 0, H * 0.66], [L, 0, H * 0.58], [L, W, H * 0.58])} fill={INK} fillOpacity={0.12} />
+          <polyline points={poly([0, W, H * 0.66], [L, W, H * 0.66], [L, 0, H * 0.66])} fill="none" stroke="#FFFFFF" strokeOpacity={0.75} strokeWidth={1.1} />
         </>
       )}
 
-      <polygon points={poly(a, b, e, f, g, d)} fill="none" stroke={INK} strokeOpacity={0.72} strokeWidth={1.2} strokeLinejoin="round" />
-      <polyline points={poly(d, c, b)} fill="none" stroke={CREASE} strokeWidth={1} strokeDasharray="4 4" />
-      <polyline points={poly(c, f)} fill="none" stroke={CREASE} strokeWidth={1} strokeDasharray="4 4" />
+      {/* Paper edges: the front corner and the lid rim catch the light, the outline stays a hairline. */}
+      <polyline points={poly(d, c, b)} fill="none" stroke="#FFFFFF" strokeOpacity={0.85} strokeWidth={1.3} strokeLinejoin="round" />
+      <polyline points={poly(c, f)} fill="none" stroke="#FFFFFF" strokeOpacity={0.45} strokeWidth={1} />
+      <polygon points={poly(a, b, e, f, g, d)} fill="none" stroke={INK} strokeOpacity={0.14} strokeWidth={1} strokeLinejoin="round" />
     </svg>
   );
 }

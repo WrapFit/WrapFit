@@ -1,5 +1,6 @@
 "use client";
 
+import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
@@ -8,6 +9,7 @@ import {
   AccountLoading,
   AccountShell,
   ApiErrorAlert,
+  SECONDARY_BUTTON,
   ResendSentNotice,
   ResendVerificationForm,
   TEXT_LINK,
@@ -23,7 +25,7 @@ export default function CheckEmailPage() {
   return (
     <Suspense
       fallback={
-        <AccountShell pose="delivery" eyebrow="Xác nhận email" title={TITLE}>
+        <AccountShell icon={MailCheck} eyebrow="Xác nhận email" title={TITLE}>
           <AccountLoading />
         </AccountShell>
       }
@@ -48,7 +50,7 @@ function CheckEmail({ initialEmail }: { initialEmail: string }) {
   if (editing) {
     return (
       <AccountShell
-        pose="delivery"
+        icon={MailCheck}
         eyebrow="Xác nhận email"
         title={TITLE}
         description="Nhập email bạn đã dùng để đăng ký, chúng tôi sẽ gửi lại link xác nhận tài khoản."
@@ -68,19 +70,19 @@ function CheckEmail({ initialEmail }: { initialEmail: string }) {
 
   return (
     <AccountShell
-      pose="delivery"
+      icon={MailCheck}
       eyebrow="Xác nhận email"
       title={TITLE}
       description={
         <>
-          Chúng tôi đã gửi email tới <strong className="break-all font-semibold text-stone-900">{email}</strong>. Tài
+          Chúng tôi đã gửi email tới <strong className="break-all font-semibold text-landing-ink">{email}</strong>. Tài
           khoản cần được xác nhận trước khi đăng nhập.
         </>
       }
     >
-      <ol className="space-y-2.5 rounded-2xl border border-stone-200/80 bg-paper-ivory/80 p-4 text-left text-[13px] leading-relaxed text-stone-700">
+      <ol className="space-y-3 rounded-2xl bg-white p-5 text-left text-sm leading-6 text-landing-muted ring-1 ring-landing-ink/10">
         <Step n={1}>
-          Mở email <strong className="font-semibold text-stone-900">mới nhất</strong> từ WrapFit. Mỗi lần gửi lại, link
+          Mở email <strong className="font-semibold text-landing-ink">mới nhất</strong> từ WrapFit. Mỗi lần gửi lại, link
           trong email trước sẽ hết hiệu lực.
         </Step>
         <Step n={2}>Bấm vào link trong email. Link có hiệu lực 24 giờ.</Step>
@@ -97,7 +99,7 @@ function CheckEmail({ initialEmail }: { initialEmail: string }) {
         onClick={() => resend.send(email)}
         disabled={locked}
         aria-busy={resend.isPending || undefined}
-        className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-stone-200 bg-white px-6 text-sm font-semibold text-stone-800 transition hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:text-stone-400 disabled:active:scale-100"
+        className={`mt-4 ${SECONDARY_BUTTON}`}
       >
         {resend.isPending ? "Đang gửi…" : resendLabel(resend, "Gửi lại email")}
       </button>
@@ -106,7 +108,7 @@ function CheckEmail({ initialEmail }: { initialEmail: string }) {
         <button type="button" onClick={() => setEditing(true)} className={TEXT_LINK}>
           Dùng email khác
         </button>
-        <span aria-hidden className="text-stone-300">
+        <span aria-hidden className="text-landing-line">
           ·
         </span>
         <BackToLogin email={email} inline />
@@ -120,7 +122,7 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
     <li className="flex gap-3">
       <span
         aria-hidden
-        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-forest font-mono text-[10px] font-bold text-white"
+        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-landing-lime text-xs font-semibold text-landing-green-night"
       >
         {n}
       </span>

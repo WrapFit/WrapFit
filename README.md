@@ -12,7 +12,7 @@
 
 ## 📌 Bối cảnh & Nỗi đau thị trường (The Problem)
 
-- **MOQ & Chi phí khuôn bế quá cao**: Các shop quà tặng handmade và cá nhân muốn đặt hộp riêng thường bị xưởng in từ chối do số lượng tối thiểu (thường từ 500 - 1.000 hộp) hoặc chi phí làm khuôn dao bế riêng dao động từ 1.000.000đ - 3.000.000đ/kích thước.
+- **MOQ & Chi phí khuôn bế quá cao**: Các shop quà tặng handmade và cá nhân muốn đặt hộp riêng thường bị xưởng in từ chối do số lượng tối thiểu (thường từ 500 - 1.000 hộp) hoặc chi phí làm khuôn dao bế riêng dao động từ 1.500.000đ - 2.000.000đ (1,5 - 2 triệu đồng)/kích thước.
 - **Công cụ thiết kế 2D "mù" về vật lý bao bì**: Các phần mềm như Canva hay Photoshop không hiểu đường cấn gấp (crease line), mép dán (glue flap) hay độ co giãn của vật liệu (GSM/caliper), dẫn đến việc file thiết kế đẹp trên màn hình nhưng khi in và bế ra thực tế bị rách, lệch khớp hoặc đứt chữ.
 
 ---

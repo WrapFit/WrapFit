@@ -76,7 +76,7 @@ export interface HealthDetails extends HealthStatus {
 // ---------------------------------------------------------------- users & auth
 
 export type Role = "MAKER" | "PRO_ARTISAN" | "PRINT_SHOP" | "ADMIN";
-export type SubscriptionTier = "FREE" | "STARTER" | "PRO_BUSINESS";
+export type SubscriptionTier = "FREE" | "PAY_PER_EXPORT" | "STARTER" | "PRO_BUSINESS";
 
 /** The signed-in user (`GET /auth/me`, `GET /users/me`). */
 export interface SafeUser {
@@ -428,7 +428,7 @@ export interface StorageUsage {
 
 // ---------------------------------------------------------------- exports
 
-export type ExportFileType = "PDF_CMYK" | "SVG" | "DXF";
+export type ExportFileType = "PDF_CMYK" | "PDF_A4_PRINT" | "SVG" | "DXF";
 export type ExportStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export interface ExportStarted {
@@ -527,4 +527,60 @@ export interface AiUsage {
   used: number;
   limit: number;
   aiEnabled: boolean;
+}
+
+// ---------------------------------------------------------------- print-shops & orders
+
+export interface PrintShop {
+  id: string;
+  name: string;
+  city: string;
+  address: string;
+  phone: string;
+  sheet?: string;
+  sheetSize?: string;
+  services: string[];
+  leadTime?: string;
+  leadTimeDays?: number;
+  minQuantity?: number;
+  state?: 'active' | 'review' | 'paused';
+  status?: 'active' | 'review' | 'paused';
+}
+
+export interface SampleOrder {
+  id: string;
+  userId: string;
+  projectId: string;
+  projectTitle: string;
+  printShopId?: string;
+  printShopName?: string;
+  partnerShop?: {
+    id: string;
+    name: string;
+    city: string;
+    contactPhone?: string;
+  };
+  quantity: number;
+  recipientName: string;
+  phone?: string;
+  recipientPhone?: string;
+  shippingAddress: string;
+  notes?: string | null;
+  totalVnd?: number;
+  sampleFeeVnd?: number;
+  status: 'pending' | 'confirmed' | 'in_production' | 'shipped' | 'delivered' | 'SUBMITTED' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED';
+  orderCode?: string;
+  createdAt: string;
+}
+
+export interface CreateSampleOrderRequest {
+  projectId: string;
+  printShopId?: string;
+  recipientName: string;
+  phone?: string;
+  recipientPhone?: string;
+  shippingAddress: string;
+  notes?: string;
+  quantity?: number;
+  paperStock?: string;
 }

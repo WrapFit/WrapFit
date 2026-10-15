@@ -7,27 +7,27 @@ export { ROLE_LABELS, TIER_LABELS } from "@/constants";
 
 export const ROLES: readonly Role[] = ["MAKER", "PRO_ARTISAN", "PRINT_SHOP", "ADMIN"];
 
-/** Badge, dot and avatar colours per role, taken from the Stitch screen's own palette. */
+/** Badge, dot and avatar colours per role, in the workspace palette. */
 export const ROLE_TONES: Record<Role, { badge: string; dot: string; avatar: string }> = {
   ADMIN: {
-    badge: "bg-primary-fixed/40 text-primary",
-    dot: "bg-primary-container",
-    avatar: "bg-primary-fixed text-primary",
+    badge: "bg-library-lime-ink text-white",
+    dot: "bg-library-lime-ink",
+    avatar: "bg-library-lime-ink text-white",
   },
   PRINT_SHOP: {
-    badge: "bg-tertiary-fixed/30 text-tertiary",
-    dot: "bg-tertiary",
-    avatar: "bg-tertiary-fixed text-on-tertiary-fixed",
+    badge: "bg-warning-bg text-warning-fg",
+    dot: "bg-warning",
+    avatar: "bg-warning-bg text-warning-fg",
   },
   PRO_ARTISAN: {
-    badge: "bg-secondary-container/50 text-secondary",
-    dot: "bg-secondary",
-    avatar: "bg-secondary-container text-on-secondary-container",
+    badge: "bg-library-accent-mist text-library-accent",
+    dot: "bg-library-accent",
+    avatar: "bg-library-lime text-library-lime-ink",
   },
   MAKER: {
-    badge: "bg-surface-container-high text-on-surface-variant",
-    dot: "bg-outline",
-    avatar: "bg-surface-container text-on-surface-variant",
+    badge: "bg-library-panel text-library-sub",
+    dot: "bg-library-muted",
+    avatar: "bg-library-tile text-library-ink",
   },
 };
 
@@ -70,13 +70,13 @@ export const formatCount = (value: number) => COUNT.format(value);
 export type AccountFilter = "all" | Role | "unverified" | "locked";
 
 export const ACCOUNT_FILTERS: readonly { id: AccountFilter; label: string; countTone: string }[] = [
-  { id: "all", label: "Tất cả", countTone: "text-on-surface-variant" },
-  { id: "MAKER", label: ROLE_LABELS.MAKER, countTone: "text-on-surface-variant" },
-  { id: "PRO_ARTISAN", label: ROLE_LABELS.PRO_ARTISAN, countTone: "text-secondary" },
-  { id: "PRINT_SHOP", label: ROLE_LABELS.PRINT_SHOP, countTone: "text-tertiary" },
-  { id: "ADMIN", label: ROLE_LABELS.ADMIN, countTone: "text-primary" },
-  { id: "unverified", label: "Chưa xác minh", countTone: "text-error" },
-  { id: "locked", label: "Đã khoá", countTone: "text-error" },
+  { id: "all", label: "Tất cả", countTone: "text-library-muted" },
+  { id: "MAKER", label: ROLE_LABELS.MAKER, countTone: "text-library-muted" },
+  { id: "PRO_ARTISAN", label: ROLE_LABELS.PRO_ARTISAN, countTone: "text-library-accent" },
+  { id: "PRINT_SHOP", label: ROLE_LABELS.PRINT_SHOP, countTone: "text-warning-fg" },
+  { id: "ADMIN", label: ROLE_LABELS.ADMIN, countTone: "text-library-ink" },
+  { id: "unverified", label: "Chưa xác minh", countTone: "text-danger-fg" },
+  { id: "locked", label: "Đã khoá", countTone: "text-danger-fg" },
 ];
 
 export function matchesFilter(user: SafeUser, filter: AccountFilter): boolean {

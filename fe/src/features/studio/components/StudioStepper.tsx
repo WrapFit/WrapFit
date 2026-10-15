@@ -3,14 +3,18 @@
 import React from "react";
 import { CheckCircle2, Lock } from "lucide-react";
 
-export type StudioStep = 1 | 2 | 3 | 4;
+/** 1 structure · 2 size · 3 paper · 4 artwork · 5 3D & gift · 6 FitCheck & export. */
+export type StudioStep = 1 | 2 | 3 | 4 | 5 | 6;
 
-const STEPS: { step: StudioStep; label: string }[] = [
-  { step: 1, label: "1. Mẫu Hộp" },
-  { step: 2, label: "2. Kích Thước" },
-  { step: 3, label: "3. Bản Vẽ 2D" },
-  { step: 4, label: "4. Phối Cảnh 3D" },
+export const STUDIO_STEPS: { step: StudioStep; label: string }[] = [
+  { step: 1, label: "Cấu trúc" },
+  { step: 2, label: "Kích thước" },
+  { step: 3, label: "Chất liệu" },
+  { step: 4, label: "Thiết kế" },
+  { step: 5, label: "Xem 3D" },
+  { step: 6, label: "Xuất file" },
 ];
+const STEPS = STUDIO_STEPS;
 
 interface StudioStepperProps {
   current: StudioStep;
@@ -19,10 +23,10 @@ interface StudioStepperProps {
   locked?: Partial<Record<StudioStep, string>>;
 }
 
-/** The 4 steps of the studio as a segmented pill (labels from `xl`, numbers below). */
+/** The 6 steps of the studio as pack.ly menu pills (labels from `xl`, numbers below). */
 export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperProps) {
   return (
-    <nav aria-label="Các bước thiết kế" className="flex items-center gap-1 sm:gap-2 bg-stone-100/90 p-1 rounded-full border border-stone-200">
+    <nav aria-label="Các bước thiết kế" className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
       {STEPS.map((s) => {
         const isActive = current === s.step;
         const isPast = current > s.step;
@@ -35,31 +39,31 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
             disabled={!!lockReason}
             title={lockReason}
             aria-current={isActive ? "step" : undefined}
-            aria-label={s.label}
+            aria-label={`Bước ${s.step}: ${s.label}`}
             onClick={() => onSelect(s.step)}
-            className={`min-h-[36px] px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 disabled:cursor-not-allowed ${
+            className={`min-h-[36px] shrink-0 px-2 sm:px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed ${
               isActive
-                ? "bg-brand-forest text-white shadow-tactile font-bold"
+                ? "bg-landing-tile text-landing-ink font-semibold"
                 : isPast
-                  ? "text-stone-700 hover:bg-stone-200/60 disabled:hover:bg-transparent"
-                  : "text-stone-500 hover:text-stone-700 hover:bg-stone-200/40 disabled:text-stone-400 disabled:hover:bg-transparent"
+                  ? "text-landing-ink hover:bg-landing-canvas disabled:hover:bg-transparent"
+                  : "text-landing-muted hover:text-landing-ink hover:bg-landing-canvas disabled:hover:bg-transparent"
             }`}
           >
             {lockReason && !isActive ? (
-              <Lock className="w-3.5 h-3.5 text-stone-400" aria-hidden />
+              <Lock className="w-3.5 h-3.5 text-landing-muted" aria-hidden />
             ) : isPast ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" aria-hidden />
+              <CheckCircle2 className="w-3.5 h-3.5 text-landing-green" aria-hidden />
             ) : (
               <span
                 aria-hidden
-                className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-mono ${
-                  isActive ? "bg-white/20 text-white" : "bg-stone-300 text-stone-700"
+                className={`size-5 rounded-full text-caption font-semibold flex items-center justify-center ${
+                  isActive ? "bg-landing-lime text-landing-green-night" : "bg-landing-tile text-landing-muted"
                 }`}
               >
                 {s.step}
               </span>
             )}
-            <span className="hidden xl:inline">{s.label}</span>
+            <span className={isActive ? "hidden sm:inline" : "hidden 2xl:inline"}>{s.label}</span>
           </button>
         );
       })}

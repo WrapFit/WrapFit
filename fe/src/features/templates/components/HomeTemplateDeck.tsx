@@ -1,4 +1,5 @@
 "use client";
+/* ds-artwork: paper and ink colours of the Stitch home deck (Playfair look), drawn like printed cards. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
 
 import Link from "next/link";
 import React, { useRef, useState } from "react";
@@ -9,6 +10,7 @@ import { useCuratedTemplates } from "../hooks";
 import { formatDimensions, formatMaterial } from "../labels";
 import { DesignThumb } from "./DesignThumb";
 import { templateHref } from "./TemplateCards";
+import { Icon } from "@/components/ui";
 
 const DECK_SIZE = 6;
 const SWIPE_PX = 40;
@@ -65,7 +67,7 @@ export function HomeTemplateDeck() {
             <span className="inline-block w-2 h-2 rounded-full bg-[#133020]"></span>
             <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">WRAPFIT CURATED · 3D STACKED DECK</span>
           </div>
-          <h2 className="font-headline-lg text-[32px] md:text-[40px] text-[#122e20] font-['Playfair_Display'] font-medium tracking-tight">
+          <h2 className="font-headline-lg text-[32px] md:text-[40px] text-brand-forest-deep font-['Playfair_Display'] font-medium tracking-tight">
             Thư Viện Cấu Trúc Mẫu
           </h2>
           <p className="font-body-md text-sm md:text-base text-[#485950] mt-1 font-['Plus_Jakarta_Sans']">
@@ -80,9 +82,7 @@ export function HomeTemplateDeck() {
             className="inline-flex min-h-[44px] items-center justify-center gap-2 px-5 rounded-full whitespace-nowrap bg-white/80 hover:bg-white text-[#152e22] text-sm font-medium border border-[#e3ded6] shadow-xs transition-all active:scale-95"
           >
             Xem tất cả
-            <span className="material-symbols-outlined text-base text-[#486458]" aria-hidden>
-              arrow_forward
-            </span>
+            <Icon name="arrow_forward" className="size-4 text-stitch-forest" />
           </Link>
           <button
             type="button"
@@ -91,7 +91,7 @@ export function HomeTemplateDeck() {
             onClick={() => step(-1)}
             className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90 disabled:opacity-40 disabled:hover:scale-100"
           >
-            <span className="material-symbols-outlined text-xl" aria-hidden>arrow_back</span>
+            <Icon name="arrow_back" className="size-5" />
           </button>
           <button
             type="button"
@@ -100,7 +100,7 @@ export function HomeTemplateDeck() {
             onClick={() => step(1)}
             className="w-11 h-11 rounded-full bg-white/90 hover:bg-white border border-[#ded7cb] text-[#152e22] shadow-xs backdrop-blur-md flex items-center justify-center transition-all hover:scale-105 active:scale-90 disabled:opacity-40 disabled:hover:scale-100"
           >
-            <span className="material-symbols-outlined text-xl" aria-hidden>arrow_forward</span>
+            <Icon name="arrow_forward" className="size-5" />
           </button>
         </div>
       </div>
@@ -215,7 +215,7 @@ function DeckCard({
       {...selectProps}
     >
       <div
-        className={`coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 ${
+        className={`coverflow-box w-[290px] sm:w-[380px] md:w-[460px] rounded-stitch-30 border p-5 sm:p-6 md:p-7 flex flex-col items-center justify-between transition-all duration-500 ${
           isSelected
             ? "border-[#cfc4b0] shadow-2xl bg-white/95"
             : "border-[#e3d7c5] shadow-md bg-gradient-to-b from-[#f7f2ea]/90 to-[#ede3d3]/80"
@@ -229,8 +229,8 @@ function DeckCard({
               <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
             </div>
-            <div className="px-3.5 py-1 rounded-full bg-[#f4eee3] border border-[#e3d7c5] text-[11px] font-mono text-[#526359] flex items-center gap-1.5 shadow-2xs">
-              <span className="material-symbols-outlined text-[13px] text-[#486458]" aria-hidden>straighten</span>
+            <div className="px-3.5 py-1 rounded-full bg-[#f4eee3] border border-[#e3d7c5] text-cad-spec-micro font-mono text-[#526359] flex items-center gap-1.5 shadow-2xs">
+              <Icon name="straighten" className="size-3.5 text-stitch-forest" />
               <span>{formatDimensions(card.dimensions)}</span>
             </div>
             <div className="w-10" />
@@ -249,7 +249,7 @@ function DeckCard({
         </div>
 
         <div className="card-caption w-full pt-4 flex flex-col items-center">
-          <h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-[#122e20] font-semibold text-center font-['Playfair_Display']">
+          <h3 className="font-headline-sm text-base sm:text-lg md:text-xl text-brand-forest-deep font-semibold text-center font-['Playfair_Display']">
             {card.title}
           </h3>
           <div
@@ -265,7 +265,7 @@ function DeckCard({
               {card.structure.name}
             </span>
             {card.materialSpec && (
-              <span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-[11px] font-medium">
+              <span className="px-3 py-1 rounded-full bg-[#caead9]/60 text-[#133020] font-cad-dimension text-cad-spec-micro font-medium">
                 {formatMaterial(card.materialSpec)}
               </span>
             )}
@@ -287,7 +287,7 @@ function DeckSkeleton() {
     <div role="status" aria-label="Đang tải mẫu" className="contents">
       {[-1, 0, 1].map((offset) => (
         <div key={offset} className="absolute top-1/2 -translate-y-1/2" style={deckStyle(offset)} aria-hidden>
-          <div className="w-[290px] sm:w-[380px] md:w-[460px] rounded-[30px] border border-[#e3d7c5] bg-white/80 p-5 sm:p-6 md:p-7">
+          <div className="w-[290px] sm:w-[380px] md:w-[460px] rounded-stitch-30 border border-[#e3d7c5] bg-white/80 p-5 sm:p-6 md:p-7">
             <div className="w-full aspect-[16/10] rounded-[22px] bg-[#f4eee3] animate-pulse motion-reduce:animate-none" />
             <div className="mx-auto mt-5 h-5 w-2/3 rounded-full bg-[#ede3d3] animate-pulse motion-reduce:animate-none" />
           </div>

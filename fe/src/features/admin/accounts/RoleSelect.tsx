@@ -3,6 +3,7 @@
 import React from "react";
 import type { Role } from "@/types/api";
 import { ROLE_LABELS, ROLE_TONES, ROLES } from "./accountFormat";
+import { Icon } from "@/components/ui";
 
 interface RoleSelectProps {
   value: Role;
@@ -22,11 +23,11 @@ export function RoleSelect({ value, onChange, disabled, id, label, title, varian
   const wrapper =
     variant === "badge"
       ? `rounded-full ${tone.badge}`
-      : "w-full rounded-xl bg-surface-container-lowest text-on-surface shadow-sm focus-within:ring-1 focus-within:ring-primary";
+      : "w-full rounded-xl bg-white text-library-ink shadow-sm focus-within:ring-1 focus-within:ring-library-accent";
   const select =
     variant === "badge"
-      ? "pl-6 pr-7 py-1 rounded-full font-cad-spec-micro text-cad-spec-micro font-semibold uppercase focus-visible:ring-2 focus-visible:ring-primary"
-      : "w-full pl-8 pr-9 py-2.5 rounded-xl font-label-ui text-label-ui";
+      ? "pl-6 pr-7 py-1 rounded-full font-mono text-cad-spec-micro font-semibold uppercase focus-visible:ring-2 focus-visible:ring-library-accent"
+      : "w-full pl-8 pr-9 py-2.5 rounded-xl font-medium text-sm";
 
   return (
     <span className={`relative inline-flex items-center ${wrapper}`} title={title}>
@@ -48,12 +49,7 @@ export function RoleSelect({ value, onChange, disabled, id, label, title, varian
           </option>
         ))}
       </select>
-      <span
-        aria-hidden="true"
-        className={`material-symbols-outlined pointer-events-none absolute ${variant === "badge" ? "right-2 text-sm" : "right-3 text-lg text-on-surface-variant"}`}
-      >
-        expand_more
-      </span>
+      <Icon name="expand_more" className={`pointer-events-none absolute ${variant === "badge" ? "right-2 size-3.5" : "right-3 size-[18px] text-library-sub"}`} />
     </span>
   );
 }

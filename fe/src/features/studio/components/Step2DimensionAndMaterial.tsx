@@ -1,23 +1,16 @@
 "use client";
 
 import React from "react";
-import {
-  Ruler,
-  Layers,
-  Sparkles,
-  ArrowRight,
-  ArrowLeft,
-  ShieldCheck,
-  AlertTriangle,
-  Gift,
-  Check,
-  Info,
-} from "lucide-react";
-import { BoxDimensions, caliperOf, CURRENT_FORMULA_VERSION, FitCheckReport } from "@wrapfit/shared";
+import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
+import { BoxDimensions, BoxStructureType, CanvasElement, CURRENT_FORMULA_VERSION, FitCheckReport } from "@wrapfit/shared";
 
-import { GoiMascot } from "@/components/common/GoiMascot";
+import { Box3DView } from "@/features/studio/components/three/Box3DView";
+import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard } from "@/features/studio/components/studioUi";
+import { formatNumber, innerVolumeMl, outerSize, sheetFits } from "@/features/studio/utils/boxMetrics";
 import type { DimensionLimits } from "@/types/api";
-import { MmInput } from "./MmInput";
+import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
+import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
+import { NumberStepper } from "@/components/ui";
 import {
   clampDimension,
   dielinePiecesOf,
@@ -25,82 +18,14 @@ import {
   type DimensionField,
 } from "@/features/studio/utils/dieline";
 
-interface GiftPreset {
-  id: string;
-  name: string;
-  category: string;
-  dims: { length: number; width: number; height: number; paperThickness: number };
-}
-
-const GIFT_PRESETS: GiftPreset[] = [
-  {
-    id: "candle",
-    name: "Hũ Nến Thơm Gỗ Thông",
-    category: "Home & Craft",
-    dims: { length: 85, width: 85, height: 105, paperThickness: 0.45 },
-  },
-  {
-    id: "perfume",
-    name: "Chai Nước Hoa 50ml",
-    category: "Cosmetics",
-    dims: { length: 65, width: 40, height: 120, paperThickness: 0.42 },
-  },
-  {
-    id: "jewelry",
-    name: "Hộp Vòng Tay / Dây Chuyền",
-    category: "Luxury",
-    dims: { length: 100, width: 100, height: 60, paperThickness: 0.5 },
-  },
-  {
-    id: "lipstick",
-    name: "Thỏi Son Môi Handmade",
-    category: "Beauty",
-    dims: { length: 28, width: 28, height: 88, paperThickness: 0.35 },
-  },
-  {
-    id: "ceramic_mug",
-    name: "Cốc Gốm Mộc & Trà Hoa",
-    category: "Artisan",
-    dims: { length: 95, width: 95, height: 105, paperThickness: 0.48 },
-  },
-  {
-    id: "macaron",
-    name: "Hộp 6 Bánh Macaron",
-    category: "Pastry",
-    dims: { length: 180, width: 55, height: 50, paperThickness: 0.4 },
-  },
-];
-
-const PAPER_MATERIALS = [
-  {
-    id: "ivory",
-    name: "Giấy Ivory Mộc 300 GSM",
-    finish: "Cán Mờ Tự Nhiên",
-    desc: "Mặt giấy đanh trắng ngà, bắt mực in rực rỡ, độ cứng tiêu chuẩn cho bán lẻ.",
-    caliper: caliperOf(300),
-  },
-  {
-    id: "kraft",
-    name: "Giấy Kraft Linen 300 GSM",
-    finish: "Mộc Thủ Công",
-    desc: "Màu nâu kraft mộc mạc ấm áp, 100% tái chế thân thiện môi trường.",
-    caliper: caliperOf(300),
-  },
-  {
-    id: "forest",
-    name: "Giấy Duplex Cao Cấp 350 GSM",
-    finish: "Phủ Màng Nhung Soft-Touch",
-    desc: "Dày dặn, bề mặt êm ái như nhung lụa, chống trầy xước.",
-    caliper: caliperOf(350),
-  },
-  {
-    id: "gold_foil",
-    name: "Carton Lạnh Bồi Mỹ Thuật 400 GSM",
-    finish: "Ép Kim Vàng Champagne",
-    desc: "Khối lượng đầm tay, nắp cứng cáp tuyệt đối, dành riêng cho quà VIP.",
-    caliper: caliperOf(400),
-  },
-];
+/** Paper stocks of the editor (same list as the materials page). */
+const PAPER_MATERIALS = PAPER_STOCKS.map((paper) => ({
+  id: paper.theme,
+  name: paper.name,
+  finish: paper.finishLabel,
+  desc: paper.description,
+  caliper: paper.spec.caliper,
+}));
 
 /** Slider ranges when the structure has no limits (offline demo). */
 const DEFAULT_RANGES: Record<DimensionField, { min: number; max: number }> = {
@@ -127,6 +52,9 @@ interface Step2DimensionAndMaterialProps {
   nextLabel?: string;
   /** The next step is running (e.g. creating the project). */
   busy?: boolean;
+  /** Artwork shown on the live 3D box. */
+  elements?: CanvasElement[];
+  backgroundPatternSvg?: string | null;
 }
 
 export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps> = ({
@@ -140,9 +68,12 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   formulaVersion = CURRENT_FORMULA_VERSION,
   onBack,
   onNext,
-  nextLabel = "Tiến Vào Xưởng Bản Vẽ Bế 2D (Bước 3)",
+  nextLabel = "Tiếp tục: chất liệu",
   busy = false,
+  elements = [],
+  backgroundPatternSvg = null,
 }) => {
+  const boxType = structure as BoxStructureType;
   const range = (field: DimensionField) => {
     const own = limits?.[field];
     if (!own) return DEFAULT_RANGES[field];
@@ -178,291 +109,173 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
     onDimensionsChange(p.dims);
   };
 
-  // Flat sheet of every piece, from the dieline that gets printed
-  const sheets = dielinePiecesOf(structure, dimensions, formulaVersion)
-    .map(({ geometry: { totalBoundingBox: b } }) => `${Math.round(b.width)} × ${Math.round(b.height)}`)
-    .join(" + ");
   // Since formula version 3 the dieline adds the paper thickness to each panel (shared/README.md)
   const addsThickness = formulaVersion >= 3;
 
+  const pieces = dielinePiecesOf(structure, dimensions, formulaVersion);
+  const fits = sheetFits(pieces);
+  const t = dimensions.paperThickness;
+  const fitTone =
+    fitCheckReport.score >= 90 ? "bg-landing-lime-mist text-landing-green-deep" : fitCheckReport.score >= 70 ? "bg-warning-bg text-warning-fg" : "bg-danger-bg text-danger-fg";
+
   return (
-    <div className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-8 space-y-8 animate-fadeIn font-sans">
-      {/* Heading */}
-      <div className="text-center space-y-3 max-w-2xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-semibold text-brand-forest">
-          <Ruler className="w-3.5 h-3.5" />
-          <span>Bước 2: Cấu Hình Kích Thước & Vật Liệu Giấy</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-brand-forest">
-          Đo Kích Thước Món Quà Chuẩn CAD (mm)
-        </h1>
-        <p className="text-sm text-stone-600 leading-relaxed">
-          Kích thước được tính theo lọt lòng của hộp.{" "}
-          {addsThickness ? (
-            <>
-              Phôi tự cộng độ dày giấy{" "}
-              <span className="font-mono font-bold text-vibrant-cobalt">+{dimensions.paperThickness} mm</span> vào
-              mỗi mặt để quà vừa vặn, nắp đóng êm không bị cấn.
-            </>
-          ) : (
-            "Dự án dùng công thức cũ: phôi chưa cộng độ dày giấy."
-          )}
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
+      <StepHeader
+        step="Bước 2 / 6 · Kích thước"
+        title="Kích thước hộp"
+        subtitle={
+          addsThickness
+            ? `Nhập kích thước lọt lòng theo milimét; mỗi nếp gấp được cộng thêm độ dày giấy ${t.toFixed(2)} mm để nắp đóng êm.`
+            : "Nhập kích thước lọt lòng theo milimét. Dự án dùng công thức cũ: phôi chưa cộng độ dày giấy."
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* LEFT COLUMN: Parametric Dimension Sliders & Presets (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Quick Gift Presets */}
-          <div className="bg-white p-5 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-vibrant-cobalt" />
-                Món Quà Mẫu Chuẩn Sẵn (1-Click Preset)
-              </span>
-              <span className="text-[11px] text-stone-500 font-mono">Đo chuẩn theo quà</span>
-            </div>
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+        {/* Inputs */}
+        <div className="flex flex-col gap-3">
+          {SIDES.map((side) => {
+            const { min, max } = range(side.field);
+            const value = dimensions[side.field];
+            return (
+              <StudioCard key={side.field} as="div" className="p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 font-landing-heading text-base font-bold text-landing-ink">
+                      <span aria-hidden className={`size-2.5 rounded-full ${side.dot}`} />
+                      {side.label} ({side.letter})
+                    </p>
+                    <p className="mt-0.5 font-mono text-xs text-landing-muted">
+                      Phủ bì ≈ {outerSize(value, t)} mm · {min}–{max}
+                    </p>
+                  </div>
+                  <NumberStepper value={value} min={min} max={max} step={1} unit="mm" label={side.label} size="lg" onChange={(next) => updateDim(side.field, next)} />
+                </div>
+                <input
+                  type="range"
+                  aria-label={side.label}
+                  min={min}
+                  max={max}
+                  step={1}
+                  value={value}
+                  onChange={(e) => updateDim(side.field, Number(e.target.value))}
+                  className="mt-3 w-full cursor-pointer accent-landing-green"
+                />
+              </StudioCard>
+            );
+          })}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <StudioCard className="p-4">
+            <CardTitle>Món quà mẫu</CardTitle>
+            <div className="mt-3 flex flex-wrap gap-2">
               {GIFT_PRESETS.map((gp) => {
-                const isMatch =
-                  gp.dims.length === dimensions.length &&
-                  gp.dims.width === dimensions.width &&
-                  gp.dims.height === dimensions.height;
-                const fits = fitsLimits(gp.dims);
-
+                const isMatch = gp.dims.length === dimensions.length && gp.dims.width === dimensions.width && gp.dims.height === dimensions.height;
+                const presetFits = fitsLimits(gp.dims);
                 return (
                   <button
                     key={gp.id}
                     type="button"
-                    disabled={!fits}
-                    title={fits ? undefined : "Kích thước này ngoài giới hạn của cấu trúc hộp đã chọn"}
+                    disabled={!presetFits}
+                    aria-pressed={isMatch}
+                    title={presetFits ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm` : "Ngoài giới hạn của cấu trúc hộp này"}
                     onClick={() => applyPreset(gp)}
-                    className={`p-3 rounded-squircle text-left border transition-all flex flex-col justify-between disabled:cursor-not-allowed disabled:opacity-45 ${
-                      isMatch
-                        ? "border-vibrant-cobalt bg-blue-50/70 text-vibrant-cobalt shadow-sm ring-2 ring-blue-500/20"
-                        : "border-stone-200 hover:border-stone-300 bg-stone-50/50 hover:bg-white text-stone-700"
+                    className={`rounded-full px-3.5 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      isMatch ? "bg-landing-green-night text-white" : "bg-landing-canvas text-landing-ink hover:bg-landing-tile"
                     }`}
                   >
-                    <div>
-                      <span className="text-xs font-semibold block truncate" title={gp.name}>{gp.name}</span>
-                      <span className="text-[10px] text-stone-400 block mt-0.5">
-                        {gp.category}
-                      </span>
-                    </div>
-                    <span className="font-mono text-[11px] font-bold mt-2">
-                      {gp.dims.length}×{gp.dims.width}×{gp.dims.height} mm
-                    </span>
+                    {gp.name}
                   </button>
                 );
               })}
             </div>
-          </div>
-
-          {/* 3 Parametric Dimension Controls (L, W, H) */}
-          <div className="bg-white p-6 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-5">
-            <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
-              Nhập Kích Thước Lọt Lòng Hộp (Length × Width × Height)
-            </span>
-
-            {([
-              { field: "length", label: "Chiều Dài (Length - L)" },
-              { field: "width", label: "Chiều Rộng (Width - W)" },
-              { field: "height", label: "Chiều Cao / Độ Sâu (Height - H)" },
-            ] as const).map(({ field, label }) => {
-              const { min, max } = range(field);
-              return (
-                <div key={field} className="space-y-2">
-                  <div className="flex items-center justify-between gap-3 text-xs">
-                    <span className="font-medium text-stone-700">{label}</span>
-                    <MmInput
-                      value={dimensions[field]}
-                      min={min}
-                      max={max}
-                      step={1}
-                      label={label}
-                      onCommit={(value) => updateDim(field, value)}
-                    />
-                  </div>
-                  <input
-                    type="range"
-                    aria-label={label}
-                    min={min}
-                    max={max}
-                    step={1}
-                    value={dimensions[field]}
-                    onChange={(e) => updateDim(field, Number(e.target.value))}
-                    className="w-full accent-brand-forest cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-stone-500 font-mono">
-                    <span>{min} mm</span>
-                    <span>{Math.round((min + max) / 2)} mm</span>
-                    <span>{max} mm</span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Paper Thickness (t) */}
-            <div className="pt-3 border-t border-stone-100 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-stone-700 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-stone-400" />
-                  Độ Dày Giấy (Caliper - t)
-                </span>
-                <span className="font-mono font-bold text-vibrant-cobalt text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {dimensions.paperThickness} mm ({(dimensions.paperThickness * 1000).toFixed(0)}µm)
-                </span>
-              </div>
-              <input
-                type="range"
-                aria-label="Độ dày giấy"
-                min={range("paperThickness").min}
-                max={range("paperThickness").max}
-                step={0.01}
-                value={dimensions.paperThickness}
-                onChange={(e) => updateThickness(Number(e.target.value))}
-                className="w-full accent-vibrant-cobalt cursor-pointer"
-              />
-            </div>
-          </div>
+          </StudioCard>
         </div>
 
-        {/* RIGHT COLUMN: Paper Material Spec & FitCheck Audit (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Material Selection */}
-          <div className="bg-white p-5 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-3">
-            <span className="text-xs font-bold text-stone-800 uppercase tracking-wider block">
-              Chất Liệu Giấy & Lớp Hoàn Thiện
+        {/* Live model */}
+        <div className="flex flex-col gap-3 lg:sticky lg:top-24 lg:self-start">
+          <StudioCard className="relative overflow-hidden">
+            <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-1.5 text-xs font-semibold text-landing-ink shadow-sm">
+              <span aria-hidden className="size-2 rounded-full bg-landing-green" />
+              Hộp 3D theo kích thước
             </span>
-
-            <div className="space-y-2.5">
-              {PAPER_MATERIALS.map((mat) => {
-                const isSelected = activeMaterial === mat.id;
-
-                return (
-                  <div
-                    key={mat.id}
-                    onClick={() => {
-                      onMaterialChange(mat.id);
-                      onDimensionsChange({
-                        ...dimensions,
-                        paperThickness: clampDimension(limits, "paperThickness", mat.caliper),
-                      });
-                    }}
-                    className={`p-3.5 rounded-squircle border transition-all cursor-pointer ${
-                      isSelected
-                        ? "border-brand-forest bg-stone-50/80 shadow-sm ring-2 ring-brand-forest/20"
-                        : "border-stone-200 hover:border-stone-300 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                            isSelected
-                              ? "border-brand-forest bg-brand-forest text-white"
-                              : "border-stone-300"
-                          }`}
-                        >
-                          {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                        </div>
-                        <span className="font-semibold text-xs text-stone-900">{mat.name}</span>
-                      </div>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-stone-100 text-stone-600">
-                        {mat.caliper} mm
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 mt-1 pl-6 leading-relaxed">
-                      {mat.desc}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* FitCheck Live Box Audit */}
-          <div className="bg-white p-5 rounded-squircle-lg border border-stone-200 shadow-tactile space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                Kiểm Định Khả Thi In Ấn (FitCheck™)
-              </span>
-              <span
-                className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${
-                  fitCheckReport.score >= 95
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : "bg-amber-50 text-amber-700 border border-amber-200"
-                }`}
-              >
-                {fitCheckReport.score}/100 Điểm
-              </span>
-            </div>
-
-            {/* Calculations Readout */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-squircle bg-stone-50 border border-stone-100">
-                <span className="text-[10px] text-stone-400 block">Khổ phôi trải phẳng:</span>
-                <span className="font-mono font-bold text-stone-800 text-xs">{sheets} mm</span>
-              </div>
-              <div className="p-2.5 rounded-squircle bg-stone-50 border border-stone-100">
-                <span className="text-[10px] text-stone-400 block">Bù độ dày giấy (t) mỗi mặt:</span>
-                <span className="font-mono font-bold text-vibrant-cobalt text-xs">
-                  {addsThickness ? `+${dimensions.paperThickness.toFixed(2)} mm` : "Không (công thức cũ)"}
-                </span>
+            <div className="relative h-[440px] bg-landing-canvas sm:h-[520px]">
+              <div className="absolute inset-0">
+                <Box3DView
+                  dimensions={dimensions}
+                  foldProgress={1}
+                  boxType={boxType}
+                  theme={activeMaterial as never}
+                  elements={elements}
+                  backgroundPatternSvg={backgroundPatternSvg}
+                  formulaVersion={formulaVersion}
+                  showHud={false}
+                  showStatusBar={false}
+                  enableMacroZoom={false}
+                  frameless
+                  minHeight={false}
+                  className="h-full w-full"
+                />
               </div>
             </div>
-
-            {/* Bé Gói Copilot Advice */}
-            <div className="flex items-center gap-3 p-3 rounded-squircle bg-[#FDFBF7] border border-[#E8D8C8]">
-              <GoiMascot pose="measuring" size={44} />
-              <div className="text-xs text-stone-600">
-                <span className="font-serif font-bold text-brand-forest block">
-                  Bé Gói thẩm định:
-                </span>
-                <span className="text-[11px] leading-snug block mt-0.5">
-                  Tỉ lệ {dimensions.length}:{dimensions.width}:{dimensions.height} rất chuẩn xác! Khổ
-                  giấy trải gọn gàng trong khổ in thương mại tiêu chuẩn.
-                </span>
-              </div>
-            </div>
-          </div>
+            <p className="px-4 py-3 text-xs text-landing-muted">Kéo để xoay, cuộn để phóng to.</p>
+          </StudioCard>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Stat label="Thể tích lọt lòng" value={`${formatNumber(innerVolumeMl(dimensions))} ml`} />
+            <Stat label="Khổ phôi trải phẳng" value={fits.map((fit) => `${fit.width} × ${fit.height}`).join(" + ") + " mm"} />
+            <Stat label="Số hộp / tờ B1" value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"} hint="Khổ 1020 × 720 mm" />
+          </dl>
         </div>
       </div>
 
-      {/* Action Bar */}
       {errors.length > 0 && (
-        <div role="alert" className="p-4 rounded-squircle-lg bg-vibrant-coral/10 border border-vibrant-coral/30 text-xs text-stone-800 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-vibrant-coral-dark flex-shrink-0 mt-0.5" />
-          <span>{errors.join(" ")}</span>
-        </div>
+        <p role="alert" className="mt-4 flex items-start gap-2 rounded-2xl bg-danger-bg p-4 text-sm text-danger-fg">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          {errors.join(" ")}
+        </p>
       )}
-      <div className={`flex flex-col sm:flex-row items-center gap-4 p-5 rounded-squircle-lg bg-white border border-stone-200 shadow-tactile ${onBack ? "justify-between" : "justify-end"}`}>
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold text-xs transition flex items-center justify-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Quay Lại Bước 1 (Chọn Mẫu Hộp)</span>
-          </button>
-        )}
 
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={busy || errors.length > 0}
-          className="w-full sm:w-auto min-h-[44px] px-7 py-3 rounded-full bg-brand-forest hover:bg-brand-forest-dark text-white font-semibold text-sm shadow-tactile flex items-center justify-center gap-2 transition hover:scale-105 active:scale-95 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
-        >
-          {busy ? (
-            <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin motion-reduce:animate-none" />
-          ) : null}
-          <span>{nextLabel}</span>
-          {!busy && <ArrowRight className="w-4 h-4" />}
-        </button>
-      </div>
+      <StepActionBar
+        back={
+          onBack ? (
+            <button type="button" onClick={onBack} className={SECONDARY_PILL}>
+              <ArrowLeft className="size-4" aria-hidden />
+              Đổi cấu trúc
+            </button>
+          ) : undefined
+        }
+        summary={
+          <>
+            <span className="block text-xs">Kích thước lọt lòng</span>
+            <span className="font-mono text-landing-ink">
+              {dimensions.length} × {dimensions.width} × {dimensions.height} mm
+            </span>{" "}
+            <span className={`ml-1 rounded-full px-2 py-0.5 font-mono text-xs ${fitTone}`}>FitCheck {fitCheckReport.score}</span>
+          </>
+        }
+        next={
+          <button type="button" onClick={onNext} disabled={busy || errors.length > 0} className={PRIMARY_PILL}>
+            {nextLabel}
+            <ArrowRight className="size-4" aria-hidden />
+          </button>
+        }
+      />
     </div>
   );
 };
+
+/** L, W, H with the axis colours of the dimension pills. */
+const SIDES = [
+  { field: "length", letter: "L", label: "Dài", dot: "bg-info" },
+  { field: "width", letter: "W", label: "Rộng", dot: "bg-fpt-orange" },
+  { field: "height", letter: "H", label: "Cao", dot: "bg-success" },
+] as const;
+
+function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+  return (
+    <div className="rounded-squircle-md bg-white px-4 py-3">
+      <dt className="text-xs text-landing-muted">{label}</dt>
+      <dd className="mt-0.5 font-mono text-base text-landing-ink">{value}</dd>
+      {hint && <dd className="text-caption text-landing-muted">{hint}</dd>}
+    </div>
+  );
+}
+

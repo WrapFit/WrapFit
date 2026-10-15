@@ -4,13 +4,17 @@
   "private": true,
   "description": "WrapFit Frontend — 2D Canvas Editor, 3D Folding Simulation & Landing Page",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev --turbopack -p 3000",
+    "dev:webpack": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "stitch:sync": "node scripts/stitch/sync.mjs",
     "stitch:parity": "node scripts/stitch/visual-parity.mjs",
-    "shots": "node scripts/page-shots.mjs"
+    "shots": "node scripts/page-shots.mjs",
+    "a11y": "node scripts/a11y-audit.mjs",
+    "tokens:check": "node scripts/check-design-tokens.mjs --max 0 && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/export-design-tokens.mjs --check",
+    "tokens:export": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/export-design-tokens.mjs"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.9",
@@ -41,6 +45,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.168.0",
     "autoprefixer": "^10.6.1",
+    "axe-core": "^4.10.3",
     "cheerio": "^1.2.0",
     "html-to-jsx": "^0.0.4",
     "pixelmatch": "^5.3.0",

@@ -63,12 +63,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
     <div className={`space-y-3 ${className}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-stone-900 tracking-wide">
-            Fonts (Bộ Phông Chữ Bao Bì)
-          </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 font-mono">
-            Editorial
-          </span>
+          <span className="font-landing-heading text-base font-bold text-landing-ink">Font chữ</span>
         </div>
         <button
           type="button"
@@ -77,7 +72,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
             const r = Math.floor(Math.random() * CURATED_FONT_PRESETS.length);
             onSelectFont(CURATED_FONT_PRESETS[r]);
           }}
-          className="text-stone-400 hover:text-stone-700 transition p-1"
+          className="text-landing-muted hover:text-landing-ink transition p-1"
           title="Đổi bộ phông ngẫu nhiên"
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -96,27 +91,27 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
                 
                 onSelectFont(font);
               }}
-              className={`p-3 rounded-2xl border text-left transition flex flex-col justify-between min-h-[68px] ${
+              className={`p-3 rounded-3xl border text-left transition flex flex-col justify-between min-h-[68px] ${
                 isSelected
-                  ? "border-vibrant-cobalt bg-blue-50/40 ring-2 ring-vibrant-cobalt/20 shadow-sm"
-                  : "border-stone-200 hover:border-stone-300 hover:bg-stone-50/70 bg-white"
+                  ? "border-landing-green bg-landing-lime-mist/40 ring-2 ring-landing-green/20 shadow-sm"
+                  : "border-landing-line hover:border-landing-ink/30 hover:bg-landing-canvas bg-white"
               }`}
             >
               <div>
                 <span
-                  className="block text-xs font-bold text-stone-900 leading-tight"
+                  className="block text-xs font-bold text-landing-ink leading-tight"
                   style={{ fontFamily: font.fontFamilyHeading }}
                 >
                   {font.name}
                 </span>
-                <span className="block text-[10px] text-stone-400 pt-0.5 font-sans">
+                <span className="block text-caption text-landing-muted pt-0.5 font-sans">
                   {font.subtitle}
                 </span>
               </div>
 
               {isSelected && (
                 <div className="flex justify-end pt-1">
-                  <Check className="w-3 h-3 text-vibrant-cobalt" />
+                  <Check className="w-3 h-3 text-landing-green" />
                 </div>
               )}
             </button>

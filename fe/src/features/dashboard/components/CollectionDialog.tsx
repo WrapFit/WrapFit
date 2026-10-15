@@ -6,15 +6,15 @@ import { COLLECTION_COLORS, HEX_COLOR, readableInk } from "../format";
 import { useCreateCollection, useUpdateCollection } from "../useCollections";
 import { DIALOG_CANCEL, DIALOG_PANEL } from "./ConfirmDialog";
 import { ModalDialog } from "./ModalDialog";
+import { Icon } from "@/components/ui";
 
 const TITLE_MAX = 100;
 const DESCRIPTION_MAX = 500;
 
 const FIELD =
-  "w-full px-3.5 py-2.5 min-h-[44px] rounded-xl bg-stone-50 ring-1 ring-stone-200 text-stone-900 placeholder:text-stone-400 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]";
-/** Cobalt of the `dashboard-projects` screen, spelled out like the dialog chrome. */
+  "min-h-[44px] w-full rounded-lg border border-library-line bg-white px-3.5 py-2.5 text-sm text-library-ink placeholder:text-library-muted focus:border-library-accent focus:outline-none focus:ring-[3px] focus:ring-library-accent/20";
 const SUBMIT =
-  "px-5 py-2.5 min-h-[44px] rounded-xl bg-[#004ac6] text-white enabled:hover:bg-[#2563eb] text-sm font-semibold shadow-sm enabled:active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait focus-visible:ring-2 focus-visible:ring-[#2563eb]/40";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-action-hover disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
 
 interface CollectionDialogProps {
   /** Edits this folder; creates a new one when omitted. */
@@ -86,20 +86,18 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             className="w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center shadow-sm"
             style={{ backgroundColor: HEX_COLOR.test(color) ? color : "#D4A373", color: readableInk(color) }}
           >
-            <span className="material-symbols-outlined text-xl">
-              {collection ? "folder_open" : "create_new_folder"}
-            </span>
+            <Icon name={collection ? "folder_open" : "create_new_folder"} className="size-5" />
           </span>
           <h2
             id={titleId}
-            className="pt-1.5 font-['Playfair_Display'] text-xl font-semibold text-stone-900 leading-snug"
+            className="pt-1.5 text-xl font-medium leading-snug text-library-ink"
           >
             {collection ? "Sửa thư mục" : "Thư mục mới"}
           </h2>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={nameId} className="text-sm font-semibold text-stone-800">
+          <label htmlFor={nameId} className="text-sm font-semibold text-library-ink">
             Tên thư mục
           </label>
           <input
@@ -114,14 +112,14 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             className={FIELD}
           />
           {submitted && titleError && (
-            <p id={nameErrorId} className="text-xs text-[#ba1a1a]">
+            <p id={nameErrorId} className="text-xs text-danger-fg">
               {titleError}
             </p>
           )}
         </div>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm font-semibold text-stone-800">Màu nhãn</legend>
+          <legend className="mb-2 text-sm font-semibold text-library-ink">Màu nhãn</legend>
           <div className="flex flex-wrap items-center gap-1.5">
             {COLLECTION_COLORS.map((option) => {
               const selected = option.value.toUpperCase() === color;
@@ -133,22 +131,16 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
                   aria-label={`${option.name} ${option.value}`}
                   title={option.name}
                   onClick={() => setColor(option.value.toUpperCase())}
-                  className="w-11 h-11 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[#2563eb]"
+                  className="w-11 h-11 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-library-accent"
                 >
                   <span
                     className={`w-7 h-7 rounded-full flex items-center justify-center ring-offset-2 transition-shadow ${
-                      selected ? "ring-2 ring-stone-900" : "ring-1 ring-black/10"
+                      selected ? "ring-2 ring-library-ink" : "ring-1 ring-black/10"
                     }`}
                     style={{ backgroundColor: option.value }}
                   >
                     {selected && (
-                      <span
-                        aria-hidden="true"
-                        className="material-symbols-outlined text-base"
-                        style={{ color: readableInk(option.value) }}
-                      >
-                        check
-                      </span>
+                      <Icon name="check" className="size-4" style={{ color: readableInk(option.value) }} />
                     )}
                   </span>
                 </button>
@@ -157,13 +149,13 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             <label
               htmlFor={customColorId}
               title="Màu khác"
-              className={`relative w-11 h-11 rounded-full flex items-center justify-center cursor-pointer focus-within:ring-2 focus-within:ring-[#2563eb]`}
+              className={`relative w-11 h-11 rounded-full flex items-center justify-center cursor-pointer focus-within:ring-2 focus-within:ring-library-accent`}
             >
               <span
                 className={`w-7 h-7 rounded-full flex items-center justify-center ring-offset-2 ${
                   preset
                     ? "ring-1 ring-black/10 bg-[conic-gradient(#FF6B6B,#FFD93D,#38A169,#2563EB,#FF6B6B)]"
-                    : "ring-2 ring-stone-900"
+                    : "ring-2 ring-library-ink"
                 }`}
                 style={preset ? undefined : { backgroundColor: color }}
               />
@@ -177,12 +169,12 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
               />
             </label>
           </div>
-          <p className="font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider text-stone-500">{color}</p>
+          <p className="font-mono text-cad-spec-micro uppercase tracking-wider text-library-muted">{color}</p>
         </fieldset>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={descriptionId} className="text-sm font-semibold text-stone-800">
-            Ghi chú <span className="font-normal text-stone-500">(không bắt buộc)</span>
+          <label htmlFor={descriptionId} className="text-sm font-semibold text-library-ink">
+            Ghi chú <span className="font-normal text-library-muted">(không bắt buộc)</span>
           </label>
           <textarea
             id={descriptionId}
@@ -193,8 +185,8 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             className={`${FIELD} resize-none`}
           />
           <p
-            className={`text-right font-['JetBrains_Mono'] text-[11px] ${
-              description.length > DESCRIPTION_MAX ? "text-[#ba1a1a]" : "text-stone-500"
+            className={`text-right font-mono text-cad-spec-micro ${
+              description.length > DESCRIPTION_MAX ? "text-danger-fg" : "text-library-muted"
             }`}
           >
             {description.length}/{DESCRIPTION_MAX}
@@ -207,12 +199,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
           </button>
           <button type="submit" disabled={saving} className={SUBMIT}>
             {saving && (
-              <span
-                aria-hidden="true"
-                className="material-symbols-outlined text-lg animate-spin motion-reduce:animate-none"
-              >
-                progress_activity
-              </span>
+              <Icon name="progress_activity" className="size-[18px] animate-spin motion-reduce:animate-none" />
             )}
             {saving ? "Đang lưu…" : collection ? "Lưu thay đổi" : "Tạo thư mục"}
           </button>

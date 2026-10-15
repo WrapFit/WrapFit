@@ -1,9 +1,12 @@
 "use client";
 
+import { ArchiveRestore, Box, Trash2 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { ROUTES } from "@/constants";
+import { DielineSketch } from "@/features/templates/components/DielineSketch";
 import type { ProjectStatus, ProjectSummary } from "@/types/api";
+import { cn } from "@/utils/helpers";
 import {
   dimensionsLabel,
   fitCheckLabel,
@@ -29,149 +32,124 @@ interface ProjectCardProps extends ProjectCardActions {
   busy: boolean;
 }
 
-/** Badge colours of the `dashboard-projects` screen tokens. */
-const BADGE: Record<FitCheckTone | "trash", { badge: string; dot: string }> = {
-  pass: { badge: "bg-secondary-container text-on-secondary-container", dot: "bg-secondary" },
-  warn: { badge: "bg-tertiary-fixed text-on-tertiary-fixed-variant", dot: "bg-tertiary" },
-  fail: { badge: "bg-error-container text-on-error-container", dot: "bg-error" },
-  unchecked: { badge: "bg-surface-container-high text-on-surface-variant", dot: "bg-outline" },
-  trash: { badge: "bg-error-container text-on-error-container", dot: "bg-error" },
+/** FitCheck tag colours. */
+export const FITCHECK_TAG: Record<FitCheckTone, string> = {
+  pass: "bg-library-accent-mist text-library-accent",
+  warn: "bg-warning-bg text-warning-fg",
+  fail: "bg-danger-bg text-danger-fg",
+  unchecked: "bg-white text-library-muted",
 };
 
-const SECONDARY_BUTTON =
-  "min-h-[44px] py-2 px-space-sm rounded-lg bg-surface-container-low text-on-surface font-label-ui text-label-ui enabled:hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50 disabled:cursor-wait";
-const ICON_BUTTON =
-  "min-h-[44px] min-w-[44px] py-2 px-3 rounded-lg bg-surface-container-low font-cad-dimension text-cad-dimension enabled:hover:bg-surface-container-high transition-colors flex items-center justify-center gap-1 focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-50 disabled:cursor-wait";
+const BUTTON =
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-library-ink bg-white px-3 text-sm font-medium text-library-ink transition-colors hover:bg-library-panel outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 disabled:cursor-wait disabled:opacity-50";
 
-/** One project of the grid: card markup of the Stitch screen `dashboard-projects`, actions by status. */
-export function ProjectCard({
-  project,
-  busy,
-  onChangeStatus,
-  onDuplicate,
-  onMove,
-  onDeletePermanently,
-}: ProjectCardProps) {
+/**
+ * Grey tile of a project (its flat dieline and its box, as in the template library), tags, title and the actions
+ * of its status.
+ */
+export function ProjectTile({ project, children }: { project: ProjectSummary; children?: React.ReactNode }) {
   const inTrash = project.status === "DELETED";
-  const tone = inTrash ? BADGE.trash : BADGE[fitCheckTone(project.fitcheckScore)];
+  return (
+    <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-library-ink bg-library-tile">
+      <div className="absolute inset-0 grid grid-cols-2">
+        <div className="flex items-center justify-center p-4 pr-2">
+          <DielineSketch structure={project.template.id} dimensions={project.dimensions} className="max-h-full w-full" />
+        </div>
+        <div className="flex items-center justify-center p-3 pl-1 pt-9">
+          <ProjectThumb project={project} className="h-full w-full object-contain" />
+        </div>
+      </div>
+      <ul className="absolute top-3 right-3 flex flex-wrap justify-end gap-1.5">
+        <li className={cn("rounded-md px-1.5 py-1.5 text-xs leading-3", inTrash ? "bg-danger-bg text-danger-fg" : FITCHECK_TAG[fitCheckTone(project.fitcheckScore)])}>
+          {inTrash ? purgeLabel(project.deletedAt) : fitCheckLabel(project.fitcheckScore)}
+        </li>
+        {project.status === "ARCHIVED" && <li className="rounded-md bg-white px-1.5 py-1.5 text-xs leading-3 text-library-muted">Lưu trữ</li>}
+      </ul>
+      <span className="absolute bottom-3 left-3 rounded-md bg-white px-1.5 py-1 font-mono text-cad-spec-micro text-library-sub">{dimensionsLabel(project)}</span>
+      {children}
+    </div>
+  );
+}
 
+/** One project of the grid. */
+export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove, onDeletePermanently }: ProjectCardProps) {
+  const inTrash = project.status === "DELETED";
   const menu: MenuAction[] = [
     { id: "duplicate", label: "Nhân bản", icon: "content_copy", onSelect: () => onDuplicate(project) },
     { id: "move", label: "Chuyển thư mục…", icon: "drive_file_move", onSelect: () => onMove(project) },
     project.status === "ARCHIVED"
       ? { id: "unarchive", label: "Bỏ lưu trữ", icon: "unarchive", onSelect: () => onChangeStatus(project, "ACTIVE") }
       : { id: "archive", label: "Lưu trữ", icon: "inventory_2", onSelect: () => onChangeStatus(project, "ARCHIVED") },
-    {
-      id: "trash",
-      label: "Chuyển vào thùng rác",
-      icon: "delete",
-      tone: "danger",
-      onSelect: () => onChangeStatus(project, "DELETED"),
-    },
+    { id: "trash", label: "Chuyển vào thùng rác", icon: "delete", tone: "danger", onSelect: () => onChangeStatus(project, "DELETED") },
   ];
 
   return (
-    <article
-      aria-busy={busy}
-      className={`group flex flex-col rounded-2xl bg-surface-container-lowest p-space-md shadow-sm hover:shadow-xl transition-all duration-300 ${
-        busy ? "opacity-70" : ""
-      }`}
-    >
-      <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-container-low mb-space-md">
-        <ProjectThumb
-          project={project}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div
-          className={`absolute top-3 left-3 flex items-center gap-1.5 px-space-sm py-1 rounded-full ${tone.badge} font-cad-spec-micro text-cad-spec-micro shadow-sm backdrop-blur-md`}
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} />
-          {inTrash ? purgeLabel(project.deletedAt) : fitCheckLabel(project.fitcheckScore)}
-        </div>
-        {project.status === "ARCHIVED" && (
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-space-sm py-1 rounded-full bg-surface-container-lowest/90 text-on-surface-variant font-cad-spec-micro text-cad-spec-micro shadow-sm backdrop-blur-md">
-            <span aria-hidden="true" className="material-symbols-outlined text-sm leading-none">
-              inventory_2
-            </span>
-            Lưu trữ
+    <article aria-busy={busy} className={cn("flex flex-col gap-3", busy && "opacity-60")}>
+      {inTrash ? (
+        <ProjectTile project={project} />
+      ) : (
+        <Link href={ROUTES.editor(project.id)} aria-label={`Mở “${project.title}” trong studio`} className="group block rounded-2xl outline-none focus-visible:shadow-hard-sm">
+          <div className="transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm rounded-2xl motion-reduce:transition-none">
+            <ProjectTile project={project} />
           </div>
-        )}
-        <div className="absolute bottom-3 right-3 font-cad-dimension text-cad-dimension bg-surface-container-lowest/90 backdrop-blur-sm text-on-surface px-space-sm py-0.5 rounded-md shadow-sm">
-          {dimensionsLabel(project)}
-        </div>
-      </div>
-      <div className="flex flex-col flex-1 justify-between gap-space-md">
-        <div className="min-w-0">
-          <h3
-            title={project.title}
-            className="font-headline-sm text-headline-sm text-on-surface tracking-tight group-hover:text-primary transition-colors truncate"
-          >
-            {project.title}
-          </h3>
-          <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">{project.template.name}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-cad-spec-micro text-cad-spec-micro text-on-surface-variant">
-            <span>{materialLabel(project)}</span>
-            {project.collection && (
-              <span className="inline-flex items-center gap-1 min-w-0 max-w-full">
-                <span
-                  aria-hidden="true"
-                  className="w-2 h-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: project.collection.colorTag ?? "#D4A373" }}
-                />
+        </Link>
+      )}
+
+      <div className="min-w-0">
+        <h3 title={project.title} className="truncate text-base font-medium text-library-ink">
+          {project.title}
+        </h3>
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-sm text-library-muted">
+          <span>{project.template.name}</span>
+          <span aria-hidden>·</span>
+          <span>{materialLabel(project)}</span>
+          {project.collection && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: project.collection.colorTag ?? "#98E665" }} />
                 <span className="truncate">{project.collection.title}</span>
               </span>
-            )}
-            <span>
-              {inTrash && project.deletedAt
-                ? `Xoá ${formatRelative(project.deletedAt)}`
-                : `Sửa ${formatRelative(project.updatedAt)}`}
-            </span>
-          </div>
-        </div>
-        <div className="pt-space-sm flex items-center justify-between gap-space-sm">
-          {inTrash ? (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onChangeStatus(project, "ACTIVE")}
-                className={`flex-1 ${SECONDARY_BUTTON}`}
-              >
-                <span aria-hidden="true" className="material-symbols-outlined text-base">
-                  restore_from_trash
-                </span>
-                <span>Khôi phục</span>
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => onDeletePermanently(project)}
-                aria-label={`Xoá vĩnh viễn “${project.title}”`}
-                className={`${ICON_BUTTON} text-error`}
-              >
-                <span aria-hidden="true" className="material-symbols-outlined text-base">
-                  delete_forever
-                </span>
-                <span>Xoá</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href={ROUTES.editor(project.id)}
-                aria-disabled={busy}
-                tabIndex={busy ? -1 : undefined}
-                className={`flex-1 ${SECONDARY_BUTTON} hover:bg-surface-container-high ${busy ? "pointer-events-none opacity-50" : ""}`}
-              >
-                <span aria-hidden="true" className="material-symbols-outlined text-base">
-                  view_in_ar
-                </span>
-                <span>Mở 3D Studio</span>
-              </Link>
-              <ProjectActionsMenu projectTitle={project.title} actions={menu} disabled={busy} className={`${ICON_BUTTON} text-on-surface`} />
             </>
           )}
-        </div>
+        </p>
+        <p className="text-xs text-library-muted">
+          {inTrash && project.deletedAt ? `Xoá ${formatRelative(project.deletedAt)}` : `Sửa ${formatRelative(project.updatedAt)}`}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {inTrash ? (
+          <>
+            <button type="button" disabled={busy} onClick={() => onChangeStatus(project, "ACTIVE")} className={cn(BUTTON, "flex-1")}>
+              <ArchiveRestore className="size-4" aria-hidden />
+              Khôi phục
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onDeletePermanently(project)}
+              aria-label={`Xoá vĩnh viễn “${project.title}”`}
+              className={cn(BUTTON, "border-danger/30 text-danger-fg hover:bg-danger-bg")}
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Xoá
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              href={ROUTES.editor(project.id)}
+              aria-disabled={busy}
+              tabIndex={busy ? -1 : undefined}
+              className={cn(BUTTON, "flex-1 border-transparent bg-library-lime text-library-lime-ink hover:bg-action-hover", busy && "pointer-events-none")}
+            >
+              <Box className="size-4" aria-hidden />
+              Mở studio
+            </Link>
+            <ProjectActionsMenu projectTitle={project.title} actions={menu} disabled={busy} className={cn(BUTTON, "w-10 px-0")} />
+          </>
+        )}
       </div>
     </article>
   );

@@ -1,8 +1,10 @@
 "use client";
 
+import { FileText, ImageOff, Upload } from "lucide-react";
 import React, { useId, useRef, useState } from "react";
 import { useToast } from "@/components/common/Toast";
 import { UPLOAD_RULES, formatBytes, showUploadError, uploadAccept, useFileUpload } from "@/features/dashboard";
+import { cn } from "@/utils/helpers";
 import { isPdfUrl } from "../brandKit";
 
 interface BrandLogoTileProps {
@@ -13,7 +15,7 @@ interface BrandLogoTileProps {
 }
 
 const TILE_BUTTON =
-  "min-h-[44px] min-w-[44px] px-2 rounded-lg flex items-center justify-center gap-1 font-cad-spec-micro text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-primary";
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 disabled:opacity-60";
 
 /**
  * Logo of the brand kit (upload purpose LOGO: PNG, JPEG, WebP, SVG or PDF up to 15 MB). The upload only stages the
@@ -43,80 +45,58 @@ export function BrandLogoTile({ logoUrl, placeholder, onChange }: BrandLogoTileP
   let preview: React.ReactNode;
   if (upload.isPending) {
     preview = (
-      <span role="status" className="flex flex-col items-center gap-1 text-on-surface-variant">
-        <span className="h-6 w-6 animate-spin rounded-full border-2 border-surface-container-high border-t-primary motion-reduce:animate-none" />
-        <span className="font-cad-spec-micro text-[9px]">Đang tải logo lên…</span>
+      <span role="status" className="flex flex-col items-center gap-1.5 text-library-sub">
+        <span className="size-6 animate-spin rounded-full border-2 border-library-line border-t-library-accent motion-reduce:animate-none" />
+        <span className="text-xs">Đang tải logo lên…</span>
       </span>
     );
   } else if (logoUrl && isPdfUrl(logoUrl)) {
     preview = (
-      <span className="flex items-center gap-1.5 text-on-surface">
-        <span aria-hidden="true" className="material-symbols-outlined text-2xl text-error">
-          picture_as_pdf
-        </span>
-        <span className="font-cad-dimension text-[10px] font-semibold">Logo vector PDF</span>
+      <span className="flex items-center gap-2 text-sm font-medium text-library-ink">
+        <FileText className="size-6 text-danger-fg" aria-hidden />
+        Logo vector PDF
       </span>
     );
   } else if (logoUrl && logoUrl !== failedUrl) {
-    preview = (
-      <img
-        src={logoUrl}
-        alt="Logo thương hiệu"
-        onError={() => setFailedUrl(logoUrl)}
-        className="max-h-16 max-w-full object-contain"
-      />
-    );
+    preview = <img src={logoUrl} alt="Logo thương hiệu" onError={() => setFailedUrl(logoUrl)} className="max-h-20 max-w-full object-contain" />;
   } else {
-    preview = (
-      <span className="font-display-hero text-sm font-semibold tracking-widest text-on-surface/40 uppercase truncate max-w-full">
-        {placeholder}
-      </span>
-    );
+    preview = <span className="max-w-full truncate text-base font-medium uppercase tracking-[0.2em] text-library-muted">{placeholder}</span>;
   }
 
   return (
-    <div className="bg-white/80 hover:bg-white rounded-xl p-2.5 flex flex-col justify-between items-center text-center group transition-all shadow-sm">
-      <div className="h-20 w-full flex items-center justify-center px-1">{preview}</div>
-      <div className="w-full flex flex-col gap-1 pt-1.5 border-t border-black/5">
-        <span className="font-cad-spec-micro text-[9px] text-on-surface-variant font-medium">
-          {logoUrl ? "Logo thương hiệu" : "Chưa có logo"} · tối đa {formatBytes(UPLOAD_RULES.LOGO.maxBytes)}
-        </span>
-        <div className="flex flex-wrap items-center justify-center gap-1">
-          <label
-            htmlFor={inputId}
-            aria-disabled={upload.isPending}
-            className={`${TILE_BUTTON} relative cursor-pointer text-primary hover:bg-primary/10 focus-within:ring-2 focus-within:ring-primary ${
-              upload.isPending ? "pointer-events-none opacity-60" : ""
-            }`}
-          >
-            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-              upload
-            </span>
-            {logoUrl ? "Thay logo" : "Tải logo"}
-            <input
-              ref={inputRef}
-              id={inputId}
-              type="file"
-              accept={uploadAccept("LOGO")}
-              disabled={upload.isPending}
-              onChange={(event) => onFile(event.target.files?.[0])}
-              className="sr-only"
-            />
-          </label>
-          {logoUrl && (
-            <button
-              type="button"
-              onClick={() => onChange(null)}
-              disabled={upload.isPending}
-              className={`${TILE_BUTTON} text-on-surface-variant hover:text-error hover:bg-error-container/40`}
-            >
-              <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
-                hide_image
-              </span>
-              Gỡ
-            </button>
+    <div className="flex flex-col gap-3">
+      <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-library-line bg-library-panel px-3">{preview}</div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label
+          htmlFor={inputId}
+          aria-disabled={upload.isPending}
+          className={cn(
+            TILE_BUTTON,
+            "relative cursor-pointer border-library-ink bg-white text-library-ink hover:bg-library-panel focus-within:ring-[3px] focus-within:ring-library-ink/20",
+            upload.isPending && "pointer-events-none opacity-60",
           )}
-        </div>
+        >
+          <Upload className="size-4" aria-hidden />
+          {logoUrl ? "Thay logo" : "Tải logo lên"}
+          <input
+            ref={inputRef}
+            id={inputId}
+            type="file"
+            accept={uploadAccept("LOGO")}
+            disabled={upload.isPending}
+            onChange={(event) => onFile(event.target.files?.[0])}
+            className="sr-only"
+          />
+        </label>
+        {logoUrl && (
+          <button type="button" onClick={() => onChange(null)} disabled={upload.isPending} className={cn(TILE_BUTTON, "border-transparent text-library-sub hover:bg-danger-bg hover:text-danger-fg")}>
+            <ImageOff className="size-4" aria-hidden />
+            Gỡ logo
+          </button>
+        )}
+        <span className="text-xs text-library-muted">
+          {UPLOAD_RULES.LOGO.formats} · tối đa {formatBytes(UPLOAD_RULES.LOGO.maxBytes)}
+        </span>
       </div>
     </div>
   );

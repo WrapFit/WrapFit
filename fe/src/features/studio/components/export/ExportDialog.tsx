@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Download, FileDown, RotateCw, ShieldAlert } from "lucide-react";
 import type { FitCheckReport } from "@wrapfit/shared";
@@ -14,14 +15,24 @@ import { StudioDialog } from "../dialog/StudioDialog";
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
     type: "PDF_CMYK",
-    title: "PDF in CMYK nhiều lớp",
-    hint: "Cho xưởng in: lớp Artwork, Crease, CutContour (màu pha, overprint), Dimensions (không in); nhúng font và ảnh PNG / JPG.",
+    title: "PDF in CMYK nhiều lớp (Offset / Công nghiệp)",
+    hint: "Cho xưởng in: lớp Artwork, Crease (#3182CE), CutContour (#E53E3E), Dimensions; 300 DPI nhúng font và hình in.",
+  },
+  {
+    type: "PDF_A4_PRINT",
+    title: "PDF A4/A3 In Thủ Công (Home DIY - Chị Linh)",
+    hint: "Dành cho in máy tại nhà: canh giữa khổ A4/A3, có dấu xén 4 góc (crop marks) và thước căn chuẩn 1:1 (50mm).",
   },
   { type: "SVG", title: "SVG nhiều lớp", hint: "Cho máy cắt Cricut, laser; cùng 4 lớp, mở bằng Illustrator, Inkscape, Figma." },
   { type: "DXF", title: "DXF", hint: "Cho máy bế CNC: lớp CUT và CREASE, mỗi đường là một polyline liền, không có hình in." },
 ];
 
-const FORMAT_NAMES: Record<ExportFileType, string> = { PDF_CMYK: "PDF", SVG: "SVG", DXF: "DXF" };
+const FORMAT_NAMES: Record<ExportFileType, string> = {
+  PDF_CMYK: "PDF CMYK",
+  PDF_A4_PRINT: "PDF In A4/A3",
+  SVG: "SVG",
+  DXF: "DXF",
+};
 
 const STATUS_LABELS: Record<ExportJob["status"], string> = {
   PENDING: "Đang chờ",
@@ -82,7 +93,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
         toast.show({
           tone: "error",
           title: "Chưa xuất được file",
-          description: "Thay đổi mới nhất chưa lưu được. Đợi trạng thái “Đã lưu” rồi thử lại.",
+          description: "Thay đổi mới nhất chưa lưu được. Đợi trạng thái “đã lưu” rồi thử lại.",
         });
         return;
       }
@@ -133,31 +144,31 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
             type="button"
             disabled={waiting}
             onClick={() => void start(format.type)}
-            className="w-full min-h-[64px] p-3.5 rounded-2xl border border-stone-200 hover:border-vibrant-cobalt hover:bg-blue-50/40 text-left transition flex items-center justify-between gap-3 group disabled:opacity-60 disabled:hover:border-stone-200 disabled:hover:bg-transparent"
+            className="w-full min-h-[64px] p-3.5 rounded-3xl border border-landing-line hover:border-landing-green hover:bg-landing-lime-mist/40 text-left transition flex items-center justify-between gap-3 group disabled:opacity-60 disabled:hover:border-landing-line disabled:hover:bg-transparent"
           >
             <span>
-              <span className="font-semibold text-sm text-stone-900 group-hover:text-vibrant-cobalt block">{format.title}</span>
-              <span className="text-xs text-stone-500 block mt-0.5 leading-relaxed">{format.hint}</span>
+              <span className="font-semibold text-sm text-landing-ink group-hover:text-landing-green block">{format.title}</span>
+              <span className="text-xs text-landing-muted block mt-0.5 leading-relaxed">{format.hint}</span>
             </span>
             {starting === format.type ? (
-              <RotateCw className="w-4 h-4 flex-shrink-0 text-vibrant-cobalt animate-spin motion-reduce:animate-none" aria-hidden />
+              <RotateCw className="w-4 h-4 flex-shrink-0 text-landing-green animate-spin motion-reduce:animate-none" aria-hidden />
             ) : (
-              <FileDown className="w-4 h-4 flex-shrink-0 text-stone-400 group-hover:text-vibrant-cobalt" aria-hidden />
+              <FileDown className="w-4 h-4 flex-shrink-0 text-landing-muted group-hover:text-landing-green" aria-hidden />
             )}
           </button>
         ))}
       </div>
 
       {blocked && (
-        <div role="alert" className="p-4 rounded-2xl bg-vibrant-coral/10 border border-vibrant-coral/30 space-y-3">
+        <div role="alert" className="p-4 rounded-3xl bg-vibrant-coral/10 border border-vibrant-coral/30 space-y-3">
           <div className="flex items-start gap-2.5">
             <ShieldAlert className="w-5 h-5 flex-shrink-0 text-vibrant-coral-dark" aria-hidden />
-            <div className="text-sm text-stone-800">
+            <div className="text-sm text-landing-ink">
               <span className="font-bold block">FitCheck chặn xuất file</span>
               Máy chủ tìm thấy {blocked.violations.filter((v) => v.severity === "error").length} lỗi sẽ làm hỏng bản in.
             </div>
           </div>
-          <ul className="space-y-1.5 text-xs text-stone-700">
+          <ul className="space-y-1.5 text-xs text-landing-ink">
             {blocked.violations
               .filter((v) => v.severity === "error")
               .slice(0, 4)
@@ -171,7 +182,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
           <button
             type="button"
             onClick={() => onBlocked(blocked)}
-            className="min-h-[40px] px-4 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold transition"
+            className="min-h-[40px] px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold transition"
           >
             Mở FitCheck để sửa
           </button>
@@ -181,36 +192,36 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
       {jobId && (
         <div
           role="status"
-          className={`p-4 rounded-2xl border flex items-center gap-3 ${
+          className={`p-4 rounded-3xl border flex items-center gap-3 ${
             current?.status === "COMPLETED"
-              ? "bg-emerald-50 border-emerald-200"
+              ? "bg-success-bg border-success/30"
               : current?.status === "FAILED" || job.error
               ? "bg-vibrant-coral/10 border-vibrant-coral/30"
-              : "bg-blue-50 border-blue-200"
+              : "bg-landing-lime-mist border-landing-green/30"
           }`}
         >
           {pose && <GoiMascot pose={pose} size={56} className="flex-shrink-0" />}
           <div className="flex-1 min-w-0 text-sm">
             {current?.status === "COMPLETED" ? (
               <>
-                <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                <span className="font-bold text-success-fg flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" aria-hidden /> File {FORMAT_NAMES[current.fileType]} đã sẵn sàng
                 </span>
-                <span className="text-xs text-emerald-800 block truncate">{current.fileName}</span>
+                <span className="text-xs text-success-fg block truncate">{current.fileName}</span>
               </>
             ) : current?.status === "FAILED" ? (
               <>
-                <span className="font-bold text-stone-900 block">Xuất file thất bại</span>
-                <span className="text-xs text-stone-600 block">{current.error ?? "Thử xuất lại sau ít phút."}</span>
+                <span className="font-bold text-landing-ink block">Xuất file thất bại</span>
+                <span className="text-xs text-landing-muted block">{current.error ?? "Thử xuất lại sau ít phút."}</span>
               </>
             ) : job.error ? (
-              <span className="text-xs text-stone-700">Chưa hỏi được trạng thái. File vẫn được dựng; xem ở lịch sử bên dưới.</span>
+              <span className="text-xs text-landing-ink">Chưa hỏi được trạng thái. File vẫn được dựng; xem ở lịch sử bên dưới.</span>
             ) : (
               <>
-                <span className="font-bold text-blue-900 block">
+                <span className="font-bold text-landing-green-night block">
                   {current ? STATUS_LABELS[current.status] : "Đang chờ"}…
                 </span>
-                <span className="text-xs text-blue-800 block">Gói đang dựng file in, thường mất vài giây.</span>
+                <span className="text-xs text-landing-green-night block">Gói đang dựng file in, thường mất vài giây.</span>
               </>
             )}
           </div>
@@ -218,7 +229,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
             <button
               type="button"
               onClick={() => void download(current, job.dataUpdatedAt)}
-              className="min-h-[40px] px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition flex-shrink-0"
+              className="min-h-[40px] px-4 rounded-full bg-success hover:bg-success text-white text-xs font-semibold transition flex-shrink-0"
             >
               Tải về
             </button>
@@ -226,30 +237,44 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
         </div>
       )}
 
-      <section aria-labelledby="export-history" className="space-y-2 pt-1 border-t border-stone-100">
-        <h3 id="export-history" className="text-xs font-bold text-stone-800 uppercase tracking-wider pt-3">
+      {/* Sample Box Order Banner (1-Unit Physical Proof) */}
+      <div className="p-3.5 rounded-2xl bg-paper-ivory border border-paper-kraft flex items-center justify-between gap-3">
+        <div>
+          <span className="font-semibold text-xs text-fg block">Cần cầm mẫu thực tế trước khi in loạt?</span>
+          <span className="text-caption text-fg-muted block">WrapFit kết nối xưởng in đối tác in thử 01 hộp mẫu gửi tận tay.</span>
+        </div>
+        <Link
+          href={`/cart?add=${encodeURIComponent(projectId)}`}
+          className="px-3.5 py-1.5 rounded-full bg-brand-forest-deep hover:bg-brand-forest text-white text-xs font-semibold shrink-0 transition shadow-xs"
+        >
+          Đặt in mẫu 1 hộp
+        </Link>
+      </div>
+
+      <section aria-labelledby="export-history" className="space-y-2 pt-1 border-t border-landing-line">
+        <h3 id="export-history" className="font-landing-heading text-base font-bold text-landing-ink pt-3">
           Lần xuất gần đây
         </h3>
         {history.isPending ? (
-          <p className="text-xs text-stone-500">Đang tải…</p>
+          <p className="text-xs text-landing-muted">Đang tải…</p>
         ) : history.error ? (
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-landing-muted">
             Chưa tải được lịch sử.{" "}
-            <button type="button" onClick={() => void history.refetch()} className="font-semibold text-vibrant-cobalt underline">
+            <button type="button" onClick={() => void history.refetch()} className="font-semibold text-landing-green underline">
               Thử lại
             </button>
           </p>
         ) : history.data.length === 0 ? (
-          <p className="text-xs text-stone-500">Chưa có lần xuất nào.</p>
+          <p className="text-xs text-landing-muted">Chưa có lần xuất nào.</p>
         ) : (
-          <ul className="divide-y divide-stone-100">
+          <ul className="divide-y divide-landing-line">
             {history.data.slice(0, 6).map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0 text-xs">
-                  <span className="font-mono font-semibold text-stone-900">{FORMAT_NAMES[item.fileType]}</span>
-                  <span className="text-stone-500"> · {dateTime.format(new Date(item.createdAt))}</span>
+                  <span className="font-mono font-semibold text-landing-ink">{FORMAT_NAMES[item.fileType]}</span>
+                  <span className="text-landing-muted"> · {dateTime.format(new Date(item.createdAt))}</span>
                   {item.status === "FAILED" && item.error && (
-                    <span className="block text-stone-500 truncate" title={item.error}>
+                    <span className="block text-landing-muted truncate" title={item.error}>
                       {item.error}
                     </span>
                   )}
@@ -258,14 +283,14 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
                   <button
                     type="button"
                     onClick={() => void download(item, history.dataUpdatedAt)}
-                    className="min-h-[36px] px-3 rounded-full border border-stone-200 hover:bg-stone-50 text-stone-700 text-xs font-semibold flex-shrink-0"
+                    className="min-h-[36px] px-3 rounded-full border border-landing-line hover:bg-landing-canvas text-landing-ink text-xs font-semibold flex-shrink-0"
                   >
                     Tải lại
                   </button>
                 ) : (
                   <span
-                    className={`text-[11px] font-semibold flex-shrink-0 ${
-                      item.status === "FAILED" ? "text-vibrant-coral-dark" : "text-stone-500"
+                    className={`text-caption font-semibold flex-shrink-0 ${
+                      item.status === "FAILED" ? "text-vibrant-coral-dark" : "text-landing-muted"
                     }`}
                   >
                     {STATUS_LABELS[item.status]}

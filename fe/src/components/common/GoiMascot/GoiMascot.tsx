@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { animate } from "animejs";
 import { tactileAudio } from "@/services/audio/tactileAudio";
+import { cn } from "@/utils/helpers";
 
 export type MascotPose =
   | "waving"
@@ -24,6 +25,8 @@ export interface GoiMascotProps {
   interactive?: boolean;
   enableTracking?: boolean;
   bubbleText?: string;
+  showBubbleOnBoop?: boolean;
+  bubblePlacement?: "top" | "top-right" | "top-left";
   soundEnabled?: boolean;
   directionsSheet?: string;
   reactionsSheet?: string;
@@ -169,6 +172,8 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
   interactive = true,
   enableTracking = true,
   bubbleText,
+  showBubbleOnBoop = true,
+  bubblePlacement = "top",
   soundEnabled = true,
   directionsSheet,
   reactionsSheet,
@@ -327,17 +332,20 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
       });
     }
 
-    // Display speech bubble
-    setShowBubble(true);
-    timersRef.current.push(
-      window.setTimeout(() => {
-        setShowBubble(false);
-      }, 3400) as unknown as number
-    );
+    // Display speech bubble if enabled
+    if (showBubbleOnBoop) {
+      setShowBubble(true);
+      timersRef.current.push(
+        window.setTimeout(() => {
+          setShowBubble(false);
+        }, 4500) as unknown as number
+      );
+    }
   }, [
     interactive,
     soundEnabled,
     bubbleText,
+    showBubbleOnBoop,
     poseInfo.label,
     poseInfo.tip,
     onBoop,
@@ -378,13 +386,40 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
       className={`relative inline-flex flex-col items-center select-none ${className}`}
     >
       {/* Interactive Speech Bubble */}
-      {showBubble && (
-        <div className="absolute -top-14 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-md text-[#1A362B] text-xs font-medium px-3.5 py-1.5 rounded-2xl shadow-tactile-lg border border-[#E8D8C8] animate-in fade-in zoom-in-95 duration-200 z-50 pointer-events-none">
-          <div className="flex items-center gap-1.5 font-['Plus_Jakarta_Sans']">
-            <span className="w-1.5 h-1.5 rounded-full bg-vibrant-cobalt animate-ping" />
-            <span>{bubbleMessage || poseInfo.label}</span>
+      {showBubble && showBubbleOnBoop && (
+        <div
+          className={cn(
+            "absolute z-50 pointer-events-none bg-white/95 backdrop-blur-md text-brand-forest text-xs sm:text-sm font-medium px-4 py-2.5 rounded-2xl shadow-soft-16 border border-paper-kraft animate-pop-in",
+            bubblePlacement === "top-right"
+              ? "bottom-[calc(100%+14px)] left-0 min-w-[220px] max-w-[280px] sm:max-w-[340px] text-left"
+              : bubblePlacement === "top-left"
+              ? "bottom-[calc(100%+14px)] right-0 min-w-[220px] max-w-[280px] sm:max-w-[340px] text-right"
+              : "bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 max-w-[280px] sm:max-w-xs text-center"
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center gap-1.5 font-['Plus_Jakarta_Sans']",
+              bubblePlacement === "top-right"
+                ? "justify-start"
+                : bubblePlacement === "top-left"
+                ? "justify-end"
+                : "justify-center"
+            )}
+          >
+            <span className="w-2 h-2 shrink-0 rounded-full bg-vibrant-cobalt animate-ping" />
+            <span className="leading-snug">{bubbleMessage || poseInfo.label}</span>
           </div>
-          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 border-b border-r border-[#E8D8C8] rotate-45" />
+          <div
+            className={cn(
+              "absolute -bottom-1.5 w-3 h-3 bg-white/95 border-b border-r border-paper-kraft rotate-45",
+              bubblePlacement === "top-right"
+                ? "left-8"
+                : bubblePlacement === "top-left"
+                ? "right-8"
+                : "left-1/2 -translate-x-1/2"
+            )}
+          />
         </div>
       )}
 
@@ -437,7 +472,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         {/* Status / Emoji Badge */}
         {showPhotoBadge && (
           <div
-            className="absolute -bottom-1 -right-1 z-20 w-6 h-6 rounded-full bg-white shadow-tactile border border-[#E8D8C8] flex items-center justify-center text-xs transform scale-95 hover:scale-110 transition-transform pointer-events-none"
+            className="absolute -bottom-1 -right-1 z-20 w-6 h-6 rounded-full bg-white shadow-tactile border border-paper-kraft flex items-center justify-center text-xs transform scale-95 hover:scale-110 transition-transform pointer-events-none"
             title={poseInfo.label}
           >
             <span>{poseInfo.badge}</span>
@@ -447,7 +482,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         {/* Paper Material Tag (Packaging Box) */}
         {showMaterialBadge && (
           <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-[#FAF6EE] text-[#1A362B] border border-[#E8D8C8] shadow-xs">
+            <span className="px-2 py-0.5 rounded-full text-cad-spec-micro font-mono font-bold bg-paper-cotton text-brand-forest border border-paper-kraft shadow-xs">
               Kraft Box 📦
             </span>
           </div>

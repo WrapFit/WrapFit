@@ -64,10 +64,10 @@ export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeP
       <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
         <div
           role="status"
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-squircle-lg bg-white border border-amber-200 shadow-tactile"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-3xl bg-white border border-warning/30 shadow-none"
         >
-          <div className="flex items-start sm:items-center gap-3 text-sm text-stone-700 min-w-0">
-            <span className="w-9 h-9 flex-shrink-0 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center">
+          <div className="flex items-start sm:items-center gap-3 text-sm text-landing-ink min-w-0">
+            <span className="w-9 h-9 flex-shrink-0 rounded-full bg-warning-bg text-warning-fg flex items-center justify-center">
               <Ruler className="w-4 h-4" aria-hidden />
             </span>
             <span className="min-w-0">
@@ -78,7 +78,7 @@ export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeP
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="min-h-[40px] px-4 rounded-full bg-brand-forest hover:bg-brand-forest/90 text-white text-xs font-semibold transition flex-shrink-0 self-end sm:self-auto"
+            className="min-h-[40px] px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold transition flex-shrink-0 self-end sm:self-auto"
           >
             Cập nhật lên công thức mới
           </button>
@@ -93,14 +93,14 @@ export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeP
           onClose={() => setConfirming(false)}
           busy={running}
         >
-          <div className="space-y-3 text-sm text-stone-700">
+          <div className="space-y-3 text-sm text-landing-ink">
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Hình phôi sẽ đổi theo công thức mới{changes.length > 0 ? `: ${changes.join("; ")}` : ""}.</li>
               <li>Chữ, ảnh, hoa văn giữ nguyên vị trí trên từng mặt; kích thước mặt có thể đổi vài phần mm.</li>
               <li>Điểm FitCheck được tính lại và có thể thay đổi.</li>
               <li>Nếu đã gửi file in cũ cho xưởng, file mới sẽ khác file đó.</li>
             </ul>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-landing-muted">
               Bản hiện tại được lưu thành mốc tự động; bấm “Hoàn tác” ngay sau đó, hoặc khôi phục mốc này trong “Mốc phiên
               bản”, để quay lại công thức cũ.
             </p>
@@ -109,7 +109,7 @@ export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeP
                 type="button"
                 onClick={() => setConfirming(false)}
                 disabled={running}
-                className="min-h-[44px] px-4 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-sm font-semibold text-stone-700 transition disabled:opacity-50"
+                className="min-h-[44px] px-4 rounded-full border border-landing-line bg-white hover:bg-landing-canvas text-sm font-semibold text-landing-ink transition disabled:opacity-50"
               >
                 Để sau
               </button>
@@ -117,7 +117,7 @@ export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeP
                 type="button"
                 onClick={() => void upgrade()}
                 disabled={running}
-                className="min-h-[44px] px-5 rounded-full bg-brand-forest hover:bg-brand-forest/90 text-white text-sm font-semibold transition disabled:opacity-60 disabled:cursor-wait"
+                className="min-h-[44px] px-5 rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold transition disabled:opacity-60 disabled:cursor-wait"
               >
                 {running ? "Đang cập nhật…" : "Cập nhật công thức"}
               </button>

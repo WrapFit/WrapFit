@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { currentRequestId } from '../common';
+import { currentRequestId, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../common';
 import {
   ACCOUNT_EXISTS_JOB,
   ACCOUNT_EXISTS_WINDOW_MS,
@@ -25,10 +25,14 @@ export class MailService {
    */
   async sendAuthEmail(authTokenId: string): Promise<boolean> {
     try {
-      await this.queue.add(
-        AUTH_EMAIL_JOB,
-        { authTokenId, requestId: currentRequestId() },
-        { ...MAIL_JOB_OPTIONS, jobId: authTokenId },
+      await withTimeout(
+        this.queue.add(
+          AUTH_EMAIL_JOB,
+          { authTokenId, requestId: currentRequestId() },
+          { ...MAIL_JOB_OPTIONS, jobId: authTokenId },
+        ),
+        QUEUE_ADD_TIMEOUT_MS,
+        'mail queue',
       );
       return true;
     } catch (error) {
@@ -47,14 +51,18 @@ export class MailService {
   async sendAccountExistsNotice(userId: string): Promise<boolean> {
     const hour = Math.floor(Date.now() / ACCOUNT_EXISTS_WINDOW_MS);
     try {
-      await this.queue.add(
-        ACCOUNT_EXISTS_JOB,
-        { userId, requestId: currentRequestId() },
-        {
-          ...MAIL_JOB_OPTIONS,
-          jobId: `${ACCOUNT_EXISTS_JOB}-${userId}-${hour}`, // BullMQ refuses `:` in custom ids
-          removeOnComplete: { age: ACCOUNT_EXISTS_WINDOW_MS / 1000 },
-        },
+      await withTimeout(
+        this.queue.add(
+          ACCOUNT_EXISTS_JOB,
+          { userId, requestId: currentRequestId() },
+          {
+            ...MAIL_JOB_OPTIONS,
+            jobId: `${ACCOUNT_EXISTS_JOB}-${userId}-${hour}`, // BullMQ refuses `:` in custom ids
+            removeOnComplete: { age: ACCOUNT_EXISTS_WINDOW_MS / 1000 },
+          },
+        ),
+        QUEUE_ADD_TIMEOUT_MS,
+        'mail queue',
       );
       return true;
     } catch (error) {

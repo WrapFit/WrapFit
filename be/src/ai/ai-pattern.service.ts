@@ -12,6 +12,7 @@ export const AI_PATTERN_GENERATOR = Symbol('AI_PATTERN_GENERATOR');
 /** AI generations per user in any rolling 24 hours. */
 export const DAILY_AI_LIMIT: Record<SubscriptionTier, number> = {
   FREE: 10,
+  PAY_PER_EXPORT: 25,
   STARTER: 50,
   PRO_BUSINESS: 300,
 };

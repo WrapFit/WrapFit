@@ -2,10 +2,11 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import React, { useState } from "react";
+import { cn } from "@/utils/helpers";
 
-/** Same input as the login screen, with the 44 px touch height and an invalid state. */
+/** Same grey field as the login screen: 48 px high, white with a green ring on focus, red ring when invalid. */
 export const INPUT_CLASS =
-  "min-h-[44px] w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 shadow-[0_1px_2px_rgba(28,25,23,0.04)] outline-none transition-all placeholder:text-stone-400 focus:border-vibrant-cobalt focus:ring-2 focus:ring-vibrant-cobalt/20 disabled:cursor-not-allowed disabled:bg-stone-50 aria-[invalid=true]:border-vibrant-coral-dark aria-[invalid=true]:focus:ring-vibrant-coral/25";
+  "h-12 w-full rounded-lg border-0 bg-mist-200 px-4 text-base text-landing-ink outline-none ring-1 ring-transparent transition-shadow placeholder:text-landing-muted/70 focus:bg-white focus:ring-landing-green/60 disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:ring-danger";
 
 interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "id"> {
   id: string;
@@ -21,25 +22,19 @@ export function TextField({ id, label, error, hint, trailing, className = "", ..
   const noteId = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-semibold text-stone-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-landing-ink">
         {label}
       </label>
       <div className="relative">
-        <input
-          id={id}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={noteId}
-          className={`${INPUT_CLASS} ${trailing ? "pr-12" : ""}`}
-          {...input}
-        />
+        <input id={id} aria-invalid={error ? true : undefined} aria-describedby={noteId} className={cn(INPUT_CLASS, trailing && "pr-12")} {...input} />
         {trailing}
       </div>
       {error ? (
-        <p id={noteId} className="mt-1.5 text-xs text-rose-700">
+        <p id={noteId} className="mt-1.5 text-sm text-danger-fg">
           {error}
         </p>
       ) : hint ? (
-        <p id={noteId} className="mt-1.5 text-xs text-stone-500">
+        <p id={noteId} className="mt-1.5 text-sm text-landing-muted">
           {hint}
         </p>
       ) : null}
@@ -62,16 +57,16 @@ export function PasswordField(props: Omit<TextFieldProps, "type" | "trailing">) 
           aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
           aria-pressed={visible}
           aria-controls={props.id}
-          className="absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-stone-400 transition-colors hover:text-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vibrant-cobalt/30"
+          className="absolute right-0.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-landing-muted transition-colors hover:text-landing-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-green/40"
         >
-          <Icon className="h-[18px] w-[18px]" aria-hidden />
+          <Icon className="size-5" aria-hidden />
         </button>
       }
     />
   );
 }
 
-/** Busy-aware primary submit of the account forms. */
+/** Busy-aware primary submit of the account forms: the lime pill of the login screen. */
 export function SubmitButton({
   busy,
   busyLabel,
@@ -90,14 +85,12 @@ export function SubmitButton({
       type="submit"
       disabled={busy || disabled}
       aria-busy={busy || undefined}
-      className={`inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-brand-forest px-6 text-sm font-semibold text-white transition hover:bg-brand-forest-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/40 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 ${className}`}
-    >
-      {busy && (
-        <span
-          aria-hidden
-          className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white motion-reduce:animate-none"
-        />
+      className={cn(
+        "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-green/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60",
+        className,
       )}
+    >
+      {busy && <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-landing-green-night/30 border-t-landing-green-night motion-reduce:animate-none" />}
       <span>{busy ? busyLabel : children}</span>
     </button>
   );

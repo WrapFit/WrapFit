@@ -31,17 +31,17 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-squircle-lg border border-stone-200 p-5 space-y-4 shadow-tactile font-sans ${className}`}
+      className={`bg-white rounded-3xl border border-landing-line p-5 space-y-4 shadow-none font-sans ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-vibrant-coral" />
           <div>
-            <h3 className="font-serif font-bold text-stone-900 text-base leading-tight">
+            <h3 className="font-landing-heading font-bold text-landing-ink text-base leading-tight">
               FitCheck™ Engine
             </h3>
-            <span className="text-[10px] font-mono text-stone-400">
+            <span className="text-cad-spec-micro font-mono text-landing-muted">
               Kiểm định dung sai in ấn
             </span>
           </div>
@@ -50,7 +50,7 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
         <span
           className={`px-3 py-1 rounded-full text-xs font-bold font-mono ${
             report.isValidForProduction
-              ? "bg-green-100 text-green-800"
+              ? "bg-success-bg text-success-fg"
               : "bg-vibrant-coral/15 text-vibrant-coral"
           }`}
         >
@@ -61,14 +61,14 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
       {/* Production Readiness Status */}
       <div className="text-xs">
         {report.isValidForProduction ? (
-          <div className="flex items-start gap-2.5 text-green-800 bg-green-50/80 p-3 rounded-squircle border border-green-200">
-            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2.5 text-success-fg bg-success-bg/80 p-3 rounded-xl border border-success/30">
+            <CheckCircle className="w-4 h-4 text-success-fg flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed">
               Bản vẽ bế đạt 100% tiêu chuẩn kỹ thuật! Toàn bộ nội dung nằm trong vùng an toàn và mép tràn lề đầy đủ.
             </p>
           </div>
         ) : (
-          <div className="flex items-start gap-2.5 text-amber-900 bg-amber-50/80 p-3 rounded-squircle border border-amber-200">
+          <div className="flex items-start gap-2.5 text-warning-fg bg-warning-bg/80 p-3 rounded-xl border border-warning/30">
             <AlertTriangle className="w-4 h-4 text-vibrant-coral flex-shrink-0 mt-0.5" />
             <p className="leading-relaxed">
               Phát hiện {report.violations.length} lỗi tiềm ẩn có thể gây rách chữ hoặc viền trắng khi xén giấy.
@@ -83,22 +83,22 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
           {report.violations.map((v) => (
             <div
               key={v.id}
-              className={`p-3 rounded-squircle border text-xs space-y-1 ${
+              className={`p-3 rounded-xl border text-xs space-y-1 ${
                 v.severity === "error"
-                  ? "bg-red-50/60 border-red-200 text-red-900"
-                  : "bg-amber-50/60 border-amber-200 text-amber-900"
+                  ? "bg-danger-bg/60 border-danger/30 text-danger-fg"
+                  : "bg-warning-bg/60 border-warning/30 text-warning-fg"
               }`}
             >
               <div className="flex items-center gap-1.5 font-bold">
                 {v.severity === "error" ? (
-                  <AlertCircle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                  <AlertCircle className="w-3.5 h-3.5 text-danger-fg flex-shrink-0" />
                 ) : (
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-warning-fg flex-shrink-0" />
                 )}
                 <span className="line-clamp-1">{v.title}</span>
               </div>
-              <p className="text-[11px] leading-relaxed opacity-90">{v.message}</p>
-              <p className="text-[11px] italic font-medium pt-1 text-stone-700">
+              <p className="text-caption leading-relaxed opacity-90">{v.message}</p>
+              <p className="text-caption italic font-medium pt-1 text-landing-ink">
                 👉 Gợi ý: {v.suggestion}
               </p>
             </div>
@@ -111,7 +111,7 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
         <button
           type="button"
           onClick={handleAutoFixClick}
-          className="w-full py-2.5 px-4 bg-vibrant-coral hover:bg-vibrant-coral-dark text-white rounded-squircle text-xs font-bold transition shadow-coral-glow flex items-center justify-center gap-2"
+          className="w-full py-2.5 px-4 bg-vibrant-coral hover:bg-vibrant-coral-dark text-white rounded-xl text-xs font-bold transition shadow-coral-glow flex items-center justify-center gap-2"
         >
           <Wand2 className="w-4 h-4" />
           <span>1-Click: Tự Động Sửa Lỗi Nếp Gấp & Tràn Lề</span>

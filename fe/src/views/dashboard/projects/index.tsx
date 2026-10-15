@@ -1,16 +1,15 @@
 'use client';
 
 /**
- * Stitch screen `dashboard-projects`, wired to `GET /projects` and `/collections` (status "wired": `stitch:sync` keeps
- * this file). The markup and classes come from the generated screen, its CSS and tokens are scoped to `data-stitch`;
- * React replaces the screen's filter script (no StitchRuntime). Lifecycle: docs/06, section 5.4.
+ * `/dashboard/projects`: every project of the user in the pacdora.com workspace style (WrapFit greens), wired to
+ * `GET /projects` (status, q, collectionId, sortBy, order, page, limit) and `/collections`.
  */
 
+import { ArchiveRestore, FolderOpen, Plus, Search, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
-import { GoiMascot } from '@/components/common/GoiMascot';
-import { EmptyState, ErrorState, PRIMARY_BUTTON } from '@/components/common/StatusViews';
-import { DashboardHeaderNav, MainFooter, MainHeader } from '@/components/layout';
+import { Pagination, outlineButton, primaryButton } from '@/components/library';
+import { SegmentedControl, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
 import {
@@ -21,6 +20,7 @@ import {
   NO_FOLDER,
   PROJECTS_PAGE_SIZE,
   ProjectCard,
+  RecentProjectSkeleton,
   SORT_OPTIONS,
   STATUS_TABS,
   TRASH_RETENTION_DAYS,
@@ -38,6 +38,7 @@ import {
   type ProjectCardActions,
 } from '@/features/dashboard';
 import type { Collection, ProjectListQuery, ProjectStatus, ProjectSummary } from '@/types/api';
+import { cn } from '@/utils/helpers';
 
 export default function DashboardProjectsPage() {
   return (
@@ -53,12 +54,7 @@ type Dialog =
   | { kind: 'folder'; collection?: Collection }
   | { kind: 'delete-folder'; collection: Collection };
 
-const PILL_ACTIVE =
-  'filter-pill active-pill shrink-0 min-h-[44px] md:min-h-0 px-space-md py-1.5 rounded-lg font-label-ui text-label-ui transition-all bg-surface-container-lowest text-primary shadow-sm font-semibold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-primary/40';
-const PILL_IDLE =
-  'filter-pill shrink-0 min-h-[44px] md:min-h-0 px-space-md py-1.5 rounded-lg font-label-ui text-label-ui text-on-surface-variant transition-all hover:text-on-surface whitespace-nowrap focus-visible:ring-2 focus-visible:ring-primary/40';
-const PAGE_BUTTON =
-  'w-11 h-11 rounded-full bg-surface-container-lowest text-on-surface-variant enabled:hover:text-on-surface enabled:hover:bg-surface-container transition-all flex items-center justify-center shadow-sm disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40';
+const GRID = 'grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
 /** Why the filtered grid is empty, in words. */
 function noMatchDescription(q: string, folderName: string | undefined, tabLabel = ''): string {
@@ -140,40 +136,27 @@ function DashboardProjectsScreen() {
   let gridBody: React.ReactNode;
   if (list.isError && !list.data) {
     gridBody = (
-      <ErrorState
-        error={list.error}
-        title="Không tải được danh sách dự án"
-        onRetry={() => void list.refetch()}
-        retrying={list.isFetching}
-      />
+      <WorkspaceError error={list.error} title="Không tải được danh sách dự án" onRetry={() => void list.refetch()} retrying={list.isFetching} />
     );
   } else if (list.isPending) {
     gridBody = (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-space-lg" aria-busy="true">
+      <div className={GRID} aria-busy="true">
         <span role="status" className="sr-only">
           Đang tải dự án…
         </span>
         {[0, 1, 2, 3, 4, 5].map((index) => (
-          <div
-            key={index}
-            aria-hidden="true"
-            className="flex flex-col gap-space-md rounded-2xl bg-surface-container-lowest p-space-md shadow-sm"
-          >
-            <div className="w-full aspect-[4/3] rounded-xl bg-surface-container-low animate-pulse motion-reduce:animate-none" />
-            <div className="h-5 w-3/4 rounded-full bg-surface-container-low animate-pulse motion-reduce:animate-none" />
-            <div className="h-3 w-1/2 rounded-full bg-surface-container-low animate-pulse motion-reduce:animate-none" />
-            <div className="h-11 rounded-lg bg-surface-container-low animate-pulse motion-reduce:animate-none" />
-          </div>
+          <RecentProjectSkeleton key={index} />
         ))}
       </div>
     );
   } else if (items.length === 0 && filtering) {
     gridBody = (
-      <EmptyState
+      <WorkspaceEmpty
+        icon={Search}
         title="Không có dự án phù hợp"
         description={noMatchDescription(q, folderName, STATUS_TABS.find((tab) => tab.status === status)?.label)}
         action={
-          <button type="button" onClick={clearFilters} className={PRIMARY_BUTTON}>
+          <button type="button" onClick={clearFilters} className={outlineButton}>
             Xoá bộ lọc
           </button>
         }
@@ -182,35 +165,33 @@ function DashboardProjectsScreen() {
   } else if (items.length === 0) {
     gridBody =
       status === 'ACTIVE' ? (
-        <EmptyState
+        <WorkspaceEmpty
+          icon={FolderOpen}
           title="Chưa có dự án nào"
           description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
           action={
-            <Link href={ROUTES.editorNew} className={PRIMARY_BUTTON}>
+            <Link href={ROUTES.editorNew} className={primaryButton}>
+              <Plus className="size-4" aria-hidden />
               Tạo hộp mới
             </Link>
           }
         />
       ) : status === 'ARCHIVED' ? (
-        <EmptyState
+        <WorkspaceEmpty
+          icon={ArchiveRestore}
           title="Chưa có dự án lưu trữ"
           description="Lưu trữ dự án đã xong để danh sách Đang thiết kế gọn gàng; bạn có thể bỏ lưu trữ bất cứ lúc nào."
         />
       ) : (
-        <EmptyState
+        <WorkspaceEmpty
+          icon={Trash2}
           title="Thùng rác trống"
           description={`Dự án bị xoá nằm ở đây ${TRASH_RETENTION_DAYS} ngày trước khi bị xoá vĩnh viễn.`}
         />
       );
   } else {
     gridBody = (
-      <div
-        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-space-lg transition-opacity ${
-          list.isPlaceholderData ? 'opacity-60' : ''
-        }`}
-        id="projectsGrid"
-        aria-busy={list.isPlaceholderData}
-      >
+      <div className={cn(GRID, 'transition-opacity', list.isPlaceholderData && 'opacity-60')} aria-busy={list.isPlaceholderData}>
         {items.map((project) => (
           <ProjectCard key={project.id} project={project} busy={busyIds.has(project.id)} {...actions} />
         ))}
@@ -219,227 +200,117 @@ function DashboardProjectsScreen() {
   }
 
   return (
-    <div
-      data-stitch="dashboard-projects"
-      className="bg-background font-body-md text-on-surface antialiased min-h-screen"
+    <WorkspaceShell
+      title="Dự án"
+      description="Mọi hộp bạn đã dựng: khuôn bế, kích thước, vật liệu và điểm FitCheck™ của từng hộp."
+      actions={
+        <Link href={ROUTES.editorNew} className={primaryButton}>
+          <Plus className="size-4" aria-hidden />
+          Tạo dự án mới
+        </Link>
+      }
     >
-      <MainHeader />
-      <main className="w-full pt-28 pb-28 md:pb-16 bg-background flex-1">
-        <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6">
-          <DashboardHeaderNav />{' '}
-          <section className="w-full px-0 md:px-gutter lg:px-margin pt-space-lg pb-space-xl">
-            {/* Top Action & Mascot Introduction Banner */}
-            <div className="w-full flex flex-col md:flex-row md:items-end justify-between gap-space-lg pb-space-lg">
-              <div className="flex items-center gap-space-md">
-                <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 bg-surface-container-low rounded-2xl flex items-center justify-center shadow-sm overflow-hidden p-space-xs">
-                  {/* Mascot spot with sticker styling (the Stitch image has expired: the app's own Gói) */}
-                  <GoiMascot pose="presenting" size={56} interactive={false} label="WrapFit Bé Gói Mascot" />
-                  <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-secondary" />
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-space-xs">
-                    <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-wider text-secondary flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
-                      {' Đồng bộ thời gian thực • VectorCAD Cloud '}
-                    </span>
-                  </div>
-                  <h1 className="font-headline-lg text-headline-lg-mobile sm:text-headline-lg text-on-surface tracking-tight">
-                    Dự Án Của Bạn
-                  </h1>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">
-                    Quản lý các bản dựng bao bì cao cấp, thông số khuôn bế CAD và chứng nhận hiệu chuẩn FitCheck™.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-space-sm self-start md:self-auto">
-                <Link
-                  href={ROUTES.editorNew}
-                  className="group flex items-center gap-space-sm min-h-[44px] px-space-lg py-3 rounded-xl bg-primary text-on-primary font-label-ui text-label-ui shadow-md hover:bg-primary-container transition-all active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-lg leading-none transition-transform group-hover:rotate-90">
-                    add
-                  </span>
-                  <span>Bắt Đầu Thiết Kế Mới</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Minimal Filter Strip & Quick Status Counter */}
-            <div className="w-full flex flex-wrap items-center justify-between gap-space-md pt-space-sm pb-space-md">
-              <div
-                className="relative inline-flex max-w-full overflow-x-auto p-1 rounded-xl bg-surface-container-low shadow-sm"
-                id="statusFilterPills"
-                role="group"
-                aria-label="Trạng thái dự án"
-              >
-                {STATUS_TABS.map((tab) => {
-                  const active = tab.status === status;
-                  const count = counts[tab.status].data;
-                  return (
-                    <button
-                      key={tab.status}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setStatus(tab.status)}
-                      className={active ? PILL_ACTIVE : PILL_IDLE}
-                    >
-                      {tab.label}
-                      <span className="font-cad-dimension text-cad-dimension ml-1 opacity-70">
-                        ({count === undefined ? '–' : formatCount(count)})
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-space-md text-on-surface-variant font-cad-spec-micro text-cad-spec-micro">
-                <span className="hidden sm:flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-secondary" />
-                  {' Khuôn Dieline V4 Chuẩn ISO '}
-                </span>
-                <span className="hidden sm:inline opacity-40">•</span>
-                <span aria-live="polite">
-                  {meta ? `Hiển thị ${items.length} / ${formatCount(meta.total)} dự án` : 'Đang tải…'}
-                </span>
-              </div>
-            </div>
-
-            {/* Search & sort */}
-            <div className="w-full flex flex-col sm:flex-row sm:items-center gap-space-sm pb-space-md">
-              <div className="relative flex-1 sm:max-w-md">
-                <span
-                  aria-hidden="true"
-                  className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg"
-                >
-                  search
-                </span>
-                <input
-                  type="text"
-                  inputMode="search"
-                  enterKeyHint="search"
-                  value={search}
-                  maxLength={100}
-                  onChange={(event) => setSearch(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape' && search) setSearch('');
-                  }}
-                  aria-label="Tìm dự án theo tên hoặc thẻ"
-                  placeholder="Tìm theo tên hoặc thẻ…"
-                  autoComplete="off"
-                  className="w-full min-h-[44px] pl-10 pr-12 rounded-xl bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant/70 font-body-md text-body-md shadow-sm ring-1 ring-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch('')}
-                    aria-label="Xoá từ khoá tìm kiếm"
-                    className="absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface focus-visible:ring-2 focus-visible:ring-primary/40"
-                  >
-                    <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                      close
-                    </span>
-                  </button>
-                )}
-              </div>
-              <label className="flex items-center gap-space-sm">
-                <span className="shrink-0 font-cad-spec-micro text-cad-spec-micro uppercase tracking-wider text-on-surface-variant">
-                  Sắp xếp
-                </span>
-                <select
-                  value={sort.id}
-                  onChange={(event) => setSortId(event.target.value)}
-                  className="flex-1 sm:flex-none min-h-[44px] pl-3 pr-9 rounded-xl bg-surface-container-lowest text-on-surface font-label-ui text-label-ui shadow-sm ring-1 ring-black/5 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <FolderBar
-              collections={collections.data}
-              loading={collections.isPending}
-              error={collections.error}
-              retrying={collections.isFetching}
-              onRetry={() => void collections.refetch()}
-              selected={folder}
-              onSelect={setFolder}
-              onCreate={() => setDialog({ kind: 'folder' })}
-              onEdit={(collection) => setDialog({ kind: 'folder', collection })}
-              onDelete={(collection) => setDialog({ kind: 'delete-folder', collection })}
-            />
-
-            {status === 'DELETED' && (
-              <div className="w-full mb-space-lg flex items-start gap-space-sm px-space-md py-3 rounded-xl bg-error-container/50 text-on-error-container font-body-sm text-body-sm">
-                <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                  auto_delete
-                </span>
-                <p>
-                  Dự án trong thùng rác tự xoá vĩnh viễn sau {TRASH_RETENTION_DAYS} ngày, cùng các tệp gắn với dự án.
-                  Khôi phục để tiếp tục chỉnh sửa.
-                </p>
-              </div>
-            )}
-
-            {/* Packaging Cards Grid */}
-            {gridBody}
-
-            {/* Pagination */}
-            {meta && meta.total > 0 && (
-              <nav
-                aria-label="Phân trang dự án"
-                className="w-full pt-space-xl flex flex-wrap items-center justify-between gap-space-md"
-              >
-                <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-wider text-on-surface-variant">
-                  {list.isFetching && !list.isPending ? 'Đang đồng bộ…' : `${formatCount(meta.total)} dự án`}
-                  {list.isRefetchError && !list.isFetching && (
-                    <button
-                      type="button"
-                      onClick={() => void list.refetch()}
-                      className="ml-2 min-h-[44px] font-semibold text-primary normal-case underline-offset-2 hover:underline"
-                    >
-                      Không làm mới được · Thử lại
-                    </button>
-                  )}
-                </span>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    aria-label="Trang trước"
-                    className={PAGE_BUTTON}
-                    disabled={page <= 1}
-                    onClick={() => goToPage(Math.max(1, page - 1))}
-                  >
-                    <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                      chevron_left
-                    </span>
-                  </button>
-                  <span
-                    aria-live="polite"
-                    className="px-3 py-1 rounded-full bg-surface-container font-cad-dimension text-cad-dimension text-on-surface font-medium"
-                  >
-                    Trang {page} / {totalPages}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Trang sau"
-                    className={PAGE_BUTTON}
-                    disabled={page >= totalPages}
-                    onClick={() => goToPage(Math.min(totalPages, page + 1))}
-                  >
-                    <span aria-hidden="true" className="material-symbols-outlined text-lg">
-                      chevron_right
-                    </span>
-                  </button>
-                </div>
-              </nav>
-            )}
-          </section>
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SegmentedControl<ProjectStatus>
+            label="Trạng thái dự án"
+            value={status}
+            onChange={setStatus}
+            options={STATUS_TABS.map((tab) => {
+              const count = counts[tab.status].data;
+              return {
+                value: tab.status,
+                label: (
+                  <>
+                    {tab.label}
+                    <span className="ml-1.5 font-mono text-xs opacity-70">{count === undefined ? '–' : formatCount(count)}</span>
+                  </>
+                ),
+              };
+            })}
+          />
+          <span aria-live="polite" className="text-sm text-library-muted">
+            {meta ? `Hiển thị ${items.length} / ${formatCount(meta.total)} dự án` : 'Đang tải…'}
+          </span>
         </div>
-      </main>
-      <MainFooter />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 sm:max-w-md">
+            <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-library-muted" />
+            <input
+              type="text"
+              inputMode="search"
+              enterKeyHint="search"
+              value={search}
+              maxLength={100}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && search) setSearch('');
+              }}
+              aria-label="Tìm dự án theo tên hoặc thẻ"
+              placeholder="Tìm theo tên hoặc thẻ…"
+              autoComplete="off"
+              className={cn(WORKSPACE_INPUT, 'rounded-full border-library-ink pl-10 pr-11')}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label="Xoá từ khoá tìm kiếm"
+                className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-library-muted hover:text-library-ink"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            )}
+          </div>
+          <label className="flex items-center gap-2">
+            <span className="shrink-0 text-sm text-library-muted">Sắp xếp</span>
+            <select value={sort.id} onChange={(event) => setSortId(event.target.value)} className={cn(WORKSPACE_INPUT, 'flex-1 pr-9 sm:w-56 sm:flex-none')}>
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <FolderBar
+          collections={collections.data}
+          loading={collections.isPending}
+          error={collections.error}
+          retrying={collections.isFetching}
+          onRetry={() => void collections.refetch()}
+          selected={folder}
+          onSelect={setFolder}
+          onCreate={() => setDialog({ kind: 'folder' })}
+          onEdit={(collection) => setDialog({ kind: 'folder', collection })}
+          onDelete={(collection) => setDialog({ kind: 'delete-folder', collection })}
+        />
+
+        {status === 'DELETED' && (
+          <p className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-bg/60 px-4 py-3 text-sm leading-[1.6] text-danger-fg">
+            <Trash2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+            Dự án trong thùng rác tự xoá vĩnh viễn sau {TRASH_RETENTION_DAYS} ngày, cùng các tệp gắn với dự án. Khôi phục để tiếp tục chỉnh sửa.
+          </p>
+        )}
+
+        {gridBody}
+
+        {meta && meta.total > 0 && (
+          <div className="flex flex-col items-center gap-1">
+            <Pagination page={page} totalPages={totalPages} busy={list.isPlaceholderData} onPage={goToPage} />
+            <p className="mt-2 text-sm text-library-muted">
+              {list.isFetching && !list.isPending ? 'Đang đồng bộ…' : `${formatCount(meta.total)} dự án · Trang ${page} / ${totalPages}`}
+              {list.isRefetchError && !list.isFetching && (
+                <button type="button" onClick={() => void list.refetch()} className="ml-2 min-h-[44px] font-medium text-library-accent hover:underline">
+                  Không làm mới được · Thử lại
+                </button>
+              )}
+            </p>
+          </div>
+        )}
+      </div>
 
       {dialog?.kind === 'purge' && (
         <ConfirmDialog
@@ -452,7 +323,7 @@ function DashboardProjectsScreen() {
           onConfirm={() => purge.mutate(dialog.project, { onSuccess: () => setDialog(null) })}
         >
           <p>
-            <strong className="font-semibold text-stone-900">“{dialog.project.title}”</strong> sẽ bị xoá cùng mốc phiên
+            <strong className="font-medium text-library-ink">“{dialog.project.title}”</strong> sẽ bị xoá cùng mốc phiên
             bản, file in đã xuất và ảnh tải lên cho dự án. Không thể hoàn tác.
           </p>
         </ConfirmDialog>
@@ -492,7 +363,7 @@ function DashboardProjectsScreen() {
           }
         >
           <p>
-            Thư mục <strong className="font-semibold text-stone-900">“{dialog.collection.title}”</strong> sẽ bị xoá.
+            Thư mục <strong className="font-medium text-library-ink">“{dialog.collection.title}”</strong> sẽ bị xoá.
           </p>
           <p>
             {dialog.collection.projectCount > 0
@@ -501,6 +372,6 @@ function DashboardProjectsScreen() {
           </p>
         </ConfirmDialog>
       )}
-    </div>
+    </WorkspaceShell>
   );
 }

@@ -28,7 +28,7 @@
       "slug": "not-found",
       "route": "not-found",
       "title": "WrapFit — Khôi Phục Bản Vẽ & Trạng Thái 404 (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1224
@@ -50,7 +50,7 @@
       "slug": "editor-export",
       "route": "/editor/export",
       "title": "WrapFit — Xuất File & Chia Sẻ (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -61,7 +61,7 @@
       "slug": "editor-inspect-fefco",
       "route": "/editor/inspect/fefco",
       "title": "WrapFit — Giải Phẫu Bóc Tách Cấu Trúc Bao Bì CAD Chuẩn In FEFCO",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -72,7 +72,7 @@
       "slug": "editor-materials-backdrop",
       "route": "/editor/materials/backdrop",
       "title": "WrapFit — Chi Tiết Vật Liệu & Bộ Sưu Tập Backdrop Động (Behance Style)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1321
@@ -83,7 +83,7 @@
       "slug": "dashboard",
       "route": "/dashboard",
       "title": "WrapFit Platform — Dashboard Quản Lý Toàn Diện (Alta Bento Style)",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -94,7 +94,7 @@
       "slug": "dashboard-projects",
       "route": "/dashboard/projects",
       "title": "WrapFit — Không Gian Dự Án Tối Giản",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1325
@@ -105,7 +105,7 @@
       "slug": "dashboard-brand-kit",
       "route": "/dashboard/brand-kit",
       "title": "WrapFit — Brand Kit & Vật Liệu Ký Gửi (Ultra Minimalist Studio)",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -116,7 +116,7 @@
       "slug": "dashboard-materials",
       "route": "/dashboard/materials",
       "title": "WrapFit — Thư Viện Vật Liệu & Bảng Điều Khiển Tinh Gọn (Apple Minimal Workspace)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1189
@@ -127,7 +127,7 @@
       "slug": "dashboard-specs",
       "route": "/dashboard/specs",
       "title": "WrapFit — Quản Lý Dự Án & Chi Tiết Thông Số Kỹ Thuật (Table Specs Style)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -138,7 +138,7 @@
       "slug": "dashboard-settings",
       "route": "/dashboard/settings",
       "title": "WrapFit — Dashboard Cài Đặt & Tài Khoản Chuyên Biệt (Apple Minimal)",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -149,18 +149,19 @@
       "slug": "pricing",
       "route": "/pricing",
       "title": "WrapFit — Bảng Giá & Nâng Cấp (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
-      }
+      },
+      "note": "Rewritten by hand in src/views/pricing after pack.ly's plan page, on the API tiers and quotas; not generated."
     },
     {
       "id": "689a394a749743c18b0620e14392455d",
       "slug": "checkout-step-1",
       "route": "/checkout/step-1",
       "title": "WrapFit — Bước 1: Chọn Gói Cước & Tài Nguyên (Visual-First Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1076
@@ -171,7 +172,7 @@
       "slug": "checkout-step-3",
       "route": "/checkout/step-3",
       "title": "WrapFit — Bước 4: Xác Nhận & Cấp Phép Studio (Visual-First Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1267
@@ -182,18 +183,19 @@
       "slug": "auth-login",
       "route": "/auth/login",
       "title": "WrapFit — Xác Thực & Tài Khoản (Jobsly Mosaic Bento Style)",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
-      }
+      },
+      "note": "Rewritten by hand in src/views/auth/login (sign in and sign up, 3D box card that swaps sides); not generated."
     },
     {
       "id": "5880d8d9915f4a66b008c59381278cd0",
       "slug": "team",
       "route": "/team",
       "title": "WrapFit — Cổng Hợp Tác Đối Tác & Quản Lý Team (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1462
@@ -204,7 +206,7 @@
       "slug": "notifications",
       "route": "/notifications",
       "title": "WrapFit — Trung Tâm Thông Báo Tương Tác Phân Loại (Interactive Bento Focus)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -215,18 +217,19 @@
       "slug": "support",
       "route": "/support",
       "title": "WrapFit — Trung Tâm Hỗ Trợ Ma Trận Tinh Chuẩn (Hyperchain Minimal Grid)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
-      }
+      },
+      "note": "Rewritten by hand in src/views/support after pack.ly's help center; not generated."
     },
     {
       "id": "49731e481c8c41258c83713c4069d851",
       "slug": "admin",
       "route": "/admin",
       "title": "WrapFit Admin — Command Center Lướt Chart Tương Tác Kéo Thả (Apple Minimal)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -237,7 +240,7 @@
       "slug": "admin-accounts",
       "route": "/admin/accounts",
       "title": "WrapFit Admin — Danh Sách & Phân Hạng Tài Khoản (Section 1)",
-      "status": "wired",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1092
@@ -248,7 +251,7 @@
       "slug": "admin-vault-quotas",
       "route": "/admin/vault-quotas",
       "title": "WrapFit Admin — Cấp Quyền & Hạn Mức CAD Vault (Section 2)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1050
@@ -259,7 +262,7 @@
       "slug": "admin-security",
       "route": "/admin/security",
       "title": "WrapFit Admin — Bảo Mật Zero-Trust & RBAC (Section 3)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1192
@@ -270,7 +273,7 @@
       "slug": "admin-dieline-vault",
       "route": "/admin/dieline-vault",
       "title": "WrapFit Admin — Dieline Vault & Kiểm Duyệt CAD (Apple Minimal Smart Deck)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -281,7 +284,7 @@
       "slug": "admin-print-shops",
       "route": "/admin/print-shops",
       "title": "WrapFit Admin — Quản Lý Xưởng In (Apple Minimal Smart Deck)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1280
@@ -292,7 +295,7 @@
       "slug": "admin-studio-monitoring",
       "route": "/admin/studio-monitoring",
       "title": "WrapFit Admin — WrapFit 3D Studio (Apple Minimal Smart Deck)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1254
@@ -303,7 +306,7 @@
       "slug": "admin-revenue",
       "route": "/admin/revenue",
       "title": "WrapFit Admin — Doanh Thu MRR & Quyết Toán Thuế VAT (Apple Minimal Smart Deck)",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -314,7 +317,7 @@
       "slug": "admin-media",
       "route": "/admin/media",
       "title": "WrapFit Admin — Quản Trị Đa Phương Tiện Thống Nhất & Tinh Chuẩn",
-      "status": "converted",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -381,7 +384,7 @@
       "slug": "checkout-step-2",
       "route": "/checkout/step-2",
       "title": "WrapFit — Bước 2: Phương Thức Thanh Toán (Visual-First Minimal)",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1171
@@ -392,7 +395,7 @@
       "slug": "auth-2fa",
       "route": "/auth/2fa",
       "title": "WrapFit — Bước 3: Xác Thực 2FA & OTP (Visual-First Minimal)",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1118
@@ -403,7 +406,7 @@
       "slug": "dashboard-orders",
       "route": "/dashboard/orders",
       "title": "WrapFit — Lịch Sử Đơn Hàng & Hóa Đơn VAT (Interactive Bento Focus)",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1080
@@ -414,7 +417,7 @@
       "slug": "dashboard-profile",
       "route": "/dashboard/profile",
       "title": "WrapFit — Hồ Sơ Cá Nhân & Cấu Hình Đo Đạc (Interactive Bento Focus)",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1170
@@ -425,7 +428,7 @@
       "slug": "admin-appraisal",
       "route": "/admin/appraisal",
       "title": "WrapFit Admin — Trung Tâm Thẩm Định Mẫu Hộp Ký Gửi",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -436,7 +439,7 @@
       "slug": "admin-gpu-cluster",
       "route": "/admin/gpu-cluster",
       "title": "WrapFit Admin — Bảo Mật Zero-Trust & Cụm GPU (Apple Minimal Smart Deck)",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -447,7 +450,7 @@
       "slug": "admin-ledger",
       "route": "/admin/ledger",
       "title": "WrapFit Admin — Sổ Cái Giao Dịch & Quyết Toán Doanh Thu",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1024
@@ -458,7 +461,7 @@
       "slug": "admin-system-config",
       "route": "/admin/system-config",
       "title": "WrapFit Admin — Cấu Hình Hệ Thống (Apple Minimal Smart Deck)",
-      "status": "approximation",
+      "status": "manual",
       "viewport": {
         "width": 1280,
         "height": 1518

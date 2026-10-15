@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { ROUTES } from "@/constants";
 import { usePathname } from "next/navigation";
+import { useHydrated } from "@/hooks/dom";
 import { Home, FolderHeart, Box, Sparkles } from "lucide-react";
 import { GoiMascot } from "@/components/common/GoiMascot";
 
@@ -11,7 +12,10 @@ import { STITCH_ROUTES } from "@/features/stitch/routes.generated";
 import { triggerSquishyClick } from "@/utils/animation/animeUtils";
 
 export const BottomNavBar: React.FC = () => {
-  const pathname = usePathname();
+  const routePath = usePathname();
+  // The 404 page renders with another pathname on the server: tabs light up only once hydrated.
+  const hydrated = useHydrated();
+  const pathname = hydrated ? routePath : "";
 
   const handleTabClick = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     
@@ -22,9 +26,9 @@ export const BottomNavBar: React.FC = () => {
   };
 
   // Hide only on fullscreen interactive 3D studio where canvas gestures take priority
-  const isFullscreenStudio = pathname === "/editor" || (pathname.startsWith("/editor/") && !pathname.includes("step-") && !pathname.includes("export") && !pathname.includes("inspect") && !pathname.includes("materials"));
+  const isFullscreenStudio = routePath === "/editor" || (routePath.startsWith("/editor/") && !routePath.includes("step-"));
   // The intro is a full-screen 3D stage too, with its own stage dock at the bottom (under this bar otherwise).
-  const isIntro = pathname.startsWith("/intro");
+  const isIntro = routePath.startsWith("/intro");
   if (isFullscreenStudio || isIntro) return null;
 
   const isHome = pathname === "/";
@@ -42,12 +46,12 @@ export const BottomNavBar: React.FC = () => {
         onClick={handleTabClick}
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isHome
-            ? "bg-brand-forest text-white shadow-tactile scale-105"
-            : "text-stone-500 hover:text-brand-forest"
+            ? "bg-landing-green-night text-white shadow-tactile scale-105"
+            : "text-fg-muted hover:text-landing-green-deep"
         }`}
       >
         <Home className="w-4 h-4" />
-        <span className="text-[10px] font-semibold">Trang Chủ</span>
+        <span className="text-caption font-semibold">Trang Chủ</span>
       </Link>
 
       {/* 2. Projects Dashboard */}
@@ -56,12 +60,12 @@ export const BottomNavBar: React.FC = () => {
         onClick={handleTabClick}
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isDashboard
-            ? "bg-brand-forest text-white shadow-tactile scale-105"
-            : "text-stone-500 hover:text-brand-forest"
+            ? "bg-landing-green-night text-white shadow-tactile scale-105"
+            : "text-fg-muted hover:text-landing-green-deep"
         }`}
       >
         <FolderHeart className="w-4 h-4" />
-        <span className="text-[10px] font-semibold">Dự Án</span>
+        <span className="text-caption font-semibold">Dự Án</span>
       </Link>
 
       {/* 3. 2D/3D Studio */}
@@ -71,11 +75,11 @@ export const BottomNavBar: React.FC = () => {
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isStudio
             ? "bg-vibrant-cobalt text-white shadow-cobalt-glow scale-105"
-            : "text-stone-500 hover:text-vibrant-cobalt"
+            : "text-fg-muted hover:text-vibrant-cobalt"
         }`}
       >
         <Box className="w-4 h-4" />
-        <span className="text-[10px] font-semibold">Studio 3D</span>
+        <span className="text-caption font-semibold">Studio 3D</span>
       </Link>
 
       {/* 4. Mascot Copilot Quick Action */}
@@ -88,11 +92,11 @@ export const BottomNavBar: React.FC = () => {
             window.dispatchEvent(new CustomEvent("wrapfit_toggle_copilot"));
           }
         }}
-        className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-full text-stone-600 hover:text-brand-forest transition"
+        className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-full text-fg-muted hover:text-landing-green-deep transition"
         title="Trợ lý AI Gói"
       >
         <GoiMascot pose="waving" size={26} showPhotoBadge={false} interactive={false} />
-        <span className="text-[10px] font-bold text-brand-forest">Bé Gói</span>
+        <span className="text-caption font-bold text-landing-green-deep">Bé Gói</span>
       </button>
     </nav>
   );
