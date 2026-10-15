@@ -117,7 +117,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
               }}
               className={`group p-2 rounded-3xl border text-left transition flex flex-col gap-1.5 ${
                 isSelected
-                  ? "border-landing-green bg-landing-lime-mist/40 ring-2 ring-landing-green/20 shadow-sm"
+                  ? "border-fpt-orange bg-orange-50/70 ring-2 ring-fpt-orange/20 shadow-sm"
                   : "border-landing-line hover:border-landing-ink/30 hover:bg-landing-canvas"
               }`}
             >
@@ -138,7 +138,7 @@ export const ColorPaletteSelector: React.FC<ColorPaletteSelectorProps> = ({
                 <span className="text-caption font-semibold text-landing-ink line-clamp-1">
                   {palette.name}
                 </span>
-                {isSelected && <Check className="w-3 h-3 text-landing-green shrink-0" />}
+                {isSelected && <Check className="w-3 h-3 text-fpt-orange-ink shrink-0" />}
               </div>
             </button>
           );

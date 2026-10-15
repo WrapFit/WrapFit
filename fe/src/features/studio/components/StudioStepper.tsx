@@ -52,12 +52,12 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
             {lockReason && !isActive ? (
               <Lock className="w-3.5 h-3.5 text-landing-muted" aria-hidden />
             ) : isPast ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-landing-green" aria-hidden />
+              <CheckCircle2 className="w-3.5 h-3.5 text-fpt-orange" aria-hidden />
             ) : (
               <span
                 aria-hidden
                 className={`size-5 rounded-full text-caption font-semibold flex items-center justify-center ${
-                  isActive ? "bg-landing-lime text-landing-green-night" : "bg-landing-tile text-landing-muted"
+                  isActive ? "bg-fpt-orange text-white" : "bg-landing-tile text-landing-muted"
                 }`}
               >
                 {s.step}
