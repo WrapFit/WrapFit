@@ -1,7 +1,7 @@
 "use client";
 
-import { Bell, Box, CircleAlert, Download, FileDown, Heart, Layers, Package, Plus, Ruler, Settings, Share2, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import { Bell, Box, ChevronDown, CircleAlert, Download, FileDown, Heart, Layers, Package, Plus, Ruler, Settings, Share2, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import {
   BREAKPOINTS,
   GRID,
@@ -18,7 +18,7 @@ import {
 } from "@/assets/styles/tokens";
 import { Carousel, Container } from "@/components/landing";
 import { useToast } from "@/components/common/Toast";
-import { Section, SitePage, PageHero } from "@/components/site";
+import { SitePage, PageHero } from "@/components/site";
 import {
   Accordion,
   Alert,
@@ -74,7 +74,7 @@ const PAIRS: { fg: string; bg: string; label: string; large?: boolean }[] = [
   { fg: "fg", bg: "surface-raised", label: "fg trên surface-raised" },
   { fg: "fg-muted", bg: "surface-raised", label: "fg-muted trên surface-raised" },
   { fg: "fg-muted", bg: "surface-sunken", label: "fg-muted trên surface-sunken" },
-  { fg: "action-fg", bg: "action", label: "action-fg trên action (nút chính)" },
+  { fg: "action-fg", bg: "action", label: "chữ trắng trên action (nút chính cam, lựa chọn thương hiệu: chỉ đạt mức chữ lớn)", large: true },
   { fg: "fg-inverse", bg: "fg", label: "fg-inverse trên fg (nút tối, tab đang chọn)" },
   { fg: "accent-contrast", bg: "accent", label: "accent-contrast trên accent (ô đã chọn)" },
   { fg: "accent-fg", bg: "accent-bg", label: "accent-fg trên accent-bg" },
@@ -107,6 +107,54 @@ const NAV = [
   { id: "thanh-phan", label: "Thành phần" },
   { id: "thay-doi", label: "Thay đổi" },
 ];
+
+/**
+ * One part of the catalogue: a heading button with the lead, and a panel that slides open (grid rows 0fr → 1fr, so
+ * the height animates without measuring). Closed panels stay mounted but inert, out of the tab order.
+ */
+function Fold({ id, title, lead, open, onToggle, children }: { id: string; title: string; lead?: React.ReactNode; open: boolean; onToggle(): void; children: React.ReactNode }) {
+  const headId = `${id}-head`;
+  const panelId = `${id}-panel`;
+  return (
+    <section id={id} className="scroll-mt-24">
+      <h2>
+        <button
+          id={headId}
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={onToggle}
+          className="group flex w-full items-start justify-between gap-4 rounded-panel py-5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 sm:py-6"
+        >
+          <span className="flex min-w-0 flex-col gap-1">
+            <span className="font-landing-heading text-heading-md text-fg transition-colors group-hover:text-fpt-orange-ink">{title}</span>
+            {lead && <span className="text-body-sm text-fg-muted">{lead}</span>}
+          </span>
+          <span
+            aria-hidden
+            className={cn(
+              "mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-full transition-[transform,background-color,color] duration-300 motion-reduce:transition-none",
+              open ? "rotate-180 bg-fpt-orange text-white" : "bg-surface-sunken text-fg group-hover:bg-fpt-orange-light group-hover:text-fpt-orange-ink",
+            )}
+          >
+            <ChevronDown className="size-5" />
+          </span>
+        </button>
+      </h2>
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={headId}
+        className="grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr", opacity: open ? 1 : 0 }}
+      >
+        <div className="min-h-0 overflow-hidden" inert={!open}>
+          <div className="pb-8 pt-1">{children}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function Demo({ title, note, children, className }: { title: string; note?: React.ReactNode; children: React.ReactNode; className?: string }) {
   const id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -146,6 +194,23 @@ export default function DesignSystemPage() {
   const [loaded, setLoaded] = useState(true);
   const [mode, setMode] = useState<ThemeMode>("light");
   const [vision, setVision] = useState<(typeof VISION)[number]["id"]>("none");
+  const [openFolds, setOpenFolds] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleFold = (id: string) =>
+    setOpenFolds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  useEffect(() => {
+    const openFromHash = () => {
+      const id = window.location.hash.slice(1);
+      if (NAV.some((item) => item.id === id)) setOpenFolds((current) => new Set(current).add(id));
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
 
   return (
     <SitePage theme={mode}>
@@ -166,7 +231,7 @@ export default function DesignSystemPage() {
           <div className="flex flex-col gap-4">
             <nav aria-label="Mục lục design system" className="flex flex-wrap gap-2">
               {NAV.map((item) => (
-                <a key={item.id} href={`#${item.id}`} className="rounded-full bg-surface-raised px-3 py-1.5 text-label text-fg ring-1 ring-line hover:bg-surface-sunken">
+                <a key={item.id} href={`#${item.id}`} onClick={() => setOpenFolds((current) => new Set(current).add(item.id))} className="rounded-full bg-surface-raised px-3 py-1.5 text-label text-fg ring-1 ring-line hover:bg-surface-sunken">
                   {item.label}
                 </a>
               ))}
@@ -196,7 +261,9 @@ export default function DesignSystemPage() {
         }
       />
 
-      <Section id="nguyen-tac" title="Nguyên tắc" lead="Ba tầng token: primitive → ngữ nghĩa → component. Trang dùng component, component dùng token ngữ nghĩa.">
+      <Container className="py-section lg:py-section-lg">
+        <div className="divide-y divide-line rounded-card bg-surface-raised px-5 ring-1 ring-line sm:px-8">
+      <Fold id="nguyen-tac" open={openFolds.has("nguyen-tac")} onToggle={() => toggleFold("nguyen-tac")} title="Nguyên tắc" lead="Ba tầng token: primitive → ngữ nghĩa → component. Trang dùng component, component dùng token ngữ nghĩa.">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {[
             { title: "Token trước, giá trị tay sau", text: "Màu, cỡ chữ, khoảng cách, bo góc lấy từ src/assets/styles/tokens.ts. Một hex, rounded-[…] hay text-[Npx] trong className cần chú thích lý do; npm run tokens:check liệt kê chúng." },
@@ -209,9 +276,9 @@ export default function DesignSystemPage() {
             </Card>
           ))}
         </div>
-      </Section>
+      </Fold>
 
-      <Section id="mau" band title="Màu ngữ nghĩa" lead="Đặt tên theo mục đích, không theo sắc độ. Dùng: text-fg, bg-canvas, bg-action, text-danger-fg, border-line-strong… Mỗi màu là biến CSS --ds-* nên có thể đổi theme mà không sửa component.">
+      <Fold id="mau" open={openFolds.has("mau")} onToggle={() => toggleFold("mau")} title="Màu ngữ nghĩa" lead="Đặt tên theo mục đích, không theo sắc độ. Dùng: text-fg, bg-canvas, bg-action, text-danger-fg, border-line-strong… Mỗi màu là biến CSS --ds-* nên có thể đổi theme mà không sửa component.">
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {SEMANTIC_COLORS.map((token) => (
             <li key={token.name} className="flex gap-3 rounded-panel border border-line bg-surface-raised p-3">
@@ -334,9 +401,9 @@ export default function DesignSystemPage() {
             </div>
           </Card>
         </div>
-      </Section>
+      </Fold>
 
-      <Section id="chu" title="Chữ" lead={`Be Vietnam Pro cho tiêu đề, Inter cho nội dung và control, JetBrains Mono cho số đo mm. Thang tỉ lệ ~1.25; cỡ display co giãn theo màn hình bằng clamp(). Cỡ nhỏ nhất: ${MIN_TEXT_PX.reading} px cho chữ đọc, ${MIN_TEXT_PX.monoLabel} px cho nhãn kỹ thuật mono.`}>
+      <Fold id="chu" open={openFolds.has("chu")} onToggle={() => toggleFold("chu")} title="Chữ" lead={`Be Vietnam Pro cho tiêu đề, Inter cho nội dung, control và số đo mm (chữ số đều độ rộng). Thang tỉ lệ ~1.25; cỡ display co giãn theo màn hình bằng clamp(). Cỡ nhỏ nhất: ${MIN_TEXT_PX.reading} px cho chữ đọc, ${MIN_TEXT_PX.monoLabel} px cho nhãn kỹ thuật mono.`}>
         <div className="divide-y divide-line rounded-card bg-surface-raised px-5 ring-1 ring-fg/10 sm:px-8">
           {TYPE_SCALE.map((style) => (
             <div key={style.name} className="grid grid-cols-1 gap-2 py-5 md:grid-cols-[14rem_minmax(0,1fr)] md:items-baseline">
@@ -356,9 +423,9 @@ export default function DesignSystemPage() {
             </div>
           ))}
         </div>
-      </Section>
+      </Fold>
 
-      <Section id="khoang-cach" band title="Khoảng cách, lưới và breakpoint" lead="Nền là thang 4 px của Tailwind. Token có tên cho các quyết định lặp lại: chiều cao control, padding thẻ, khoảng giữa section.">
+      <Fold id="khoang-cach" open={openFolds.has("khoang-cach")} onToggle={() => toggleFold("khoang-cach")} title="Khoảng cách, lưới và breakpoint" lead="Nền là thang 4 px của Tailwind. Token có tên cho các quyết định lặp lại: chiều cao control, padding thẻ, khoảng giữa section.">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card variant="panel">
             <CardHeader title="Token khoảng cách" description="Trong component: control-*, stack-*, card-*. Giữa các khối trang: section-*." />
@@ -418,9 +485,9 @@ export default function DesignSystemPage() {
             </Card>
           </div>
         </div>
-      </Section>
+      </Fold>
 
-      <Section id="tiep-can" title="Tiếp cận" lead="Mục tiêu WCAG 2.2 AA cho mọi trang mới và mọi component chung.">
+      <Fold id="tiep-can" open={openFolds.has("tiep-can")} onToggle={() => toggleFold("tiep-can")} title="Tiếp cận" lead="Mục tiêu WCAG 2.2 AA cho mọi trang mới và mọi component chung.">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Card>
             <h3 className="text-title text-fg">Bàn phím</h3>
@@ -442,9 +509,9 @@ export default function DesignSystemPage() {
             </ul>
           </Card>
         </div>
-      </Section>
+      </Fold>
 
-      <Section id="thanh-phan" band title="Thành phần" lead="Import từ @/components/ui. Mỗi ví dụ dùng được thật: bấm, gõ, dùng bàn phím.">
+      <Fold id="thanh-phan" open={openFolds.has("thanh-phan")} onToggle={() => toggleFold("thanh-phan")} title="Thành phần" lead="Import từ @/components/ui. Mỗi ví dụ dùng được thật: bấm, gõ, dùng bàn phím.">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Demo title="Button" note="primary (lime) một lần mỗi màn hình; secondary, outline, dark, ghost, danger, link. Ba cỡ, hình pill hoặc rounded, trạng thái loading.">
             <div className="flex flex-wrap gap-2">
@@ -745,9 +812,9 @@ export default function DesignSystemPage() {
             </Carousel>
           </Demo>
         </div>
-      </Section>
+      </Fold>
 
-      <Section id="thay-doi" title="Thay đổi token" lead="Mỗi thay đổi giá trị token được ghi kèm phiên bản và ngày để các trang biết ảnh hưởng.">
+      <Fold id="thay-doi" open={openFolds.has("thay-doi")} onToggle={() => toggleFold("thay-doi")} title="Thay đổi token" lead="Mỗi thay đổi giá trị token được ghi kèm phiên bản và ngày để các trang biết ảnh hưởng.">
         <Container className="px-0 lg:px-0">
           {TOKEN_CHANGELOG.map((entry) => (
             <Card key={entry.version} variant="panel">
@@ -760,7 +827,9 @@ export default function DesignSystemPage() {
             </Card>
           ))}
         </Container>
-      </Section>
+      </Fold>
+        </div>
+      </Container>
 
       {dialog && (
         <Dialog
