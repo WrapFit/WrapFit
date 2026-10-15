@@ -107,7 +107,7 @@ export function WhyWrapFit() {
 /** Light green band with a large translucent box behind the closing call to action. */
 export function CtaBand() {
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-b from-[#DEF7CE] to-[#C7F1AB] py-28 lg:py-40">
+    <section className="relative isolate overflow-hidden bg-gradient-to-b from-landing-lime-mist to-landing-lime-soft py-28 lg:py-40">
       <svg
         viewBox="0 0 200 200"
         className="absolute top-1/2 left-1/2 -z-10 size-[420px] -translate-x-1/2 -translate-y-1/2 opacity-70 lg:size-[560px]"
