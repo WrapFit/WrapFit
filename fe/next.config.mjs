@@ -48,9 +48,8 @@ const nextConfig = {
       { source: '/privacy', destination: '/legal/privacy', permanent: true },
       { source: '/terms', destination: '/legal/terms', permanent: true },
       { source: '/cookies', destination: '/legal/cookies', permanent: true },
-      // Pages merged into others: the team lives on /about, the launch sign-up on /waitlist.
+      // Pages merged into others: the team lives on /about.
       { source: '/about/team', destination: '/about#doi-ngu', permanent: true },
-      { source: '/coming-soon', destination: '/waitlist', permanent: true },
     ];
   },
   // The browser calls the API on this origin (/api), so the session cookies are first-party. `output: "standalone"`
