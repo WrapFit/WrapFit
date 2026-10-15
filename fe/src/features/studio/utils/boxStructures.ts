@@ -35,7 +35,7 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
     subtitle: "Mẫu hộp bán lẻ & quà tặng quốc dân",
     description: "Cấu trúc một mảnh tích hợp nắp gài trên và khóa đáy đan chéo chịu lực cao. Tiết kiệm keo dán, sản xuất nhanh, cực kỳ chắc chắn.",
     badge: "Phổ Biến Nhất",
-    badgeColor: "bg-library-accent-mist text-library-accent border-library-accent/30",
+    badgeColor: "bg-fpt-orange-light text-fpt-orange-ink border-fpt-orange/30",
     recommendedGifts: ["Hũ nến thơm", "Chai nước hoa", "Mỹ phẩm dưỡng da", "Cốc gốm sứ"],
     recommendedPaper: "Ivory 300 – 350 GSM",
     foldDifficulty: "Dễ",
