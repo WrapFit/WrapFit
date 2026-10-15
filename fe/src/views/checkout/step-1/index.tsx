@@ -32,7 +32,7 @@ function ChoosePlan() {
 
   return (
     <CheckoutShell step={1} tier={tier} billing={billing} query={query()}>
-      <section aria-labelledby="checkout-title" className="rounded-sheet bg-white p-6 sm:p-8">
+      <section aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Chọn gói của bạn
         </h1>
@@ -50,7 +50,7 @@ function ChoosePlan() {
               className={cn('inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors', billing === cycle ? 'bg-white text-landing-ink shadow-sm' : 'text-landing-muted hover:text-landing-ink')}
             >
               {cycle === 'monthly' ? 'Theo tháng' : 'Theo năm'}
-              {cycle === 'yearly' && <span className="rounded-full bg-landing-lime px-2 py-0.5 text-xs text-landing-green-night">−{yearlySaving(PLANS.STARTER)}%</span>}
+              {cycle === 'yearly' && <span className="rounded-full bg-fpt-orange px-2 py-0.5 text-xs text-white">−{yearlySaving(PLANS.STARTER)}%</span>}
             </Link>
           ))}
         </div>
@@ -80,7 +80,7 @@ function ChoosePlan() {
                 <span className="flex items-center justify-between gap-2">
                   <span className="font-landing-heading text-xl font-bold">{plan.name}</span>
                   <span
-                    className={cn('flex size-6 items-center justify-center rounded-full', active ? 'bg-landing-lime text-landing-green-night' : 'ring-1 ring-landing-line')}
+                    className={cn('flex size-6 items-center justify-center rounded-full', active ? 'bg-fpt-orange text-white' : 'ring-1 ring-landing-line')}
                     aria-hidden
                   >
                     {active && <Check className="size-4" />}
@@ -94,7 +94,7 @@ function ChoosePlan() {
                   <span>{formatQuota(plan.storageBytes)} lưu trữ</span>
                   <span>{plan.aiPatternsPerDay} lượt hoa văn AI / 24h</span>
                 </span>
-                {isOwned && <span className="text-xs font-medium text-landing-green-deep">Đã có trong gói của bạn</span>}
+                {isOwned && <span className="text-xs font-medium text-fpt-orange-ink">Đã có trong gói của bạn</span>}
               </Link>
             );
           })}
@@ -109,7 +109,7 @@ function ChoosePlan() {
           ) : (
             <Link
               href={`/checkout/step-2${query()}`}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-action-hover"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover"
             >
               Tiếp tục
               <ArrowRight className="size-4" aria-hidden />
