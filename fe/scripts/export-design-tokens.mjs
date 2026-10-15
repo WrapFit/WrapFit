@@ -33,7 +33,7 @@ const out = {
       {
         $type: "typography",
         $value: {
-          fontFamily: s.name.startsWith("cad") ? "JetBrains Mono" : /^(display|heading|title)/.test(s.name) ? "Be Vietnam Pro" : "Inter",
+          fontFamily: s.name.startsWith("cad") ? "Inter" : /^(display|heading|title)/.test(s.name) ? "Be Vietnam Pro" : "Inter",
           fontSize: s.size,
           lineHeight: s.lineHeight,
           ...(s.weight ? { fontWeight: Number(s.weight) } : {}),

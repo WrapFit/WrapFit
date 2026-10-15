@@ -15,9 +15,17 @@
  * No path alias in this file: tailwind.config.ts imports it directly.
  */
 
-export const TOKENS_VERSION = "1.1.0";
+export const TOKENS_VERSION = "1.2.0";
 
 export const TOKEN_CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: "1.2.0",
+    date: "2026-10-16",
+    changes: [
+      "Cam FPT là màu chủ đạo của mọi trang người dùng: action (nút chính) và accent (ô đã chọn) chuyển sang dải orange; xanh dương và xanh lá là màu phụ.",
+      "Màu nhấn lime/xanh lá trong trang (landing-lime, landing-green, library-accent, library-lime) đổi sang fpt-orange / fpt-orange-ink / fpt-orange-light; success giữ màu xanh lá cho trạng thái.",
+    ],
+  },
   {
     version: "1.1.0",
     date: "2026-10-15",
@@ -27,6 +35,7 @@ export const TOKEN_CHANGELOG: { version: string; date: string; changes: string[]
       "Token mới: accent, accent-contrast, accent-bg, accent-fg (ô đã chọn) và success/warning/danger/info-solid (badge đặc chữ trắng).",
       "Style body/caption không ép độ đậm; text-[11px] đổi thành text-caption 12 px (chữ đọc) hoặc text-cad-spec-micro 11 px (mono).",
       "Bảng màu mặc định của Tailwind (stone, red, amber, emerald…) trong trang đổi sang token; npm run tokens:check chặn giá trị tay trong CI.",
+      "Trang giới thiệu trở lại cam FPT làm màu chủ đạo (Button variant brand, chữ trắng 3.2:1 theo lựa chọn thương hiệu), phối xanh dương và xanh lá FPT; thư viện mẫu và workspace giữ nút lime.",
     ],
   },
   {
@@ -67,7 +76,7 @@ export const PALETTE = {
   blue: { 50: "#EFF6FF", 100: "#E8F0FE", 200: "#BFDBFE", 300: "#93C5FD", 400: "#60A5FA", 500: "#3B82F6", 600: "#2563EB", 700: "#1E4FB8", 800: "#1E3A8A", 900: "#172554", 950: "#0F1A3D" },
 } as const;
 
-const { neutral: N, green: G, red: R, amber: A, blue: B } = PALETTE;
+const { neutral: N, green: G, orange: O, red: R, amber: A, blue: B } = PALETTE;
 
 export type ThemeMode = "light" | "dark";
 
@@ -97,14 +106,14 @@ export const SEMANTIC_COLORS: ColorToken[] = [
   token("surface-sunken", N[150], N[850], "Ô nền xám, skeleton, chip icon."),
   token("line", N[300], N[700], "Đường kẻ trang trí, viền thẻ.", "Viền duy nhất của input (chỉ 1.5:1)."),
   token("line-strong", N[500], N[500], "Viền input, checkbox, toggle tắt (3.5:1 sáng · 4.9:1 tối, đạt 1.4.11)."),
-  token("action", G[400], G[400], "Nền nút chính (lime pack.ly), luôn đi với action-fg.", "Chữ hoặc icon trên nền sáng (1.5:1)."),
-  token("action-hover", G[300], G[300], "Hover của nút chính."),
-  token("action-pressed", G[500], G[500], "Nhấn giữ nút chính."),
-  token("action-fg", G[900], G[900], "Chữ trên action (10:1), giữ nguyên ở cả hai theme."),
-  token("accent", G[700], G[400], "Ô đã chọn: checkbox, radio, ngày được chọn, switch bật."),
-  token("accent-contrast", "#FFFFFF", G[900], "Dấu tích, chữ trên accent (7.9:1 sáng · 10:1 tối)."),
-  token("accent-bg", G[100], G[900], "Nền hàng/thẻ đang chọn."),
-  token("accent-fg", G[700], G[200], "Chữ trên accent-bg (7.3:1 sáng · 12:1 tối)."),
+  token("action", O[500], O[500], "Nền nút chính: cam FPT, màu chủ đạo, luôn đi với action-fg.", "Chữ nhỏ trên nền sáng (3.2:1): dùng accent-fg."),
+  token("action-hover", O[600], O[600], "Hover của nút chính."),
+  token("action-pressed", O[700], O[700], "Nhấn giữ nút chính."),
+  token("action-fg", "#FFFFFF", "#FFFFFF", "Chữ trắng trên action (3.2:1, lựa chọn thương hiệu; chữ nút luôn semibold)."),
+  token("accent", O[700], O[400], "Ô đã chọn: checkbox, radio, ngày được chọn, switch bật."),
+  token("accent-contrast", "#FFFFFF", O[950], "Dấu tích, chữ trên accent (5.6:1 sáng · 6.2:1 tối)."),
+  token("accent-bg", O[50], O[950], "Nền hàng/thẻ đang chọn."),
+  token("accent-fg", O[700], O[200], "Chữ cam trên nền sáng (5.6:1) và trên accent-bg (5.0:1 sáng · 10:1 tối)."),
   token("focus", B[600], B[400], "Vòng focus của mọi phần tử tương tác (5.2:1 sáng · 6.7:1 tối)."),
   token("success", G[600], G[500], "Icon, chấm trạng thái thành công."),
   token("success-fg", G[700], G[200], "Chữ trên success-bg (7.3:1 sáng · 12:1 tối)."),
