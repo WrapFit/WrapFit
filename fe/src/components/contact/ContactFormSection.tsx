@@ -4,49 +4,36 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
-  Facebook,
   Globe,
   GraduationCap,
-  Instagram,
   Mail,
   MapPin,
   MessageCircle,
   Phone,
   Send,
-  Share2,
   Sparkles,
 } from "lucide-react";
 import React, { useState } from "react";
+import { BRANDS, BrandIcon, type Brand } from "@/components/common/BrandIcon";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { Container, Eyebrow, Reveal, limeButton } from "@/components/landing";
-import { Field, Input, Select, Textarea } from "@/components/ui";
+import { Field, Input, SelectMenu, Textarea } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 
-const SOCIAL_CHANNELS = [
-  {
-    name: "Zalo Official",
-    handle: "WrapFit Packaging",
-    href: "https://zalo.me",
-    color: "bg-info-bg text-info-fg border-info/80 hover:bg-info-bg",
-  },
-  {
-    name: "Facebook",
-    handle: "@wrapfit.platform",
-    href: "https://facebook.com",
-    color: "bg-info-bg text-info-fg border-info/80 hover:bg-info-bg",
-  },
-  {
-    name: "Instagram",
-    handle: "@wrapfit.craft",
-    href: "https://instagram.com",
-    color: "bg-pink-50 text-pink-700 border-pink-200/80 hover:bg-pink-100",
-  },
-  {
-    name: "TikTok",
-    handle: "@wrapfit.packaging",
-    href: "https://tiktok.com",
-    color: "bg-surface-sunken text-fg border-line hover:bg-line/60",
-  },
+const SOCIAL_CHANNELS: { brand: Brand; handle: string; href: string }[] = [
+  { brand: "zalo", handle: "WrapFit", href: "https://zalo.me" },
+  { brand: "facebook", handle: "@wrapfit.platform", href: "https://facebook.com" },
+  { brand: "instagram", handle: "@wrapfit.craft", href: "https://instagram.com" },
+  { brand: "tiktok", handle: "@wrapfit.packaging", href: "https://tiktok.com" },
+];
+
+const TOPICS = [
+  { value: "Tư vấn cấu trúc & kích thước hộp", label: "Tư vấn kiểu hộp và kích thước" },
+  { value: "Hỗ trợ kỹ thuật in & FitCheck™", label: "Hỗ trợ kỹ thuật in và FitCheck™" },
+  { value: "Đăng ký gia nhập mạng lưới Xưởng in", label: "Đăng ký làm xưởng in đối tác" },
+  { value: "Đặt in mẫu thử 01 hộp", label: "Đặt in thử một hộp mẫu" },
+  { value: "Hợp tác thương mại & Đơn lớn", label: "Hợp tác và đơn hàng lớn" },
+  { value: "Khác", label: "Câu hỏi khác" },
 ];
 
 export function ContactFormSection() {
@@ -85,7 +72,7 @@ export function ContactFormSection() {
                 Ghé thăm hoặc kết nối với chúng tôi
               </h2>
               <p className="mt-2 text-sm text-landing-muted leading-relaxed">
-                Đội ngũ WrapFit luôn sẵn sàng chào đón bạn tại trụ sở hoặc qua các kênh mạng xã hội chính thức.
+                Gặp chúng tôi tại trường hoặc qua mạng xã hội.
               </p>
             </div>
 
@@ -97,11 +84,8 @@ export function ContactFormSection() {
                   <MapPin className="size-4" />
                 </div>
                 <div>
-                  <span className="text-xs font-semibold uppercase text-fg-muted block">Trụ sở & Văn phòng</span>
-                  <span className="font-semibold text-fg block mt-0.5">Đại học FPT Hà Nội</span>
-                  <span className="text-xs text-fg-muted">
-                    Khu Công nghệ cao Hòa Lạc, Km29 Đại lộ Thăng Long, Hà Nội
-                  </span>
+                  <span className="text-xs font-semibold uppercase text-fg-muted block">Trụ sở & văn phòng</span>
+                  <span className="font-semibold text-fg block mt-0.5">Đại học FPT</span>
                 </div>
               </div>
 
@@ -111,18 +95,14 @@ export function ContactFormSection() {
                   <Phone className="size-4" />
                 </div>
                 <div className="flex flex-col gap-1 w-full">
-                  <span className="text-xs font-semibold uppercase text-fg-muted">Đường dây nóng phân luồng</span>
+                  <span className="text-xs font-semibold uppercase text-fg-muted">Đường dây nóng</span>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
-                    <span className="text-fg-muted">Tư vấn in ấn & Kỹ thuật:</span>
-                    <a href="tel:0901234567" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-fpt-blue">
-                      (+84) 90 123 4567
-                    </a>
+                    <span className="text-fg-muted">Tư vấn in ấn, kỹ thuật:</span>
+                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
-                    <span className="text-fg-muted">Hợp tác xưởng in & Báo giá:</span>
-                    <a href="tel:0907654321" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-fpt-blue">
-                      (+84) 90 765 4321
-                    </a>
+                    <span className="text-fg-muted">Hợp tác xưởng in, báo giá:</span>
+                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
                   </div>
                 </div>
               </div>
@@ -136,15 +116,11 @@ export function ContactFormSection() {
                   <span className="text-xs font-semibold uppercase text-fg-muted">Hòm thư điện tử</span>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
                     <span className="text-fg-muted">Hỗ trợ người dùng:</span>
-                    <a href="mailto:contact@wrapfit.vn" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-fpt-orange-ink">
-                      contact@wrapfit.vn
-                    </a>
+                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
-                    <span className="text-fg-muted">Hợp tác & Đối tác:</span>
-                    <a href="mailto:partner@wrapfit.vn" className="inline-flex min-h-6 items-center font-semibold text-fg hover:text-fpt-orange-ink">
-                      partner@wrapfit.vn
-                    </a>
+                    <span className="text-fg-muted">Hợp tác, đối tác:</span>
+                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
                   </div>
                 </div>
               </div>
@@ -157,7 +133,7 @@ export function ContactFormSection() {
                 <div>
                   <span className="text-xs font-semibold uppercase text-fg-muted block">Thời gian làm việc</span>
                   <span className="text-xs text-fg-muted block mt-0.5 font-medium">
-                    Thứ 2 – Thứ 7: 08:30 – 18:00 (Nghỉ Chủ nhật & ngày Lễ)
+                    Thứ 2 – Thứ 7: 08:30 – 18:00
                   </span>
                 </div>
               </div>
@@ -171,17 +147,18 @@ export function ContactFormSection() {
               <div className="grid grid-cols-2 gap-2">
                 {SOCIAL_CHANNELS.map((social) => (
                   <a
-                    key={social.name}
+                    key={social.brand}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={cn(
-                      "flex items-center justify-between rounded-xl p-2.5 text-xs font-medium border transition-colors",
-                      social.color
-                    )}
+                    aria-label={`${BRANDS[social.brand].name} ${social.handle}`}
+                    className="flex min-h-11 items-center gap-2.5 rounded-xl border border-line bg-white p-2.5 text-xs transition-colors hover:border-line-strong hover:bg-surface-sunken"
                   >
-                    <span>{social.name}</span>
-                    <Share2 className="size-3 opacity-60" />
+                    <BrandIcon brand={social.brand} className="size-5 shrink-0" />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="font-semibold text-fg">{BRANDS[social.brand].name}</span>
+                      <span className="truncate text-fg-muted">{social.handle}</span>
+                    </span>
                   </a>
                 ))}
               </div>
@@ -199,14 +176,14 @@ export function ContactFormSection() {
               />
               <div className="flex flex-col text-xs text-fg-muted leading-relaxed">
                 <span className="font-bold text-fg">Trợ lý Bé Gói</span>
-                <span>Bạn cần gấp? Hãy bấm vào Bé Gói để chat trực tiếp hoặc để lại tin nhắn nhé!</span>
+                <span>Cần gấp? Bấm vào Gói để trò chuyện.</span>
               </div>
             </div>
           </div>
 
           {/* Right Column (7 cols): Interactive Contact Form */}
           <div className="lg:col-span-7">
-            <div className="overflow-hidden rounded-3xl border border-line/90 bg-white p-6 sm:p-10 shadow-soft-16">
+            <div className="rounded-3xl border border-line/90 bg-white p-6 sm:p-10 shadow-soft-16">
               {submitted ? (
                 /* Success Confirmation State */
                 <div className="flex flex-col items-center text-center py-10">
@@ -241,7 +218,7 @@ export function ContactFormSection() {
                       Điền thông tin yêu cầu tư vấn
                     </h3>
                     <p className="text-xs sm:text-sm text-fg-muted mt-1">
-                      Chúng tôi cam kết bảo mật 100% thông tin dự án và bản vẽ kỹ thuật của bạn.
+                      Thông tin của bạn được bảo mật.
                     </p>
                   </div>
 
@@ -268,18 +245,16 @@ export function ContactFormSection() {
                   </Field>
 
                   {/* Segmented Topic Selector */}
-                  <Field label="Chủ đề bạn cần hỗ trợ">
-                    {(props) => (
-                    <Select {...props} value={formData.topic} onChange={(e) => setFormData({ ...formData, topic: e.target.value })}>
-                      <option value="Tư vấn cấu trúc & kích thước hộp">Tư vấn cấu trúc & kích thước hộp (Dài × Rộng × Cao)</option>
-                      <option value="Hỗ trợ kỹ thuật in & FitCheck™">Hỗ trợ kỹ thuật in, bù lề & FitCheck™</option>
-                      <option value="Đăng ký gia nhập mạng lưới Xưởng in">Đăng ký gia nhập mạng lưới Xưởng in (Print Shop)</option>
-                      <option value="Đặt in mẫu thử 01 hộp">Yêu cầu đặt in thử 01 hộp mẫu thực tế</option>
-                      <option value="Hợp tác thương mại & Đơn lớn">Hợp tác thương mại & Đơn hàng lớn (B2B)</option>
-                      <option value="Khác">Câu hỏi khác</option>
-                    </Select>
-                    )}
-                  </Field>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-label text-fg">Chủ đề bạn cần hỗ trợ</span>
+                    <SelectMenu
+                      label="Chủ đề bạn cần hỗ trợ"
+                      value={formData.topic}
+                      onChange={(topic) => setFormData({ ...formData, topic })}
+                      options={TOPICS}
+                      className="w-full"
+                    />
+                  </div>
 
                   {/* Message textarea */}
                   <Field label="Chi tiết lời nhắn hoặc kích thước món quà">
