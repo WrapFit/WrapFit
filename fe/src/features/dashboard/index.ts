@@ -57,3 +57,4 @@ export {
   useProjectList,
 } from "./useProjects";
 export { usagePercent, useAiUsage, useStorageUsage } from "./useUsage";
+export { DEMO_PROJECTS } from "./demoData";

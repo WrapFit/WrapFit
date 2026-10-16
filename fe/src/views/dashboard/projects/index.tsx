@@ -12,10 +12,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Pagination, outlineButton, primaryButton, createBoxButton } from '@/components/library';
 import { SegmentedControl, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { ROUTES } from '@/constants';
-import { RequireAuth } from '@/features/auth';
+import { useAuth } from '@/features/auth';
 import {
   CollectionDialog,
   ConfirmDialog,
+  DEMO_PROJECTS,
   FolderBar,
   MoveToFolderDialog,
   NO_FOLDER,
@@ -42,11 +43,7 @@ import type { Collection, ProjectListQuery, ProjectStatus, ProjectSummary } from
 import { cn } from '@/utils/helpers';
 
 export default function DashboardProjectsPage() {
-  return (
-    <RequireAuth>
-      <DashboardProjectsScreen />
-    </RequireAuth>
-  );
+  return <DashboardProjectsScreen />;
 }
 
 type Dialog =
@@ -65,6 +62,8 @@ function noMatchDescription(q: string, folderName: string | undefined, tabLabel 
 }
 
 function DashboardProjectsScreen() {
+  const { status: authStatus } = useAuth();
+  const isGuest = authStatus !== 'authenticated';
   const [status, setStatus] = useState<ProjectStatus>('ACTIVE');
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState(SORT_OPTIONS[0].id);
@@ -101,8 +100,29 @@ function DashboardProjectsScreen() {
   const purge = useDeleteProjectPermanently();
   const deleteFolder = useDeleteCollection();
 
-  const meta = list.data?.meta;
-  const items = useMemo(() => list.data?.items ?? [], [list.data]);
+  const demoCounts: Record<ProjectStatus, number> = useMemo(() => ({
+    ACTIVE: DEMO_PROJECTS.filter((p) => p.status === 'ACTIVE').length,
+    ARCHIVED: DEMO_PROJECTS.filter((p) => p.status === 'ARCHIVED').length,
+    DELETED: DEMO_PROJECTS.filter((p) => p.status === 'DELETED').length,
+  }), []);
+
+  const isGuestOrOffline = isGuest || (list.isError && !list.data);
+
+  const items = useMemo(() => {
+    if (list.data?.items && list.data.items.length > 0) return list.data.items;
+    if (isGuestOrOffline) {
+      return DEMO_PROJECTS.filter((p) => {
+        if (p.status !== status) return false;
+        if (q && !p.title.toLowerCase().includes(q.toLowerCase()) && !p.tags.some((t) => t.includes(q.toLowerCase()))) {
+          return false;
+        }
+        return true;
+      });
+    }
+    return [];
+  }, [list.data, isGuestOrOffline, status, q]);
+
+  const meta = list.data?.meta ?? (isGuestOrOffline ? { total: items.length, page: 1, limit: PROJECTS_PAGE_SIZE, totalPages: 1 } : undefined);
   const totalPages = Math.max(1, meta?.totalPages ?? 1);
   const filtering = q !== '' || folder !== undefined;
   const folderName =
@@ -135,11 +155,11 @@ function DashboardProjectsScreen() {
   };
 
   let gridBody: React.ReactNode;
-  if (list.isError && !list.data) {
+  if (!isGuest && list.isError && !list.data) {
     gridBody = (
       <WorkspaceError error={list.error} title="Không tải được danh sách dự án" onRetry={() => void list.refetch()} retrying={list.isFetching} />
     );
-  } else if (list.isPending) {
+  } else if (!isGuest && list.isPending) {
     gridBody = (
       <div className={GRID} aria-busy="true">
         <span role="status" className="sr-only">
@@ -203,7 +223,7 @@ function DashboardProjectsScreen() {
   return (
     <WorkspaceShell
       title="Dự án"
-      description="Mọi hộp bạn đã dựng: khuôn bế, kích thước, vật liệu và điểm FitCheck™ của từng hộp."
+      description={isGuest ? "Không gian làm việc trải nghiệm — mở hộp bất kỳ trong Studio 3D hoặc tạo mới theo kích thước." : "Mọi hộp bạn đã dựng: khuôn bế, kích thước, vật liệu và điểm FitCheck™ của từng hộp."}
       actions={
         <Link href={ROUTES.editorNew} className={primaryButton}>
           <Plus className="size-4" aria-hidden />
@@ -211,6 +231,17 @@ function DashboardProjectsScreen() {
         </Link>
       }
     >
+      {isGuest && (
+        <div className="mb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-fpt-orange/30 bg-orange-50/80 p-4 text-sm text-landing-ink">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white font-bold text-xs">i</span>
+            <span><strong>Không gian làm việc khách (Demo Workspace):</strong> Bạn đang xem các dự án mẫu của WrapFit. Bấm vào bất kỳ dự án nào để mở trực tiếp trong Studio 3D hoặc bấm <strong>Tạo dự án mới</strong> để thiết kế theo kích thước riêng.</span>
+          </div>
+          <Link href="/auth/login" className="shrink-0 rounded-full border border-fpt-orange bg-white px-3.5 py-1.5 text-xs font-semibold text-fpt-orange-ink hover:bg-orange-100 transition-colors">
+            Đăng nhập tài khoản
+          </Link>
+        </div>
+      )}
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SegmentedControl<ProjectStatus>
@@ -218,7 +249,8 @@ function DashboardProjectsScreen() {
             value={status}
             onChange={setStatus}
             options={STATUS_TABS.map((tab) => {
-              const count = counts[tab.status].data;
+              const apiCount = counts[tab.status].data;
+              const count = apiCount !== undefined ? apiCount : isGuestOrOffline ? demoCounts[tab.status] : undefined;
               return {
                 value: tab.status,
                 label: (

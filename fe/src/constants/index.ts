@@ -24,7 +24,14 @@ export const ROUTES = {
   editorNew: "/editor/new",
   /** The studio without an account: nothing is saved. */
   editorDemo: "/editor/demo",
-  editor: (projectId: string) => `/editor/${projectId}`,
+  editor: (projectId: string) => {
+    if (projectId === "demo-tuck-top") return "/editor/demo?structure=tuck-top&l=85&w=85&h=110&paper=ivory";
+    if (projectId === "demo-sleeve") return "/editor/demo?structure=sleeve&l=120&w=80&h=35&paper=kraft";
+    if (projectId === "demo-lid-base") return "/editor/demo?structure=lid-base&l=200&w=150&h=60&paper=ivory";
+    if (projectId === "demo-pillow") return "/editor/demo?structure=pillow&l=150&w=100&h=35&paper=ivory";
+    if (projectId.startsWith("demo")) return "/editor/demo";
+    return `/editor/${projectId}`;
+  },
   publicProject: (slug: string) => `/p/${slug}`,
   unbox: (slug: string) => `/unbox/${slug}`,
   /** Code-entry page: the recipient types or pastes the code printed with the gift. */
