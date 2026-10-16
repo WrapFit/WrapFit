@@ -14,34 +14,29 @@ interface FaqItem {
 
 const HOME_FAQS: FaqItem[] = [
   {
-    question: "Tôi không biết dùng Illustrator hay Photoshop thì có tự thiết kế hộp được không?",
-    answer:
-      "Hoàn toàn được! WrapFit được thiết kế theo tư duy không cần kinh nghiệm đồ họa: bạn chỉ cần nhập kích thước món quà (Dài × Rộng × Cao theo milimét), hệ thống sẽ tự động tính toán dung sai, sinh bản vẽ khuôn bế và dựng hộp 3D trực quan. Trợ lý AI Bé Gói sẽ tự động cảnh báo nếu chữ hoặc logo bị tràn lề hay đè lên nếp gấp.",
-    highlight: "Không cần kinh nghiệm CAD/Design",
+    question: "Không biết dùng phần mềm thiết kế thì có làm được hộp không?",
+    answer: "Được. Bạn chỉ cần nhập kích thước món quà, WrapFit tự dựng khuôn bế và hộp 3D. Trợ lý Gói nhắc khi chữ hay logo lấn nếp gấp.",
+    highlight: "Không cần biết thiết kế",
   },
   {
-    question: "WrapFit có bắt buộc đặt số lượng tối thiểu (MOQ) hàng trăm hộp như các xưởng in truyền thống không?",
-    answer:
-      "Không. WrapFit ứng dụng công nghệ cắt kỹ thuật số phẳng (Flatbed Digital Cutting), cho phép sản xuất linh hoạt từ 20 – 50 hộp mà không cần tốn 1.5 – 2 triệu VNĐ chi phí làm khuôn dao sắt kim loại. Đây là giải pháp hoàn hảo cho các shop handmade, tiệm bánh, mỹ phẩm làm theo mùa vụ.",
-    highlight: "Sản xuất từ 20 hộp · Tiết kiệm tiền khuôn",
+    question: "Có phải đặt in hàng trăm hộp không?",
+    answer: "Không. Máy cắt kỹ thuật số in được từ 20 hộp, không tốn tiền làm khuôn dao.",
+    highlight: "In từ 20 hộp",
   },
   {
-    question: "File xuất từ WrapFit mang ra xưởng in bất kỳ thì họ có nhận in và bế được ngay không?",
-    answer:
-      "Chắc chắn có. File xuất từ WrapFit là file vector chuẩn in công nghiệp đạt chứng nhận kỹ thuật quốc tế: PDF CMYK 300 DPI tách lớp rõ ràng (đường cắt CutContour đỏ #E53E3E, đường cấn Crease xanh #3182CE), kèm định dạng SVG và DXF tương thích với 100% phần mềm máy bế xưởng in tại Việt Nam.",
-    highlight: "Chuẩn in công nghiệp CMYK 300 DPI",
+    question: "Mang file ra xưởng in bất kỳ có in được không?",
+    answer: "Được. File PDF CMYK 300 DPI tách lớp đường cắt, đường gấp, kèm SVG và DXF cho máy cắt.",
+    highlight: "Chuẩn xưởng in",
   },
   {
-    question: "Làm sao để tôi được cầm mẫu hộp thực tế trên tay trước khi quyết định in số lượng lớn?",
-    answer:
-      "WrapFit liên kết với mạng lưới xưởng in đối tác hỗ trợ in thử đúng 01 hộp mẫu thực tế gửi tận tay bạn kiểm định trước khi in loạt. Bạn đặt hộp mẫu ngay từ dự án của mình qua Giỏ in mẫu, không cần đặt số lượng tối thiểu.",
-    highlight: "In mẫu thử 01 hộp tận tay",
+    question: "Tôi có thể cầm hộp mẫu trước khi in số lượng lớn không?",
+    answer: "Có. Đặt in thử một hộp mẫu ngay trong dự án, xưởng đối tác gửi tận tay bạn.",
+    highlight: "In thử 1 hộp",
   },
   {
-    question: "Tôi có phải trả phí để thiết kế và xoay lật xem thử hộp 3D không?",
-    answer:
-      "Hoàn toàn miễn phí. Gói Free của WrapFit cung cấp đầy đủ công cụ Studio: chọn 4 cấu trúc hộp chuẩn, nhập kích thước theo milimét, kéo thả logo, xoay lật 360° mô phỏng gập mở 3D và chạy kiểm định FitCheck™ mà không yêu cầu thẻ tín dụng hay trả trước bất kỳ khoản phí nào.",
-    highlight: "Miễn phí 100% Studio 3D cơ bản",
+    question: "Thiết kế và xem hộp 3D có mất phí không?",
+    answer: "Không. Gói miễn phí có đủ Studio, xem 3D và FitCheck™, không cần thẻ thanh toán.",
+    highlight: "Miễn phí",
   },
 ];
 
@@ -54,11 +49,11 @@ export function HomeFaq() {
             <Reveal variant="text" className="flex flex-col items-center">
               <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-line/80 bg-white/90 px-3.5 py-1.5 shadow-soft-8 backdrop-blur-md">
                 <HelpCircle className="size-3.5 text-fpt-orange" aria-hidden />
-                <span className="text-overline uppercase text-fg-muted">Giải đáp thắc mắc thường gặp</span>
+                <span className="text-overline uppercase text-fg-muted">Hỏi đáp</span>
               </div>
-              <h2 className="font-landing-heading text-heading-lg text-fg">Những Câu Hỏi Phổ Biến Nhất</h2>
+              <h2 className="font-landing-heading text-heading-lg text-fg">Câu hỏi thường gặp</h2>
               <p className="mt-3 max-w-2xl text-body text-fg-muted lg:text-body-lg">
-                Mọi điều bạn cần biết về quy trình làm hộp quà, kiểm định FitCheck™ và chuẩn in ấn cùng WrapFit.
+                Những điều bạn hay thắc mắc khi làm hộp cùng WrapFit.
               </p>
             </Reveal>
           </div>
@@ -81,11 +76,11 @@ export function HomeFaq() {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-body-sm text-fg-muted">
             <MessageCircleQuestion className="size-4" aria-hidden />
-            <span>Bạn còn thắc mắc khác? Ghé thăm</span>
+            <span>Còn thắc mắc? Ghé</span>
             <Link href="/support" className="font-semibold text-fg underline underline-offset-4 transition-colors hover:text-fpt-orange-ink">
               Trung tâm hỗ trợ
             </Link>
-            <span>hoặc nhắn tin trực tiếp với Trợ lý Gói!</span>
+            <span>hoặc hỏi Trợ lý Gói.</span>
           </div>
         </div>
       </Container>
