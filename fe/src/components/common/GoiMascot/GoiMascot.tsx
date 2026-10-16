@@ -394,7 +394,8 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
               ? "bottom-[calc(100%+14px)] left-0 min-w-[220px] max-w-[280px] sm:max-w-[340px] text-left"
               : bubblePlacement === "top-left"
               ? "bottom-[calc(100%+14px)] right-0 min-w-[220px] max-w-[280px] sm:max-w-[340px] text-right"
-              : "bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 max-w-[280px] sm:max-w-xs text-center"
+              : // w-max: an absolute box would otherwise shrink to the mascot's width and stack the words in a column
+                "bottom-[calc(100%+14px)] left-1/2 -translate-x-1/2 w-max max-w-[260px] sm:max-w-[300px] text-center"
           )}
         >
           <div
