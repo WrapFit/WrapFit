@@ -47,7 +47,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const TIER_LABELS: Record<SubscriptionTier, string> = {
-  FREE: "Gói Free",
+  FREE: "Gói Miễn phí",
   PAY_PER_EXPORT: "Từng lần xuất (19k)",
   STARTER: "Gói Tháng (99k)",
   PRO_BUSINESS: "Doanh Nghiệp",
