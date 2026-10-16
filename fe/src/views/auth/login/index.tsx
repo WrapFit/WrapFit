@@ -286,7 +286,7 @@ function AuthLoginScreen({
           <div className="flex w-full items-center justify-center">
           <section
             aria-labelledby="auth-title"
-            className="relative flex w-full max-w-[420px] flex-col rounded-[22px] border border-white bg-white/95 px-6 py-6 shadow-[0_24px_60px_-24px_rgba(29,41,61,0.28)] backdrop-blur sm:px-8 sm:py-7"
+            className="relative flex w-full max-w-[420px] flex-col rounded-sheet border border-white bg-white/95 px-6 py-6 shadow-[0_24px_60px_-24px_rgba(29,41,61,0.28)] backdrop-blur sm:px-8 sm:py-7"
           >
             <h1
               id="auth-title"
@@ -438,7 +438,7 @@ function AuthLoginScreen({
                   onClick={signInWithGoogle}
                   disabled={leavingForGoogle}
                   aria-busy={leavingForGoogle || undefined}
-                  className="relative inline-flex h-10 w-full items-center justify-center rounded-lg border border-landing-line bg-white text-[13px] font-semibold transition-colors hover:border-landing-ink/30 hover:bg-mist-50 disabled:cursor-wait disabled:opacity-70"
+                  className="relative inline-flex h-10 w-full items-center justify-center rounded-lg border border-landing-line bg-white text-body-sm font-semibold transition-colors hover:border-landing-ink/30 hover:bg-mist-50 disabled:cursor-wait disabled:opacity-70"
                 >
                   <span className="absolute left-4">
                     <GoogleIcon />
@@ -450,7 +450,7 @@ function AuthLoginScreen({
                       : "Đăng nhập bằng Google"}
                 </button>
 
-                <p className="mt-3.5 text-center text-[13px] text-landing-muted">
+                <p className="mt-3.5 text-center text-body-sm text-landing-muted">
                   {copy.switchLabel}{" "}
                   <button
                     type="button"
@@ -460,7 +460,7 @@ function AuthLoginScreen({
                     {copy.switchAction}
                   </button>
                 </p>
-                <p className="text-center text-[13px] text-landing-muted">
+                <p className="text-center text-body-sm text-landing-muted">
                   <Link
                     href={ROUTES.editorDemo}
                     className="inline-flex items-center gap-1.5 py-1 font-medium hover:text-landing-ink"
