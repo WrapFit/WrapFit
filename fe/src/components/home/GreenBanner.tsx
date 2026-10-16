@@ -1,9 +1,6 @@
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 import React from "react";
-import { cn } from "@/utils/helpers";
 import { BANNER } from "./content";
-import { Container, Reveal, limeButton } from "@/components/landing";
+import { Container, Reveal } from "@/components/landing";
 
 /** Full-width dark green band over a slowly drifting kraft paper photo. */
 export function GreenBanner() {
@@ -23,10 +20,6 @@ export function GreenBanner() {
             </h2>
           </div>
           <p className="text-lg leading-7 text-white/90 lg:text-2xl lg:leading-8">{BANNER.body}</p>
-          <Link href={BANNER.cta.href} className={cn(limeButton(), "w-fit")}>
-            {BANNER.cta.label}
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
         </Reveal>
       </Container>
     </section>

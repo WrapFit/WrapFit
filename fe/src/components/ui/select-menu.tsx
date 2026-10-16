@@ -95,7 +95,7 @@ export function SelectMenu<T extends string>({
           role="listbox"
           aria-label={label}
           aria-activedescendant={`${listId}-${active}`}
-          className="absolute inset-x-0 top-full z-40 mt-1.5 origin-top animate-pop-in overflow-hidden rounded-panel border border-line bg-surface-raised p-1 shadow-popover"
+          className="absolute inset-x-0 top-full z-40 mt-1.5 max-h-72 origin-top animate-pop-in overflow-y-auto overscroll-contain rounded-panel border border-line bg-surface-raised p-1 shadow-popover"
         >
           {options.map((option, index) => {
             const selected = option.value === value;
@@ -108,9 +108,9 @@ export function SelectMenu<T extends string>({
                 onPointerEnter={() => setActive(index)}
                 onClick={() => pick(option)}
                 className={cn(
-                  "flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-body-sm transition-colors",
+                  "flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-body-sm transition-colors",
                   index === active ? "bg-surface-sunken text-fg" : "text-fg",
-                  selected && "font-semibold",
+                  selected && "font-semibold text-accent",
                 )}
               >
                 {option.label}

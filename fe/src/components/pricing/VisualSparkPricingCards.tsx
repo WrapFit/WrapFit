@@ -8,6 +8,7 @@ import { PLANS, formatQuota, formatVnd } from "@/features/pricing";
 import type { SubscriptionTier } from "@/types/api";
 import { EmeraldPolyhedron, GoldCylinder, PurpleSlantedDisc } from "./GeometricShapes";
 import { buttonClass } from "@/components/ui";
+import { PaymentLogos, type PaymentMethodId } from "@/components/layout/PaymentLogos";
 
 export type BillingCycle = "monthly" | "yearly";
 
@@ -43,13 +44,13 @@ const PLANS_DATA: PricingPlan[] = [
   },
   {
     tier: "STARTER",
-    subtitle: "Cho maker và shop handmade",
+    subtitle: "Cho người làm đồ thủ công",
     bgClass: "bg-warning-bg/50",
     borderClass: "border-warning/20",
     shape: GoldCylinder,
     features: [
       "Xuất file in không giới hạn",
-      "Brand Kit: logo, màu, phông chữ",
+      "Bộ nhận diện: logo, màu, phông chữ",
       `${formatQuota(PLANS.STARTER.storageBytes)} lưu trữ · ${PLANS.STARTER.aiPatternsPerDay} hoa văn AI/ngày`,
       "Ưu tiên đặt in hộp mẫu qua xưởng đối tác",
       "Mọi tính năng của gói Từng lần xuất",
@@ -76,7 +77,7 @@ const PLANS_DATA: PricingPlan[] = [
   },
 ];
 
-const PAYMENTS = ["VietQR", "Chuyển khoản", "MoMo", "Thẻ ATM nội địa"];
+const PAYMENTS: PaymentMethodId[] = ["vietqr", "bank", "momo", "napas"];
 
 const CYCLES: [BillingCycle, string][] = [
   ["monthly", "Theo tháng"],
@@ -200,13 +201,7 @@ export function VisualSparkPricingCards() {
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="size-4 text-success-fg" aria-hidden /> Thanh toán mã hoá qua cổng của ngân hàng · WrapFit không lưu số thẻ
           </span>
-          <span className="flex flex-wrap justify-center gap-1.5">
-            {PAYMENTS.map((method) => (
-              <span key={method} className="rounded-md border border-line bg-white px-2 py-0.5 font-semibold text-fg-muted">
-                {method}
-              </span>
-            ))}
-          </span>
+          <PaymentLogos methods={PAYMENTS} className="flex flex-wrap justify-center gap-2" />
         </div>
         <p className="mt-3 text-center text-xs text-fg-muted">
           Chi tiết hoàn tiền và huỷ gói tại{" "}

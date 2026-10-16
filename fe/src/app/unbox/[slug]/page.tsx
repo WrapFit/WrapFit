@@ -3,7 +3,7 @@ import UnboxView from "@/views/unbox";
 
 // The slug is the secret of a gift (it works even for a private design): never indexed, never previewed with data.
 export const metadata: Metadata = {
-  title: "Bạn có một món quà — WrapFit",
+  title: "Bạn có một món quà | WrapFit",
   robots: { index: false, follow: false },
 };
 

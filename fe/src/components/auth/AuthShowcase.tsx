@@ -196,7 +196,7 @@ export function AuthShowcase({ mode, className }: AuthShowcaseProps) {
                   {mode === "login" ? <PackageCheck className="size-4" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
                 </span>
                 <span className="rounded-full bg-fpt-orange-ink px-2 py-0.5 text-label-sm uppercase tracking-wider text-white">
-                  {mode === "login" ? "Mới" : "Gói Free"}
+                  {mode === "login" ? "Mới" : "Gói Miễn phí"}
                 </span>
               </div>
               <p className="mt-2.5 text-sm font-semibold text-white">{mode === "login" ? "Giỏ in mẫu" : "Không cần thẻ thanh toán"}</p>

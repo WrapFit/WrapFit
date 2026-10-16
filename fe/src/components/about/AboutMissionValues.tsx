@@ -3,40 +3,27 @@
 import { Heart, Leaf, Ruler, ShieldCheck } from "lucide-react";
 import React from "react";
 import { Container } from "@/components/landing";
-import { cn } from "@/utils/helpers";
 
 const CORE_VALUES = [
   {
     icon: Ruler,
-    title: "Chính xác tuyệt đối (CAD Precision 1:1)",
-    description:
-      "Mọi panel, nắp gài, tai khóa và khe cấn đều được tự động tính toán dựa trên kích thước thật của món quà và độ dày giấy thực tế (250–350 GSM). Tuyệt đối không dùng bản vẽ mockup tĩnh.",
-    tag: "Chuẩn milimét",
-    color: "bg-info-bg text-info-fg border-info/60",
+    title: "Chính xác từng milimét",
+    description: "Khuôn bế tính từ kích thước thật của món quà và độ dày giấy.",
   },
   {
     icon: ShieldCheck,
-    title: "100% Khả thi sản xuất (FitCheck™)",
-    description:
-      "Tự động rà soát vùng an toàn (≥3mm), tràn lề (bleed ≥2mm), độ phân giải ảnh (≥200 DPI) và bảo đảm chữ/logo không đè lên nếp gấp hay tai dán keo. File xuất ra xưởng in nhận là in được ngay.",
-    tag: "Kiểm định tự động",
-    color: "bg-fpt-orange-light text-fpt-orange-ink border-fpt-orange/60",
+    title: "In được ngay",
+    description: "FitCheck™ soát lỗi trước khi in, xưởng nhận file là chạy máy.",
   },
   {
     icon: Leaf,
-    title: "Bền vững & Zero MOQ (Không lãng phí)",
-    description:
-      "Hộp vừa khít là hộp bền vững nhất: không thừa giấy, không cần nhồi xốp hay rơm lót. Nhờ kết nối với bàn cắt kỹ thuật số phẳng, chúng tôi xóa bỏ rào cản tiền khuôn, nhận sản xuất từ 20 hộp.",
-    tag: "Bảo vệ môi trường",
-    color: "bg-success-bg text-success-fg border-success/60",
+    title: "Không lãng phí",
+    description: "Hộp vừa khít, không nhồi lót, in từ 20 hộp.",
   },
   {
     icon: Heart,
-    title: "Nâng niu cảm xúc người nhận (3D QR)",
-    description:
-      "Bao bì không chỉ là chiếc vỏ bảo vệ mà là nơi thăng hoa tình cảm. Người nhận quà quét mã QR in trên nắp hộp để mở chiếc hộp 3D ảo và đọc lời chúc cá nhân hóa đầy xúc động.",
-    tag: "Chạm tới cảm xúc",
-    color: "bg-danger-bg text-danger-fg border-danger/60",
+    title: "Chạm tới cảm xúc",
+    description: "Người nhận quét QR để mở hộp 3D và đọc lời chúc.",
   },
 ];
 
@@ -51,10 +38,10 @@ export function AboutMissionValues() {
               Triết lý hoạt động
             </span>
             <h3 className="font-landing-heading text-2xl sm:text-4xl font-bold text-fg mt-1">
-              4 Giá Trị Cốt Lõi Định Hình WrapFit
+              Giá trị cốt lõi
             </h3>
             <p className="mt-2 text-sm sm:text-base text-fg-muted max-w-xl mx-auto">
-              Mọi tính năng, quyết định kỹ thuật và quan hệ hợp tác xưởng in của WrapFit đều được dẫn dắt bởi 4 nguyên tắc bất biến:
+              Bốn điều dẫn lối mọi tính năng của WrapFit.
             </p>
           </div>
 
@@ -64,16 +51,13 @@ export function AboutMissionValues() {
               return (
                 <div
                   key={val.title}
-                  className="rounded-3xl border border-line/90 bg-white p-6 sm:p-7 shadow-soft-8 transition-all hover:shadow-soft-16 flex flex-col justify-between"
+                  className="group flex flex-col justify-between rounded-3xl border border-line/90 bg-white p-6 shadow-soft-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-16 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-7"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex size-11 items-center justify-center rounded-2xl bg-surface-sunken text-fg">
+                    <div className="mb-4">
+                      <div className="flex size-11 items-center justify-center rounded-2xl bg-surface-sunken text-fg-muted transition-colors group-hover:bg-fpt-orange-light group-hover:text-fpt-orange-ink">
                         <Icon className="size-5" />
                       </div>
-                      <span className={cn("rounded-full px-2.5 py-0.5 text-caption font-semibold border", val.color)}>
-                        {val.tag}
-                      </span>
                     </div>
 
                     <h4 className="font-landing-heading text-lg sm:text-xl font-bold text-fg mb-2">

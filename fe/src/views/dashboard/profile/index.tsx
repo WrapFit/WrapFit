@@ -41,7 +41,7 @@ function DashboardProfileScreen() {
               <p className="text-sm text-library-muted">{user.shopName || ROLE_LABELS[user.role]}</p>
             </div>
             <div className="flex flex-wrap justify-center gap-1.5">
-              <Badge tone="lime">{TIER_LABELS[user.subscriptionTier]}</Badge>
+              <Badge tone="green">{TIER_LABELS[user.subscriptionTier]}</Badge>
               <Badge>{ROLE_LABELS[user.role]}</Badge>
               {user.emailVerifiedAt ? (
                 <Badge tone="green">
@@ -135,7 +135,7 @@ function BrandKitPanel({ user }: { user: SafeUser }) {
           </Link>
         }
       >
-        Brand kit
+        Bộ nhận diện
       </PanelTitle>
       {kit ? (
         <>

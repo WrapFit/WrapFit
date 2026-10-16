@@ -19,7 +19,7 @@ const TILE_BUTTON =
 
 /**
  * Logo of the brand kit (upload purpose LOGO: PNG, JPEG, WebP, SVG or PDF up to 15 MB). The upload only stages the
- * file: the kit is saved as a whole with "Lưu Brand Kit".
+ * file: the kit is saved as a whole with "Lưu bộ nhận diện".
  */
 export function BrandLogoTile({ logoUrl, placeholder, onChange }: BrandLogoTileProps) {
   const toast = useToast();
@@ -33,7 +33,7 @@ export function BrandLogoTile({ logoUrl, placeholder, onChange }: BrandLogoTileP
     upload.mutate(file, {
       onSuccess: (fileUrl) => {
         onChange(fileUrl);
-        toast.show({ tone: "info", title: "Đã tải logo lên", description: "Nhấn “Lưu Brand Kit” để dùng logo này." });
+        toast.show({ tone: "info", title: "Đã tải logo lên", description: "Nhấn “Lưu bộ nhận diện” để dùng logo này." });
       },
       onError: (error) => showUploadError(toast, error, "LOGO", "Không tải được logo"),
       onSettled: () => {

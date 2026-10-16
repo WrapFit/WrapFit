@@ -580,8 +580,7 @@ export function StudioWorkspace({
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
           {/* Left: logo */}
           <div className="flex items-center gap-3 min-w-0">
-            {/* ds-allow: compact logo size in the studio bar. */}
-            <LandingLogo className="inline-flex [&_span]:text-[22px] [&_svg]:size-7" />
+            <LandingLogo size="sm" />
           </div>
 
           {/* Center: 4-Step Segmented Breadcrumb Stepper */}

@@ -44,7 +44,7 @@ export default function Step1BoxStructurePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
+    <div className="min-h-screen bg-[#fff8f5] text-[#1b1c18] flex flex-col justify-between font-landing-body select-none">
       <MainHeader />
       <main className="w-full max-w-7xl 2xl:max-w-[1600px] mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-between">
         {/* Top Floating Header & Stepper */}
@@ -54,8 +54,8 @@ export default function Step1BoxStructurePage() {
             <span className="material-symbols-outlined text-lg">arrow_back</span>
           </Link>
           <div>
-            <h1 className="font-['Playfair_Display'] text-2xl lg:text-3xl font-bold text-[#122e20]">Chọn Cấu Trúc Bao Bì</h1>
-            <p className="text-xs text-[#717971] font-['JetBrains_Mono']">VISUAL-FIRST STUDIO • ZERO-FRICTION</p>
+            <h1 className="font-landing-heading text-2xl lg:text-3xl font-bold text-[#122e20]">Chọn Cấu Trúc Bao Bì</h1>
+            <p className="text-xs text-[#717971] font-mono tabular-nums">VISUAL-FIRST STUDIO • ZERO-FRICTION</p>
           </div>
         </div>
 
@@ -89,16 +89,16 @@ export default function Step1BoxStructurePage() {
                     alt={b.name}
                     className="w-4/5 h-4/5 object-contain transform group-hover:scale-110 transition-transform duration-500 drop-shadow-lg"
                   />
-                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-[10px] font-bold font-['JetBrains_Mono'] text-[#122e20] shadow-xs">
+                  <span className="absolute top-3 right-3 px-2 py-0.5 rounded-md bg-white/90 backdrop-blur-sm text-cad-spec-micro font-bold font-mono tabular-nums text-[#122e20] shadow-xs">
                     {b.badge}
                   </span>
                 </div>
 
                 <div className="space-y-1 text-center">
-                  <h3 className="font-['Playfair_Display'] text-xl font-bold text-[#122e20] group-hover:text-[#2563eb] transition-colors">
+                  <h3 className="font-landing-heading text-xl font-bold text-[#122e20] group-hover:text-[#2563eb] transition-colors">
                     {b.name}
                   </h3>
-                  <p className="text-xs text-[#717971] font-['JetBrains_Mono']">{b.code}</p>
+                  <p className="text-xs text-[#717971] font-mono tabular-nums">{b.code}</p>
                 </div>
               </div>
 
@@ -121,7 +121,7 @@ export default function Step1BoxStructurePage() {
         <div className="flex items-center gap-4">
           <GoiMascot pose="waving" size={56} />
           <div>
-            <p className="text-sm font-bold text-[#122e20]">Bé Gói AI Copilot</p>
+            <p className="text-sm font-bold text-[#122e20]">Trợ lý Gói</p>
             <p className="text-xs text-[#717971]">Hệ thống tự cân chỉnh dao bế &amp; bù nếp gập theo định lượng giấy.</p>
           </div>
         </div>

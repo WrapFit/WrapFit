@@ -58,13 +58,13 @@ function DashboardBrandKitScreen() {
     save.mutate(toBrandKitRequest(draft), {
       onSuccess: (saved) => {
         markSaved(saved.brandKit);
-        toast.show({ tone: 'success', title: 'Đã lưu Brand Kit', description: 'Màu, font, logo và slogan sẵn sàng để dùng trong studio.' });
+        toast.show({ tone: 'success', title: 'Đã lưu bộ nhận diện', description: 'Màu, font, logo và slogan sẵn sàng để dùng trong studio.' });
       },
-      onError: (error) => toast.error(error, 'Không lưu được Brand Kit'),
+      onError: (error) => toast.error(error, 'Không lưu được bộ nhận diện'),
     });
   };
 
-  const status = save.isPending ? 'Đang lưu…' : dirty ? 'Có thay đổi chưa lưu' : kit ? 'Đã lưu' : 'Chưa có Brand Kit';
+  const status = save.isPending ? 'Đang lưu…' : dirty ? 'Có thay đổi chưa lưu' : kit ? 'Đã lưu' : 'Chưa có bộ nhận diện';
   const actions = (
     <>
       {dirty && (
@@ -74,13 +74,13 @@ function DashboardBrandKitScreen() {
       )}
       <button type="button" onClick={submit} disabled={!canSave} aria-disabled={save.isPending} className={cn(primaryButton, 'disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait')}>
         <Save className={cn('size-4', save.isPending && 'animate-pulse motion-reduce:animate-none')} aria-hidden />
-        {save.isPending ? 'Đang lưu…' : 'Lưu Brand Kit'}
+        {save.isPending ? 'Đang lưu…' : 'Lưu bộ nhận diện'}
       </button>
     </>
   );
 
   return (
-    <WorkspaceShell title="Brand kit" description="Logo, bảng màu, font và slogan của thương hiệu: áp lên mọi hộp chỉ với một cú nhấp trong studio." actions={actions}>
+    <WorkspaceShell title="Bộ nhận diện" description="Logo, bảng màu, font và slogan của thương hiệu: áp lên mọi hộp chỉ với một cú nhấp trong studio." actions={actions}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-7">
           <Panel aria-labelledby="bk-colors">
@@ -204,7 +204,7 @@ function BrandPreview({ draft, shopName }: { draft: BrandKitDraft; shopName: str
             </span>
           </div>
           {/* ds-allow: band of the miniature box preview, scaled with the box (artwork, not reading text). */}
-          <div className="flex h-[10%] items-center justify-center text-[9px] uppercase tracking-[0.2em]" style={{ backgroundColor: accent, color: readableInk(accent), fontFamily: body }}>
+          <div className="flex h-[10%] items-center justify-center text-cad-spec-micro uppercase tracking-[0.2em]" style={{ backgroundColor: accent, color: readableInk(accent), fontFamily: body }}>
             Handmade · Gift box
           </div>
         </div>

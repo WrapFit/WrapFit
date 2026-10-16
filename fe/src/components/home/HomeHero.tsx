@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { cn } from "@/utils/helpers";
@@ -39,7 +38,6 @@ export function HomeHero() {
               {HERO.highlight}
             </span>
           </h1>
-          <p className="max-w-3xl text-balance text-body-sm text-fg-muted lg:text-body-lg lg:font-medium">{HERO.lead}</p>
         </div>
 
         <ul className="grid w-full grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:justify-center lg:flex-nowrap lg:gap-2">
@@ -60,7 +58,6 @@ export function HomeHero() {
 
         <Link href={HERO.cta.href} className={limeButton()}>
           {HERO.cta.label}
-          <ArrowRight className="size-4" aria-hidden />
         </Link>
       </Container>
 

@@ -234,7 +234,7 @@ function TemplateLibrary() {
                       materialSpec={item.materialSpec}
                       color={item.color}
                       thumbnailUrl={item.thumbnailUrl}
-                      tags={["Curated", `${formatCount(item.usesCount)} lượt dùng`]}
+                      tags={["Tuyển chọn", `${formatCount(item.usesCount)} lượt dùng`]}
                     />
                   )}
                 />

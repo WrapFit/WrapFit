@@ -12,7 +12,7 @@ import { cn } from "@/utils/helpers";
 // hairline, the flat dieline next to the box, small white tags, numbered pages) in the green of pack.ly.
 
 /** Main call to action: Pacdora's button shape in the lime of pack.ly (shared Button, rounded shape). */
-export const primaryButton = buttonClass({ variant: "primary", shape: "rounded", className: "px-4 text-body font-medium" });
+export const primaryButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-medium" });
 /** "Tạo hộp mới" of the workspace pages: black, bold. */
 export const createBoxButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-bold" });
 
@@ -71,7 +71,7 @@ export function LibraryCard({
         {tags.length > 0 && (
           <ul className="absolute top-2.5 right-2.5 flex gap-1">
             {tags.map((tag) => (
-              <li key={tag} className="rounded-md bg-white/95 backdrop-blur-sm px-2 py-0.5 text-[11px] font-medium leading-4 text-library-ink border border-black/10 shadow-sm">
+              <li key={tag} className="rounded-md bg-white/95 backdrop-blur-sm px-2 py-0.5 text-caption font-medium leading-4 text-library-ink border border-black/10 shadow-sm">
                 {tag}
               </li>
             ))}
@@ -92,7 +92,7 @@ export function LibraryCard({
             />
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-library-muted">
+        <div className="flex flex-wrap items-center gap-1.5 text-caption text-library-muted">
           <span className="font-mono text-stone-700 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200/80">
             {dimensions.length} × {dimensions.width} × {dimensions.height} mm
           </span>

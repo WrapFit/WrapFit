@@ -12,7 +12,6 @@ import {
   HomeHero,
   MadeInVietnam,
   PlansAndCopilot,
-  StandardsStrip,
 } from "@/components/home";
 import { MainFooter, MainHeader } from "@/components/layout";
 
@@ -26,7 +25,6 @@ export default function HomePage() {
       <MainHeader />
       <main className={`${landingFontVariables} w-full bg-landing-canvas font-landing-body text-landing-ink antialiased`}>
         <HomeHero />
-        <StandardsStrip />
         <BoxCatalog />
         <CardsAlmanacSection />
         <PlansAndCopilot />

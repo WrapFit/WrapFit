@@ -1,6 +1,24 @@
 "use client";
 
-import { ArrowRight, Bookmark, CheckCircle2, Eye } from "lucide-react";
+import {
+  ArrowRight,
+  Award,
+  Bookmark,
+  Candy,
+  CheckCircle2,
+  Coffee,
+  Droplets,
+  Eye,
+  Flame,
+  Gem,
+  Gift,
+  Package,
+  Shirt,
+  ShoppingBag,
+  Sparkles,
+  Watch,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
@@ -123,81 +141,73 @@ function StructureSmartCard({
 
   return (
     <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-line/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-landing-ink/20 hover:shadow-soft-16">
-      {/* Card Header: Badges only (no size switcher) */}
-        <div className="flex items-center justify-between border-b border-line/60 bg-surface-sunken/70 p-3.5">
-          <div className="flex items-center gap-1.5">
-            <span className="rounded-full border border-fpt-blue/25 bg-fpt-blue-light px-2.5 py-0.5 text-caption font-semibold text-fpt-blue shadow-xs">
+        {/* Blueprint Visual Area with CAD Grid, corner chips & Hover Action Overlay */}
+        {/* ds-allow: dotted CAD grid of the blueprint tile. */}
+        <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-line/60 bg-surface-sunken/60 bg-[radial-gradient(#cad5e2_1px,transparent_1px)] [background-size:14px_14px]">
+          {/* Corner chips: one line each, same height, same inset */}
+          <div className="absolute inset-x-3 top-3 z-30 flex items-center justify-between gap-2">
+            <span className="inline-flex h-7 min-w-0 items-center truncate whitespace-nowrap rounded-full bg-white px-3 text-label-sm text-fpt-blue shadow-xs ring-1 ring-inset ring-fpt-blue/20">
               {structure.badge}
             </span>
-            <span className="flex items-center gap-1 text-caption font-semibold text-fpt-orange-ink">
-              <CheckCircle2 className="size-3" />
-              CNC Ready
-            </span>
-          </div>
-
-          {/* Bookmark Button */}
-          <button
-            type="button"
-            onClick={handleBookmarkClick}
-            aria-label={bookmarked ? "Bỏ lưu mẫu này" : "Lưu mẫu vào mục yêu thích"}
-            className={cn(
-              "inline-flex size-7 items-center justify-center rounded-full border transition-all duration-200",
-              bookmarked
-                ? "border-fpt-orange bg-fpt-orange-light text-fpt-orange-ink shadow-xs"
-                : "border-line/80 bg-white text-fg-muted hover:text-fg"
-            )}
-          >
-            <Bookmark className={cn("size-3.5", bookmarked && "fill-current")} />
-          </button>
-        </div>
-
-        {/* Blueprint Visual Area with CAD Grid & Hover Action Overlay */}
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:12px_12px] bg-surface-sunken/50">
-          {/* Structure CAD Illustration */}
-          <div className="flex size-full items-center justify-center p-6 transition-transform duration-300 group-hover:scale-105">
-            <StructureArt structure={structure.id} className="size-full max-h-[160px] drop-shadow-sm" />
-          </div>
-
-          {/* Quick Action Overlay (Reveals on Hover: FPT Blue 3D button + FPT Orange Customize button) */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center gap-2.5 bg-fg/20 backdrop-blur-[3px] opacity-0 transition-all duration-200 group-hover:opacity-100 p-3">
             <button
               type="button"
-              onClick={handlePreviewClick}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line/90 bg-white/95 px-3.5 text-xs font-bold text-fg shadow-soft-8 backdrop-blur-md transition-all duration-200 hover:border-fpt-blue hover:text-fpt-blue hover:scale-105 active:scale-95"
+              onClick={handleBookmarkClick}
+              aria-label={bookmarked ? "Bỏ lưu mẫu này" : "Lưu mẫu vào mục yêu thích"}
+              aria-pressed={bookmarked}
+              className={cn(
+                "inline-flex size-9 shrink-0 items-center justify-center rounded-full border shadow-xs transition-colors duration-200 outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
+                bookmarked
+                  ? "border-fpt-orange bg-fpt-orange-light text-fpt-orange-ink"
+                  : "border-line/80 bg-white text-fg-muted hover:text-fg"
+              )}
             >
-              <Eye className="size-3.5 text-fpt-blue" />
-              <span>Xem 3D nhanh</span>
+              <Bookmark className={cn("size-4", bookmarked && "fill-current")} />
             </button>
-            <Link
-              href={studioUrl}
-              className={buttonClass({ variant: "brand", size: "sm", shape: "rounded" })}
-            >
-              <span>Tùy chỉnh ngay</span>
-              <ArrowRight className="size-3.5" />
-            </Link>
           </div>
+
+          {/* Structure CAD Illustration */}
+          <div className="flex size-full items-center justify-center px-6 pb-8 pt-12 transition-transform duration-300 group-hover:scale-105">
+            <StructureArt structure={structure.id} className="size-full max-h-[150px] drop-shadow-sm" />
+          </div>
+
+          <span className="absolute bottom-3 left-3 z-10 inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-full bg-success-bg px-2.5 text-label-sm text-success-fg">
+            <CheckCircle2 className="size-3.5" aria-hidden />
+            Sẵn sàng cắt
+          </span>
+
+          <QuickActions compact onPreview={handlePreviewClick} studioUrl={studioUrl} />
         </div>
 
         {/* Content: Title, Subtitle, and Gift Chips (no dimensions, no material/time bar) */}
         <div className="flex flex-1 flex-col justify-between p-4 pt-3.5">
           <div className="flex flex-col gap-2">
             <div>
-              <h3 className="font-landing-heading text-base font-bold text-landing-ink lg:text-lg">
+              {/* Two-line slot so every card's subtitle and chips start at the same height */}
+              <h3 className="line-clamp-2 min-h-[2.8em] font-landing-heading text-title font-bold leading-snug text-landing-ink">
                 {structure.vietnameseName}
               </h3>
-              <p className="mt-0.5 line-clamp-1 text-xs text-landing-muted">{structure.subtitle}</p>
+              <p className="mt-1 line-clamp-1 text-caption text-landing-muted" title={structure.subtitle}>{structure.subtitle}</p>
             </div>
 
-            {/* Gift Compatibility Chips */}
-            <div className="flex flex-wrap items-center gap-1 pt-1">
-              {structure.recommendedGifts.slice(0, 3).map((gift) => (
-                <span
-                  key={gift}
-                  className="rounded-md border border-line/70 bg-white px-2 py-0.5 text-caption text-fg-muted shadow-2xs"
-                >
-                  {gift}
-                </span>
-              ))}
+            {/* Gifts this box suits: an icon per gift kind, warm paper chips */}
+            <div className="pt-1.5">
+              <span className="text-overline uppercase text-fg-muted">Phù hợp cho</span>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {structure.recommendedGifts.slice(0, 3).map((gift) => {
+                  const GiftIcon = giftIcon(gift);
+                  return (
+                    <li
+                      key={gift}
+                      className="inline-flex h-7 items-center gap-1.5 rounded-full bg-paper-cotton pl-1 pr-2.5 text-caption font-medium text-fg ring-1 ring-inset ring-paper-kraft"
+                    >
+                      <span className="flex size-5 items-center justify-center rounded-full bg-white text-fpt-orange-ink shadow-2xs">
+                        <GiftIcon className="size-3" aria-hidden />
+                      </span>
+                      {gift}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </div>
 
@@ -215,14 +225,14 @@ function StructureSmartCard({
               <button
                 type="button"
                 onClick={handlePreviewClick}
-                className="inline-flex h-7 items-center gap-1 rounded-lg border border-line bg-white px-2 text-caption font-semibold text-fg shadow-2xs"
+                className="inline-flex h-9 items-center gap-1 rounded-control border border-line bg-white px-3 text-label-sm text-fg shadow-2xs"
               >
                 <Eye className="size-3 text-fpt-blue" />
                 <span>3D</span>
               </button>
               <Link
                 href={studioUrl}
-                className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange px-2 text-label-sm text-white shadow-2xs"
+                className="inline-flex h-9 items-center gap-1 rounded-control bg-fpt-orange px-3 text-label-sm text-white shadow-2xs"
               >
                 <span>Tùy chỉnh</span>
                 <ArrowRight className="size-3" />
@@ -232,6 +242,52 @@ function StructureSmartCard({
         </div>
       </div>
   );
+}
+
+/**
+ * Hover (and keyboard focus) actions over a card's picture: white "Xem 3D" and orange "Tùy chỉnh" side by side, one line
+ * each. `compact` shortens the labels for the five-column row of structure cards (about 230 px wide). Touch screens use
+ * the buttons in the card footer instead.
+ */
+function QuickActions({ onPreview, studioUrl, compact = false }: { onPreview: (e: React.MouseEvent) => void; studioUrl: string; compact?: boolean }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 hidden items-center justify-center gap-1.5 bg-fg/20 px-2 opacity-0 backdrop-blur-[3px] transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 motion-reduce:transition-none lg:flex">
+      <button
+        type="button"
+        onClick={onPreview}
+        className="inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-line/90 bg-white/95 px-2.5 text-label-sm text-fg shadow-soft-8 backdrop-blur-md transition-[color,border-color,transform] duration-200 hover:scale-105 hover:border-fpt-blue hover:text-fpt-blue active:scale-95 outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 motion-reduce:hover:scale-100"
+      >
+        <Eye className="size-3.5 shrink-0 text-fpt-blue" aria-hidden />
+        {compact ? "Xem 3D" : "Xem 3D nhanh"}
+      </button>
+      <Link
+        href={studioUrl}
+        className="inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl bg-fpt-orange px-2.5 text-label-sm text-white shadow-soft-8 transition-[background-color,transform] duration-200 hover:scale-105 hover:bg-fpt-orange-dark active:scale-95 outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 motion-reduce:hover:scale-100"
+      >
+        {compact ? "Tùy chỉnh" : "Tùy chỉnh ngay"}
+        <ArrowRight className="size-3.5 shrink-0" aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
+/** Icon of a recommended gift, picked from its Vietnamese name. */
+const GIFT_ICONS: Array<[RegExp, LucideIcon]> = [
+  [/nến/i, Flame],
+  [/nước hoa|tinh dầu/i, Droplets],
+  [/mỹ phẩm|dưỡng/i, Sparkles],
+  [/đồng hồ/i, Watch],
+  [/trang sức|vòng|nhẫn/i, Gem],
+  [/kỷ niệm|chương/i, Award],
+  [/socola|macaron|kẹo|bánh/i, Candy],
+  [/khăn|cà vạt|lụa/i, Shirt],
+  [/cốc|gốm/i, Coffee],
+  [/túi/i, ShoppingBag],
+  [/hộp|lọ/i, Package],
+];
+
+function giftIcon(gift: string): LucideIcon {
+  return GIFT_ICONS.find(([pattern]) => pattern.test(gift))?.[1] ?? Gift;
 }
 
 /** Helper to match industry card to the most relevant BoxStructureOption */
@@ -295,24 +351,7 @@ function IndustrySmartCard({
           </div>
         )}
 
-        {/* Quick Action Overlay (Reveals on Hover: FPT Blue 3D button + FPT Orange Customize button) */}
-        <div className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-fg/25 p-3 opacity-0 backdrop-blur-[2px] transition-all duration-200 group-hover:opacity-100">
-          <button
-            type="button"
-            onClick={handlePreviewClick}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-line/90 bg-white/95 px-3 text-xs font-bold text-fg shadow-soft-8 backdrop-blur-md transition-all duration-200 hover:border-fpt-blue hover:text-fpt-blue hover:scale-105 active:scale-95"
-          >
-            <Eye className="size-3.5 text-fpt-blue" />
-            <span>Xem 3D nhanh</span>
-          </button>
-          <Link
-            href={studioUrl}
-            className={buttonClass({ variant: "brand", size: "sm", shape: "rounded" })}
-          >
-            <span>Tùy chỉnh ngay</span>
-            <ArrowRight className="size-3.5" />
-          </Link>
-        </div>
+        <QuickActions onPreview={handlePreviewClick} studioUrl={studioUrl} />
       </div>
 
       {/* Info & Typography: Clean layout below image */}
@@ -329,14 +368,23 @@ function IndustrySmartCard({
 
           {/* Recommended Packaging Structure */}
           {card.recommendedStructure && (
-            <div className="rounded-xl border border-line/60 bg-surface-sunken/80 p-2.5 text-xs">
-              <span className="block font-mono text-cad-spec-micro font-semibold uppercase tracking-wider text-fg-muted">
-                Cấu trúc khuyên dùng
+            <button
+              type="button"
+              onClick={handlePreviewClick}
+              aria-label={`Xem 3D cấu trúc khuyên dùng: ${card.recommendedStructure}`}
+              className="group/rec relative z-30 flex w-full items-center gap-3 rounded-2xl border border-line/70 bg-surface-sunken/60 p-2 pr-3 text-left transition-colors hover:border-fpt-orange/40 hover:bg-fpt-orange-light/50 outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
+            >
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-inset ring-line/70">
+                <StructureArt structure={structure.id} className="size-full" />
               </span>
-              <span className="mt-0.5 block font-semibold text-fg">
-                {card.recommendedStructure}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-caption font-medium text-fg-muted">Cấu trúc khuyên dùng</span>
+                <span className="line-clamp-2 text-body-sm font-semibold leading-snug text-fg">{card.recommendedStructure}</span>
               </span>
-            </div>
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-fg-muted ring-1 ring-inset ring-line/70 transition-colors group-hover/rec:text-fpt-orange-ink">
+                <Eye className="size-4" aria-hidden />
+              </span>
+            </button>
           )}
         </div>
 
@@ -355,14 +403,14 @@ function IndustrySmartCard({
             <button
               type="button"
               onClick={handlePreviewClick}
-              className="inline-flex h-7 items-center gap-1 rounded-lg border border-line bg-white px-2 text-caption font-semibold text-fg shadow-2xs"
+              className="inline-flex h-9 items-center gap-1 rounded-control border border-line bg-white px-3 text-label-sm text-fg shadow-2xs"
             >
               <Eye className="size-3 text-fpt-blue" />
               <span>3D</span>
             </button>
             <Link
               href={studioUrl}
-              className="inline-flex h-7 items-center gap-1 rounded-lg bg-fpt-orange px-2 text-label-sm text-white shadow-2xs"
+              className="inline-flex h-9 items-center gap-1 rounded-control bg-fpt-orange px-3 text-label-sm text-white shadow-2xs"
             >
               <span>Tùy chỉnh</span>
               <ArrowRight className="size-3" />

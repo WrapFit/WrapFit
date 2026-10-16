@@ -5,6 +5,7 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
 import { ROUTES } from "@/constants";
+import { PHOTOS } from "@/features/site/photos";
 import { Container } from "@/components/landing";
 import { BoxQuickPreviewModal } from "./BoxQuickPreviewModal";
 import { tactileAudio } from "@/services/audio/tactileAudio";
@@ -30,82 +31,77 @@ export const ALMANAC_PRODUCTS: AlmanacProduct[] = [
   {
     id: "almanac-tuck-top",
     structureId: "tuck-top",
-    title: "Hộp Nắp Gài Đáy Khóa · Mỹ Phẩm & Nến Thơm",
-    subtitle: "Mẫu hộp bán lẻ & quà tặng quốc dân",
-    description:
-      "Cấu trúc một mảnh tích hợp nắp gài trên và khóa đáy đan chéo chịu lực cao cho hũ thuỷ tinh nặng. Tự động tính toán dung sai an toàn 3mm, tiết kiệm keo dán, sản xuất siêu tốc.",
-    publishedMeta: "TIÊU CHUẨN ECMA · FEFCO 0215 · 300 GSM",
-    tag: "tuck-top",
+    title: "Hộp nắp gài đáy khóa",
+    subtitle: "Mỹ phẩm, nến thơm",
+    description: "Một mảnh giấy, đáy khóa chịu lực cho hũ thủy tinh.",
+    publishedMeta: "Mỹ phẩm, nến thơm · Ivory 300 GSM",
+    tag: "nắp gài",
     dims: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
-    paper: "Ivory 300–350 GSM cán mờ",
+    paper: "Ivory 300–350 GSM",
     foldDifficulty: "Dễ",
     foldTimeSec: 3,
-    image: "/stitch/img/8f3cf51318eaf072.jpg",
-    alt: "Hộp nắp gài giấy kraft và ivory WrapFit",
+    image: PHOTOS.kraftTuck.src,
+    alt: PHOTOS.kraftTuck.alt,
   },
   {
     id: "almanac-sleeve-drawer",
     structureId: "sleeve-drawer",
-    title: "Hộp Bao Diêm Khay Rút · Tinh Dầu & Phụ Kiện",
-    subtitle: "Trải nghiệm mở quà trượt tinh tế",
-    description:
-      "Gồm bao vỏ ngoài trượt kết hợp khay kéo bên trong có dải ruy băng lụa. Tạo cảm giác tò mò và bất ngờ khi người nhận từ từ rút món quà ra khỏi vỏ bọc. Khay chia ngăn chống va đập.",
-    publishedMeta: "THIẾT KẾ KHAY KÉO · DUPLEX CÁN MỜ",
-    tag: "sleeve-drawer",
+    title: "Hộp bao diêm",
+    subtitle: "Tinh dầu, phụ kiện",
+    description: "Vỏ ngoài trượt, khay rút bên trong tạo bất ngờ khi mở.",
+    publishedMeta: "Tinh dầu, phụ kiện · Duplex 350 GSM",
+    tag: "bao diêm",
     dims: { length: 140, width: 90, height: 45, paperThickness: 0.4 },
-    paper: "Duplex 350 GSM hoặc Carton lạnh",
+    paper: "Duplex 350 GSM",
     foldDifficulty: "Trung bình",
     foldTimeSec: 8,
-    image: "/stitch/img/f958a0d1ac6f013b.jpg",
-    alt: "Hộp khay rút bao diêm WrapFit màu vàng",
+    image: PHOTOS.kraftDrawer.src,
+    alt: PHOTOS.kraftDrawer.alt,
   },
   {
     id: "almanac-chocolate-tray",
     structureId: "sleeve-drawer",
-    title: "Hộp Socola Khay Mộc · Artisan Confectionery",
-    subtitle: "Bao bì mộc mạc lưu giữ hương thơm bánh ngọt",
-    description:
-      "Thiết kế khay ngăn định hình bằng chất liệu giấy Kraft tự nhiên chuẩn an toàn thực phẩm. Khóa trượt khít giữ trọn hình dáng bánh và mùi hương của socola nghệ nhân.",
-    publishedMeta: "FOOD SAFE CERTIFIED · KRAFT MỘC 100%",
-    tag: "artisan-kraft",
+    title: "Hộp socola khay chia ngăn",
+    subtitle: "Bánh kẹo thủ công",
+    description: "Khay kraft chia ngăn giữ trọn hình dáng từng viên.",
+    publishedMeta: "Bánh kẹo thủ công · Kraft 300 GSM",
+    tag: "khay chia ngăn",
     dims: { length: 150, width: 150, height: 35, paperThickness: 0.42 },
-    paper: "Kraft Linen 300 GSM chuẩn thực phẩm",
+    paper: "Kraft 300 GSM",
     foldDifficulty: "Trung bình",
     foldTimeSec: 6,
-    image: "/stitch/img/3729dc5394915422.jpg",
-    alt: "Hộp socola khay rút kraft A la Maison",
+    image: PHOTOS.chocolate.src,
+    alt: PHOTOS.chocolate.alt,
   },
   {
     id: "almanac-lid-base",
     structureId: "lid-base",
-    title: "Hộp Âm Dương Nắp Rời · Quà Tết & Đồng Hồ VIP",
-    subtitle: "Đẳng cấp quà tặng cao cấp & VIP",
-    description:
-      "Hai cấu trúc âm dương độc lập chụp khít vào nhau tạo ấn tượng bề thế, vững chãi bậc nhất. Kết cấu carton lạnh vuông vức tuyệt đối, ép kim vàng Champagne sang trọng.",
-    publishedMeta: "KẾT CẤU 2 MẢNH ĐỘC LẬP · ÉP KIM GOLD",
-    tag: "lid-base",
+    title: "Hộp âm dương",
+    subtitle: "Quà Tết, đồng hồ",
+    description: "Nắp và đáy rời chụp khít, vuông vức và sang trọng.",
+    publishedMeta: "Quà Tết, đồng hồ · Carton bồi giấy",
+    tag: "âm dương",
     dims: { length: 180, width: 180, height: 70, paperThickness: 0.48 },
-    paper: "Carton lạnh bồi giấy mỹ thuật ép kim",
+    paper: "Carton bồi giấy mỹ thuật",
     foldDifficulty: "Cao cấp",
     foldTimeSec: 12,
-    image: "/stitch/img/0d6ad47bfba44c5b.jpg",
-    alt: "Hộp nắp rời âm dương xanh rêu ép kim WrapFit",
+    image: PHOTOS.luxuryLid.src,
+    alt: PHOTOS.luxuryLid.alt,
   },
   {
     id: "almanac-pillow",
     structureId: "pillow",
-    title: "Hộp Gối Cánh Cung · Khăn Lụa & Trang Sức",
-    subtitle: "Đường cong mềm mại, đóng gói siêu tốc 3 giây",
-    description:
-      "Hình dáng chiếc gối duyên dáng uốn lượn hai đầu bán nguyệt tự khóa. Không cần dùng keo dán phức tạp, gấp lại trong 3 giây. Hoàn hảo cho quà cưới, khăn lụa tơ tằm và phụ kiện.",
-    publishedMeta: "ZERO-GLUE CURVED · GẬP TRONG 3 GIÂY",
-    tag: "pillow-curve",
+    title: "Hộp gối",
+    subtitle: "Trang sức, khăn lụa",
+    description: "Hai đầu cong tự khóa, không cần keo, gấp trong 3 giây.",
+    publishedMeta: "Trang sức, khăn lụa · Kraft 250 GSM",
+    tag: "hộp gối",
     dims: { length: 160, width: 110, height: 35, paperThickness: 0.35 },
-    paper: "Kraft mộc 250 – 300 GSM dẻo dai",
+    paper: "Kraft 250–300 GSM",
     foldDifficulty: "Dễ",
     foldTimeSec: 3,
-    image: "/stitch/img/1a2b00bef63aaaf6.jpg",
-    alt: "Hộp gối cánh cung giấy kraft in logo WrapFit",
+    image: PHOTOS.pillowBox.src,
+    alt: PHOTOS.pillowBox.alt,
   },
 ];
 
@@ -128,7 +124,7 @@ export function CardsAlmanacSection() {
 
   return (
     <>
-      <section className="relative overflow-visible py-8 lg:py-14" aria-label="Bộ sưu tập bao bì Cards Almanac">
+      <section className="relative overflow-visible py-8 lg:py-14" aria-label="Bộ sưu tập mẫu hộp">
         <Container>
           {/* Section Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-line/70 pb-6">
@@ -136,21 +132,15 @@ export function CardsAlmanacSection() {
               <div className="flex items-center gap-2 mb-2">
                 <span className="inline-block size-2 rounded-full bg-landing-ink" />
                 <span className="font-mono text-xs uppercase tracking-widest text-fg-muted font-semibold">
-                  WRAPFIT SHOWCASE · STICKY CARDS ALMANAC
+                  Bộ sưu tập
                 </span>
               </div>
               <h2 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink lg:text-4xl">
-                Bộ Sưu Tập Bao Bì Chuẩn Bế
+                Năm mẫu hộp tiêu biểu
               </h2>
               <p className="mt-1.5 max-w-2xl text-sm sm:text-base text-fg-muted">
-                Mỗi hộp quà đều được may đo chính xác theo milimét món quà của bạn, tích hợp công nghệ xem trước 3D và bảo đảm 100% khả thi in ấn.
+                May đo theo món quà, xem 3D trước khi in.
               </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="rounded-full border border-line bg-white/80 px-3 py-1 font-mono text-xs text-fg-muted backdrop-blur-md">
-                5 Dòng Hộp Tiêu Biểu
-              </span>
             </div>
           </div>
 
@@ -228,7 +218,7 @@ function AlmanacCard({
     <article className="group relative overflow-hidden rounded-sheet sm:rounded-stitch-30 border border-line/90 bg-white p-3.5 sm:p-5 shadow-[0_15px_35px_-10px_rgba(0,0,0,0.07)] transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12)]">
       <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 lg:gap-8">
         {/* Cover Photo (Left) */}
-        <div className="relative aspect-[4/3] sm:aspect-square w-full sm:w-[42%] lg:w-[44%] shrink-0 overflow-hidden rounded-2xl bg-surface-sunken">
+        <div className="relative aspect-[4/3] w-full sm:w-[42%] lg:w-[40%] shrink-0 overflow-hidden rounded-2xl bg-surface-sunken">
           <img
             src={item.image}
             alt={item.alt}
@@ -239,7 +229,7 @@ function AlmanacCard({
           {/* Quick 3D Peek Badge on Image */}
           <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full border border-white/40 bg-fg/60 px-2.5 py-1 text-caption font-medium text-white backdrop-blur-md">
             <span className="size-2 rounded-full bg-fpt-green animate-pulse" />
-            <span>FitCheck™ 100/100</span>
+            <span>Đạt FitCheck™</span>
           </div>
 
           {/* Hover Button on Photo */}
@@ -254,7 +244,7 @@ function AlmanacCard({
           >
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-fg shadow-lg hover:scale-105 transition-transform">
               <Eye className="size-3.5 text-landing-indigo" />
-              <span>Xoay 3D & Xem Gập</span>
+              <span>Xem 3D</span>
             </span>
           </button>
         </div>
@@ -278,21 +268,21 @@ function AlmanacCard({
             </h3>
 
             {/* Description */}
-            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-fg-muted line-clamp-3">
+            <p className="mt-2 text-sm sm:text-base leading-relaxed text-fg-muted">
               {item.description}
             </p>
 
             {/* CAD Specs Readout Bar */}
-            <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl border border-line/60 bg-surface-sunken/70 p-2.5 text-xs">
+            <div className="mt-4 grid grid-cols-1 gap-2 rounded-xl border border-line/60 bg-surface-sunken/70 p-3 text-sm sm:grid-cols-2">
               <div className="flex items-center gap-1.5 truncate">
                 <Ruler className="size-3.5 text-fg-muted shrink-0" />
                 <span className="font-mono font-medium text-fg">
                   {item.dims.length} × {item.dims.width} × {item.dims.height} mm
                 </span>
               </div>
-              <div className="flex items-center justify-end gap-1.5 text-right text-fg-muted truncate">
+              <div className="flex items-center gap-1.5 text-fg-muted truncate sm:justify-end sm:text-right">
                 <span className="text-fg-muted">Giấy:</span>
-                <span className="font-medium text-fg truncate">{item.paper.split(" ")[0]}</span>
+                <span className="font-medium text-fg truncate">{item.paper}</span>
               </div>
             </div>
           </div>
@@ -305,7 +295,7 @@ function AlmanacCard({
                 {item.tag}
               </span>
               <span className="hidden sm:inline-block text-caption text-fg-muted">
-                ⚡ Gập {item.foldTimeSec}s ({item.foldDifficulty})
+                Gập {item.foldTimeSec} giây · {item.foldDifficulty}
               </span>
             </div>
 
@@ -315,7 +305,7 @@ function AlmanacCard({
                 type="button"
                 onClick={toggleActions}
                 aria-expanded={isActionsOpen}
-                aria-label={isActionsOpen ? "Đóng tùy chọn" : "Mở menu thao tác đa nhiệm"}
+                aria-label={isActionsOpen ? "Đóng tùy chọn" : "Mở tùy chọn"}
                 className={cn(
                   "inline-flex size-9 sm:size-10 items-center justify-center rounded-full text-white shadow-sm transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange active:scale-95",
                   isActionsOpen
@@ -338,7 +328,7 @@ function AlmanacCard({
                     className="flex w-full items-center gap-2 rounded-xl p-2 text-left font-medium text-fg transition hover:bg-surface-sunken"
                   >
                     <Eye className="size-4 text-landing-indigo" />
-                    <span>Xem 3D Nhanh (Xoay 360°)</span>
+                    <span>Xem 3D nhanh</span>
                   </button>
                   <Link
                     href={studioUrl}

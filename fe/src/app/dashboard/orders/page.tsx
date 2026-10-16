@@ -4,7 +4,7 @@ import { PageLoader } from '@/components/common/StatusViews';
 import DashboardOrdersPage from '@/views/dashboard/orders';
 
 export const metadata: Metadata = {
-  title: 'Đơn hàng — WrapFit',
+  title: 'Đơn hàng | WrapFit',
   robots: { index: false },
 };
 

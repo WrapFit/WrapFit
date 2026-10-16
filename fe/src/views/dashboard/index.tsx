@@ -34,7 +34,7 @@ export default function DashboardPage() {
 }
 
 const SHORTCUTS = [
-  { href: ROUTES.brandKit, title: 'Brand kit', text: 'Logo, bảng màu, font và khẩu hiệu dùng lại trên mọi hộp.' },
+  { href: ROUTES.brandKit, title: 'Bộ nhận diện', text: 'Logo, bảng màu, font và khẩu hiệu dùng lại trên mọi hộp.' },
   { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Mẫu WrapFit Curated và thiết kế đạt FitCheck™ của cộng đồng.' },
   { href: '/support', title: 'Trung tâm hỗ trợ', text: 'Kích thước, FitCheck™, file in, mã QR mở hộp.' },
   { href: '/pricing', title: 'Gói dịch vụ', text: 'Dung lượng lưu trữ và lượt tạo hoa văn AI của từng gói.' },

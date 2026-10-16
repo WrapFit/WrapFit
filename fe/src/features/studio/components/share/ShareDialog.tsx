@@ -178,7 +178,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
 
           <label className="flex items-center justify-between gap-3 p-3 min-h-[56px] rounded-3xl border border-landing-line cursor-pointer">
             <span>
-              <span className="text-sm font-semibold text-landing-ink block">Cho phép Remix</span>
+              <span className="text-sm font-semibold text-landing-ink block">Cho phép phối lại</span>
               <span className="text-xs text-landing-muted block">Người xem tạo được bản sao để chỉnh sửa trong tài khoản của họ.</span>
             </span>
             <input

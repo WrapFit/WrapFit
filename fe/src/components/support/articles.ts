@@ -156,10 +156,10 @@ export const CATEGORIES: ArticleCategory[] = [
       },
       {
         id: "remix",
-        title: "Remix một thiết kế của cộng đồng",
+        title: "Phối lại thiết kế của cộng đồng",
         body: [
-          "Trên trang 3D của một thiết kế công khai, bấm “Remix” để sao chép nó vào dự án của bạn và chỉnh sửa tự do. Bản remix ghi nguồn tác giả gốc.",
-          "Tác giả có thể tắt remix cho thiết kế của mình; khi đó nút Remix không hiện.",
+          "Trên trang 3D của một thiết kế công khai, bấm “Phối lại” để sao chép nó vào dự án của bạn và chỉnh sửa tự do. Bản phối lại ghi nguồn tác giả gốc.",
+          "Tác giả có thể tắt tính năng này; khi đó nút Phối lại không hiện.",
         ],
         action: { label: "Xem thư viện mẫu", href: ROUTES.templates },
       },
