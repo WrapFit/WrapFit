@@ -232,6 +232,7 @@ function TemplateLibrary() {
                       structure={item.structure.id}
                       dimensions={item.dimensions}
                       materialSpec={item.materialSpec}
+                      color={item.color}
                       thumbnailUrl={item.thumbnailUrl}
                       tags={["Curated", `${formatCount(item.usesCount)} lượt dùng`]}
                     />
@@ -263,6 +264,7 @@ function TemplateLibrary() {
                       structure={item.structure.id}
                       dimensions={item.dimensions}
                       materialSpec={item.materialSpec}
+                      color={item.color}
                       thumbnailUrl={item.thumbnailUrl}
                       tags={[...(item.fitcheckScore !== null ? [`FitCheck ${item.fitcheckScore}`] : []), `♥ ${formatCount(item.likesCount)}`]}
                     />

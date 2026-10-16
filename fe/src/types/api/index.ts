@@ -161,6 +161,8 @@ export interface ProjectSummary {
   collection: { id: string; title: string; colorTag: string | null } | null;
   dimensions: BoxDimensions;
   materialSpec: MaterialSpecification;
+  /** Primary accent color hex `#RRGGBB` for 3D box shading preview. */
+  color?: string;
   /** 0–100 from the last server-side FitCheck; null until checked. */
   fitcheckScore: number | null;
   thumbnailUrl: string | null;
@@ -335,6 +337,8 @@ interface HubCardBase {
   tags: string[];
   /** Curated: times "use this template" was clicked. Community: number of remixes. */
   usesCount: number;
+  /** Primary brand / finish color of the box in hex `#RRGGBB`. */
+  color?: string;
 }
 
 /** WrapFit design, opened by `id`. */

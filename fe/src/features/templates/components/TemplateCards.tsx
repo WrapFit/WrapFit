@@ -33,6 +33,7 @@ function Preview({ card, label }: { card: CuratedCard | CommunityCard; label: st
         structure={card.structure.id}
         dimensions={card.dimensions}
         materialSpec={card.materialSpec}
+        color={card.color}
         alt={label}
       />
       <span className="absolute left-3 top-3 max-w-[70%] truncate rounded-full border border-line/80 bg-white/90 px-2.5 py-1 font-mono text-cad-spec-micro uppercase tracking-wider text-fg-muted backdrop-blur-md">

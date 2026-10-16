@@ -243,6 +243,7 @@ function DeckCard({
             structure={card.structure.id}
             dimensions={card.dimensions}
             materialSpec={card.materialSpec}
+            color={card.color}
             alt={`${card.structure.name} ${formatDimensions(card.dimensions)}`}
             className="mix-blend-multiply transition-transform duration-500 pointer-events-none"
           />
