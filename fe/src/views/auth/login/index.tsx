@@ -16,6 +16,7 @@ import { landingFontVariables } from "@/assets/fonts/landing";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 import { ROUTES } from "@/constants";
 import { safeRedirect, useAuth } from "@/features/auth";
+import { DEMO_USER } from "@/features/dashboard/demoData";
 import { isApiError } from "@/services/api";
 import type { LoginRequest, RegisterRequest } from "@/types/api";
 import { cn } from "@/utils/helpers";
@@ -448,6 +449,18 @@ function AuthLoginScreen({
                     : isRegister
                       ? "Đăng ký bằng Google"
                       : "Đăng nhập bằng Google"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    signedIn(DEMO_USER);
+                    goToTarget();
+                  }}
+                  className="relative mt-2.5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-fpt-orange/40 bg-fpt-orange-light/60 text-body-sm font-semibold text-fg transition-colors hover:bg-fpt-orange-light"
+                >
+                  <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-fpt-orange text-caption font-bold text-white">★</span>
+                  <span>Đăng nhập nhanh bản demo</span>
                 </button>
 
                 <p className="mt-3.5 text-center text-body-sm text-landing-muted">
