@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ArrowLeft, ArrowRight, Box, Gift, Palette, QrCode, Sliders } from "lucide-react";
-import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar } from "@/features/studio/components/studioUi";
+import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, stageBarButton } from "@/features/studio/components/studioUi";
 import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 
@@ -129,8 +129,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
       {/* Step header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-semibold text-landing-green">Bước 5 / 6 · Xem 3D & quà tặng</p>
-          <h1 className="mt-1 font-landing-heading text-3xl font-bold tracking-tight text-landing-ink sm:text-4xl">Hộp quà hoàn chỉnh</h1>
+          <h1 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink sm:text-4xl">Hộp quà hoàn chỉnh</h1>
           <p className="mt-1.5 text-sm text-landing-muted">
             {structureName} · {dimensions.length} × {dimensions.width} × {dimensions.height} mm · giấy {activeMaterial === "gold_foil" ? "carton bồi" : activeMaterial === "forest" ? "duplex" : activeMaterial}
           </p>
@@ -139,26 +138,8 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* 3D stage */}
-        <div className="relative flex flex-col overflow-hidden rounded-[28px] bg-white lg:col-span-9">
-          <div className="absolute left-4 top-4 z-20 flex items-center gap-2">
-            <span className="inline-flex h-9 items-center gap-2 rounded-full bg-white/95 px-4 text-sm font-semibold text-landing-ink shadow-sm">
-              <Box className="h-4 w-4 text-landing-green" aria-hidden />
-              {structureName}
-            </span>
-            <button
-              type="button"
-              onClick={handleToggleLid}
-              aria-pressed={isLidOpen}
-              className={`inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors ${
-                isLidOpen ? "bg-landing-green-night text-white" : "bg-landing-lime text-landing-green-night hover:bg-[#AFEC88]"
-              }`}
-            >
-              <Gift className="h-4 w-4" aria-hidden />
-              {lidLabel}
-            </button>
-          </div>
-
-          <div className="relative h-[540px] w-full overflow-hidden bg-landing-canvas">
+        <div className="relative flex flex-col overflow-hidden rounded-sheet bg-white lg:col-span-9">
+          <div className="relative h-[580px] w-full overflow-hidden bg-landing-canvas">
             <Box3DView
               dimensions={dimensions}
               foldProgress={foldProgress}
@@ -172,6 +153,23 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               showHud={false}
               showStatusBar={false}
               frameless
+              minHeight={false}
+              chrome="bar"
+              barStart={
+                <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
+                  <Box className="size-4 text-fg-muted" aria-hidden />
+                  {structureName}
+                </span>
+              }
+              barEnd={
+                <>
+                  <button type="button" onClick={handleToggleLid} aria-pressed={isLidOpen} className={stageBarButton(isLidOpen)}>
+                    <Gift className="size-3.5" aria-hidden />
+                    {lidLabel}
+                  </button>
+                  <span className="mx-0.5 h-4 w-px bg-line" aria-hidden />
+                </>
+              }
               className="h-full w-full"
             />
           </div>
@@ -179,9 +177,9 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
           {/* Fold scrubber */}
           <label className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <span className="flex items-center gap-3 text-sm font-semibold text-landing-ink">
-              <Sliders className="h-4 w-4 text-landing-green" aria-hidden />
+              <Sliders className="h-4 w-4 text-fpt-orange" aria-hidden />
               Gấp hộp
-              <span className="rounded-full bg-landing-lime-mist px-2.5 py-0.5 font-mono text-xs text-landing-green-deep">{foldPercent}%</span>
+              <span className="rounded-full bg-orange-50 px-2.5 py-0.5 font-mono text-xs text-fpt-orange-ink font-semibold">{foldPercent}%</span>
               <span className="hidden text-xs font-normal text-landing-muted sm:inline">
                 {foldProgress === 0 ? "Khuôn bế trải phẳng" : foldProgress === 1 ? "Đã gấp xong" : "Đang gấp theo nếp"}
               </span>
@@ -194,16 +192,16 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               value={foldProgress}
               onChange={(e) => handleFoldChange(Number(e.target.value))}
               aria-label="Mức gấp hộp"
-              className="w-full cursor-pointer accent-landing-green sm:w-80"
+              className="w-full cursor-pointer accent-fpt-orange sm:w-80"
             />
           </label>
         </div>
 
         {/* Right panel */}
         <div className="space-y-5 lg:col-span-3">
-          <section aria-labelledby="step4-scenes" className="space-y-3 rounded-[28px] bg-white p-5">
+          <section aria-labelledby="step4-scenes" className="space-y-3 rounded-sheet bg-white p-5">
             <h2 id="step4-scenes" className="flex items-center gap-2 font-landing-heading text-base font-bold text-landing-ink">
-              <Palette className="h-4 w-4 text-landing-green" aria-hidden />
+              <Palette className="h-4 w-4 text-fpt-orange" aria-hidden />
               Bối cảnh
             </h2>
             <div className="space-y-2">
@@ -216,7 +214,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                     aria-pressed={isSelected}
                     onClick={() => setSelectedEnv(item.id)}
                     className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-colors ${
-                      isSelected ? "bg-landing-lime-mist ring-2 ring-landing-green" : "bg-landing-canvas hover:bg-landing-tile"
+                      isSelected ? "bg-orange-50 ring-2 ring-fpt-orange" : "bg-landing-canvas hover:bg-landing-tile"
                     }`}
                   >
                     <span aria-hidden className="h-6 w-6 shrink-0 rounded-full ring-1 ring-landing-ink/15" style={{ backgroundColor: item.dotColor }} />
@@ -230,23 +228,23 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             </div>
           </section>
 
-          <section aria-labelledby="step4-qr" className="space-y-3 rounded-[28px] bg-landing-green-night p-5 text-white">
+          <section aria-labelledby="step4-qr" className="space-y-3 rounded-sheet bg-stone-900 p-5 text-white">
             <h2 id="step4-qr" className="flex items-center gap-2 font-landing-heading text-base font-bold">
-              <QrCode className="h-4 w-4 text-landing-lime" aria-hidden />
+              <QrCode className="h-4 w-4 text-fpt-orange" aria-hidden />
               Mã QR mở hộp
             </h2>
-            <p className="text-sm leading-6 text-landing-lime-mist/80">In mã lên hộp: người nhận quét bằng điện thoại để mở hộp 3D cùng lời chúc của bạn.</p>
+            <p className="text-sm leading-6 text-white/80">In mã lên hộp: người nhận quét bằng điện thoại để mở hộp 3D cùng lời chúc của bạn.</p>
             <button
               type="button"
               onClick={() => onOpenQrModal?.()}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-landing-lime text-sm font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-fpt-orange text-sm font-semibold text-white transition-colors hover:bg-fpt-orange-dark shadow-xs"
             >
               <QrCode className="h-4 w-4" aria-hidden />
               Tạo mã QR
             </button>
           </section>
 
-          <section className="flex items-center gap-3 rounded-[28px] bg-white p-4">
+          <section className="flex items-center gap-3 rounded-sheet bg-white p-4">
             <GoiMascot pose="celebration" size={48} />
             <p className="text-sm leading-6 text-landing-muted">
               <span className="block font-semibold text-landing-ink">Sẵn sàng in</span>

@@ -389,7 +389,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
       {showBubble && showBubbleOnBoop && (
         <div
           className={cn(
-            "absolute z-50 pointer-events-none bg-white/95 backdrop-blur-md text-[#1A362B] text-xs sm:text-sm font-medium px-4 py-2.5 rounded-2xl shadow-soft-16 border border-[#E8D8C8] animate-in fade-in zoom-in-95 duration-200",
+            "absolute z-50 pointer-events-none bg-white/95 backdrop-blur-md text-brand-forest text-xs sm:text-sm font-medium px-4 py-2.5 rounded-2xl shadow-soft-16 border border-paper-kraft animate-pop-in",
             bubblePlacement === "top-right"
               ? "bottom-[calc(100%+14px)] left-0 min-w-[220px] max-w-[280px] sm:max-w-[340px] text-left"
               : bubblePlacement === "top-left"
@@ -399,7 +399,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         >
           <div
             className={cn(
-              "flex items-center gap-1.5 font-['Plus_Jakarta_Sans']",
+              "flex items-center gap-1.5 font-landing-body",
               bubblePlacement === "top-right"
                 ? "justify-start"
                 : bubblePlacement === "top-left"
@@ -412,7 +412,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
           </div>
           <div
             className={cn(
-              "absolute -bottom-1.5 w-3 h-3 bg-white/95 border-b border-r border-[#E8D8C8] rotate-45",
+              "absolute -bottom-1.5 w-3 h-3 bg-white/95 border-b border-r border-paper-kraft rotate-45",
               bubblePlacement === "top-right"
                 ? "left-8"
                 : bubblePlacement === "top-left"
@@ -472,7 +472,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         {/* Status / Emoji Badge */}
         {showPhotoBadge && (
           <div
-            className="absolute -bottom-1 -right-1 z-20 w-6 h-6 rounded-full bg-white shadow-tactile border border-[#E8D8C8] flex items-center justify-center text-xs transform scale-95 hover:scale-110 transition-transform pointer-events-none"
+            className="absolute -bottom-1 -right-1 z-20 w-6 h-6 rounded-full bg-white shadow-tactile border border-paper-kraft flex items-center justify-center text-xs transform scale-95 hover:scale-110 transition-transform pointer-events-none"
             title={poseInfo.label}
           >
             <span>{poseInfo.badge}</span>
@@ -482,7 +482,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         {/* Paper Material Tag (Packaging Box) */}
         {showMaterialBadge && (
           <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
-            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-[#FAF6EE] text-[#1A362B] border border-[#E8D8C8] shadow-xs">
+            <span className="px-2 py-0.5 rounded-full text-cad-spec-micro font-mono font-bold bg-paper-cotton text-brand-forest border border-paper-kraft shadow-xs">
               Kraft Box 📦
             </span>
           </div>

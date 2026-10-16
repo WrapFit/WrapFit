@@ -16,7 +16,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function emailError(email: string): string | undefined {
   const value = email.trim();
   if (!value) return "Vui lòng nhập email.";
-  if (!EMAIL_PATTERN.test(value)) return "Email chưa đúng định dạng, ví dụ ten@shop.vn.";
+  if (!EMAIL_PATTERN.test(value)) return "Email chưa đúng định dạng, ví dụ name@example.com.";
   return undefined;
 }
 

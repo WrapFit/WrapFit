@@ -1,87 +1,50 @@
 "use client";
 
 import { Star } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 import { Container, Reveal } from "@/components/landing";
+import { VOICES } from "@/components/home/content";
+import { SampleBadge } from "@/components/site";
 
-interface Testimonial {
-  stars: number;
-  quote: string;
-  avatar: string;
-  name: string;
-  role: string;
-  company: string;
-}
-
-const TESTIMONIALS: Testimonial[] = [
-  {
-    stars: 5,
-    quote:
-      "Love the simplicity of the service and the prompt customer support. We can’t imagine working without it.",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop",
-    name: "Kelly Williams",
-    role: "Head of Design",
-    company: "Layers",
-  },
-  {
-    stars: 5,
-    quote:
-      "Incredibly intuitive platform that works so well for us. Quickly became a must-have tool for everyone in the business.",
-    avatar:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300&auto=format&fit=crop",
-    name: "Maxine Bunton",
-    role: "Lead Product Designer",
-    company: "After",
-  },
-];
+/** Two reviews of the trial sessions (sample copy of the home page, labelled as such) under the plans. */
+const PICKS = [VOICES.reviews[0], VOICES.reviews[3]];
 
 export function PricingTestimonials() {
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-white">
       <Container>
+        <div className="mb-6 flex justify-center">
+          <SampleBadge />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
-          {TESTIMONIALS.map((t) => (
+          {PICKS.map((t) => (
             <Reveal key={t.name}>
-              <div className="flex h-full flex-col justify-between items-center text-center rounded-3xl border border-stone-200/90 bg-white p-8 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
+              <div className="flex h-full flex-col justify-between items-center text-center rounded-3xl border border-line/90 bg-white p-8 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
                 <div>
-                  {/* 5 Golden Stars */}
-                  <div className="flex items-center justify-center gap-1.5 mb-5">
-                    {[...Array(t.stars)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="size-5 fill-amber-400 text-amber-400"
-                        aria-hidden="true"
-                      />
+                  <div role="img" className="flex items-center justify-center gap-1.5 mb-5" aria-label="5 sao">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star key={i} className="size-5 fill-warning text-warning" aria-hidden="true" />
                     ))}
                   </div>
-
-                  {/* Testimonial Quote */}
-                  <blockquote className="font-landing-heading text-lg sm:text-xl font-medium text-stone-900 leading-relaxed max-w-md mx-auto">
-                    &ldquo;{t.quote}&rdquo;
-                  </blockquote>
+                  <blockquote className="font-landing-heading text-lg sm:text-xl font-medium text-fg leading-relaxed max-w-md mx-auto">&ldquo;{t.text}&rdquo;</blockquote>
                 </div>
-
-                {/* Author Info */}
                 <div className="mt-8 flex flex-col items-center">
-                  <div className="size-14 overflow-hidden rounded-full border-2 border-white shadow-soft-8 mb-3">
-                    <img
-                      src={t.avatar}
-                      alt={t.name}
-                      className="size-full object-cover"
-                    />
-                  </div>
-                  <h4 className="font-landing-heading text-base font-bold text-stone-900">
-                    {t.name}
-                  </h4>
-                  <p className="text-xs text-stone-500 font-medium mt-0.5">
-                    {t.role}, {t.company}
-                  </p>
+                  <span className="mb-3 inline-flex size-14 items-center justify-center rounded-full font-landing-heading text-lg font-bold text-white shadow-soft-8" style={{ background: t.color }}>
+                    {t.name.split(" ").pop()?.[0]}
+                  </span>
+                  <h4 className="font-landing-heading text-base font-bold text-fg">{t.name}</h4>
+                  <p className="text-xs text-fg-muted font-medium mt-0.5">{t.role}</p>
                 </div>
               </div>
             </Reveal>
           ))}
         </div>
+        <p className="mt-6 text-center text-sm text-fg-muted">
+          <Link href="/testimonials" className="font-semibold text-fg underline underline-offset-4">
+            Xem thêm câu chuyện của người bán quà
+          </Link>
+        </p>
       </Container>
     </section>
   );

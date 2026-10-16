@@ -97,7 +97,7 @@ function ForgotPassword({ initialEmail }: { initialEmail: string }) {
           name="email"
           type="email"
           label="Email"
-          placeholder="ten@shop.vn"
+          placeholder="name@example.com"
           autoComplete="email"
           inputMode="email"
           required

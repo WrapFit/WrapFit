@@ -93,7 +93,7 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
               }}
               className={`p-3 rounded-3xl border text-left transition flex flex-col justify-between min-h-[68px] ${
                 isSelected
-                  ? "border-landing-green bg-landing-lime-mist/40 ring-2 ring-landing-green/20 shadow-sm"
+                  ? "border-fpt-orange bg-orange-50/70 ring-2 ring-fpt-orange/20 shadow-sm"
                   : "border-landing-line hover:border-landing-ink/30 hover:bg-landing-canvas bg-white"
               }`}
             >
@@ -104,14 +104,14 @@ export const FontSelectorCards: React.FC<FontSelectorCardsProps> = ({
                 >
                   {font.name}
                 </span>
-                <span className="block text-[10px] text-landing-muted pt-0.5 font-sans">
+                <span className="block text-caption text-landing-muted pt-0.5 font-sans">
                   {font.subtitle}
                 </span>
               </div>
 
               {isSelected && (
                 <div className="flex justify-end pt-1">
-                  <Check className="w-3 h-3 text-landing-green" />
+                  <Check className="w-3 h-3 text-fpt-orange" />
                 </div>
               )}
             </button>

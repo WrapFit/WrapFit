@@ -144,16 +144,16 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
             type="button"
             disabled={waiting}
             onClick={() => void start(format.type)}
-            className="w-full min-h-[64px] p-3.5 rounded-3xl border border-landing-line hover:border-landing-green hover:bg-landing-lime-mist/40 text-left transition flex items-center justify-between gap-3 group disabled:opacity-60 disabled:hover:border-landing-line disabled:hover:bg-transparent"
+            className="w-full min-h-[64px] p-3.5 rounded-3xl border border-landing-line hover:border-fpt-orange hover:bg-orange-50/50 text-left transition flex items-center justify-between gap-3 group disabled:opacity-60 disabled:hover:border-landing-line disabled:hover:bg-transparent"
           >
             <span>
-              <span className="font-semibold text-sm text-landing-ink group-hover:text-landing-green block">{format.title}</span>
+              <span className="font-semibold text-sm text-landing-ink group-hover:text-fpt-orange block">{format.title}</span>
               <span className="text-xs text-landing-muted block mt-0.5 leading-relaxed">{format.hint}</span>
             </span>
             {starting === format.type ? (
-              <RotateCw className="w-4 h-4 flex-shrink-0 text-landing-green animate-spin motion-reduce:animate-none" aria-hidden />
+              <RotateCw className="w-4 h-4 flex-shrink-0 text-fpt-orange animate-spin motion-reduce:animate-none" aria-hidden />
             ) : (
-              <FileDown className="w-4 h-4 flex-shrink-0 text-landing-muted group-hover:text-landing-green" aria-hidden />
+              <FileDown className="w-4 h-4 flex-shrink-0 text-landing-muted group-hover:text-fpt-orange" aria-hidden />
             )}
           </button>
         ))}
@@ -194,20 +194,20 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
           role="status"
           className={`p-4 rounded-3xl border flex items-center gap-3 ${
             current?.status === "COMPLETED"
-              ? "bg-emerald-50 border-emerald-200"
+              ? "bg-success-bg border-success/30"
               : current?.status === "FAILED" || job.error
               ? "bg-vibrant-coral/10 border-vibrant-coral/30"
-              : "bg-landing-lime-mist border-landing-green/30"
+              : "bg-orange-50 border-orange-200"
           }`}
         >
           {pose && <GoiMascot pose={pose} size={56} className="flex-shrink-0" />}
           <div className="flex-1 min-w-0 text-sm">
             {current?.status === "COMPLETED" ? (
               <>
-                <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                <span className="font-bold text-success-fg flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" aria-hidden /> File {FORMAT_NAMES[current.fileType]} đã sẵn sàng
                 </span>
-                <span className="text-xs text-emerald-800 block truncate">{current.fileName}</span>
+                <span className="text-xs text-success-fg block truncate">{current.fileName}</span>
               </>
             ) : current?.status === "FAILED" ? (
               <>
@@ -218,10 +218,10 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
               <span className="text-xs text-landing-ink">Chưa hỏi được trạng thái. File vẫn được dựng; xem ở lịch sử bên dưới.</span>
             ) : (
               <>
-                <span className="font-bold text-landing-green-night block">
+                <span className="font-bold text-fpt-orange-ink block">
                   {current ? STATUS_LABELS[current.status] : "Đang chờ"}…
                 </span>
-                <span className="text-xs text-landing-green-night block">Gói đang dựng file in, thường mất vài giây.</span>
+                <span className="text-xs text-fpt-orange-ink block">Gói đang dựng file in, thường mất vài giây.</span>
               </>
             )}
           </div>
@@ -229,7 +229,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
             <button
               type="button"
               onClick={() => void download(current, job.dataUpdatedAt)}
-              className="min-h-[40px] px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition flex-shrink-0"
+              className="min-h-[40px] px-4 rounded-full bg-success hover:bg-success text-white text-xs font-semibold transition flex-shrink-0"
             >
               Tải về
             </button>
@@ -238,14 +238,14 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
       )}
 
       {/* Sample Box Order Banner (1-Unit Physical Proof) */}
-      <div className="p-3.5 rounded-2xl bg-[#FDFBF7] border border-[#E8D8C8] flex items-center justify-between gap-3">
+      <div className="p-3.5 rounded-2xl bg-paper-ivory border border-paper-kraft flex items-center justify-between gap-3">
         <div>
-          <span className="font-semibold text-xs text-stone-900 block">Cần cầm mẫu thực tế trước khi in loạt?</span>
-          <span className="text-[11px] text-stone-500 block">WrapFit kết nối xưởng in đối tác in thử 01 hộp mẫu gửi tận tay.</span>
+          <span className="font-semibold text-xs text-fg block">Cần cầm mẫu thực tế trước khi in loạt?</span>
+          <span className="text-caption text-fg-muted block">WrapFit kết nối xưởng in đối tác in thử 01 hộp mẫu gửi tận tay.</span>
         </div>
         <Link
-          href={`/dashboard/orders?project=${projectId}&action=sample`}
-          className="px-3.5 py-1.5 rounded-full bg-[#122e20] hover:bg-[#1a3f2c] text-white text-xs font-semibold shrink-0 transition shadow-xs"
+          href={`/cart?add=${encodeURIComponent(projectId)}`}
+          className="px-3.5 py-1.5 rounded-full bg-brand-forest-deep hover:bg-brand-forest text-white text-xs font-semibold shrink-0 transition shadow-xs"
         >
           Đặt in mẫu 1 hộp
         </Link>
@@ -260,7 +260,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
         ) : history.error ? (
           <p className="text-xs text-landing-muted">
             Chưa tải được lịch sử.{" "}
-            <button type="button" onClick={() => void history.refetch()} className="font-semibold text-landing-green underline">
+            <button type="button" onClick={() => void history.refetch()} className="font-semibold text-fpt-orange-ink underline">
               Thử lại
             </button>
           </p>
@@ -289,7 +289,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
                   </button>
                 ) : (
                   <span
-                    className={`text-[11px] font-semibold flex-shrink-0 ${
+                    className={`text-caption font-semibold flex-shrink-0 ${
                       item.status === "FAILED" ? "text-vibrant-coral-dark" : "text-landing-muted"
                     }`}
                   >

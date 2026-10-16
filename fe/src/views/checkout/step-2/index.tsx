@@ -54,7 +54,7 @@ function Payment() {
 
   return (
     <CheckoutShell step={2} tier={tier} billing={billing} query={query()}>
-      <form onSubmit={onSubmit} noValidate aria-labelledby="checkout-title" className="rounded-[28px] bg-white p-6 sm:p-8">
+      <form onSubmit={onSubmit} noValidate aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Thông tin thanh toán
         </h1>
@@ -104,7 +104,7 @@ function Payment() {
                   onClick={() => setMethod(item.id)}
                   className={cn('flex flex-col items-start gap-2 rounded-2xl p-4 text-left transition-shadow', active ? 'ring-2 ring-landing-ink' : 'ring-1 ring-landing-ink/10 hover:ring-landing-ink/40')}
                 >
-                  <span className={cn('flex size-9 items-center justify-center rounded-xl', active ? 'bg-landing-lime text-landing-green-night' : 'bg-[#EBEDEF] text-landing-ink')}>
+                  <span className={cn('flex size-9 items-center justify-center rounded-xl', active ? 'bg-fpt-orange text-white' : 'bg-mist-200 text-landing-ink')}>
                     <item.icon className="size-5" aria-hidden />
                   </span>
                   <span className="text-sm font-semibold">{item.label}</span>
@@ -121,7 +121,7 @@ function Payment() {
             <ArrowLeft className="size-4" aria-hidden />
             Đổi gói
           </Link>
-          <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]">
+          <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover">
             Xem lại đơn hàng
             <ArrowRight className="size-4" aria-hidden />
           </button>

@@ -14,7 +14,7 @@ const LIME = "#98E665";
 const CREAM = "#EAFAE0";
 const LINE = "#53647D";
 const HEADING = { fontFamily: "var(--font-landing-heading), sans-serif" } as const;
-const MONO = { fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" } as const;
+const MONO = { fontFamily: "var(--font-landing-body), Inter, sans-serif", fontVariantNumeric: "tabular-nums" } as const;
 
 /** Flat dieline of the box, computed once (module scope: the sheet never changes). */
 const DIELINE = (() => {

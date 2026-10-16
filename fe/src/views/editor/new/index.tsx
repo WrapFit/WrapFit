@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, Info, LayoutTemplate } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { BoxDimensions, BoxStructureType, FitCheckReport } from "@wrapfit/shared";
 import { createProject, getTemplate, listBoxStructures } from "@/api";
 import { landingFontVariables } from "@/assets/fonts/landing";
@@ -34,6 +34,9 @@ import { cn } from "@/utils/helpers";
 const EMPTY_REPORT: FitCheckReport = { isValidForProduction: true, score: 100, violations: [], auditedAt: "" };
 
 /** Slider ranges when the structure has no limits. */
+/** Pause after the last slider move before the 3D box is rebuilt at the new size (as COMMIT_DELAY_MS of step 2). */
+const STAGE_REBUILD_DELAY_MS = 180;
+
 const DEFAULT_RANGES: Record<DimensionField, { min: number; max: number }> = {
   length: { min: 20, max: 400 },
   width: { min: 20, max: 300 },
@@ -84,7 +87,7 @@ function NewProject() {
         />
         {template.error && (
           <p className="mt-4 text-center">
-            <Link href={ROUTES.editorNew} className="text-sm font-medium text-library-accent hover:underline">
+            <Link href={ROUTES.editorNew} className="text-sm font-medium text-fpt-orange-ink hover:underline">
               Tự chọn cấu trúc hộp
             </Link>
           </p>
@@ -154,6 +157,12 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
   });
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [fold, setFold] = useState(100);
+  // The 3D box is rebuilt only once a slider rests; while it moves, the built box is scaled to `dimensions` (as in step 2).
+  const [stageDimensions, setStageDimensions] = useState(dimensions);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setStageDimensions(dimensions), STAGE_REBUILD_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [dimensions]);
 
   const current = structures.find((s) => s.id === structure);
   const presentation = BOX_STRUCTURES.find((s) => s.id === structure);
@@ -236,7 +245,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
       </p>
       <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-medium text-library-ink sm:text-[32px] sm:leading-tight">{template ? template.title : `${current?.name ?? "Hộp"} theo kích thước của bạn`}</h1>
+          <h1 className="text-2xl font-medium text-library-ink sm:text-heading-lg sm:leading-tight">{template ? template.title : `${current?.name ?? "Hộp"} theo kích thước của bạn`}</h1>
           <p className="mt-1.5 max-w-2xl text-base leading-[1.6] text-library-sub">
             Nhập kích thước lọt lòng theo milimét và chọn giấy: khuôn bế và hộp 3D cập nhật ngay, đúng công thức của file in.
           </p>
@@ -257,7 +266,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
               <span className="block truncate text-base font-medium text-library-ink">{template.title}</span>
             </span>
           </span>
-          <Link href={ROUTES.editorNew} className="text-sm font-medium text-library-accent hover:underline">
+          <Link href={ROUTES.editorNew} className="text-sm font-medium text-fpt-orange-ink hover:underline">
             Bỏ mẫu, tự chọn cấu trúc hộp
           </Link>
         </div>
@@ -266,7 +275,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Stage: stays in view while the settings on the right scroll. */}
         <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
-          <section aria-label="Xem trước" className="overflow-hidden rounded-[20px] border-[1.5px] border-library-ink bg-library-tile shadow-hard">
+          <section aria-label="Xem trước" className="overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-library-ink/15 px-4 py-3">
               <SegmentedControl<"2d" | "3d">
                 label="Chế độ xem"
@@ -287,7 +296,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
             </div>
 
             {view === "2d" ? (
-              <div className="flex h-[360px] items-center justify-center bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px] p-6 sm:h-[520px] sm:p-10">
+              <div className="flex h-[360px] items-center justify-center bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px] p-6 sm:h-[520px] sm:p-10">
                 <DielineSketch
                   structure={structure}
                   dimensions={dimensions}
@@ -300,7 +309,8 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                 <div className="absolute inset-0">
                   <BoxStage3D
                     structure={structure}
-                    dimensions={dimensions}
+                    dimensions={stageDimensions}
+                    liveDimensions={dimensions}
                     materialSpec={materialSpec}
                     canvasState={canvasState}
                     title={template?.title ?? current?.name ?? "Hộp mới"}
@@ -323,7 +333,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
               ) : (
                 <label className="flex w-full items-center gap-3 sm:w-auto">
                   <span className="shrink-0">Gấp hộp</span>
-                  <input type="range" min={0} max={100} value={fold} onChange={(event) => setFold(Number(event.target.value))} className="w-full accent-library-accent sm:w-56" />
+                  <input type="range" min={0} max={100} value={fold} onChange={(event) => setFold(Number(event.target.value))} className="w-full accent-fpt-orange sm:w-56" />
                   <span className="w-10 shrink-0 text-right font-mono text-xs">{fold}%</span>
                 </label>
               )}
@@ -391,7 +401,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                   const preset = GIFT_PRESETS.find((p) => p.id === event.target.value);
                   if (preset) setDimensions({ ...preset.dims, paperThickness: dimensions.paperThickness });
                 }}
-                className="h-11 w-full rounded-lg border border-library-line bg-white px-3 pr-9 text-sm text-library-ink outline-none focus:border-library-accent focus:ring-[3px] focus:ring-library-accent/20"
+                className="h-11 w-full rounded-lg border border-library-line bg-white px-3 pr-9 text-sm text-library-ink outline-none focus:border-fpt-orange focus:ring-[3px] focus:ring-fpt-orange/20"
               >
                 <option value="">Tự nhập kích thước</option>
                 {GIFT_PRESETS.map((preset) => (
@@ -418,9 +428,9 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                       step={1}
                       value={dimensions[field]}
                       onChange={(event) => setSide(field, Number(event.target.value))}
-                      className="mt-1.5 w-full accent-library-accent"
+                      className="mt-1.5 w-full accent-fpt-orange"
                     />
-                    <div className="flex justify-between font-mono text-[11px] text-library-muted">
+                    <div className="flex justify-between font-mono text-cad-spec-micro text-library-muted">
                       <span>{min}</span>
                       <span>{max}</span>
                     </div>
@@ -447,7 +457,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                           bottomType: weight > 300 ? "lock" : dims.bottomType ?? "tuck",
                         }));
                       }}
-                      className="w-20 h-8 rounded-lg border border-library-line px-2 text-right font-mono text-sm text-library-ink outline-none focus:border-library-accent"
+                      className="w-20 h-8 rounded-lg border border-library-line px-2 text-right font-mono text-sm text-library-ink outline-none focus:border-fpt-orange"
                     />
                     <span className="text-xs text-library-muted">g</span>
                   </div>
@@ -466,23 +476,23 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                       bottomType: weight > 300 ? "lock" : dims.bottomType ?? "tuck",
                     }));
                   }}
-                  className="mt-1.5 w-full accent-library-accent"
+                  className="mt-1.5 w-full accent-fpt-orange"
                 />
-                <div className="flex justify-between font-mono text-[11px] text-library-muted">
+                <div className="flex justify-between font-mono text-cad-spec-micro text-library-muted">
                   <span>50g (nhẹ)</span>
                   <span>&gt; 300g (nặng)</span>
                   <span>1500g</span>
                 </div>
 
                 {(dimensions.giftWeight ?? 0) > 300 && structure === "tuck-top" && (
-                  <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50/80 p-3 text-xs leading-relaxed text-amber-900 space-y-2">
+                  <div className="mt-3 rounded-xl border border-warning/30 bg-warning-bg/80 p-3 text-xs leading-relaxed text-warning-fg space-y-2">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="size-4 shrink-0 text-amber-700 mt-0.5" />
+                      <AlertTriangle className="size-4 shrink-0 text-warning-fg mt-0.5" />
                       <div>
                         <strong className="font-semibold">Quà nặng {dimensions.giftWeight}g (&gt; 300g):</strong> Đáy gài tiêu chuẩn (Straight tuck) có nguy cơ bục đáy khi vận chuyển.
                       </div>
                     </div>
-                    <p className="text-amber-800">
+                    <p className="text-warning-fg">
                       WrapFit khuyến nghị kết cấu <strong>Đáy khóa FEFCO 0215 (Crash-lock / 1-2-3 lock)</strong> và giấy GSM ≥ 350 để hộp chịu lực tốt nhất.
                     </p>
                     <div className="flex items-center gap-2 pt-1">
@@ -491,7 +501,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                         onClick={() => setDimensions((dims) => ({ ...dims, bottomType: "lock" }))}
                         className={cn(
                           "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
-                          dimensions.bottomType !== "tuck" ? "bg-amber-600 text-white border-amber-700 font-semibold" : "bg-white text-amber-900 border-amber-300 hover:bg-amber-100",
+                          dimensions.bottomType !== "tuck" ? "bg-warning text-white border-warning font-semibold" : "bg-white text-warning-fg border-warning/30 hover:bg-warning-bg",
                         )}
                       >
                         ✓ Đáy khóa chịu lực (Khuyên dùng)
@@ -499,7 +509,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                       <button
                         type="button"
                         onClick={() => selectStructure("lid-base")}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
+                        className="px-2.5 py-1 rounded-lg text-xs font-medium bg-white text-fg-muted border border-line hover:bg-surface-sunken/50"
                       >
                         Đổi sang Hộp Âm Dương
                       </button>
@@ -526,7 +536,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                     }}
                     className={cn(
                       "flex items-center gap-3 rounded-xl border p-2.5 text-left transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20",
-                      active ? "border-[1.5px] border-library-ink bg-library-accent-mist" : "border-library-line hover:border-library-ink",
+                      active ? "border-[1.5px] border-library-ink bg-fpt-orange-light" : "border-library-line hover:border-library-ink",
                     )}
                   >
                     <span aria-hidden className="size-9 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: paper.swatch.outside }} />
@@ -551,20 +561,20 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                 step={0.01}
                 value={dimensions.paperThickness}
                 onChange={(event) => setThickness(Number(event.target.value))}
-                className="mt-1.5 w-full accent-library-accent"
+                className="mt-1.5 w-full accent-fpt-orange"
               />
             </label>
           </Section>
 
           <div className="flex flex-col gap-3 p-5">
             {errors.length > 0 && (
-              <p role="alert" className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+              <p role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
                 {errors.join(" ")}
               </p>
             )}
             <button type="button" onClick={() => create.mutate()} disabled={busy || errors.length > 0} className={cn(primaryButton, "h-12 w-full disabled:cursor-not-allowed")}>
-              {busy && <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-library-lime-ink/30 border-t-library-lime-ink motion-reduce:animate-none" />}
+              {busy && <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-fpt-orange/30 border-t-fpt-orange motion-reduce:animate-none" />}
               {busy ? "Đang tạo dự án…" : "Tạo dự án & mở studio"}
               {!busy && <ArrowRight className="size-4" aria-hidden />}
             </button>

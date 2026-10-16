@@ -34,9 +34,9 @@ interface ProjectCardProps extends ProjectCardActions {
 
 /** FitCheck tag colours. */
 export const FITCHECK_TAG: Record<FitCheckTone, string> = {
-  pass: "bg-library-accent-mist text-library-accent",
-  warn: "bg-amber-50 text-amber-800",
-  fail: "bg-red-50 text-red-700",
+  pass: "bg-fpt-orange-light text-fpt-orange-ink",
+  warn: "bg-warning-bg text-warning-fg",
+  fail: "bg-danger-bg text-danger-fg",
   unchecked: "bg-white text-library-muted",
 };
 
@@ -60,12 +60,12 @@ export function ProjectTile({ project, children }: { project: ProjectSummary; ch
         </div>
       </div>
       <ul className="absolute top-3 right-3 flex flex-wrap justify-end gap-1.5">
-        <li className={cn("rounded-md px-1.5 py-1.5 text-xs leading-3", inTrash ? "bg-red-50 text-red-700" : FITCHECK_TAG[fitCheckTone(project.fitcheckScore)])}>
+        <li className={cn("rounded-md px-1.5 py-1.5 text-xs leading-3", inTrash ? "bg-danger-bg text-danger-fg" : FITCHECK_TAG[fitCheckTone(project.fitcheckScore)])}>
           {inTrash ? purgeLabel(project.deletedAt) : fitCheckLabel(project.fitcheckScore)}
         </li>
         {project.status === "ARCHIVED" && <li className="rounded-md bg-white px-1.5 py-1.5 text-xs leading-3 text-library-muted">Lưu trữ</li>}
       </ul>
-      <span className="absolute bottom-3 left-3 rounded-md bg-white px-1.5 py-1 font-mono text-[11px] text-library-sub">{dimensionsLabel(project)}</span>
+      <span className="absolute bottom-3 left-3 rounded-md bg-white px-1.5 py-1 font-mono text-cad-spec-micro text-library-sub">{dimensionsLabel(project)}</span>
       {children}
     </div>
   );
@@ -84,7 +84,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
   ];
 
   return (
-    <article aria-busy={busy} className={cn("flex flex-col gap-3", busy && "opacity-60")}>
+    <article aria-busy={busy} className={cn("flex h-full flex-col gap-3", busy && "opacity-60")}>
       {inTrash ? (
         <ProjectTile project={project} />
       ) : (
@@ -118,7 +118,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="mt-auto flex items-center gap-2">
         {inTrash ? (
           <>
             <button type="button" disabled={busy} onClick={() => onChangeStatus(project, "ACTIVE")} className={cn(BUTTON, "flex-1")}>
@@ -130,7 +130,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
               disabled={busy}
               onClick={() => onDeletePermanently(project)}
               aria-label={`Xoá vĩnh viễn “${project.title}”`}
-              className={cn(BUTTON, "border-red-300 text-red-700 hover:bg-red-50")}
+              className={cn(BUTTON, "border-danger/30 text-danger-fg hover:bg-danger-bg")}
             >
               <Trash2 className="size-4" aria-hidden />
               Xoá
@@ -142,7 +142,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
               href={ROUTES.editor(project.id)}
               aria-disabled={busy}
               tabIndex={busy ? -1 : undefined}
-              className={cn(BUTTON, "flex-1 border-transparent bg-library-lime text-library-lime-ink hover:bg-[#AFEC88]", busy && "pointer-events-none")}
+              className={cn(BUTTON, "flex-1 border-transparent bg-fpt-orange text-white hover:bg-action-hover", busy && "pointer-events-none")}
             >
               <Box className="size-4" aria-hidden />
               Mở studio

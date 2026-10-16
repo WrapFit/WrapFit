@@ -46,14 +46,14 @@ export function BrandLogoTile({ logoUrl, placeholder, onChange }: BrandLogoTileP
   if (upload.isPending) {
     preview = (
       <span role="status" className="flex flex-col items-center gap-1.5 text-library-sub">
-        <span className="size-6 animate-spin rounded-full border-2 border-library-line border-t-library-accent motion-reduce:animate-none" />
+        <span className="size-6 animate-spin rounded-full border-2 border-library-line border-t-fpt-orange motion-reduce:animate-none" />
         <span className="text-xs">Đang tải logo lên…</span>
       </span>
     );
   } else if (logoUrl && isPdfUrl(logoUrl)) {
     preview = (
       <span className="flex items-center gap-2 text-sm font-medium text-library-ink">
-        <FileText className="size-6 text-red-600" aria-hidden />
+        <FileText className="size-6 text-danger-fg" aria-hidden />
         Logo vector PDF
       </span>
     );
@@ -89,7 +89,7 @@ export function BrandLogoTile({ logoUrl, placeholder, onChange }: BrandLogoTileP
           />
         </label>
         {logoUrl && (
-          <button type="button" onClick={() => onChange(null)} disabled={upload.isPending} className={cn(TILE_BUTTON, "border-transparent text-library-sub hover:bg-red-50 hover:text-red-700")}>
+          <button type="button" onClick={() => onChange(null)} disabled={upload.isPending} className={cn(TILE_BUTTON, "border-transparent text-library-sub hover:bg-danger-bg hover:text-danger-fg")}>
             <ImageOff className="size-4" aria-hidden />
             Gỡ logo
           </button>

@@ -64,10 +64,10 @@ export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeP
       <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
         <div
           role="status"
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-3xl bg-white border border-amber-200 shadow-none"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-3xl bg-white border border-warning/30 shadow-none"
         >
           <div className="flex items-start sm:items-center gap-3 text-sm text-landing-ink min-w-0">
-            <span className="w-9 h-9 flex-shrink-0 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center">
+            <span className="w-9 h-9 flex-shrink-0 rounded-full bg-warning-bg text-warning-fg flex items-center justify-center">
               <Ruler className="w-4 h-4" aria-hidden />
             </span>
             <span className="min-w-0">

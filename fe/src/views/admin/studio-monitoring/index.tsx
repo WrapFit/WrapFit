@@ -68,7 +68,7 @@ function StudioMonitoring() {
                 return (
                   <li key={service.key} className="flex items-center justify-between gap-4 py-3.5">
                     <span>
-                      <span className="block text-[15px] font-medium text-library-ink">{service.label}</span>
+                      <span className="block text-body font-medium text-library-ink">{service.label}</span>
                       <span className="block text-sm text-library-sub">{service.text}</span>
                     </span>
                     {state ? (
@@ -91,7 +91,7 @@ function StudioMonitoring() {
             ) : (
               <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {QUEUE.map((item) => (
-                  <div key={item.key} className={cn('rounded-xl px-4 py-3', item.key === 'failed' && (data?.exportQueue?.failed ?? 0) > 0 ? 'bg-red-50' : 'bg-library-panel')}>
+                  <div key={item.key} className={cn('rounded-xl px-4 py-3', item.key === 'failed' && (data?.exportQueue?.failed ?? 0) > 0 ? 'bg-danger-bg' : 'bg-library-panel')}>
                     <dt className="text-xs text-library-muted">{item.label}</dt>
                     <dd className="mt-0.5 text-2xl font-medium text-library-ink">{data?.exportQueue ? formatCount(data.exportQueue[item.key] ?? 0) : '–'}</dd>
                   </div>

@@ -5,6 +5,7 @@ import type { Role, SafeUser } from "@/types/api";
 import { AccountAvatar } from "./AccountAvatar";
 import { displayName, formatDate, formatDateTime, ROLE_LABELS, SELF_EDIT_HINT, TIER_LABELS } from "./accountFormat";
 import { RoleSelect } from "./RoleSelect";
+import { Icon } from "@/components/ui";
 
 export interface AccountActions {
   onOpen(user: SafeUser): void;
@@ -35,7 +36,7 @@ export function AccountsTable({ users, loading, stale, selfId, busyIds, ...actio
       <table className="w-full min-w-[880px] text-left">
         <caption className="sr-only">Danh sách tài khoản, mới tạo trước</caption>
         <thead>
-          <tr className="bg-library-panel/30 text-library-sub font-mono text-[11px] uppercase tracking-wider">
+          <tr className="bg-library-panel/30 text-library-sub font-mono text-cad-spec-micro uppercase tracking-wider">
             <th scope="col" className="py-3.5 px-6 font-semibold">
               Tài Khoản
             </th>
@@ -116,13 +117,13 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm font-semibold truncate max-w-[160px]">{name}</span>
               {isSelf && (
-                <span className="px-2 py-0.5 rounded-full bg-library-accent-mist/40 text-library-accent font-mono text-[11px] font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-fpt-orange-light/40 text-fpt-orange-ink font-mono text-cad-spec-micro font-medium">
                   Bạn
                 </span>
               )}
             </div>
             {user.fullName?.trim() && (
-              <span className="font-mono text-[11px] text-library-sub truncate max-w-[180px]">
+              <span className="font-mono text-cad-spec-micro text-library-sub truncate max-w-[180px]">
                 {user.email}
               </span>
             )}
@@ -146,9 +147,9 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
                 onClick={saveRole}
                 aria-label={`Lưu vai trò ${ROLE_LABELS[draft]} cho ${name}`}
                 title="Lưu vai trò"
-                className="w-7 h-7 rounded-full bg-library-lime-ink text-white hover:bg-black shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
+                className="w-7 h-7 rounded-full bg-fpt-orange text-white hover:bg-black shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
               >
-                <span className="material-symbols-outlined text-sm">check</span>
+                <Icon name="check" className="size-3.5" />
               </button>
               <button
                 type="button"
@@ -157,7 +158,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
                 title="Huỷ"
                 className="w-7 h-7 rounded-full bg-library-line text-library-sub hover:text-library-ink inline-flex items-center justify-center transition-all"
               >
-                <span className="material-symbols-outlined text-sm">close</span>
+                <Icon name="close" className="size-3.5" />
               </button>
             </>
           )}
@@ -185,13 +186,8 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
       <td className="py-4 px-6">
         <div className="flex items-center justify-end gap-1.5">
           {busy && (
-            <span role="status" className="inline-flex text-library-accent">
-              <span
-                aria-hidden="true"
-                className="material-symbols-outlined text-base animate-spin motion-reduce:animate-none"
-              >
-                progress_activity
-              </span>
+            <span role="status" className="inline-flex text-fpt-orange-ink">
+              <Icon name="progress_activity" className="size-4 animate-spin motion-reduce:animate-none" />
               <span className="sr-only">Đang cập nhật {name}</span>
             </span>
           )}
@@ -204,7 +200,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
               title={isSelf ? undefined : user.isActive ? "Khoá tài khoản" : "Mở khoá tài khoản"}
               className={`${ICON_BUTTON} bg-library-panel text-library-sub enabled:hover:bg-library-tile enabled:hover:text-library-ink`}
             >
-              <span className="material-symbols-outlined text-sm">{user.isActive ? "lock" : "lock_open"}</span>
+              <Icon name={user.isActive ? "lock" : "lock_open"} className="size-3.5" />
             </button>
             <button
               type="button"
@@ -212,9 +208,9 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
               onClick={() => onDelete(user)}
               aria-label={`Xoá tài khoản ${name}`}
               title={isSelf ? undefined : "Xoá tài khoản"}
-              className={`${ICON_BUTTON} bg-library-panel text-library-sub enabled:hover:bg-red-50 enabled:hover:text-red-800`}
+              className={`${ICON_BUTTON} bg-library-panel text-library-sub enabled:hover:bg-danger-bg enabled:hover:text-danger-fg`}
             >
-              <span className="material-symbols-outlined text-sm">delete</span>
+              <Icon name="delete" className="size-3.5" />
             </button>
             {isSelf && <span className="sr-only">{SELF_EDIT_HINT}</span>}
           </span>
@@ -225,7 +221,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
             title="Xem chi tiết"
             className={`${ICON_BUTTON} bg-library-line group-hover:bg-black group-hover:text-white text-library-ink`}
           >
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <Icon name="arrow_forward" className="size-3.5" />
           </button>
         </div>
       </td>
@@ -235,13 +231,13 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
 
 export function ActiveBadge({ active }: { active: boolean }) {
   return active ? (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-library-accent-mist/50 text-library-accent font-mono text-[11px] font-semibold uppercase whitespace-nowrap">
-      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-library-accent" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fpt-orange-light/50 text-fpt-orange-ink font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-fpt-orange" />
       Hoạt động
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-800 font-mono text-[11px] font-semibold uppercase whitespace-nowrap">
-      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-red-600" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-danger-bg text-danger-fg font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-danger" />
       Đã khoá
     </span>
   );
@@ -251,21 +247,17 @@ export function EmailBadge({ verifiedAt }: { verifiedAt: string | null }) {
   return verifiedAt ? (
     <span
       title={`Email xác minh lúc ${formatDateTime(verifiedAt)}`}
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-library-accent-mist text-library-accent font-mono text-[11px] font-semibold whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-fpt-orange-light text-fpt-orange-ink font-mono text-cad-spec-micro font-semibold whitespace-nowrap"
     >
-      <span aria-hidden="true" className="material-symbols-outlined text-xs">
-        mark_email_read
-      </span>
+      <Icon name="mark_email_read" className="size-3" />
       <span className="sr-only">Email </span>Đã xác minh
     </span>
   ) : (
     <span
       title="Email chưa được xác minh"
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-library-line text-library-sub font-mono text-[11px] whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-library-line text-library-sub font-mono text-cad-spec-micro whitespace-nowrap"
     >
-      <span aria-hidden="true" className="material-symbols-outlined text-xs">
-        mail
-      </span>
+      <Icon name="mail" className="size-3" />
       <span className="sr-only">Email </span>Chưa xác minh
     </span>
   );

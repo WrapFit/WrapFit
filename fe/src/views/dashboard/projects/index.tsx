@@ -6,9 +6,10 @@
  */
 
 import { ArchiveRestore, FolderOpen, Plus, Search, Trash2, X } from 'lucide-react';
+import { SelectMenu } from "@/components/ui";
 import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pagination, outlineButton, primaryButton } from '@/components/library';
+import { Pagination, outlineButton, primaryButton, createBoxButton } from '@/components/library';
 import { SegmentedControl, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
@@ -170,7 +171,7 @@ function DashboardProjectsScreen() {
           title="Chưa có dự án nào"
           description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
           action={
-            <Link href={ROUTES.editorNew} className={primaryButton}>
+            <Link href={ROUTES.editorNew} className={createBoxButton}>
               <Plus className="size-4" aria-hidden />
               Tạo hộp mới
             </Link>
@@ -263,16 +264,10 @@ function DashboardProjectsScreen() {
               </button>
             )}
           </div>
-          <label className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <span className="shrink-0 text-sm text-library-muted">Sắp xếp</span>
-            <select value={sort.id} onChange={(event) => setSortId(event.target.value)} className={cn(WORKSPACE_INPUT, 'flex-1 pr-9 sm:w-56 sm:flex-none')}>
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SelectMenu label="Sắp xếp" value={sort.id} onChange={setSortId} options={SORT_OPTIONS.map((option) => ({ value: option.id, label: option.label }))} className="flex-1 sm:w-56 sm:flex-none" />
+          </div>
         </div>
 
         <FolderBar
@@ -289,7 +284,7 @@ function DashboardProjectsScreen() {
         />
 
         {status === 'DELETED' && (
-          <p className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm leading-[1.6] text-red-800">
+          <p className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-bg/60 px-4 py-3 text-sm leading-[1.6] text-danger-fg">
             <Trash2 className="mt-0.5 size-4 shrink-0" aria-hidden />
             Dự án trong thùng rác tự xoá vĩnh viễn sau {TRASH_RETENTION_DAYS} ngày, cùng các tệp gắn với dự án. Khôi phục để tiếp tục chỉnh sửa.
           </p>
@@ -303,7 +298,7 @@ function DashboardProjectsScreen() {
             <p className="mt-2 text-sm text-library-muted">
               {list.isFetching && !list.isPending ? 'Đang đồng bộ…' : `${formatCount(meta.total)} dự án · Trang ${page} / ${totalPages}`}
               {list.isRefetchError && !list.isFetching && (
-                <button type="button" onClick={() => void list.refetch()} className="ml-2 min-h-[44px] font-medium text-library-accent hover:underline">
+                <button type="button" onClick={() => void list.refetch()} className="ml-2 min-h-[44px] font-medium text-fpt-orange-ink hover:underline">
                   Không làm mới được · Thử lại
                 </button>
               )}

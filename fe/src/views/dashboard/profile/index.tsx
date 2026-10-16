@@ -115,7 +115,7 @@ function PlanPanel({ user }: { user: SafeUser }) {
           <div aria-hidden className="h-2 animate-pulse rounded-full bg-library-panel motion-reduce:animate-none" />
         )}
       </div>
-      <Link href="/pricing" className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-library-accent hover:underline">
+      <Link href="/pricing" className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-fpt-orange-ink hover:underline">
         So sánh các gói
         <ArrowRight className="size-4" aria-hidden />
       </Link>
@@ -130,7 +130,7 @@ function BrandKitPanel({ user }: { user: SafeUser }) {
     <Panel>
       <PanelTitle
         action={
-          <Link href={ROUTES.brandKit} className="text-sm font-medium text-library-accent hover:underline">
+          <Link href={ROUTES.brandKit} className="text-sm font-medium text-fpt-orange-ink hover:underline">
             {kit ? 'Chỉnh sửa' : 'Thiết lập'}
           </Link>
         }
@@ -167,7 +167,7 @@ function SecurityPanel({ user }: { user: SafeUser }) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-library-ink bg-white">
-            {user.emailVerifiedAt ? <KeyRound className="size-4" aria-hidden /> : <MailWarning className="size-4 text-amber-700" aria-hidden />}
+            {user.emailVerifiedAt ? <KeyRound className="size-4" aria-hidden /> : <MailWarning className="size-4 text-warning-fg" aria-hidden />}
           </span>
           <p className="text-sm leading-[1.6] text-library-sub">
             {user.emailVerifiedAt

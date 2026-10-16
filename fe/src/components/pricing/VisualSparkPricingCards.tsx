@@ -1,291 +1,183 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Container, Reveal } from "@/components/landing";
+import { PLANS, formatQuota, formatVnd } from "@/features/pricing";
+import type { SubscriptionTier } from "@/types/api";
 import { EmeraldPolyhedron, GoldCylinder, PurpleSlantedDisc } from "./GeometricShapes";
+import { buttonClass } from "@/components/ui";
 
-export type CurrencyMode = "USD" | "VND";
 export type BillingCycle = "monthly" | "yearly";
 
 interface PricingPlan {
-  id: string;
-  name: string;
+  tier: SubscriptionTier;
   subtitle: string;
-  priceUsdMonthly: number;
-  priceUsdYearly: number;
-  priceVndMonthly: number;
-  priceVndYearly: number;
-  periodUsd: string;
-  periodVnd: string;
   bgClass: string;
   borderClass: string;
   shape: React.ComponentType<{ className?: string }>;
   checkColor: string;
   features: string[];
-  featuresVn: string[];
-  ctaText: string;
-  ctaTextVn: string;
+  cta: string;
+  href: string;
   popular?: boolean;
 }
 
+// The three paid plans of features/pricing (the quotas the API enforces); the free plan is the way in above them.
 const PLANS_DATA: PricingPlan[] = [
   {
-    id: "basic",
-    name: "Basic",
-    subtitle: "Simple and effective",
-    priceUsdMonthly: 5,
-    priceUsdYearly: 5,
-    priceVndMonthly: 19000,
-    priceVndYearly: 19000,
-    periodUsd: "/mth",
-    periodVnd: "/lần xuất",
-    bgClass: "bg-[#F3F5FE]",
-    borderClass: "border-[#E3E7FA]",
+    tier: "PAY_PER_EXPORT",
+    subtitle: "Trả khi cần, không phí tháng",
+    bgClass: "bg-info-bg/60",
+    borderClass: "border-info/15",
     shape: PurpleSlantedDisc,
     checkColor: "bg-[#6366F1]",
     features: [
-      "Access to basic features",
-      "Basic reporting and analytics",
-      "Up to 10 individual users",
-      "20GB individual data each user",
-      "Basic email support",
+      "Studio CAD đầy đủ & hộp gấp 3D",
+      "FitCheck™ trước mỗi lần xuất",
+      "File in PDF CMYK · SVG · DXF · PDF A4/A3",
+      `${formatQuota(PLANS.PAY_PER_EXPORT.storageBytes)} lưu trữ · ${PLANS.PAY_PER_EXPORT.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Mã QR mở hộp 3D",
     ],
-    featuresVn: [
-      "Truy cập đầy đủ Studio CAD & mô phỏng 3D Origami",
-      "Rà soát lỗi cơ bản với FitCheck™ tự động",
-      "Xuất file vector chuẩn in (PDF CMYK / PDF A4 có dấu xén)",
-      "500MB lưu trữ mẫu hộp cá nhân trên đám mây",
-      "Hỗ trợ kỹ thuật xuất xưởng qua Bé Gói & Zalo",
-    ],
-    ctaText: "Get started",
-    ctaTextVn: "Bắt đầu ngay",
+    cta: "Mua lượt xuất",
+    href: "/checkout/step-1?plan=PAY_PER_EXPORT",
   },
   {
-    id: "premium",
-    name: "Premium",
-    subtitle: "Advanced and comprehensive",
-    priceUsdMonthly: 20,
-    priceUsdYearly: 16,
-    priceVndMonthly: 99000,
-    priceVndYearly: 79000,
-    periodUsd: "/mth",
-    periodVnd: "/tháng",
-    bgClass: "bg-[#FFF9EB]",
-    borderClass: "border-[#FCEECB]",
+    tier: "STARTER",
+    subtitle: "Cho maker và shop handmade",
+    bgClass: "bg-warning-bg/50",
+    borderClass: "border-warning/20",
     shape: GoldCylinder,
     checkColor: "bg-[#D97706]",
     features: [
-      "Access to basic and premium features",
-      "Advanced reporting and analytics",
-      "Up to 100 individual users",
-      "100GB individual data each user",
-      "Basic chat and email support",
+      "Xuất file in không giới hạn",
+      "Brand Kit: logo, màu, phông chữ",
+      `${formatQuota(PLANS.STARTER.storageBytes)} lưu trữ · ${PLANS.STARTER.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Ưu tiên đặt in hộp mẫu qua xưởng đối tác",
+      "Mọi tính năng của gói Từng lần xuất",
     ],
-    featuresVn: [
-      "Không giới hạn lượt xuất file vector CMYK chất lượng cao",
-      "FitCheck™ chuyên sâu: bắt lỗi tràn lề bleed & nếp gập",
-      "Tích hợp Brand Kit: logo, màu sắc & họa tiết độc quyền",
-      "1GB lưu trữ đám mây & 50 lượt sinh hoa văn AI/ngày",
-      "Ưu tiên kết nối xưởng cắt phẳng số & đặt in mẫu thử",
-    ],
-    ctaText: "Get started",
-    ctaTextVn: "Chọn gói Pro (Khuyên dùng)",
+    cta: "Chọn Gói Tháng",
+    href: "/checkout/step-1?plan=STARTER",
     popular: true,
   },
   {
-    id: "enterprise",
-    name: "Enterprise",
-    subtitle: "Unlimited and complete",
-    priceUsdMonthly: 99,
-    priceUsdYearly: 79,
-    priceVndMonthly: 299000,
-    priceVndYearly: 239000,
-    periodUsd: "/mth",
-    periodVnd: "/tháng",
-    bgClass: "bg-[#EEF8F2]",
-    borderClass: "border-[#D7F0E2]",
+    tier: "PRO_BUSINESS",
+    subtitle: "Cho thương hiệu và xưởng in",
+    bgClass: "bg-success-bg/70",
+    borderClass: "border-success/15",
     shape: EmeraldPolyhedron,
     checkColor: "bg-[#059669]",
     features: [
-      "Access to basic features",
-      "Customised reporting and analytics",
-      "Up to 1,000 individual users",
-      "1TB individual data each user",
-      "Personal chat and email support",
+      `${formatQuota(PLANS.PRO_BUSINESS.storageBytes)} lưu trữ · ${PLANS.PRO_BUSINESS.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Nhiều thành viên trong một không gian làm việc",
+      "Kiểm tra hàng loạt file khuôn cho đối tác gia công",
+      "Tư vấn 1-1 với chuyên gia bao bì",
+      "Mọi tính năng của Gói Tháng",
     ],
-    featuresVn: [
-      "Toàn bộ tính năng cao cấp & tích hợp API xưởng in",
-      "Kiểm toán hàng loạt file khuôn cho đối tác gia công",
-      "Quản lý đa thành viên nhóm thiết kế & xưởng in",
-      "10GB lưu trữ dự án không giới hạn & 300 lượt AI/ngày",
-      "Tư vấn 1-1 chuyên gia kỹ thuật bao bì & SLA cam kết",
-    ],
-    ctaText: "Get started",
-    ctaTextVn: "Liên hệ Enterprise",
+    cta: "Chọn Doanh nghiệp",
+    href: "/checkout/step-1?plan=PRO_BUSINESS",
   },
 ];
 
+const PAYMENTS = ["VietQR", "Chuyển khoản", "MoMo", "Thẻ ATM nội địa"];
+
+const CYCLES: [BillingCycle, string][] = [
+  ["monthly", "Theo tháng"],
+  ["yearly", "Theo năm · tiết kiệm 20%"],
+];
+
+/**
+ * Top of /pricing, in the VisualSpark layout (3D-illustrated pastel cards): the paid plans of features/pricing with a
+ * monthly / yearly switch, the free way in, the recommended plan, payment methods and the refund rule.
+ */
 export function VisualSparkPricingCards() {
-  const [currency, setCurrency] = useState<CurrencyMode>("VND");
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [cycle, setCycle] = useState<BillingCycle>("monthly");
 
   return (
     <section className="bg-white pt-24 sm:pt-32 pb-12 lg:pb-16">
       <Container>
-        {/* Header matching VisualSpark Sample */}
         <div className="mx-auto max-w-3xl text-center mb-10 sm:mb-12">
           <Reveal variant="text" className="flex flex-col items-center">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-stone-600 mb-3">
-              PRICING
-            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-fg-muted mb-3">Bảng giá</span>
 
-            <h1 className="font-landing-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[#111827]">
-              Plans that fit your scale
+            <h1 className="font-landing-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-fg">
+              Gói vừa với quy mô của bạn
             </h1>
 
-            <p className="mt-3 text-base sm:text-lg text-stone-600">
-              Upgrade or downgrade anytime, money-back guarantee
-            </p>
+            <p className="mt-3 text-base sm:text-lg text-fg-muted">Đổi gói bất cứ lúc nào · hoàn tiền 100% trong 7 ngày nếu chưa xuất file in</p>
 
-            {/* Controls: Billing Cycle + Currency Switcher */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              {/* Billing Cycle Toggle */}
-              <div className="inline-flex items-center rounded-full bg-stone-100 p-1 border border-stone-200">
+            <div role="group" aria-label="Chu kỳ thanh toán" className="mt-6 inline-flex items-center rounded-full bg-surface-sunken p-1 border border-line">
+              {CYCLES.map(([value, label]) => (
                 <button
+                  key={value}
                   type="button"
-                  onClick={() => setBillingCycle("monthly")}
+                  aria-pressed={cycle === value}
+                  onClick={() => setCycle(value)}
                   className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
-                    billingCycle === "monthly"
-                      ? "bg-white text-stone-900 shadow-soft-4"
-                      : "text-stone-700 hover:text-stone-900"
+                    cycle === value ? "bg-fg text-fg-inverse shadow-soft-4" : "text-fg-muted hover:text-fg"
                   }`}
                 >
-                  Tháng (Monthly)
+                  {label}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setBillingCycle("yearly")}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
-                    billingCycle === "yearly"
-                      ? "bg-white text-stone-900 shadow-soft-4"
-                      : "text-stone-700 hover:text-stone-900"
-                  }`}
-                >
-                  <span>Năm (Yearly)</span>
-                  <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.2">
-                    -20%
-                  </span>
-                </button>
-              </div>
-
-              {/* Currency switch pill */}
-              <div className="inline-flex items-center rounded-full bg-stone-100 p-1 border border-stone-200">
-                <button
-                  type="button"
-                  onClick={() => setCurrency("VND")}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
-                    currency === "VND"
-                      ? "bg-[#F26522] text-white shadow-soft-4"
-                      : "text-stone-700 hover:text-stone-900"
-                  }`}
-                >
-                  VNĐ (WrapFit)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrency("USD")}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all ${
-                    currency === "USD"
-                      ? "bg-white text-stone-900 shadow-soft-4"
-                      : "text-stone-700 hover:text-stone-900"
-                  }`}
-                >
-                  USD ($)
-                </button>
-              </div>
+              ))}
             </div>
+
+            <p className="mt-5 text-sm text-fg-muted">
+              Mới bắt đầu?{" "}
+              <Link href="/auth/register" className="font-semibold text-fg underline underline-offset-4">
+                Gói Free
+              </Link>{" "}
+              có đủ studio, FitCheck™ và hộp 3D, không cần thẻ thanh toán.
+            </p>
           </Reveal>
         </div>
 
-        {/* 3 Pricing Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-stretch">
-          {PLANS_DATA.map((plan) => {
-            const ShapeComponent = plan.shape;
-            const isVnd = currency === "VND";
-            const isYearly = billingCycle === "yearly";
-
-            const priceNum = isVnd
-              ? isYearly
-                ? plan.priceVndYearly
-                : plan.priceVndMonthly
-              : isYearly
-              ? plan.priceUsdYearly
-              : plan.priceUsdMonthly;
-
-            const formattedPrice = isVnd
-              ? plan.id === "basic"
-                ? "19.000đ"
-                : `${(priceNum / 1000).toLocaleString("vi-VN")}.000đ`
-              : `$${priceNum}`;
-
-            const period = isVnd ? plan.periodVnd : plan.periodUsd;
-            const features = isVnd ? plan.featuresVn : plan.features;
-            const cta = isVnd ? plan.ctaTextVn : plan.ctaText;
+          {PLANS_DATA.map((item) => {
+            const ShapeComponent = item.shape;
+            const plan = PLANS[item.tier];
+            const perExport = Boolean(plan.isPerExport);
+            const price = perExport ? (plan.price.perExport ?? plan.price.monthly) : cycle === "yearly" ? plan.price.yearlyPerMonth : plan.price.monthly;
+            const period = perExport ? "/lần xuất" : "/tháng";
+            const note = perExport
+              ? "Không phí duy trì"
+              : cycle === "yearly"
+                ? `Thanh toán ${formatVnd(plan.price.yearlyPerMonth * 12)} mỗi năm`
+                : `${formatVnd(plan.price.yearlyPerMonth)}/tháng khi trả theo năm`;
 
             return (
-              <Reveal key={plan.id} className="h-full">
+              <Reveal key={item.tier} className="h-full">
                 <div
-                  className={`relative flex h-full flex-col justify-between rounded-[2rem] sm:rounded-[2.25rem] p-7 sm:p-9 border transition-all hover:-translate-y-1 ${
-                    plan.popular
-                      ? `${plan.bgClass} border-[#F26522]/50 shadow-[0_8px_32px_rgba(242,101,34,0.14)] ring-2 ring-[#F26522]/30`
-                      : `${plan.bgClass} ${plan.borderClass} shadow-[0_4px_24px_rgba(0,0,0,0.03)] hover:shadow-[0_12px_36px_rgba(0,0,0,0.08)]`
+                  className={`relative flex h-full flex-col justify-between rounded-card sm:rounded-squircle-xl p-7 sm:p-9 border shadow-[0_4px_24px_rgba(0,0,0,0.03)] transition-all hover:shadow-[0_12px_36px_rgba(0,0,0,0.08)] hover:-translate-y-1 ${item.bgClass} ${
+                    item.popular ? "border-fpt-orange ring-2 ring-action" : item.borderClass
                   }`}
                 >
-                  {/* Popular Highlight Badge */}
-                  {plan.popular && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#F26522] text-white text-[11px] font-bold px-3.5 py-1 shadow-soft-8 uppercase tracking-wider">
-                        <Sparkles className="size-3" />
-                        Gói phổ biến nhất
-                      </span>
-                    </div>
+                  {item.popular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-fpt-orange px-3 py-1 text-label-sm text-white shadow-soft-4">Khuyên dùng</span>
                   )}
-
                   <div>
-                    {/* 3D Geometric Shape at Top */}
                     <div className="flex justify-center mb-6 pt-2">
                       <ShapeComponent className="size-24 sm:size-28" />
                     </div>
 
-                    {/* Plan Title & Subtitle */}
-                    <div className="text-center mb-5">
-                      <h3 className="font-landing-heading text-2xl font-bold text-stone-900">
-                        {plan.name}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-stone-600 mt-1">
-                        {plan.subtitle}
-                      </p>
+                    <div className="text-center mb-6">
+                      <h3 className="font-landing-heading text-2xl font-bold text-fg">{plan.name}</h3>
+                      <p className="text-xs sm:text-sm text-fg-muted mt-1">{item.subtitle}</p>
                     </div>
 
-                    {/* Price Header */}
-                    <div className="flex items-baseline justify-center gap-1 mb-8">
-                      <span className="font-landing-heading text-4xl sm:text-5xl font-extrabold text-stone-900 tracking-tight">
-                        {formattedPrice}
-                      </span>
-                      <span className="text-xs sm:text-sm font-semibold text-stone-600">
-                        {period}
-                      </span>
+                    <div className="flex flex-col items-center mb-8">
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="font-landing-heading text-4xl sm:text-5xl font-extrabold text-fg tracking-tight">{formatVnd(price)}</span>
+                        <span className="text-xs sm:text-sm font-semibold text-fg-muted">{period}</span>
+                      </div>
+                      <span className="mt-1 text-xs text-fg-muted">{note}</span>
                     </div>
 
-                    {/* Features List with High-Contrast Themed Checkmark */}
                     <ul className="space-y-3.5 mb-8">
-                      {features.map((feat) => (
-                        <li key={feat} className="flex items-start gap-3 text-xs sm:text-sm text-stone-700">
-                          <span
-                            className={`size-4 sm:size-4.5 rounded-full ${plan.checkColor} text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm`}
-                          >
+                      {item.features.map((feat) => (
+                        <li key={feat} className="flex items-start gap-3 text-xs sm:text-sm text-fg-muted">
+                          <span className="size-4 sm:size-4.5 rounded-full bg-line-strong text-white flex items-center justify-center shrink-0 mt-0.5">
                             <Check className="size-2.5 sm:size-3 stroke-[3]" />
                           </span>
                           <span className="leading-snug">{feat}</span>
@@ -294,17 +186,12 @@ export function VisualSparkPricingCards() {
                     </ul>
                   </div>
 
-                  {/* Action Button: Styled distinctly for Popular tier */}
                   <div className="pt-2">
                     <Link
-                      href={plan.id === "basic" ? "/editor/new" : "/checkout"}
-                      className={`inline-flex w-full items-center justify-center rounded-xl py-3.5 px-4 text-xs sm:text-sm font-bold transition-all ${
-                        plan.popular
-                          ? "bg-[#F26522] text-white shadow-soft-16 hover:bg-[#D85314] hover:scale-[1.02]"
-                          : "bg-[#131722] text-white shadow-soft-8 hover:bg-stone-800"
-                      }`}
+                      href={perExport ? item.href : `${item.href}&billing=${cycle}`}
+                      className={buttonClass({ variant: item.popular ? "brand" : "dark", size: "lg", shape: "rounded", block: true, className: "text-label" })}
                     >
-                      {cta}
+                      {item.cta}
                     </Link>
                   </div>
                 </div>
@@ -312,6 +199,26 @@ export function VisualSparkPricingCards() {
             );
           })}
         </div>
+
+        <div className="mx-auto mt-10 flex max-w-4xl flex-col items-center gap-3 text-center text-xs text-fg-muted sm:flex-row sm:justify-center sm:gap-6">
+          <span className="inline-flex items-center gap-1.5">
+            <ShieldCheck className="size-4 text-success-fg" aria-hidden /> Thanh toán mã hoá qua cổng của ngân hàng · WrapFit không lưu số thẻ
+          </span>
+          <span className="flex flex-wrap justify-center gap-1.5">
+            {PAYMENTS.map((method) => (
+              <span key={method} className="rounded-md border border-line bg-white px-2 py-0.5 font-semibold text-fg-muted">
+                {method}
+              </span>
+            ))}
+          </span>
+        </div>
+        <p className="mt-3 text-center text-xs text-fg-muted">
+          Chi tiết hoàn tiền và huỷ gói tại{" "}
+          <Link href="/legal/terms#thanh-toan" className="underline">
+            Điều khoản sử dụng
+          </Link>
+          .
+        </p>
       </Container>
     </section>
   );

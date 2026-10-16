@@ -44,6 +44,12 @@ const nextConfig = {
       { source: '/editor/export', destination: '/dashboard/orders', permanent: false },
       { source: '/editor/inspect/fefco', destination: '/structures/tuck-top', permanent: false },
       { source: '/editor/materials/backdrop', destination: '/dashboard/materials', permanent: false },
+      // Usual addresses of the legal pages.
+      { source: '/privacy', destination: '/legal/privacy', permanent: true },
+      { source: '/terms', destination: '/legal/terms', permanent: true },
+      { source: '/cookies', destination: '/legal/cookies', permanent: true },
+      // Pages merged into others: the team lives on /about.
+      { source: '/about/team', destination: '/about#doi-ngu', permanent: true },
     ];
   },
   // The browser calls the API on this origin (/api), so the session cookies are first-party. `output: "standalone"`

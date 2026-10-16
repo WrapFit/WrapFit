@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import {
-  ArrowLeft,
   Download,
   ShieldCheck,
   ShieldAlert,
@@ -16,7 +14,22 @@ import {
   Share2,
   RotateCcw,
   X,
+  Box,
+  LayoutPanelTop,
+  PackageOpen,
+  PenTool,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Palette,
+  Gift,
+  Ruler,
+  type LucideIcon,
 } from "lucide-react";
+import { buttonClass } from "@/components/ui";
+import { ViewToggle } from "@/features/studio/components/studioUi";
+import { Box3DView } from "@/features/studio/components/three/Box3DView";
+import { cn } from "@/utils/helpers";
 import { autoFixElements, BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
@@ -49,7 +62,7 @@ import { ShareDialog } from "@/features/studio/components/share/ShareDialog";
 import { SnapshotsDialog } from "@/features/studio/components/snapshots/SnapshotsDialog";
 import { UnboxingDialog } from "@/features/studio/components/unboxing/UnboxingDialog";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
-import { checkDesign, dielinePiecesOf, dimensionErrors, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
+import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
 import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
@@ -63,37 +76,48 @@ const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const VECTOR_TYPES = ["image/svg+xml"];
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
-/** Design of the offline demo (`/editor/demo`). */
-const DEMO_ELEMENTS: CanvasElement[] = [
-  {
-    id: "logo-main",
-    type: "logo",
-    panelId: "panel_front",
-    x: 35,
-    y: 18,
-    width: 50,
-    height: 25,
-    rotation: 0,
-    content: "/branding/wrapfit-logo.png",
-    dpi: 300,
-  },
-  {
-    id: "txt-brand",
-    type: "text",
-    panelId: "panel_front",
-    x: 35,
-    y: 45,
-    width: 50,
-    height: 10,
-    rotation: 0,
-    content: "WRAPFIT SIGNATURE",
-    style: {
-      fontFamily: "Big Shoulders Display, sans-serif",
-      fontSize: 14,
-      color: "#1A362B",
-    },
-  },
+/** Undo history of the artwork: changes this close together are one step; at most this many steps. */
+const HISTORY_GAP_MS = 600;
+const HISTORY_LIMIT = 60;
+
+/** Keys of the step 4 tool dock (StudioToolDock shows the same letters). */
+const TOOL_KEYS: Record<string, StudioToolId> = { v: "select", t: "text", u: "image", s: "stickers", c: "palette", a: "patterns" };
+
+type InspectorTab = "style" | "stickers" | "dimensions" | "fitcheck";
+
+const INSPECTOR_TABS: { id: InspectorTab; label: string; icon: LucideIcon }[] = [
+  { id: "style", label: "Kiểu", icon: Palette },
+  { id: "stickers", label: "Sticker", icon: Gift },
+  { id: "dimensions", label: "Cỡ", icon: Ruler },
+  { id: "fitcheck", label: "FitCheck", icon: ShieldCheck },
 ];
+
+/** Seamless patterns drawn by DielineCanvas2D (its `pattern-*` defs) under the artwork. */
+const SEAMLESS_PATTERNS = [
+  { id: "tet", label: "Hoa mai Tết", dot: "bg-brand-gold" },
+  { id: "xmas", label: "Giáng Sinh", dot: "bg-brand-forest" },
+  { id: "botanical", label: "Lá khuynh diệp", dot: "bg-success" },
+  { id: "gold", label: "Art Deco vàng", dot: "bg-warning" },
+];
+
+/** Icon button of the dark view dock under the stage: 40 px, lime when on. */
+const darkDockButton = (on: boolean, className?: string) =>
+  cn(
+    "flex size-10 shrink-0 items-center justify-center rounded-control outline-none transition-[background-color,color,transform] duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:ring-[3px] focus-visible:ring-focus/70",
+    on ? "bg-action text-action-fg" : "text-white/75 hover:bg-white/10 hover:text-white",
+    className,
+  );
+
+/** Colours of the FitCheck pill by score: pass, needs a look, blocks the print file. */
+const scoreToneOf = (score: number) =>
+  score >= 90
+    ? { pill: "bg-success-bg/95 text-success-fg ring-success/30", dot: "bg-success" }
+    : score >= 70
+      ? { pill: "bg-warning-bg/95 text-warning-fg ring-warning/30", dot: "bg-warning" }
+      : { pill: "bg-danger-bg/95 text-danger-fg ring-danger/30", dot: "bg-danger" };
+
+/** Design of the offline demo (`/editor/demo`). */
+const DEMO_ELEMENTS: CanvasElement[] = [];
 
 const SYNC_LABELS: Record<SyncState, { label: string; tone: "ok" | "busy" | "warn" | "muted" }> = {
   demo: { label: "Bản dùng thử · không lưu", tone: "muted" },
@@ -107,8 +131,8 @@ const SYNC_LABELS: Record<SyncState, { label: string; tone: "ok" | "busy" | "war
 };
 
 const DOT_CLASS = {
-  ok: "bg-emerald-500",
-  busy: "bg-amber-400 animate-pulse motion-reduce:animate-none",
+  ok: "bg-success",
+  busy: "bg-warning animate-pulse motion-reduce:animate-none",
   warn: "bg-vibrant-coral",
   muted: "bg-landing-muted",
 };
@@ -162,7 +186,6 @@ export function StudioWorkspace({
   onReplaced,
   notice = null,
 }: StudioWorkspaceProps) {
-  const router = useRouter();
   const toast = useToast();
   const isDemo = project === null;
   // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export. The structure of a saved
@@ -177,7 +200,7 @@ export function StudioWorkspace({
     project ? materialThemeOf(project.canvasState?.materialTheme, project.materialSpec) : "ivory"
   );
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
-    project ? (project.canvasState?.backgroundPattern ?? null) : "tet"
+    project?.canvasState?.backgroundPattern ?? null
   );
 
   // Image 2 Inspired Palette & Typography states
@@ -204,15 +227,53 @@ export function StudioWorkspace({
   const [activePanelId, setActivePanelId] = useState<string>("panel_front");
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
 
-  // Inspector Tabs in Step 3: "style" | "dimensions" | "fitcheck" | "stickers"
-  const [activeInspectorTab, setActiveInspectorTab] = useState<
-    "style" | "dimensions" | "fitcheck" | "stickers"
-  >("style");
+  // Inspector Tabs in Step 4: "style" | "dimensions" | "fitcheck" | "stickers"
+  const [activeInspectorTab, setActiveInspectorTab] = useState<InspectorTab>("style");
+
+  // Step 4 stage: the flat dieline to edit, or the folded box to check it; the dock's text tool opens the composer
+  const [artView, setArtView] = useState<"2d" | "3d">("2d");
+  const [foldProgress, setFoldProgress] = useState<number>(1);
+  const [lidOpen, setLidOpen] = useState<boolean>(false);
+  const [textComposerOpen, setTextComposerOpen] = useState<boolean>(false);
 
   // Artwork Canvas Elements
   const [elements, setElements] = useState<CanvasElement[]>(
     project ? (project.canvasState?.elements ?? []) : DEMO_ELEMENTS
   );
+
+  // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
+  const history = useRef({ past: [] as CanvasElement[][], future: [] as CanvasElement[][], current: elements, at: 0, travelling: false });
+  const [historySize, setHistorySize] = useState({ past: 0, future: 0 });
+  useEffect(() => {
+    const h = history.current;
+    if (h.current === elements) return;
+    if (h.travelling) {
+      h.travelling = false;
+    } else {
+      const now = Date.now();
+      if (now - h.at > HISTORY_GAP_MS) h.past = [...h.past.slice(-(HISTORY_LIMIT - 1)), h.current];
+      h.at = now;
+      h.future = [];
+    }
+    h.current = elements;
+    setHistorySize({ past: h.past.length, future: h.future.length });
+  }, [elements]);
+  const travel = useCallback((direction: "undo" | "redo") => {
+    const h = history.current;
+    const target = direction === "undo" ? h.past.at(-1) : h.future[0];
+    if (!target) return;
+    if (direction === "undo") {
+      h.past = h.past.slice(0, -1);
+      h.future = [h.current, ...h.future];
+    } else {
+      h.future = h.future.slice(1);
+      h.past = [...h.past, h.current];
+    }
+    h.travelling = true;
+    h.at = 0;
+    setElements(target);
+    setSelectedElementId(null);
+  }, []);
   const [uploading, setUploading] = useState<boolean>(false);
 
   const [dialog, setDialog] = useState<StudioDialogId | null>(null);
@@ -272,6 +333,7 @@ export function StudioWorkspace({
   const readOnly = sync.state === "trash";
   // The score the server stored with the last save; while a change waits for its save, the score of the browser.
   const displayReport = sync.dirty || !sync.serverReport ? fitcheckReport : sync.serverReport;
+  const scoreTone = scoreToneOf(displayReport.score);
   const flaggedElementIds = useMemo(
     () => new Set(fitcheckReport.violations.flatMap((v) => (v.elementId ? [v.elementId] : []))),
     [fitcheckReport]
@@ -279,11 +341,6 @@ export function StudioWorkspace({
   const syncLabel =
     sync.state === "error" ? `Chưa lưu được: ${errorMessage(sync.error)}` : sync.state === "invalid" && invalidReason ? `Chưa lưu: ${invalidReason}` : SYNC_LABELS[sync.state].label;
   const syncTone = SYNC_LABELS[sync.state].tone;
-
-  const goBack = () => {
-    if (currentStep > firstStep) setCurrentStep((currentStep - 1) as StudioStep);
-    else router.push(isDemo ? "/" : ROUTES.projects);
-  };
 
   const restoreProject = async () => {
     try {
@@ -375,6 +432,50 @@ export function StudioWorkspace({
     setSelectedElementId(pattern.id);
   }, []);
 
+  // Step 4 tool dock: text and image act on the flat dieline, the others open their inspector tab.
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const selectTool = useCallback(
+    (tool: StudioToolId) => {
+      if (tool === "image") {
+        if (!uploading) imageInputRef.current?.click();
+        return;
+      }
+      setActiveTool(tool);
+      if (tool === "text") {
+        setArtView("2d");
+        setTextComposerOpen(true);
+      }
+      if (tool === "stickers") setActiveInspectorTab("stickers");
+      if (tool === "palette" || tool === "patterns") setActiveInspectorTab("style");
+    },
+    [uploading]
+  );
+
+  // Keyboard of step 4: tool letters, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, never while typing in a field.
+  useEffect(() => {
+    if (currentStep !== 4 || readOnly) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
+      const key = e.key.toLowerCase();
+      if (e.ctrlKey || e.metaKey) {
+        if (key === "z" || key === "y") {
+          e.preventDefault();
+          travel(key === "y" || e.shiftKey ? "redo" : "undo");
+        }
+        return;
+      }
+      if (e.altKey || textComposerOpen) return;
+      const tool = TOOL_KEYS[key];
+      if (tool) {
+        e.preventDefault();
+        selectTool(tool);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [currentStep, readOnly, textComposerOpen, travel, selectTool]);
+
   // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
   const openDialog = (id: StudioDialogId) => {
     if (!project) {
@@ -444,34 +545,10 @@ export function StudioWorkspace({
       {/* ================= 1. GLOBAL TOP STEPPER NAVBAR ================= */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
-          {/* Left: logo, back & project title */}
+          {/* Left: logo */}
           <div className="flex items-center gap-3 min-w-0">
-            <LandingLogo className="hidden lg:inline-flex [&_span]:text-[22px] [&_svg]:size-7" />
-            <span aria-hidden className="hidden lg:block h-7 w-px bg-landing-line" />
-            <button
-              type="button"
-              onClick={goBack}
-              className="w-10 h-10 flex-shrink-0 rounded-full bg-landing-canvas hover:bg-landing-tile flex items-center justify-center text-landing-ink transition-colors cursor-pointer"
-              aria-label={currentStep > firstStep ? `Quay lại bước ${currentStep - 1}` : isDemo ? "Về trang chủ" : "Về trang dự án"}
-              title={currentStep > firstStep ? `Quay lại bước ${currentStep - 1}` : isDemo ? "Về trang chủ" : "Về trang dự án"}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-
-            <div className="hidden sm:block min-w-0">
-              <input
-                type="text"
-                aria-label="Tên dự án"
-                value={projectTitle}
-                maxLength={120}
-                disabled={readOnly}
-                onChange={(e) => setProjectTitle(e.target.value)}
-                className="font-landing-heading font-bold text-landing-ink text-base bg-transparent border-b border-transparent hover:border-landing-ink/30 focus:border-landing-green focus:outline-none transition max-w-[220px] truncate disabled:hover:border-transparent"
-              />
-              <span className="text-xs text-landing-muted block">
-                {dimensions.length} × {dimensions.width} × {dimensions.height} mm
-              </span>
-            </div>
+            {/* ds-allow: compact logo size in the studio bar. */}
+            <LandingLogo className="inline-flex [&_span]:text-[22px] [&_svg]:size-7" />
           </div>
 
           {/* Center: 4-Step Segmented Breadcrumb Stepper */}
@@ -483,17 +560,19 @@ export function StudioWorkspace({
 
           {/* Right: Cloud Save Status, FitCheck & Export */}
           <div className="flex items-center gap-2">
-            {/* Save status: the label from 2xl, a dot below */}
-            <div
-              role="status"
-              title={syncLabel}
-              className="flex items-center gap-1.5 2xl:px-3 py-1 rounded-full 2xl:bg-landing-canvas text-landing-muted text-xs max-w-[220px]"
-            >
-              <span className={`w-2 h-2 flex-shrink-0 rounded-full ${DOT_CLASS[syncTone]}`} aria-hidden />
-              <span title={syncLabel} className="sr-only 2xl:not-sr-only text-[11px] font-medium truncate whitespace-nowrap">
-                {syncLabel}
-              </span>
-            </div>
+            {/* Save status: the label from 2xl, a dot below (only for saved projects) */}
+            {!isDemo && (
+              <div
+                role="status"
+                title={syncLabel}
+                className="flex items-center gap-1.5 2xl:px-3 py-1 rounded-full 2xl:bg-landing-canvas text-landing-muted text-xs max-w-[220px]"
+              >
+                <span className={`w-2 h-2 flex-shrink-0 rounded-full ${DOT_CLASS[syncTone]}`} aria-hidden />
+                <span title={syncLabel} className="sr-only 2xl:not-sr-only text-caption font-medium truncate whitespace-nowrap">
+                  {syncLabel}
+                </span>
+              </div>
+            )}
 
             {/* FitCheck Badge */}
             <button
@@ -502,9 +581,9 @@ export function StudioWorkspace({
                 setCurrentStep(6);
               }}
               title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
-              className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-landing-lime-mist text-landing-green-deep text-sm font-semibold transition-colors hover:bg-[#DDF5CC]"
+              className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-orange-50 text-fpt-orange-ink border border-orange-200/60 text-sm font-semibold transition-colors hover:bg-orange-100/80"
             >
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4 text-fpt-orange" />
               <span>FitCheck: {displayReport.score}/100</span>
             </button>
 
@@ -517,7 +596,7 @@ export function StudioWorkspace({
               onClick={() => openDialog("export")}
               disabled={readOnly}
               aria-label="Xuất file in"
-              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-sm font-semibold transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-fpt-orange hover:bg-fpt-orange-dark text-white text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Xuất file in</span>
@@ -531,7 +610,7 @@ export function StudioWorkspace({
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
           <div
             role="status"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[28px] bg-white"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-sheet bg-white"
           >
             <div className="flex items-center gap-3">
               <span className="w-10 h-10 flex-shrink-0 rounded-full bg-landing-canvas text-landing-muted flex items-center justify-center">
@@ -570,10 +649,10 @@ export function StudioWorkspace({
         <div className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 pt-4">
           <div
             role="status"
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-3xl bg-white border border-landing-green/30 shadow-none"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-3xl bg-white border border-orange-200 shadow-none"
           >
             <div className="flex items-center gap-3 text-sm text-landing-ink min-w-0">
-              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-landing-lime-mist text-landing-green flex items-center justify-center">
+              <span className="w-9 h-9 flex-shrink-0 rounded-full bg-orange-50 text-fpt-orange flex items-center justify-center">
                 <RotateCcw className="w-4 h-4" aria-hidden />
               </span>
               <span className="min-w-0">
@@ -595,7 +674,7 @@ export function StudioWorkspace({
                 type="button"
                 onClick={() => void undoRestore()}
                 disabled={undoing}
-                className="min-h-[40px] px-4 rounded-full bg-landing-green hover:bg-landing-green-deep text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
+                className="min-h-[40px] px-4 rounded-full bg-fpt-orange hover:bg-fpt-orange-ink text-white text-xs font-semibold transition disabled:opacity-60 disabled:cursor-wait"
               >
                 {undoing ? "Đang hoàn tác…" : "Hoàn tác"}
               </button>
@@ -663,22 +742,51 @@ export function StudioWorkspace({
           />
         )}
 
-        {/* STEP 3: XƯỞNG BẢN VẼ BẾ 2D TOÀN MÀN HÌNH VỚI DOCK CÔNG CỤ & KÉO THẢ TỰ DO */}
+        {/* STEP 4: HÌNH IN — a full-height CAD stage: floating tool dock, dieline or folded box in the middle, inspector
+            on the right, view dock at the bottom. On phones the same pieces stack in one column. */}
         {currentStep === 4 && (
-          <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex flex-col gap-4">
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-landing-green">Bước 4 / 6 · Thiết kế</p>
-                <h1 className="font-landing-heading text-2xl font-bold tracking-tight text-landing-ink sm:text-3xl">Hình in trên khuôn bế</h1>
+          <section
+            aria-label="Hình in trên khuôn bế"
+            className="bg-studio-stage relative flex flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:block lg:h-[calc(100dvh-72px)] lg:min-h-[660px] lg:overflow-hidden lg:p-0"
+          >
+            {/* ── Top bar: 2D / 3D switch and the way to the next step ── */}
+            <div className="pointer-events-none z-30 flex flex-wrap items-center justify-between gap-2 lg:absolute lg:inset-x-4 lg:top-4">
+              <div className="pointer-events-none hidden sm:block sm:w-10" />
+
+              <div className="pointer-events-auto order-last w-full rounded-full bg-surface-raised/90 p-1 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-xl sm:order-none sm:w-auto">
+                <ViewToggle<"2d" | "3d">
+                  label="Chế độ xem"
+                  value={artView}
+                  onChange={setArtView}
+                  options={[
+                    { value: "2d", label: "Khuôn bế 2D", icon: LayoutPanelTop },
+                    { value: "3d", label: "Gập hộp 3D", icon: Box },
+                  ]}
+                />
               </div>
-              <p className="text-sm text-landing-muted">Chọn một mặt hộp, thêm chữ, logo, sticker hoặc hoa văn; FitCheck™ kiểm tra ngay khi bạn sửa.</p>
+
+              <div className="pointer-events-auto flex w-full items-center justify-end gap-2 sm:w-auto">
+                {uploading && (
+                  <span role="status" className="flex min-h-11 items-center gap-1.5 rounded-full bg-info-bg px-3.5 text-label-sm font-semibold text-info-fg">
+                    <ImageUp className="size-4 animate-pulse motion-reduce:animate-none" aria-hidden />
+                    <span className="hidden sm:inline">Đang tải ảnh…</span>
+                  </span>
+                )}
+                <button type="button" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "min-h-11" })}>
+                  <span>
+                    Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
+                  </span>
+                  <ArrowRight className="size-4" aria-hidden />
+                </button>
+              </div>
             </div>
-            {/* Step 3 Subheader: Piece + Panel Navigator + Quick Navigation to Step 4 */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-2 rounded-full">
-              <div className="flex flex-col md:flex-row md:items-center gap-2 min-w-0 w-full sm:w-auto">
-                {/* Two-piece boxes (base + lid, sleeve + drawer) print as two dielines */}
+
+            {/* ── Pieces and panels of the dieline (2D only): where new elements land ── */}
+            {artView === "2d" && (
+              <div className="pointer-events-none z-30 flex min-w-0 justify-center lg:absolute lg:left-[84px] lg:right-[396px] lg:top-[76px]">
+              <div className="pointer-events-auto flex min-w-0 max-w-full items-center gap-1 rounded-full bg-surface-raised/90 p-1 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-xl">
                 {pieces.length > 1 && (
-                  <div className="flex items-center gap-1 bg-landing-canvas p-1 rounded-full flex-shrink-0" role="group" aria-label="Mảnh phôi">
+                  <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
                     {pieces.map((piece, index) => (
                       <button
                         key={piece.name}
@@ -688,8 +796,8 @@ export function StudioWorkspace({
                           setPieceIndex(index);
                           setActivePanelId("all");
                         }}
-                        className={`min-h-[32px] px-3 rounded-full text-xs font-semibold whitespace-nowrap transition ${
-                          index === pieceIndex ? "bg-white text-landing-ink shadow-xs" : "text-landing-muted hover:text-landing-ink"
+                        className={`min-h-8 whitespace-nowrap rounded-full px-3 text-label-sm font-semibold transition-colors ${
+                          index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
                         }`}
                       >
                         {piece.name}
@@ -697,76 +805,39 @@ export function StudioWorkspace({
                     ))}
                   </div>
                 )}
-                <PanelNavigator
-                  dieline={dieline}
-                  activePanelId={activePanelId}
-                  onSelectPanel={selectPanel}
-                  className="min-w-0"
-                />
+                <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} className="min-w-0" />
               </div>
+              </div>
+            )}
 
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {!isDemo && <div className="flex sm:hidden items-center gap-2">{projectActions}</div>}
-                {uploading && (
-                  <span role="status" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-landing-lime-mist text-landing-green text-xs font-semibold">
-                    <ImageUp className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none" aria-hidden />
-                    Đang tải ảnh lên…
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
-                  className="min-h-[40px] px-4 rounded-full bg-landing-canvas hover:bg-landing-tile text-landing-ink text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5"
-                >
-                  <ArrowLeft className="w-4 h-4" aria-hidden />
-                  Chất liệu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(5)}
-                  className="min-h-[40px] px-4 rounded-full bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-sm font-semibold whitespace-nowrap flex items-center gap-1.5 transition-colors"
-                >
-                  Xem 3D
-                  <ArrowRight className="w-4 h-4" aria-hidden />
-                </button>
-              </div>
+            {/* ── Left: tool dock ── */}
+            <div className="z-30 flex lg:absolute lg:left-4 lg:top-1/2 lg:-translate-y-1/2">
+              <StudioToolDock
+                activeTool={activeTool}
+                onSelectTool={selectTool}
+                showRulers={showRulers}
+                onToggleRulers={() => setShowRulers((on) => !on)}
+                canUndo={historySize.past > 0}
+                canRedo={historySize.future > 0}
+                onUndo={() => travel("undo")}
+                onRedo={() => travel("redo")}
+              />
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept={[...PHOTO_TYPES, ...VECTOR_TYPES].join(",")}
+                onChange={(e) => void handleImageUpload(e)}
+                className="hidden"
+                tabIndex={-1}
+                aria-hidden
+              />
             </div>
 
-            {/* Main 2D Workspace: Left Dock (1 col) + Central Canvas (8 cols) + Right Inspector (3 cols) */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[620px]">
-              {/* LEFT STUDIO TOOL DOCK (1 col) */}
-              <div className="lg:col-span-1 min-w-0 flex lg:flex-col items-center justify-start py-1">
-                <StudioToolDock
-                  activeTool={activeTool}
-                  onSelectTool={(tool) => {
-                    setActiveTool(tool);
-                    if (tool === "stickers") setActiveInspectorTab("stickers");
-                    if (tool === "palette" || tool === "text" || tool === "patterns") {
-                      setActiveInspectorTab("style");
-                    }
-                    if (tool === "image" && !uploading) {
-                      const input = document.getElementById("logo-upload-hidden") as HTMLInputElement;
-                      if (input) input.click();
-                    }
-                    if (tool === "rulers") setShowRulers(!showRulers);
-                  }}
-                  showRulers={showRulers}
-                  onToggleRulers={() => setShowRulers(!showRulers)}
-                  onUndo={() => {}}
-                  onRedo={() => {}}
-                />
-                <input
-                  id="logo-upload-hidden"
-                  type="file"
-                  accept={[...PHOTO_TYPES, ...VECTOR_TYPES].join(",")}
-                  onChange={(e) => void handleImageUpload(e)}
-                  className="hidden"
-                />
-              </div>
-
-              {/* CENTRAL 2D CAD CANVAS (8 cols) — Equipped with FREE Pointer Drag & Drop */}
-              <div className="lg:col-span-7 flex flex-col">
+            {/* ── Centre: the stage ── */}
+            <div className="relative z-10 h-[62vh] min-h-[420px] overflow-hidden rounded-sheet bg-surface-raised/40 ring-1 ring-line/50 lg:absolute lg:inset-auto lg:bottom-[84px] lg:left-[84px] lg:right-[396px] lg:top-[124px] lg:h-auto lg:min-h-0 lg:overflow-visible lg:rounded-none lg:bg-transparent lg:ring-0">
+              {artView === "2d" ? (
                 <DielineCanvas2D
+                  variant="stage"
                   dieline={dieline}
                   scale={zoomScale}
                   onScaleChange={setZoomScale}
@@ -779,56 +850,185 @@ export function StudioWorkspace({
                   onSelectPanel={selectPanel}
                   showRulers={showRulers}
                   flaggedElementIds={flaggedElementIds}
-                  className="h-full"
+                  textComposerOpen={textComposerOpen}
+                  onTextComposerOpenChange={(open) => {
+                    setTextComposerOpen(open);
+                    if (!open) setActiveTool("select");
+                  }}
                 />
+              ) : (
+                <Box3DView
+                  dimensions={dimensions}
+                  foldProgress={foldProgress}
+                  boxType={boxType}
+                  theme={activeMaterial}
+                  elements={elements}
+                  formulaVersion={project?.formulaVersion}
+                  backgroundPatternSvg={backgroundPatternSvg}
+                  environment="transparent"
+                  interactiveOpenState={lidOpen}
+                  showHud={false}
+                  showStatusBar={false}
+                  frameless
+                  minHeight={false}
+                />
+              )}
+            </div>
+
+            {/* ── Bottom: view dock (zoom in 2D, folding in 3D) ── */}
+            <div className="pointer-events-none z-30 flex justify-center lg:absolute lg:bottom-4 lg:left-[84px] lg:right-[396px]">
+              <div
+                role="toolbar"
+                aria-label={artView === "2d" ? "Thu phóng khuôn bế" : "Gập hộp 3D"}
+                className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-panel bg-landing-ink/95 p-1.5 text-white shadow-popover ring-1 ring-white/10 backdrop-blur-xl no-scrollbar"
+              >
+                {artView === "2d" ? (
+                  <>
+                    <button type="button" onClick={() => setZoomScale((s) => Math.max(0.4, +(s - 0.15).toFixed(2)))} className={darkDockButton(false)} aria-label="Thu nhỏ" title="Thu nhỏ">
+                      <ZoomOut className="size-4" aria-hidden />
+                    </button>
+                    <span className="w-14 text-center font-mono text-label-sm tabular-nums text-white" aria-live="polite">
+                      {Math.round(zoomScale * 100)}%
+                    </span>
+                    <button type="button" onClick={() => setZoomScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)))} className={darkDockButton(false)} aria-label="Phóng to" title="Phóng to">
+                      <ZoomIn className="size-4" aria-hidden />
+                    </button>
+                    <button type="button" onClick={() => setZoomScale(1)} className={darkDockButton(zoomScale === 1)} aria-label="Vừa màn hình" title="Vừa màn hình">
+                      <Maximize2 className="size-4" aria-hidden />
+                    </button>
+                    <span className="mx-1 h-6 w-px shrink-0 bg-white/15" aria-hidden />
+                    <span className="hidden whitespace-nowrap px-2 text-caption text-white/70 xl:inline">
+                      Đang in lên <strong className="font-semibold text-white">{placementPanel?.name ?? "—"}</strong>
+                      {placementPanel && (
+                        <span className="font-mono tabular-nums"> · {formatMm(placementPanel.bounds.width)}×{formatMm(placementPanel.bounds.height)} mm</span>
+                      )}
+                    </span>
+                    <button type="button" onClick={() => setArtView("3d")} className={darkDockButton(false, "px-3 w-auto gap-1.5 text-label-sm font-semibold")}>
+                      <Box className="size-4" aria-hidden />
+                      Gập thử
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLidOpen(false);
+                        setFoldProgress(0);
+                      }}
+                      className={darkDockButton(foldProgress === 0)}
+                      aria-label="Trải phẳng"
+                      title="Trải phẳng"
+                    >
+                      <LayoutPanelTop className="size-4" aria-hidden />
+                    </button>
+                    <label className="flex items-center gap-2.5 px-2">
+                      <span className="whitespace-nowrap font-mono text-cad-spec-micro text-white/70">Phẳng</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(foldProgress * 100)}
+                        onChange={(e) => {
+                          const value = Number(e.target.value) / 100;
+                          setFoldProgress(value);
+                          if (value < 0.9) setLidOpen(false);
+                        }}
+                        aria-label="Mức gập hộp"
+                        aria-valuetext={`${Math.round(foldProgress * 100)}% gập`}
+                        className="studio-dock-range w-28 cursor-pointer sm:w-40"
+                      />
+                      <span className="whitespace-nowrap font-mono text-cad-spec-micro text-white/70">Gập</span>
+                      <span className="w-11 text-right font-mono text-label-sm font-bold tabular-nums text-action">{Math.round(foldProgress * 100)}%</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLidOpen(false);
+                        setFoldProgress(1);
+                      }}
+                      className={darkDockButton(foldProgress === 1 && !lidOpen)}
+                      aria-label="Gập kín"
+                      title="Gập kín"
+                    >
+                      <Box className="size-4" aria-hidden />
+                    </button>
+                    {boxType !== "pillow" && (
+                      <button
+                        type="button"
+                        aria-pressed={lidOpen}
+                        onClick={() => {
+                          setFoldProgress(1);
+                          setLidOpen((open) => !open);
+                        }}
+                        className={darkDockButton(lidOpen, "px-3 w-auto gap-1.5 text-label-sm font-semibold")}
+                      >
+                        <PackageOpen className="size-4" aria-hidden />
+                        {lidOpen ? "Đóng nắp" : "Mở nắp"}
+                      </button>
+                    )}
+                    <span className="mx-1 h-6 w-px shrink-0 bg-white/15" aria-hidden />
+                    <button type="button" onClick={() => setArtView("2d")} className={darkDockButton(false, "px-3 w-auto gap-1.5 text-label-sm font-semibold")}>
+                      <PenTool className="size-4" aria-hidden />
+                      Sửa hình in
+                    </button>
+                  </>
+                )}
+                {!isDemo && (
+                  <>
+                    <span className="mx-1 h-6 w-px shrink-0 bg-white/15 sm:hidden" aria-hidden />
+                    <div className="flex items-center gap-1 sm:hidden">{projectActions}</div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── Right: inspector ── */}
+            <aside
+              aria-label="Bảng thuộc tính"
+              className="z-20 flex flex-col overflow-hidden rounded-sheet bg-surface-raised/95 shadow-popover ring-1 ring-line/70 backdrop-blur-xl lg:absolute lg:bottom-4 lg:right-4 lg:top-[76px] lg:w-[364px]"
+            >
+              <div className="border-b border-line/70 p-3">
+                <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 rounded-full bg-surface-sunken p-1 text-label-sm">
+                  {INSPECTOR_TABS.map((tab) => {
+                    const on = activeInspectorTab === tab.id;
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveInspectorTab(tab.id)}
+                        role="tab"
+                        aria-selected={on}
+                        className={`relative flex min-h-9 items-center justify-center gap-1 whitespace-nowrap rounded-full px-1 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+                          on ? "bg-surface-raised font-semibold text-fg shadow-xs" : "text-fg-muted hover:text-fg"
+                        }`}
+                      >
+                        <Icon className="size-3.5 shrink-0" aria-hidden />
+                        {tab.label}
+                        {tab.id === "fitcheck" && displayReport.violations.length > 0 && (
+                          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-danger-solid font-mono text-cad-spec-micro text-white">
+                            {Math.min(9, displayReport.violations.length)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* RIGHT INSPECTOR DRAWER (3 cols) */}
-              <div className="lg:col-span-4 bg-white rounded-[28px] p-5 flex flex-col gap-5 overflow-y-auto max-h-[calc(100vh-170px)] min-h-[580px]">
-                {/* Inspector Tabs */}
-                <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 bg-landing-tile p-1 rounded-full text-[13px]">
-                  {[
-                    { id: "style", label: "Kiểu" },
-                    { id: "stickers", label: "Sticker" },
-                    { id: "dimensions", label: "Kích thước" },
-                    { id: "fitcheck", label: "FitCheck" },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveInspectorTab(tab.id as typeof activeInspectorTab)}
-                      role="tab"
-                      aria-selected={activeInspectorTab === tab.id}
-                      className={`min-h-[34px] px-1 rounded-full text-center whitespace-nowrap transition-colors ${
-                        activeInspectorTab === tab.id
-                          ? "bg-white text-landing-ink shadow-sm font-semibold"
-                          : "text-landing-muted hover:text-landing-ink"
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* TAB 1: STYLE (Image 2 Color Frames & Typography Cards) */}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
+                {/* TAB 1: STYLE (fonts, palette, AI pattern, seamless patterns) */}
                 {activeInspectorTab === "style" && (
                   <div className="space-y-5 animate-fadeIn">
                     <FontSelectorCards
                       selectedFontId={selectedFont.id}
                       onSelectFont={(f) => {
                         setSelectedFont(f);
-                        const updated = elements.map((el) =>
-                          el.type === "text"
-                            ? {
-                                ...el,
-                                style: {
-                                  ...el.style,
-                                  fontFamily: f.fontFamilyHeading,
-                                },
-                              }
-                            : el
+                        setElements((prev) =>
+                          prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el))
                         );
-                        setElements(updated);
                       }}
                     />
 
@@ -842,7 +1042,7 @@ export function StudioWorkspace({
                       }}
                     />
 
-                    <div className="pt-2 border-t border-landing-line">
+                    <div className="border-t border-line pt-4">
                       <AiPatternPanel
                         projectId={project?.id ?? null}
                         panel={placementPanel}
@@ -852,35 +1052,28 @@ export function StudioWorkspace({
                       />
                     </div>
 
-                    {/* Pattern Presets */}
-                    <div className="space-y-2 pt-2 border-t border-landing-line">
-                      <span className="font-landing-heading text-base font-bold text-landing-ink block">
-                        Hoa Văn Lặp (Seamless Patterns)
-                      </span>
+                    <div className="space-y-2 border-t border-line pt-4">
+                      <span className="block font-landing-heading text-title font-bold text-fg">Hoa văn lặp</span>
                       <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: "tet", label: "Hoa mai Tết 2026", color: "bg-amber-100 text-amber-900" },
-                          { id: "xmas", label: "Giáng Sinh & thông", color: "bg-emerald-100 text-emerald-900" },
-                          { id: "botanical", label: "Lá khuynh diệp", color: "bg-teal-100 text-teal-900" },
-                          { id: "gold", label: "Lưới vàng Art Deco", color: "bg-yellow-100 text-yellow-900" },
-                        ].map((pat) => (
-                          <button
-                            key={pat.id}
-                            type="button"
-                            onClick={() => {
-                              setBackgroundPatternSvg(
-                                backgroundPatternSvg === pat.id ? null : pat.id
-                              );
-                            }}
-                            className={`p-2.5 rounded-xl text-xs font-medium border text-left transition ${
-                              backgroundPatternSvg === pat.id
-                                ? "border-landing-green bg-landing-lime-mist/80 text-landing-green font-bold shadow-xs"
-                                : "border-landing-line hover:border-landing-ink/30 bg-landing-canvas"
-                            }`}
-                          >
-                            <span className="block truncate" title={pat.label}>{pat.label}</span>
-                          </button>
-                        ))}
+                        {SEAMLESS_PATTERNS.map((pat) => {
+                          const on = backgroundPatternSvg === pat.id;
+                          return (
+                            <button
+                              key={pat.id}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() => setBackgroundPatternSvg(on ? null : pat.id)}
+                              className={`flex min-h-11 items-center gap-2 rounded-control px-3 text-left text-label-sm transition-colors ${
+                                on ? "bg-fg font-semibold text-fg-inverse shadow-xs" : "bg-surface-sunken text-fg hover:bg-line/60"
+                              }`}
+                            >
+                              <span className={`size-2.5 shrink-0 rounded-full ${pat.dot}`} aria-hidden />
+                              <span className="truncate" title={pat.label}>
+                                {pat.label}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -889,21 +1082,14 @@ export function StudioWorkspace({
                 {/* TAB 2: STICKERS & ASSET BANK */}
                 {activeInspectorTab === "stickers" && placementPanel && (
                   <div className="animate-fadeIn">
-                    <StickerAssetBank
-                      activePanelId={placementPanel.id}
-                      onAddElement={handleAddElement}
-                    />
+                    <StickerAssetBank activePanelId={placementPanel.id} onAddElement={handleAddElement} />
                   </div>
                 )}
 
                 {/* TAB 3: DIMENSIONS CAD */}
                 {activeInspectorTab === "dimensions" && (
                   <div className="space-y-4 animate-fadeIn">
-                    <DimensionControls
-                      dimensions={dimensions}
-                      onChange={setDimensions}
-                      limits={limits}
-                    />
+                    <DimensionControls dimensions={dimensions} onChange={setDimensions} limits={limits} />
                   </div>
                 )}
 
@@ -911,18 +1097,15 @@ export function StudioWorkspace({
                 {activeInspectorTab === "fitcheck" && (
                   <div className="space-y-3 animate-fadeIn">
                     {!isDemo && (
-                      <p className="text-[11px] text-landing-muted leading-relaxed">
+                      <p className="text-caption leading-relaxed text-fg-muted">
                         {sync.dirty || !sync.serverReport
                           ? "Điểm tạm tính trên trình duyệt; máy chủ kiểm lại khi lưu."
                           : "Điểm do máy chủ kiểm ở lần lưu gần nhất, cũng là điểm dùng khi xuất file in."}
                       </p>
                     )}
                     {blockingReport && (
-                      <p
-                        role="alert"
-                        className="flex gap-2 p-3 rounded-3xl bg-vibrant-coral/10 border border-vibrant-coral/30 text-xs text-landing-ink"
-                      >
-                        <ShieldAlert className="w-4 h-4 flex-shrink-0 text-vibrant-coral-dark" aria-hidden />
+                      <p role="alert" className="flex gap-2 rounded-panel bg-danger-bg p-3 text-label-sm text-danger-fg">
+                        <ShieldAlert className="size-4 shrink-0" aria-hidden />
                         Máy chủ chặn xuất file vì các lỗi dưới đây. Sửa xong thì xuất lại.
                       </p>
                     )}
@@ -930,8 +1113,8 @@ export function StudioWorkspace({
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+            </aside>
+          </section>
         )}
 
         {/* STEP 5: XEM 3D, BỐI CẢNH & QUÀ TẶNG */}

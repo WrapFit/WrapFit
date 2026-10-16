@@ -1,24 +1,24 @@
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import React from "react";
-import { ApiError, errorMessage } from "@/services/api";
+import { errorMessage } from "@/services/api";
 
 export type FormAlertTone = "error" | "success" | "info";
 
 const TONES: Record<FormAlertTone, { box: string; icon: string; Icon: typeof Info }> = {
   // The text stays dark ink so it keeps AA contrast on the tinted background.
   error: {
-    box: "border-red-200 bg-red-50 text-landing-ink",
-    icon: "text-red-600",
+    box: "border-danger/30 bg-danger-bg text-landing-ink",
+    icon: "text-danger-fg",
     Icon: AlertTriangle,
   },
   success: {
-    box: "border-landing-green/25 bg-landing-lime-mist text-landing-green-night",
-    icon: "text-landing-green",
+    box: "border-fpt-orange/25 bg-fpt-orange-light text-fg",
+    icon: "text-fpt-orange-ink",
     Icon: CheckCircle2,
   },
   info: {
     box: "border-landing-line bg-white text-landing-ink",
-    icon: "text-landing-green",
+    icon: "text-fpt-orange-ink",
     Icon: Info,
   },
 };
@@ -27,13 +27,11 @@ interface FormAlertProps {
   tone?: FormAlertTone;
   title?: string;
   children?: React.ReactNode;
-  /** Shown small so the user can quote it when reporting a bug. */
-  requestId?: string;
   className?: string;
 }
 
 /** Message next to a form. Errors are announced at once (`role="alert"`), the rest politely. */
-export function FormAlert({ tone = "error", title, children, requestId, className = "" }: FormAlertProps) {
+export function FormAlert({ tone = "error", title, children, className = "" }: FormAlertProps) {
   const { box, icon, Icon } = TONES[tone];
   return (
     <div
@@ -44,20 +42,15 @@ export function FormAlert({ tone = "error", title, children, requestId, classNam
       <div className="min-w-0">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div>{children}</div>}
-        {requestId && (
-          <p className="mt-1 break-all font-mono text-[11px] opacity-75">
-            Mã lỗi · {requestId}
-          </p>
-        )}
       </div>
     </div>
   );
 }
 
-/** A failed API call: its Vietnamese message (`errorMessage`) and request id. */
+/** A failed API call: its Vietnamese message (`errorMessage`), without the request id. */
 export function ApiErrorAlert({ error, className }: { error: unknown; className?: string }) {
   return (
-    <FormAlert tone="error" requestId={error instanceof ApiError ? error.requestId : undefined} className={className}>
+    <FormAlert tone="error" className={className}>
       {errorMessage(error)}
     </FormAlert>
   );

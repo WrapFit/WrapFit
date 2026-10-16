@@ -48,7 +48,7 @@ export function BrandLogo({
         className={`${sizeBox} rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-xs ${
           isLight
             ? 'bg-white/20 border border-white/30 text-white'
-            : 'bg-[#122e20] border border-[#1c422d] text-white'
+            : 'bg-brand-forest-deep border border-brand-forest text-white'
         }`}
       >
         <svg
@@ -72,8 +72,8 @@ export function BrandLogo({
       {!isCompact && (
         <div className="flex items-center gap-2 leading-none">
           <span
-            className={`font-['Plus_Jakarta_Sans'] font-bold tracking-tight transition-colors ${sizeText} ${
-              isLight ? 'text-white' : 'text-[#122e20] group-hover:text-[#1a382b]'
+            className={`font-landing-body font-bold tracking-tight transition-colors ${sizeText} ${
+              isLight ? 'text-white' : 'text-brand-forest-deep group-hover:text-brand-forest'
             }`}
           >
             WrapFit
@@ -81,10 +81,10 @@ export function BrandLogo({
 
           {badge && (
             <span
-              className={`${badgeClassName} font-['JetBrains_Mono'] text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
+              className={`${badgeClassName} font-mono text-caption uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
                 isLight
                   ? 'bg-white/10 text-white/90 border-white/20'
-                  : 'bg-stone-100 text-stone-600 border-stone-200/80'
+                  : 'bg-surface-sunken text-fg-muted border-line/80'
               }`}
             >
               {badge}
@@ -97,7 +97,7 @@ export function BrandLogo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex items-center focus:outline-hidden">
+      <Link href={href} className="inline-flex items-center rounded-lg">
         {content}
       </Link>
     );

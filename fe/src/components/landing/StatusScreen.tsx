@@ -3,6 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
+import { buttonClass } from "@/components/ui";
 
 interface Shortcut {
   href: string;
@@ -23,14 +24,14 @@ interface StatusScreenProps {
 /** Full page for a missing page or a crash, in the pack.ly style: big code, bold title, lime action, shortcuts. */
 export function StatusScreen({ code, title, description, actions, shortcuts = [] }: StatusScreenProps) {
   return (
-    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-[#F5F6F4] font-landing-body text-landing-ink antialiased`}>
+    <div className={`${landingFontVariables} flex min-h-screen flex-col bg-mist-100 font-landing-body text-landing-ink antialiased`}>
       <header className="flex h-16 items-center px-5 lg:px-8">
         <LandingLogo />
       </header>
       <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col justify-center px-4 pb-24 pt-6 md:pb-12 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
           <div>
-            <p className="font-landing-heading text-7xl font-bold leading-none tracking-tight text-landing-green sm:text-8xl">{code}</p>
+            <p className="font-landing-heading text-7xl font-bold leading-none tracking-tight text-fpt-orange-ink sm:text-8xl">{code}</p>
             <h1 className="mt-4 font-landing-heading text-4xl font-bold tracking-tight sm:text-5xl">{title}</h1>
             <p className="mt-4 max-w-xl text-lg leading-8 text-landing-muted">{description}</p>
             <div className="mt-8 flex flex-wrap gap-3">{actions}</div>
@@ -51,8 +52,8 @@ export function StatusScreen({ code, title, description, actions, shortcuts = []
           <ul className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {shortcuts.map((item) => (
               <li key={item.href}>
-                <Link href={item.href} className="flex h-full items-start gap-3 rounded-[28px] bg-white p-5 transition-shadow hover:ring-2 hover:ring-landing-ink/10">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-landing-lime text-landing-green-night">
+                <Link href={item.href} className="flex h-full items-start gap-3 rounded-sheet bg-white p-5 transition-shadow hover:ring-2 hover:ring-landing-ink/10">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-fpt-orange text-white">
                     <item.icon className="size-5" aria-hidden />
                   </span>
                   <span>
@@ -69,7 +70,5 @@ export function StatusScreen({ code, title, description, actions, shortcuts = []
   );
 }
 
-export const LIME_PILL =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-landing-lime px-6 text-base font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]";
-export const WHITE_PILL =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-medium text-landing-ink ring-1 ring-landing-line transition-colors hover:bg-landing-tile/50";
+export const LIME_PILL = buttonClass({ variant: "primary", size: "xl" });
+export const WHITE_PILL = buttonClass({ variant: "secondary", size: "xl", className: "font-medium" });

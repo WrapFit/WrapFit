@@ -82,7 +82,6 @@ export function Step6ReviewExport({
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
       <StepHeader
-        step="Bước 6 / 6 · Kiểm tra & xuất file"
         title="Sẵn sàng gửi xưởng in"
         subtitle={`${structureName} · ${dimensions.length} × ${dimensions.width} × ${dimensions.height} mm · ${paper.name}`}
       />
@@ -130,10 +129,10 @@ export function Step6ReviewExport({
             )}
           </div>
 
-          <div className="relative mx-4 flex-1 overflow-hidden rounded-[20px] bg-landing-canvas">
+          <div className="relative mx-4 flex-1 overflow-hidden rounded-squircle-md bg-landing-canvas">
             {view === "2d" && piece ? (
               // Read-only: no onElementsChange, nothing moves here.
-              <DielineCanvas2D dieline={piece.geometry} elements={elements} backgroundPatternSvg={backgroundPatternSvg} activePanelId="all" showRulers className="h-full !min-h-[520px] !rounded-[20px]" />
+              <DielineCanvas2D dieline={piece.geometry} elements={elements} backgroundPatternSvg={backgroundPatternSvg} activePanelId="all" showRulers className="h-full !min-h-[520px] !rounded-squircle-md" />
             ) : (
               <div className="absolute inset-0">
                 <Box3DView
@@ -171,7 +170,7 @@ export function Step6ReviewExport({
                       if (Number(e.target.value) < 90) setOpen(false);
                     }}
                     aria-label="Mức gấp hộp"
-                    className="w-full accent-landing-green sm:w-64"
+                    className="w-full accent-fpt-orange sm:w-64"
                   />
                   <span className="w-10 font-mono text-xs">{fold}%</span>
                 </label>
@@ -182,7 +181,7 @@ export function Step6ReviewExport({
                     setFold(100);
                   }}
                   aria-pressed={open}
-                  className={cn("inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors", open ? "bg-landing-green-night text-white" : "bg-landing-lime text-landing-green-night hover:bg-[#AFEC88]")}
+                  className={cn("inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors", open ? "bg-stone-900 text-white" : "bg-fpt-orange text-white hover:bg-fpt-orange-dark shadow-xs")}
                 >
                   <Gift className="size-4" aria-hidden />
                   {open ? "Đóng nắp" : "Mở nắp"}
@@ -198,10 +197,10 @@ export function Step6ReviewExport({
 
         {/* Report */}
         <div className="flex flex-col gap-4">
-          <StudioCard className={cn("p-5", passed ? "bg-landing-lime-mist" : "bg-red-50")}>
+          <StudioCard className={cn("p-5", passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold text-landing-green-deep">FitCheck™</p>
+                <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
                 <p className="mt-1 font-landing-heading text-xl font-bold text-landing-ink">{passed ? (warnings ? "Xuất được, nên sửa cảnh báo" : "Đạt chuẩn in") : "Còn lỗi chặn xuất file"}</p>
                 <p className="mt-1 text-sm text-landing-muted">
                   {errors} lỗi · {warnings} cảnh báo
@@ -213,7 +212,7 @@ export function Step6ReviewExport({
               </p>
             </div>
             {blocked && (
-              <p role="alert" className="mt-3 flex gap-2 rounded-2xl bg-white p-3 text-sm text-red-800">
+              <p role="alert" className="mt-3 flex gap-2 rounded-2xl bg-white p-3 text-sm text-danger-fg">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
                 Máy chủ đã chặn lần xuất file trước vì các lỗi dưới đây.
               </p>
@@ -233,7 +232,7 @@ export function Step6ReviewExport({
                     <span
                       className={cn(
                         "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
-                        hits.length === 0 ? "bg-landing-lime text-landing-green-night" : error ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800",
+                        hits.length === 0 ? "bg-fpt-orange text-white" : error ? "bg-danger-bg text-danger-fg" : "bg-warning-bg text-warning-fg",
                       )}
                     >
                       {hits.length === 0 ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : <AlertTriangle className="size-3.5" aria-hidden />}
@@ -257,13 +256,13 @@ export function Step6ReviewExport({
             )}
           </StudioCard>
 
-          <StudioCard className="bg-landing-green-night p-5 text-white">
+          <StudioCard className="bg-stone-900 p-5 text-white">
             <p className="flex items-center gap-2 font-landing-heading text-lg font-bold">
-              <QrCode className="size-5 text-landing-lime" aria-hidden />
+              <QrCode className="size-5 text-fpt-orange" aria-hidden />
               Mã QR mở hộp
             </p>
-            <p className="mt-1.5 text-sm leading-6 text-landing-lime-mist/80">In mã lên hộp: người nhận quét để mở hộp 3D cùng lời chúc của bạn.</p>
-            <button type="button" onClick={onOpenQr} className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-landing-lime text-sm font-semibold text-landing-green-night transition-colors hover:bg-[#AFEC88]">
+            <p className="mt-1.5 text-sm leading-6 text-white/80">In mã lên hộp: người nhận quét để mở hộp 3D cùng lời chúc của bạn.</p>
+            <button type="button" onClick={onOpenQr} className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-fpt-orange text-sm font-semibold text-white transition-colors hover:bg-fpt-orange-dark shadow-xs">
               <Sparkles className="size-4" aria-hidden />
               Tạo lời chúc & mã QR
             </button>

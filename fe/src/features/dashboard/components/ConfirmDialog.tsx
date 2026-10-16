@@ -2,6 +2,7 @@
 
 import React, { useId, useRef } from "react";
 import { ModalDialog } from "./ModalDialog";
+import { Icon } from "@/components/ui";
 
 /** Workspace dialog: white, black hairline and hard shadow (pacdora.com style). */
 export const DIALOG_PANEL =
@@ -9,7 +10,7 @@ export const DIALOG_PANEL =
 export const DIALOG_CANCEL =
   "min-h-[44px] rounded-lg border border-library-ink bg-white px-4 py-2.5 text-sm font-medium text-library-ink transition-colors hover:bg-library-panel focus-visible:ring-[3px] focus-visible:ring-library-ink/20";
 export const DIALOG_DANGER =
-  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-red-700 disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-red-600/30";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-danger px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-danger disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-danger/30";
 
 interface ConfirmDialogProps {
   title: string;
@@ -56,12 +57,10 @@ export function ConfirmDialog({
       <div className="flex items-start gap-3">
         <span
           className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${
-            danger ? "bg-red-50 text-red-700" : "bg-library-accent-mist text-library-accent"
+            danger ? "bg-danger-bg text-danger-fg" : "bg-fpt-orange-light text-fpt-orange-ink"
           }`}
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-xl">
-            {icon}
-          </span>
+          <Icon name={icon} className="size-5" />
         </span>
         <h2 id={titleId} className="pt-1.5 text-xl font-medium leading-snug text-library-ink">
           {title}
@@ -76,12 +75,7 @@ export function ConfirmDialog({
         </button>
         <button type="button" onClick={onConfirm} disabled={busy} className={confirmClassName}>
           {busy && (
-            <span
-              aria-hidden="true"
-              className="material-symbols-outlined text-lg animate-spin motion-reduce:animate-none"
-            >
-              progress_activity
-            </span>
+            <Icon name="progress_activity" className="size-[18px] animate-spin motion-reduce:animate-none" />
           )}
           {busy ? busyLabel : confirmLabel}
         </button>

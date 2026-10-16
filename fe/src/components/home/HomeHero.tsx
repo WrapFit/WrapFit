@@ -3,7 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { cn } from "@/utils/helpers";
 import { HERO, HERO_FEATURES, INDUSTRY_TILES, type IndustryTile } from "./content";
-import { Container, Stars, Tag, limeButton } from "@/components/landing";
+import { Container, Tag, limeButton } from "@/components/landing";
 
 /** Hero of the home page: badges, two-line title, lead, the five strengths, and the bento of industries. */
 export function HomeHero() {
@@ -12,25 +12,16 @@ export function HomeHero() {
       <Container className="flex flex-col items-center gap-3.5 text-center lg:gap-7">
         {/* Official Slogan & FPT Identity */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4">
-          <div className="group inline-flex items-center gap-2.5 rounded-full border border-stone-200/90 bg-white/95 px-4 py-1.5 shadow-2xs backdrop-blur-md transition-all duration-300 hover:border-[#F26522]/40 hover:shadow-soft-8">
+          <div className="group inline-flex items-center gap-2.5 rounded-full border border-line/90 bg-white/95 px-4 py-1.5 shadow-2xs backdrop-blur-md transition-all duration-300 hover:border-fpt-orange/40 hover:shadow-soft-8">
             {/* 3 iconic FPT colored frames/dots */}
             <span className="flex items-center gap-1.5" aria-hidden>
-              <span className="size-2 rounded-full bg-[#005CA9] ring-2 ring-[#005CA9]/25" title="FPT Blue" />
-              <span className="size-2 rounded-full bg-[#F26522] ring-2 ring-[#F26522]/25 animate-pulse" title="FPT Orange" />
-              <span className="size-2 rounded-full bg-[#6DB33F] ring-2 ring-[#6DB33F]/25" title="FPT Green" />
+              <span className="size-2 rounded-full bg-fpt-blue ring-2 ring-fpt-blue/25" title="FPT Blue" />
+              <span className="size-2 rounded-full bg-fpt-orange ring-2 ring-fpt-orange/25 animate-pulse" title="FPT Orange" />
+              <span className="size-2 rounded-full bg-fpt-green ring-2 ring-fpt-green/25" title="FPT Green" />
             </span>
-            <span className="text-xs sm:text-sm font-semibold tracking-wide text-stone-800">
-              WrapFit · Nền tảng thiết kế hộp quà thông minh
+            <span className="text-xs sm:text-sm font-semibold tracking-wide text-fg">
+              Nền tảng thiết kế hộp quà thông minh
             </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {HERO.badges.map((badge, idx) => (
-              <span key={badge} className="inline-flex h-6 items-center gap-1 rounded-full bg-stone-100/90 px-2.5 text-xs font-medium text-stone-700">
-                <Stars className={cn("text-xs", idx === 0 ? "text-[#005CA9]" : "text-[#6DB33F]")} />
-                {badge}
-              </span>
-            ))}
           </div>
         </div>
 
@@ -41,14 +32,14 @@ export function HomeHero() {
             <span
               className={cn(
                 "inline-block bg-clip-text py-1 text-[2.75rem] leading-[1.15] text-transparent md:text-6xl xl:text-7xl 2xl:text-8xl",
-                "bg-[length:200%_auto]",
-                "bg-[linear-gradient(135deg,#005CA9_0%,#F26522_45%,#6DB33F_100%)]"
+                // FPT blue, orange and green drifting through the word (globals.css .text-tricolor); every stop is ≥ 3:1 for large text.
+                "text-tricolor bg-gradient-to-r from-fpt-blue from-15% via-fpt-orange via-50% to-fpt-green-dark to-85%"
               )}
             >
               {HERO.highlight}
             </span>
           </h1>
-          <p className="max-w-3xl text-balance text-sm leading-5 text-landing-muted lg:text-lg lg:font-medium lg:leading-7">{HERO.lead}</p>
+          <p className="max-w-3xl text-balance text-body-sm text-fg-muted lg:text-body-lg lg:font-medium">{HERO.lead}</p>
         </div>
 
         <ul className="grid w-full grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:justify-center lg:flex-nowrap lg:gap-2">
@@ -108,14 +99,14 @@ function BentoTile({ tile, featured }: { tile: IndustryTile; featured: boolean }
       <div className="relative">
         <h3
           className={cn(
-            "font-landing-heading font-semibold text-slate-50",
+            "font-landing-heading font-semibold text-white/95",
             featured ? "text-base leading-6 lg:text-2xl lg:leading-8" : "text-base leading-6 lg:text-xl lg:leading-7"
           )}
         >
           {tile.title}
         </h3>
         {tile.description && (
-          <p className="mt-1 line-clamp-4 text-sm font-medium leading-5 text-slate-50/80 lg:line-clamp-3 lg:text-base lg:leading-6">
+          <p className="mt-1 line-clamp-4 text-sm font-medium leading-5 text-white/80 lg:line-clamp-3 lg:text-base lg:leading-6">
             {tile.description}
           </p>
         )}

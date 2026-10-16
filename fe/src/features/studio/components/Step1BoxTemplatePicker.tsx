@@ -6,7 +6,7 @@ import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { CardTitle, MetricRow, PRIMARY_PILL, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
-import { BoxStructureType, caliperOf, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
+import { BoxStructureType, caliperOf, type CanvasElement, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
 import type { BoxStructure } from "@/types/api";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
 
@@ -50,6 +50,9 @@ const orderOf = (id: string) => {
  * Cards of the structures the API offers (`GET /templates/structures`), most common first (order of BOX_STRUCTURES,
  * new structures last); offline demo: the 4 built in.
  */
+/** Shared empty list: a new `[]` each render would make the 3D box rebuild its model on every fold step. */
+const NO_ELEMENTS: CanvasElement[] = [];
+
 function structureCards(structures: BoxStructure[] | undefined): StructureCard[] {
   if (!structures) return BOX_STRUCTURES.map((s) => ({ ...s, apiName: s.vietnameseName }));
   return [...structures].sort((a, b) => orderOf(a.id) - orderOf(b.id)).map((api) => {
@@ -90,7 +93,6 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6">
       <StepHeader
-        step="Bước 1 / 6 · Cấu trúc"
         title="Chọn cấu trúc hộp"
         subtitle="Mỗi cấu trúc là một bộ công thức khuôn bế. Xem hộp gấp và khuôn trải phẳng trước khi nhập kích thước."
       />
@@ -109,7 +111,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                     aria-pressed={isSelected}
                     onClick={() => onSelectStructure(item.id)}
                     className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors ${
-                      isSelected ? "bg-landing-lime-mist ring-2 ring-landing-green" : "hover:bg-landing-canvas"
+                      isSelected ? "bg-orange-50 ring-2 ring-fpt-orange" : "hover:bg-landing-canvas"
                     }`}
                   >
                     <span className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-landing-line/60">
@@ -120,7 +122,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                       <span className="block truncate text-xs text-landing-muted">{item.badge}</span>
                     </span>
                     {isSelected && (
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-landing-lime text-landing-green-night">
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white">
                         <Check className="size-3.5" strokeWidth={3} aria-hidden />
                       </span>
                     )}
@@ -143,20 +145,9 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                 { value: "2d", label: "Khuôn bế 2D", icon: Grid3x3 },
               ]}
             />
-            <span className="flex gap-1.5 font-mono text-xs">
-              <span className="rounded-full px-2.5 py-1 ring-2 ring-sky-400">
-                <span className="text-sky-600">L</span> {dims.length}
-              </span>
-              <span className="rounded-full px-2.5 py-1 ring-2 ring-orange-300">
-                <span className="text-orange-600">W</span> {dims.width}
-              </span>
-              <span className="rounded-full px-2.5 py-1 ring-2 ring-emerald-300">
-                <span className="text-emerald-600">H</span> {dims.height} mm
-              </span>
-            </span>
           </div>
 
-          <div className={`relative mx-4 flex-1 overflow-hidden rounded-[20px] ${view === "3d" ? "bg-landing-canvas" : "bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
+          <div className={`relative mx-4 flex-1 overflow-hidden rounded-squircle-md ${view === "3d" ? "bg-landing-canvas" : "bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
             {view === "3d" ? (
               <div className="absolute inset-0">
                 <Box3DView
@@ -164,10 +155,11 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                   foldProgress={fold / 100}
                   boxType={current.id}
                   theme="ivory"
-                  elements={[]}
+                  elements={NO_ELEMENTS}
                   showHud={false}
                   showStatusBar={false}
                   enableMacroZoom={false}
+                  chrome="bar"
                   frameless
                   minHeight={false}
                   className="h-full w-full"
@@ -184,17 +176,17 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             {view === "3d" ? (
               <label className="flex w-full items-center gap-3 text-sm text-landing-muted sm:w-auto">
                 <span className="shrink-0 font-medium text-landing-ink">Gấp hộp</span>
-                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-landing-green sm:w-64" />
+                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-fpt-orange sm:w-64" />
                 <span className="w-10 font-mono text-xs">{fold}%</span>
               </label>
             ) : (
               <span className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-landing-muted">
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0.5 w-6 bg-[#E53E3E]" />
+                  <span aria-hidden className="h-0.5 w-6 bg-dieline-cut" />
                   Đường cắt
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0 w-6 border-t-2 border-dashed border-[#3182CE]" />
+                  <span aria-hidden className="h-0 w-6 border-t-2 border-dashed border-dieline-crease" />
                   Đường gấp
                 </span>
               </span>

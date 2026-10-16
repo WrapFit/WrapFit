@@ -67,8 +67,8 @@ export function ContactHero() {
           {/* Left Column: Eyebrow, Big Headline, Subtitle */}
           <div className="lg:col-span-4 flex flex-col justify-center">
             <Reveal variant="text">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 mb-3 border border-blue-200/60">
-                <Sparkles className="size-3 text-blue-600" />
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-info-bg px-3 py-1 text-xs font-semibold text-info-fg mb-3 border border-info/60">
+                <Sparkles className="size-3 text-info-fg" />
                 Liên hệ WrapFit
               </span>
 
@@ -89,16 +89,16 @@ export function ContactHero() {
               return (
                 <div
                   key={channel.title}
-                  className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-soft-8 transition-all duration-300 hover:-translate-y-1 hover:border-stone-300 hover:shadow-soft-16"
+                  className="group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-line/90 bg-white p-5 sm:p-6 shadow-soft-8 transition-all duration-300 hover:-translate-y-1 hover:border-line hover:shadow-soft-16"
                 >
                   <div>
                     {/* Squircle Icon */}
-                    <div className="flex size-11 items-center justify-center rounded-xl bg-stone-100 text-stone-700 transition-colors group-hover:bg-[#FEF1EA] group-hover:text-[#F26522] mb-4">
+                    <div className="flex size-11 items-center justify-center rounded-xl bg-surface-sunken text-fg-muted transition-colors group-hover:bg-fpt-orange-light group-hover:text-fpt-orange-ink mb-4">
                       <Icon className="size-5" />
                     </div>
 
                     {channel.badge && (
-                      <span className="absolute top-5 right-5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                      <span className="absolute top-5 right-5 rounded-full bg-fpt-orange-light px-2 py-0.5 text-caption font-semibold text-fpt-orange-ink border border-fpt-orange/40">
                         {channel.badge}
                       </span>
                     )}
@@ -114,7 +114,7 @@ export function ContactHero() {
 
                   <Link
                     href={channel.href}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#F26522] transition-colors group-hover:text-[#D85314] hover:underline"
+                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-fpt-orange-ink transition-colors group-hover:text-fg hover:underline"
                   >
                     <span>{channel.actionText}</span>
                     <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
@@ -126,18 +126,18 @@ export function ContactHero() {
         </div>
 
         {/* Bottom Social Proof: Trusted by 100+ companies */}
-        <div className="mt-14 sm:mt-20 pt-8 sm:pt-10 border-t border-stone-200/70 text-center">
-          <p className="text-xs sm:text-sm font-semibold text-stone-500 uppercase tracking-wider mb-6">
+        <div className="mt-14 sm:mt-20 pt-8 sm:pt-10 border-t border-line/70 text-center">
+          <p className="text-xs sm:text-sm font-semibold text-fg-muted uppercase tracking-wider mb-6">
             Được tin chọn bởi 100+ xưởng in và thương hiệu quà tặng thủ công
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 opacity-75 grayscale hover:grayscale-0 transition-all duration-300">
             {TRUSTED_PARTNERS.map((partner) => (
               <div key={partner.name} className="flex flex-col items-center">
-                <span className="font-landing-heading text-sm sm:text-base font-bold text-stone-700">
+                <span className="font-landing-heading text-sm sm:text-base font-bold text-fg-muted">
                   {partner.name}
                 </span>
-                <span className="text-[10px] font-mono text-stone-400">
+                <span className="text-cad-spec-micro font-mono text-fg-muted">
                   {partner.role}
                 </span>
               </div>

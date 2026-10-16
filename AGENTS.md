@@ -29,23 +29,19 @@ When generating code or designing interfaces for WrapFit, you MUST adhere to phy
 
 ---
 
-## 2. UI/UX Craftsmanship & Brand System (Luxury Minimalist & Vibrant Accents)
+## 2. UI/UX Craftsmanship & Brand System (pack.ly + Pacdora, FPT accents)
 
-WrapFit targets handmade boutique owners, artisan crafters, and thoughtful luxury gift givers. Avoid generic, lazy "AI templates":
+WrapFit targets handmade boutique owners, artisan crafters, and thoughtful gift givers. The interface follows **pack.ly** on marketing pages (slate ink, FPT orange call to action with blue and green accents, white cards with 32–48 px corners, big bold headings) and **pacdora.com** in the template library and workspace (grey tiles, black hairlines, hard offset shadow on hover). Avoid generic "AI templates". Full rules: `docs/15_DESIGN_SYSTEM.md`; live catalogue: `/design-system`.
 
-- **Design Tone**: **Luxury Minimalist & Vibrant Accents** — Clean editorial elegance inspired by Aesop, Luma, and Hers, elevated by warm tactile paper materials and energetic accent highlights for critical components.
-- **Typography Hierarchy**:
-  - *Editorial Headings & Hero*: Elegant display serif (**Cormorant Garamond** or **Playfair Display**) for sophistication.
-  - *UI Controls & Labels*: High-legibility grotesque sans-serif (**Plus Jakarta Sans** or **DM Sans**).
-  - *CAD Dimension Specs*: Monospace font (**JetBrains Mono**) for exact $L, W, H, t$ mm readouts.
-- **Palette**:
-  - *Paper Surfaces*: Cotton Ivory (`#FDFBF7`), Pure Alabaster (`#F7F5F0`), Fine Kraft Linen (`#E8D8C8`).
-  - *Brand & Luxury Tones*: Deep Luxury Forest (`#1A362B`), Champagne Gold Foil (`#D4AF37`), Dark Espresso Ink (`#1C1917`).
-  - *Vibrant Accent Highlights (Reserved for CTAs, FitCheck alerts & Copilot)*: Electric Cobalt Blue (`#2563EB` / `#1E56A0`), Radiant Coral (`#FF6B6B`), Sunshine Citron (`#FFD93D`).
-- **Component Polish & Tactile Finish**:
-  - Apple Squircle rounded corners (`rounded-2xl`, `rounded-3xl`).
-  - Crisp micro-borders (`border border-stone-200/80` or `border-white/60`), Frosted Glass (`backdrop-blur-md bg-white/80`).
-  - Soft ambient occlusion box shadows without harsh black drop-shadows.
+- **Tokens** (single source `fe/src/assets/styles/tokens.ts`, three tiers):
+  - *Semantic* (use in components): `fg` #1D293D, `fg-muted` #53647D, `canvas` #F1F5F9, `surface-raised` #FFFFFF, `surface-sunken` #E9EFF5, `line` #CAD5E2, `line-strong` #7C8BA1 (input borders), `action` #F26522 (FPT orange) with `action-fg` #FFFFFF (primary button), `accent` #B93F0A (selected controls), `focus` #2563EB, and `success` / `warning` / `danger` / `info` each with `-fg` and `-bg`.
+  - *Primitive* ramps in `fe/tailwind.config.ts`: `landing-*` (pack.ly), `library-*` (Pacdora), `paper-*` and `brand-*` (packaging materials: ivory #FDFBF7, kraft #E8D8C8, forest #1A362B, gold #D4AF37), `fpt-*` (FPT University: orange #F26522, blue #005CA9, green #6DB33F), `dieline-*`.
+  - *Component* decisions live in `fe/src/components/ui/*` (e.g. `BUTTON_VARIANTS`).
+- **Brand colours**: **FPT orange** #F26522 is the main colour of every user page (marketing, library, workspace, studio, account); FPT blue #005CA9 and FPT green #6DB33F are the two secondary colours. Primary buttons are orange with white semibold text (`Button` `primary` / `brand`, 3.2:1, a deliberate brand choice); selected controls and accent text use `accent` / `fpt-orange-ink` #B93F0A (5.6:1); light accent fills `fpt-orange-light`. Green stays for success states (`success*`) and the dark green bands; blue for focus, info and links. Do not bring back lime (`landing-lime`, `library-lime`) as an accent. Plain `fpt-orange` / `fpt-green` are for fills, icons on dark and decoration, not small text on light backgrounds.
+- **Typography**: headings **Be Vietnam Pro** (`font-landing-heading`), body and controls **Inter** (`font-landing-body`), numbers and mm readouts Inter with `tabular-nums` (`font-mono` maps to Inter; no JetBrains, Playfair or Plus Jakarta in the UI); Cormorant Garamond, Playfair, Be Vietnam Pro, Big Shoulders and Inter are the print fonts of box texts (`fe/src/assets/fonts/print`). Sizes come from the semantic type scale (`text-display-xl`, `text-display`, `text-heading-lg|md|sm`, `text-title`, `text-body-lg|body|body-sm`, `text-label`, `text-label-sm`, `text-caption`, `text-overline`, `text-cad-*`); display sizes are fluid (clamp). Minimum 12 px for reading text, 11 px for monospace technical labels.
+- **Spacing & shape**: Tailwind's 4 px scale plus purposeful tokens (`h-control*`, `p-card*`, `py-section*`, `gap-stack*`); radii `rounded-control` 12, `rounded-panel` 16, `rounded-sheet` 28, `rounded-card` 32, `rounded-card-lg` 48 px. Soft ambient shadows (`shadow-soft-*`, `shadow-popover`), `shadow-hard*` only for Pacdora hover states.
+- **Components**: build pages from `@/components/ui` (Button, Card, Badge, Field/Input, Checkbox/Radio/Switch, Tabs, Accordion, Tooltip, Alert/Banner, Breadcrumb, Dialog/Drawer, DropdownMenu, NumberStepper, Slider, SearchBar, DatePicker, DataTable, Skeleton/LoadingState, Avatar, Icon). Do not write new button or card class strings in pages; add a variant instead.
+- **Accessibility**: WCAG 2.2 AA. Text ≥ 4.5:1, large text and control borders ≥ 3:1, visible cobalt focus on every control, full keyboard use, no meaning by colour alone, touch targets ≥ 44 px, `prefers-reduced-motion` respected.
 
 ---
 

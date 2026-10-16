@@ -2,14 +2,15 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import React, { useEffect, useState, useCallback } from "react";
-import { ArrowRight, CheckCircle2, Eye, Layers, Maximize2, RotateCcw, ShieldCheck, Sparkles, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ArrowRight, CheckCircle2, Layers, Sparkles, X } from "lucide-react";
 import { ROUTES } from "@/constants";
 import type { BoxStructureOption, BoxSizePreset } from "@/features/studio/utils/boxStructures";
 import { formatDimensions } from "@/features/templates/labels";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
 import type { BoxMaterialTheme } from "@/features/studio/components/three/InteractiveFoldingBox3D";
+import { buttonClass } from "@/components/ui";
 
 // Dynamically import InteractiveFoldingBox3D for SSR safety
 const InteractiveFoldingBox3D = dynamic(
@@ -17,8 +18,8 @@ const InteractiveFoldingBox3D = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex size-full flex-col items-center justify-center gap-3 bg-stone-900/40 text-stone-300">
-        <div className="size-8 animate-spin rounded-full border-2 border-stone-400 border-t-white" />
+      <div className="flex size-full flex-col items-center justify-center gap-3 bg-fg/40 text-white/75">
+        <div className="size-8 animate-spin rounded-full border-2 border-line-strong border-t-white" />
         <span className="font-mono text-xs uppercase tracking-wider">Đang khởi tạo 3D Canvas…</span>
       </div>
     ),
@@ -139,7 +140,7 @@ export function BoxQuickPreviewModal({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-stone-950/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-fg/75 backdrop-blur-md transition-opacity animate-fade-in"
         onClick={() => {
           tactileAudio.playSquishyTap();
           onClose();
@@ -147,7 +148,7 @@ export function BoxQuickPreviewModal({
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-stone-200/40 bg-stone-900 text-stone-100 shadow-2xl transition-all sm:flex-row">
+      <div className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-line/40 bg-fg text-white/95 shadow-2xl transition-all sm:flex-row">
         {/* Close Button */}
         <button
           type="button"
@@ -155,21 +156,21 @@ export function BoxQuickPreviewModal({
             tactileAudio.playSquishyTap();
             onClose();
           }}
-          className="absolute right-4 top-4 z-20 inline-flex size-10 items-center justify-center rounded-full bg-stone-800/80 text-stone-300 backdrop-blur-md transition hover:bg-stone-700 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-landing-lime"
+          className="absolute right-4 top-4 z-20 inline-flex size-10 items-center justify-center rounded-full bg-fg/80 text-white/75 backdrop-blur-md transition hover:bg-fg hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
           aria-label="Đóng cửa sổ xem nhanh"
         >
           <X className="size-5" />
         </button>
 
         {/* 3D Canvas Stage (Left) */}
-        <div className="relative flex h-[340px] w-full flex-col bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 sm:h-auto sm:w-[58%]">
+        <div className="relative flex h-[340px] w-full flex-col bg-gradient-to-b from-fg via-fg to-fg sm:h-auto sm:w-[58%]">
           {/* Status Header */}
           <div className="absolute left-4 top-4 z-10 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3 py-1 text-xs font-medium text-emerald-400 backdrop-blur-md">
-              <span className="size-2 animate-pulse rounded-full bg-emerald-400" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-emerald-950/60 px-3 py-1 text-xs font-medium text-success backdrop-blur-md">
+              <span className="size-2 animate-pulse rounded-full bg-success" />
               Live 3D Fold
             </span>
-            <span className="hidden rounded-full border border-stone-700/60 bg-stone-800/60 px-2.5 py-1 font-mono text-xs text-stone-300 backdrop-blur-md sm:inline-block">
+            <span className="hidden rounded-full border border-white/20/60 bg-white/5 px-2.5 py-1 font-mono text-xs text-white/75 backdrop-blur-md sm:inline-block">
               {formatDimensions(currentPreset.dims)}
             </span>
           </div>
@@ -191,7 +192,7 @@ export function BoxQuickPreviewModal({
           </div>
 
           {/* Interactive Folding Slider Dock */}
-          <div className="absolute inset-x-4 bottom-4 z-10 flex flex-col gap-2 rounded-2xl border border-stone-700/50 bg-stone-900/85 p-3 backdrop-blur-lg">
+          <div className="absolute inset-x-4 bottom-4 z-10 flex flex-col gap-2 rounded-2xl border border-white/20/50 bg-fg/85 p-3 backdrop-blur-lg">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1.5 font-medium text-stone-300">
@@ -208,8 +209,8 @@ export function BoxQuickPreviewModal({
                   type="button"
                   onClick={() => handleFoldChange(0.0)}
                   className={cn(
-                    "rounded px-2 py-0.5 text-[11px] transition",
-                    foldProgress === 0.0 ? "bg-[#F26522] text-white font-bold" : "bg-stone-800 text-stone-400 hover:text-stone-200"
+                    "rounded px-2 py-0.5 text-caption transition",
+                    foldProgress === 0.0 ? "bg-fpt-orange text-white font-bold" : "bg-fg text-white/70 hover:text-white/85"
                   )}
                 >
                   Phẳng (0%)
@@ -218,8 +219,8 @@ export function BoxQuickPreviewModal({
                   type="button"
                   onClick={() => handleFoldChange(0.5)}
                   className={cn(
-                    "rounded px-2 py-0.5 text-[11px] transition",
-                    foldProgress === 0.5 ? "bg-[#F26522] text-white font-bold" : "bg-stone-800 text-stone-400 hover:text-stone-200"
+                    "rounded px-2 py-0.5 text-caption transition",
+                    foldProgress === 0.5 ? "bg-fpt-orange text-white font-bold" : "bg-fg text-white/70 hover:text-white/85"
                   )}
                 >
                   Bán gập (50%)
@@ -228,8 +229,8 @@ export function BoxQuickPreviewModal({
                   type="button"
                   onClick={() => handleFoldChange(1.0)}
                   className={cn(
-                    "rounded px-2 py-0.5 text-[11px] transition",
-                    foldProgress === 1.0 ? "bg-[#F26522] text-white font-bold" : "bg-stone-800 text-stone-400 hover:text-stone-200"
+                    "rounded px-2 py-0.5 text-caption transition",
+                    foldProgress === 1.0 ? "bg-fpt-orange text-white font-bold" : "bg-fg text-white/70 hover:text-white/85"
                   )}
                 >
                   Đóng (100%)
@@ -244,23 +245,23 @@ export function BoxQuickPreviewModal({
               value={foldProgress}
               onChange={(e) => handleFoldChange(parseFloat(e.target.value))}
               aria-label="Điều chỉnh độ gập hộp 3D"
-              className="h-1.5 w-full cursor-ew-resize appearance-none rounded-lg bg-stone-700 accent-[#F26522]"
+              className="h-1.5 w-full cursor-ew-resize appearance-none rounded-lg bg-fg accent-fpt-orange"
             />
           </div>
         </div>
 
         {/* Technical Info & Multi-action Suite (Right) */}
-        <div className="flex flex-1 flex-col justify-between overflow-y-auto bg-stone-900 p-5 sm:p-7">
+        <div className="flex flex-1 flex-col justify-between overflow-y-auto bg-fg p-5 sm:p-7">
           <div className="flex flex-col gap-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-stone-700 bg-stone-800 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-stone-400">
+                <span className="rounded-full border border-white/20 bg-fg px-2.5 py-0.5 font-mono text-cad-spec-micro uppercase tracking-wider text-white/70">
                   {structure.name}
                 </span>
-                <span className="rounded-full border border-landing-lime/30 bg-landing-lime/10 px-2.5 py-0.5 text-[11px] font-medium text-landing-lime">
+                <span className="rounded-full border border-fpt-orange/30 bg-fpt-orange/10 px-2.5 py-0.5 text-caption font-medium text-fpt-orange">
                   {structure.badge}
                 </span>
-                <span className="flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-2 py-0.5 text-[11px] text-emerald-400">
+                <span className="flex items-center gap-1 rounded-full border border-success/30 bg-emerald-950/40 px-2 py-0.5 text-caption text-success">
                   <CheckCircle2 className="size-3" />
                   {structure.feasibilityRate}
                 </span>
@@ -268,14 +269,14 @@ export function BoxQuickPreviewModal({
               <h2 id="quick-preview-title" className="mt-2 text-2xl font-bold tracking-tight text-white lg:text-3xl">
                 {structure.vietnameseName}
               </h2>
-              <p className="mt-1 text-sm leading-relaxed text-stone-400">{structure.description}</p>
+              <p className="mt-1 text-sm leading-relaxed text-white/70">{structure.description}</p>
             </div>
 
             {/* Size Selector Switcher (S / M / L) */}
-            <div className="rounded-2xl border border-stone-800 bg-stone-950/60 p-3.5">
+            <div className="rounded-2xl border border-fg bg-white/5 p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-stone-300">Chọn kích thước chuẩn:</span>
-                <span className="font-mono text-xs text-landing-lime font-medium">
+                <span className="text-xs font-semibold text-white/75">Chọn kích thước chuẩn:</span>
+                <span className="font-mono text-xs text-fpt-orange font-medium">
                   {formatDimensions(currentPreset.dims)}
                 </span>
               </div>
@@ -290,24 +291,24 @@ export function BoxQuickPreviewModal({
                       className={cn(
                         "flex flex-col items-center rounded-xl border p-2 text-center transition",
                         isActive
-                          ? "border-landing-lime bg-landing-lime/10 text-landing-lime shadow-sm"
-                          : "border-stone-800 bg-stone-900/60 text-stone-400 hover:border-stone-700 hover:text-stone-200"
+                          ? "border-fpt-orange bg-fpt-orange/10 text-fpt-orange shadow-sm"
+                          : "border-white/15 bg-white/5 text-white/70 hover:border-white/40 hover:text-white/85"
                       )}
                     >
                       <span className="text-xs font-bold uppercase">{preset.label} · {preset.name}</span>
-                      <span className="mt-0.5 font-mono text-[10px] text-stone-400">{preset.dims.length}×{preset.dims.width} mm</span>
+                      <span className="mt-0.5 font-mono text-cad-spec-micro text-white/70">{preset.dims.length}×{preset.dims.width} mm</span>
                     </button>
                   );
                 })}
               </div>
-              <p className="mt-2 text-[11px] text-stone-400">
-                <span className="font-medium text-stone-300">Phù hợp:</span> {currentPreset.description}
+              <p className="mt-2 text-caption text-white/70">
+                <span className="font-medium text-white/75">Phù hợp:</span> {currentPreset.description}
               </p>
             </div>
 
             {/* Material Theme Swatches */}
-            <div className="flex items-center justify-between rounded-xl border border-stone-800 bg-stone-950/40 px-3.5 py-2.5 text-xs">
-              <span className="text-stone-400">Chất liệu giấy:</span>
+            <div className="flex items-center justify-between rounded-xl border border-fg bg-fg/40 px-3.5 py-2.5 text-xs">
+              <span className="text-white/70">Chất liệu giấy:</span>
               <div className="flex items-center gap-1.5">
                 {(
                   [
@@ -321,13 +322,13 @@ export function BoxQuickPreviewModal({
                     type="button"
                     onClick={() => handleThemeChange(mat.id)}
                     className={cn(
-                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition",
+                      "flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption transition",
                       theme === mat.id
-                        ? "border-landing-lime bg-stone-800 text-landing-lime font-medium"
-                        : "border-stone-800 text-stone-400 hover:border-stone-700"
+                        ? "border-fpt-orange bg-fg text-fpt-orange font-medium"
+                        : "border-fg text-white/70 hover:border-white/40"
                     )}
                   >
-                    <span className="size-2 rounded-full border border-stone-600" style={{ backgroundColor: mat.color }} />
+                    <span className="size-2 rounded-full border border-white/20" style={{ backgroundColor: mat.color }} />
                     {mat.label}
                   </button>
                 ))}
@@ -336,39 +337,39 @@ export function BoxQuickPreviewModal({
 
             {/* Packaging Technical Specs */}
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-xl border border-stone-800/80 bg-stone-950/30 p-2.5">
-                <span className="text-stone-400 block text-[11px]">Định lượng khuyên dùng</span>
-                <span className="font-medium text-stone-200 mt-0.5 block">{structure.recommendedPaper}</span>
+              <div className="rounded-xl border border-fg/80 bg-fg/30 p-2.5">
+                <span className="text-white/70 block text-caption">Định lượng khuyên dùng</span>
+                <span className="font-medium text-white/85 mt-0.5 block">{structure.recommendedPaper}</span>
               </div>
-              <div className="rounded-xl border border-stone-800/80 bg-stone-950/30 p-2.5">
-                <span className="text-stone-400 block text-[11px]">Thời gian gập hộp</span>
-                <span className="font-medium text-stone-200 mt-0.5 block">⚡ {structure.foldTimeSec} giây ({structure.foldDifficulty})</span>
+              <div className="rounded-xl border border-fg/80 bg-fg/30 p-2.5">
+                <span className="text-white/70 block text-caption">Thời gian gập hộp</span>
+                <span className="font-medium text-white/85 mt-0.5 block">⚡ {structure.foldTimeSec} giây ({structure.foldDifficulty})</span>
               </div>
             </div>
           </div>
 
           {/* Action CTAs */}
-          <div className="mt-6 flex flex-col gap-2 pt-2 border-t border-stone-800">
+          <div className="mt-6 flex flex-col gap-2 pt-2 border-t border-fg">
             <Link
               href={studioUrl}
               onClick={() => {
                 tactileAudio.playCreaseSnap();
                 onClose();
               }}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#F26522] font-bold text-white shadow-soft-8 transition hover:bg-[#D85314] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F26522]"
+              className={buttonClass({ variant: "brand", size: "lg", shape: "rounded", block: true })}
             >
               <span>Mở trong Studio 3D</span>
               <ArrowRight className="size-4" />
             </Link>
-            <div className="flex items-center justify-between text-xs text-stone-400 px-1">
+            <div className="flex items-center justify-between text-xs text-white/70 px-1">
               <Link
                 href={`${ROUTES.templates}?structure=${structure.id}`}
                 onClick={onClose}
-                className="hover:text-[#F26522] underline underline-offset-2 transition"
+                className="hover:text-fpt-orange underline underline-offset-2 transition"
               >
                 Xem 30+ mẫu thiết kế có sẵn →
               </Link>
-              <span className="font-mono text-[11px] text-stone-400">CAD v2.4 · FEFCO</span>
+              <span className="font-mono text-cad-spec-micro text-white/70">CAD v2.4 · FEFCO</span>
             </div>
           </div>
         </div>

@@ -29,8 +29,6 @@ export const ROUTES = {
   unbox: (slug: string) => `/unbox/${slug}`,
   /** Code-entry page: the recipient types or pastes the code printed with the gift. */
   unboxCode: "/unbox",
-  /** Waitlist / Early Access page */
-  waitlist: "/waitlist",
   /** Contact Us page */
   contact: "/contact",
   /** About Us / Story page */

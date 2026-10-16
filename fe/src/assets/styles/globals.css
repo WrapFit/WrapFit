@@ -5,6 +5,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Semantic colour variables (--ds-fg, --ds-action, --ds-success…) are generated from src/assets/styles/tokens.ts by
+ * the Tailwind config; the variables below are the older primitive palette, kept for CSS that is not Tailwind.
+ */
 :root {
   /* Surface & Papers */
   --color-paper-ivory: #FDFBF7;
@@ -56,6 +60,31 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+@layer base {
+  /*
+   * One focus indicator for the whole app: a 2 px cobalt outline for keyboard users. Components that draw their own
+   * ring (focus-visible:ring-*) remove the outline with outline-none; nothing else should.
+   */
+  :focus-visible {
+    outline: 2px solid rgb(var(--ds-focus));
+    outline-offset: 2px;
+  }
+
+  /* Visitors who asked for less motion get no smooth scrolling and near-instant transitions everywhere. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
 /* Luxury Paper Texture Gradient Overlay */
 .bg-paper-grain {
   background-color: #FDFBF7;
@@ -95,7 +124,7 @@ body {
 .dieline-crease {
   stroke: #3182CE;
   stroke-width: 1.5;
-  stroke-dasharray: 6 4;
+  stroke-dasharray: 4 4; /* AGENTS.md §1 */
 }
 
 .dieline-bleed {
@@ -122,36 +151,144 @@ body {
   background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
 }
 
+/*
+ * Artwork stage of the studio (step 4): a dot every 24 px and a hairline grid every 120 px, like a CAD sheet, with a
+ * soft light in the middle that fades the grid towards the edges.
+ */
+.bg-studio-stage {
+  background-color: rgb(var(--ds-canvas));
+  background-image:
+    radial-gradient(60% 55% at 50% 48%, rgb(var(--ds-surface-raised) / 0.7) 0%, transparent 100%),
+    radial-gradient(circle, rgb(var(--ds-fg) / 0.14) 1px, transparent 1.3px),
+    linear-gradient(to right, rgb(var(--ds-focus) / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--ds-focus) / 0.06) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px, 120px 120px, 120px 120px;
+  background-position: center;
+}
+
 /* Tactile Range Sliders */
 input[type="range"] {
   -webkit-appearance: none;
-  background: #E8D8C8;
+  background: #E2E8F0;
   height: 6px;
   border-radius: 9999px;
   outline: none;
+  transition: background 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #1A362B;
+  background: #F26522;
   cursor: pointer;
   border: 2px solid #FFFFFF;
-  box-shadow: 0 2px 8px rgba(26, 54, 43, 0.35);
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  box-shadow: 0 2px 6px rgba(242, 101, 34, 0.35);
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-  background: #2563EB;
+  transform: scale(1.18);
+  background: #D85314;
+  box-shadow: 0 3px 8px rgba(242, 101, 34, 0.45);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
   transform: scale(1.25);
-  background: #2563EB;
+  background: #B93F0A;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #F26522;
+  cursor: pointer;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(242, 101, 34, 0.35);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover,
+input[type="range"]::-moz-range-thumb:active {
+  background: #D85314;
+}
+
+input[type="range"]:focus-visible {
+  outline: 2px solid #F26522;
+  outline-offset: 4px;
+}
+
+input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rows that scroll sideways (chips, docks) without a visible scrollbar; they still scroll by touch, wheel and keys. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fold slider of the dark view dock (studio step 4): faint track, white thumb, cobalt focus. */
+input[type="range"].studio-dock-range {
+  height: 4px;
+  background: rgb(255 255 255 / 0.22);
+}
+input[type="range"].studio-dock-range::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF;
+  border: 0;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.45);
+}
+input[type="range"].studio-dock-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF;
+  border: 0;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.45);
+}
+input[type="range"].studio-dock-range:focus-visible {
+  outline-color: rgb(var(--ds-focus));
+}
+
+/*
+ * Dimension sliders of the studio: the filled part takes the colour of the measure (--axis, same as its guide on the
+ * 3D model) up to --fill; white thumb ringed with that colour, a bigger hit area than the 6 px track.
+ */
+input[type="range"].dimension-range {
+  height: 6px;
+  background: linear-gradient(to right, var(--axis) var(--fill), rgb(var(--ds-surface-sunken)) var(--fill));
+  box-shadow: inset 0 0 0 1px rgb(var(--ds-line) / 0.6);
+}
+input[type="range"].dimension-range::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border: 3px solid var(--axis);
+  box-shadow: 0 2px 6px rgba(29, 41, 61, 0.22);
+  transition: transform 0.12s ease;
+}
+input[type="range"].dimension-range::-webkit-slider-thumb:hover,
+input[type="range"].dimension-range:active::-webkit-slider-thumb {
+  transform: scale(1.18);
+  background: #FFFFFF;
+}
+input[type="range"].dimension-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #FFFFFF;
+  border: 3px solid var(--axis);
+  box-shadow: 0 2px 6px rgba(29, 41, 61, 0.22);
+}
+input[type="range"].dimension-range::-moz-range-thumb:hover,
+input[type="range"].dimension-range::-moz-range-thumb:active {
+  background: #FFFFFF;
 }
 
 /* Custom Scrollbar for Studio */
@@ -200,14 +337,32 @@ input[type="range"]::-webkit-slider-thumb:active {
   bottom: 0;
   left: 0;
   transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0.45) 20%,
-    rgba(255, 255, 255, 0.7) 60%,
-    rgba(255, 255, 255, 0)
-  );
   animation: shimmer 1.8s infinite;
   content: "";
 }
 
+
+/* Numbers set in the "mono" family (now the body font, Inter) keep even-width digits, so sizes line up and do not jump. */
+.font-mono,
+.font-cad-dimension,
+.font-cad-spec-micro {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hero word in the three FPT colours: blue → orange → green bands that drift slowly across the letters (colours come from the classes beside it). */
+.text-tricolor {
+  background-size: 140% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tricolor-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes tricolor-drift {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-tricolor { animation: none; background-position: 30% 50%; }
+}

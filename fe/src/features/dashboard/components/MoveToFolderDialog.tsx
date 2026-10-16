@@ -5,9 +5,10 @@ import type { Collection, ProjectSummary } from "@/types/api";
 import { useMoveProject } from "../useProjects";
 import { DIALOG_CANCEL, DIALOG_PANEL } from "./ConfirmDialog";
 import { ModalDialog } from "./ModalDialog";
+import { Icon } from "@/components/ui";
 
 const SUBMIT =
-  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-[#AFEC88] disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-fpt-orange px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait focus-visible:ring-[3px] focus-visible:ring-fpt-orange/30";
 
 interface MoveToFolderDialogProps {
   project: ProjectSummary;
@@ -56,10 +57,8 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
     >
       <form onSubmit={submit} className="flex flex-col gap-5">
         <div className="flex items-start gap-3">
-          <span className="w-10 h-10 shrink-0 rounded-2xl bg-library-accent-mist text-library-accent flex items-center justify-center">
-            <span aria-hidden="true" className="material-symbols-outlined text-xl">
-              drive_file_move
-            </span>
+          <span className="w-10 h-10 shrink-0 rounded-2xl bg-fpt-orange-light text-fpt-orange-ink flex items-center justify-center">
+            <Icon name="drive_file_move" className="size-5" />
           </span>
           <div className="min-w-0 pt-0.5">
             <h2 id={titleId} className="text-xl font-medium text-library-ink leading-snug">
@@ -82,8 +81,8 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
               <label
                 key={option.id || "none"}
                 className={`min-h-[48px] px-3 rounded-xl flex items-center gap-3 cursor-pointer transition-colors ${
-                  checked ? "bg-library-accent-mist ring-1 ring-library-accent/40" : "hover:bg-library-panel"
-                } focus-within:ring-2 focus-within:ring-[#2563eb]`}
+                  checked ? "bg-fpt-orange-light ring-1 ring-fpt-orange/40" : "hover:bg-library-panel"
+                } focus-within:ring-2 focus-within:ring-vibrant-cobalt`}
               >
                 <input
                   ref={option.id === current ? currentRef : undefined}
@@ -101,19 +100,14 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
                 />
                 <span className="flex-1 min-w-0 truncate text-sm font-medium text-library-ink">{option.title}</span>
                 {option.projectCount !== null && (
-                  <span className="font-mono text-[11px] text-library-muted">{option.projectCount}</span>
+                  <span className="font-mono text-cad-spec-micro text-library-muted">{option.projectCount}</span>
                 )}
                 {option.id === current && (
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-library-muted">
+                  <span className="font-mono text-cad-spec-micro uppercase tracking-wider text-library-muted">
                     Hiện tại
                   </span>
                 )}
-                <span
-                  aria-hidden="true"
-                  className={`material-symbols-outlined text-lg ${checked ? "text-library-accent" : "text-transparent"}`}
-                >
-                  check
-                </span>
+                <Icon name="check" className={`size-[18px] ${checked ? "text-fpt-orange-ink" : "text-transparent"}`} />
               </label>
             );
           })}
@@ -125,7 +119,7 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
             <button
               type="button"
               onClick={onCreateFolder}
-              className="font-semibold text-library-accent underline-offset-2 hover:underline min-h-[44px]"
+              className="font-semibold text-fpt-orange-ink underline-offset-2 hover:underline min-h-[44px]"
             >
               Tạo thư mục mới
             </button>

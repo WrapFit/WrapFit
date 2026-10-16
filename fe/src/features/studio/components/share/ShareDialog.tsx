@@ -21,7 +21,7 @@ const VISIBILITIES: { value: ProjectVisibility; title: string; hint: string; ico
 ];
 
 const SELECT_CLASS =
-  "w-full min-h-[44px] px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink focus:outline-none focus:border-landing-green";
+  "w-full min-h-[44px] px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink focus:outline-none focus:border-fpt-orange";
 
 interface ShareDialogProps {
   /** The project as the editor loaded it; the dialog reads newer values from the cache. */
@@ -116,7 +116,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
             <label
               key={option.value}
               className={`flex items-center gap-3 p-3 min-h-[56px] rounded-3xl border cursor-pointer transition ${
-                active ? "border-landing-green bg-landing-lime-mist/60" : "border-landing-line hover:border-landing-ink/30"
+                active ? "border-fpt-orange bg-orange-50" : "border-landing-line hover:border-landing-ink/30"
               }`}
             >
               <input
@@ -129,7 +129,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               />
               <span
                 className={`w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center ${
-                  active ? "bg-landing-green text-white" : "bg-landing-canvas text-landing-muted"
+                  active ? "bg-fpt-orange text-white" : "bg-landing-canvas text-landing-muted"
                 }`}
               >
                 <Icon className="w-4 h-4" aria-hidden />
@@ -186,7 +186,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               checked={current.allowFork}
               disabled={saving !== null}
               onChange={(event) => void changeVisibility({ allowFork: event.target.checked })}
-              className="w-5 h-5 flex-shrink-0 accent-[#2563EB]"
+              className="w-5 h-5 flex-shrink-0 accent-vibrant-cobalt"
             />
           </label>
         </div>
@@ -238,7 +238,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
               type="button"
               disabled={!communityChanged || saving !== null}
               onClick={() => void saveCommunity()}
-              className="min-h-[44px] px-5 rounded-full bg-landing-green hover:bg-landing-green-deep text-white text-sm font-semibold shadow-none transition disabled:opacity-50"
+              className="min-h-[44px] px-5 rounded-full bg-fpt-orange hover:bg-fpt-orange-ink text-white text-sm font-semibold shadow-none transition disabled:opacity-50"
             >
               {saving === "community" ? "Đang lưu…" : "Lưu chủ đề"}
             </button>

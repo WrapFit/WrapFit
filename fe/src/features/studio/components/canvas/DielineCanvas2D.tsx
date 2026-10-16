@@ -1,29 +1,14 @@
 "use client";
 
+import { stageBarButton } from "@/features/studio/components/studioUi";
 import React, { useId, useMemo, useState, useRef } from "react";
 import { DielineGeometry, CanvasElement, matchesPanel, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
-import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  RotateCw,
-  Trash2,
-  Plus,
-  Type,
-  Image as ImageIcon,
-  AlertTriangle,
-  CheckCircle,
-  Move,
-  CornerDownRight,
-  Eye,
-  Layers,
-  Sparkles,
-  Info,
-} from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Info } from "lucide-react";
 import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
 import { formatMm } from "@/features/studio/utils/dieline";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
+import { Checkbox } from "@/components/ui";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
 const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
@@ -49,6 +34,14 @@ interface DielineCanvas2DProps {
   showRulers?: boolean;
   /** Elements FitCheck flags (margin, bleed, glue…): drawn with a red badge. */
   flaggedElementIds?: ReadonlySet<string>;
+  /**
+   * `card` (default): a framed card with its own top bar (zoom) and bottom bar (layers, cursor). `stage`: no frame and
+   * no bars, the dieline floats on the page's backdrop; the page owns the zoom and the layers sit in a floating legend.
+   */
+  variant?: "card" | "stage";
+  /** Opens the "Thêm chữ" composer from outside (a tool dock); uncontrolled when omitted. */
+  textComposerOpen?: boolean;
+  onTextComposerOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -77,8 +70,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   onSelectPanel,
   showRulers = true,
   flaggedElementIds,
+  variant = "card",
+  textComposerOpen,
+  onTextComposerOpenChange,
   className = "",
 }) => {
+  const isStage = variant === "stage";
   const [showLayers, setShowLayers] = useState({
     cut: true,
     crease: true,
@@ -94,7 +91,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cursorMm, setCursorMm] = useState<{ x: number; y: number } | null>(null);
   const [newTextValue, setNewTextValue] = useState<string>("");
-  const [showAddTextModal, setShowAddTextModal] = useState<boolean>(false);
+  const [ownTextComposerOpen, setOwnTextComposerOpen] = useState<boolean>(false);
+  const showAddTextModal = textComposerOpen ?? ownTextComposerOpen;
+  const setShowAddTextModal = (open: boolean) => {
+    setOwnTextComposerOpen(open);
+    onTextComposerOpenChange?.(open);
+  };
   // Changes once the fonts of the texts are loaded: texts first measured with a fallback font are laid out again.
   const fontsVersion = useBoxFonts(elements, NEW_TEXT_FONTS);
 
@@ -338,93 +340,83 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   return (
     <div
-      className={`relative w-full h-full min-h-[560px] bg-[#F4F6F2] rounded-[28px] overflow-hidden flex items-center justify-center p-4 shadow-none ${className}`}
+      className={
+        isStage
+          ? `relative flex w-full h-full flex-col ${className}`
+          : `flex w-full h-full min-h-[560px] flex-col overflow-hidden rounded-sheet bg-surface-raised ring-1 ring-line ${className}`
+      }
     >
-      {/* Cutting mat: fine dot grid with a soft light in the middle */}
-      <div className="absolute inset-0 bg-[radial-gradient(#C9D2C3_1px,transparent_1px)] opacity-70 [background-size:14px_14px]" />
-      <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_45%,rgba(255,255,255,0.75),transparent_75%)]" />
-
-      {/* Top Floating Control Bar */}
-      <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-landing-line shadow-none text-xs text-landing-ink">
-          <span className="font-landing-heading font-bold text-landing-ink">Khuôn bế phẳng</span>
-          <span className="text-landing-line">|</span>
-          <span className="font-mono text-[11px] text-landing-muted">
+      {/* Top bar: what the canvas shows, adding text, zoom. Attached to the canvas, nothing floats over the dieline. */}
+      {!isStage && (
+      <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-line px-3 py-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">
+          <span className="font-semibold text-fg">Khuôn bế phẳng</span>
+          <span className="tabular-nums">
             {formatMm(totalW)} × {formatMm(totalH)} mm
           </span>
-        </div>
-
-        {/* Add Text / Element Button: not on a read-only canvas (no onElementsChange) */}
-        {onElementsChange && (
-          <button
-            type="button"
-            onClick={() => setShowAddTextModal(true)}
-            className="px-4 py-1.5 rounded-full bg-landing-lime hover:bg-[#AFEC88] text-landing-green-night text-xs font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <Type className="w-3.5 h-3.5" />
-            <span>Thêm chữ</span>
-          </button>
-        )}
-
-        {backgroundPatternSvg && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold shadow-none">
-            <Sparkles className="w-3 h-3 text-amber-500 animate-spin" />
-            <span className="truncate max-w-[140px]">
-              {backgroundPatternSvg.includes("tet")
-                ? "Hoa mai Tết"
-                : backgroundPatternSvg.includes("xmas")
-                ? "Giáng Sinh"
-                : backgroundPatternSvg.includes("botanical")
-                ? "Botanical"
-                : backgroundPatternSvg.includes("gold")
-                ? "Ép kim vàng"
-                : "Hoa Văn AI"}
+          {backgroundPatternSvg && (
+            <span className="inline-flex items-center gap-1.5">
+              <Sparkles className="size-3.5 text-warning" aria-hidden />
+              <span className="max-w-[140px] truncate">
+                {backgroundPatternSvg.includes("tet")
+                  ? "Hoa mai Tết"
+                  : backgroundPatternSvg.includes("xmas")
+                  ? "Giáng Sinh"
+                  : backgroundPatternSvg.includes("botanical")
+                  ? "Botanical"
+                  : backgroundPatternSvg.includes("gold")
+                  ? "Ép kim vàng"
+                  : "Hoa văn AI"}
+              </span>
             </span>
-          </div>
-        )}
+          )}
+        </div>
+        <div role="toolbar" aria-label="Khuôn bế" className="flex items-center gap-0.5">
+          {/* Add text: not on a read-only canvas (no onElementsChange) */}
+          {onElementsChange && (
+            <>
+              <button type="button" onClick={() => setShowAddTextModal(true)} className={stageBarButton()}>
+                <Type className="size-3.5" aria-hidden />
+                Thêm chữ
+              </button>
+              <span className="mx-0.5 h-4 w-px bg-line" aria-hidden />
+            </>
+          )}
+          <button type="button" onClick={() => handleZoom(-0.15)} className={stageBarButton()} aria-label="Thu nhỏ" title="Thu nhỏ">
+            <ZoomOut className="size-3.5" aria-hidden />
+          </button>
+          <span className="w-12 select-none text-center text-label-sm tabular-nums text-fg" aria-live="polite">
+            {Math.round(scale * 100)}%
+          </span>
+          <button type="button" onClick={() => handleZoom(0.15)} className={stageBarButton()} aria-label="Phóng to" title="Phóng to">
+            <ZoomIn className="size-3.5" aria-hidden />
+          </button>
+          <button type="button" onClick={handleResetZoom} className={stageBarButton()} aria-label="Về 100%" title="Về 100%">
+            <Maximize2 className="size-3.5" aria-hidden />
+          </button>
+        </div>
       </div>
+      )}
 
-      {/* Top Right Zoom Controls */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/95 backdrop-blur-md p-1 rounded-full border border-landing-line shadow-none">
-        <button
-          type="button"
-          onClick={() => handleZoom(-0.15)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas transition"
-          title="Thu nhỏ"
-        >
-          <ZoomOut className="w-3.5 h-3.5" />
-        </button>
-        <span className="text-[11px] font-mono font-bold text-landing-ink px-1 select-none">
-          {Math.round(scale * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={() => handleZoom(0.15)}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas transition"
-          title="Phóng to"
-        >
-          <ZoomIn className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={handleResetZoom}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas transition"
-          title="Đặt lại 100%"
-        >
-          <Maximize2 className="w-3 h-3" />
-        </button>
-      </div>
+      <div className={`relative flex min-h-0 flex-1 items-center justify-center ${isStage ? "" : "overflow-hidden bg-mist-150 p-4"}`}>
+      {/* Cutting mat: fine dot grid with a soft light in the middle (the stage shows the page's own backdrop) */}
+      {!isStage && (
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(#C9D2C3_1px,transparent_1px)] opacity-70 [background-size:14px_14px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_45%,rgba(255,255,255,0.75),transparent_75%)]" />
+        </>
+      )}
 
       {/* FLOATING GIZMO TOOLBAR FOR SELECTED ELEMENT
-          Placed at BOTTOM-CENTER so it NEVER blocks dieline panels, top flaps, or rulers */}
+          Bottom-centre, clear of the flaps and rulers; one line while it fits. */}
       {selectedEl && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-wrap items-center gap-2 bg-landing-green-night text-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-soft-16 text-xs animate-fadeIn border border-white/20">
+        <div className={`absolute ${isStage ? "bottom-2" : "bottom-6"} left-1/2 -translate-x-1/2 z-30 flex w-max max-w-[calc(100%-1rem)] flex-wrap items-center gap-2 bg-landing-ink/95 text-white backdrop-blur-xl px-4 py-2 rounded-2xl shadow-popover ring-1 ring-white/10 text-xs animate-fadeIn`}>
           <div className="flex items-center gap-2 pr-2.5 border-r border-white/20">
-            <Move className="w-3.5 h-3.5 text-landing-green animate-pulse" />
-            <span className="font-semibold text-landing-green truncate max-w-[110px]">
+            <Move className="w-3.5 h-3.5 text-fpt-orange-ink animate-pulse" />
+            <span className="font-semibold text-fpt-orange-ink truncate max-w-[110px]">
               {selectedEl.content || "Phần tử"}
             </span>
-            <span className="font-mono text-[10px] text-landing-muted">
+            <span className="font-mono text-cad-spec-micro text-landing-muted">
               {formatMm(selectedEl.width)}×{formatMm(selectedEl.height)}mm
             </span>
           </div>
@@ -434,7 +426,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleMove(-2, 0)}
-              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-[11px]"
+              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-caption"
               title="Sang trái 2mm"
             >
               ←
@@ -442,7 +434,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleMove(2, 0)}
-              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-[11px]"
+              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-caption"
               title="Sang phải 2mm"
             >
               →
@@ -450,7 +442,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleMove(0, -2)}
-              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-[11px]"
+              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-caption"
               title="Lên trên 2mm"
             >
               ↑
@@ -458,7 +450,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleMove(0, 2)}
-              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-[11px]"
+              className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/20 transition text-caption"
               title="Xuống dưới 2mm"
             >
               ↓
@@ -470,7 +462,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleRotate(45)}
-              className="px-2 py-1 rounded hover:bg-white/20 transition flex items-center gap-1 text-[11px]"
+              className="px-2 py-1 rounded hover:bg-white/20 transition flex items-center gap-1 text-caption"
               title="Xoay 45 độ"
             >
               <RotateCw className="w-3 h-3" />
@@ -479,7 +471,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleRotate(90)}
-              className="px-2 py-1 rounded hover:bg-white/20 transition flex items-center gap-1 text-[11px]"
+              className="px-2 py-1 rounded hover:bg-white/20 transition flex items-center gap-1 text-caption"
               title="Xoay 90 độ"
             >
               <span>90°</span>
@@ -491,7 +483,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleResize(0.9)}
-              className="px-2 py-0.5 rounded hover:bg-white/20 text-[11px] font-mono"
+              className="px-2 py-0.5 rounded hover:bg-white/20 text-cad-spec-micro font-mono"
               title="Thu nhỏ 10%"
             >
               -10%
@@ -499,7 +491,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <button
               type="button"
               onClick={() => handleResize(1.1)}
-              className="px-2 py-0.5 rounded hover:bg-white/20 text-[11px] font-mono"
+              className="px-2 py-0.5 rounded hover:bg-white/20 text-cad-spec-micro font-mono"
               title="Phóng to 10%"
             >
               +10%
@@ -510,7 +502,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <button
             type="button"
             onClick={handleDeleteElement}
-            className="p-1.5 hover:bg-red-500/80 rounded-full transition text-red-300 hover:text-white ml-1.5"
+            className="p-1.5 hover:bg-danger/80 rounded-full transition text-red-300 hover:text-white ml-1.5"
             title="Xóa phần tử"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -526,7 +518,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
-          className={`relative w-full h-full max-h-[85%] ${
+          className={`relative w-full h-full ${isStage ? "max-h-[94%]" : "max-h-[85%]"} ${
             dragState ? "cursor-grabbing" : "cursor-default"
           }`}
           onPointerMove={handleSvgPointerMove}
@@ -729,9 +721,9 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   y={py}
                   width={pw}
                   height={ph}
-                  fill={isPanelActive ? "rgba(152, 230, 101, 0.2)" : isHovered ? "rgba(15, 23, 42, 0.035)" : "rgba(255, 255, 255, 0)"}
-                  stroke={isPanelActive ? "#458C17" : "none"}
-                  strokeWidth="0.7"
+                  fill={isPanelActive ? "rgba(242, 101, 34, 0.16)" : isHovered ? "rgba(15, 23, 42, 0.035)" : "rgba(255, 255, 255, 0)"}
+                  stroke={isPanelActive ? "#F26522" : "none"}
+                  strokeWidth="0.8"
                   className="transition-[fill] duration-150"
                 />
 
@@ -779,7 +771,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                       y={py + safeInset + labelSize * 2.15 + 0.6}
                       fontSize={labelSize * 0.78}
                       fill={isPanelActive ? "#458C17" : "#94A3B8"}
-                      style={{ fontFamily: "var(--font-mono), 'JetBrains Mono', monospace" }}
+                      style={{ fontFamily: "var(--font-landing-body), Inter, sans-serif" }}
                     >
                       {formatMm(pw)} × {formatMm(ph)} mm
                     </text>
@@ -1112,60 +1104,82 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         </svg>
       </div>
 
-      {/* Bottom Right Live CAD Cursor Coordinate Badge */}
-      {cursorMm && (
-        <div className="absolute bottom-4 right-4 z-20 pointer-events-none bg-landing-green-night text-white font-mono text-[10px] px-2.5 py-1 rounded-squircle-sm backdrop-blur-md shadow-none border border-white/20">
-          <span className="text-landing-green font-bold">CAD:</span> X: {cursorMm.x} mm | Y:{" "}
-          {cursorMm.y} mm
+      </div>
+
+      {/* Stage: the layers as a floating legend (each line toggles its layer) with the cursor position under it. */}
+      {isStage && (
+        <div className="pointer-events-none absolute bottom-2 left-2 z-20 hidden flex-col gap-1.5 md:flex">
+          <div role="group" aria-label="Lớp khuôn bế" className="pointer-events-auto flex flex-col gap-0.5 rounded-panel bg-surface-raised/85 p-1.5 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-md">
+            {(
+              [
+                { key: "cut", label: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
+                { key: "crease", label: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
+                { key: "bleed", label: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
+                { key: "safeMargin", label: "Vùng an toàn ≥ 3 mm", swatch: "h-0 border-b-2 border-dashed border-warning" },
+              ] as const
+            ).map((layer) => {
+              const on = showLayers[layer.key];
+              return (
+                <button
+                  key={layer.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setShowLayers({ ...showLayers, [layer.key]: !on })}
+                  title={on ? `Ẩn lớp ${layer.label}` : `Hiện lớp ${layer.label}`}
+                  className={`flex min-h-8 items-center gap-2 rounded-control px-2 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+                    on ? "text-fg hover:bg-surface-sunken" : "text-fg-muted line-through decoration-fg-muted/60 hover:bg-surface-sunken"
+                  }`}
+                >
+                  <span className={`inline-block w-4 ${layer.swatch} ${on ? "" : "opacity-40"}`} aria-hidden />
+                  {layer.label}
+                </button>
+              );
+            })}
+          </div>
+          <span className="w-fit rounded-full bg-surface-raised/85 px-2.5 py-1 font-mono text-cad-spec-micro tabular-nums text-fg-muted ring-1 ring-line/70 backdrop-blur-md" aria-hidden>
+            {cursorMm ? `X ${cursorMm.x} · Y ${cursorMm.y} mm` : "X — · Y — mm"}
+          </span>
         </div>
       )}
 
-      {/* Bottom Legend Layer Toggles */}
-      <div className="absolute bottom-4 left-4 z-20 hidden sm:flex items-center gap-3 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-landing-line shadow-none text-[11px] text-landing-muted">
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
-          <input
-            type="checkbox"
+      {/* Bottom bar: layers of the dieline, cursor position in mm. */}
+      {!isStage && (
+      <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-line px-3 py-1.5 text-caption text-fg-muted">
+        <div className="hidden flex-wrap items-center gap-x-4 gap-y-1 sm:flex">
+          <Checkbox
+            compact
             checked={showLayers.cut}
             onChange={(e) => setShowLayers({ ...showLayers, cut: e.target.checked })}
-            className="w-3 h-3 rounded accent-red-600 cursor-pointer"
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-dieline-cut rounded-full inline-block" aria-hidden />Nét cắt dao</span>}
+            className="min-h-0 py-0"
           />
-          <span className="w-2.5 h-0.5 bg-[#E53E3E] rounded-full inline-block" />
-          <span>Nét cắt dao</span>
-        </label>
-
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
-          <input
-            type="checkbox"
+          <Checkbox
+            compact
             checked={showLayers.crease}
             onChange={(e) => setShowLayers({ ...showLayers, crease: e.target.checked })}
-            className="w-3 h-3 rounded accent-landing-green cursor-pointer"
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dashed border-dieline-crease inline-block" aria-hidden />Nếp cấn gập</span>}
+            className="min-h-0 py-0"
           />
-          <span className="w-2.5 h-0.5 border-b border-dashed border-[#3182CE] inline-block" />
-          <span>Nếp cấn gập</span>
-        </label>
-
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
-          <input
-            type="checkbox"
+          <Checkbox
+            compact
             checked={showLayers.bleed}
             onChange={(e) => setShowLayers({ ...showLayers, bleed: e.target.checked })}
-            className="w-3 h-3 rounded accent-emerald-600 cursor-pointer"
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dotted border-dieline-bleed inline-block" aria-hidden />Tràn lề (Bleed ≥2mm)</span>}
+            className="min-h-0 py-0"
           />
-          <span className="w-2.5 h-0.5 border-b border-dotted border-[#38A169] inline-block" />
-          <span>Tràn lề (Bleed ≥2mm)</span>
-        </label>
-
-        <label className="flex items-center gap-1.5 cursor-pointer hover:text-landing-ink">
-          <input
-            type="checkbox"
+          <Checkbox
+            compact
             checked={showLayers.safeMargin}
             onChange={(e) => setShowLayers({ ...showLayers, safeMargin: e.target.checked })}
-            className="w-3 h-3 rounded accent-amber-500 cursor-pointer"
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dashed border-warning inline-block" aria-hidden />Vùng an toàn (≥3mm)</span>}
+            className="min-h-0 py-0"
           />
-          <span className="w-2.5 h-0.5 border-b border-dashed border-[#D97706] inline-block" />
-          <span>Vùng an toàn (≥3mm)</span>
-        </label>
+        </div>
+        <span className="tabular-nums" aria-hidden>
+          {cursorMm ? `X ${cursorMm.x} mm · Y ${cursorMm.y} mm` : "Rê chuột lên khuôn để đo"}
+        </span>
       </div>
+      )}
 
       {/* Pretext Add Text Modal */}
       {showAddTextModal && (
@@ -1173,10 +1187,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <div className="bg-white rounded-3xl max-w-sm w-full p-5 space-y-4 border border-landing-line shadow-soft-16">
             <div className="flex items-center justify-between border-b border-landing-line pb-2.5">
               <h3 className="font-landing-heading font-bold text-landing-ink text-sm flex items-center gap-1.5">
-                <Type className="w-4 h-4 text-landing-green" />
+                <Type className="w-4 h-4 text-fpt-orange" />
                 <span>Thêm Văn Bản / Lời Chúc Mừng</span>
               </h3>
-              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-cad-spec-micro font-mono text-fpt-orange bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
                 Pretext Engine
               </span>
             </div>
@@ -1208,12 +1222,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   value={newTextValue}
                   onChange={(e) => setNewTextValue(e.target.value)}
                   placeholder="Ví dụ: chúc mừng sinh nhật Mai Anh ❤️..."
-                  className="w-full p-2.5 text-xs rounded-xl bg-landing-canvas border border-landing-line focus:outline-none focus:border-landing-green text-landing-ink"
+                  className="w-full p-2.5 text-xs rounded-xl bg-landing-canvas border border-landing-line focus:outline-none focus:border-fpt-orange text-landing-ink"
                 />
               </div>
 
-              <div className="text-[11px] text-landing-muted bg-landing-canvas p-2.5 rounded-xl border border-landing-line flex items-start gap-1.5">
-                <Info className="w-3.5 h-3.5 text-landing-green flex-shrink-0 mt-0.5" />
+              <div className="text-caption text-landing-muted bg-landing-canvas p-2.5 rounded-xl border border-landing-line flex items-start gap-1.5">
+                <Info className="w-3.5 h-3.5 text-fpt-orange flex-shrink-0 mt-0.5" />
                 <span>
                   Công nghệ <strong>Pretext Layout</strong> tự động tính toán số dòng và ngắt câu vừa vặn
                   theo milimet của mặt hộp mà không làm đơ giật trình duyệt.
@@ -1232,7 +1246,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               <button
                 type="button"
                 onClick={handleAddText}
-                className="px-4 py-1.5 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold shadow-none transition"
+                className="px-4 py-1.5 rounded-full bg-fpt-orange hover:bg-fpt-orange-dark text-white text-xs font-semibold shadow-xs transition"
               >
                 Chèn vào mặt hộp
               </button>

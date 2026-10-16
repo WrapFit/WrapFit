@@ -22,6 +22,7 @@ import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
 import { BoxPreview, DielineSketch, useBoxStructures } from "@/features/templates";
 import type { DimensionRange } from "@/types/api";
 import { cn } from "@/utils/helpers";
+import { Breadcrumb } from "@/components/ui";
 
 const SIDES = [
   { field: "length", label: "Dài", letter: "L" },
@@ -55,7 +56,7 @@ export default function StructureDetailPage({ id }: { id: string }) {
           {structures.isError ? (
             <WorkspaceError className="mt-6" error={structures.error} title="Không tải được cấu trúc hộp" onRetry={() => void structures.refetch()} retrying={structures.isFetching} />
           ) : !structures.data ? (
-            <div aria-busy="true" className="mt-6 h-[560px] animate-pulse rounded-[20px] bg-library-tile motion-reduce:animate-none" />
+            <div aria-busy="true" className="mt-6 h-[560px] animate-pulse rounded-squircle-md bg-library-tile motion-reduce:animate-none" />
           ) : !structure ? (
             <div className="mt-10 rounded-2xl bg-library-panel p-10 text-center">
               <h1 className="text-2xl font-medium text-library-ink">Không có cấu trúc hộp này</h1>
@@ -143,7 +144,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
     <>
       <div className="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
         {/* Stage */}
-        <section aria-label="Xem trước" className="overflow-hidden rounded-[20px] border-[1.5px] border-library-ink bg-library-tile shadow-hard">
+        <section aria-label="Xem trước" className="overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-library-ink/15 px-4 py-3">
             <div role="tablist" aria-label="Chế độ xem" className="inline-flex rounded-lg border border-library-ink p-0.5">
               {(
@@ -160,7 +161,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
                   onClick={() => setView(option.value)}
                   className={cn(
                     "inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm transition-colors",
-                    view === option.value ? "bg-library-lime-ink text-white" : "text-library-ink hover:bg-library-panel",
+                    view === option.value ? "bg-fpt-orange text-white" : "text-library-ink hover:bg-library-panel",
                   )}
                 >
                   <option.icon className="size-4" aria-hidden />
@@ -170,7 +171,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
             </div>
             <span className="font-mono text-xs text-library-sub">{fits.map((fit) => `${fit.width} × ${fit.height}`).join(" + ")} mm</span>
           </div>
-          <div className={`relative h-[420px] sm:h-[560px] ${view === "2d" ? "bg-[#F4F6F2] bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]" : "bg-white"}`}>
+          <div className={`relative h-[420px] sm:h-[560px] ${view === "2d" ? "bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]" : "bg-white"}`}>
             {view === "2d" ? (
               <div ref={sketchRef} className="absolute inset-0 flex items-center justify-center p-8">
                 <DielineSketch structure={id} dimensions={dimensions} label={`Khuôn bế ${name}`} className="h-full w-full" />
@@ -197,17 +198,17 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
             {view === "3d" ? (
               <label className="flex w-full items-center gap-3 sm:w-auto">
                 <span className="shrink-0 text-library-ink">Gấp hộp</span>
-                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-library-accent sm:w-64" />
+                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-fpt-orange sm:w-64" />
                 <span className="w-10 font-mono text-xs">{fold}%</span>
               </label>
             ) : (
               <span className="flex flex-wrap gap-x-5 gap-y-1">
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0.5 w-6 bg-[#E53E3E]" />
+                  <span aria-hidden className="h-0.5 w-6 bg-dieline-cut" />
                   Đường cắt
                 </span>
                 <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="w-6 border-t-2 border-dashed border-[#3182CE]" />
+                  <span aria-hidden className="w-6 border-t-2 border-dashed border-dieline-crease" />
                   Đường gấp
                 </span>
                 <span>Kích thước thật theo mm, cùng công thức với file in</span>
@@ -219,8 +220,9 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
         {/* Settings */}
         <div className="flex flex-col gap-5">
           <div>
-            <span className="inline-flex h-6 items-center rounded-md bg-library-panel px-2 text-xs text-library-sub">{category === "rigid" ? "Hộp cứng" : "Hộp gấp"}</span>
-            <h1 className="mt-2 text-3xl font-medium leading-tight text-library-ink sm:text-[40px]">{name}</h1>
+            <Breadcrumb className="mb-3" items={[{ label: "Trang chủ", href: "/" }, { label: "Thư viện mẫu", href: "/templates" }, { label: "Cấu trúc hộp" }, { label: name }]} />
+            <span className="inline-flex h-6 items-center rounded-md bg-library-panel px-2 text-caption text-library-sub">{category === "rigid" ? "Hộp cứng" : "Hộp gấp"}</span>
+            <h1 className="mt-2 text-heading-lg font-medium text-library-ink">{name}</h1>
             <p className="mt-2 text-base leading-[1.6] text-library-sub">{description}</p>
           </div>
 
@@ -243,7 +245,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
                     onKeyDown={(e) => {
                       if (e.key === "Enter") setSide(side.field, Number((e.target as HTMLInputElement).value));
                     }}
-                    className="h-11 w-full rounded-lg border border-library-line px-3 font-mono text-base text-library-ink outline-none focus:border-library-accent focus:ring-[3px] focus:ring-library-accent/20"
+                    className="h-11 w-full rounded-lg border border-library-line px-3 font-mono text-base text-library-ink outline-none focus:border-fpt-orange focus:ring-[3px] focus:ring-fpt-orange/20"
                   />
                 </label>
               ))}
@@ -253,7 +255,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
               <select
                 value={paperTheme}
                 onChange={(e) => setPaperTheme(e.target.value as typeof paperTheme)}
-                className="h-11 w-full rounded-lg border border-library-line bg-white px-3 text-sm text-library-ink outline-none focus:border-library-accent focus:ring-[3px] focus:ring-library-accent/20"
+                className="h-11 w-full rounded-lg border border-library-line bg-white px-3 text-sm text-library-ink outline-none focus:border-fpt-orange focus:ring-[3px] focus:ring-fpt-orange/20"
               >
                 {PAPER_STOCKS.map((stock) => (
                   <option key={stock.theme} value={stock.theme}>

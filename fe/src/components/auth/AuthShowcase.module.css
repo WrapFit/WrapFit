@@ -1,0 +1,95 @@
+/* Motion of the sign-in showcase. Everything stops for visitors who asked for reduced motion. */
+
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.floatSlow {
+  animation: float 8s ease-in-out -3s infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Fill of the active progress segment; the duration comes from --slide-ms. */
+.progress {
+  transform-origin: left center;
+  animation: progress var(--slide-ms, 6000ms) linear forwards;
+}
+
+.paused {
+  animation-play-state: paused;
+}
+
+@keyframes progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Caption of a new slide rises in. */
+.rise {
+  animation: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* "Live" dot. */
+.ping {
+  animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  75%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Slow drift of the coloured glows behind the box. */
+.glow {
+  animation: glow 14s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .floatSlow,
+  .rise,
+  .ping,
+  .glow {
+    animation: none;
+  }
+  .progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

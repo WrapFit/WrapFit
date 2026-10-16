@@ -56,9 +56,9 @@ const FILTERS: { value: Filter; label: string }[] = [
 ];
 
 const ICON_TONES: Record<Notice['tone'], string> = {
-  red: 'bg-red-50 text-red-700',
-  amber: 'bg-amber-50 text-amber-800',
-  green: 'bg-library-accent-mist text-library-accent',
+  red: 'bg-danger-bg text-danger-fg',
+  amber: 'bg-warning-bg text-warning-fg',
+  green: 'bg-fpt-orange-light text-fpt-orange-ink',
   grey: 'bg-library-panel text-library-ink',
 };
 
@@ -194,13 +194,13 @@ function NotificationsScreen() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-[15px] font-medium text-library-ink">{notice.title}</span>
+                  <span className="text-body font-medium text-library-ink">{notice.title}</span>
                   <Badge>{notice.category === 'project' ? 'Dự án' : 'Tài khoản'}</Badge>
                 </span>
                 <span className="mt-0.5 block text-sm leading-[1.6] text-library-sub">{notice.text}</span>
                 {notice.at && <span className="mt-1 block text-xs text-library-muted">{formatRelative(notice.at)}</span>}
               </span>
-              <span className="hidden shrink-0 items-center gap-1 self-center text-sm font-medium text-library-accent sm:inline-flex">
+              <span className="hidden shrink-0 items-center gap-1 self-center text-sm font-medium text-fpt-orange-ink sm:inline-flex">
                 {notice.action}
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </span>

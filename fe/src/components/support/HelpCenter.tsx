@@ -1,9 +1,8 @@
 "use client";
 
-import { ArrowRight, Search, X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
-import { GoiMascot } from "@/components/common/GoiMascot";
+import React, { useEffect, useId, useState } from "react";
 import { Carousel, Container, SectionHeading, limeButton } from "@/components/landing";
 import { ROUTES } from "@/constants";
 import { ModalDialog } from "@/features/dashboard";
@@ -14,44 +13,19 @@ import { ALL_ARTICLES, CATEGORIES, POPULAR_IDS, type Article } from "./articles"
 
 const SLIDE = "w-[85vw] sm:w-[340px] lg:w-[356px]";
 
-/** Lower-case text without Vietnamese accents, so "dinh dang" finds "định dạng". */
-const fold = (text: string) =>
-  text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase();
-
 /**
- * The help center of /support, after pack.ly's: title, search box (Ctrl K), rows of article cards by topic, the box
+ * The help center of /support, after pack.ly's: title, rows of article cards by topic, the box
  * structures read from the API, and a closing "need support" card. A card opens its article in a dialog.
  */
 export function HelpCenter() {
-  const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Article | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
 
-  // Ctrl K / ⌘ K jumps to the search box, as the hint in it says.
+  // /support?a=<article id> opens that article (links from the site search and the blog).
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const id = new URLSearchParams(window.location.search).get("a");
+    const article = id ? ALL_ARTICLES.find((item) => item.id === id) : undefined;
+    if (article) setOpen(article);
   }, []);
-
-  const results = useMemo(() => {
-    const words = fold(query).split(/\s+/).filter(Boolean);
-    if (!words.length) return null;
-    return ALL_ARTICLES.filter((article) => {
-      const text = fold(`${article.title} ${article.body.join(" ")}`);
-      return words.every((word) => text.includes(word));
-    });
-  }, [query]);
 
   const popular = POPULAR_IDS.map((id) => ALL_ARTICLES.find((article) => article.id === id)).filter(
     (article): article is Article => !!article
@@ -67,49 +41,19 @@ export function HelpCenter() {
           <p className="mt-2 font-landing-heading text-2xl font-semibold leading-tight text-landing-muted lg:text-4xl">
             Cần giúp? Tìm câu trả lời nhanh cho câu hỏi của bạn
           </p>
-          <form role="search" onSubmit={(event) => event.preventDefault()} className="mx-auto mt-8 max-w-2xl lg:mt-10">
-            <div className="rounded-full bg-white/60 p-2 shadow-soft-8 ring-1 ring-landing-ink/5">
-              <label className="flex h-12 items-center gap-2.5 rounded-full border border-landing-line bg-white px-4 focus-within:border-landing-ink/40">
-                <Search className="size-5 shrink-0 text-landing-muted" aria-hidden />
-                <span className="sr-only">Tìm trong trung tâm hỗ trợ</span>
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Tìm trong trung tâm hỗ trợ…"
-                  className="h-full min-w-0 flex-1 bg-transparent text-base text-landing-ink outline-none placeholder:text-landing-muted [&::-webkit-search-cancel-button]:hidden"
-                />
-                {query ? (
-                  <button type="button" onClick={() => setQuery("")} aria-label="Xoá tìm kiếm" className="rounded-full p-1 text-landing-muted hover:bg-landing-tile">
-                    <X className="size-4" aria-hidden />
-                  </button>
-                ) : (
-                  <kbd className="hidden rounded-md border border-landing-line px-1.5 py-0.5 font-mono text-xs text-landing-muted sm:inline">
-                    Ctrl K
-                  </kbd>
-                )}
-              </label>
-            </div>
-          </form>
         </Container>
       </header>
 
-      {results ? (
-        <SearchResults query={query} results={results} onOpen={setOpen} />
-      ) : (
-        <div className="flex flex-col gap-12 overflow-x-clip py-12 lg:gap-16 lg:py-16">
-          <ArticleRow id="pho-bien" title="Bài viết phổ biến" articles={popular} onOpen={setOpen} />
-          {CATEGORIES.map((category) => (
-            <React.Fragment key={category.id}>
-              <ArticleRow id={category.id} title={category.title} articles={category.articles} onOpen={setOpen} />
-              {category.id === "kich-thuoc" && <StructureRow />}
-            </React.Fragment>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col gap-12 overflow-x-clip py-12 lg:gap-16 lg:py-16">
+        <ArticleRow id="pho-bien" title="Bài viết phổ biến" articles={popular} onOpen={setOpen} />
+        {CATEGORIES.map((category) => (
+          <React.Fragment key={category.id}>
+            <ArticleRow id={category.id} title={category.title} articles={category.articles} onOpen={setOpen} />
+            {category.id === "kich-thuoc" && <StructureRow />}
+          </React.Fragment>
+        ))}
+      </div>
 
-      <NeedSupport />
       {open && <ArticleDialog article={open} onClose={() => setOpen(null)} />}
     </>
   );
@@ -150,27 +94,6 @@ function ArticleCard({ article, onOpen }: { article: Article; onOpen(article: Ar
       <h3 className="line-clamp-2 font-landing-heading text-base font-semibold leading-6 text-landing-ink">{article.title}</h3>
       <p className="line-clamp-3 text-base leading-6 text-landing-muted">{article.body[0]}</p>
     </button>
-  );
-}
-
-function SearchResults({ query, results, onOpen }: { query: string; results: Article[]; onOpen(article: Article): void }) {
-  return (
-    <section aria-live="polite" className="py-12 lg:py-16">
-      <Container className="flex flex-col gap-6">
-        <h2 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink lg:text-4xl">
-          {results.length ? `${results.length} kết quả cho “${query.trim()}”` : `Không có kết quả cho “${query.trim()}”`}
-        </h2>
-        {results.length ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((article) => (
-              <ArticleCard key={article.id} article={article} onOpen={onOpen} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-base text-landing-muted">Thử từ khoá ngắn hơn, ví dụ “QR”, “FitCheck” hay “dung lượng”.</p>
-        )}
-      </Container>
-    </section>
   );
 }
 
@@ -219,29 +142,6 @@ function StructureCard({ structure }: { structure: BoxStructure }) {
         ))}
       </dl>
     </Link>
-  );
-}
-
-/** Warm gradient card at the end of the page. */
-function NeedSupport() {
-  return (
-    <section className="pb-12 lg:pb-24">
-      <Container>
-        <div className="relative flex flex-col items-center gap-4 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#FFF7ED] via-[#FFE9D2] to-[#FFD5A8] px-6 py-20 text-center lg:rounded-[3rem] lg:py-40">
-          <GoiMascot pose="waving" size={72} label="Gói" />
-          <h2 className="font-landing-heading text-3xl font-bold text-landing-green-night lg:text-4xl">Cần hỗ trợ thêm?</h2>
-          <p className="max-w-xl text-base text-landing-green-night lg:text-lg">
-            Chưa tìm thấy câu trả lời? Đừng lo, Gói luôn ở trong studio để giúp bạn từng bước.
-          </p>
-          <Link
-            href={ROUTES.editorDemo}
-            className="inline-flex h-10 items-center rounded-full bg-white px-4 text-sm font-medium text-landing-ink shadow-soft-8 transition-colors hover:bg-landing-lime-mist"
-          >
-            Hỏi Gói ngay
-          </Link>
-        </div>
-      </Container>
-    </section>
   );
 }
 

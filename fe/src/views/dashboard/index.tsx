@@ -9,7 +9,7 @@
 import { ArrowRight, Box, FolderOpen, Plus } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
-import { outlineButton, primaryButton } from '@/components/library';
+import { outlineButton, primaryButton, createBoxButton } from '@/components/library';
 import { HeroPanel, Panel, PanelTitle, StatTile, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { displayName } from '@/components/layout/account';
 import { ROUTES } from '@/constants';
@@ -26,6 +26,7 @@ import {
   useProjectList,
 } from '@/features/dashboard';
 import { DielineSketch, useBoxStructures } from '@/features/templates';
+import { Banner } from '@/components/ui';
 
 export default function DashboardPage() {
   return (
@@ -76,7 +77,7 @@ function DashboardScreen() {
         title="Chưa có dự án nào"
         description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
         action={
-          <Link href={ROUTES.editorNew} className={primaryButton}>
+          <Link href={ROUTES.editorNew} className={createBoxButton}>
             <Plus className="size-4" aria-hidden />
             Tạo hộp mới
           </Link>
@@ -105,7 +106,7 @@ function DashboardScreen() {
               Tiếp tục dự án gần nhất
             </Link>
           )}
-          <Link href={ROUTES.editorNew} className={primaryButton}>
+          <Link href={ROUTES.editorNew} className={createBoxButton}>
             <Plus className="size-4" aria-hidden />
             Tạo hộp mới
           </Link>
@@ -113,11 +114,23 @@ function DashboardScreen() {
       }
     >
       <div className="flex flex-col gap-8">
+        {user && !user.emailVerifiedAt && (
+          <Banner
+            tone="warning"
+            title="Email của bạn chưa được xác minh"
+            description="Xác minh để nhận hoá đơn, link tải file in và thông báo đơn in mẫu. Hãy mở thư WrapFit gửi tới hộp thư của bạn."
+            action={
+              <Link href={ROUTES.profile} className={outlineButton}>
+                Xem hồ sơ
+              </Link>
+            }
+          />
+        )}
         <HeroPanel>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)] lg:items-center">
             <div>
               <h2 className="flex gap-3 text-2xl font-medium leading-snug text-library-ink">
-                <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent" strokeWidth={2.5} aria-hidden />
+                <ArrowRight className="mt-1 size-7 shrink-0 text-fpt-orange-ink" strokeWidth={1.75} aria-hidden />
                 Bắt đầu từ một cấu trúc hộp
               </h2>
               <p className="mt-3 text-base leading-[1.6] text-library-sub">
@@ -180,7 +193,7 @@ function DashboardScreen() {
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {SHORTCUTS.map((shortcut) => (
               <li key={shortcut.href}>
-                <Link href={shortcut.href} className="group flex h-full flex-col gap-1 rounded-xl bg-library-panel p-4 transition-colors hover:bg-library-accent-mist">
+                <Link href={shortcut.href} className="group flex h-full flex-col gap-1 rounded-xl bg-library-panel p-4 transition-colors hover:bg-fpt-orange-light">
                   <span className="flex items-center justify-between text-base font-medium text-library-ink">
                     {shortcut.title}
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
