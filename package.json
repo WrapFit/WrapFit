@@ -12,6 +12,8 @@
     "dev:fe": "npm --workspace=fe run dev",
     "dev:be": "npm --workspace=be run dev",
     "build:shared": "npm --workspace=shared run build",
+    "build:fe": "npm run build:shared && npm --workspace=fe run build",
+    "build:vercel": "npm run build:shared && npm --workspace=fe run build",
     "build": "npm run build:shared && npm --workspace=be run build && npm --workspace=fe run build"
   },
   "devDependencies": {
