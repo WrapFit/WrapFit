@@ -240,7 +240,12 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
               type="button"
               disabled={fork.isPending || auth.status === "loading"}
               onClick={() => {
-                if (requireAccount()) return;
+                if (auth.status === "anonymous" || auth.status === "error" || !auth.user) {
+                  router.push(
+                    `${ROUTES.editorDemo}?structure=${project.template.id}&l=${project.dimensions.length}&w=${project.dimensions.width}&h=${project.dimensions.height}&paper=${project.materialSpec.type}`
+                  );
+                  return;
+                }
                 fork.mutate();
               }}
               className={primaryButton}

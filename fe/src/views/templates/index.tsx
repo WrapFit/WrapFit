@@ -28,6 +28,13 @@ import {
   useCommunityTemplates,
   useCuratedTemplates,
   type HubFilters,
+  DEMO_BOX_STRUCTURES,
+  DEMO_COMMUNITY_TEMPLATES,
+  DEMO_CURATED_TEMPLATES,
+  filterCommunityTemplates,
+  filterCuratedTemplates,
+  getStructureTemplateCounts,
+  paginateTemplates,
 } from "@/features/templates";
 import { useHydrated, useInView } from "@/hooks/dom";
 import { queryKeys } from "@/hooks/data";
@@ -135,8 +142,22 @@ function TemplateLibrary() {
   // Size of the whole library, for the title (one card per section is enough to read the total).
   const allCurated = useCuratedTemplates({ page: 1, limit: 1 });
   const allCommunity = useCommunityTemplates({ page: 1, limit: 1 });
+
+  const fallbackCurated = useMemo(
+    () => paginateTemplates(filterCuratedTemplates(filters), pages.curated, PAGE_SIZE),
+    [filters, pages.curated]
+  );
+  const fallbackCommunity = useMemo(
+    () => paginateTemplates(filterCommunityTemplates(filters), pages.community, PAGE_SIZE),
+    [filters, pages.community]
+  );
+
+  const effectiveCurated = curated.data ?? fallbackCurated;
+  const effectiveCommunity = community.data ?? fallbackCommunity;
+
   const libraryTotal =
-    allCurated.data && allCommunity.data ? allCurated.data.meta.total + allCommunity.data.meta.total : null;
+    (allCurated.data?.meta.total ?? DEMO_CURATED_TEMPLATES.length) +
+    (allCommunity.data?.meta.total ?? DEMO_COMMUNITY_TEMPLATES.length);
 
   const scrollToGrid = () => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -172,9 +193,7 @@ function TemplateLibrary() {
             <div ref={grid.ref}>
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-base text-library-sub" aria-live="polite">
-                  {(tab === "curated" ? curated : community).data
-                    ? `${(tab === "curated" ? curated : community).data!.meta.total} ${tab === "curated" ? "mẫu" : "thiết kế"}`
-                    : "Đang tải…"}
+                  {`${(tab === "curated" ? effectiveCurated : effectiveCommunity).meta.total} ${tab === "curated" ? "mẫu" : "thiết kế"}`}
                   {hasFilters && (
                     <button type="button" onClick={clearFilters} className="ml-3 inline-flex items-center gap-1 text-sm text-library-ink underline-offset-4 hover:underline">
                       <X className="size-3.5" aria-hidden />
@@ -184,10 +203,10 @@ function TemplateLibrary() {
                 </p>
                 {/* Curated first: most visitors start from a ready-made template. */}
                 <TabList label="Nguồn mẫu">
-                  <Tab value="curated" count={curated.data?.meta.total}>
+                  <Tab value="curated" count={effectiveCurated.meta.total}>
                     WrapFit Curated
                   </Tab>
-                  <Tab value="community" count={community.data?.meta.total}>
+                  <Tab value="community" count={effectiveCommunity.meta.total}>
                     Cộng đồng
                   </Tab>
                 </TabList>
@@ -196,6 +215,7 @@ function TemplateLibrary() {
               <TabPanel value="curated">
                 <LibraryGrid
                   query={curated}
+                  data={effectiveCurated}
                   hasFilters={hasFilters}
                   onClearFilters={clearFilters}
                   onPage={(page) => {
@@ -221,6 +241,7 @@ function TemplateLibrary() {
               <TabPanel value="community">
                 <LibraryGrid
                   query={community}
+                  data={effectiveCommunity}
                   hasFilters={hasFilters}
                   onClearFilters={clearFilters}
                   onPage={(page) => {
@@ -380,9 +401,11 @@ interface FilterGroup {
 
 function SideFilters({ filters, tab, onChange }: { filters: Filters; tab: Section; onChange(patch: Patch): void }) {
   const structures = useBoxStructures();
+  const demoCounts = useMemo(() => getStructureTemplateCounts(tab), [tab]);
+  const structuresList = structures.data ?? DEMO_BOX_STRUCTURES;
   // Designs of each structure in the open section (one card per request is enough to read the total).
   const counts = useQueries({
-    queries: (structures.data ?? []).map((structure) => {
+    queries: structuresList.map((structure) => {
       const query = { structure: structure.id, page: 1, limit: 1 };
       return {
         queryKey: queryKeys.templates.hub({ ...query, section: tab }),
@@ -392,11 +415,15 @@ function SideFilters({ filters, tab, onChange }: { filters: Filters; tab: Sectio
     }),
   });
 
-  const structureOptions = (structures.data ?? []).map((structure, index) => ({
-    value: structure.id,
-    label: structure.name,
-    count: (counts[index]?.data as Paginated<unknown> | undefined)?.meta.total,
-  }));
+  const structureOptions: { value: string; label: string; count?: number }[] = structuresList.map((structure, index) => {
+    const apiTotal = (counts[index]?.data as Paginated<unknown> | undefined)?.meta.total;
+    const count = apiTotal !== undefined ? apiTotal : demoCounts[structure.id as BoxStructureType] ?? 0;
+    return {
+      value: structure.id,
+      label: structure.name,
+      count,
+    };
+  });
   // A structure from a shared link stays selectable while the list loads.
   if (filters.structure && !structureOptions.some((option) => option.value === filters.structure)) {
     structureOptions.push({ value: filters.structure, label: filters.structure, count: undefined });
@@ -505,6 +532,7 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
 
 function LibraryGrid<T>({
   query,
+  data: dataProp,
   hasFilters,
   onClearFilters,
   onPage,
@@ -512,16 +540,17 @@ function LibraryGrid<T>({
   renderCard,
 }: {
   query: UseQueryResult<Paginated<T>>;
+  data?: Paginated<T>;
   hasFilters: boolean;
   onClearFilters(): void;
   onPage(page: number): void;
   empty: { title: string; description: string };
   renderCard(item: T): React.ReactNode;
 }) {
-  const data = query.data;
+  const data = dataProp ?? query.data;
   const gridClass = "mt-6 grid grid-cols-1 gap-x-6 gap-y-7 sm:grid-cols-2 xl:grid-cols-3";
 
-  if (query.isPending) {
+  if (query.isPending && !data) {
     return (
       <div role="status" aria-label="Đang tải" className={gridClass}>
         {Array.from({ length: 6 }, (_, index) => (
