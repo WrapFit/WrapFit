@@ -21,25 +21,25 @@ export default function Step3StudioPage() {
           <div className="w-72 h-72 rounded-full border border-primary/15 flex items-center justify-center">
             <div className="w-52 h-52 rounded-full border border-dashed border-primary/20" />
           </div>
-          <span className="absolute top-2 font-mono text-[9px] text-primary/60 tracking-wider">
+          <span className="absolute top-2 font-mono text-cad-spec-micro text-primary/60 tracking-wider">
             Y+ [90°]
           </span>
-          <span className="absolute bottom-2 font-mono text-[9px] text-primary/60 tracking-wider">
+          <span className="absolute bottom-2 font-mono text-cad-spec-micro text-primary/60 tracking-wider">
             Y- [270°]
           </span>
-          <span className="absolute left-2 font-mono text-[9px] text-primary/60 tracking-wider">
+          <span className="absolute left-2 font-mono text-cad-spec-micro text-primary/60 tracking-wider">
             X- [180°]
           </span>
-          <span className="absolute right-2 font-mono text-[9px] text-primary/60 tracking-wider">
+          <span className="absolute right-2 font-mono text-cad-spec-micro text-primary/60 tracking-wider">
             X+ [0°]
           </span>
-          <span className="absolute bottom-6 right-6 font-mono text-[8px] text-neutral-400 bg-white/70 px-1.5 py-0.5 rounded border border-neutral-200">
+          <span className="absolute bottom-6 right-6 font-mono text-cad-spec-micro text-neutral-400 bg-white/70 px-1.5 py-0.5 rounded border border-neutral-200">
             XYZ: (0.00, 0.00, 0.00)
           </span>
         </div>
 
         {/* Studio Technical Legend on Bottom Left Background */}
-        <div className="absolute bottom-8 left-20 pointer-events-none flex flex-col gap-1.5 text-[10px] font-mono text-neutral-400">
+        <div className="absolute bottom-8 left-20 pointer-events-none flex flex-col gap-1.5 text-cad-spec-micro font-mono text-neutral-400">
           <div className="flex items-center gap-2">
             <span className="w-3.5 h-0.5 bg-cad-cut" />
             <span className="text-neutral-600 font-medium">Cut Line (Dao Bế Cắt Đứt 100%)</span>
@@ -113,11 +113,11 @@ export default function Step3StudioPage() {
                 <span className="font-bold text-xs tracking-tight text-neutral-900 font-sans">
                   WRAPFIT STUDIO CAD
                 </span>
-                <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.2 rounded font-mono font-semibold">
+                <span className="text-cad-spec-micro bg-primary/10 text-primary px-1.5 py-0.2 rounded font-mono font-semibold">
                   v2.8 PRO
                 </span>
               </div>
-              <span className="text-[10px] text-neutral-500 font-mono">
+              <span className="text-cad-spec-micro text-neutral-500 font-mono">
                 FEFCO 0215 · TUCK-END DIESET
               </span>
             </div>
@@ -134,7 +134,7 @@ export default function Step3StudioPage() {
             </svg>
             <span>220 × 150 × 80 mm</span>
             <span className="text-neutral-300">|</span>
-            <span className="text-neutral-500">Caliper: 0.45mm</span>
+            <span className="text-neutral-500">Độ dày giấy: 0.45mm</span>
           </div>
         </div>
 
@@ -201,15 +201,15 @@ export default function Step3StudioPage() {
             <div className="absolute right-0 top-full mt-2 w-48 py-1 rounded-2xl glass-dock-dark shadow-dock border border-white/10 hidden group-hover:block text-xs z-50">
               <a className="px-3.5 py-2 hover:bg-white/10 flex items-center justify-between text-stone-200" href="#" data-st-on="click:0">
                 <span>DXF Bản Dao Bế (CAD)</span>
-                <span className="text-[9px] font-mono text-stone-400">1:1</span>
+                <span className="text-cad-spec-micro font-mono text-stone-400">1:1</span>
               </a>
               <a className="px-3.5 py-2 hover:bg-white/10 flex items-center justify-between text-stone-200" href="#" data-st-on="click:1">
-                <span>PDF Vector Proofing</span>
-                <span className="text-[9px] font-mono text-stone-400">CMYK</span>
+                <span>Bản in thử PDF vector</span>
+                <span className="text-cad-spec-micro font-mono text-stone-400">CMYK</span>
               </a>
               <a className="px-3.5 py-2 hover:bg-white/10 flex items-center justify-between text-stone-200" href="#" data-st-on="click:2">
                 <span>3D Model (GLTF/OBJ)</span>
-                <span className="text-[9px] font-mono text-stone-400">PBR</span>
+                <span className="text-cad-spec-micro font-mono text-stone-400">PBR</span>
               </a>
             </div>
           </div>
@@ -316,7 +316,7 @@ export default function Step3StudioPage() {
           <button
             className="tool-btn w-10 h-10 rounded-xl hover:bg-white/10 hover:text-white flex items-center justify-center transition-all"
             data-tool="history"
-            title="Tool 7: Hoàn tác Undo/Redo"
+            title="Hoàn tác / Làm lại"
           >
             <svg className="w-4 h-4 stroke-current fill-none stroke-[2]" viewBox="0 0 24 24">
               <path d="M3 7v6h6" />
@@ -336,7 +336,7 @@ export default function Step3StudioPage() {
                 </svg>
                 <span>Con Trỏ Chọn & Xoay</span>
               </div>
-              <span className="text-[9px] font-mono bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded">V</span>
+              <span className="text-cad-spec-micro font-mono bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded">V</span>
             </div>
             <p className="text-[11px] text-neutral-500 mb-3 leading-relaxed">
               Chọn mặt hộp để chỉnh sửa họa tiết, kéo xoay 360° tự do quanh trục XYZ.
@@ -362,40 +362,40 @@ export default function Step3StudioPage() {
                 </svg>
                 <span>Thước Đo Caliper Điện Tử</span>
               </div>
-              <span className="text-[9px] font-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+              <span className="text-cad-spec-micro font-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
                 ±0.05mm
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="bg-neutral-50 p-2 rounded-xl text-center">
-                <span className="block text-[9px] font-mono text-neutral-400">DÀI (W)</span>
+                <span className="block text-cad-spec-micro font-mono text-neutral-400">DÀI (W)</span>
                 <input
                   className="w-full text-center font-mono font-bold text-xs bg-transparent border-0 p-0 focus:ring-0 text-neutral-900"
                   id="inputW"
                   type="number"
                   defaultValue="220"
                 />
-                <span className="text-[9px] font-mono text-neutral-400">mm</span>
+                <span className="text-cad-spec-micro font-mono text-neutral-400">mm</span>
               </div>
               <div className="bg-neutral-50 p-2 rounded-xl text-center">
-                <span className="block text-[9px] font-mono text-neutral-400">RỘNG (D)</span>
+                <span className="block text-cad-spec-micro font-mono text-neutral-400">RỘNG (D)</span>
                 <input
                   className="w-full text-center font-mono font-bold text-xs bg-transparent border-0 p-0 focus:ring-0 text-neutral-900"
                   id="inputD"
                   type="number"
                   defaultValue="80"
                 />
-                <span className="text-[9px] font-mono text-neutral-400">mm</span>
+                <span className="text-cad-spec-micro font-mono text-neutral-400">mm</span>
               </div>
               <div className="bg-neutral-50 p-2 rounded-xl text-center">
-                <span className="block text-[9px] font-mono text-neutral-400">CAO (H)</span>
+                <span className="block text-cad-spec-micro font-mono text-neutral-400">CAO (H)</span>
                 <input
                   className="w-full text-center font-mono font-bold text-xs bg-transparent border-0 p-0 focus:ring-0 text-neutral-900"
                   id="inputH"
                   type="number"
                   defaultValue="150"
                 />
-                <span className="text-[9px] font-mono text-neutral-400">mm</span>
+                <span className="text-cad-spec-micro font-mono text-neutral-400">mm</span>
               </div>
             </div>
             <div className="bg-stone-50 p-2.5 rounded-xl mb-3 flex items-center justify-between text-xs">
@@ -421,7 +421,7 @@ export default function Step3StudioPage() {
                 </svg>
                 <span>Chèn Artwork / Logo Vector</span>
               </div>
-              <span className="text-[9px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold">
+              <span className="text-cad-spec-micro font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold">
                 SVG/AI
               </span>
             </div>
@@ -435,7 +435,7 @@ export default function Step3StudioPage() {
                 <line x1="12" x2="12" y1="3" y2="15" />
               </svg>
               <span className="text-[11px] font-medium text-neutral-700 block">Kéo thả SVG hoặc Click tải lên</span>
-              <span className="text-[9px] font-mono text-neutral-400">Vector Path 100% không vỡ hạt</span>
+              <span className="text-cad-spec-micro font-mono text-neutral-400">Vector Path 100% không vỡ hạt</span>
             </div>
           </div>
 
@@ -450,15 +450,15 @@ export default function Step3StudioPage() {
                 </svg>
                 <span>Khắc Chữ & Ép Kim Dập Nổi</span>
               </div>
-              <span className="text-[9px] font-mono bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
+              <span className="text-cad-spec-micro font-mono bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded font-semibold">
                 22K Foil
               </span>
             </div>
             <div className="space-y-2 mb-3">
               <div>
-                <label className="text-[9px] font-mono text-neutral-400 block mb-0.5">NỘI DUNG NHÃN HỘP:</label>
+                <label className="text-cad-spec-micro font-mono text-neutral-400 block mb-0.5">NỘI DUNG NHÃN HỘP:</label>
                 <input
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs font-serif italic text-neutral-800 focus:ring-1 focus:ring-primary focus:border-primary"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs font-landing-heading italic text-neutral-800 focus:ring-1 focus:ring-primary focus:border-primary"
                   id="inputBoxTitle"
                   type="text"
                   defaultValue="WRAPFIT ATELIER"
@@ -486,7 +486,7 @@ export default function Step3StudioPage() {
                 </svg>
                 <span>Bộ Mã Cấu Trúc Dao Bế</span>
               </div>
-              <span className="text-[9px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold">
+              <span className="text-cad-spec-micro font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded font-semibold">
                 CAD DB
               </span>
             </div>
@@ -494,9 +494,9 @@ export default function Step3StudioPage() {
               <button className="w-full p-2 rounded-xl bg-primary/10 border border-primary/20 text-left flex items-center justify-between text-xs">
                 <div>
                   <span className="font-bold text-primary font-mono block">FEFCO 0215</span>
-                  <span className="text-[10px] text-neutral-500">Tuck-End Lock (Hộp Nắp Gài Đáy Gài)</span>
+                  <span className="text-cad-spec-micro text-neutral-500">Tuck-End Lock (Hộp Nắp Gài Đáy Gài)</span>
                 </div>
-                <span className="text-[9px] font-mono bg-primary text-white px-1.5 py-0.5 rounded">Đang Chọn</span>
+                <span className="text-cad-spec-micro font-mono bg-primary text-white px-1.5 py-0.5 rounded">Đang Chọn</span>
               </button>
             </div>
           </div>
@@ -511,7 +511,7 @@ export default function Step3StudioPage() {
                 </svg>
                 <span>FitCheck™ Bù Co Giãn Giấy</span>
               </div>
-              <span className="text-[9px] font-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+              <span className="text-cad-spec-micro font-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
                 Auto-Pass
               </span>
             </div>
@@ -536,8 +536,8 @@ export default function Step3StudioPage() {
             </div>
             <div className="space-y-1.5 text-xs mb-3">
               <div className="flex items-center justify-between text-neutral-800 py-1 border-b border-stone-100">
-                <span className="font-medium">Origami Fold Engine Active</span>
-                <span className="text-[9px] font-mono text-neutral-400">Vừa xong</span>
+                <span className="font-medium">Đang mô phỏng gập hộp</span>
+                <span className="text-cad-spec-micro font-mono text-neutral-400">Vừa xong</span>
               </div>
             </div>
           </div>
@@ -548,7 +548,7 @@ export default function Step3StudioPage() {
       <aside className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-3 w-48 pointer-events-auto">
         <div className="w-full glass-dock-dark p-4 rounded-3xl shadow-dock border border-white/10 flex flex-col text-stone-200">
           <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
-            <span className="text-[10px] font-mono tracking-widest text-stone-400 uppercase">
+            <span className="text-cad-spec-micro font-mono tracking-widest text-stone-400 uppercase">
               Substrate & Foil
             </span>
             <span className="w-2 h-2 rounded-full bg-emerald-400" title="PBR Shading Active" />
@@ -567,10 +567,10 @@ export default function Step3StudioPage() {
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/60 pointer-events-none" />
             </div>
             <div className="text-center mt-2.5">
-              <p className="text-xs font-semibold text-white tracking-wide font-serif" id="inspectorMatName">
+              <p className="text-xs font-semibold text-white tracking-wide font-landing-heading" id="inspectorMatName">
                 Cotton Ivory 350G
               </p>
-              <p className="text-[9px] text-stone-400 font-mono" id="inspectorFinishName">
+              <p className="text-cad-spec-micro text-stone-400 font-mono" id="inspectorFinishName">
                 Ép Kim Gold Foil 22K
               </p>
             </div>
@@ -578,22 +578,22 @@ export default function Step3StudioPage() {
 
           {/* Material Choice Quick Select */}
           <div className="mt-3 space-y-1.5">
-            <span className="text-[9px] font-mono uppercase text-stone-400">Chọn Chất Liệu Giấy:</span>
+            <span className="text-cad-spec-micro font-mono uppercase text-stone-400">Chọn Chất Liệu Giấy:</span>
             <div className="grid grid-cols-3 gap-1">
               <button
-                className="mat-selector-btn py-1 px-1.5 rounded-lg text-[9px] font-mono border border-primary bg-white/20 text-white font-medium"
+                className="mat-selector-btn py-1 px-1.5 rounded-lg text-cad-spec-micro font-mono border border-primary bg-white/20 text-white font-medium"
                 data-substrate="cotton"
               >
                 Cotton
               </button>
               <button
-                className="mat-selector-btn py-1 px-1.5 rounded-lg text-[9px] font-mono border border-white/10 text-stone-400 hover:text-white"
+                className="mat-selector-btn py-1 px-1.5 rounded-lg text-cad-spec-micro font-mono border border-white/10 text-stone-400 hover:text-white"
                 data-substrate="kraft"
               >
                 Kraft
               </button>
               <button
-                className="mat-selector-btn py-1 px-1.5 rounded-lg text-[9px] font-mono border border-white/10 text-stone-400 hover:text-white"
+                className="mat-selector-btn py-1 px-1.5 rounded-lg text-cad-spec-micro font-mono border border-white/10 text-stone-400 hover:text-white"
                 data-substrate="greyboard"
               >
                 Cứng Grey
@@ -603,8 +603,8 @@ export default function Step3StudioPage() {
 
           {/* Printing Special Effects */}
           <div className="mt-3 pt-2.5 border-t border-white/10 space-y-1.5">
-            <span className="text-[9px] font-mono uppercase text-stone-400">Hiệu Ứng Gia Công:</span>
-            <div className="grid grid-cols-2 gap-1 text-[9px] font-mono">
+            <span className="text-cad-spec-micro font-mono uppercase text-stone-400">Hiệu Ứng Gia Công:</span>
+            <div className="grid grid-cols-2 gap-1 text-cad-spec-micro font-mono">
               <button
                 className="py-1 px-1.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-left flex items-center gap-1"
                 id="toggleGoldFoil"
@@ -657,7 +657,7 @@ export default function Step3StudioPage() {
           </div>
 
           {/* Technical Volume & Die Specs */}
-          <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-stone-400">
+          <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-cad-spec-micro font-mono text-stone-400">
             <span>THỂ TÍCH</span>
             <span className="text-white font-semibold">2,640 cm³</span>
           </div>
@@ -697,10 +697,10 @@ export default function Step3StudioPage() {
           >
             {/* Front Panel Artwork & Foil Stamp */}
             <div className="flex items-center justify-between border-b border-primary/20 pb-1">
-              <span className="font-mono text-[8px] text-primary/70 font-semibold tracking-wider">
+              <span className="font-mono text-cad-spec-micro text-primary/70 font-semibold tracking-wider">
                 [ FRONT PANEL · 220×150 ]
               </span>
-              <span className="font-mono text-[8px] text-neutral-400">FEFCO 0215</span>
+              <span className="font-mono text-cad-spec-micro text-neutral-400">FEFCO 0215</span>
             </div>
             <div className="flex flex-col items-center justify-center text-center my-auto">
               <div
@@ -711,22 +711,22 @@ export default function Step3StudioPage() {
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                 </svg>
               </div>
-              <h2 className="font-serif italic text-base font-semibold text-neutral-900 tracking-wide gold-foil-text" id="boxTitle">
+              <h2 className="font-landing-heading italic text-base font-semibold text-neutral-900 tracking-wide gold-foil-text" id="boxTitle">
                 WRAPFIT ATELIER
               </h2>
-              <span className="font-mono text-[8px] tracking-widest text-neutral-500 uppercase mt-0.5">
+              <span className="font-mono text-cad-spec-micro tracking-widest text-neutral-500 uppercase mt-0.5">
                 High Precision Packaging
               </span>
             </div>
             <div className="flex items-center justify-between font-mono text-[7px] text-neutral-400 border-t border-dashed border-neutral-300 pt-1">
-              <span className="text-cad-cut font-medium">CUT 100%</span>
+              <span className="text-cad-cut font-medium">CẮT 100%</span>
               <span>CREASE ±0.2mm</span>
-              <span className="text-emerald-700 font-semibold">ECO 350GSM</span>
+              <span className="text-emerald-700 font-semibold">GIẤY 350GSM</span>
             </div>
 
             {/* Dimension Guides Overlay */}
             <div
-              className="absolute -bottom-5 left-0 right-0 flex items-center justify-center font-mono text-[9px] text-primary/80 font-bold pointer-events-none transition-opacity duration-200"
+              className="absolute -bottom-5 left-0 right-0 flex items-center justify-center font-mono text-cad-spec-micro text-primary/80 font-bold pointer-events-none transition-opacity duration-200"
               id="dimensionW"
             >
               <span>← 220 mm →</span>
@@ -760,7 +760,7 @@ export default function Step3StudioPage() {
                   <div className="panel-face mat-cotton cad-border-cut cad-border-crease-t cad-border-crease-b w-[220px] h-[150px] absolute top-0 left-0 -translate-x-full p-3 flex flex-col justify-between" id="panelBack">
                     <div className="flex items-center justify-between border-b border-neutral-200 pb-1">
                       <span className="font-mono text-[7px] text-neutral-400">[ BACK PANEL · 220×150 ]</span>
-                      <span className="font-mono text-[7px] text-emerald-600">RECYCLABLE</span>
+                      <span className="font-mono text-[7px] text-emerald-600">TÁI CHẾ ĐƯỢC</span>
                     </div>
                     {/* Mock barcode & technical dieline text */}
                     <div className="flex items-end justify-between">
@@ -777,7 +777,7 @@ export default function Step3StudioPage() {
                         <span className="font-mono text-[6px] text-neutral-600">9 341829 018247</span>
                       </div>
                       <div className="text-right font-mono text-[7px] text-neutral-400">
-                        <p>FEFCO STANDARD</p>
+                        <p>KHUÔN CHUẨN</p>
                         <p>DIE SPEC: #420-B</p>
                       </div>
                     </div>
@@ -826,9 +826,9 @@ export default function Step3StudioPage() {
               <div className="panel-face mat-cotton cad-border-cut cad-border-crease-t w-[220px] h-[80px] absolute top-0 left-0 -translate-y-full p-2 flex flex-col justify-between" id="panelTop">
                 <div className="flex items-center justify-between text-[7px] font-mono text-neutral-400">
                   <span>[ TOP TUCK LID · 220×80 ]</span>
-                  <span className="text-primary font-bold">R: 6mm FOLD</span>
+                  <span className="text-primary font-bold">NẾP GẤP R 6mm</span>
                 </div>
-                <p className="font-serif italic text-xs text-center text-neutral-700">
+                <p className="font-landing-heading italic text-xs text-center text-neutral-700">
                   Open with Care · Mở Nắp Nhẹ Tay
                 </p>
                 <div className="w-full flex justify-center text-[7px] font-mono text-neutral-400">
@@ -838,7 +838,7 @@ export default function Step3StudioPage() {
                 <div className="joint absolute top-0 left-0 w-[220px] h-0 origin-top" id="jointTuck" style={{ transform: 'rotateX(90deg)' }}>
                   {/* TUCK-IN FLAP (220 x 28 with rounded tabs) */}
                   <div className="panel-face mat-cotton cad-border-cut w-[200px] h-[28px] mx-auto absolute top-0 left-[10px] -translate-y-full rounded-t-xl flex items-center justify-center bg-amber-50/40" id="panelTuck">
-                    <span className="font-mono text-[8px] text-amber-700 font-semibold tracking-wide">
+                    <span className="font-mono text-cad-spec-micro text-amber-700 font-semibold tracking-wide">
                       Tai Gài Nắp Tuck-in Tab (Khóa Khớp)
                     </span>
                   </div>
@@ -853,9 +853,9 @@ export default function Step3StudioPage() {
               <div className="panel-face mat-cotton cad-border-cut cad-border-crease-b w-[220px] h-[80px] absolute top-full left-0 p-2 flex flex-col justify-between" id="panelBottom">
                 <div className="flex items-center justify-between text-[7px] font-mono text-neutral-400">
                   <span>[ BOTTOM SNAP CLOSURE · 220×80 ]</span>
-                  <span>LOCKING TAB</span>
+                  <span>TAI KHÓA</span>
                 </div>
-                <span className="text-center font-mono text-[8px] text-neutral-500 font-medium">
+                <span className="text-center font-mono text-cad-spec-micro text-neutral-500 font-medium">
                   KHÓA ĐÁY TỰ GÀI FEFCO 0215
                 </span>
                 <div className="w-16 h-3 mx-auto border-t-2 border-primary/40 rounded-t-md" />
@@ -865,7 +865,7 @@ export default function Step3StudioPage() {
         </div>
 
         {/* Drag Rotation Indicator Hint */}
-        <div className="absolute bottom-24 flex items-center gap-2 pointer-events-none text-neutral-400 font-mono text-[10px] tracking-wide" id="dragHint">
+        <div className="absolute bottom-24 flex items-center gap-2 pointer-events-none text-neutral-400 font-mono text-cad-spec-micro tracking-wide" id="dragHint">
           <svg className="w-3.5 h-3.5 text-primary animate-pulse stroke-current fill-none stroke-[2]" viewBox="0 0 24 24">
             <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
             <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
@@ -982,7 +982,7 @@ export default function Step3StudioPage() {
                 <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
                 <circle cx="12" cy="13" r="3" />
               </svg>
-              <span>Snapshot</span>
+              <span>Phiên bản</span>
             </button>
           </div>
         </div>

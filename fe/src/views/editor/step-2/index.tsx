@@ -50,7 +50,7 @@ export default function Step2DimensionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] flex flex-col justify-between font-landing-body select-none">
       {/* ================= 1. LUXURY EDITORIAL TOP NAV HEADER ================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200">
         <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
@@ -60,14 +60,14 @@ export default function Step2DimensionsPage() {
               <div className="w-8 h-8 rounded-xl bg-[#122e20] text-white flex items-center justify-center font-bold text-sm tracking-wider shadow-xs group-hover:bg-[#1a3f2c] transition-colors">
                 W
               </div>
-              <span className="font-['Playfair_Display'] font-bold text-lg text-neutral-900 tracking-tight">
+              <span className="font-landing-heading font-bold text-lg text-neutral-900 tracking-tight">
                 WRAPFIT
               </span>
             </Link>
 
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-['JetBrains_Mono'] font-bold text-emerald-800">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-mono tabular-nums font-bold text-emerald-800">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>FITCHECK™ CALIBRATED</span>
+              <span>FITCHECK™ ĐÃ HIỆU CHUẨN</span>
             </div>
           </div>
 
@@ -83,7 +83,7 @@ export default function Step2DimensionsPage() {
               href="/dashboard/brand-kit"
               className="px-3 py-1.5 rounded-full text-stone-600 hover:text-stone-900 transition-colors"
             >
-              Brand Kit
+              Bộ nhận diện
             </Link>
             <Link
               href="/editor/step-1"
@@ -110,15 +110,15 @@ export default function Step2DimensionsPage() {
 
           {/* Right: Technical Scale Badge & Atelier Pro Avatar */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 border border-stone-200 text-[11px] font-['JetBrains_Mono'] text-stone-600">
+            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 border border-stone-200 text-[11px] font-mono tabular-nums text-stone-600">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>SCALE 1:1 mm</span>
+              <span>TỈ LỆ 1:1 mm</span>
             </div>
 
             <div className="flex items-center gap-2 pl-2 border-l border-stone-200">
               <div className="text-right hidden sm:block">
-                <p className="text-[11px] font-bold text-neutral-900 leading-tight">Studio PACKAGING</p>
-                <p className="text-[10px] font-['JetBrains_Mono'] text-emerald-700">ATELIER PRO</p>
+                <p className="text-[11px] font-bold text-neutral-900 leading-tight">Studio BAO BÌ</p>
+                <p className="text-cad-spec-micro font-mono tabular-nums text-emerald-700">XƯỞNG THIẾT KẾ</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-900 font-bold text-xs flex items-center justify-center border border-emerald-300">
                 PRO
@@ -132,11 +132,11 @@ export default function Step2DimensionsPage() {
       <section className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 pt-6 pb-2">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-stone-200/80">
           <div>
-            <div className="flex items-center gap-2 text-xs font-['JetBrains_Mono'] font-bold text-emerald-700 uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-xs font-mono tabular-nums font-bold text-emerald-700 uppercase tracking-wider mb-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span>• PARAMETRIC REAL-TIME 3D STUDIO</span>
             </div>
-            <h1 className="font-['Playfair_Display'] text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900 tracking-tight">
+            <h1 className="font-landing-heading text-2xl sm:text-3xl lg:text-4xl font-bold text-neutral-900 tracking-tight">
               Kích Thước &amp; Dung Sai Bao Bì
             </h1>
           </div>
@@ -213,7 +213,7 @@ export default function Step2DimensionsPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-neutral-800">Chiều Dài (L) — X-Axis</span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="font-mono tabular-nums text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {length} mm
                 </span>
               </div>
@@ -225,7 +225,7 @@ export default function Step2DimensionsPage() {
                 >
                   −
                 </button>
-                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-['JetBrains_Mono'] text-lg font-bold text-neutral-900">
+                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-mono tabular-nums text-lg font-bold text-neutral-900">
                   {length} <span className="text-xs font-normal text-stone-400 ml-1">mm</span>
                 </div>
                 <button
@@ -250,7 +250,7 @@ export default function Step2DimensionsPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-neutral-800">Chiều Rộng (W) — Y-Axis</span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="font-mono tabular-nums text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {width} mm
                 </span>
               </div>
@@ -262,7 +262,7 @@ export default function Step2DimensionsPage() {
                 >
                   −
                 </button>
-                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-['JetBrains_Mono'] text-lg font-bold text-neutral-900">
+                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-mono tabular-nums text-lg font-bold text-neutral-900">
                   {width} <span className="text-xs font-normal text-stone-400 ml-1">mm</span>
                 </div>
                 <button
@@ -287,7 +287,7 @@ export default function Step2DimensionsPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-neutral-800">Chiều Cao (H) — Z-Axis</span>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                <span className="font-mono tabular-nums text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {height} mm
                 </span>
               </div>
@@ -299,7 +299,7 @@ export default function Step2DimensionsPage() {
                 >
                   −
                 </button>
-                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-['JetBrains_Mono'] text-lg font-bold text-neutral-900">
+                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-mono tabular-nums text-lg font-bold text-neutral-900">
                   {height} <span className="text-xs font-normal text-stone-400 ml-1">mm</span>
                 </div>
                 <button
@@ -324,7 +324,7 @@ export default function Step2DimensionsPage() {
             <div className="space-y-2 pt-2 border-t border-stone-100">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-neutral-800">Khối Lượng Quà (g)</span>
-                <span className={`font-['JetBrains_Mono'] text-xs font-bold px-2 py-0.5 rounded ${weight > 300 ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-blue-600 bg-blue-50'}`}>
+                <span className={`font-mono tabular-nums text-xs font-bold px-2 py-0.5 rounded ${weight > 300 ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-blue-600 bg-blue-50'}`}>
                   {weight} g {weight > 300 ? '• >300g (Khóa Đáy 1-2-3)' : '• Nhẹ (Gài thẳng)'}
                 </span>
               </div>
@@ -336,7 +336,7 @@ export default function Step2DimensionsPage() {
                 >
                   −
                 </button>
-                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-['JetBrains_Mono'] text-lg font-bold text-neutral-900">
+                <div className="flex-1 h-10 bg-stone-50 border border-stone-200 rounded-xl flex items-center justify-center font-mono tabular-nums text-lg font-bold text-neutral-900">
                   {weight} <span className="text-xs font-normal text-stone-400 ml-1">g</span>
                 </div>
                 <button
@@ -361,7 +361,7 @@ export default function Step2DimensionsPage() {
 
           {/* Caliper & Paper Substrate Swatches */}
           <div className="pt-2">
-            <label className="block text-[11px] font-['JetBrains_Mono'] font-bold text-stone-500 uppercase tracking-wider mb-2.5">
+            <label className="block text-[11px] font-mono tabular-nums font-bold text-stone-500 uppercase tracking-wider mb-2.5">
               ĐỘ DÀY GIẤY CALIPER (+{paperSpec.compensation} mm Bù Co Giãn)
             </label>
             <div className="grid grid-cols-3 gap-2.5">
@@ -376,10 +376,10 @@ export default function Step2DimensionsPage() {
                 }`}
               >
                 <div className="text-xs font-bold text-neutral-900">Ivory 300g</div>
-                <div className="text-[10px] text-emerald-700 font-semibold font-['JetBrains_Mono'] mt-0.5">
+                <div className="text-cad-spec-micro text-emerald-700 font-semibold font-mono tabular-nums mt-0.5">
                   (+1.8mm)
                 </div>
-                <div className="text-[10px] text-stone-400 mt-1">0.38mm Caliper</div>
+                <div className="text-cad-spec-micro text-stone-400 mt-1">0.38mm Caliper</div>
               </button>
 
               {/* Swatch 2: Kraft 350g */}
@@ -393,10 +393,10 @@ export default function Step2DimensionsPage() {
                 }`}
               >
                 <div className="text-xs font-bold text-neutral-900">Kraft 350g</div>
-                <div className="text-[10px] text-blue-700 font-semibold font-['JetBrains_Mono'] mt-0.5">
+                <div className="text-cad-spec-micro text-blue-700 font-semibold font-mono tabular-nums mt-0.5">
                   (+2.5mm)
                 </div>
-                <div className="text-[10px] text-stone-400 mt-1">0.45mm Caliper</div>
+                <div className="text-cad-spec-micro text-stone-400 mt-1">0.45mm Caliper</div>
               </button>
 
               {/* Swatch 3: E-Flute Carton */}
@@ -409,11 +409,11 @@ export default function Step2DimensionsPage() {
                     : 'border-stone-200 hover:border-stone-300 bg-white'
                 }`}
               >
-                <div className="text-xs font-bold text-neutral-900">E-Flute Carton</div>
-                <div className="text-[10px] text-amber-700 font-semibold font-['JetBrains_Mono'] mt-0.5">
+                <div className="text-xs font-bold text-neutral-900">Carton sóng E</div>
+                <div className="text-cad-spec-micro text-amber-700 font-semibold font-mono tabular-nums mt-0.5">
                   (+3.2mm)
                 </div>
-                <div className="text-[10px] text-stone-400 mt-1">1.50mm Sóng E</div>
+                <div className="text-cad-spec-micro text-stone-400 mt-1">1.50mm Sóng E</div>
               </button>
             </div>
           </div>
@@ -425,7 +425,7 @@ export default function Step2DimensionsPage() {
             </span>
             <div>
               <p className="font-bold text-neutral-900">Tự Động Bù Co Giãn K-Factor</p>
-              <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed font-['JetBrains_Mono']">
+              <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed font-mono tabular-nums">
                 Dung sai khe hở nắp gài: +0.8mm • Mép dán keo tiêu chuẩn: 15.0mm • Góc vát flap: 45°
               </p>
             </div>
@@ -441,7 +441,7 @@ export default function Step2DimensionsPage() {
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-stone-200 shadow-xs text-xs font-bold text-neutral-800">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>• MÔ HÌNH 3D THỜI GIAN THỰC</span>
-                <span className="text-[10px] font-['JetBrains_Mono'] text-stone-400">| {weight > 300 ? 'FEFCO 0215 (Đáy Khóa)' : 'FEFCO 0211 (Đáy Gài)'}</span>
+                <span className="text-cad-spec-micro font-mono tabular-nums text-stone-400">| {weight > 300 ? 'FEFCO 0215 (Đáy Khóa)' : 'FEFCO 0211 (Đáy Gài)'}</span>
               </div>
 
               <div className="flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-full border border-stone-200 shadow-xs text-xs">
@@ -510,7 +510,7 @@ export default function Step2DimensionsPage() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-neutral-900">Bé Gói AI trợ lý bao bì</span>
-                  <span className="text-[9px] font-['JetBrains_Mono'] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">
+                  <span className="text-cad-spec-micro font-mono tabular-nums bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">
                     FIT-AUTO REALTIME
                   </span>
                 </div>
@@ -527,10 +527,10 @@ export default function Step2DimensionsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             {/* Card 1: Thể tích lọt lòng */}
             <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-1">
-              <p className="text-[10px] font-['JetBrains_Mono'] font-bold text-stone-400 uppercase tracking-wider">
+              <p className="text-cad-spec-micro font-mono tabular-nums font-bold text-stone-400 uppercase tracking-wider">
                 THỂ TÍCH LỌT LÒNG
               </p>
-              <p className="font-['JetBrains_Mono'] text-xl font-bold text-neutral-900">
+              <p className="font-mono tabular-nums text-xl font-bold text-neutral-900">
                 {volumeMl.toLocaleString('vi-VN')} ml
               </p>
               <p className="text-[11px] text-stone-500">Khối lượng khuyến nghị: ≤ 850g</p>
@@ -538,10 +538,10 @@ export default function Step2DimensionsPage() {
 
             {/* Card 2: Diện tích trải rập */}
             <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-1">
-              <p className="text-[10px] font-['JetBrains_Mono'] font-bold text-stone-400 uppercase tracking-wider">
+              <p className="text-cad-spec-micro font-mono tabular-nums font-bold text-stone-400 uppercase tracking-wider">
                 DIỆN TÍCH TRẢI RẬP
               </p>
-              <p className="font-['JetBrains_Mono'] text-xl font-bold text-neutral-900">
+              <p className="font-mono tabular-nums text-xl font-bold text-neutral-900">
                 {dielineAreaCm2.toLocaleString('vi-VN')} cm²
               </p>
               <p className="text-[11px] text-stone-500">Tiêu hao vật tư: Tối ưu 94.2%</p>
@@ -549,10 +549,10 @@ export default function Step2DimensionsPage() {
 
             {/* Card 3: Khổ in kinh tế */}
             <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-1">
-              <p className="text-[10px] font-['JetBrains_Mono'] font-bold text-stone-400 uppercase tracking-wider">
+              <p className="text-cad-spec-micro font-mono tabular-nums font-bold text-stone-400 uppercase tracking-wider">
                 KHỔ IN KINH TẾ
               </p>
-              <p className="font-['JetBrains_Mono'] text-xl font-bold text-neutral-900">
+              <p className="font-mono tabular-nums text-xl font-bold text-neutral-900">
                 2 Hộp / Tờ In
               </p>
               <p className="text-[11px] text-stone-500">Khổ 65 × 86 cm • Tiết kiệm 28%</p>
@@ -572,7 +572,7 @@ export default function Step2DimensionsPage() {
             <span>Chọn Dáng Khác</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-2 font-['JetBrains_Mono'] text-xs font-bold text-neutral-800">
+          <div className="hidden md:flex items-center gap-2 font-mono tabular-nums text-xs font-bold text-neutral-800">
             <span>KÍCH THƯỚC CHUẨN ÁP DỤNG:</span>
             <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded">
               {length} × {width} × {height} mm
