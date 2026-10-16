@@ -33,9 +33,10 @@ export function BoxJourney() {
           )}
         </Reveal>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.95fr)] lg:gap-12 items-center">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.95fr)] lg:gap-12 lg:items-stretch">
           {/* Left: Step Description Card */}
-          <div className="flex flex-col justify-center gap-3.5 rounded-3xl border border-line/80 bg-surface-sunken/60 p-6 sm:p-8 lg:p-10 shadow-2xs" aria-live="polite">
+          <div className="flex flex-col justify-between gap-6 rounded-3xl border border-line/80 bg-surface-sunken/60 p-6 sm:p-8 lg:p-10 shadow-2xs" aria-live="polite">
+            <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs sm:text-sm font-bold text-fg-muted tracking-wider">
                 BƯỚC {step.stepNumber} / {total}
@@ -54,24 +55,25 @@ export function BoxJourney() {
               </span>
             </div>
 
-            <h3 className="font-landing-heading text-xl sm:text-2xl font-bold text-landing-ink leading-snug">
+            <h3 className="font-landing-heading text-2xl sm:text-3xl font-bold text-landing-ink leading-snug text-balance">
               {step.title}
             </h3>
 
-            <p className="text-sm sm:text-base leading-relaxed text-fg-muted">
+            <p className="text-base sm:text-lg leading-relaxed text-fg-muted">
               {step.body}
             </p>
 
             {/* Key Engineering Metric / Value Chip */}
             {step.stat && (
-              <div className="mt-1 flex items-center gap-2 rounded-xl border border-line/80 bg-white px-3.5 py-2.5 text-xs font-semibold text-fg shadow-2xs">
+              <div className="flex items-center gap-2 rounded-xl border border-line/80 bg-white px-4 py-3 text-sm font-semibold text-fg shadow-2xs">
                 <CheckCircle2 className="size-4 shrink-0 text-success" />
                 <span>{step.stat}</span>
               </div>
             )}
+            </div>
 
             {/* CTA & Step Indicator */}
-            <div className="mt-2 flex items-center justify-between border-t border-line/70 pt-4">
+            <div className="flex items-center justify-between border-t border-line/70 pt-4">
               {step.cta && (
                 <Link
                   href={step.cta.href}
@@ -107,7 +109,7 @@ export function BoxJourney() {
           </div>
 
           {/* Right: Expandable Photo Accordion */}
-          <div className="flex h-[380px] gap-2 sm:h-[480px] lg:h-[540px] lg:gap-3" role="group" aria-label={JOURNEY.title}>
+          <div className="flex h-[340px] gap-2 sm:h-[420px] lg:h-[460px] lg:gap-3" role="group" aria-label={JOURNEY.title}>
             {JOURNEY.steps.map((item, index) => {
               const open = index === active;
               return (
