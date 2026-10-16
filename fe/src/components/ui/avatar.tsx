@@ -9,6 +9,7 @@ const SIZES = {
   md: "size-10 text-label",
   lg: "size-12 text-body",
   xl: "size-24 text-heading-md",
+  "2xl": "size-16 text-heading-sm",
 } as const;
 
 const STATUS = { online: "bg-success", away: "bg-warning", offline: "bg-fg-muted" } as const;
@@ -30,7 +31,7 @@ export interface AvatarProps {
   size?: keyof typeof SIZES;
   /** Presence dot at the bottom-right corner. */
   status?: keyof typeof STATUS;
-  /** Colours of the initials tile (default: deep green on lime mist). */
+  /** Colours of the initials tile (default: deep green, like the header). */
   fallbackClassName?: string;
   /** Hide from screen readers when the name is written next to it. */
   decorative?: boolean;
@@ -60,7 +61,7 @@ export function Avatar({ src, name, size = "md", status, fallbackClassName, deco
           className={cn(
             SIZES[size],
             "flex items-center justify-center rounded-full font-landing-heading font-bold",
-            fallbackClassName ?? "bg-accent-bg text-accent-fg",
+            fallbackClassName ?? "bg-brand-forest-deep text-white",
           )}
         >
           {initialsFrom(name)}
