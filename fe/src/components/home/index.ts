@@ -1,6 +1,5 @@
 /** Blocks of the home page, in page order. */
 export { HomeHero } from "./HomeHero";
-export { StandardsStrip } from "./StandardsStrip";
 export { BoxCatalog } from "./BoxCatalog";
 export { PhotoReel } from "./PhotoReel";
 export { FeatureShowcase } from "./FeatureShowcase";
