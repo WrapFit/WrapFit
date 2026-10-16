@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 352">
+  <!-- Full lockup, same as src/components/layout/LandingLogo.tsx -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#F9A23C"/><stop offset="1" stop-color="#F7932A"/></linearGradient>
+    <linearGradient id="t" gradientUnits="userSpaceOnUse" x1="130" y1="0" x2="650" y2="0"><stop offset="0" stop-color="#2183C3"/><stop offset="0.3" stop-color="#3398C2"/><stop offset="0.55" stop-color="#52BAB0"/><stop offset="0.78" stop-color="#7BD59E"/><stop offset="1" stop-color="#9CE88D"/></linearGradient>
+  </defs>
+  <g fill="url(#g)"><path d="M14 86 L160 7 Q165 4 170 7 L318 86 Q323 90 316 92 L140 92 Q85 92 85 128 Z"/><path d="M5 96 L85 143 L85 207 Q85 262 140 262 L158 262 L158 347 L14 250 Q5 244 5 233 Z"/><path d="M183 262 L321 262 Q328 263 322 267 L183 347 Z"/></g>
+  <text x="130" y="211" textLength="520" lengthAdjust="spacing" fill="url(#t)" font-family="'Be Vietnam Pro', Inter, Arial, sans-serif" font-size="86" font-weight="700">WRAPFIT</text>
+</svg>
