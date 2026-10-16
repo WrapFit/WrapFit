@@ -204,7 +204,7 @@ function TemplateLibrary() {
                 {/* Curated first: most visitors start from a ready-made template. */}
                 <TabList label="Nguồn mẫu">
                   <Tab value="curated" count={effectiveCurated.meta.total}>
-                    WrapFit Curated
+                    WrapFit tuyển chọn
                   </Tab>
                   <Tab value="community" count={effectiveCommunity.meta.total}>
                     Cộng đồng

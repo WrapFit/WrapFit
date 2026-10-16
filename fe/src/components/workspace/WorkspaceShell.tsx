@@ -168,7 +168,7 @@ export function ShellLayout({ title, description, actions, children, nav, root, 
           </main>
         </div>
       </div>
-      <MainFooter compact />
+      <MainFooter />
     </>
   );
 }
