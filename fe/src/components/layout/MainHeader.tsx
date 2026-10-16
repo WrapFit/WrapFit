@@ -128,15 +128,6 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                 {openMenu === group.id && <MenuPanel group={group} pathname={pathname} onNavigate={() => setOpenMenu(null)} />}
               </li>
             ))}
-            <li>
-              <Link
-                href="/pricing"
-                aria-current={pathname === '/pricing' ? 'page' : undefined}
-                className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 2xl:px-4 text-sm font-medium transition-colors hover:bg-landing-tile/70 aria-[current=page]:bg-landing-tile"
-              >
-                Bảng giá
-              </Link>
-            </li>
           </ul>
         </div>
 
@@ -274,9 +265,6 @@ function MobileMenu({
             )}
           </div>
         ))}
-        <Link href="/pricing" onClick={onNavigate} className="flex h-12 items-center border-b border-landing-line/60 text-base font-medium">
-          Bảng giá
-        </Link>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
             href={userName ? ROUTES.dashboard : login}

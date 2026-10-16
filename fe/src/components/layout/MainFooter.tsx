@@ -1,6 +1,7 @@
 'use client';
 
-import { ArrowUp, Clock, Facebook, GraduationCap, Mail, MapPin, MessageCircle, Music2, Phone } from 'lucide-react';
+import { ArrowUp, Clock, GraduationCap, Mail, MapPin } from 'lucide-react';
+import { BrandIcon } from '@/components/common/BrandIcon';
 import { PaymentLogos } from './PaymentLogos';
 import Link from 'next/link';
 import React from 'react';
@@ -14,7 +15,6 @@ import { LandingLogo } from './LandingLogo';
 import { SOCIAL_LINKS } from '@/features/site/social';
 import { COMPANY_LINKS, INDUSTRY_LINKS, LEGAL_LINKS, RESOURCE_LINKS, STUDIO_LINKS, structureLinks, type NavLink } from './navigation';
 
-const SOCIAL_ICONS = { facebook: Facebook, tiktok: Music2, zalo: MessageCircle, email: Mail } as const;
 
 export interface MainFooterProps {
   /** Optional custom class */
@@ -25,7 +25,7 @@ export interface MainFooterProps {
 
 const ACCOUNT_SIGNED_IN: NavLink[] = [
   { label: 'Tổng quan', href: ROUTES.dashboard },
-  { label: 'Brand kit', href: ROUTES.brandKit },
+  { label: 'Bộ nhận diện', href: ROUTES.brandKit },
   { label: 'Hồ sơ', href: ROUTES.profile },
   { label: 'Cài đặt', href: ROUTES.settings },
 ];
@@ -52,7 +52,7 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
   const columns: { title: string; links: NavLink[] }[] = [
     { title: 'Studio', links: [...STUDIO_LINKS, { label: 'Giỏ in mẫu', href: '/cart' }] },
     { title: 'Mẫu hộp', links: structureLinks(hydrated ? structures.data : undefined) },
-    { title: 'Ngành hàng & dịp', links: [...industries, ...occasions.slice(0, 3)] },
+    { title: 'Ngành hàng', links: [...industries, ...occasions.slice(0, 3)] },
     { title: 'Tài nguyên', links: RESOURCE_LINKS.filter((link) => link.href !== ROUTES.about) },
     { title: 'Công ty', links: COMPANY_LINKS },
     { title: 'Tài khoản', links: user ? ACCOUNT_SIGNED_IN : ACCOUNT_ANONYMOUS },
@@ -70,18 +70,14 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
         {!compact && (
           <div className="grid w-full grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
             {/* Left Column: Brand Logo, Slogan, Contact Info & University Affiliation */}
-            <div className="flex flex-col items-start gap-5 lg:col-span-4 xl:col-span-5">
+            <div className="flex flex-col items-start gap-5 lg:col-span-4 xl:col-span-3">
               <LandingLogo tone="light" />
-
-              <p className="max-w-md text-sm font-medium leading-relaxed text-wf-orange-200">
-                <span className="font-serif italic font-semibold text-white">&ldquo;Make Every Present, Present.&rdquo;</span> — Nền tảng thiết kế &amp; dựng khuôn bế bao bì thông minh theo kích thước món quà, đảm bảo 100% khả thi sản xuất từ bản đo milimét.
-              </p>
 
               {/* Contact Information */}
               <div className="space-y-3 pt-1 text-xs text-white/90">
                 <div className="flex items-start gap-2.5">
                   <MapPin className="size-4 shrink-0 text-wf-orange-200 mt-0.5" aria-hidden />
-                  <span>Đại học FPT TP. Hồ Chí Minh · Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh</span>
+                  <span>Đại học FPT</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Mail className="size-4 shrink-0 text-white/80" aria-hidden />
@@ -90,14 +86,8 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Phone className="size-4 shrink-0 text-fpt-green-light" aria-hidden />
-                  <a href="tel:0901234567" className="hover:text-wf-orange-200 transition-colors">
-                    (+84) 90 123 4567 (Tư vấn kỹ thuật &amp; in ấn)
-                  </a>
-                </div>
-                <div className="flex items-center gap-2.5">
                   <GraduationCap className="size-4 shrink-0 text-wf-amber-300" aria-hidden />
-                  <span>Dự án Khởi nghiệp Thực nghiệm (EXE101) — FPT University</span>
+                  <span>Dự án khởi nghiệp EXE101 — Đại học FPT</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Clock className="size-4 shrink-0 text-white/60" aria-hidden />
@@ -111,7 +101,7 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
                   href={ROUTES.contact}
                   className="inline-flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 px-3.5 py-1.5 text-xs font-medium text-white/90 hover:text-white border border-white/15 transition-colors"
                 >
-                  <span>Xem trang Liên hệ &amp; Gửi yêu cầu</span>
+                  <span>Liên hệ với chúng tôi</span>
                   <span aria-hidden="true">→</span>
                 </Link>
               </div>
@@ -121,17 +111,17 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
             {/* Right Column: Navigation Categories shifted to the right */}
             <nav
               aria-label="Liên kết cuối trang"
-              className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-3 xl:col-span-7 xl:grid-cols-6"
+              className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-3 xl:col-span-9 xl:grid-cols-6"
             >
               {columns.map((column) => (
                 <div key={column.title}>
-                  <h2 className="font-landing-heading text-base font-semibold text-white lg:text-lg">{column.title}</h2>
-                  <ul className="mt-2 flex flex-col">
+                  <h2 className="whitespace-nowrap font-landing-heading text-base font-semibold text-white">{column.title}</h2>
+                  <ul className="mt-3 flex flex-col gap-0.5">
                     {column.links.map((link) => (
                       <li key={link.href}>
                         <Link
                           href={link.href}
-                          className="block min-h-6 py-1 text-xs text-white/90 transition-colors hover:text-wf-orange-200 lg:text-sm"
+                          className="block min-h-6 py-1 text-sm leading-snug text-white/85 transition-colors hover:text-wf-orange-200"
                         >
                           {link.label}
                         </Link>
@@ -148,7 +138,6 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
           <div className="flex w-full flex-col gap-5 border-t border-white/10 pt-6 lg:flex-row lg:items-center lg:justify-between">
             <ul className="flex flex-wrap items-center gap-2" aria-label="Mạng xã hội">
               {SOCIAL_LINKS.map((social) => {
-                const Icon = SOCIAL_ICONS[social.id];
                 return (
                   <li key={social.id}>
                     <a
@@ -156,9 +145,13 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
                       target={social.id === 'email' ? undefined : '_blank'}
                       rel="noopener noreferrer"
                       aria-label={social.label}
-                      className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 text-white/90 ring-1 ring-white/15 transition-colors hover:bg-white/20 hover:text-white"
+                      className="inline-flex size-11 items-center justify-center rounded-full bg-white ring-1 ring-white/15 transition-transform hover:scale-105"
                     >
-                      <Icon className="size-4" aria-hidden />
+                      {social.id === 'email' ? (
+                        <Mail className="size-5 text-fg" aria-hidden />
+                      ) : (
+                        <BrandIcon brand={social.id} className="size-5" />
+                      )}
                     </a>
                   </li>
                 );

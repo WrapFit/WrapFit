@@ -185,90 +185,77 @@ export function UserAvatarDropdown({
                 </div>
               )}
               <div className="flex flex-col min-w-0">
-                <span className="font-landing-body text-xs font-bold text-fg truncate">
+                <span className="font-landing-body text-sm font-bold text-fg truncate">
                   {name}
                 </span>
-                <span className="font-mono text-cad-spec-micro text-success-fg font-medium truncate">
+                <span className="text-caption text-fg-muted truncate">
                   {role} · {ROLE_LABELS[user.role]}
                 </span>
-                <span className="text-caption text-fg-muted flex items-center gap-1 mt-0.5 min-w-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shrink-0" />
-                  <span className="truncate">{user.email}</span>
-                </span>
+                <span className="truncate text-caption text-fg-muted">{user.email}</span>
               </div>
             </div>
           </div>
 
           {/* Group 1: User Workspaces */}
-          <div className="space-y-0.5 py-1 text-xs font-medium text-fg-muted">
+          <div className="space-y-0.5 py-1 text-sm font-medium">
             <Link
               href="/dashboard/projects"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <Icon name="folder_special" className="size-[17px] text-vibrant-cobalt" />
-              <span>Dự Án Bản Vẽ CAD Của Tôi</span>
+              <Icon name="folder_special" className="size-[18px] text-fg-muted" />
+              <span>Dự án</span>
             </Link>
 
             <Link
               href="/dashboard/orders"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <Icon name="receipt_long" className="size-[17px] text-success-fg" />
-              <span>Đơn Đặt In &amp; Hóa Đơn VAT</span>
+              <Icon name="receipt_long" className="size-[18px] text-fg-muted" />
+              <span>Đơn hàng</span>
             </Link>
 
             <Link
               href="/dashboard/brand-kit"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <Icon name="palette" className="size-[17px] text-warning-fg" />
-              <span>Bộ Nhận Diện Brand Kit</span>
+              <Icon name="palette" className="size-[18px] text-fg-muted" />
+              <span>Bộ nhận diện</span>
             </Link>
 
             <Link
               href="/dashboard/specs"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <Icon name="architecture" className="size-[17px] text-purple-600" />
-              <span>Quy Chuẩn FEFCO &amp; Caliper</span>
+              <Icon name="architecture" className="size-[18px] text-fg-muted" />
+              <span>Quy chuẩn hộp</span>
             </Link>
           </div>
 
           <div className="h-px bg-line/60 my-1.5" />
 
           {/* Group 2: Quick Jump to 3D Studio & Admin */}
-          <div className="space-y-0.5 py-1 text-xs font-medium text-fg-muted">
+          <div className="space-y-0.5 py-1 text-sm font-medium">
             <Link
               href={ROUTES.editorNew}
               onClick={() => setIsOpen(false)}
-              className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors group"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <span className="flex items-center gap-2.5">
-                <Icon name="view_in_ar" className="size-[17px] text-fg-muted" />
-                <span>Vào 3D CAD Studio</span>
-              </span>
-              <span className="px-1.5 py-0.5 rounded text-cad-spec-micro font-mono bg-surface-sunken text-fg-muted">
-                WebGL
-              </span>
+                <Icon name="view_in_ar" className="size-[18px] text-fg-muted" />
+                <span>Mở Studio</span>
             </Link>
 
             {isAdmin && (
               <Link
                 href="/admin"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors group"
+                className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
               >
-                <span className="flex items-center gap-2.5">
-                  <Icon name="shield_person" className="size-[17px] text-brand-forest-deep" />
-                  <span>Bảng Điều Khiển Admin</span>
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-cad-spec-micro font-mono bg-success-bg text-success-fg">
-                  13 Views
-                </span>
+                  <Icon name="shield_person" className="size-[18px] text-fg-muted" />
+                  <span>Quản trị</span>
               </Link>
             )}
           </div>
@@ -276,23 +263,23 @@ export function UserAvatarDropdown({
           <div className="h-px bg-line/60 my-1.5" />
 
           {/* Group 3: Settings & Logout */}
-          <div className="space-y-0.5 py-1 text-xs font-medium text-fg-muted">
+          <div className="space-y-0.5 py-1 text-sm font-medium">
             <Link
               href="/dashboard/profile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <Icon name="badge" className="size-[17px] text-fg-muted" />
-              <span>Hồ Sơ Nhà Sáng Tạo</span>
+              <Icon name="badge" className="size-[18px] text-fg-muted" />
+              <span>Hồ sơ</span>
             </Link>
 
             <Link
               href="/dashboard/settings"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-              <Icon name="tune" className="size-[17px] text-fg-muted" />
-              <span>Cài Đặt Hệ Thống</span>
+              <Icon name="tune" className="size-[18px] text-fg-muted" />
+              <span>Cài đặt</span>
             </Link>
 
             <button
@@ -300,10 +287,10 @@ export function UserAvatarDropdown({
               onClick={handleLogout}
               disabled={signingOut}
               aria-busy={signingOut || undefined}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-danger-bg text-danger-fg transition-colors text-left disabled:cursor-wait disabled:opacity-70"
+              className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-danger-fg transition-colors hover:bg-danger-bg disabled:cursor-wait disabled:opacity-70"
             >
-              <Icon name="logout" className="size-[17px] text-danger-fg" />
-              <span>{signingOut ? 'Đang đăng xuất…' : 'Đăng Xuất Tài Khoản'}</span>
+              <Icon name="logout" className="size-[18px] text-danger-fg" />
+              <span>{signingOut ? 'Đang đăng xuất…' : 'Đăng xuất'}</span>
             </button>
           </div>
         </div>
