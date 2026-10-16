@@ -8,7 +8,7 @@ import { ROUTES } from "@/constants";
 import { useSiteSearch } from "@/features/site/search";
 import { cn } from "@/utils/helpers";
 
-const PLACEHOLDER = "Tìm mẫu hộp, cấu trúc, câu hỏi…";
+const PLACEHOLDER = "Tìm mẫu hộp…";
 
 /**
  * Search of the site header. From lg a field sits in the bar; below, a magnifier opens a full-width field under it.
