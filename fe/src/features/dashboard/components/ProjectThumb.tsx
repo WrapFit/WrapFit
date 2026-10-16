@@ -27,6 +27,7 @@ export function ProjectThumb({ project, className }: { project: ProjectSummary; 
       structure={project.template.id}
       dimensions={project.dimensions}
       material={project.materialSpec?.type}
+      color={project.color}
       label={`${project.title}: chưa có ảnh xem trước, phác thảo hộp`}
       className={className}
     />

@@ -3,23 +3,46 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { ApiError, getProject, listBoxStructures } from "@/api";
 import { ErrorState, PageLoader, PRIMARY_BUTTON } from "@/components/common/StatusViews";
 import { ROUTES } from "@/constants";
 import { RequireAuth } from "@/features/auth";
 import { queryKeys } from "@/hooks/data";
-import type { ProjectDetail } from "@/types/api";
+import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
+import type { BoxStructure, ProjectDetail } from "@/types/api";
 import { StudioWorkspace, type RestoreNotice } from "./StudioWorkspace";
 
 /** Route id of the offline demo: no sign-in, nothing saved (docs/12 D5). */
 const DEMO_ID = "demo";
 
+const FALLBACK_STRUCTURES: BoxStructure[] = BOX_STRUCTURES.map((s) => ({
+  id: s.id,
+  name: s.vietnameseName,
+  category: "Standard",
+  description: s.description,
+  preview3dUrl: null,
+  dimensionLimits: {
+    length: { min: 20, max: 400 },
+    width: { min: 20, max: 300 },
+    height: { min: 15, max: 300 },
+    paperThickness: { min: 0.2, max: 0.8 },
+  },
+}));
+
 /** `/editor/[id]`: the studio of one project, or the offline demo at `/editor/demo`. */
 export default function EditorPage() {
+  return (
+    <Suspense fallback={<PageLoader label="Đang mở Studio 3D…" />}>
+      <EditorRouteHandler />
+    </Suspense>
+  );
+}
+
+function EditorRouteHandler() {
   // Next.js passes route params to pages as a Promise; a client component reads them with useParams().
   const { id } = useParams<{ id: string }>();
-  if (id === DEMO_ID) return <StudioWorkspace project={null} />;
+  if (id === DEMO_ID) return <StudioWorkspace project={null} structures={FALLBACK_STRUCTURES} />;
   return (
     <RequireAuth>
       <ProjectEditor key={id} projectId={id} />

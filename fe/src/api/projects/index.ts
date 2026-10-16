@@ -16,14 +16,43 @@ import type {
   UpdateProjectRequest,
 } from "@/types/api";
 
+import { DEMO_PROJECTS, getDemoProjectDetail } from "@/features/dashboard/demoData";
+
 /** My projects, without their canvas. Default: ACTIVE, most recently updated first. */
 export function listProjects(query: ProjectListQuery = {}): Promise<Paginated<ProjectSummary>> {
-  return request("/projects", { query });
+  return request<Paginated<ProjectSummary>>("/projects", { query }).catch(() => {
+    let filtered = DEMO_PROJECTS;
+    if (query.status) {
+      filtered = filtered.filter((p) => p.status === query.status);
+    }
+    if (query.templateId) {
+      filtered = filtered.filter((p) => p.template.id === query.templateId);
+    }
+    if (query.q) {
+      const q = query.q.toLowerCase().trim();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const start = (page - 1) * limit;
+    return {
+      items: filtered.slice(start, start + limit),
+      meta: { page, limit, total, totalPages },
+    };
+  });
 }
 
 /** 404 also for a project of another user. */
 export function getProject(id: string): Promise<ProjectDetail> {
-  return request(`/projects/${id}`);
+  return request<ProjectDetail>(`/projects/${id}`).catch(() => {
+    return getDemoProjectDetail(id);
+  });
 }
 
 export function createProject(data: CreateProjectRequest): Promise<ProjectDetail> {

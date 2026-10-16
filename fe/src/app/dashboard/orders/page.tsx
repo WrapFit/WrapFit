@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { PageLoader } from '@/components/common/StatusViews';
 import DashboardOrdersPage from '@/views/dashboard/orders';
 
 export const metadata: Metadata = {
@@ -6,4 +8,10 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default DashboardOrdersPage;
+export default function Page() {
+  return (
+    <Suspense fallback={<PageLoader label="Đang tải danh sách đơn hàng…" />}>
+      <DashboardOrdersPage />
+    </Suspense>
+  );
+}

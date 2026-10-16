@@ -9,12 +9,21 @@ interface DesignThumbProps {
   structure: BoxStructureType;
   dimensions: BoxDimensions;
   materialSpec: MaterialSpecification | null;
+  color?: string;
   alt: string;
   className?: string;
 }
 
 /** The saved thumbnail of a design, or its parametric sketch when there is none (or it fails to load). */
-export function DesignThumb({ thumbnailUrl, structure, dimensions, materialSpec, alt, className = "" }: DesignThumbProps) {
+export function DesignThumb({
+  thumbnailUrl,
+  structure,
+  dimensions,
+  materialSpec,
+  color,
+  alt,
+  className = "",
+}: DesignThumbProps) {
   const [broken, setBroken] = useState(false);
 
   if (thumbnailUrl && !broken) {
@@ -35,6 +44,7 @@ export function DesignThumb({ thumbnailUrl, structure, dimensions, materialSpec,
       structure={structure}
       dimensions={dimensions}
       material={materialSpec?.type}
+      color={color}
       label={alt}
       className={`h-full w-full ${className}`}
     />
