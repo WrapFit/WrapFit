@@ -429,11 +429,61 @@ function SideFilters({ filters, tab, onChange }: { filters: Filters; tab: Sectio
     structureOptions.push({ value: filters.structure, label: filters.structure, count: undefined });
   }
 
+  const list = tab === "curated" ? DEMO_CURATED_TEMPLATES : DEMO_COMMUNITY_TEMPLATES;
+
+  const occasionCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const item of list) {
+      if (item.occasion) acc[item.occasion] = (acc[item.occasion] ?? 0) + 1;
+    }
+    return acc;
+  }, [list]);
+
+  const industryCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const item of list) {
+      if (item.industry) acc[item.industry] = (acc[item.industry] ?? 0) + 1;
+    }
+    return acc;
+  }, [list]);
+
+  const materialCounts = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const item of list) {
+      if (item.materialSpec?.type) acc[item.materialSpec.type] = (acc[item.materialSpec.type] ?? 0) + 1;
+    }
+    return acc;
+  }, [list]);
+
   const groups: FilterGroup[] = [
     { key: "structure", title: "Theo cấu trúc", options: structureOptions },
-    { key: "occasion", title: "Theo dịp tặng", options: OCCASIONS.map((value) => ({ value, label: OCCASION_LABELS[value] })) },
-    { key: "industry", title: "Theo ngành hàng", options: INDUSTRIES.map((value) => ({ value, label: INDUSTRY_LABELS[value] })) },
-    { key: "material", title: "Theo chất liệu", options: MATERIALS.map((value) => ({ value, label: MATERIAL_LABELS[value] })) },
+    {
+      key: "occasion",
+      title: "Theo dịp tặng",
+      options: OCCASIONS.map((value) => ({
+        value,
+        label: OCCASION_LABELS[value],
+        count: occasionCounts[value] ?? 0,
+      })),
+    },
+    {
+      key: "industry",
+      title: "Theo ngành hàng",
+      options: INDUSTRIES.map((value) => ({
+        value,
+        label: INDUSTRY_LABELS[value],
+        count: industryCounts[value] ?? 0,
+      })),
+    },
+    {
+      key: "material",
+      title: "Theo chất liệu",
+      options: MATERIALS.map((value) => ({
+        value,
+        label: MATERIAL_LABELS[value],
+        count: materialCounts[value] ?? 0,
+      })),
+    },
   ];
 
   const none = groups.every((group) => filters[group.key] === undefined);
