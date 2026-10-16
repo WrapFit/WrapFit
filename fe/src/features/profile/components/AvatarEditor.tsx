@@ -88,7 +88,7 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
         ) : (
           <span
             aria-hidden="true"
-            className="flex h-24 w-24 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-fpt-orange text-3xl font-medium text-white"
+            className="flex h-24 w-24 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-brand-forest-deep text-3xl font-medium text-white"
           >
             {initialsOf(name)}
           </span>
@@ -110,7 +110,7 @@ export function AvatarEditor({ user }: { user: SafeUser }) {
           aria-disabled={busy}
           className={cn(
             BUTTON,
-            "relative cursor-pointer border-transparent bg-fpt-orange text-white hover:bg-action-hover focus-within:ring-[3px] focus-within:ring-fpt-orange/40",
+            "relative cursor-pointer border-transparent bg-fg text-fg-inverse hover:bg-fg/90 focus-within:ring-[3px] focus-within:ring-focus/40",
             busy && "pointer-events-none opacity-60",
           )}
         >

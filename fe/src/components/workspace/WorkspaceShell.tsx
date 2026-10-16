@@ -49,7 +49,7 @@ export const WORKSPACE_NAV: NavGroup[] = [
   {
     title: "Thương hiệu & sản xuất",
     items: [
-      { href: ROUTES.brandKit, label: "Brand kit", icon: Palette },
+      { href: ROUTES.brandKit, label: "Bộ nhận diện", icon: Palette },
       { href: "/dashboard/materials", label: "Vật liệu", icon: Layers },
       { href: "/dashboard/specs", label: "Quy chuẩn hộp", icon: Ruler },
       { href: "/dashboard/orders", label: "Đơn hàng", icon: Receipt },

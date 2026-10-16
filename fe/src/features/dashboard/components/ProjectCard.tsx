@@ -142,7 +142,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
               href={ROUTES.editor(project.id)}
               aria-disabled={busy}
               tabIndex={busy ? -1 : undefined}
-              className={cn(BUTTON, "flex-1 border-transparent bg-fpt-orange text-white hover:bg-action-hover", busy && "pointer-events-none")}
+              className={cn(BUTTON, "flex-1 border-transparent bg-fg text-fg-inverse hover:bg-fg/90", busy && "pointer-events-none")}
             >
               <Box className="size-4" aria-hidden />
               Mở studio
