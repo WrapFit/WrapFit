@@ -213,7 +213,7 @@ function TemplateLibrary() {
                       dimensions={item.dimensions}
                       materialSpec={item.materialSpec}
                       thumbnailUrl={item.thumbnailUrl}
-                      tags={["Curated", `${formatCount(item.usesCount)} lượt dùng`]}
+                      tags={["Tuyển chọn", `${formatCount(item.usesCount)} lượt dùng`]}
                     />
                   )}
                 />

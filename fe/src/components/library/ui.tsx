@@ -12,7 +12,7 @@ import { cn } from "@/utils/helpers";
 // hairline, the flat dieline next to the box, small white tags, numbered pages) in the green of pack.ly.
 
 /** Main call to action: Pacdora's button shape in the lime of pack.ly (shared Button, rounded shape). */
-export const primaryButton = buttonClass({ variant: "primary", shape: "rounded", className: "px-4 text-body font-medium" });
+export const primaryButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-medium" });
 /** "Tạo hộp mới" of the workspace pages: black, bold. */
 export const createBoxButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-bold" });
 

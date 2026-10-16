@@ -84,7 +84,7 @@ export function CuratedTemplateCard({ template }: { template: CuratedCard }) {
     <article className={`${CARD} hover:-translate-y-0.5 hover:shadow-tactile-lg motion-reduce:hover:translate-y-0`}>
       <Preview card={template} label={`Mẫu ${template.title}`} />
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="font-serif text-xl leading-snug tracking-tight text-fg">{template.title}</h3>
+        <h3 className="font-landing-heading text-xl leading-snug tracking-tight text-fg">{template.title}</h3>
         {template.description && (
           <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-fg-muted">{template.description}</p>
         )}
@@ -112,7 +112,7 @@ export function CommunityTemplateCard({ project }: { project: CommunityCard }) {
       <Preview card={project} label={`Thiết kế ${project.title}`} />
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-serif text-xl leading-snug tracking-tight text-fg">{project.title}</h3>
+          <h3 className="font-landing-heading text-xl leading-snug tracking-tight text-fg">{project.title}</h3>
           {project.fitcheckScore !== null && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-forest/10 px-2 py-0.5 font-mono text-cad-spec-micro font-bold text-brand-forest"
@@ -140,8 +140,8 @@ export function CommunityTemplateCard({ project }: { project: CommunityCard }) {
             <Eye className="h-3.5 w-3.5" aria-hidden />
             <dd>{formatCount(project.viewsCount)}</dd>
           </div>
-          <div className="flex items-center gap-1" title="Bản remix">
-            <dt className="sr-only">Bản remix</dt>
+          <div className="flex items-center gap-1" title="Bản phối lại">
+            <dt className="sr-only">Bản phối lại</dt>
             <GitFork className="h-3.5 w-3.5" aria-hidden />
             <dd>{formatCount(project.usesCount)}</dd>
           </div>
