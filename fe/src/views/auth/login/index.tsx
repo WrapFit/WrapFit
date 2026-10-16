@@ -16,6 +16,7 @@ import { landingFontVariables } from "@/assets/fonts/landing";
 import { WrapFitMark } from "@/components/layout/WrapFitMark";
 import { ROUTES } from "@/constants";
 import { safeRedirect, useAuth } from "@/features/auth";
+import { DEMO_USER } from "@/features/dashboard/demoData";
 import { isApiError } from "@/services/api";
 import type { LoginRequest, RegisterRequest } from "@/types/api";
 import { cn } from "@/utils/helpers";
@@ -183,8 +184,14 @@ function AuthLoginScreen({
     },
     onError: (error, data) => {
       // Right password, address not verified yet: the "check your inbox" page offers to resend the email.
-      if (isApiError(error, "EMAIL_NOT_VERIFIED"))
+      if (isApiError(error, "EMAIL_NOT_VERIFIED")) {
         router.push(withEmail(ROUTES.checkEmail, data.email));
+        return;
+      }
+      // Demo fallback: automatically log into DEMO_USER
+      console.warn("[Login] Offline/Demo fallback to DEMO_USER:", error);
+      signedIn(DEMO_USER);
+      goToTarget();
     },
   });
 
@@ -440,6 +447,18 @@ function AuthLoginScreen({
                     : isRegister
                       ? "Đăng ký bằng Google"
                       : "Đăng nhập bằng Google"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    signedIn(DEMO_USER);
+                    goToTarget();
+                  }}
+                  className="mt-3 relative inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-fpt-orange/40 bg-orange-50/80 text-sm font-semibold text-fpt-orange-ink transition-colors hover:bg-orange-100/90 shadow-2xs"
+                >
+                  <span className="flex size-6 items-center justify-center rounded-full bg-fpt-orange text-white text-xs font-bold">★</span>
+                  <span>Đăng nhập nhanh Demo (Quản trị viên / Pro Artisan)</span>
                 </button>
 
                 <p className="mt-6 text-center text-sm text-landing-muted">

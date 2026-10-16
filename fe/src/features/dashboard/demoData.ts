@@ -19,7 +19,7 @@ export const DEMO_USER: SafeUser = {
   avatarUrl: null,
   shopName: "WrapFit Craft Studio",
   role: "ADMIN",
-  subscriptionTier: "FREE",
+  subscriptionTier: "PRO_BUSINESS",
   brandKit: {
     logoUrl: null,
     colors: ["#1A362B", "#D4AF37", "#FDFBF7"],

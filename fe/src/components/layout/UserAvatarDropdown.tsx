@@ -211,12 +211,21 @@ export function UserAvatarDropdown({
             </Link>
 
             <Link
-              href="/dashboard/orders"
+              href="/dashboard/profile"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
             >
-              <Icon name="receipt_long" className="size-[17px] text-success-fg" />
-              <span>Đơn Đặt In &amp; Hóa Đơn VAT</span>
+              <Icon name="badge" className="size-[17px] text-brand-forest-deep" />
+              <span>Hồ Sơ Nhà Sáng Tạo &amp; Shop</span>
+            </Link>
+
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+            >
+              <Icon name="tune" className="size-[17px] text-fg-muted" />
+              <span>Cài Đặt Hệ Thống &amp; Studio</span>
             </Link>
 
             <Link
@@ -226,6 +235,33 @@ export function UserAvatarDropdown({
             >
               <Icon name="palette" className="size-[17px] text-warning-fg" />
               <span>Bộ Nhận Diện Brand Kit</span>
+            </Link>
+
+            <Link
+              href="/dashboard/billing"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+            >
+              <Icon name="credit_card" className="size-[17px] text-fpt-orange" />
+              <span>Gói Cước &amp; Hạn Mức In</span>
+            </Link>
+
+            <Link
+              href="/dashboard/orders"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+            >
+              <Icon name="receipt_long" className="size-[17px] text-success-fg" />
+              <span>Đơn Đặt In &amp; Hóa Đơn VAT</span>
+            </Link>
+
+            <Link
+              href="/dashboard/materials"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-surface-sunken/80 transition-colors"
+            >
+              <Icon name="inventory_2" className="size-[17px] text-amber-700" />
+              <span>Kho Giấy &amp; Vật Liệu In</span>
             </Link>
 
             <Link

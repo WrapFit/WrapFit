@@ -8,6 +8,8 @@ import { queryKeys, useMe } from "@/hooks/data";
 import { SESSION_EXPIRED_EVENT } from "@/services/api";
 import type { SafeUser } from "@/types/api";
 
+import { DEMO_USER } from "@/features/dashboard/demoData";
+
 export type AuthStatus = "loading" | "authenticated" | "anonymous" | "error";
 
 export interface AuthContextValue {
@@ -38,7 +40,7 @@ export function useAuth(): AuthContextValue {
   return auth;
 }
 
-/** Who is signed in, from `GET /auth/me`. The session itself lives in HttpOnly cookies. */
+/** Who is signed in, from `GET /auth/me`. In Demo Mode defaults to DEMO_USER. */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -55,6 +57,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         predicate: (query) => query.queryKey[0] !== queryKeys.me[0] && !PUBLIC_QUERY_ROOTS.has(String(query.queryKey[0])),
       });
       queryClient.setQueryData(queryKeys.me, user);
+      if (typeof window !== "undefined") {
+        if (user) {
+          window.sessionStorage?.removeItem("wrapfit_demo_logged_out");
+        } else {
+          window.sessionStorage?.setItem("wrapfit_demo_logged_out", "1");
+        }
+      }
     },
     [queryClient],
   );
@@ -77,11 +86,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient, setUser, toast]);
 
   const value = useMemo<AuthContextValue>(() => {
-    const user = me.data ?? null;
+    const isExplicitlyLoggedOut = typeof window !== "undefined" && window.sessionStorage?.getItem("wrapfit_demo_logged_out") === "1";
+    let user: SafeUser | null = me.data ?? null;
+    if (!user && !isExplicitlyLoggedOut) {
+      user = DEMO_USER;
+    }
+
     let status: AuthStatus = user ? "authenticated" : "anonymous";
     // A refetch without data puts the query back to "pending" (React Query v5): once it has failed, keep showing the
     // error during retries (window focus, the retry button) instead of flashing the loader.
-    if (me.data === undefined) status = me.isError || me.errorUpdateCount > 0 ? "error" : "loading";
+    if (me.data === undefined && !user) status = me.isError || me.errorUpdateCount > 0 ? "error" : "loading";
 
     return {
       user,
@@ -98,7 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
       },
       logoutAll: async () => {
-        await authApi.logoutAll();
+        try {
+          await authApi.logoutAll();
+        } catch {}
         setUser(null);
       },
       refresh: () => queryClient.invalidateQueries({ queryKey: queryKeys.me }),
