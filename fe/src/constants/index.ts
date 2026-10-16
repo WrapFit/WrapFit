@@ -33,6 +33,8 @@ export const ROUTES = {
   contact: "/contact",
   /** About Us / Story page */
   about: "/about",
+  /** Box Structure Inspection page */
+  structure: (id: string) => `/structures/${id}`,
 } as const;
 
 /** Page opened after signing in when no `?redirect=` was given. */

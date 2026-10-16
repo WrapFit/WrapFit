@@ -14,7 +14,7 @@ import { MainHeader } from "@/components/layout";
 import { primaryButton } from "@/components/library";
 import { Badge, SegmentedControl, WorkspaceError } from "@/components/workspace";
 import { ROUTES } from "@/constants";
-import { RequireAuth } from "@/features/auth";
+import { useAuth } from "@/features/auth";
 import { BoxStage3D } from "@/features/showcase";
 import { MmInput } from "@/features/studio/components/MmInput";
 import type { BoxMaterialTheme } from "@/features/studio/components/three/InteractiveFoldingBox3D";
@@ -50,54 +50,44 @@ const SIDES = [
   { field: "height", label: "Cao (H)" },
 ] as const;
 
+const FALLBACK_STRUCTURES: BoxStructure[] = BOX_STRUCTURES.map((s) => ({
+  id: s.id,
+  name: s.name,
+  category: "Standard",
+  description: s.description,
+  preview3dUrl: null,
+  dimensionLimits: {
+    length: { min: 20, max: 400 },
+    width: { min: 20, max: 300 },
+    height: { min: 15, max: 300 },
+    paperThickness: { min: 0.2, max: 0.8 },
+  },
+}));
+
 function defaultDimensionsOf(structure: BoxStructureType): BoxDimensions {
   return { ...(BOX_STRUCTURES.find((s) => s.id === structure)?.defaultDims ?? BOX_STRUCTURES[0].defaultDims) };
 }
 
 export default function NewProjectPage() {
-  return (
-    <RequireAuth>
-      <NewProject />
-    </RequireAuth>
-  );
+  return <NewProject />;
 }
 
 function NewProject() {
   const params = useSearchParams();
   const templateId = params.get("template");
-  const structures = useQuery({ queryKey: queryKeys.templates.structures, queryFn: listBoxStructures, staleTime: 5 * 60_000 });
+  const structures = useQuery({ queryKey: queryKeys.templates.structures, queryFn: listBoxStructures, staleTime: 5 * 60_000, retry: false });
   const template = useQuery({
     queryKey: queryKeys.templates.detail(templateId ?? ""),
     queryFn: () => getTemplate(templateId!),
     enabled: !!templateId,
+    retry: false,
   });
 
-  const failed = structures.error ?? template.error;
-  if (failed) {
-    return (
-      <Page>
-        <WorkspaceError
-          error={failed}
-          title={template.error ? "Không mở được mẫu thiết kế" : "Không tải được danh sách cấu trúc hộp"}
-          onRetry={() => {
-            if (structures.error) void structures.refetch();
-            if (template.error) void template.refetch();
-          }}
-          retrying={structures.isFetching || template.isFetching}
-        />
-        {template.error && (
-          <p className="mt-4 text-center">
-            <Link href={ROUTES.editorNew} className="text-sm font-medium text-fpt-orange-ink hover:underline">
-              Tự chọn cấu trúc hộp
-            </Link>
-          </p>
-        )}
-      </Page>
-    );
-  }
-  if (!structures.data || (templateId && !template.data)) return <PageLoader label="Đang chuẩn bị khuôn bế…" />;
+  const structuresData = structures.data ?? FALLBACK_STRUCTURES;
 
-  return <NewBoxDesigner key={templateId ?? "blank"} structures={structures.data} template={template.data ?? null} preset={templateId ? null : presetFrom(params)} />;
+  if (templateId && template.isLoading) return <PageLoader label="Đang chuẩn bị khuôn bế…" />;
+
+  return <NewBoxDesigner key={templateId ?? "blank"} structures={structuresData} template={template.data ?? null} preset={templateId ? null : presetFrom(params)} />;
 }
 
 /** Site header and the white page of the workspace. */
@@ -133,6 +123,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { status } = useAuth();
 
   const [structure, setStructure] = useState<BoxStructureType>(
     () =>
@@ -226,6 +217,17 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
   });
   const busy = create.isPending || create.isSuccess;
 
+  const handleCreateOrExplore = () => {
+    if (status !== "authenticated") {
+      toast.show({ tone: "info", title: "Đang mở Studio 3D (Chế độ trải nghiệm khách)..." });
+      router.push(
+        `${ROUTES.editorDemo}?structure=${structure}&l=${dimensions.length}&w=${dimensions.width}&h=${dimensions.height}&paper=${material}`
+      );
+      return;
+    }
+    create.mutate();
+  };
+
   const sheets = pieces.map(({ name, geometry: { totalBoundingBox: b } }) => ({ name, width: Math.round(b.width), height: Math.round(b.height) }));
   const presetFits = (dims: BoxDimensions) => dimensionErrors(dims, limits, structure).length === 0;
   const presetId = GIFT_PRESETS.find((p) => p.dims.length === dimensions.length && p.dims.width === dimensions.width && p.dims.height === dimensions.height)?.id ?? "";
@@ -233,12 +235,12 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
   return (
     <Page>
       <p className="text-sm text-library-muted">
-        <Link href={ROUTES.dashboard} className="hover:text-library-ink hover:underline">
-          Không gian làm việc
+        <Link href="/" className="hover:text-library-ink hover:underline">
+          Trang chủ
         </Link>
         <span className="mx-2">/</span>
-        <Link href={ROUTES.projects} className="hover:text-library-ink hover:underline">
-          Dự án
+        <Link href={ROUTES.templates} className="hover:text-library-ink hover:underline">
+          Thư viện mẫu
         </Link>
         <span className="mx-2">/</span>
         <span>Tạo hộp mới</span>
@@ -573,11 +575,24 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                 {errors.join(" ")}
               </p>
             )}
-            <button type="button" onClick={() => create.mutate()} disabled={busy || errors.length > 0} className={cn(primaryButton, "h-12 w-full disabled:cursor-not-allowed")}>
+            <button
+              type="button"
+              onClick={handleCreateOrExplore}
+              disabled={busy || errors.length > 0}
+              className={cn(primaryButton, "h-12 w-full disabled:cursor-not-allowed")}
+            >
               {busy && <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-fpt-orange/30 border-t-fpt-orange motion-reduce:animate-none" />}
-              {busy ? "Đang tạo dự án…" : "Tạo dự án & mở studio"}
+              {busy ? "Đang tạo dự án…" : status === "authenticated" ? "Tạo dự án & mở studio" : "Mở Studio 3D (Trải nghiệm ngay)"}
               {!busy && <ArrowRight className="size-4" aria-hidden />}
             </button>
+            {status !== "authenticated" && (
+              <Link
+                href={`${ROUTES.structure(structure)}?l=${dimensions.length}&w=${dimensions.width}&h=${dimensions.height}&paper=${material}`}
+                className="text-center text-xs font-medium text-fpt-orange-ink hover:underline"
+              >
+                Hoặc xem thông số kỹ thuật & tải khuôn bế SVG
+              </Link>
+            )}
             <p className="text-center text-xs text-library-muted">Kích thước và giấy vẫn đổi được trong studio.</p>
           </div>
         </aside>

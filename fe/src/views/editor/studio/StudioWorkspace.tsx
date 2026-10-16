@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import {
@@ -187,18 +188,41 @@ export function StudioWorkspace({
   notice = null,
 }: StudioWorkspaceProps) {
   const toast = useToast();
+  const searchParams = useSearchParams();
   const isDemo = project === null;
-  // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export. The structure of a saved
-  // project is fixed (it is its dieline), so step 1 only exists in the demo; a saved project opens on its artwork.
+
+  // Query parameter overrides for demo mode (e.g. from /editor/new or direct links)
+  const paramStructure = searchParams.get("structure") as BoxStructureType | null;
+  const initialStructure =
+    isDemo && paramStructure && BOX_STRUCTURES.some((s) => s.id === paramStructure)
+      ? paramStructure
+      : (project?.template.id ?? "tuck-top");
+
+  const paramL = Number(searchParams.get("l") || searchParams.get("length"));
+  const paramW = Number(searchParams.get("w") || searchParams.get("width"));
+  const paramH = Number(searchParams.get("h") || searchParams.get("height") || searchParams.get("d") || searchParams.get("depth"));
+  const paramPaper = searchParams.get("paper") as BoxMaterialTheme | null;
+  const hasParamDims =
+    isDemo && Number.isFinite(paramL) && paramL > 0 && Number.isFinite(paramW) && paramW > 0 && Number.isFinite(paramH) && paramH > 0;
+
+  // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export.
   const firstStep: StudioStep = isDemo ? 1 : 2;
-  const [currentStep, setCurrentStep] = useState<StudioStep>(isDemo ? 1 : 4);
+  const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
+    if (project) return 4;
+    if (hasParamDims || paramStructure) return 4;
+    return 1;
+  });
 
   // Project Core State: a saved project fills it once, on mount
   const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? "Bao bì quà tặng sang trọng");
-  const [boxType, setBoxType] = useState<BoxStructureType>(project?.template.id ?? "tuck-top");
-  const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(
-    project ? materialThemeOf(project.canvasState?.materialTheme, project.materialSpec) : "ivory"
-  );
+  const [boxType, setBoxType] = useState<BoxStructureType>(initialStructure);
+  const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(() => {
+    if (project) return materialThemeOf(project.canvasState?.materialTheme, project.materialSpec);
+    if (isDemo && paramPaper && ["ivory", "kraft", "black_matte", "white_gloss", "metallics"].includes(paramPaper)) {
+      return paramPaper;
+    }
+    return "ivory";
+  });
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
     project?.canvasState?.backgroundPattern ?? null
   );
@@ -210,14 +234,23 @@ export function StudioWorkspace({
   const [selectedFont, setSelectedFont] = useState<FontPresetCard>(CURATED_FONT_PRESETS[0]);
 
   // Box Dimensions in mm
-  const [dimensions, setDimensions] = useState<BoxDimensions>(
-    project?.dimensions ?? {
+  const [dimensions, setDimensions] = useState<BoxDimensions>(() => {
+    if (project?.dimensions) return project.dimensions;
+    if (hasParamDims) {
+      return {
+        length: Math.round(paramL),
+        width: Math.round(paramW),
+        height: Math.round(paramH),
+        paperThickness: 0.38, // 300 GSM
+      };
+    }
+    return {
       length: 120,
       width: 80,
       height: 60,
       paperThickness: 0.38, // 300 GSM
-    }
-  );
+    };
+  });
   const limits = structures?.find((s) => s.id === boxType)?.dimensionLimits;
 
   // 2D Canvas State
