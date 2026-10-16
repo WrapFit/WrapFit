@@ -1,37 +1,52 @@
-/** A photo of public/stitch/img (plain module: also used on the server, by the blog metadata). */
-const photo = (id: string) => `/stitch/img/${id}.jpg`;
+/** A photo of public/photos (plain module: also used on the server, by the blog metadata). */
+const photo = (name: string) => `/photos/${name}.jpg`;
 
-// Photos of the company and marketing pages, from the project library (public/stitch/img), named after what they show
-// (the home page describes the same files in components/home/content.ts).
+// Photos of every user page, from public/photos, named after what they show. They are free photos from Unsplash
+// (Unsplash License: free for commercial use, no attribution needed), resized to 1600 px wide;
+// pillow-box.jpg was generated with Figma AI.
 
 export const PHOTOS = {
-  designer: { src: photo("52d394c3859e67b0"), alt: "Nhà thiết kế làm việc với khuôn hộp trên màn hình lớn" },
-  inspection: { src: photo("911d50c6851db5c2"), alt: "Nhóm kỹ thuật cùng soi tờ in và mẫu bế hộp trên bàn" },
-  offset: { src: photo("0fd63a93bcc6e79f"), alt: "Thợ in vận hành máy in với tờ in khuôn hộp" },
-  foil: { src: photo("583fb224c447a31f"), alt: "Nghệ nhân ép kim vàng lên giấy mỹ thuật" },
-  foilSample: { src: photo("d4747bd7fbdff9e6"), alt: "Mẫu thử ép kim chữ WrapFit trên giấy" },
-  embossedDieline: { src: photo("8bc6e04f24de029f"), alt: "Khuôn hộp kraft trải phẳng dập nổi đường gấp" },
-  sketching: { src: photo("475326f160122011"), alt: "Bàn tay phác thảo hoa văn bao bì" },
-  pallets: { src: photo("f7c292efc7189f00"), alt: "Pallet thùng carton in sẵn trong kho" },
-  delivery: { src: photo("7690e8d6ff974a31"), alt: "Giao hộp quà bằng xe máy trên phố" },
-  kraftPaper: { src: photo("7b5628e1ca1cb23e"), alt: "Bề mặt giấy kraft mộc" },
-  tetGift: { src: photo("af8c8412c159d49a"), alt: "Hộp quà Tết xanh thắt nơ vàng" },
-  lacquerBox: { src: photo("9aeea1ca61895060"), alt: "Hộp âm dương sơn mài cho quà Tết" },
-  kraftTuck: { src: photo("8f3cf51318eaf072"), alt: "Hộp nắp gài giấy kraft đứng trên bàn" },
-  kraftPillow: { src: photo("1a2b00bef63aaaf6"), alt: "Hộp gối giấy kraft in logo WrapFit" },
-  greenLid: { src: photo("0d6ad47bfba44c5b"), alt: "Hộp nắp rời xanh rêu ép kim logo WrapFit" },
-  blackMagnet: { src: photo("d9bcf1d058bfb05b"), alt: "Hộp nam châm đen ép kim vàng" },
-  candleBox: { src: photo("5714e230a3e22084"), alt: "Hộp giấy mỹ thuật đựng nến thơm" },
-  chocolate: { src: photo("3729dc5394915422"), alt: "Hộp khay kraft đựng socola thủ công" },
-  oilsDrawer: { src: photo("4c7ce7d1a5170261"), alt: "Hộp khay rút đựng bộ tinh dầu" },
-  yellowDrawer: { src: photo("f958a0d1ac6f013b"), alt: "Hộp khay rút màu vàng in khuôn bế" },
-  teaBags: { src: photo("45070742ddab799c"), alt: "Túi và hộp kraft đựng trà, cà phê thủ công" },
-  kraftBags: { src: photo("ceb84293f215fae7"), alt: "Túi giấy kraft in logo cho cửa hàng" },
-  skincare: { src: photo("727b7e0788de4f2f"), alt: "Hộp mỹ phẩm in thương hiệu Aurora" },
-  waxLetter: { src: photo("1012c6f152a6d72f"), alt: "Phong thư niêm sáp đỏ kèm lời nhắn viết tay" },
-  ivoryPillow: { src: photo("0bdf429fa5bb6e20"), alt: "Hộp gối ivory thắt nơ" },
-  whiteBox: { src: photo("42f41003ce34a4a9"), alt: "Hộp trắng tối giản in chìm logo" },
-  candleTube: { src: photo("11aab61a5e6b85b3"), alt: "Hộp ống giấy đựng nến" },
+  // Products and industries
+  cosmetics: { src: photo("cosmetics"), alt: "Hộp giấy đựng serum dưỡng da" },
+  candle: { src: photo("candle"), alt: "Nến thơm trong ly thủy tinh cạnh hộp giấy" },
+  candleJars: { src: photo("candle-jars"), alt: "Hai hũ nến thơm dán nhãn" },
+  chocolate: { src: photo("chocolate"), alt: "Hộp giấy chia ngăn đựng socola" },
+  macarons: { src: photo("macarons"), alt: "Hộp giấy đựng bánh macaron nhiều màu" },
+  jewelry: { src: photo("jewelry"), alt: "Hộp lót nhung đựng nhẫn vàng" },
+  pillowBox: { src: photo("pillow-box"), alt: "Hộp gối giấy kraft cạnh mặt dây chuyền bạc" },
+  tea: { src: photo("tea"), alt: "Các hộp trà in họa tiết trên kệ" },
+  teaSet: { src: photo("tea-set"), alt: "Bộ ấm chén trà bên cành hoa" },
+  necklaceBox: { src: photo("necklace-box"), alt: "Hộp giấy đựng dây chuyền" },
+  // Occasions
+  tet: { src: photo("tet"), alt: "Bàn trà ngày Tết với bình gốm và mứt" },
+  tetTable: { src: photo("tet-table"), alt: "Góc nhà ngày Tết với cành đào và đèn lồng" },
+  hoaMai: { src: photo("hoa-mai"), alt: "Cành hoa mai vàng ngày Tết" },
+  christmas: { src: photo("christmas"), alt: "Hộp quà kraft buộc dây đỏ mùa Giáng sinh" },
+  wedding: { src: photo("wedding"), alt: "Hộp quà cưới trắng thắt nơ" },
+  valentine: { src: photo("valentine"), alt: "Hộp quà đỏ thắt nơ ngày Valentine" },
+  birthday: { src: photo("birthday"), alt: "Hộp quà sinh nhật thắt ruy băng vàng" },
+  // Boxes
+  kraftDrawer: { src: photo("kraft-drawer"), alt: "Hộp bao diêm giấy kraft mở khay" },
+  kraftTuck: { src: photo("kraft-boxes"), alt: "Hai hộp giấy kraft tối giản" },
+  kraftTwine: { src: photo("kraft-twine"), alt: "Hộp kraft buộc dây và nhánh lá" },
+  luxuryLid: { src: photo("luxury-lid"), alt: "Hộp âm dương trắng niêm sáp" },
+  whiteBox: { src: photo("white-rigid"), alt: "Hộp cứng trắng tối giản" },
+  blackGift: { src: photo("black-gift"), alt: "Hộp quà đen thắt ruy băng" },
+  greenGift: { src: photo("green-gift"), alt: "Hộp quà xanh buộc dây cạnh bình hoa" },
+  dieline: { src: photo("dieline"), alt: "Khuôn hộp in trải phẳng" },
+  // Making and delivering
+  measuring: { src: photo("measuring"), alt: "Thước dây đo kích thước" },
+  designer: { src: photo("designer"), alt: "Nhà thiết kế vẽ trên bảng vẽ cạnh bảng màu" },
+  sketching: { src: photo("design-desk"), alt: "Bàn làm việc với mẫu màu và bút vẽ" },
+  swatches: { src: photo("swatches"), alt: "Bảng màu in ấn xòe ra" },
+  offset: { src: photo("offset-press"), alt: "Máy in offset đang chạy" },
+  largePrinter: { src: photo("large-printer"), alt: "Máy in khổ lớn trong xưởng" },
+  foil: { src: photo("foil"), alt: "Chữ ép kim vàng trên bìa da" },
+  kraftPaper: { src: photo("kraft-texture"), alt: "Bề mặt giấy kraft" },
+  warehouse: { src: photo("warehouse"), alt: "Kệ hộp carton trong kho" },
+  delivery: { src: photo("delivery"), alt: "Người giao hàng chở thùng hộp bằng xe máy" },
+  giftHands: { src: photo("gift-hands"), alt: "Hai bàn tay trao hộp quà" },
+  giftHold: { src: photo("gift-hold"), alt: "Người cầm hộp quà gói giấy kraft" },
 } as const;
 
 export type SitePhoto = (typeof PHOTOS)[keyof typeof PHOTOS];
