@@ -27,7 +27,7 @@ export interface AuthContextValue {
   refresh(): Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 /** Cached data anyone may see; everything else belongs to the signed-in user and is dropped when the user changes. */
 const PUBLIC_QUERY_ROOTS = new Set(["templates"]);

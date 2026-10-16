@@ -1,4 +1,100 @@
-import type { ProjectSummary } from "@/types/api";
+import type {
+  AiUsage,
+  Collection,
+  ExportJob,
+  HealthDetails,
+  PrintShop,
+  ProjectDetail,
+  ProjectSummary,
+  SafeUser,
+  SampleOrder,
+  StorageUsage,
+} from "@/types/api";
+
+export const DEMO_USER: SafeUser = {
+  id: "demo-user-id",
+  email: "demo@wrapfit.vn",
+  emailVerifiedAt: "2026-01-01T00:00:00Z",
+  fullName: "Nhà Sáng Tạo WrapFit (Demo)",
+  avatarUrl: null,
+  shopName: "WrapFit Craft Studio",
+  role: "ADMIN",
+  subscriptionTier: "FREE",
+  brandKit: {
+    logoUrl: null,
+    colors: ["#1A362B", "#D4AF37", "#FDFBF7"],
+    fonts: ["Cormorant Garamond", "Plus Jakarta Sans"],
+    slogan: "Make Every Present, Present.",
+  },
+  referralCode: "WRAPFIT2026",
+  isActive: true,
+  createdAt: "2026-01-01T00:00:00Z",
+  updatedAt: "2026-10-16T12:00:00Z",
+};
+
+export const DEMO_USERS: SafeUser[] = [
+  DEMO_USER,
+  {
+    id: "usr-02",
+    email: "hoai.an@annhien.vn",
+    emailVerifiedAt: "2026-02-10T00:00:00Z",
+    fullName: "Nguyễn Hoài An",
+    shopName: "An Nhiên Candle Studio",
+    avatarUrl: null,
+    role: "PRO_ARTISAN",
+    subscriptionTier: "STARTER",
+    brandKit: null,
+    referralCode: "ANNHIEN2026",
+    isActive: true,
+    createdAt: "2026-02-10T00:00:00Z",
+    updatedAt: "2026-10-15T08:00:00Z",
+  },
+  {
+    id: "usr-03",
+    email: "quocbao@lumierecraft.vn",
+    emailVerifiedAt: "2026-03-01T00:00:00Z",
+    fullName: "Trần Quốc Bảo",
+    shopName: "Lumière Craft",
+    avatarUrl: null,
+    role: "MAKER",
+    subscriptionTier: "FREE",
+    brandKit: null,
+    referralCode: null,
+    isActive: true,
+    createdAt: "2026-03-01T00:00:00Z",
+    updatedAt: "2026-10-14T09:00:00Z",
+  },
+  {
+    id: "usr-04",
+    email: "partner@saigonxanhprint.vn",
+    emailVerifiedAt: "2026-01-15T00:00:00Z",
+    fullName: "Xưởng In Sài Gòn Xanh",
+    shopName: "In Bao Bì Sài Gòn Xanh",
+    avatarUrl: null,
+    role: "PRINT_SHOP",
+    subscriptionTier: "PRO_BUSINESS",
+    brandKit: null,
+    referralCode: "SGXANH2026",
+    isActive: true,
+    createdAt: "2026-01-15T00:00:00Z",
+    updatedAt: "2026-10-16T10:00:00Z",
+  },
+  {
+    id: "usr-05",
+    email: "ngocmai@tiembanhmomang.vn",
+    emailVerifiedAt: "2026-04-12T00:00:00Z",
+    fullName: "Lê Ngọc Mai",
+    shopName: "Tiệm Bánh Mơ Màng",
+    avatarUrl: null,
+    role: "MAKER",
+    subscriptionTier: "PAY_PER_EXPORT",
+    brandKit: null,
+    referralCode: null,
+    isActive: true,
+    createdAt: "2026-04-12T00:00:00Z",
+    updatedAt: "2026-10-12T14:00:00Z",
+  },
+];
 
 export const DEMO_PROJECTS: ProjectSummary[] = [
   {
@@ -86,3 +182,198 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     updatedAt: "2026-10-14T13:20:00Z",
   },
 ];
+
+export function getDemoProjectDetail(id: string): ProjectDetail {
+  const summary = DEMO_PROJECTS.find((p) => p.id === id) ?? DEMO_PROJECTS[0];
+  return {
+    ...summary,
+    version: 1,
+    formulaVersion: 1,
+    latestFormulaVersion: 1,
+    allowFork: true,
+    forkedFromId: null,
+    canvasState: {
+      elements: [],
+      backgroundPattern: null,
+      backgroundTheme: null,
+      materialTheme: summary.materialSpec.type === "kraft" ? "kraft" : "ivory",
+    },
+    fitcheckState: {
+      score: summary.fitcheckScore ?? 100,
+      isValidForProduction: (summary.fitcheckScore ?? 100) >= 90,
+      violations: [],
+      auditedAt: summary.updatedAt,
+    },
+  };
+}
+
+export const DEMO_COLLECTIONS: Collection[] = [
+  {
+    id: "col-01",
+    title: "Bộ Sưu Tập Quà Tết 2026",
+    description: "Các mẫu hộp quà Tết sơn mài, ép kim cho trà và mứt",
+    colorTag: "#E53E3E",
+    projectCount: 2,
+    createdAt: "2026-01-10T00:00:00Z",
+    updatedAt: "2026-10-15T00:00:00Z",
+  },
+  {
+    id: "col-02",
+    title: "Nến Thơm & Spa Thư Giãn",
+    description: "Hộp Kraft và nắp gài đáy khóa cho hũ nến tinh dầu",
+    colorTag: "#2F855A",
+    projectCount: 2,
+    createdAt: "2026-02-15T00:00:00Z",
+    updatedAt: "2026-10-16T00:00:00Z",
+  },
+];
+
+export const DEMO_STORAGE_USAGE: StorageUsage = {
+  tier: "FREE",
+  usedBytes: 15728640,
+  quotaBytes: 52428800,
+  fileCount: 4,
+};
+
+export const DEMO_AI_USAGE: AiUsage = {
+  tier: "FREE",
+  used: 2,
+  limit: 5,
+  aiEnabled: true,
+};
+
+export const DEMO_PRINT_SHOPS: PrintShop[] = [
+  {
+    id: "ps-sg-01",
+    name: "In Bao Bì Sài Gòn Xanh",
+    city: "TP. Hồ Chí Minh",
+    address: "Khu Công Nghiệp Tân Bình, P. Tây Thạnh, Q. Tân Phú",
+    sheet: "B1 · 1020 × 720 mm",
+    sheetSize: "B1 · 1020 × 720 mm",
+    services: ["Offset 4 màu", "Bế tự động", "Ép kim vàng", "Cắt phẳng Zero-MOQ"],
+    leadTime: "3–5 ngày (Mẫu thử 24h)",
+    leadTimeDays: 3,
+    state: "active",
+    status: "active",
+    phone: "028 3816 8888",
+    minQuantity: 1,
+  },
+  {
+    id: "ps-hn-02",
+    name: "Hộp Giấy Hà Thành",
+    city: "Hà Nội",
+    address: "Cụm Công Nghiệp Hai Bà Trưng, P. Vĩnh Tuy, Q. Hai Bà Trưng",
+    sheet: "B1 · 1020 × 720 mm",
+    sheetSize: "B1 · 1020 × 720 mm",
+    services: ["Hộp cứng cao cấp", "Bồi carton sóng E", "Cán màng mờ", "In mẫu thử"],
+    leadTime: "5–7 ngày (Mẫu thử 48h)",
+    leadTimeDays: 5,
+    state: "active",
+    status: "active",
+    phone: "024 3972 6666",
+    minQuantity: 1,
+  },
+  {
+    id: "ps-dn-03",
+    name: "Bao Bì Sông Hàn",
+    city: "Đà Nẵng",
+    address: "Khu Công Nghiệp Hòa Cầm, Q. Cẩm Lệ",
+    sheet: "B2 · 720 × 520 mm",
+    sheetSize: "B2 · 720 × 520 mm",
+    services: ["In kỹ thuật số", "Bế CNC theo yêu cầu", "Giao hàng toàn quốc"],
+    leadTime: "3–4 ngày",
+    leadTimeDays: 3,
+    state: "active",
+    status: "active",
+    phone: "0236 368 9999",
+    minQuantity: 1,
+  },
+];
+
+export const DEMO_ORDERS: SampleOrder[] = [
+  {
+    id: "ord-demo-01",
+    orderCode: "WF-2026-0891",
+    userId: "demo-user-id",
+    projectId: "demo-tuck-top",
+    projectTitle: "Hộp Nến Thơm Tinh Dầu Lavender",
+    printShopId: "ps-sg-01",
+    printShopName: "In Bao Bì Sài Gòn Xanh",
+    partnerShop: {
+      id: "ps-sg-01",
+      name: "In Bao Bì Sài Gòn Xanh",
+      city: "TP. Hồ Chí Minh",
+      contactPhone: "028 3816 8888",
+    },
+    quantity: 1,
+    recipientName: "Nguyễn Hoài An",
+    phone: "0901234567",
+    shippingAddress: "Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh",
+    notes: "Mẫu thử hộp nến thơm giấy Ivory 350 GSM cán mờ",
+    totalVnd: 49000,
+    sampleFeeVnd: 49000,
+    status: "in_production",
+    createdAt: "2026-10-15T09:30:00Z",
+  },
+  {
+    id: "ord-demo-02",
+    orderCode: "WF-2026-0842",
+    userId: "demo-user-id",
+    projectId: "demo-lid-base",
+    projectTitle: "Hộp Âm Dương — Bộ Quà Tết Hoàng Kim",
+    printShopId: "ps-hn-02",
+    printShopName: "Hộp Giấy Hà Thành",
+    partnerShop: {
+      id: "ps-hn-02",
+      name: "Hộp Giấy Hà Thành",
+      city: "Hà Nội",
+      contactPhone: "024 3972 6666",
+    },
+    quantity: 2,
+    recipientName: "Trần Quốc Bảo",
+    phone: "0912345678",
+    shippingAddress: "Số 18 Phố Huế, P. Hàng Bài, Q. Hoàn Kiếm, Hà Nội",
+    notes: "In mẫu ép kim logo vàng",
+    totalVnd: 74000,
+    sampleFeeVnd: 74000,
+    status: "delivered",
+    createdAt: "2026-10-12T14:15:00Z",
+  },
+];
+
+export const DEMO_EXPORTS: ExportJob[] = [
+  {
+    id: "exp-demo-01",
+    projectId: "demo-tuck-top",
+    fileType: "PDF_CMYK",
+    status: "COMPLETED",
+    error: null,
+    createdAt: "2026-10-16T08:00:00Z",
+    completedAt: "2026-10-16T08:00:04Z",
+    fileName: "WrapFit_HopNenThom_PDF_CMYK.pdf",
+    downloadUrl: "#",
+    downloadExpiresIn: 3600,
+  },
+  {
+    id: "exp-demo-02",
+    projectId: "demo-tuck-top",
+    fileType: "SVG",
+    status: "COMPLETED",
+    error: null,
+    createdAt: "2026-10-16T08:05:00Z",
+    completedAt: "2026-10-16T08:05:02Z",
+    fileName: "WrapFit_HopNenThom_Dieline.svg",
+    downloadUrl: "#",
+    downloadExpiresIn: 3600,
+  },
+];
+
+export const DEMO_HEALTH: HealthDetails = {
+  status: "ok",
+  uptime: 864000,
+  timestamp: "2026-10-16T15:00:00Z",
+  database: "up",
+  redis: "up",
+  worker: "up",
+  exportQueue: { waiting: 0, active: 1, completed: 142, failed: 0 },
+};

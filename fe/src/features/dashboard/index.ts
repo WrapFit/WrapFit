@@ -57,4 +57,16 @@ export {
   useProjectList,
 } from "./useProjects";
 export { usagePercent, useAiUsage, useStorageUsage } from "./useUsage";
-export { DEMO_PROJECTS } from "./demoData";
+export {
+  DEMO_AI_USAGE,
+  DEMO_COLLECTIONS,
+  DEMO_EXPORTS,
+  DEMO_HEALTH,
+  DEMO_ORDERS,
+  DEMO_PRINT_SHOPS,
+  DEMO_PROJECTS,
+  DEMO_STORAGE_USAGE,
+  DEMO_USER,
+  DEMO_USERS,
+  getDemoProjectDetail,
+} from "./demoData";
