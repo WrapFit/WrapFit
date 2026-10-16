@@ -43,7 +43,7 @@ export function AuthIllustration({ className, mode = "login" }: AuthIllustration
         <p className="font-landing-heading text-[44px] font-bold leading-[1.08] tracking-tight xl:text-[52px]">
           Gói trọn tâm ý,
           <br />
-          <span className="text-[#FFB27D]">vừa khít từng mi li</span>
+          <span className="text-[#FFB27D]">chuẩn từng milimét.</span>
         </p>
       </div>
     </div>
