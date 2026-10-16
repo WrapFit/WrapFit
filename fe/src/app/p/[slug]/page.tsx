@@ -14,11 +14,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (result.status === "not-found") notFound();
   if (result.status === "error") {
     // Visibility unknown: never let an UNLISTED page be indexed by accident.
-    return { title: "Thiết kế hộp quà — WrapFit", robots: { index: false, follow: false } };
+    return { title: "Thiết kế hộp quà | WrapFit", robots: { index: false, follow: false } };
   }
 
   const { project } = result;
-  const title = `${project.title} — WrapFit`;
+  const title = `${project.title} | WrapFit`;
   const description = `${project.template.name} ${formatDimensions(project.dimensions)} của ${authorName(project.author)}. Xem 3D, thả tim và remix trên WrapFit.`;
   return {
     title,
