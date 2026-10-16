@@ -18,83 +18,57 @@ interface Milestone {
 const MILESTONES: Milestone[] = [
   {
     time: "Tháng 03/2026",
-    quarter: "Q1 2026",
-    title: "Khởi động dự án WrapFit tại Đại học FPT",
-    badge: "Genesis",
-    description:
-      "Dự án được ươm mầm trong khuôn khổ bộ môn Khởi nghiệp EXE101 tại Đại học FPT, xuất phát từ thực tế phỏng vấn hơn 50 chủ shop thủ công và phát hiện rào cản tiền khuôn bế 2.000.000 VNĐ.",
-    achievements: [
-      "Thành lập đội ngũ sáng lập 6 thành viên đa ngành",
-      "Xác thực nhu cầu bao bì từ 50+ xưởng nến thơm & thủ công",
-      "Định hình triết lý: 'Make Every Present, Present'",
-    ],
+    quarter: "Quý 1/2026",
+    title: "Khởi động tại Đại học FPT",
+    badge: "Khởi đầu",
+    description: "Phỏng vấn hơn 50 chủ shop thủ công về khó khăn khi làm hộp.",
+    achievements: ["Lập nhóm 6 thành viên", "Xác định khẩu hiệu 'Make Every Present,  Present'"],
     icon: Flag,
   },
   {
     time: "Tháng 05/2026",
-    quarter: "Q2 2026",
-    title: "Ra mắt Engine CAD Parametric Dieline thế hệ 1",
-    badge: "CAD Engine",
-    description:
-      "Phát triển thành công thuật toán toán học suy biến tọa độ bản vẽ 2D từ 4 thông số vật lý (L, W, H, t). Hỗ trợ chuẩn mực 4 kết cấu hộp tiêu chuẩn bán chạy nhất.",
-    achievements: [
-      "Hộp nắp gài đáy khóa (Tuck Top Box)",
-      "Hộp bao diêm kéo rút (Sleeve & Drawer Box)",
-      "Hộp âm dương cao cấp (Lid & Base Box)",
-      "Hộp gối phụ kiện (Pillow Box)",
-    ],
+    quarter: "Quý 2/2026",
+    title: "Ra mắt bộ dựng khuôn bế",
+    badge: "Khuôn bế",
+    description: "Khuôn 2D tự sinh từ dài, rộng, cao và độ dày giấy.",
+    achievements: ["Hộp nắp gài,  bao diêm,  âm dương", "Hộp gối"],
     icon: Layers,
   },
   {
     time: "Tháng 07/2026",
-    quarter: "Q3 2026",
-    title: "Tích hợp 3D WebGL Origami & Hệ thống FitCheck™",
-    badge: "3D & Quality",
-    description:
-      "Người dùng có thể gập mở hộp ảo 3D 360 độ ngay trên trình duyệt với cơ chế haptic audio xúc giác. Đồng thời, công cụ FitCheck™ tự động rà soát sai sót in ấn trước khi xuất xưởng.",
-    achievements: [
-      "Mô phỏng gập mở 3D chân thực thời gian thực",
-      "FitCheck™ cảnh báo vùng an toàn 3mm & bleed tràn lề 2mm",
-      "Khai sinh Bé Gói (AI Copilot thông minh)",
-    ],
+    quarter: "Quý 3/2026",
+    title: "Xem 3D và FitCheck™",
+    badge: "3D & kiểm tra",
+    description: "Gập mở hộp 3D trên trình duyệt, soát lỗi in tự động.",
+    achievements: ["Gập mở 3D thời gian thực", "Ra mắt trợ lý Gói"],
     icon: Sparkles,
   },
   {
     time: "Tháng 09/2026",
-    quarter: "Q3 2026",
-    title: "Ký kết đối tác xưởng cắt phẳng kỹ thuật số (Zero MOQ)",
-    badge: "Supply Chain",
-    description:
-      "Hợp tác chiến lược với 3 xưởng in sở hữu máy cắt phẳng kỹ thuật số tại Hà Nội & TP.HCM, biến cam kết 'Không cần khuôn bế — Đặt in từ 20 hộp' thành hiện thực.",
-    achievements: [
-      "Xuất file PDF CMYK 300 DPI phân tách lớp dao bế",
-      "Quy trình kiểm soát chất lượng màu và độ chuẩn cấn nếp",
-      "Rút ngắn thời gian nhận hàng xuống còn 48 - 72 giờ",
-    ],
+    quarter: "Quý 3/2026",
+    title: "Kết nối xưởng cắt kỹ thuật số",
+    badge: "Sản xuất",
+    description: "In từ 20 hộp, không cần khuôn dao.",
+    achievements: ["Xuất PDF CMYK 300 DPI tách lớp", "Nhận hàng sau 48–72 giờ"],
     icon: CheckCircle2,
   },
   {
     time: "Tháng 10/2026",
-    quarter: "Q4 2026",
-    title: "Vượt mốc 427+ đăng ký sớm & Mở rộng 3D QR Unboxing",
-    badge: "Traction",
-    description:
-      "Cộng đồng nhà sáng tạo đón nhận nồng nhiệt với 427+ lượt đăng ký dùng thử sớm. Bổ sung tính năng QR thông minh trên nắp hộp để người nhận mở hộp 3D ảo và nghe lời chúc âm thanh.",
-    achievements: [
-      "Hơn 427+ boutique & nghệ nhân tham gia hàng chờ",
-      "Trải nghiệm 3D Virtual Unboxing qua mã QR độc bản",
-      "Chuẩn bị phát hành phiên bản Public Beta trên toàn quốc",
-    ],
+    quarter: "Quý 4/2026",
+    title: "Hơn 427 người đăng ký sớm",
+    badge: "Tăng trưởng",
+    description: "Thêm mã QR trên nắp để người nhận mở hộp 3D.",
+    achievements: ["Mở quà 3D qua mã QR", "Chuẩn bị bản thử nghiệm công khai"],
     icon: TrendingUp,
     highlight: true,
   },
 ];
 
 const TRACTION_STATS = [
-  { value: "427+", label: "Nhà sáng tạo đăng ký sớm", sub: "Boutique & nghệ nhân toàn quốc" },
-  { value: "Zero MOQ", label: "Sản xuất từ 20 chiếc", sub: "Không mất 2 triệu tiền khuôn bế" },
-  { value: "100%", label: "Khả thi sản xuất", sub: "FitCheck™ rà soát tự động" },
-  { value: "300 DPI", label: "Vector CMYK chuẩn in", sub: "Tách lớp CutContour & Crease" },
+  { value: "427+", label: "Đăng ký sớm", sub: "Shop và nghệ nhân" },
+  { value: "20 hộp", label: "In tối thiểu", sub: "Không cần khuôn dao" },
+  { value: "100%", label: "In được", sub: "Nhờ FitCheck™" },
+  { value: "300 DPI", label: "File in CMYK", sub: "Tách lớp sẵn" },
 ];
 
 export function AboutMilestones() {
@@ -104,13 +78,13 @@ export function AboutMilestones() {
         {/* Header */}
         <div className="mx-auto max-w-4xl text-center mb-14">
           <span className="text-xs font-bold uppercase tracking-wider text-fpt-orange-ink">
-            Dấu ấn tăng trưởng (Milestones & Traction)
+            Chặng đường
           </span>
           <h2 className="font-landing-heading text-2xl sm:text-4xl lg:text-5xl font-bold text-fg mt-2">
-            Hành Trình Hiện Thực Hóa Từng Chiếc Hộp
+            Hành trình của WrapFit
           </h2>
           <p className="mt-3 text-sm sm:text-base text-fg-muted max-w-2xl mx-auto leading-relaxed">
-            Từ ý tưởng trên giảng đường Đại học FPT đến nền tảng thiết kế bao bì thông minh được đón nhận bởi hàng trăm người sáng tạo độc lập.
+            Từ giảng đường Đại học FPT đến tay người làm quà.
           </p>
         </div>
 
