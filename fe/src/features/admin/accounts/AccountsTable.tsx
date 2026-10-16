@@ -117,7 +117,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm font-semibold truncate max-w-[160px]">{name}</span>
               {isSelf && (
-                <span className="px-2 py-0.5 rounded-full bg-library-accent-mist/40 text-library-accent font-mono text-cad-spec-micro font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-fpt-orange-light/40 text-fpt-orange-ink font-mono text-cad-spec-micro font-medium">
                   Bạn
                 </span>
               )}
@@ -147,7 +147,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
                 onClick={saveRole}
                 aria-label={`Lưu vai trò ${ROLE_LABELS[draft]} cho ${name}`}
                 title="Lưu vai trò"
-                className="w-7 h-7 rounded-full bg-library-lime-ink text-white hover:bg-black shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
+                className="w-7 h-7 rounded-full bg-fpt-orange text-white hover:bg-black shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
               >
                 <Icon name="check" className="size-3.5" />
               </button>
@@ -186,7 +186,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
       <td className="py-4 px-6">
         <div className="flex items-center justify-end gap-1.5">
           {busy && (
-            <span role="status" className="inline-flex text-library-accent">
+            <span role="status" className="inline-flex text-fpt-orange-ink">
               <Icon name="progress_activity" className="size-4 animate-spin motion-reduce:animate-none" />
               <span className="sr-only">Đang cập nhật {name}</span>
             </span>
@@ -231,8 +231,8 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
 
 export function ActiveBadge({ active }: { active: boolean }) {
   return active ? (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-library-accent-mist/50 text-library-accent font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
-      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-library-accent" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fpt-orange-light/50 text-fpt-orange-ink font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-fpt-orange" />
       Hoạt động
     </span>
   ) : (
@@ -247,7 +247,7 @@ export function EmailBadge({ verifiedAt }: { verifiedAt: string | null }) {
   return verifiedAt ? (
     <span
       title={`Email xác minh lúc ${formatDateTime(verifiedAt)}`}
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-library-accent-mist text-library-accent font-mono text-cad-spec-micro font-semibold whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-fpt-orange-light text-fpt-orange-ink font-mono text-cad-spec-micro font-semibold whitespace-nowrap"
     >
       <Icon name="mark_email_read" className="size-3" />
       <span className="sr-only">Email </span>Đã xác minh

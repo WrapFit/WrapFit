@@ -34,7 +34,7 @@ export function BrandSwatch({ index, role, color, onChange, onRemove }: BrandSwa
     <div className="flex flex-col gap-2 rounded-xl border border-library-line bg-white p-2.5">
       <label
         htmlFor={pickerId}
-        className="relative flex h-20 cursor-pointer flex-col justify-between overflow-hidden rounded-lg border border-black/10 p-2 focus-within:ring-[3px] focus-within:ring-library-accent/40"
+        className="relative flex h-20 cursor-pointer flex-col justify-between overflow-hidden rounded-lg border border-black/10 p-2 focus-within:ring-[3px] focus-within:ring-fpt-orange/40"
         style={{ backgroundColor: valid ? color : "#FFFFFF", color: ink }}
       >
         <span className="flex items-center justify-between text-caption font-medium">
@@ -68,7 +68,7 @@ export function BrandSwatch({ index, role, color, onChange, onRemove }: BrandSwa
           spellCheck={false}
           autoComplete="off"
           aria-invalid={typed !== null && !HEX_COLOR.test(typed.startsWith("#") ? typed : `#${typed}`)}
-          className="h-9 w-full min-[440px]:w-[84px] rounded-md border border-library-line bg-library-panel px-2 text-right font-mono text-xs uppercase text-library-ink outline-none focus:border-library-accent focus:ring-[3px] focus:ring-library-accent/20 aria-[invalid=true]:border-danger aria-[invalid=true]:text-danger-fg"
+          className="h-9 w-full min-[440px]:w-[84px] rounded-md border border-library-line bg-library-panel px-2 text-right font-mono text-xs uppercase text-library-ink outline-none focus:border-fpt-orange focus:ring-[3px] focus:ring-fpt-orange/20 aria-[invalid=true]:border-danger aria-[invalid=true]:text-danger-fg"
         />
       </div>
       {onRemove && (

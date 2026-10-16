@@ -12,9 +12,9 @@ const TITLE_MAX = 100;
 const DESCRIPTION_MAX = 500;
 
 const FIELD =
-  "min-h-[44px] w-full rounded-lg border border-library-line bg-white px-3.5 py-2.5 text-sm text-library-ink placeholder:text-library-muted focus:border-library-accent focus:outline-none focus:ring-[3px] focus:ring-library-accent/20";
+  "min-h-[44px] w-full rounded-lg border border-library-line bg-white px-3.5 py-2.5 text-sm text-library-ink placeholder:text-library-muted focus:border-fpt-orange focus:outline-none focus:ring-[3px] focus:ring-fpt-orange/20";
 const SUBMIT =
-  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-action-hover disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-fpt-orange px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-action-hover disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-fpt-orange/30";
 
 interface CollectionDialogProps {
   /** Edits this folder; creates a new one when omitted. */
@@ -131,7 +131,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
                   aria-label={`${option.name} ${option.value}`}
                   title={option.name}
                   onClick={() => setColor(option.value.toUpperCase())}
-                  className="w-11 h-11 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-library-accent"
+                  className="w-11 h-11 rounded-full flex items-center justify-center focus-visible:ring-2 focus-visible:ring-fpt-orange"
                 >
                   <span
                     className={`w-7 h-7 rounded-full flex items-center justify-center ring-offset-2 transition-shadow ${
@@ -149,7 +149,7 @@ export function CollectionDialog({ collection, onClose, onSaved }: CollectionDia
             <label
               htmlFor={customColorId}
               title="Màu khác"
-              className={`relative w-11 h-11 rounded-full flex items-center justify-center cursor-pointer focus-within:ring-2 focus-within:ring-library-accent`}
+              className={`relative w-11 h-11 rounded-full flex items-center justify-center cursor-pointer focus-within:ring-2 focus-within:ring-fpt-orange`}
             >
               <span
                 className={`w-7 h-7 rounded-full flex items-center justify-center ring-offset-2 ${

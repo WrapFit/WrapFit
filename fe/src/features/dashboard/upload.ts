@@ -64,7 +64,6 @@ export function showUploadError(toast: ToastApi, error: unknown, purpose: Upload
     tone: "error",
     title,
     description: uploadErrorMessage(error, purpose),
-    requestId: isApiError(error) ? error.requestId : undefined,
   });
 }
 

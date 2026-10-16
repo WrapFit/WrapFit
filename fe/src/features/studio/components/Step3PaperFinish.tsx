@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Info } from "lucide-react";
 import React from "react";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard } from "@/features/studio/components/studioUi";
+import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard } from "@/features/studio/components/studioUi";
 import { clampDimension } from "@/features/studio/utils/dieline";
 import { MATERIAL_FINISH_LABELS, PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
 import type { DimensionLimits } from "@/types/api";
@@ -52,18 +52,13 @@ export function Step3PaperFinish({
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
       <StepHeader
-        step="Bước 3 / 6 · Chất liệu"
         title="Giấy & bề mặt"
         subtitle="Giấy quyết định màu nền, độ cứng và độ dày nếp gấp của hộp. Đổi giấy là khuôn bế tự cộng lại độ dày mới."
       />
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <StudioCard className="relative overflow-hidden lg:sticky lg:top-24 lg:self-start">
-          <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-1.5 text-xs font-semibold text-landing-ink shadow-sm">
-            <span aria-hidden className="size-3 rounded-full ring-1 ring-black/15" style={{ backgroundColor: paper.swatch.outside }} />
-            {paper.name}
-          </span>
-          <div className="relative h-[440px] bg-landing-canvas sm:h-[560px]">
+        <StudioCard className="overflow-hidden lg:sticky lg:top-24 lg:self-start">
+          <div className="relative h-[480px] bg-landing-canvas sm:h-[600px]">
             <div className="absolute inset-0">
               <Box3DView
                 dimensions={dimensions}
@@ -77,55 +72,33 @@ export function Step3PaperFinish({
                 showStatusBar={false}
                 frameless
                 minHeight={false}
+                chrome="bar"
+                barStart={
+                  <>
+                    <span className="font-semibold text-fg">{paper.name}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.outside }} />
+                      Mặt in
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.inside }} />
+                      Mặt trong
+                    </span>
+                  </>
+                }
                 className="h-full w-full"
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4 px-4 py-3 text-sm text-landing-muted">
-            <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="size-4 rounded ring-1 ring-black/15" style={{ backgroundColor: paper.swatch.outside }} />
-              Mặt in
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span aria-hidden className="size-4 rounded ring-1 ring-black/15" style={{ backgroundColor: paper.swatch.inside }} />
-              Mặt trong
-            </span>
-            <span>Kéo để xoay hộp</span>
-          </div>
         </StudioCard>
 
-        <StudioCard as="aside" aria-label="Chọn giấy" className="bg-landing-green-night p-5 text-white sm:p-6">
-          <div className="flex items-center gap-4">
-            <span
-              aria-hidden
-              className="size-20 shrink-0 rounded-full shadow-[inset_-8px_-10px_18px_rgba(0,0,0,0.25),inset_6px_6px_14px_rgba(255,255,255,0.35)]"
-              style={{ backgroundColor: paper.swatch.outside }}
-            />
-            <div className="min-w-0">
-              <p className="font-landing-heading text-2xl font-bold">{paper.name}</p>
-              <p className="text-sm text-landing-lime-mist/80">{paper.finishLabel}</p>
-            </div>
-          </div>
-          <p className="mt-4 text-sm leading-6 text-landing-lime-mist/80">{paper.description}</p>
+        <StudioCard as="aside" aria-labelledby="paper-title" className="p-5 sm:p-6">
+          <CardTitle id="paper-title" action={<span className="text-caption text-fg-muted">{PAPER_STOCKS.length} loại giấy</span>}>
+            Chọn giấy
+          </CardTitle>
 
-          <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            {[
-              { label: "Định lượng", value: `${paper.spec.gsm} GSM` },
-              { label: "Độ dày t", value: `${t.toFixed(2)} mm` },
-              { label: "Bề mặt", value: MATERIAL_FINISH_LABELS[paper.spec.finish] },
-              { label: "Hợp với", value: paper.bestFor },
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl bg-white/[0.07] px-3 py-2.5">
-                <dt className="text-xs text-landing-lime-mist/60">{item.label}</dt>
-                <dd className="mt-0.5 truncate font-semibold" title={item.value}>
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          <p className="mt-6 text-xs font-medium text-landing-lime-mist/60">Chọn giấy</p>
-          <div role="radiogroup" aria-label="Giấy" className="mt-2 flex flex-col gap-2">
+          {/* Paper tiles: a large swatch of the printed side over a strip of the inside, like a paper sample. */}
+          <div role="radiogroup" aria-label="Giấy" className="mt-4 grid grid-cols-2 gap-3">
             {PAPER_STOCKS.map((stock) => {
               const active = stock.theme === activeMaterial;
               return (
@@ -136,27 +109,62 @@ export function Step3PaperFinish({
                   aria-checked={active}
                   onClick={() => choose(stock.theme)}
                   className={cn(
-                    "flex items-center gap-3 rounded-2xl p-3 text-left transition-colors",
-                    active ? "bg-landing-lime text-landing-green-night" : "bg-white/[0.07] text-white hover:bg-white/[0.12]",
+                    "group relative flex flex-col overflow-hidden rounded-panel border-2 bg-surface-raised text-left transition-[border-color,box-shadow,transform] motion-reduce:transition-none",
+                    active
+                      ? "border-fpt-orange-ink"
+                      : "border-line hover:-translate-y-0.5 hover:border-fg hover:shadow-hard-sm",
                   )}
                 >
-                  <span aria-hidden className="size-10 shrink-0 rounded-xl ring-1 ring-black/15" style={{ backgroundColor: stock.swatch.outside }} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{stock.name}</span>
-                    <span className={cn("block truncate text-xs", active ? "text-landing-green-night/70" : "text-landing-lime-mist/60")}>
-                      {stock.finishLabel} · t {stock.spec.caliper.toFixed(2)} mm
+                  <span aria-hidden className="relative block h-20 sm:h-24" style={{ backgroundColor: stock.swatch.outside }}>
+                    <span className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.35),transparent_45%,rgba(0,0,0,0.08))]" />
+                    <span className="absolute inset-x-0 bottom-0 h-2" style={{ backgroundColor: stock.swatch.inside }} />
+                  </span>
+                  <span className="flex flex-1 flex-col px-3 py-2.5">
+                    <span className="text-body-sm font-semibold text-fg">{stock.name}</span>
+                    <span className="mt-0.5 text-caption text-fg-muted">
+                      {stock.finishLabel} · <span className="whitespace-nowrap tabular-nums">{stock.spec.caliper.toFixed(2)} mm</span>
                     </span>
                   </span>
-                  {active && <Check className="size-4 shrink-0" strokeWidth={3} aria-hidden />}
+                  {active && (
+                    <span className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-fpt-orange-ink text-white shadow-sm">
+                      <Check className="size-3.5" strokeWidth={3} aria-hidden />
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
 
-          <label className="mt-5 block text-sm">
-            <span className="flex items-center justify-between">
+          {/* The chosen paper */}
+          <section aria-label={`Thông số ${paper.name}`} className="mt-5 rounded-panel bg-surface-sunken p-4">
+            <p className="font-landing-heading text-body font-bold text-fg">{paper.name}</p>
+            <p className="mt-1 text-body-sm leading-6 text-fg-muted">{paper.description}</p>
+            <dl className="mt-3 grid grid-cols-3 divide-x divide-line rounded-control bg-surface-raised py-2.5 text-center">
+              {[
+                { label: "Định lượng", value: `${paper.spec.gsm} GSM` },
+                { label: "Độ dày", value: `${t.toFixed(2)} mm` },
+                { label: "Bề mặt", value: MATERIAL_FINISH_LABELS[paper.spec.finish] },
+              ].map((item) => (
+                <div key={item.label} className="min-w-0 px-2">
+                  <dt className="text-caption text-fg-muted">{item.label}</dt>
+                  <dd className="mt-0.5 truncate text-body-sm font-semibold tabular-nums text-fg">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-3 text-caption text-fg-muted">Hợp với</p>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {paper.bestFor.split(/,\s*/).map((use) => (
+                <li key={use} className="rounded-full border border-line bg-surface-raised px-2.5 py-1 text-caption font-medium text-fg">
+                  {use.charAt(0).toUpperCase() + use.slice(1)}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <label className="mt-5 block">
+            <span className="flex items-center justify-between text-body-sm font-medium text-fg">
               Tinh chỉnh độ dày
-              <span className="font-mono text-xs text-landing-lime">{t.toFixed(2)} mm</span>
+              <span className="rounded-full bg-fpt-orange-light px-2.5 py-0.5 text-caption font-semibold tabular-nums text-fpt-orange-ink">{t.toFixed(2)} mm</span>
             </span>
             <input
               type="range"
@@ -165,11 +173,16 @@ export function Step3PaperFinish({
               step={0.01}
               value={t}
               onChange={(e) => onDimensionsChange({ ...dimensions, paperThickness: clampDimension(limits, "paperThickness", Number(Number(e.target.value).toFixed(2))) })}
-              className="mt-2 w-full cursor-pointer accent-landing-lime"
+              className="mt-2 w-full cursor-pointer accent-fpt-orange"
             />
+            <span className="flex justify-between text-caption tabular-nums text-fg-muted">
+              <span>{range.min.toFixed(2)} mm</span>
+              <span>{range.max.toFixed(2)} mm</span>
+            </span>
           </label>
-          <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-landing-lime-mist/60">
-            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+
+          <p className="mt-5 flex items-start gap-2 border-t border-line pt-4 text-caption leading-5 text-fg-muted">
+            <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
             Ép kim, dập nổi và phủ UV cục bộ được làm ở xưởng in; đánh dấu vị trí của chúng trong bước thiết kế.
           </p>
         </StudioCard>

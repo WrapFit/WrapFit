@@ -72,7 +72,7 @@ export function BrandLogo({
       {!isCompact && (
         <div className="flex items-center gap-2 leading-none">
           <span
-            className={`font-['Plus_Jakarta_Sans'] font-bold tracking-tight transition-colors ${sizeText} ${
+            className={`font-landing-body font-bold tracking-tight transition-colors ${sizeText} ${
               isLight ? 'text-white' : 'text-brand-forest-deep group-hover:text-brand-forest'
             }`}
           >
@@ -81,7 +81,7 @@ export function BrandLogo({
 
           {badge && (
             <span
-              className={`${badgeClassName} font-['JetBrains_Mono'] text-caption uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
+              className={`${badgeClassName} font-mono text-caption uppercase font-semibold px-2 py-0.5 rounded-full border tracking-wider leading-tight ${
                 isLight
                   ? 'bg-white/10 text-white/90 border-white/20'
                   : 'bg-surface-sunken text-fg-muted border-line/80'

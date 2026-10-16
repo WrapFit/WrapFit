@@ -86,7 +86,7 @@ function DielineVault() {
                   label: 'Mẫu',
                   align: 'right',
                   render: (row) => (
-                    <Link href={`${ROUTES.templates}?structure=${row.id}`} className="inline-flex items-center gap-1 font-medium text-library-accent hover:underline">
+                    <Link href={`${ROUTES.templates}?structure=${row.id}`} className="inline-flex items-center gap-1 font-medium text-fpt-orange-ink hover:underline">
                       {countOf(row.index) !== undefined ? formatCount(countOf(row.index)!) : '–'}
                       <ArrowRight className="size-3.5" aria-hidden />
                     </Link>

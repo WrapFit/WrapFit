@@ -46,7 +46,7 @@ export function BrandLogoTile({ logoUrl, placeholder, onChange }: BrandLogoTileP
   if (upload.isPending) {
     preview = (
       <span role="status" className="flex flex-col items-center gap-1.5 text-library-sub">
-        <span className="size-6 animate-spin rounded-full border-2 border-library-line border-t-library-accent motion-reduce:animate-none" />
+        <span className="size-6 animate-spin rounded-full border-2 border-library-line border-t-fpt-orange motion-reduce:animate-none" />
         <span className="text-xs">Đang tải logo lên…</span>
       </span>
     );

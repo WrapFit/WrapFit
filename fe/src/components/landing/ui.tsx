@@ -13,11 +13,11 @@ export function Container({ className, children }: { className?: string; childre
 }
 
 /**
- * Primary call to action of pack.ly: lime pill, dark green text (10:1). `size="sm"` is the 36 px button of the cards.
- * The shared Button (components/ui) in its primary variant.
+ * Primary call to action of the marketing pages: FPT orange pill, white text (the Button's brand variant). The name is
+ * historical. `size="sm"` is the 36 px button of the cards.
  */
 export function limeButton(size: "md" | "sm" = "md") {
-  return buttonClass({ variant: "primary", size });
+  return buttonClass({ variant: "brand", size });
 }
 
 /** Outline pill on the dark green card. */

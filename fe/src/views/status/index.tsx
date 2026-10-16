@@ -42,7 +42,7 @@ function componentsOf(health: HealthStatus | undefined, failed: boolean): Compon
 
 const STATE_LABEL: Record<State, string> = { up: "Hoạt động", degraded: "Suy giảm", down: "Gián đoạn", checking: "Đang kiểm tra" };
 const STATE_STYLE: Record<State, string> = {
-  up: "bg-landing-lime-mist text-landing-green-deep",
+  up: "bg-fpt-orange-light text-fpt-orange-ink",
   degraded: "bg-warning-bg text-warning-fg",
   down: "bg-danger-bg text-danger-fg",
   checking: "bg-landing-tile text-landing-muted",
@@ -89,7 +89,7 @@ export default function StatusPage() {
               <p className="font-landing-heading text-2xl font-bold">
                 {overall === "up" ? "Mọi hệ thống hoạt động bình thường" : overall === "checking" ? "Đang kiểm tra hệ thống…" : overall === "degraded" ? "Xuất file in đang chậm hoặc tạm dừng" : "WrapFit đang gián đoạn"}
               </p>
-              <p className={cn("text-sm", overall === "up" ? "text-landing-lime-mist/80" : "opacity-80")}>
+              <p className={cn("text-sm", overall === "up" ? "text-white/80" : "opacity-80")}>
                 {overall === "degraded" ? "Bạn vẫn thiết kế và lưu dự án được; file in sẽ được xử lý khi hàng đợi hoạt động lại." : overall === "down" ? "Dự án chưa lưu vẫn nằm trong trình duyệt của bạn. Chúng tôi đang khắc phục." : "Dữ liệu từ /api/health của máy chủ WrapFit."}
               </p>
             </div>
@@ -141,13 +141,13 @@ export default function StatusPage() {
                 <span
                   key={i}
                   title={sample ? new Date(sample.at).toLocaleTimeString("vi-VN") : undefined}
-                  className={cn("h-full flex-1 rounded-full", !sample ? "bg-landing-tile" : !sample.ok ? "bg-danger" : sample.full ? "bg-landing-green" : "bg-warning")}
+                  className={cn("h-full flex-1 rounded-full", !sample ? "bg-landing-tile" : !sample.ok ? "bg-danger" : sample.full ? "bg-fpt-orange" : "bg-warning")}
                 />
               );
             })}
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-xs text-landing-muted">
-            <Legend className="bg-landing-green" label="Hoạt động đủ" />
+            <Legend className="bg-fpt-orange" label="Hoạt động đủ" />
             <Legend className="bg-warning" label="Suy giảm (xuất file)" />
             <Legend className="bg-danger" label="Không phản hồi" />
           </div>
@@ -158,7 +158,7 @@ export default function StatusPage() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <Card>
             <div className="flex items-center gap-2">
-              <History className="size-5 text-landing-green-deep" aria-hidden />
+              <History className="size-5 text-fpt-orange-ink" aria-hidden />
               <h3 className="font-landing-heading text-lg font-bold">Lịch sử sự cố</h3>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-landing-muted">
@@ -167,7 +167,7 @@ export default function StatusPage() {
           </Card>
           <Card>
             <div className="flex flex-wrap items-center gap-2">
-              <CalendarClock className="size-5 text-landing-green-deep" aria-hidden />
+              <CalendarClock className="size-5 text-fpt-orange-ink" aria-hidden />
               <h3 className="font-landing-heading text-lg font-bold">Bảo trì theo lịch</h3>
               <SampleBadge />
             </div>

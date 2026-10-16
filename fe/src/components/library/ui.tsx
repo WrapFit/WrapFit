@@ -13,6 +13,8 @@ import { cn } from "@/utils/helpers";
 
 /** Main call to action: Pacdora's button shape in the lime of pack.ly (shared Button, rounded shape). */
 export const primaryButton = buttonClass({ variant: "primary", shape: "rounded", className: "px-4 text-body font-medium" });
+/** "Tạo hộp mới" of the workspace pages: black, bold. */
+export const createBoxButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-bold" });
 
 /** White button with a black hairline (Pacdora's secondary button; shared Button, outline variant). */
 export const outlineButton = buttonClass({ variant: "outline", shape: "rounded", className: "px-4 text-body font-medium" });
@@ -113,7 +115,7 @@ export function Pagination({
             aria-current={p === page ? "page" : undefined}
             disabled={busy && p !== page}
             onClick={() => p !== page && onPage(p)}
-            className={cn(box, p === page ? "border-library-lime-ink bg-library-lime-ink font-medium text-white" : "bg-white text-library-ink hover:bg-library-panel")}
+            className={cn(box, p === page ? "border-fpt-orange bg-fpt-orange font-medium text-white" : "bg-white text-library-ink hover:bg-library-panel")}
           >
             {p}
           </button>

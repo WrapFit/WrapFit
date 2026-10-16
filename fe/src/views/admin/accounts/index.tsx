@@ -199,7 +199,7 @@ function AdminAccountsScreen() {
                     onClick={() => setFilter(id)}
                     className={cn(
                       "inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm transition-colors",
-                      active ? "border-library-ink bg-library-lime-ink text-white" : "border-library-line text-library-ink hover:border-library-ink",
+                      active ? "border-library-ink bg-fpt-orange text-white" : "border-library-line text-library-ink hover:border-library-ink",
                     )}
                   >
                     {label}
@@ -237,7 +237,7 @@ function AdminAccountsScreen() {
                   ? `Lọc được ${visible.length} / ${items.length} tài khoản của trang này`
                   : `Hiển thị ${items.length} trong số ${formatCount(meta.total)} tài khoản`}
               {accounts.isRefetchError && !accounts.isFetching && (
-                <button type="button" onClick={() => void accounts.refetch()} className="ml-2 font-medium text-library-accent hover:underline">
+                <button type="button" onClick={() => void accounts.refetch()} className="ml-2 font-medium text-fpt-orange-ink hover:underline">
                   Thử lại
                 </button>
               )}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { Container, Reveal } from "@/components/landing";
 import { CustomerVoices } from "@/components/home/CustomerVoices";
-import { CtaPanel, PageHero, PhotoFrame, PRIMARY_CTA, SampleBadge, Section, SitePage, StatGrid, WHITE_PILL } from "@/components/site";
+import { PageHero, PhotoFrame, SampleBadge, Section, SitePage, StatGrid } from "@/components/site";
 import { PHOTOS, type SitePhoto } from "@/features/site/photos";
 import { cn } from "@/utils/helpers";
 
@@ -88,7 +88,7 @@ export default function TestimonialsPage() {
           {research.map((item) => (
             <Reveal as="article" key={item.quote} className="h-full">
               <div className="flex h-full flex-col rounded-card bg-white p-6 ring-1 ring-landing-ink/10 sm:p-8">
-                <Quote className="size-8 text-landing-lime" aria-hidden />
+                <Quote className="size-8 text-fpt-orange" aria-hidden />
                 <blockquote className="mt-4 flex-1 font-landing-heading text-xl font-semibold leading-snug">{item.quote}</blockquote>
                 <p className="mt-6 text-sm font-semibold">{item.who}</p>
                 <p className="text-xs text-landing-muted">{item.detail}</p>
@@ -117,20 +117,6 @@ export default function TestimonialsPage() {
         </div>
       </Section>
 
-      <CtaPanel
-        title="Kể câu chuyện chiếc hộp của bạn"
-        body="Dùng WrapFit cho sản phẩm của mình và muốn chia sẻ? Chúng tôi tặng một hộp in mẫu cho mỗi câu chuyện được đăng."
-        actions={
-          <>
-            <Link href="/editor/demo" className={PRIMARY_CTA}>
-              Thiết kế hộp ngay
-            </Link>
-            <Link href="/contact" className={WHITE_PILL}>
-              Gửi câu chuyện
-            </Link>
-          </>
-        }
-      />
     </SitePage>
   );
 }

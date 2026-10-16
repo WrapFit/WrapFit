@@ -5,10 +5,9 @@ import Link from "next/link";
 import { ROUTES } from "@/constants";
 import { usePathname } from "next/navigation";
 import { useHydrated } from "@/hooks/dom";
-import { Home, FolderHeart, Box, Sparkles } from "lucide-react";
+import { Home, FolderHeart, Box } from "lucide-react";
 import { GoiMascot } from "@/components/common/GoiMascot";
 
-import { STITCH_ROUTES } from "@/features/stitch/routes.generated";
 import { triggerSquishyClick } from "@/utils/animation/animeUtils";
 
 export const BottomNavBar: React.FC = () => {
@@ -47,7 +46,7 @@ export const BottomNavBar: React.FC = () => {
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isHome
             ? "bg-landing-green-night text-white shadow-tactile scale-105"
-            : "text-fg-muted hover:text-landing-green-deep"
+            : "text-fg-muted hover:text-fpt-orange-ink"
         }`}
       >
         <Home className="w-4 h-4" />
@@ -61,7 +60,7 @@ export const BottomNavBar: React.FC = () => {
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isDashboard
             ? "bg-landing-green-night text-white shadow-tactile scale-105"
-            : "text-fg-muted hover:text-landing-green-deep"
+            : "text-fg-muted hover:text-fpt-orange-ink"
         }`}
       >
         <FolderHeart className="w-4 h-4" />
@@ -92,11 +91,11 @@ export const BottomNavBar: React.FC = () => {
             window.dispatchEvent(new CustomEvent("wrapfit_toggle_copilot"));
           }
         }}
-        className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-full text-fg-muted hover:text-landing-green-deep transition"
+        className="flex flex-col items-center gap-0.5 px-2 py-0.5 rounded-full text-fg-muted hover:text-fpt-orange-ink transition"
         title="Trợ lý AI Gói"
       >
         <GoiMascot pose="waving" size={26} showPhotoBadge={false} interactive={false} />
-        <span className="text-caption font-bold text-landing-green-deep">Bé Gói</span>
+        <span className="text-caption font-bold text-fpt-orange-ink">Bé Gói</span>
       </button>
     </nav>
   );

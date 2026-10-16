@@ -1,10 +1,8 @@
 "use client";
 
-import { ArrowRight, Award, ExternalLink, Github, GraduationCap, Heart, Linkedin, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { Github, GraduationCap, Linkedin } from "lucide-react";
 import React from "react";
-import { Container, Reveal, limeButton } from "@/components/landing";
-import { GoiMascot } from "@/components/common/GoiMascot";
+import { Container } from "@/components/landing";
 
 interface TeamMember {
   name: string;
@@ -120,8 +118,8 @@ export function AboutTeam() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-caption font-semibold text-success-fg bg-success-bg px-2.5 py-0.5 rounded-full w-fit border border-success/50 mb-2">
-                  <GraduationCap className="size-3 text-success-fg" />
+                <div className="flex items-center gap-1.5 text-caption font-semibold text-fpt-orange-ink bg-fpt-orange-light px-2.5 py-0.5 rounded-full w-fit border border-fpt-orange/40 mb-2">
+                  <GraduationCap className="size-3 text-fpt-orange-ink" />
                   {member.education}
                 </div>
 
@@ -177,55 +175,6 @@ export function AboutTeam() {
             </div>
           ))}
 
-          {/* Special Honorary Member: Bé Gói */}
-          <div className="rounded-3xl border-2 border-dashed border-fpt-orange/50 bg-gradient-to-br from-fpt-orange-light/50 via-white to-warning-bg/40 p-6 shadow-soft-8 flex flex-col justify-between items-center text-center">
-            <div className="flex flex-col items-center">
-              <div className="size-28 flex items-center justify-center rounded-full bg-white shadow-soft-12 border border-fpt-orange/60 mb-4 p-2">
-                <GoiMascot pose="presenting" size={80} />
-              </div>
-
-              <span className="inline-flex items-center gap-1 text-caption font-bold text-fpt-orange-ink bg-fpt-orange-light/80 px-2.5 py-0.5 rounded-full mb-2">
-                <Sparkles className="size-3" />
-                Thành viên đặc biệt
-              </span>
-
-              <h3 className="font-landing-heading text-xl font-bold text-fg">
-                Bé Gói (BeBoxy)
-              </h3>
-              <p className="text-xs font-semibold text-success-fg mt-0.5">
-                AI Packaging Copilot & Mascot
-              </p>
-
-              <p className="text-xs sm:text-sm text-fg-muted mt-3 leading-relaxed">
-                Người bạn đồng hành 24/7 của bạn trong Studio. Chuyên đo kích thước milimét, nhắc nhở vùng an toàn 3mm và kiểm định FitCheck™ trước khi xuất xưởng in!
-              </p>
-            </div>
-
-            <div className="mt-5 w-full rounded-2xl bg-white p-3 border border-fpt-orange/50 text-center">
-              <span className="font-mono text-xs font-bold text-fg block">
-                9 Trạng thái cảm xúc
-              </span>
-              <span className="text-caption text-fg-muted">
-                Từ gập hộp đến cảnh báo tràn lề
-              </span>
-            </div>
-          </div>
-        </div>
-        {/* Ways in: careers, press, partners */}
-        <div className="mt-12 flex flex-col items-center gap-4 text-center">
-          <p className="text-sm text-fg-muted">Muốn cùng làm, viết về hay giới thiệu WrapFit?</p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/careers" className={limeButton()}>
-              Gia nhập đội ngũ
-              <ArrowRight className="size-4" aria-hidden />
-            </Link>
-            <Link href="/press" className="inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-semibold text-landing-ink ring-1 ring-landing-line hover:bg-landing-tile/60">
-              Thông tin báo chí
-            </Link>
-            <Link href="/affiliate" className="inline-flex h-10 items-center rounded-full bg-white px-5 text-sm font-semibold text-landing-ink ring-1 ring-landing-line hover:bg-landing-tile/60">
-              Đối tác giới thiệu
-            </Link>
-          </div>
         </div>
       </Container>
     </section>

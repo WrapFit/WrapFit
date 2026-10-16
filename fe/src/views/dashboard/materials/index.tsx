@@ -9,7 +9,7 @@
 import { ArrowRight, Info } from 'lucide-react';
 import Link from 'next/link';
 import React, { useState } from 'react';
-import { primaryButton } from '@/components/library';
+import { primaryButton, createBoxButton } from '@/components/library';
 import { Badge, Panel, PanelTitle, SegmentedControl, WorkspaceShell } from '@/components/workspace';
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
@@ -48,7 +48,7 @@ function MaterialsScreen() {
       title="Vật liệu"
       description="Các loại giấy in được trong studio: định lượng, độ dày và bề mặt quyết định khuôn bế của hộp."
       actions={
-        <Link href={ROUTES.editorNew} className={primaryButton}>
+        <Link href={ROUTES.editorNew} className={createBoxButton}>
           Tạo hộp mới
           <ArrowRight className="size-4" aria-hidden />
         </Link>
@@ -205,7 +205,7 @@ function Backdrops({ paper }: { paper: PaperStock }) {
                 onClick={() => setScene(item.id)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors',
-                  scene === item.id ? 'border-[1.5px] border-library-ink bg-library-accent-mist' : 'border-library-line hover:border-library-ink',
+                  scene === item.id ? 'border-[1.5px] border-library-ink bg-fpt-orange-light' : 'border-library-line hover:border-library-ink',
                 )}
               >
                 <span aria-hidden className="size-9 shrink-0 rounded-lg border border-black/15" style={{ backgroundColor: item.color }} />

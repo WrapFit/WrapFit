@@ -2,7 +2,7 @@
 
 import type { BoxStructureType, MaterialType } from "@wrapfit/shared";
 import { useQueries, type UseQueryResult } from "@tanstack/react-query";
-import { ArrowRight, ChevronDown, ScanSearch, SlidersHorizontal, X } from "lucide-react";
+import { ArrowRight, ChevronDown, ScanSearch, SlidersHorizontal, X, Package } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -160,7 +160,7 @@ function TemplateLibrary() {
               <span className="inline-flex items-center gap-2">
                 <SlidersHorizontal className="size-4" aria-hidden />
                 Bộ lọc
-                {hasFilters && <span className="rounded-full bg-library-lime px-2 text-xs leading-5 text-library-lime-ink">đang lọc</span>}
+                {hasFilters && <span className="rounded-full bg-fpt-orange px-2 text-xs leading-5 text-white">đang lọc</span>}
               </span>
               <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
             </summary>
@@ -291,7 +291,7 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
       <div className="px-5 pb-8 pt-5 sm:pl-8">
         <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
         <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-heading-lg sm:leading-[1.3]">
-          <ArrowRight className="mt-1 size-7 shrink-0 text-library-accent sm:size-8" strokeWidth={1.75} aria-hidden />
+          <ArrowRight className="mt-1 size-7 shrink-0 text-fpt-orange-ink sm:size-8" strokeWidth={1.75} aria-hidden />
           <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} in được & tuỳ chỉnh theo từng milimét</span>
         </h1>
         <p className="mt-4 text-base leading-[1.6] text-library-sub">
@@ -409,8 +409,21 @@ function SideFilters({ filters, tab, onChange }: { filters: Filters; tab: Sectio
     { key: "material", title: "Theo chất liệu", options: MATERIALS.map((value) => ({ value, label: MATERIAL_LABELS[value] })) },
   ];
 
+  const none = groups.every((group) => filters[group.key] === undefined);
   return (
     <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        aria-pressed={none}
+        onClick={() => onChange(Object.fromEntries(groups.map((group) => [group.key, null])) as Patch)}
+        className={cn(
+          "flex h-[42px] w-full items-center gap-2.5 rounded-lg px-3 text-left text-base text-library-ink transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
+          none ? "border-[1.5px] border-library-ink bg-white shadow-hard-sm" : "border-[1.5px] border-transparent hover:bg-library-panel",
+        )}
+      >
+        <Package className="size-5" strokeWidth={1.75} aria-hidden />
+        Tất cả mẫu
+      </button>
       {groups.map((group, index) => (
         <FilterGroupList
           key={group.key}
@@ -451,7 +464,6 @@ function FilterGroupList({
       </button>
       {open && (
         <ul id={listId} className="mt-1 flex flex-col gap-1 pb-2">
-          <FilterItem label="Tất cả" active={value === undefined} onClick={() => onSelect(null)} />
           {group.options.map((option) => (
             <FilterItem
               key={option.value}

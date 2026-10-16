@@ -149,7 +149,7 @@ export function AboutBackers() {
           <div className="mt-6 pt-6 border-t border-line/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {TRUST_FACTS.map((fact) => (
               <div key={fact} className="flex items-center gap-2 text-caption sm:text-xs text-fg-muted">
-                <CheckCircle className="size-3.5 text-success-fg shrink-0" />
+                <CheckCircle className="size-3.5 text-fpt-orange shrink-0" />
                 <span>{fact}</span>
               </div>
             ))}

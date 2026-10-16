@@ -3,7 +3,7 @@ import Link from "next/link";
 import React from "react";
 import { cn } from "@/utils/helpers";
 import { HERO, HERO_FEATURES, INDUSTRY_TILES, type IndustryTile } from "./content";
-import { Container, Stars, Tag, limeButton } from "@/components/landing";
+import { Container, Tag, limeButton } from "@/components/landing";
 
 /** Hero of the home page: badges, two-line title, lead, the five strengths, and the bento of industries. */
 export function HomeHero() {
@@ -20,17 +20,8 @@ export function HomeHero() {
               <span className="size-2 rounded-full bg-fpt-green ring-2 ring-fpt-green/25" title="FPT Green" />
             </span>
             <span className="text-xs sm:text-sm font-semibold tracking-wide text-fg">
-              WrapFit · Nền tảng thiết kế hộp quà thông minh
+              Nền tảng thiết kế hộp quà thông minh
             </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {HERO.badges.map((badge, idx) => (
-              <span key={badge} className="inline-flex h-6 items-center gap-1 rounded-full bg-surface-sunken/90 px-2.5 text-xs font-medium text-fg-muted">
-                <Stars className={cn("text-xs", idx === 0 ? "text-fpt-blue" : "text-fpt-green-dark")} />
-                {badge}
-              </span>
-            ))}
           </div>
         </div>
 
@@ -41,8 +32,8 @@ export function HomeHero() {
             <span
               className={cn(
                 "inline-block bg-clip-text py-1 text-[2.75rem] leading-[1.15] text-transparent md:text-6xl xl:text-7xl 2xl:text-8xl",
-                // pack.ly green headline; the lightest stop stays ≥ 3:1 for large text.
-                "bg-gradient-to-r from-landing-green-deep via-landing-green to-landing-green-deep"
+                // FPT blue, orange and green drifting through the word (globals.css .text-tricolor); every stop is ≥ 3:1 for large text.
+                "text-tricolor bg-gradient-to-r from-fpt-blue from-15% via-fpt-orange via-50% to-fpt-green-dark to-85%"
               )}
             >
               {HERO.highlight}

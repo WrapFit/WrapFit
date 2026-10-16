@@ -50,7 +50,7 @@ export function RequireAuth({ children, role }: RequireAuthProps) {
           title="Không có quyền truy cập"
           description="Tài khoản của bạn không được mở trang này."
           action={
-            <Link href={ROUTES.dashboard} className="text-sm font-semibold text-landing-green-deep underline-offset-4 hover:underline">
+            <Link href={ROUTES.dashboard} className="text-sm font-semibold text-fpt-orange-ink underline-offset-4 hover:underline">
               Về trang Dự án
             </Link>
           }

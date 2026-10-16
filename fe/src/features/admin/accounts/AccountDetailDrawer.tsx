@@ -51,7 +51,7 @@ export function AccountDetailDrawer({
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between pb-4 border-b border-library-line">
           <div className="flex items-center gap-2">
-            <Icon name="manage_accounts" className="size-5 text-library-accent" />
+            <Icon name="manage_accounts" className="size-5 text-fpt-orange-ink" />
             <span className="font-medium text-sm font-semibold text-library-ink">Hồ Sơ Tài Khoản</span>
           </div>
           <button
@@ -86,7 +86,7 @@ export function AccountDetailDrawer({
         <dl className="flex flex-col gap-3 p-4 rounded-2xl bg-library-panel/60">
           <div className="flex justify-between items-center gap-4">
             <dt className={LABEL}>Vai trò</dt>
-            <dd className={`${VALUE} font-semibold text-library-accent`}>{ROLE_LABELS[user.role]}</dd>
+            <dd className={`${VALUE} font-semibold text-fpt-orange-ink`}>{ROLE_LABELS[user.role]}</dd>
           </div>
           <div className="flex justify-between items-center gap-4">
             <dt className={LABEL}>Gói</dt>
@@ -137,7 +137,7 @@ export function AccountDetailDrawer({
             Quản Lý Quyền Hạn
           </p>
           {isSelf && (
-            <p className="flex items-center gap-2 p-3 rounded-xl bg-library-accent-mist/30 font-medium text-sm text-library-accent">
+            <p className="flex items-center gap-2 p-3 rounded-xl bg-fpt-orange-light/30 font-medium text-sm text-fpt-orange-ink">
               <Icon name="info" className="size-4" />
               {SELF_EDIT_HINT}.
             </p>
@@ -163,7 +163,7 @@ export function AccountDetailDrawer({
               className="w-full flex items-center justify-between gap-3 p-3 rounded-xl bg-library-panel/40 enabled:hover:bg-library-panel text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="flex items-center gap-2">
-                <Icon name={user.isActive ? "lock" : "lock_open"} className="size-4 text-library-accent" />
+                <Icon name={user.isActive ? "lock" : "lock_open"} className="size-4 text-fpt-orange-ink" />
                 <span className="font-medium text-sm text-library-ink">
                   {user.isActive ? "Khoá tài khoản" : "Mở khoá tài khoản"}
                 </span>
@@ -195,7 +195,7 @@ export function AccountDetailDrawer({
           type="button"
           onClick={saveRole}
           disabled={!dirty || frozen}
-          className="w-full py-3 rounded-2xl bg-library-lime-ink text-white enabled:hover:bg-black font-medium text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 rounded-2xl bg-fpt-orange text-white enabled:hover:bg-black font-medium text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Icon name={busy ? "progress_activity" : "sync_lock"} className={`size-[18px] ${busy ? "animate-spin motion-reduce:animate-none" : ""}`} />
           <span>{busy ? "Đang cập nhật…" : dirty ? `Đổi thành ${ROLE_LABELS[role]}` : "Cập Nhật Quyền Hạn"}</span>

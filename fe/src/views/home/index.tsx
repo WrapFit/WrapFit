@@ -15,7 +15,6 @@ import {
   StandardsStrip,
 } from "@/components/home";
 import { MainFooter, MainHeader } from "@/components/layout";
-import { WaitlistSection } from "@/components/waitlist";
 
 /**
  * `/`: the home page, laid out after the pack.ly home page (slate ink on a cool grey canvas, lime calls to action,
@@ -33,7 +32,6 @@ export default function HomePage() {
         <PlansAndCopilot />
         <BoxJourney />
         <CustomerVoices />
-        <WaitlistSection />
         <HomeFaq />
         <GreenBanner />
         <MadeInVietnam />

@@ -53,7 +53,7 @@ function PlanCard({
           {PLANS[plan.tier].name}
         </h3>
         {isCurrent ? (
-          <Tag className="border-landing-green/30 bg-landing-lime-mist text-landing-green-deep">Gói của bạn</Tag>
+          <Tag className="border-fpt-orange/30 bg-fpt-orange-light text-fpt-orange-ink">Gói của bạn</Tag>
         ) : (
           plan.popular && <Tag className="border-landing-indigo/20 bg-landing-indigo/[0.04]">Phổ biến</Tag>
         )}
@@ -163,7 +163,7 @@ function UsageBar({ label, value, percent }: { label: string; value: string; per
         <span className="font-medium">{value}</span>
       </div>
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-landing-line" role="progressbar" aria-valuenow={Math.round(percent)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-        <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-landing-green")} style={{ width: `${percent}%` }} />
+        <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-fpt-orange")} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

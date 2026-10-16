@@ -1,8 +1,8 @@
 "use client";
 
-import { CheckCircle2, Heart, Layers, Leaf, Ruler, ShieldCheck, Sparkles } from "lucide-react";
+import { Heart, Leaf, Ruler, ShieldCheck } from "lucide-react";
 import React from "react";
-import { Container, Reveal } from "@/components/landing";
+import { Container } from "@/components/landing";
 import { cn } from "@/utils/helpers";
 
 const CORE_VALUES = [
@@ -44,24 +44,6 @@ export function AboutMissionValues() {
   return (
     <section className="bg-landing-canvas py-14 lg:py-24 border-t border-line/70">
       <Container>
-        {/* Mission Banner */}
-        <div className="relative overflow-hidden rounded-card sm:rounded-card-lg bg-landing-green-night px-6 py-14 sm:px-12 sm:py-20 text-center shadow-soft-16 text-white mb-16">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 size-60 rounded-full bg-success/10 blur-3xl pointer-events-none" />
-          <div className="mx-auto max-w-3xl flex flex-col items-center">
-            <span className="text-xs font-mono font-bold tracking-widest uppercase text-landing-lime mb-3">
-              Tuyên ngôn sứ mệnh
-            </span>
-
-            <h2 className="font-landing-heading text-3xl sm:text-5xl font-bold tracking-tight">
-              &ldquo;Make Every Present, Present.&rdquo;
-            </h2>
-
-            <p className="mt-4 text-base sm:text-lg text-landing-lime-mist leading-relaxed max-w-2xl">
-              Sứ mệnh của WrapFit là dân chủ hóa ngành thiết kế và sản xuất bao bì cá nhân hóa tại Việt Nam. Chúng tôi tin rằng bất kỳ người sáng tạo nào, dù kinh doanh quy mô nhỏ nhất, cũng xứng đáng sở hữu những chiếc hộp đóng gói tinh tế và chuyên nghiệp như những thương hiệu hàng đầu.
-            </p>
-          </div>
-        </div>
-
         {/* Core Values Section */}
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-12">

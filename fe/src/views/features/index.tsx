@@ -5,7 +5,7 @@ import Link from "next/link";
 import React from "react";
 import { BLEED_MM, MIN_DPI, SAFE_MARGIN_MM } from "@wrapfit/shared";
 import { Container, Reveal } from "@/components/landing";
-import { CheckList, CtaPanel, PageHero, PhotoFrame, PRIMARY_CTA, SECONDARY_CTA, Section, SitePage, StatGrid, WHITE_PILL } from "@/components/site";
+import { CheckList, PageHero, PhotoFrame, PRIMARY_CTA, SECONDARY_CTA, Section, SitePage, StatGrid } from "@/components/site";
 import { formatVnd, PLANS } from "@/features/pricing";
 import { PHOTOS } from "@/features/site/photos";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
@@ -86,8 +86,8 @@ export default function FeaturesPage() {
             <Link href="/editor/demo" className={PRIMARY_CTA}>
               Dùng thử miễn phí <ArrowRight className="size-4" aria-hidden />
             </Link>
-            <Link href="/compare" className={SECONDARY_CTA}>
-              So sánh với công cụ khác
+            <Link href="/pricing" className={SECONDARY_CTA}>
+              Xem bảng giá
             </Link>
           </>
         }
@@ -120,7 +120,7 @@ export default function FeaturesPage() {
             title="FitCheck™ trước khi in"
             text={`Vùng an toàn ${SAFE_MARGIN_MM} mm, tràn lề ${BLEED_MM} mm, ảnh ${MIN_DPI} DPI, mép dán sạch mực. Sửa lỗi bằng một cú bấm.`}
             proof={{ value: "74,3%", text: "thấy hữu ích" }}
-            href="/blog/tran-le-2mm-het-vien-trang"
+            href="/support?a=fitcheck-kiem-tra-gi"
             cta="Đọc thêm"
             visualClass="bg-landing-green-night"
             visual={
@@ -128,7 +128,7 @@ export default function FeaturesPage() {
                 {["Vùng an toàn", "Tràn lề", "Mép dán keo", "Độ phân giải ảnh"].map((rule) => (
                   <span key={rule} className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-2.5 text-sm text-white ring-1 ring-white/10">
                     {rule}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-landing-lime px-2 py-0.5 text-xs font-semibold text-landing-green-night">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-fpt-orange px-2 py-0.5 text-xs font-semibold text-white">
                       <Check className="size-3" strokeWidth={3} aria-hidden /> Đạt
                     </span>
                   </span>
@@ -140,7 +140,7 @@ export default function FeaturesPage() {
             title="File in chuẩn xưởng"
             text="PDF CMYK 4 lớp (cắt, gấp, hình in, kích thước), SVG và DXF cho máy cắt, PDF A4/A3 để in tại nhà."
             proof={{ value: "73,4%", text: "thấy hữu ích" }}
-            href="/blog/mang-file-di-in-o-dau"
+            href="/support?a=dinh-dang-xuat"
             cta="Mang file đi in"
             visual={photoFill(PHOTOS.offset)}
           />
@@ -184,7 +184,7 @@ export default function FeaturesPage() {
                     <p className="mt-1 text-sm text-landing-muted">{track.who}</p>
                   </div>
                   <CheckList items={track.points} />
-                  <p className="mt-auto text-sm font-semibold text-landing-green-deep">{track.price}</p>
+                  <p className="mt-auto text-sm font-semibold text-fpt-orange-ink">{track.price}</p>
                   <Link href={track.href} className={cn(SECONDARY_CTA, "w-fit")}>
                     {track.cta}
                   </Link>
@@ -206,20 +206,6 @@ export default function FeaturesPage() {
         />
       </Container>
 
-      <CtaPanel
-        title="Thiết kế. Xem trước. In."
-        body="Làm thử chiếc hộp đầu tiên trong 3 phút, không cần tài khoản."
-        actions={
-          <>
-            <Link href="/editor/demo" className={PRIMARY_CTA}>
-              Mở studio dùng thử
-            </Link>
-            <Link href="/pricing" className={WHITE_PILL}>
-              Xem bảng giá
-            </Link>
-          </>
-        }
-      />
     </SitePage>
   );
 }

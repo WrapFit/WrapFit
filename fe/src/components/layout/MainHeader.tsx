@@ -12,6 +12,7 @@ import { useBoxStructures } from '@/features/templates/hooks';
 import { useHydrated } from '@/hooks/dom';
 import { cn } from '@/utils/helpers';
 import { displayName, loginHref } from './account';
+import { HeaderSearch } from './HeaderSearch';
 import { LandingLogo } from './LandingLogo';
 import { navGroups, type NavGroup } from './navigation';
 import { UserAvatarDropdown } from './UserAvatarDropdown';
@@ -37,7 +38,7 @@ const ICON_BUTTON =
   'inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-landing-tile text-landing-ink transition-colors hover:bg-landing-accent outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25';
 
 /**
- * Site header in the pack.ly manner: logo, menus that open on hover or click, then "Bắt đầu", notifications, the
+ * Site header in the pack.ly manner: logo, menus that open on hover or click, then the site search, "Bắt đầu", notifications, the
  * account and the number of my projects. The "Mẫu hộp" menu lists the structures of the API; a signed-in user sees
  * their own menu and project count. Fixed at the top; pages leave room for it.
  */
@@ -117,7 +118,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                   aria-controls={`menu-${group.id}`}
                   onClick={() => setOpenMenu((current) => (current === group.id ? null : group.id))}
                   className={cn(
-                    'inline-flex h-9 items-center gap-1 rounded-full px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/20',
+                    'inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-full px-3 2xl:px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/20',
                     openMenu === group.id ? 'bg-landing-tile' : 'hover:bg-landing-tile/70'
                   )}
                 >
@@ -131,7 +132,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
               <Link
                 href="/pricing"
                 aria-current={pathname === '/pricing' ? 'page' : undefined}
-                className="inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors hover:bg-landing-tile/70 aria-[current=page]:bg-landing-tile"
+                className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-3 2xl:px-4 text-sm font-medium transition-colors hover:bg-landing-tile/70 aria-[current=page]:bg-landing-tile"
               >
                 Bảng giá
               </Link>
@@ -140,10 +141,11 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <HeaderSearch />
           {showCta && (
             <Link
               href={ROUTES.editorNew}
-              className={buttonClass({ className: "hidden px-4 sm:inline-flex" })}
+              className={buttonClass({ variant: "brand", className: "hidden px-4 sm:inline-flex" })}
             >
               Bắt đầu
               <ArrowRight className="size-4" aria-hidden />
@@ -286,7 +288,7 @@ function MobileMenu({
           <Link
             href={ROUTES.editorNew}
             onClick={onNavigate}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-landing-lime text-sm font-medium text-landing-green-night"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-fpt-orange text-sm font-semibold text-white hover:bg-fpt-orange-dark"
           >
             Bắt đầu
             <ArrowRight className="size-4" aria-hidden />

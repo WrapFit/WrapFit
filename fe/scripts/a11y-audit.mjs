@@ -23,7 +23,7 @@ const require = createRequire(import.meta.url);
 const AXE_SOURCE = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const BASE = process.env.BASE_URL ?? 'http://localhost:3000';
 
-const GUEST = ['/', '/templates', '/search?q=hop', '/pricing', '/about', '/contact', '/blog', '/legal/privacy', '/support', '/waitlist', '/auth/login', '/auth/register', '/design-system', '/design-system#dark'];
+const GUEST = ['/', '/templates', '/pricing', '/about', '/features', '/testimonials', '/contact', '/legal/privacy', '/support', '/auth/login', '/auth/register', '/design-system', '/design-system#dark'];
 const SIGNED_IN = ['/dashboard', '/dashboard/projects', '/dashboard/orders', '/dashboard/brand-kit', '/dashboard/profile', '/dashboard/settings', '/admin/accounts'];
 
 const args = process.argv.slice(2);

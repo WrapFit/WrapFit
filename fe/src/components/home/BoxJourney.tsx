@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { cn } from "@/utils/helpers";
@@ -44,7 +44,7 @@ export function BoxJourney() {
                 className={cn(
                   "rounded-full px-3 py-1 font-mono text-cad-spec-micro font-bold shadow-2xs border",
                   active === 2
-                    ? "bg-fg text-fg-inverse border-fg"
+                    ? "bg-fpt-orange-light text-fpt-orange-ink border-fpt-orange/30"
                     : active === 3
                     ? "bg-fpt-green-light text-success-fg border-fpt-green/30"
                     : "bg-fpt-blue-light text-fpt-blue border-fpt-blue/30"
@@ -75,7 +75,7 @@ export function BoxJourney() {
               {step.cta && (
                 <Link
                   href={step.cta.href}
-                  className="group inline-flex items-center gap-1.5 text-label-sm font-bold text-success-fg underline-offset-4 transition-colors hover:underline"
+                  className="group inline-flex items-center gap-1.5 text-label-sm font-bold text-fpt-orange-ink underline-offset-4 transition-colors hover:text-fpt-orange-dark hover:underline"
                 >
                   <span>{step.cta.label}</span>
                   <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
@@ -97,7 +97,7 @@ export function BoxJourney() {
                     <span
                       className={cn(
                         "h-1.5 rounded-full transition-all duration-300",
-                        index === active ? "w-7 bg-fg" : "w-2.5 bg-line-strong/50 group-hover/dot:bg-line-strong"
+                        index === active ? "w-7 bg-fpt-orange" : "w-2.5 bg-line-strong/50 group-hover/dot:bg-line-strong"
                       )}
                     />
                   </button>
@@ -138,7 +138,7 @@ export function BoxJourney() {
                     className={cn(
                       "absolute bottom-3 inline-flex size-7 items-center justify-center rounded-full font-mono text-xs font-bold transition-all lg:size-8 lg:text-sm shadow-md",
                       open
-                        ? "left-3 lg:left-4 bg-action text-action-fg"
+                        ? "left-3 lg:left-4 bg-fpt-orange text-white"
                         : "left-1/2 -translate-x-1/2 bg-white/90 text-fg"
                     )}
                   >

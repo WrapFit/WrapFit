@@ -57,7 +57,7 @@ export function ConfirmDialog({
       <div className="flex items-start gap-3">
         <span
           className={`w-10 h-10 shrink-0 rounded-2xl flex items-center justify-center ${
-            danger ? "bg-danger-bg text-danger-fg" : "bg-library-accent-mist text-library-accent"
+            danger ? "bg-danger-bg text-danger-fg" : "bg-fpt-orange-light text-fpt-orange-ink"
           }`}
         >
           <Icon name={icon} className="size-5" />

@@ -1,29 +1,21 @@
 "use client";
 
-import { ArrowRight, FileDown } from "lucide-react";
+import { ArrowRight, Box, FileDown } from "lucide-react";
 import React from "react";
 import { DielineSketch } from "@/features/templates";
 import { cn } from "@/utils/helpers";
 
+/** The six steps of the studio, with the names of its step bar (Cấu trúc → Xuất file). */
 const STEPS = [
-  {
-    title: "1. Chọn một mẫu hộp",
-    body: "Lọc theo cấu trúc, dịp tặng hay ngành hàng và chọn mẫu gần nhất với món quà của bạn.",
-    art: "pick",
-  },
-  {
-    title: "2. Đổi kích thước theo món quà",
-    body: "Nhập dài, rộng, cao và loại giấy: khuôn bế được dựng lại theo từng milimét, kể cả tai gài và tai dán.",
-    art: "size",
-  },
-  {
-    title: "3. Xuất file in",
-    body: "FitCheck™ soát lỗi trước, rồi tải PDF CMYK tách lớp, SVG hay DXF cho xưởng in và máy cắt.",
-    art: "export",
-  },
+  { title: "Cấu trúc", body: "Chọn một mẫu ở thư viện này (WrapFit Curated hoặc Cộng đồng), hoặc chọn thẳng một cấu trúc hộp: nắp gài, bao diêm, âm dương, hộp gối.", art: "pick" },
+  { title: "Kích thước", body: "Nhập dài, rộng, cao lọt lòng của món quà theo mm (hoặc cm, inch); khuôn bế dựng lại theo từng milimét, cộng cả độ dày giấy.", art: "size" },
+  { title: "Chất liệu", body: "Chọn giấy Ivory, Kraft, Duplex hay Carton bồi; độ dày giấy đổi thì nếp gấp và tai gài tự tính lại.", art: "paper" },
+  { title: "Thiết kế", body: "Thêm chữ, logo, sticker, bảng màu hay hoa văn AI lên từng mặt khuôn bế; FitCheck™ soát vùng an toàn 3 mm ngay khi bạn sửa.", art: "design" },
+  { title: "Xem 3D", body: "Gấp thử hộp 3D, mở nắp, đổi bối cảnh và tạo mã QR mở hộp cho người nhận.", art: "view" },
+  { title: "Xuất file", body: "Tải PDF CMYK tách lớp, SVG hay DXF cho xưởng in và máy cắt, hoặc đặt in 01 hộp mẫu.", art: "export" },
 ] as const;
 
-/** Introduction and the three steps, under the grid of the template library. */
+/** Introduction and the six steps of the studio, under the grid of the template library. */
 export function HowItWorks() {
   return (
     <section className="mt-16 bg-canvas py-16 lg:mt-24 lg:py-20">
@@ -50,13 +42,16 @@ export function HowItWorks() {
         </div>
 
         <h2 className="text-center text-2xl font-medium text-library-ink lg:text-heading-lg">Làm một chiếc hộp với WrapFit thế nào?</h2>
-        <ol className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {STEPS.map((step) => (
+        <ol className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {STEPS.map((step, index) => (
             <li key={step.title} className="flex flex-col gap-4">
-              <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-line bg-info-bg p-6">
+              <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-line bg-fpt-orange-light/60 p-6">
                 <StepArt art={step.art} />
               </div>
-              <h3 className="text-lg font-medium text-library-ink">{step.title}</h3>
+              <h3 className="flex items-center gap-2.5 text-lg font-medium text-library-ink">
+                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-label-sm text-white tabular-nums">{index + 1}</span>
+                {step.title}
+              </h3>
               <p className="text-base leading-[1.6] text-library-sub">{step.body}</p>
             </li>
           ))}
@@ -72,10 +67,10 @@ function StepArt({ art }: { art: (typeof STEPS)[number]["art"] }) {
   if (art === "pick") {
     return (
       <div className={panel}>
-        <p className="mb-3 w-fit rounded-md bg-library-accent-mist px-2 py-1 text-xs font-medium text-library-accent">Mẫu hộp</p>
+        <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Mẫu hộp</p>
         <div className="grid grid-cols-2 gap-2">
           {(["tuck-top", "sleeve-drawer", "lid-base", "pillow"] as const).map((structure, index) => (
-            <div key={structure} className={cn("flex aspect-[4/3] items-center justify-center rounded-lg bg-library-tile p-2", index === 0 && "ring-[1.5px] ring-library-accent")}>
+            <div key={structure} className={cn("flex aspect-[4/3] items-center justify-center rounded-lg bg-library-tile p-2", index === 0 && "ring-[1.5px] ring-fpt-orange")}>
               <DielineSketch structure={structure} dimensions={{ length: 80, width: 50, height: 60, paperThickness: 0.42 }} className="max-h-full w-full" />
             </div>
           ))}
@@ -86,7 +81,7 @@ function StepArt({ art }: { art: (typeof STEPS)[number]["art"] }) {
   if (art === "size") {
     return (
       <div className={panel}>
-        <p className="mb-3 w-fit rounded-md bg-library-accent-mist px-2 py-1 text-xs font-medium text-library-accent">Kích thước</p>
+        <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Kích thước</p>
         {[
           ["Dài (L)", "120"],
           ["Rộng (W)", "80"],
@@ -102,12 +97,50 @@ function StepArt({ art }: { art: (typeof STEPS)[number]["art"] }) {
       </div>
     );
   }
+  if (art === "paper") {
+    return (
+      <div className={panel}>
+        <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Chất liệu</p>
+        {[
+          ["Ivory 300 GSM", "bg-paper-ivory"],
+          ["Kraft 300 GSM", "bg-paper-kraft"],
+          ["Duplex 350 GSM", "bg-brand-forest"],
+        ].map(([name, swatch], i) => (
+          <div key={name} className={cn("mb-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-library-ink", i === 0 ? "border-fpt-orange" : "border-library-line")}>
+            <span className={cn("size-4 rounded-full ring-1 ring-fg/15", swatch)} aria-hidden />
+            {name}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (art === "design") {
+    return (
+      <div className={panel}>
+        <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Thiết kế</p>
+        <div className="relative flex aspect-[4/3] items-center justify-center rounded-lg border border-dashed border-dieline-crease bg-library-tile">
+          <span className="text-sm font-semibold text-library-ink">Tiệm nến Hạ</span>
+          <span className="absolute bottom-2 right-2 rounded bg-success-bg px-1.5 text-xs text-success-fg">FitCheck 100</span>
+        </div>
+      </div>
+    );
+  }
+  if (art === "view") {
+    return (
+      <div className={panel}>
+        <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Xem 3D</p>
+        <div className="flex aspect-[4/3] items-center justify-center rounded-lg bg-library-tile">
+          <Box className="size-14 text-fpt-orange" strokeWidth={1.25} aria-hidden />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={panel}>
-      <p className="mb-3 w-fit rounded-md bg-library-accent-mist px-2 py-1 text-xs font-medium text-library-accent">Xuất file</p>
+      <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Xuất file</p>
       {["PDF CMYK", "SVG", "DXF"].map((format) => (
         <div key={format} className="mb-2 flex items-center gap-2 rounded-lg border border-library-line px-3 py-2 text-sm text-library-ink">
-          <FileDown className="size-4 text-library-accent" aria-hidden />
+          <FileDown className="size-4 text-fpt-orange-ink" aria-hidden />
           {format}
         </div>
       ))}
@@ -127,12 +160,12 @@ export function StartBar({ visible, onStart }: { visible: boolean; onStart(): vo
         visible ? "translate-y-0" : "pointer-events-none translate-y-full"
       )}
     >
-      <div className="relative h-11 overflow-hidden bg-library-lime-ink">
+      <div className="relative h-11 overflow-hidden bg-fpt-orange">
         <div className="flex w-max animate-marquee items-center gap-10 whitespace-nowrap py-3 text-sm text-white/90 motion-reduce:animate-none">
           {[...MARQUEE, ...MARQUEE, ...MARQUEE, ...MARQUEE].map((label, index) => (
             <span key={index} className="inline-flex items-center gap-10">
               {label}
-              <span aria-hidden className="text-library-lime">
+              <span aria-hidden className="text-fpt-orange">
                 ✱
               </span>
             </span>
@@ -142,7 +175,7 @@ export function StartBar({ visible, onStart }: { visible: boolean; onStart(): vo
           type="button"
           tabIndex={visible ? 0 : -1}
           onClick={onStart}
-          className="absolute top-1/2 left-1/2 inline-flex h-8 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-md bg-library-lime px-4 text-sm font-medium text-library-lime-ink shadow-panel"
+          className="absolute top-1/2 left-1/2 inline-flex h-8 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-md bg-fpt-orange px-4 text-sm font-medium text-white shadow-panel"
         >
           Chọn một mẫu hộp để bắt đầu
           <ArrowRight className="size-4" aria-hidden />

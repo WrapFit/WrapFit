@@ -161,7 +161,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
                   onClick={() => setView(option.value)}
                   className={cn(
                     "inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm transition-colors",
-                    view === option.value ? "bg-library-lime-ink text-white" : "text-library-ink hover:bg-library-panel",
+                    view === option.value ? "bg-fpt-orange text-white" : "text-library-ink hover:bg-library-panel",
                   )}
                 >
                   <option.icon className="size-4" aria-hidden />
@@ -198,7 +198,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
             {view === "3d" ? (
               <label className="flex w-full items-center gap-3 sm:w-auto">
                 <span className="shrink-0 text-library-ink">Gấp hộp</span>
-                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-library-accent sm:w-64" />
+                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-fpt-orange sm:w-64" />
                 <span className="w-10 font-mono text-xs">{fold}%</span>
               </label>
             ) : (
@@ -245,7 +245,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
                     onKeyDown={(e) => {
                       if (e.key === "Enter") setSide(side.field, Number((e.target as HTMLInputElement).value));
                     }}
-                    className="h-11 w-full rounded-lg border border-library-line px-3 font-mono text-base text-library-ink outline-none focus:border-library-accent focus:ring-[3px] focus:ring-library-accent/20"
+                    className="h-11 w-full rounded-lg border border-library-line px-3 font-mono text-base text-library-ink outline-none focus:border-fpt-orange focus:ring-[3px] focus:ring-fpt-orange/20"
                   />
                 </label>
               ))}
@@ -255,7 +255,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
               <select
                 value={paperTheme}
                 onChange={(e) => setPaperTheme(e.target.value as typeof paperTheme)}
-                className="h-11 w-full rounded-lg border border-library-line bg-white px-3 text-sm text-library-ink outline-none focus:border-library-accent focus:ring-[3px] focus:ring-library-accent/20"
+                className="h-11 w-full rounded-lg border border-library-line bg-white px-3 text-sm text-library-ink outline-none focus:border-fpt-orange focus:ring-[3px] focus:ring-fpt-orange/20"
               >
                 {PAPER_STOCKS.map((stock) => (
                   <option key={stock.theme} value={stock.theme}>

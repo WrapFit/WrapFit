@@ -14,8 +14,13 @@ import { cn } from "@/utils/helpers";
  */
 
 export const BUTTON_VARIANTS = {
-  /** Main call to action: lime with dark green text (10:1). One per view. */
+  /** Main call to action of the library and workspace (Pacdora look): lime with dark green text (10:1). */
   primary: "bg-action text-action-fg hover:bg-action-hover active:bg-action-pressed",
+  /**
+   * Main call to action of the marketing pages: FPT orange with white text (brand choice). White on #F26522 is 3.2:1,
+   * enough for large text only; keep the label semibold and the button ≥ 40 px tall.
+   */
+  brand: "bg-fpt-orange font-semibold text-white hover:bg-fpt-orange-dark active:bg-fpt-orange-ink",
   /** White button with a hairline ring (pack.ly secondary). */
   secondary: "bg-surface-raised text-fg ring-1 ring-inset ring-line hover:bg-surface-sunken",
   /** White button with a black hairline (pacdora secondary, workspace and library). */
@@ -25,7 +30,7 @@ export const BUTTON_VARIANTS = {
   /** No fill until hovered: toolbars, secondary actions in a row. */
   ghost: "bg-transparent text-fg hover:bg-surface-sunken",
   /** Outline pill on dark green sections. */
-  "ghost-dark": "border border-landing-lime/40 bg-transparent text-landing-lime-mist hover:bg-landing-lime/10",
+  "ghost-dark": "border border-white/35 bg-transparent text-white hover:border-fpt-orange hover:bg-fpt-orange/15",
   /** White pill on lime or photo backgrounds. */
   white: "bg-surface-raised text-fg shadow-soft-8 hover:bg-accent-bg",
   /** Actions that delete or cannot be undone (white on red 4.8:1). */

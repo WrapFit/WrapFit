@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Box, Check, MessageSquare, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Box, Check, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import { Container } from "@/components/landing";
@@ -41,20 +41,11 @@ export function AboutCta() {
               {/* Primary CTA */}
               <Link
                 href="/editor/new"
-                className={buttonClass({ size: "xl", className: "w-full px-8 sm:w-auto" })}
+                className={buttonClass({ variant: "brand", size: "xl", className: "w-full px-8 sm:w-auto" })}
               >
                 <Box className="size-5" />
                 Vào Studio Thiết Kế 3D
                 <ArrowRight className="size-4" />
-              </Link>
-
-              {/* Secondary CTA: Waitlist */}
-              <Link
-                href="/waitlist"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-2xl bg-white/10 backdrop-blur-md px-7 py-4 text-base font-semibold text-white border border-white/20 hover:bg-white/20 transition-all"
-              >
-                <Users className="size-5 text-landing-lime" />
-                Gia Nhập Waitlist (427+ chờ)
               </Link>
 
               {/* Tertiary CTA: Contact */}
@@ -70,15 +61,15 @@ export function AboutCta() {
             {/* Reassurances */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-caption text-white/75">
               <span className="inline-flex items-center gap-1.5">
-                <Check className="size-4 text-landing-lime" />
+                <Check className="size-4 text-fpt-orange" />
                 Hoàn toàn miễn phí thiết kế
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Check className="size-4 text-landing-lime" />
+                <Check className="size-4 text-fpt-orange" />
                 Không cần cài đặt phần mềm
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Check className="size-4 text-landing-lime" />
+                <Check className="size-4 text-fpt-orange" />
                 Sản xuất tối thiểu từ 20 hộp
               </span>
             </div>

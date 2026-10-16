@@ -50,12 +50,12 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Ruler className="w-4 h-4 text-landing-green" />
+          <Ruler className="w-4 h-4 text-fpt-orange" />
           <h3 className="font-landing-heading font-bold text-landing-ink text-base">
             Kích Thước Khối (mm)
           </h3>
         </div>
-        <span className="text-cad-spec-micro font-mono text-landing-muted bg-landing-canvas px-2 py-0.5 rounded-full">
+        <span className="font-sans text-xs text-landing-muted bg-slate-100 px-2.5 py-0.5 rounded-full font-medium">
           Dung sai ±0.5mm
         </span>
       </div>
@@ -86,7 +86,7 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
               max={max}
               value={dimensions[field]}
               onChange={(e) => updateDim(field, Number(e.target.value))}
-              className="w-full cursor-pointer"
+              className="w-full cursor-pointer accent-fpt-orange"
             />
           </div>
         );
@@ -95,8 +95,8 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
       {/* Paper GSM & Thickness preset */}
       <div className="pt-3 border-t border-landing-line space-y-2">
         <div className="flex justify-between items-center text-xs font-semibold text-landing-ink">
-          <span>Định Lượng Giấy & Độ Dày ($t$)</span>
-          <span className="font-mono text-cad-spec-micro text-landing-muted">
+          <span>Định Lượng Giấy & Độ Dày (t)</span>
+          <span className="font-sans text-xs font-medium text-landing-muted">
             t = {dimensions.paperThickness.toFixed(2)} mm
           </span>
         </div>
@@ -115,12 +115,12 @@ export const DimensionControls: React.FC<DimensionControlsProps> = ({
                 onClick={() => handleGsmChange(item.t)}
                 className={`py-2 px-1 text-center rounded-xl transition border flex flex-col items-center ${
                   isSelected
-                    ? "bg-landing-green-night text-white border-landing-ink shadow-sm"
-                    : "bg-landing-canvas border-landing-line text-landing-ink hover:bg-landing-canvas"
+                    ? "bg-fpt-orange text-white border-fpt-orange shadow-xs"
+                    : "bg-slate-50 border-slate-200 text-landing-ink hover:bg-slate-100"
                 }`}
               >
-                <span className="text-xs font-bold font-mono">{item.label}</span>
-                <span className={`text-caption ${isSelected ? "text-landing-line" : "text-landing-muted"}`}>
+                <span className="text-xs font-bold font-sans">{item.label}</span>
+                <span className={`text-caption ${isSelected ? "text-white/80" : "text-fg-muted"}`}>
                   {item.desc}
                 </span>
               </button>

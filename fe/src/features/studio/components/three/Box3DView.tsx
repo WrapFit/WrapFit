@@ -8,7 +8,7 @@ export const Box3DView = dynamic(() => import("./InteractiveFoldingBox3D").then(
   ssr: false,
   loading: () => (
     <div role="status" className="flex h-full min-h-[320px] w-full items-center justify-center gap-3 text-sm text-landing-muted">
-      <span aria-hidden className="size-5 animate-spin rounded-full border-2 border-landing-line border-t-landing-green motion-reduce:animate-none" />
+      <span aria-hidden className="size-5 animate-spin rounded-full border-2 border-landing-line border-t-fpt-orange motion-reduce:animate-none" />
       Đang dựng hộp 3D…
     </div>
   ),

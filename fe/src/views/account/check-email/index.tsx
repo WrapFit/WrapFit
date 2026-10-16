@@ -122,7 +122,7 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
     <li className="flex gap-3">
       <span
         aria-hidden
-        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-landing-lime text-xs font-semibold text-landing-green-night"
+        className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-xs font-semibold text-white"
       >
         {n}
       </span>

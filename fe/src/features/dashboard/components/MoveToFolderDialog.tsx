@@ -8,7 +8,7 @@ import { ModalDialog } from "./ModalDialog";
 import { Icon } from "@/components/ui";
 
 const SUBMIT =
-  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-library-lime px-5 py-2.5 text-sm font-medium text-library-lime-ink transition-colors enabled:hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait focus-visible:ring-[3px] focus-visible:ring-library-accent/30";
+  "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-fpt-orange px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-wait focus-visible:ring-[3px] focus-visible:ring-fpt-orange/30";
 
 interface MoveToFolderDialogProps {
   project: ProjectSummary;
@@ -57,7 +57,7 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
     >
       <form onSubmit={submit} className="flex flex-col gap-5">
         <div className="flex items-start gap-3">
-          <span className="w-10 h-10 shrink-0 rounded-2xl bg-library-accent-mist text-library-accent flex items-center justify-center">
+          <span className="w-10 h-10 shrink-0 rounded-2xl bg-fpt-orange-light text-fpt-orange-ink flex items-center justify-center">
             <Icon name="drive_file_move" className="size-5" />
           </span>
           <div className="min-w-0 pt-0.5">
@@ -81,7 +81,7 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
               <label
                 key={option.id || "none"}
                 className={`min-h-[48px] px-3 rounded-xl flex items-center gap-3 cursor-pointer transition-colors ${
-                  checked ? "bg-library-accent-mist ring-1 ring-library-accent/40" : "hover:bg-library-panel"
+                  checked ? "bg-fpt-orange-light ring-1 ring-fpt-orange/40" : "hover:bg-library-panel"
                 } focus-within:ring-2 focus-within:ring-vibrant-cobalt`}
               >
                 <input
@@ -107,7 +107,7 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
                     Hiện tại
                   </span>
                 )}
-                <Icon name="check" className={`size-[18px] ${checked ? "text-library-accent" : "text-transparent"}`} />
+                <Icon name="check" className={`size-[18px] ${checked ? "text-fpt-orange-ink" : "text-transparent"}`} />
               </label>
             );
           })}
@@ -119,7 +119,7 @@ export function MoveToFolderDialog({ project, collections, onClose, onCreateFold
             <button
               type="button"
               onClick={onCreateFolder}
-              className="font-semibold text-library-accent underline-offset-2 hover:underline min-h-[44px]"
+              className="font-semibold text-fpt-orange-ink underline-offset-2 hover:underline min-h-[44px]"
             >
               Tạo thư mục mới
             </button>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- WrapFit mark: Gói in the FPT blue badge. Same drawing as fe/src/components/layout/GoiMark.tsx. -->
+  <defs>
+    <radialGradient id="b" cx="30%" cy="22%" r="85%">
+      <stop offset="0" stop-color="#2A8BE0"/>
+      <stop offset="0.55" stop-color="#005CA9"/>
+      <stop offset="1" stop-color="#003E78"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="32" fill="url(#b)"/>
+  <g stroke-linecap="round" stroke-linejoin="round" transform="translate(32 33) scale(1.12) translate(-32 -33)">
+    <g fill="none" stroke="#3A230F" stroke-width="1.8">
+      <path d="M19 32 Q14.5 30 12.8 25.2 M12.8 25.2 l-1.6 -2.3 M12.8 25.2 l0.6 -2.8"/>
+      <path d="M46.5 30.5 Q50.5 28 51.6 23.2 M51.6 23.2 l-0.7 -2.8 M51.6 23.2 l1.7 -2.2"/>
+      <path d="M25.5 43.5 L24 49 L21.8 49.4 M35 43.5 L36.5 49 L38.7 49.4"/>
+    </g>
+    <path d="M18 22 L24 16.5 L48 16.5 L42 22 Z" fill="#FCDBA2"/>
+    <path d="M42 22 L48 16.5 L48 37.5 L42 43.5 Z" fill="#DA9549"/>
+    <rect x="18" y="22" width="24" height="21.5" rx="2.2" fill="#F6BF76"/>
+    <path d="M29 22 L35 16.5 L38.2 16.5 L32.2 22 Z" fill="#F26522"/>
+    <path d="M29 22 h3.2 v4.2 h-3.2 Z" fill="#F26522"/>
+    <g fill="none" stroke="#3A230F" stroke-width="1.7">
+      <path d="M22.6 31.4 q2.2 -2.6 4.4 0"/>
+      <path d="M33 31.4 q2.2 -2.6 4.4 0"/>
+    </g>
+    <path d="M27.4 34.6 q2.6 3.6 5.2 0 Z" fill="#3A230F"/>
+    <ellipse cx="23.2" cy="35.2" rx="2" ry="1.25" fill="#F38C86" opacity="0.9"/>
+    <ellipse cx="36.8" cy="35.2" rx="2" ry="1.25" fill="#F38C86" opacity="0.9"/>
+  </g>
+</svg>

@@ -126,7 +126,7 @@ export function ResendVerificationForm({
         name="email"
         type="email"
         label="Email đã dùng để đăng ký"
-        placeholder="ten@shop.vn"
+        placeholder="name@example.com"
         autoComplete="email"
         inputMode="email"
         required

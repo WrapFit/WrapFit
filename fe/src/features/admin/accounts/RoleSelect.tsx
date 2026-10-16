@@ -23,10 +23,10 @@ export function RoleSelect({ value, onChange, disabled, id, label, title, varian
   const wrapper =
     variant === "badge"
       ? `rounded-full ${tone.badge}`
-      : "w-full rounded-xl bg-white text-library-ink shadow-sm focus-within:ring-1 focus-within:ring-library-accent";
+      : "w-full rounded-xl bg-white text-library-ink shadow-sm focus-within:ring-1 focus-within:ring-fpt-orange";
   const select =
     variant === "badge"
-      ? "pl-6 pr-7 py-1 rounded-full font-mono text-cad-spec-micro font-semibold uppercase focus-visible:ring-2 focus-visible:ring-library-accent"
+      ? "pl-6 pr-7 py-1 rounded-full font-mono text-cad-spec-micro font-semibold uppercase focus-visible:ring-2 focus-visible:ring-fpt-orange"
       : "w-full pl-8 pr-9 py-2.5 rounded-xl font-medium text-sm";
 
   return (

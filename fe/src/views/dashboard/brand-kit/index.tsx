@@ -160,7 +160,7 @@ function DashboardBrandKitScreen() {
           <div className="flex flex-col gap-4 lg:sticky lg:top-24">
             <BrandPreview draft={draft} shopName={user?.shopName ?? null} />
             <p aria-live="polite" className="flex items-center gap-2 text-sm text-library-sub">
-              <span aria-hidden className={cn('size-2 rounded-full', dirty || !kit ? 'bg-warning' : 'bg-library-accent')} />
+              <span aria-hidden className={cn('size-2 rounded-full', dirty || !kit ? 'bg-warning' : 'bg-fpt-orange')} />
               {status} · {draft.colors.length} màu · {draft.fonts.length} font{draft.logoUrl ? ' · có logo' : ''}
             </p>
           </div>

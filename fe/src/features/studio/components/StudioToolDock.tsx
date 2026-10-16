@@ -2,21 +2,8 @@
 
 import React from "react";
 import { Tooltip } from "@/components/ui";
-import {
-  MousePointer,
-  Type,
-  Gift,
-  Upload,
-  Palette,
-  Sparkles,
-  Ruler,
-  Undo2,
-  Redo2,
-  Layers,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
-
+import { MousePointer, Type, Gift, Upload, Palette, Sparkles, Ruler, Undo2, Redo2 } from "lucide-react";
+import { cn } from "@/utils/helpers";
 
 export type StudioToolId =
   | "select"
@@ -40,6 +27,26 @@ interface StudioToolDockProps {
   className?: string;
 }
 
+const TOOLS: { id: StudioToolId; label: string; icon: typeof MousePointer; shortcut: string }[] = [
+  { id: "select", label: "Chọn & di chuyển", icon: MousePointer, shortcut: "V" },
+  { id: "text", label: "Thêm chữ", icon: Type, shortcut: "T" },
+  { id: "image", label: "Tải ảnh / logo", icon: Upload, shortcut: "U" },
+  { id: "stickers", label: "Sticker", icon: Gift, shortcut: "S" },
+  { id: "palette", label: "Phông & bảng màu", icon: Palette, shortcut: "C" },
+  { id: "patterns", label: "Hoa văn AI", icon: Sparkles, shortcut: "A" },
+];
+
+/** Square icon button of the dark dock: 44 px, lime when on (dark green text, 10:1), cobalt focus ring. */
+const dockButton = (on: boolean) =>
+  cn(
+    "relative flex size-11 shrink-0 items-center justify-center rounded-control outline-none transition-[background-color,color,transform] duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:ring-[3px] focus-visible:ring-focus/70 disabled:pointer-events-none disabled:opacity-30",
+    on ? "bg-action text-action-fg shadow-xs" : "text-white/70 hover:bg-white/10 hover:text-white",
+  );
+
+/**
+ * Floating dark dock of the artwork step: a vertical column at the left of the stage on desktop, a horizontal strip
+ * on phones. Labels live in tooltips (and aria-label), shortcuts in aria-keyshortcuts.
+ */
 export const StudioToolDock: React.FC<StudioToolDockProps> = ({
   activeTool,
   onSelectTool,
@@ -51,99 +58,62 @@ export const StudioToolDock: React.FC<StudioToolDockProps> = ({
   onRedo,
   className = "",
 }) => {
-  const tools = [
-    { id: "select", label: "Chọn", icon: MousePointer, shortcut: "V" },
-    { id: "panels", label: "Mặt hộp", icon: Layers, shortcut: "P" },
-    { id: "text", label: "Chữ", icon: Type, shortcut: "T" },
-    { id: "stickers", label: "Sticker", icon: Gift, shortcut: "S", badge: "Mới" },
-    { id: "image", label: "Tải logo", icon: Upload, shortcut: "U" },
-    { id: "palette", label: "Bảng màu", icon: Palette, shortcut: "C" },
-    { id: "patterns", label: "Hoa văn", icon: Sparkles, shortcut: "A" },
-  ];
-
   return (
     <div
-      className={`flex flex-row lg:flex-col items-center gap-1.5 max-w-full overflow-x-auto lg:overflow-visible bg-white rounded-3xl p-2 select-none ${className}`}
+      role="toolbar"
+      aria-label="Công cụ thiết kế"
+      className={cn(
+        "flex max-w-full select-none flex-row items-center gap-1 overflow-x-auto rounded-panel bg-landing-ink/95 p-1.5 shadow-popover ring-1 ring-white/10 backdrop-blur-xl no-scrollbar lg:flex-col lg:overflow-visible",
+        className,
+      )}
     >
-      {/* Primary Tools */}
-      <div className="flex flex-row lg:flex-col items-center gap-1 flex-shrink-0 lg:w-full">
-        {tools.map((t) => {
-          const Icon = t.icon;
-          const isActive = activeTool === t.id;
-          return (
-            <Tooltip key={t.id} side="right" content={`${t.label} · phím tắt ${t.shortcut}`} className="hidden lg:block">
-              <button
-                type="button"
-                aria-pressed={isActive}
-                aria-keyshortcuts={t.shortcut}
-                onClick={() => onSelectTool(t.id as StudioToolId)}
-                className={`relative group w-16 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
-                  isActive
-                    ? "bg-landing-lime text-landing-green-night"
-                    : "text-landing-muted hover:text-landing-ink hover:bg-landing-canvas"
-                }`}
-              >
-                <Icon className="w-5 h-5" aria-hidden />
-                <span className="text-caption font-medium leading-none">{t.label}</span>
-                {t.badge && !isActive && (
-                  <span className="absolute top-0.5 right-0.5 px-1.5 py-0.5 rounded-full bg-landing-green-night text-landing-lime text-caption font-bold leading-none">
-                    {t.badge}
-                  </span>
-                )}
-              </button>
-            </Tooltip>
-          );
-        })}
-      </div>
+      {TOOLS.map((t) => {
+        const Icon = t.icon;
+        const isActive = activeTool === t.id;
+        return (
+          <Tooltip key={t.id} side="right" content={`${t.label} · ${t.shortcut}`}>
+            <button
+              type="button"
+              aria-pressed={isActive}
+              aria-label={t.label}
+              aria-keyshortcuts={t.shortcut}
+              onClick={() => onSelectTool(t.id)}
+              className={dockButton(isActive)}
+            >
+              <Icon className="size-[18px]" strokeWidth={1.9} aria-hidden />
+            </button>
+          </Tooltip>
+        );
+      })}
 
-      {/* Divider */}
-      <div className="w-[1px] h-6 lg:w-6 lg:h-[1px] flex-shrink-0 bg-landing-line mx-1 lg:mx-0 lg:my-1" />
+      <span className="mx-1 h-6 w-px shrink-0 bg-white/15 lg:mx-0 lg:my-1 lg:h-px lg:w-6" aria-hidden />
 
-      {/* CAD Ruler Toggle */}
-      <button
-        type="button"
-        onClick={() => {
-          
-          onToggleRulers();
-        }}
-        className={`w-11 h-11 flex-shrink-0 rounded-full flex items-center justify-center transition-colors ${
-          showRulers
-            ? "bg-landing-lime-mist text-landing-green-deep"
-            : "text-landing-muted hover:text-landing-ink hover:bg-landing-canvas"
-        }`}
-        title={showRulers ? "Ẩn thước đo CAD" : "Hiện thước đo CAD (mm)"}
-      >
-        <Ruler className="w-5 h-5" />
-      </button>
-
-      {/* Undo & Redo */}
-      <div className="flex flex-row lg:flex-col items-center gap-1 flex-shrink-0 lg:pt-1">
+      <Tooltip side="right" content={showRulers ? "Ẩn thước mm" : "Hiện thước mm"}>
         <button
           type="button"
-          disabled={!canUndo}
-          onClick={() => {
-            
-            if (onUndo) onUndo();
-          }}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas disabled:opacity-30 disabled:hover:bg-transparent transition"
-          title="Hoàn tác (Ctrl+Z)"
+          aria-pressed={showRulers}
+          aria-label="Thước đo mm"
+          onClick={onToggleRulers}
+          className={dockButton(showRulers)}
         >
-          <Undo2 className="w-4 h-4" />
+          <Ruler className="size-[18px]" strokeWidth={1.9} aria-hidden />
         </button>
+      </Tooltip>
 
-        <button
-          type="button"
-          disabled={!canRedo}
-          onClick={() => {
-            
-            if (onRedo) onRedo();
-          }}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-landing-muted hover:text-landing-ink hover:bg-landing-canvas disabled:opacity-30 disabled:hover:bg-transparent transition"
-          title="Làm lại (Ctrl+Y)"
-        >
-          <Redo2 className="w-4 h-4" />
-        </button>
-      </div>
+      {(onUndo || onRedo) && (
+        <>
+          <Tooltip side="right" content="Hoàn tác · Ctrl+Z">
+            <button type="button" aria-label="Hoàn tác" disabled={!canUndo} onClick={onUndo} className={dockButton(false)}>
+              <Undo2 className="size-[18px]" strokeWidth={1.9} aria-hidden />
+            </button>
+          </Tooltip>
+          <Tooltip side="right" content="Làm lại · Ctrl+Y">
+            <button type="button" aria-label="Làm lại" disabled={!canRedo} onClick={onRedo} className={dockButton(false)}>
+              <Redo2 className="size-[18px]" strokeWidth={1.9} aria-hidden />
+            </button>
+          </Tooltip>
+        </>
+      )}
     </div>
   );
 };

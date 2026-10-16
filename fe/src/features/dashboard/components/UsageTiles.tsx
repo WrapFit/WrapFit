@@ -13,7 +13,7 @@ const TILE = "flex min-h-[200px] flex-col justify-between gap-4 rounded-2xl bord
 /** Green while there is room, amber past 80 %, red past 95 %: the quota is about to block uploads. */
 function meterColor(percent: number): string {
   if (percent >= 95) return "bg-danger";
-  return percent >= 80 ? "bg-warning" : "bg-library-accent";
+  return percent >= 80 ? "bg-warning" : "bg-fpt-orange";
 }
 
 function Meter({ percent, label }: { percent: number; label: string }) {
@@ -68,7 +68,7 @@ export function StorageUsageTile() {
   return (
     <section aria-labelledby={titleId} className={TILE}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-library-accent-mist text-library-accent">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-fpt-orange-light text-fpt-orange-ink">
           <Cloud className="size-5" aria-hidden />
         </div>
         <span className="rounded-md bg-library-panel px-2 py-1 text-xs font-medium text-library-sub">
@@ -91,7 +91,7 @@ export function StorageUsageTile() {
       </div>
       <Link
         href={ROUTES.settings}
-        className="inline-flex min-h-[44px] items-center gap-1 self-start text-sm font-medium text-library-accent underline-offset-4 hover:underline"
+        className="inline-flex min-h-[44px] items-center gap-1 self-start text-sm font-medium text-fpt-orange-ink underline-offset-4 hover:underline"
       >
         Quản lý dung lượng
         <ArrowRight className="size-4" aria-hidden />
@@ -122,7 +122,7 @@ export function AiUsageTile() {
   return (
     <section aria-labelledby={titleId} className={TILE}>
       <div className="flex items-start justify-between gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-library-accent-mist text-library-accent">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-fpt-orange-light text-fpt-orange-ink">
           <Sparkles className="size-5" aria-hidden />
         </div>
         <span className="rounded-md bg-library-panel px-2 py-1 text-xs font-medium text-library-sub">

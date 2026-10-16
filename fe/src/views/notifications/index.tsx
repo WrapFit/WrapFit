@@ -58,7 +58,7 @@ const FILTERS: { value: Filter; label: string }[] = [
 const ICON_TONES: Record<Notice['tone'], string> = {
   red: 'bg-danger-bg text-danger-fg',
   amber: 'bg-warning-bg text-warning-fg',
-  green: 'bg-library-accent-mist text-library-accent',
+  green: 'bg-fpt-orange-light text-fpt-orange-ink',
   grey: 'bg-library-panel text-library-ink',
 };
 
@@ -200,7 +200,7 @@ function NotificationsScreen() {
                 <span className="mt-0.5 block text-sm leading-[1.6] text-library-sub">{notice.text}</span>
                 {notice.at && <span className="mt-1 block text-xs text-library-muted">{formatRelative(notice.at)}</span>}
               </span>
-              <span className="hidden shrink-0 items-center gap-1 self-center text-sm font-medium text-library-accent sm:inline-flex">
+              <span className="hidden shrink-0 items-center gap-1 self-center text-sm font-medium text-fpt-orange-ink sm:inline-flex">
                 {notice.action}
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </span>

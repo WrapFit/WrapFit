@@ -29,7 +29,7 @@ const EFFECTS: { value: ParticleEffect; label: string }[] = [
 ];
 
 const FIELD_CLASS =
-  "w-full px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-landing-green";
+  "w-full px-3 rounded-xl border border-landing-line bg-white text-sm text-landing-ink placeholder:text-landing-muted focus:outline-none focus:border-fpt-orange";
 
 interface UnboxingDialogProps {
   projectId: string;
@@ -173,7 +173,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                   key={effect.value}
                   className={`min-h-[44px] px-3 rounded-xl border text-xs font-semibold flex items-center justify-center text-center cursor-pointer transition ${
                     particleEffect === effect.value
-                      ? "border-landing-green bg-landing-lime-mist/70 text-landing-green"
+                      ? "border-fpt-orange bg-orange-50 text-fpt-orange"
                       : "border-landing-line text-landing-muted hover:border-landing-ink/30"
                   }`}
                 >
@@ -203,7 +203,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
             <button
               type="submit"
               disabled={!valid || saving}
-              className="min-h-[44px] px-5 rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold shadow-none transition disabled:opacity-50"
+              className="min-h-[44px] px-5 rounded-full bg-fpt-orange hover:bg-fpt-orange-dark text-white text-sm font-semibold shadow-xs transition disabled:opacity-50"
             >
               {saving ? "Đang lưu…" : config.data ? "Lưu thay đổi" : "Tạo mã QR"}
             </button>
@@ -234,7 +234,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               <a
                 href={unboxingQrDownloadUrl(projectId, "png")}
                 download
-                className="min-h-[44px] px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+                className="min-h-[44px] px-4 rounded-full bg-fpt-orange hover:bg-fpt-orange-dark text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs"
               >
                 <Download className="w-4 h-4" aria-hidden /> QR PNG
               </a>
