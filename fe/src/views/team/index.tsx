@@ -29,7 +29,7 @@ interface Member {
 }
 
 const MEMBERS: Member[] = [
-  { name: 'Bạn', kind: 'owner', access: 'Toàn quyền', scope: 'Mọi dự án, Brand kit, gói dịch vụ', lastActive: 'Đang hoạt động' },
+  { name: 'Bạn', kind: 'owner', access: 'Toàn quyền', scope: 'Mọi dự án, bộ nhận diện, gói dịch vụ', lastActive: 'Đang hoạt động' },
   { name: 'Studio Minh & Co.', kind: 'designer', access: 'Sửa thiết kế', scope: 'Hình in, hoa văn, chữ trên khuôn bế', lastActive: '2 giờ trước' },
   { name: 'In Bao Bì Sài Gòn Xanh', kind: 'print-shop', access: 'Tải file in', scope: 'PDF CMYK, DXF của dự án đã đạt FitCheck™', lastActive: 'Hôm qua' },
   { name: 'An Nguyễn', kind: 'reviewer', access: 'Xem & góp ý', scope: 'Xem 3D, bình luận trước khi in', lastActive: '3 ngày trước' },
@@ -43,7 +43,7 @@ const KIND = {
 } as const;
 
 const ACCESS = [
-  { name: 'Toàn quyền', text: 'Tạo, sửa, xoá dự án; quản lý Brand kit và gói dịch vụ.' },
+  { name: 'Toàn quyền', text: 'Tạo, sửa, xoá dự án; quản lý bộ nhận diện và gói dịch vụ.' },
   { name: 'Sửa thiết kế', text: 'Chỉnh hình in trên khuôn bế; không đổi kích thước hay xuất file.' },
   { name: 'Tải file in', text: 'Chỉ tải file in của dự án đạt FitCheck™, dành cho xưởng in.' },
   { name: 'Xem & góp ý', text: 'Xem khuôn bế, hộp 3D và để lại góp ý.' },

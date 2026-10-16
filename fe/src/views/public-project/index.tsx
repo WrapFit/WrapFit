@@ -161,7 +161,7 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
       celebrate();
       tactileAudio.playSuccessChime();
-      toast.show({ tone: "success", title: "Đã remix vào dự án của bạn", description: copy.title });
+      toast.show({ tone: "success", title: "Đã phối lại vào dự án của bạn", description: copy.title });
       router.push(ROUTES.editor(copy.id));
     },
     onError: (error) => {
@@ -172,11 +172,11 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
         void queryClient.invalidateQueries({ queryKey: key });
         toast.show({
           tone: "error",
-          title: "Không remix được",
-          description: "Tác giả không cho phép remix thiết kế này.",
+          title: "Không phối lại được",
+          description: "Tác giả không cho phép phối lại thiết kế này.",
         });
       } else {
-        toast.error(error, "Không remix được");
+        toast.error(error, "Không phối lại được");
       }
     },
   });
@@ -246,7 +246,7 @@ function ProjectWorkspace({ slug, project, viewerKnown }: { slug: string; projec
               className={primaryButton}
             >
               <GitFork className="size-4" aria-hidden />
-              {fork.isPending ? "Đang tạo bản remix…" : "Remix thiết kế này"}
+              {fork.isPending ? "Đang tạo bản phối lại…" : "Phối lại thiết kế này"}
             </button>
           )}
         </div>
@@ -390,7 +390,7 @@ function InfoPanel({ project }: { project: PublicProject }) {
         <p className="flex items-start gap-1.5 text-sm text-library-sub">
           <GitFork className="mt-0.5 size-4 shrink-0 text-library-muted" aria-hidden />
           <span>
-            Remix từ{" "}
+            Phối lại từ{" "}
             <Link href={ROUTES.publicProject(project.forkedFrom.slug)} className="font-medium text-fpt-orange-ink underline-offset-4 hover:underline">
               {project.forkedFrom.title}
             </Link>{" "}
@@ -426,7 +426,7 @@ function InfoPanel({ project }: { project: PublicProject }) {
           </Link>
         </p>
       ) : (
-        !project.allowFork && <p className="text-xs text-library-muted">Tác giả chưa bật remix cho thiết kế này.</p>
+        !project.allowFork && <p className="text-xs text-library-muted">Tác giả chưa cho phép phối lại thiết kế này.</p>
       )}
     </div>
   );

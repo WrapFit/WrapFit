@@ -19,9 +19,9 @@ const TIERS = [
 ];
 
 const STEPS = [
-  { title: "Đăng ký", text: "Gửi email và kênh của bạn (Facebook group, TikTok, lớp học, agency). Chúng tôi duyệt trong 3 ngày." },
+  { title: "Đăng ký", text: "Gửi email và kênh của bạn (nhóm Facebook, TikTok, lớp học, đơn vị thiết kế). Chúng tôi duyệt trong 3 ngày." },
   { title: "Nhận liên kết riêng", text: "Mỗi đối tác có một liên kết và mã giảm 10% cho tháng đầu của người được giới thiệu." },
-  { title: "Giới thiệu", text: "Chia sẻ với shop quà, học viên làm nến, khách hàng của agency." },
+  { title: "Giới thiệu", text: "Chia sẻ với shop quà, học viên làm nến, khách hàng của đơn vị thiết kế." },
   { title: "Nhận hoa hồng", text: "15% doanh thu trong 12 tháng đầu, chuyển khoản ngày 5 hằng tháng khi đạt từ 200.000đ." },
 ];
 
@@ -38,7 +38,7 @@ export default function AffiliatePage() {
       <PageHero
         title="Giới thiệu WrapFit"
         subtitle="nhận 15% hoa hồng trong 12 tháng."
-        lead="Dành cho agency thiết kế, người dạy làm nến – xà phòng – gốm, quản trị nhóm người bán handmade và KOC đồ thủ công."
+        lead="Dành cho đơn vị thiết kế, người dạy làm nến – xà phòng – gốm, quản trị nhóm người bán handmade và KOC đồ thủ công."
         actions={
           <>
             <a href="#dang-ky" className={PRIMARY_CTA}>
@@ -50,7 +50,7 @@ export default function AffiliatePage() {
           </>
         }
         aside={
-          <PhotoFrame image={PHOTOS.teaBags} className="aspect-[4/3] lg:aspect-[5/4]">
+          <PhotoFrame image={PHOTOS.kraftTwine} className="aspect-[4/3] lg:aspect-[5/4]">
             <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-white/95 p-5 shadow-soft-16 backdrop-blur sm:bottom-6 sm:left-6 sm:right-auto sm:w-72">
               <p className="flex items-center gap-2 text-sm font-semibold text-landing-muted">
                 <BadgePercent className="size-4 text-fpt-orange-ink" aria-hidden /> Mỗi shop dùng Gói Tháng
@@ -76,9 +76,9 @@ export default function AffiliatePage() {
       <Section title="Chương trình dành cho ai">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {[
-            { image: PHOTOS.kraftBags, title: "Cộng đồng người bán", text: "Quản trị nhóm Facebook, Zalo của chủ shop handmade, quà tặng." },
-            { image: PHOTOS.foil, title: "Người dạy nghề", text: "Lớp làm nến, xà phòng, gốm, bánh — học viên nào cũng cần hộp." },
-            { image: PHOTOS.designer, title: "Agency & freelancer", text: "Studio thiết kế nhận làm bao bì cho thương hiệu nhỏ." },
+            { image: PHOTOS.kraftTuck, title: "Cộng đồng người bán", text: "Quản trị nhóm Facebook, Zalo của chủ shop handmade, quà tặng." },
+            { image: PHOTOS.candleJars, title: "Người dạy nghề", text: "Lớp làm nến, xà phòng, gốm, bánh — học viên nào cũng cần hộp." },
+            { image: PHOTOS.designer, title: "Đơn vị thiết kế, người làm tự do", text: "Studio thiết kế nhận làm bao bì cho thương hiệu nhỏ." },
           ].map((item) => (
             <article key={item.title} className="overflow-hidden rounded-card bg-white ring-1 ring-landing-ink/10 lg:rounded-card-lg">
               <PhotoFrame image={item.image} className="aspect-[4/3] rounded-none lg:rounded-none" />
