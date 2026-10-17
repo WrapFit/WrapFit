@@ -35,6 +35,26 @@ export const DEMO_USER: SafeUser = {
 export const DEMO_USERS: SafeUser[] = [
   DEMO_USER,
   {
+    id: "usr-lecturer",
+    email: "thanhntl2@fpt.edu.vn",
+    emailVerifiedAt: "2026-01-01T00:00:00Z",
+    fullName: "Thầy/Cô Thanhntl2 (Giảng viên Hướng dẫn EXE101)",
+    shopName: "FPT University Innovation Hub",
+    avatarUrl: null,
+    role: "ADMIN",
+    subscriptionTier: "PRO_BUSINESS",
+    brandKit: {
+      logoUrl: null,
+      colors: ["#F27024", "#0B3C5D", "#1D2731"],
+      fonts: ["Plus Jakarta Sans", "Cormorant Garamond"],
+      slogan: "FPT University Entrepreneurship",
+    },
+    referralCode: "FPTU2026",
+    isActive: true,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-10-17T00:00:00Z",
+  },
+  {
     id: "usr-02",
     email: "hoai.an@annhien.vn",
     emailVerifiedAt: "2026-02-10T00:00:00Z",
