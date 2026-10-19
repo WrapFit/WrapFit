@@ -188,7 +188,7 @@ export function errorMessage(error: unknown): string {
       return error.messages.length ? error.messages.join("; ") : "Dữ liệu không hợp lệ.";
     case 401:
       return error.body?.path.endsWith("/auth/login")
-        ? "Email hoặc mật khẩu không đúng."
+        ? "Email hoặc mật khẩu không đúng, hoặc email này chưa được đăng ký."
         : "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.";
     case 403:
       // The only 403 of an upload request: the files already stored fill the quota of the subscription tier.

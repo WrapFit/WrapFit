@@ -15,10 +15,11 @@ import { googleSignInUrl, login, register } from "@/api/auth";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 import { ROUTES } from "@/constants";
-import { safeRedirect, useAuth } from "@/features/auth";
+import { ADMIN_HOME, afterSignInTarget, ONBOARDING_TOUR_ID, useAuth } from "@/features/auth";
 import { DEMO_USER, DEMO_USERS } from "@/features/dashboard/demoData";
-import { isApiError } from "@/services/api";
-import type { LoginRequest, RegisterRequest } from "@/types/api";
+import { useHydrated } from "@/hooks/dom";
+import { ApiError, isApiError } from "@/services/api";
+import type { LoginRequest, RegisterRequest, SafeUser } from "@/types/api";
 import { cn } from "@/utils/helpers";
 import { buttonClass } from "@/components/ui";
 import {
@@ -140,8 +141,9 @@ function AuthLoginScreen({
   params: Params;
 }) {
   const router = useRouter();
-  const { status, signedIn } = useAuth();
-  const redirectTarget = safeRedirect(params.get("redirect"));
+  const { status, signedIn, user: currentUser } = useAuth();
+  const hydrated = useHydrated();
+  const redirectParam = params.get("redirect");
   const googleError = messageFor(GOOGLE_ERRORS, params.get("error"));
   const notice = messageFor(NOTICES, params.get("notice"));
 
@@ -156,16 +158,17 @@ function AuthLoginScreen({
   const [leavingForGoogle, setLeavingForGoogle] = useState(false);
 
   const redirected = useRef(false);
-  const goToTarget = useCallback(() => {
+  const goToTarget = useCallback((user?: SafeUser | null) => {
     if (redirected.current) return;
     redirected.current = true;
-    router.replace(redirectTarget);
-  }, [redirectTarget, router]);
+    // First sign-in on this browser: the home page and its guided tour, not straight into the workspace.
+    router.replace(afterSignInTarget(redirectParam, user));
+  }, [redirectParam, router]);
 
   // A signed-in user has nothing to do here (also covers the session set by a successful login below).
   useEffect(() => {
-    if (status === "authenticated") goToTarget();
-  }, [status, goToTarget]);
+    if (status === "authenticated") goToTarget(currentUser);
+  }, [status, currentUser, goToTarget]);
 
   // Back from Google through the back/forward cache: the button must work again.
   useEffect(() => {
@@ -180,7 +183,8 @@ function AuthLoginScreen({
     mutationFn: (data: LoginRequest) => login(data),
     onSuccess: (session) => {
       signedIn(session.user);
-      goToTarget();
+      // Each role lands on its own area: administrators on /admin, everyone else on the workspace or the home tour.
+      goToTarget(session.user);
     },
     onError: (error, data) => {
       // Right password, address not verified yet: the "check your inbox" page offers to resend the email.
@@ -188,20 +192,18 @@ function AuthLoginScreen({
         router.push(withEmail(ROUTES.checkEmail, data.email));
         return;
       }
-      // Demo fallback: if backend is offline or returns error, authenticate smoothly
-      const isLecturer = data.email.toLowerCase().includes("thanhntl2");
-      const matchedUser = DEMO_USERS.find(
-        (u) => u.email.toLowerCase() === data.email.toLowerCase(),
-      );
-      const userToSign = matchedUser || {
-        ...DEMO_USER,
-        email: data.email || DEMO_USER.email,
-        fullName: isLecturer
-          ? "Thầy/Cô Thanhntl2 (Giảng viên Hướng dẫn)"
-          : data.email ? data.email.split("@")[0] : DEMO_USER.fullName,
-      };
-      signedIn(userToSign);
-      goToTarget();
+      // The API answered (wrong password, unknown or unverified account, rate limit…): that answer stands, the form
+      // shows it. Signing in anyway would let any address in without an account or a verified email.
+      const backendUnreachable = !(error instanceof ApiError) || error.status === 0 || error.status >= 500;
+      if (!backendUnreachable) return;
+      // Backend offline (demo without the API): only the demo accounts and the lecturer's account get in.
+      const email = data.email.toLowerCase();
+      const isLecturer = email.includes("thanhntl2");
+      const matchedUser = DEMO_USERS.find((u) => u.email.toLowerCase() === email);
+      if (!matchedUser && !isLecturer) return;
+      const offlineUser = matchedUser ?? { ...DEMO_USER, email: data.email, fullName: "Thầy/Cô Thanhntl2 (Giảng viên Hướng dẫn)" };
+      signedIn(offlineUser);
+      goToTarget(offlineUser);
     },
   });
 
@@ -282,7 +284,7 @@ function AuthLoginScreen({
   const signInWithGoogle = () => {
     setLeavingForGoogle(true);
     // A browser navigation, not fetch: the backend redirects to Google, then back here with the cookies set.
-    window.location.assign(googleSignInUrl(redirectTarget));
+    window.location.assign(googleSignInUrl(afterSignInTarget(redirectParam)));
   };
 
   return (
@@ -317,7 +319,7 @@ function AuthLoginScreen({
               </p>
             )}
 
-            {status === "authenticated" ? (
+            {hydrated && status === "authenticated" ? (
               <div
                 role="status"
                 className="mt-8 flex items-center gap-3 rounded-xl border border-landing-line bg-mist-50 px-4 py-3.5 text-sm"
@@ -470,10 +472,17 @@ function AuthLoginScreen({
                 <button
                   type="button"
                   onClick={() => {
+                    // Demo: always replay the onboarding, so the guided tour can be shown and tested every time.
+                    try {
+                      window.localStorage.removeItem(`wrapfit.tour.${ONBOARDING_TOUR_ID}`);
+                    } catch {
+                      // Storage blocked: the tour still starts, it just cannot be remembered.
+                    }
+                    redirected.current = true;
                     signedIn(DEMO_USER);
-                    goToTarget();
+                    router.replace(`${ROUTES.home}?welcome=1`);
                   }}
-                  className="relative mt-2.5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-fpt-orange/40 bg-fpt-orange-light/60 text-body-sm font-semibold text-fg transition-colors hover:bg-fpt-orange-light"
+                  className="mt-2.5 relative inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-fpt-orange/40 bg-fpt-orange-light/60 text-body-sm font-semibold text-fg transition-colors hover:bg-fpt-orange-light"
                 >
                   <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-fpt-orange text-caption font-bold text-white">★</span>
                   <span>Đăng nhập nhanh bản demo</span>

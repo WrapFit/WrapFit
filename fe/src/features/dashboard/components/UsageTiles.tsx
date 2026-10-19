@@ -27,8 +27,8 @@ function Meter({ percent, label }: { percent: number; label: string }) {
       className="h-2 w-full overflow-hidden rounded-full bg-library-panel"
     >
       <div
-        className={`h-full rounded-full transition-[width] duration-700 ${meterColor(percent)}`}
-        style={{ width: `${percent}%` }}
+        className={`h-full w-full origin-left rounded-full transition-transform duration-700 motion-reduce:transition-none ${meterColor(percent)}`}
+        style={{ transform: `scaleX(${percent / 100})` }}
       />
     </div>
   );

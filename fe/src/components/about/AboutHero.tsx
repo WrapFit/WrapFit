@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React from "react";
 import { Container, Reveal } from "@/components/landing";
 import { PHOTOS } from "@/features/site/photos";
@@ -48,11 +49,8 @@ export function AboutHero() {
 
             <div className="md:col-span-5 flex flex-col gap-3">
               <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line shadow-soft-8">
-                <img
-                  src={PHOTOS.giftHands.src}
-                  alt={PHOTOS.giftHands.alt}
-                  className="size-full object-cover"
-                />
+                {/* Above the fold: loaded first (priority), as AVIF/WebP at the column width. */}
+                <Image src={PHOTOS.giftHands.src} alt={PHOTOS.giftHands.alt} fill priority sizes="(min-width: 768px) 40vw, 100vw" className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
                   <span className="text-xs font-medium text-white">
                     Hộp vừa khít, món quà trọn vẹn

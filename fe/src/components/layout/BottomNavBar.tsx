@@ -1,16 +1,20 @@
 "use client";
 
 import React from "react";
+import { ViewTransition } from "@/components/common/ViewTransition";
 import Link from "next/link";
 import { ROUTES } from "@/constants";
 import { usePathname } from "next/navigation";
 import { useHydrated } from "@/hooks/dom";
-import { Home, FolderHeart, Box } from "lucide-react";
+import { Home, FolderHeart, Box, Shield } from "lucide-react";
 import { GoiMascot } from "@/components/common/GoiMascot";
+import { isRealAdmin, useAuth } from "@/features/auth";
 
 import { triggerSquishyClick } from "@/utils/animation/animeUtils";
 
 export const BottomNavBar: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = isRealAdmin(user);
   const routePath = usePathname();
   // The 404 page renders with another pathname on the server: tabs light up only once hydrated.
   const hydrated = useHydrated();
@@ -28,13 +32,17 @@ export const BottomNavBar: React.FC = () => {
   const isFullscreenStudio = routePath === "/editor" || (routePath.startsWith("/editor/") && !routePath.includes("step-"));
   // The intro is a full-screen 3D stage too, with its own stage dock at the bottom (under this bar otherwise).
   const isIntro = routePath.startsWith("/intro");
-  if (isFullscreenStudio || isIntro) return null;
+  // Hide completely on the admin console: admin console has its own dedicated navigation
+  const isAdminRoute = routePath.startsWith("/admin");
+  if (isFullscreenStudio || isIntro || isAdminRoute) return null;
 
   const isHome = pathname === "/";
   const isDashboard = pathname.startsWith("/dashboard");
+  const isAdminActive = pathname.startsWith("/admin");
   const isStudio = pathname.startsWith("/editor");
 
   return (
+    <ViewTransition name="bottom-nav">
     <nav
       className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[92vw] max-w-[360px] bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_10px_35px_-5px_rgba(30,86,160,0.18)] rounded-full px-3 py-1.5 flex items-center justify-between select-none"
       aria-label="Mobile Bottom Navigation"
@@ -53,19 +61,34 @@ export const BottomNavBar: React.FC = () => {
         <span className="text-caption font-semibold">Trang Chủ</span>
       </Link>
 
-      {/* 2. Projects Dashboard */}
-      <Link
-        href="/dashboard/projects"
-        onClick={handleTabClick}
-        className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
-          isDashboard
-            ? "bg-landing-green-night text-white shadow-tactile scale-105"
-            : "text-fg-muted hover:text-fpt-orange-ink"
-        }`}
-      >
-        <FolderHeart className="w-4 h-4" />
-        <span className="text-caption font-semibold">Dự Án</span>
-      </Link>
+      {/* 2. Admin Console for Admin, Projects for Makers */}
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          onClick={handleTabClick}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
+            isAdminActive
+              ? "bg-landing-green-night text-white shadow-tactile scale-105"
+              : "text-fg-muted hover:text-fpt-orange-ink"
+          }`}
+        >
+          <Shield className="w-4 h-4" />
+          <span className="text-caption font-semibold">Quản Trị</span>
+        </Link>
+      ) : (
+        <Link
+          href="/dashboard/projects"
+          onClick={handleTabClick}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
+            isDashboard
+              ? "bg-landing-green-night text-white shadow-tactile scale-105"
+              : "text-fg-muted hover:text-fpt-orange-ink"
+          }`}
+        >
+          <FolderHeart className="w-4 h-4" />
+          <span className="text-caption font-semibold">Dự Án</span>
+        </Link>
+      )}
 
       {/* 3. 2D/3D Studio */}
       <Link
@@ -98,5 +121,6 @@ export const BottomNavBar: React.FC = () => {
         <span className="text-caption font-bold text-fpt-orange-ink">Bé Gói</span>
       </button>
     </nav>
+    </ViewTransition>
   );
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowRight, Box, FileDown } from "lucide-react";
 import React from "react";
 import { DielineSketch } from "@/features/templates";
@@ -120,7 +121,7 @@ function StepArt({ art }: { art: (typeof STEPS)[number]["art"] }) {
       <div className={panel}>
         <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Thiết kế</p>
         <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-dashed border-dieline-crease bg-library-tile">
-          <img src={PHOTOS.candle.src} alt={PHOTOS.candle.alt} loading="lazy" className="size-full object-cover" />
+          <Image src={PHOTOS.candle.src} alt={PHOTOS.candle.alt} fill sizes="(min-width: 1024px) 360px, 90vw" className="object-cover" />
           <span className="absolute bottom-2 right-2 rounded bg-success-bg px-1.5 text-xs text-success-fg">FitCheck™ 100</span>
         </div>
       </div>

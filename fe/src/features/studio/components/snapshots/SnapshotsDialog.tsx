@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, History, RotateCcw, Trash2 } from "lucide-react";
 import { ApiError, createSnapshot, deleteSnapshot, listSnapshots, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
+import { Skeleton } from "@/components/ui";
 import { queryKeys } from "@/hooks/data";
 import type { ProjectDetail, SnapshotSummary } from "@/types/api";
 import { UnsavedChangesError } from "../../hooks/useProjectSync";
@@ -152,7 +153,20 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
       </form>
 
       {snapshots.isPending ? (
-        <p className="text-sm text-landing-muted">Đang tải các mốc…</p>
+        <ul className="space-y-2" aria-busy="true">
+          <li className="sr-only" role="status">
+            Đang tải các mốc…
+          </li>
+          {[0, 1, 2].map((row) => (
+            <li key={row} aria-hidden className="flex items-center gap-3 rounded-3xl border border-landing-line bg-white p-2.5">
+              <Skeleton className="h-12 w-16 rounded-xl" />
+              <span className="flex flex-1 flex-col gap-2">
+                <Skeleton shape="text" className="w-1/2" />
+                <Skeleton shape="text" className="h-3 w-2/3" />
+              </span>
+            </li>
+          ))}
+        </ul>
       ) : snapshots.error ? (
         <p className="text-sm text-landing-muted">
           Chưa tải được danh sách mốc.{" "}

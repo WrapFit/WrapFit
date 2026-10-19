@@ -147,7 +147,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             />
           </div>
 
-          <div className={`relative mx-4 flex-1 overflow-hidden rounded-squircle-md ${view === "3d" ? "bg-landing-canvas" : "bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
+          <div data-tour="s1-preview" className={`relative mx-4 flex-1 overflow-hidden rounded-squircle-md ${view === "3d" ? "bg-landing-canvas" : "bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
             {view === "3d" ? (
               <div className="absolute inset-0">
                 <Box3DView
@@ -221,7 +221,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             </StudioCard>
           )}
 
-          <button type="button" onClick={onNext} className={`${PRIMARY_PILL} w-full`}>
+          <button type="button" data-tour="studio-next" onClick={onNext} className={`${PRIMARY_PILL} w-full`}>
             Tiếp tục: kích thước
             <ArrowRight className="size-4" aria-hidden />
           </button>

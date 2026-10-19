@@ -5,13 +5,19 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
 import { ApiError, getProject, listBoxStructures } from "@/api";
-import { ErrorState, PageLoader, PRIMARY_BUTTON } from "@/components/common/StatusViews";
+import { ErrorState, PRIMARY_BUTTON } from "@/components/common/StatusViews";
 import { ROUTES } from "@/constants";
 import { RequireAuth } from "@/features/auth";
 import { queryKeys } from "@/hooks/data";
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import type { BoxStructure, ProjectDetail } from "@/types/api";
-import { StudioWorkspace, type RestoreNotice } from "./StudioWorkspace";
+import dynamic from "next/dynamic";
+import { loadStudioWorkspace } from "./lazy";
+import { StudioSkeleton } from "./StudioSkeleton";
+import type { RestoreNotice } from "./StudioWorkspace";
+
+// Code splitting: the 2D/3D editor loads in its own chunk, behind the studio skeleton.
+const StudioWorkspace = dynamic<React.ComponentProps<typeof import("./StudioWorkspace").StudioWorkspace>>(loadStudioWorkspace, { ssr: false, loading: () => <StudioSkeleton /> });
 
 /** Route id of the offline demo: no sign-in, nothing saved (docs/12 D5). */
 const DEMO_ID = "demo";
@@ -33,7 +39,7 @@ const FALLBACK_STRUCTURES: BoxStructure[] = BOX_STRUCTURES.map((s) => ({
 /** `/editor/[id]`: the studio of one project, or the offline demo at `/editor/demo`. */
 export default function EditorPage() {
   return (
-    <Suspense fallback={<PageLoader label="Đang mở Studio 3D…" />}>
+    <Suspense fallback={<StudioSkeleton />}>
       <EditorRouteHandler />
     </Suspense>
   );
@@ -125,7 +131,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
       </main>
     );
   }
-  if (!session) return <PageLoader label="Đang mở dự án…" />;
+  if (!session) return <StudioSkeleton label="Đang mở dự án…" />;
 
   return (
     <StudioWorkspace
@@ -134,7 +140,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
       structures={structures.data}
       onReload={() => void reload()}
       reloading={reloading}
-      onReplaced={(replaced, notice) =>
+      onReplaced={(replaced: ProjectDetail, notice: RestoreNotice | null) =>
         setSession((current) => ({ project: replaced, nonce: (current?.nonce ?? 0) + 1, notice }))
       }
       notice={session.notice}

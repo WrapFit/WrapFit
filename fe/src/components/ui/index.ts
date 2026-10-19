@@ -25,3 +25,5 @@ export * from "./search-bar";
 export * from "./date-picker";
 export * from "./data-table";
 export * from "./select-menu";
+export * from "./tour";
+export * from "./virtual-list";

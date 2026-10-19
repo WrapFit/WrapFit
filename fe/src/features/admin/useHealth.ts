@@ -9,6 +9,7 @@ export function useHealthDetails() {
   return useQuery({
     queryKey: queryKeys.admin.health,
     queryFn: getHealthDetails,
+    staleTime: 60_000,
     refetchInterval: 30_000,
   });
 }

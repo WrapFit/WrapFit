@@ -21,9 +21,9 @@ export const ANCHORS = {
 } as const;
 
 export const HERO = {
-  slogan: "Make Every Present, Present.",
-  title: "Make Every Present,",
-  highlight: "Present.",
+  slogan: "Mỗi món quà, trọn vẹn tâm ý.",
+  title: "Mỗi món quà,",
+  highlight: "Trọn vẹn tâm ý.",
   cta: { label: "Tất cả mẫu hộp", href: ROUTES.templates },
 };
 

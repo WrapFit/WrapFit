@@ -197,7 +197,7 @@ export function Step6ReviewExport({
 
         {/* Report */}
         <div className="flex flex-col gap-4">
-          <StudioCard className={cn("p-5", passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
+          <StudioCard data-tour="s6-status" className={cn("p-5", passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
@@ -219,7 +219,7 @@ export function Step6ReviewExport({
             )}
           </StudioCard>
 
-          <StudioCard className="p-5">
+          <StudioCard data-tour="s6-checks" className="p-5">
             <CardTitle action={<span className="text-xs text-landing-muted">{RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code))).length}/{RULES.length} đạt</span>}>
               Quy tắc sản xuất
             </CardTitle>
@@ -256,7 +256,7 @@ export function Step6ReviewExport({
             )}
           </StudioCard>
 
-          <StudioCard className="bg-stone-900 p-5 text-white">
+          <StudioCard data-tour="s6-qr" className="bg-stone-900 p-5 text-white">
             <p className="flex items-center gap-2 font-landing-heading text-lg font-bold">
               <QrCode className="size-5 text-fpt-orange" aria-hidden />
               Mã QR mở hộp
@@ -284,7 +284,7 @@ export function Step6ReviewExport({
           </>
         }
         next={
-          <button type="button" onClick={onExport} disabled={!passed} title={passed ? undefined : "Sửa các lỗi FitCheck trước khi xuất"} className={PRIMARY_PILL}>
+          <button type="button" data-tour="s6-export" onClick={onExport} disabled={!passed} title={passed ? undefined : "Sửa các lỗi FitCheck trước khi xuất"} className={PRIMARY_PILL}>
             <Download className="size-4" aria-hidden />
             Xuất file in
           </button>

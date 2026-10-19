@@ -18,7 +18,7 @@ import {
 } from "@/api/projects";
 import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
-import type { Collection, ProjectListQuery, ProjectStatus, ProjectSummary } from "@/types/api";
+import type { Collection, Paginated, ProjectListQuery, ProjectStatus, ProjectSummary } from "@/types/api";
 import { showActionError } from "./errors";
 import { TRASH_RETENTION_DAYS } from "./format";
 
@@ -78,6 +78,53 @@ export interface StatusChange {
   status: ProjectStatus;
 }
 
+type ListSnapshot = [readonly unknown[], Paginated<ProjectSummary> | undefined][];
+
+/**
+ * Optimistic update of every cached project list: the project leaves the lists of its old status (and its folder
+ * when it moves) at once, and the counts follow. Returns what to put back if the API refuses.
+ */
+async function applyToLists(
+  queryClient: QueryClient,
+  project: ProjectSummary,
+  change: { status?: ProjectStatus; collectionId?: string | null },
+): Promise<ListSnapshot> {
+  // A list request still running would land after this and bring the project back.
+  await queryClient.cancelQueries({ queryKey: queryKeys.projects.lists() });
+  const snapshot = queryClient.getQueriesData<Paginated<ProjectSummary>>({ queryKey: queryKeys.projects.lists() });
+  const fromStatus = project.status;
+  for (const [key, page] of snapshot) {
+    if (!page?.items) continue;
+    const query = (key[2] ?? {}) as ProjectListQuery;
+    const listStatus = query.status ?? "ACTIVE";
+    const inList = page.items.some((item) => item.id === project.id);
+    let total = page.meta.total;
+    let items = page.items;
+    if (change.status && change.status !== fromStatus) {
+      if (listStatus === fromStatus && (inList || page.meta.limit === 1)) total -= 1;
+      if (listStatus === change.status && !query.collectionId && !query.q) total += 1;
+      if (inList) items = items.filter((item) => item.id !== project.id);
+    } else if (change.collectionId !== undefined && query.collectionId) {
+      const target = change.collectionId ?? "none";
+      if (inList && query.collectionId !== target) {
+        items = items.filter((item) => item.id !== project.id);
+        total -= 1;
+      }
+    }
+    if (items === page.items && total === page.meta.total) continue;
+    total = Math.max(0, total);
+    queryClient.setQueryData<Paginated<ProjectSummary>>(key, {
+      items,
+      meta: { ...page.meta, total, totalPages: Math.max(1, Math.ceil(total / Math.max(1, page.meta.limit))) },
+    });
+  }
+  return snapshot;
+}
+
+function restoreLists(queryClient: QueryClient, snapshot: ListSnapshot | undefined) {
+  snapshot?.forEach(([key, page]) => queryClient.setQueryData(key, page));
+}
+
 function statusToast({ project, status }: StatusChange) {
   const name = `“${project.title}”`;
   if (status === "ARCHIVED") return { title: "Đã lưu trữ dự án", description: `${name} nằm trong tab Lưu trữ.` };
@@ -105,8 +152,13 @@ export function useChangeProjectStatus() {
   return useMutation({
     mutationKey: STATUS_KEY,
     mutationFn: ({ project, status }: StatusChange) => changeProjectStatus(project.id, status),
+    // Optimistic UI: the card leaves its tab at once; it comes back if the API refuses.
+    onMutate: async ({ project, status }) => ({ snapshot: await applyToLists(queryClient, project, { status }) }),
     onSuccess: (_, change) => toast.show({ tone: "success", ...statusToast(change) }),
-    onError: (error, change) => showActionError(toast, error, statusErrorTitle(change), STALE_PROJECT),
+    onError: (error, change, context) => {
+      restoreLists(queryClient, context?.snapshot);
+      showActionError(toast, error, statusErrorTitle(change), STALE_PROJECT);
+    },
     onSettled: () => refreshAfterChange(queryClient),
   });
 }
@@ -163,6 +215,9 @@ export function useMoveProject() {
     mutationKey: MOVE_KEY,
     mutationFn: ({ project, collection }: ProjectMove) =>
       updateProject(project.id, { collectionId: collection?.id ?? null }),
+    onMutate: async ({ project, collection }) => ({
+      snapshot: await applyToLists(queryClient, project, { collectionId: collection?.id ?? null }),
+    }),
     onSuccess: (_, { project, collection }) =>
       toast.show({
         tone: "success",
@@ -171,7 +226,10 @@ export function useMoveProject() {
           ? `“${project.title}” giờ nằm trong thư mục “${collection.title}”.`
           : `“${project.title}” không còn thuộc thư mục nào.`,
       }),
-    onError: (error) => showActionError(toast, error, "Không chuyển được thư mục", STALE_PROJECT),
+    onError: (error, _, context) => {
+      restoreLists(queryClient, context?.snapshot);
+      showActionError(toast, error, "Không chuyển được thư mục", STALE_PROJECT);
+    },
     onSettled: () => refreshAfterChange(queryClient),
   });
 }
