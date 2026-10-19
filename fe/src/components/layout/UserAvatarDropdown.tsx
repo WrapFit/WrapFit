@@ -4,9 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { ROUTES } from '@/constants';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAuth } from '@/features/auth';
+import { isRealAdmin, useAuth } from '@/features/auth';
 import { displayName, initialsOf, loginHref, ROLE_LABELS, TIER_LABELS } from './account';
 import { Icon } from "@/components/ui";
+import { useHydrated } from '@/hooks/dom';
 
 export interface UserAvatarDropdownProps {
   /** Overrides of the signed-in user's data; by default everything comes from `useAuth()`. */
@@ -34,7 +35,10 @@ export function UserAvatarDropdown({
   className = '',
   labelClassName = 'hidden lg:flex',
 }: UserAvatarDropdownProps) {
-  const { user, status, logout } = useAuth();
+  const { user: authUser, status: authStatus, logout } = useAuth();
+  const hydrated = useHydrated();
+  const user = hydrated ? authUser : null;
+  const status = hydrated ? authStatus : 'loading';
   const [isOpen, setIsOpen] = useState(false);
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -103,7 +107,8 @@ export function UserAvatarDropdown({
   const avatarUrl = avatarOverride === undefined ? user.avatarUrl : avatarOverride;
   // Falls back to the initials when the image cannot be loaded (a new URL is tried again).
   const imageUrl = avatarUrl && failedImage !== avatarUrl ? avatarUrl : null;
-  const isAdmin = user.role === 'ADMIN';
+  // Real administrators get the admin menu only; the demo account (ADMIN role for graders) keeps the maker menu.
+  const isAdmin = isRealAdmin(user);
   const initials = initialsOf(name);
 
   const handleLogout = async () => {
@@ -196,8 +201,46 @@ export function UserAvatarDropdown({
             </div>
           </div>
 
-          {/* Group 1: User Workspaces */}
-          <div className="space-y-0.5 py-1 text-sm font-medium">
+          {isAdmin ? (
+            /* Administrator: the console and its main pages, nothing of the maker workspace. */
+            <div className="space-y-0.5 py-1 text-sm font-medium">
+            <Link
+              href="/admin"
+              onClick={() => setIsOpen(false)}
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
+            >
+              <Icon name="shield_person" className="size-[18px] text-fg-muted" />
+              <span>Bảng điều khiển quản trị</span>
+            </Link>
+            <Link
+              href="/admin/accounts"
+              onClick={() => setIsOpen(false)}
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
+            >
+              <Icon name="manage_accounts" className="size-[18px] text-fg-muted" />
+              <span>Tài khoản người dùng</span>
+            </Link>
+            <Link
+              href="/admin/print-shops"
+              onClick={() => setIsOpen(false)}
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
+            >
+              <Icon name="devices" className="size-[18px] text-fg-muted" />
+              <span>Xưởng in</span>
+            </Link>
+            <Link
+              href="/admin/revenue"
+              onClick={() => setIsOpen(false)}
+              className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
+            >
+              <Icon name="receipt_long" className="size-[18px] text-fg-muted" />
+              <span>Doanh thu</span>
+            </Link>
+            </div>
+          ) : (
+            <>
+              {/* Group 1: User Workspaces */}
+              <div className="space-y-0.5 py-1 text-sm font-medium">
             <Link
               href="/dashboard/projects"
               onClick={() => setIsOpen(false)}
@@ -206,7 +249,6 @@ export function UserAvatarDropdown({
               <Icon name="folder_special" className="size-[18px] text-fg-muted" />
               <span>Dự án</span>
             </Link>
-
             <Link
               href="/dashboard/orders"
               onClick={() => setIsOpen(false)}
@@ -215,7 +257,6 @@ export function UserAvatarDropdown({
               <Icon name="receipt_long" className="size-[18px] text-fg-muted" />
               <span>Đơn hàng</span>
             </Link>
-
             <Link
               href="/dashboard/brand-kit"
               onClick={() => setIsOpen(false)}
@@ -224,7 +265,6 @@ export function UserAvatarDropdown({
               <Icon name="palette" className="size-[18px] text-fg-muted" />
               <span>Bộ nhận diện</span>
             </Link>
-
             <Link
               href="/dashboard/specs"
               onClick={() => setIsOpen(false)}
@@ -233,32 +273,23 @@ export function UserAvatarDropdown({
               <Icon name="architecture" className="size-[18px] text-fg-muted" />
               <span>Quy chuẩn hộp</span>
             </Link>
-          </div>
+              </div>
 
-          <div className="h-px bg-line/60 my-1.5" />
+              <div className="h-px bg-line/60 my-1.5" />
 
-          {/* Group 2: Quick Jump to 3D Studio & Admin */}
-          <div className="space-y-0.5 py-1 text-sm font-medium">
+              {/* Group 2: Quick Jump to 3D Studio */}
+              <div className="space-y-0.5 py-1 text-sm font-medium">
             <Link
               href={ROUTES.editorNew}
               onClick={() => setIsOpen(false)}
               className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >
-                <Icon name="view_in_ar" className="size-[18px] text-fg-muted" />
-                <span>Mở Studio</span>
+              <Icon name="view_in_ar" className="size-[18px] text-fg-muted" />
+              <span>Mở Studio</span>
             </Link>
-
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={() => setIsOpen(false)}
-                className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
-              >
-                  <Icon name="shield_person" className="size-[18px] text-fg-muted" />
-                  <span>Quản trị</span>
-              </Link>
-            )}
-          </div>
+              </div>
+            </>
+          )}
 
           <div className="h-px bg-line/60 my-1.5" />
 
