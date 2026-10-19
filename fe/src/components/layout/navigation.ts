@@ -30,8 +30,8 @@ export const RESOURCE_LINKS: NavLink[] = [
   { label: "Tính năng", href: "/features", description: "Khuôn bế, hộp 3D, FitCheck™, file in tách lớp" },
   { label: "Về chúng tôi", href: ROUTES.about, description: "Hành trình và đội ngũ EXE101 đứng sau WrapFit" },
   { label: "Trung tâm hỗ trợ", href: "/support", description: "Câu trả lời về kích thước, FitCheck™, file in" },
-  { label: "Liên hệ & Tư vấn", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
-  { label: "Bảng giá", href: "/pricing", description: "Gói Free, Starter và Pro Business" },
+  { label: "Liên hệ", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
+  { label: "Bảng giá", href: "/pricing", description: "Gói Miễn phí, Gói Tháng và Doanh Nghiệp" },
   { label: "Thiết kế cộng đồng", href: `${ROUTES.templates}?tab=community`, description: "Thiết kế công khai đạt FitCheck™ từ 90 điểm" },
   { label: "Đội ngũ & xưởng in", href: "/team", description: "Thành viên, quyền và xưởng in đối tác" },
 ];
@@ -48,10 +48,10 @@ export const COMPANY_LINKS: NavLink[] = [
 export const LEGAL_LINKS: NavLink[] = [
   { label: "Quyền riêng tư", href: "/legal/privacy" },
   { label: "Điều khoản", href: "/legal/terms" },
-  { label: "Cookie", href: "/legal/cookies" },
+  { label: "Chính sách cookie", href: "/legal/cookies" },
   { label: "Bảo mật", href: "/security" },
   { label: "Trạng thái hệ thống", href: "/status" },
-  { label: "Design system", href: "/design-system" },
+  { label: "Hệ thống thiết kế", href: "/design-system" },
 ];
 
 export const INDUSTRY_LINKS: NavLink[] = [
@@ -67,7 +67,7 @@ export function structureLinks(structures: BoxStructure[] | undefined): NavLink[
       href: `${ROUTES.templates}?structure=${structure.id}`,
       description: structure.description ?? undefined,
     })),
-    { label: "Tất cả mẫu hộp", href: ROUTES.templates, description: "Mẫu WrapFit Curated và thiết kế cộng đồng" },
+    { label: "Tất cả mẫu hộp", href: ROUTES.templates, description: "Mẫu tuyển chọn và thiết kế cộng đồng" },
   ];
 }
 

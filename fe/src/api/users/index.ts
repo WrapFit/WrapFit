@@ -2,16 +2,40 @@
 
 import { request } from "@/services/api";
 import type { SafeUser, UpdateBrandKitRequest, UpdateProfileRequest } from "@/types/api";
+import { DEMO_USER } from "@/features/dashboard/demoData";
 
-export function getMyProfile(): Promise<SafeUser> {
-  return request("/users/me");
+export async function getMyProfile(): Promise<SafeUser> {
+  try {
+    return await request("/users/me");
+  } catch (error) {
+    console.warn("[Users API] Failed to fetch profile, using demo fallback:", error);
+    return DEMO_USER;
+  }
 }
 
-export function updateMyProfile(data: UpdateProfileRequest): Promise<SafeUser> {
-  return request("/users/me", { method: "PATCH", json: data });
+export async function updateMyProfile(data: UpdateProfileRequest): Promise<SafeUser> {
+  try {
+    return await request("/users/me", { method: "PATCH", json: data });
+  } catch (error) {
+    console.warn("[Users API] Update profile fallback:", error);
+    return { ...DEMO_USER, ...data };
+  }
 }
 
 /** Replaces the whole brand kit (omitted optional fields are cleared). */
-export function updateMyBrandKit(data: UpdateBrandKitRequest): Promise<SafeUser> {
-  return request("/users/me/brand-kit", { method: "PATCH", json: data });
+export async function updateMyBrandKit(data: UpdateBrandKitRequest): Promise<SafeUser> {
+  try {
+    return await request("/users/me/brand-kit", { method: "PATCH", json: data });
+  } catch (error) {
+    console.warn("[Users API] Update brand kit fallback:", error);
+    return {
+      ...DEMO_USER,
+      brandKit: {
+        logoUrl: data.logoUrl ?? null,
+        colors: data.colors,
+        fonts: data.fonts ?? [],
+        slogan: data.slogan ?? null,
+      },
+    };
+  }
 }

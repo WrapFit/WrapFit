@@ -5,6 +5,7 @@ import { animate, stagger } from "animejs";
 import { Sparkles, ArrowRight, SkipForward, Layers } from "lucide-react";
 import { InteractiveFoldingBox3D } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { GoiMascot } from "@/components/common/GoiMascot";
+import { WrapFitMark } from "@/components/layout/WrapFitMark";
 
 
 interface BlueprintIntroProps {
@@ -79,13 +80,11 @@ export const BlueprintIntro: React.FC<BlueprintIntroProps> = ({ onComplete }) =>
       {/* Top Header Bar */}
       <div className="w-full max-w-5xl flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
-          <img
-            src="/branding/wrapfit-logo.png"
-            alt="WrapFit Logo"
-            className="h-10 w-auto object-contain bg-white/95 p-1 rounded-2xl shadow-md"
-          />
+          <span className="flex size-11 items-center justify-center rounded-2xl bg-white/95 shadow-md">
+            <WrapFitMark height={30} />
+          </span>
           <div>
-            <span className="font-serif font-bold text-lg tracking-wide text-white">
+            <span className="font-landing-heading font-bold text-lg tracking-wide text-white">
               WrapFit CAD
             </span>
             <span className="block text-cad-spec-micro font-mono text-cyan-400">

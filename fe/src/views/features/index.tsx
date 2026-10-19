@@ -57,7 +57,7 @@ const TRACKS = [
   {
     title: "Mới bắt đầu bán quà",
     who: "Người bán một mình hoặc chuẩn bị ra mắt — 65% người trả lời khảo sát",
-    image: PHOTOS.candleBox,
+    image: PHOTOS.candle,
     price: `Miễn phí · ${formatVnd(PLANS.PAY_PER_EXPORT.price.perExport ?? 19_000)} mỗi lần xuất file`,
     points: ["Nhập kích thước món quà, có khuôn ngay", "Xem hộp 3D trước khi in", "PDF A4/A3 có dấu xén để in và cắt tại nhà", "In 1 hộp mẫu trước khi đặt 20–50 hộp"],
     href: "/editor/demo",
@@ -66,9 +66,9 @@ const TRACKS = [
   {
     title: "Thương hiệu đang lớn",
     who: "Nhóm 2–3 người đã có logo — 35% người trả lời khảo sát",
-    image: PHOTOS.skincare,
+    image: PHOTOS.cosmetics,
     price: `${formatVnd(PLANS.STARTER.price.monthly)}/tháng · xuất file không giới hạn`,
-    points: ["Brand Kit: logo, màu, phông chữ dùng lại cho mọi hộp", "FitCheck™ trước mỗi lần gửi xưởng", "PDF CMYK tách lớp, SVG, DXF cho máy cắt", "Đặt in mẫu qua xưởng đối tác"],
+    points: ["Bộ nhận diện: logo, màu, phông chữ dùng lại cho mọi hộp", "FitCheck™ trước mỗi lần gửi xưởng", "PDF CMYK tách lớp, SVG, DXF cho máy cắt", "Đặt in mẫu qua xưởng đối tác"],
     href: "/pricing",
     cta: "Xem Gói Tháng",
   },
@@ -91,7 +91,7 @@ export default function FeaturesPage() {
             </Link>
           </>
         }
-        image={{ ...PHOTOS.designer, caption: "Studio WrapFit: khuôn 2D và hộp 3D cạnh nhau, cập nhật theo từng milimét." }}
+        image={{ ...PHOTOS.designer, caption: "Khuôn 2D và hộp 3D cạnh nhau." }}
       />
 
       <Section title="Tính năng chính" lead="Bốn cấu trúc hộp quà, một quy trình từ đo đến in.">
@@ -145,7 +145,7 @@ export default function FeaturesPage() {
             visual={photoFill(PHOTOS.offset)}
           />
           <Tile
-            title="Hoa văn AI & Brand Kit"
+            title="Hoa văn AI & bộ nhận diện"
             text="Gõ phong cách (Tết, pastel, vintage) để có hoa văn lặp; lưu logo, màu và phông của cửa hàng để dùng lại."
             proof={{ value: "67%", text: "thấy hoa văn AI hữu ích" }}
             href="/templates"
@@ -159,7 +159,7 @@ export default function FeaturesPage() {
             text="In mã dưới đáy hộp: người nhận quét để mở chiếc hộp 3D cùng lời chúc và hiệu ứng bạn chọn."
             href="/unbox"
             cta="Thử mở một hộp"
-            visual={photoFill(PHOTOS.tetGift)}
+            visual={photoFill(PHOTOS.giftHands)}
           />
           <Tile
             title="In 1 hộp mẫu qua xưởng đối tác"
@@ -167,7 +167,7 @@ export default function FeaturesPage() {
             proof={{ value: "90,8%", text: "muốn có hộp mẫu thật" }}
             href="/cart"
             cta="Mở giỏ in mẫu"
-            visual={photoFill(PHOTOS.inspection)}
+            visual={photoFill(PHOTOS.kraftDrawer)}
           />
         </div>
       </Section>

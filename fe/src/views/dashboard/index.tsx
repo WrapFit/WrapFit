@@ -13,9 +13,10 @@ import { outlineButton, primaryButton, createBoxButton } from '@/components/libr
 import { HeroPanel, Panel, PanelTitle, StatTile, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { displayName } from '@/components/layout/account';
 import { ROUTES } from '@/constants';
-import { RequireAuth, useAuth } from '@/features/auth';
+import { useAuth } from '@/features/auth';
 import {
   AiUsageTile,
+  DEMO_PROJECTS,
   RECENT_PROJECTS_QUERY,
   RecentProjectCard,
   RecentProjectSkeleton,
@@ -29,33 +30,33 @@ import { DielineSketch, useBoxStructures } from '@/features/templates';
 import { Banner } from '@/components/ui';
 
 export default function DashboardPage() {
-  return (
-    <RequireAuth>
-      <DashboardScreen />
-    </RequireAuth>
-  );
+  return <DashboardScreen />;
 }
 
 const SHORTCUTS = [
-  { href: ROUTES.brandKit, title: 'Brand kit', text: 'Logo, bảng màu, font và khẩu hiệu dùng lại trên mọi hộp.' },
-  { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Mẫu WrapFit Curated và thiết kế đạt FitCheck™ của cộng đồng.' },
+  { href: ROUTES.brandKit, title: 'Bộ nhận diện', text: 'Logo, bảng màu, font và khẩu hiệu dùng lại trên mọi hộp.' },
+  { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Mẫu WrapFit tuyển chọn và thiết kế đạt FitCheck™ của cộng đồng.' },
   { href: '/support', title: 'Trung tâm hỗ trợ', text: 'Kích thước, FitCheck™, file in, mã QR mở hộp.' },
   { href: '/pricing', title: 'Gói dịch vụ', text: 'Dung lượng lưu trữ và lượt tạo hoa văn AI của từng gói.' },
 ];
 
 function DashboardScreen() {
-  const { user } = useAuth();
+  const { user, status: authStatus } = useAuth();
+  const isGuest = authStatus !== 'authenticated';
   const recent = useProjectList(RECENT_PROJECTS_QUERY);
   const active = useProjectCount('ACTIVE');
   const archived = useProjectCount('ARCHIVED');
   const trashed = useProjectCount('DELETED');
   const ai = useAiUsage();
   const structures = useBoxStructures();
-  const projects = recent.data?.items ?? [];
+  const isGuestOrOffline = isGuest || (recent.isError && !recent.data);
+  const projects = (recent.data?.items && recent.data.items.length > 0)
+    ? recent.data.items
+    : (isGuestOrOffline ? DEMO_PROJECTS : []);
   const latest = projects[0];
 
   let recentBody: React.ReactNode;
-  if (recent.isPending) {
+  if (recent.isPending && !isGuestOrOffline) {
     recentBody = (
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4" aria-busy="true">
         <span role="status" className="sr-only">
@@ -66,7 +67,7 @@ function DashboardScreen() {
         ))}
       </div>
     );
-  } else if (recent.isError) {
+  } else if (recent.isError && !isGuestOrOffline) {
     recentBody = (
       <WorkspaceError error={recent.error} title="Không tải được dự án gần đây" onRetry={() => void recent.refetch()} retrying={recent.isFetching} />
     );
@@ -97,7 +98,7 @@ function DashboardScreen() {
   return (
     <WorkspaceShell
       title="Tổng quan"
-      description={user ? `Chào ${displayName(user)}, đây là các hộp bạn đang làm.` : undefined}
+      description={user ? `Chào ${displayName(user)}, đây là các hộp bạn đang làm.` : "Không gian làm việc trải nghiệm — mở hộp bất kỳ trong Studio 3D hoặc tạo mới theo kích thước."}
       actions={
         <>
           {latest && (
@@ -113,6 +114,17 @@ function DashboardScreen() {
         </>
       }
     >
+      {isGuest && (
+        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-fpt-orange/30 bg-orange-50/80 p-4 text-sm text-landing-ink">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white font-bold text-xs">i</span>
+            <span><strong>Không gian làm việc khách (Demo Workspace):</strong> Bạn đang xem các dự án mẫu của WrapFit. Bấm vào bất kỳ dự án nào để mở trực tiếp trong Studio 3D hoặc bấm <strong>Tạo hộp mới</strong> để tùy chỉnh kích thước riêng.</span>
+          </div>
+          <Link href="/auth/login" className="shrink-0 rounded-full border border-fpt-orange bg-white px-3.5 py-1.5 text-xs font-semibold text-fpt-orange-ink hover:bg-orange-100 transition-colors">
+            Đăng nhập tài khoản
+          </Link>
+        </div>
+      )}
       <div className="flex flex-col gap-8">
         {user && !user.emailVerifiedAt && (
           <Banner

@@ -53,7 +53,12 @@ export function ProjectTile({ project, children }: { project: ProjectSummary; ch
     <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-library-ink bg-library-tile">
       <div className="absolute inset-0 grid grid-cols-2">
         <div className="flex items-center justify-center p-4 pr-2">
-          <DielineSketch structure={project.template.id} dimensions={project.dimensions} className="max-h-full w-full" />
+          <DielineSketch
+            structure={project.template.id}
+            dimensions={project.dimensions}
+            paper={project.materialSpec?.type === "kraft" ? "#EFE7DC" : project.materialSpec?.type === "duplex" ? "#F5F3EF" : "#FFFFFF"}
+            className="max-h-full w-full"
+          />
         </div>
         <div className="flex items-center justify-center p-3 pl-1 pt-9">
           <ProjectThumb project={project} className="h-full w-full object-contain" />
@@ -65,7 +70,16 @@ export function ProjectTile({ project, children }: { project: ProjectSummary; ch
         </li>
         {project.status === "ARCHIVED" && <li className="rounded-md bg-white px-1.5 py-1.5 text-xs leading-3 text-library-muted">Lưu trữ</li>}
       </ul>
-      <span className="absolute bottom-3 left-3 rounded-md bg-white px-1.5 py-1 font-mono text-cad-spec-micro text-library-sub">{dimensionsLabel(project)}</span>
+      <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-md bg-white/95 px-2 py-1 font-mono text-cad-spec-micro text-library-sub border border-stone-200/80 shadow-xs backdrop-blur-sm">
+        {project.color && (
+          <span
+            aria-hidden
+            className="size-2.5 shrink-0 rounded-full border border-black/20"
+            style={{ backgroundColor: project.color }}
+          />
+        )}
+        <span>{dimensionsLabel(project)}</span>
+      </div>
       {children}
     </div>
   );
@@ -142,7 +156,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
               href={ROUTES.editor(project.id)}
               aria-disabled={busy}
               tabIndex={busy ? -1 : undefined}
-              className={cn(BUTTON, "flex-1 border-transparent bg-fpt-orange text-white hover:bg-action-hover", busy && "pointer-events-none")}
+              className={cn(BUTTON, "flex-1 border-transparent bg-fg text-fg-inverse hover:bg-fg/90", busy && "pointer-events-none")}
             >
               <Box className="size-4" aria-hidden />
               Mở studio

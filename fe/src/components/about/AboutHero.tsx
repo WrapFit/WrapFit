@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Container, Reveal } from "@/components/landing";
+import { PHOTOS } from "@/features/site/photos";
 
 export function AboutHero() {
   return (
@@ -15,10 +16,7 @@ export function AboutHero() {
             </h1>
 
             <p className="mt-5 text-base sm:text-xl leading-relaxed text-landing-muted max-w-2xl">
-              Chúng tôi bắt đầu WrapFit với một niềm tin giản dị:{" "}
-              <strong className="text-fg font-semibold">
-                &ldquo;Món quà là thứ mang đậm dấu ấn cá nhân. Tại sao chiếc hộp bên ngoài lại phải rập khuôn công nghiệp?&rdquo;
-              </strong>
+              Món quà mang dấu ấn riêng, chiếc hộp cũng vậy.
             </p>
           </Reveal>
         </div>
@@ -28,36 +26,36 @@ export function AboutHero() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
             <div className="md:col-span-7 flex flex-col gap-4 text-sm sm:text-base leading-relaxed text-fg-muted">
               <span className="text-xs font-bold uppercase tracking-wider text-fpt-orange-ink">
-                Khởi nguồn từ thực tế (Origin Story)
+                Câu chuyện khởi đầu
               </span>
 
               <h2 className="font-landing-heading text-2xl sm:text-3xl font-bold text-fg">
-                Nỗi niềm của người làm quà tinh tế
+                Vì sao có WrapFit
               </h2>
 
               <p>
-                Những người sáng tạo đồ thủ công tại Việt Nam — từ tiệm nến thơm, xưởng trang sức bạc, tiệm bánh ngọt hay thương hiệu trà hoa — luôn đặt trọn tâm huyết vào từng chi tiết của sản phẩm. Nhưng khi đến khâu đóng gói, họ đều vấp phải một rào cản vô lý:
+                Người làm quà thủ công chăm chút từng sản phẩm, nhưng lại khó tìm được chiếc hộp vừa ý:
               </p>
 
               <blockquote className="border-l-2 border-fpt-orange pl-4 italic text-fg font-medium">
-                Mua hộp carton có sẵn thì rộng thênh thang, phải nhét đầy rơm xốp vụn vừa mất mỹ quan vừa lãng phí; còn muốn đặt hộp riêng thì các xưởng in đòi số lượng tối thiểu từ 500 – 1.000 hộp kèm tiền làm khuôn dao bế 2 triệu VNĐ.
+                Hộp có sẵn thì rộng, phải nhồi lót. Đặt hộp riêng thì phải in hàng trăm chiếc và trả tiền khuôn dao.
               </blockquote>
 
               <p>
-                Đó là lý do <strong className="text-fg">WrapFit</strong> ra đời tại Đại học FPT (chương trình Khởi nghiệp EXE101). Chúng tôi phát triển một thuật toán CAD tự sinh khuôn bế theo đúng số đo milimét của món quà, mô phỏng 3D thời gian thực và kết nối trực tiếp với bàn cắt phẳng kỹ thuật số — giúp bất kỳ ai cũng có thể đặt in từ 20 chiếc hộp vừa khít mà không tốn tiền làm khuôn.
+                <strong className="text-fg">WrapFit</strong> ra đời tại Đại học FPT để ai cũng tự làm được hộp vừa khít món quà, in từ 20 chiếc, không tốn tiền khuôn.
               </p>
             </div>
 
             <div className="md:col-span-5 flex flex-col gap-3">
               <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-line shadow-soft-8">
                 <img
-                  src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=800&auto=format&fit=crop"
-                  alt="Nghệ nhân thủ công đóng gói hộp quà"
+                  src={PHOTOS.giftHands.src}
+                  alt={PHOTOS.giftHands.alt}
                   className="size-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
                   <span className="text-xs font-medium text-white">
-                    Chiếc hộp vừa vặn là chiếc hộp tôn vinh sự hiện diện của món quà
+                    Hộp vừa khít, món quà trọn vẹn
                   </span>
                 </div>
               </div>
@@ -68,8 +66,8 @@ export function AboutHero() {
                   <span className="text-caption text-fg-muted">Khả thi sản xuất</span>
                 </div>
                 <div className="rounded-xl bg-surface-sunken/50 p-3 border border-line/60">
-                  <span className="block font-mono text-xl font-bold text-fpt-orange-ink">Zero MOQ</span>
-                  <span className="text-caption text-fg-muted">Sản xuất từ 20 hộp</span>
+                  <span className="block font-mono text-xl font-bold text-fpt-orange-ink">Từ 20 hộp</span>
+                  <span className="text-caption text-fg-muted">Không cần khuôn dao</span>
                 </div>
               </div>
             </div>

@@ -37,7 +37,7 @@ export function PlansAndCopilot() {
   );
 }
 
-/** Dark green card of the Gói copilot, with Mascot Gói showcased on the right. */
+/** Slate card of the Gói copilot, with Bé Gói on a warm paper stage on the right. */
 export function CopilotCard() {
   const [mascotSize, setMascotSize] = useState(190);
 
@@ -53,7 +53,7 @@ export function CopilotCard() {
   return (
     <Reveal>
       <Container>
-        <FeatureCard className="bg-landing-green-night ring-white/10">
+        <FeatureCard className="bg-landing-ink ring-white/10">
           <article id={COPILOT.id} className="grid scroll-mt-28 grid-cols-1 items-center gap-8 lg:grid-cols-2">
             {/* Left column: Text & action buttons */}
             <div className="flex flex-col justify-center gap-6">
@@ -78,28 +78,30 @@ export function CopilotCard() {
             </div>
 
             {/* Right column: Bé Gói Mascot Showcase */}
-            <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-8 sm:p-12 text-center shadow-soft-16">
-              {/* Subtle ambient glow behind Bé Gói */}
+            {/* Warm paper stage: the kraft mascot reads on ivory; the top padding leaves room for the speech bubble. */}
+            {/* ds-allow: dotted grid of the paper stage. */}
+            <div className="relative isolate flex flex-col items-center justify-center rounded-panel bg-paper-ivory bg-[radial-gradient(#E8D8C8_1px,transparent_1px)] [background-size:16px_16px] px-6 pb-8 pt-32 text-center shadow-soft-16 ring-1 ring-inset ring-paper-kraft sm:px-10 sm:pb-10 sm:pt-36">
+              {/* Soft glow and floor shadow behind Bé Gói */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-48 rounded-full bg-fpt-orange/10 blur-3xl"
+                className="pointer-events-none absolute left-1/2 top-[58%] -z-10 size-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fpt-orange/15 blur-3xl"
               />
-              <div className="relative z-10 py-2">
+              <div className="relative z-10">
                 <GoiMascot
                   pose="measuring"
                   size={mascotSize}
                   bubbleText={COPILOT.bubble}
                   bubblePlacement="top"
                   showBubbleOnBoop={true}
-                  label="Bé Gói - Trợ lý AI Packaging Copilot (Bấm để tương tác!)"
+                  label="Trợ lý Gói, bấm để trò chuyện"
                 />
               </div>
               <div className="relative z-10 mt-5 flex flex-col items-center text-center">
-                <span className="font-landing-heading text-base font-bold text-fpt-orange">
-                  Bé Gói luôn sẵn sàng
+                <span className="font-landing-heading text-title font-bold text-fpt-orange-ink">
+                  Gói luôn sẵn sàng
                 </span>
-                <span className="mt-1 max-w-[280px] text-xs leading-relaxed text-white/80">
-                  Bấm vào Gói để trò chuyện và nhận gợi ý kích thước tối ưu!
+                <span className="mt-1 max-w-[300px] text-body-sm leading-relaxed text-fg-muted">
+                  Bấm vào Gói để được gợi ý kích thước.
                 </span>
               </div>
             </div>
@@ -117,8 +119,8 @@ function PricePicker() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="overflow-hidden rounded-xl border border-landing-line bg-landing-tile/50 shadow-soft-8">
-        <div className="flex snap-x overflow-x-auto px-2 py-2 [scrollbar-width:none] lg:justify-center [&::-webkit-scrollbar]:hidden" role="radiogroup" aria-label="Gói dịch vụ">
+      <div className="rounded-xl border border-landing-line bg-landing-tile/50 p-2 shadow-soft-8">
+        <div className="grid grid-cols-2 gap-1 sm:grid-cols-3" role="radiogroup" aria-label="Gói dịch vụ">
           {PLANS.options.map((option, index) => (
             <button
               key={option.unit}
@@ -127,12 +129,12 @@ function PricePicker() {
               aria-checked={index === selected}
               onClick={() => setSelected(index)}
               className={cn(
-                "flex min-w-[88px] shrink-0 snap-start cursor-pointer flex-col items-center justify-center gap-1 px-2 py-4 transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25",
-                index === selected ? "rounded-md bg-landing-accent" : "hover:bg-landing-accent/60"
+                "flex min-w-0 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-md px-2 py-3 text-center transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25",
+                index === selected ? "bg-white shadow-soft-8 ring-1 ring-inset ring-accent" : "hover:bg-white/70"
               )}
             >
-              <span className={cn("font-bold text-landing-ink", index === selected ? "text-base" : "text-sm")}>{option.price}</span>
-              <span className="text-xs whitespace-nowrap text-landing-muted">{option.unit}</span>
+              <span className={cn("text-sm font-bold tabular-nums", index === selected ? "text-accent" : "text-landing-ink")}>{option.price}</span>
+              <span className="text-xs leading-tight text-landing-muted">{option.unit}</span>
             </button>
           ))}
         </div>

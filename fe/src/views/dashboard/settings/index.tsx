@@ -22,7 +22,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import { displayName, initialsOf } from '@/components/layout/account';
+import { displayName } from '@/components/layout/account';
+import { Avatar } from '@/components/ui';
 import { outlineButton, primaryButton } from '@/components/library';
 import { Badge, Meter, Panel, PanelTitle, SegmentedControl, Toggle, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { ROLE_LABELS, ROUTES, TIER_LABELS } from '@/constants';
@@ -113,28 +114,15 @@ function SettingRow({ icon: Icon, title, text, children }: { icon: LucideIcon; t
 }
 
 function AccountPanel({ user }: { user: SafeUser }) {
-  const [failedAvatar, setFailedAvatar] = useState<string | null>(null);
   const name = displayName(user);
   return (
     <Panel className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex min-w-0 items-center gap-4">
-        {user.avatarUrl && user.avatarUrl !== failedAvatar ? (
-          <img
-            alt={`Ảnh đại diện của ${name}`}
-            src={user.avatarUrl}
-            referrerPolicy="no-referrer"
-            onError={() => setFailedAvatar(user.avatarUrl)}
-            className="size-16 shrink-0 rounded-full border-[1.5px] border-library-ink object-cover"
-          />
-        ) : (
-          <span aria-hidden className="flex size-16 shrink-0 items-center justify-center rounded-full border-[1.5px] border-library-ink bg-fpt-orange text-xl font-medium text-white">
-            {initialsOf(name)}
-          </span>
-        )}
+        <Avatar src={user.avatarUrl} name={name} size="2xl" decorative />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="truncate text-lg font-medium text-library-ink">{name}</h2>
-            <Badge tone="lime">{TIER_LABELS[user.subscriptionTier]}</Badge>
+            <Badge tone="green">{TIER_LABELS[user.subscriptionTier]}</Badge>
           </div>
           <p className="truncate text-sm text-library-sub">{user.email}</p>
           <p className="truncate text-sm text-library-muted">{user.shopName || ROLE_LABELS[user.role]}</p>
@@ -278,7 +266,7 @@ function StoragePanel() {
           <p className="text-2xl font-medium text-library-ink">
             {formatBytes(usedBytes)} <span className="text-base font-normal text-library-muted">/ {formatBytes(quotaBytes)}</span>
           </p>
-          <Badge tone="lime">{TIER_LABELS[tier]}</Badge>
+          <Badge tone="green">{TIER_LABELS[tier]}</Badge>
         </div>
         <div className="mt-3">
           <Meter percent={percent} label="Dung lượng đã dùng" />

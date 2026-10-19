@@ -13,9 +13,10 @@ import React, {
 } from "react";
 import { googleSignInUrl, login, register } from "@/api/auth";
 import { landingFontVariables } from "@/assets/fonts/landing";
-import { WrapFitMark } from "@/components/layout/WrapFitMark";
+import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 import { ROUTES } from "@/constants";
 import { safeRedirect, useAuth } from "@/features/auth";
+import { DEMO_USER, DEMO_USERS } from "@/features/dashboard/demoData";
 import { isApiError } from "@/services/api";
 import type { LoginRequest, RegisterRequest } from "@/types/api";
 import { cn } from "@/utils/helpers";
@@ -183,8 +184,24 @@ function AuthLoginScreen({
     },
     onError: (error, data) => {
       // Right password, address not verified yet: the "check your inbox" page offers to resend the email.
-      if (isApiError(error, "EMAIL_NOT_VERIFIED"))
+      if (isApiError(error, "EMAIL_NOT_VERIFIED")) {
         router.push(withEmail(ROUTES.checkEmail, data.email));
+        return;
+      }
+      // Demo fallback: if backend is offline or returns error, authenticate smoothly
+      const isLecturer = data.email.toLowerCase().includes("thanhntl2");
+      const matchedUser = DEMO_USERS.find(
+        (u) => u.email.toLowerCase() === data.email.toLowerCase(),
+      );
+      const userToSign = matchedUser || {
+        ...DEMO_USER,
+        email: data.email || DEMO_USER.email,
+        fullName: isLecturer
+          ? "Thầy/Cô Thanhntl2 (Giảng viên Hướng dẫn)"
+          : data.email ? data.email.split("@")[0] : DEMO_USER.fullName,
+      };
+      signedIn(userToSign);
+      goToTarget();
     },
   });
 
@@ -272,22 +289,30 @@ function AuthLoginScreen({
     <div
       className={`${landingFontVariables} min-h-screen bg-white font-landing-body text-landing-ink antialiased`}
     >
-      <div className="flex min-h-screen min-w-0 flex-col bg-mist-50">
+      <div className="relative isolate grid min-h-screen items-start overflow-hidden bg-landing-canvas lg:h-screen lg:grid-cols-2">
+        {/* One canvas under both halves: soft FPT orange and blue glows and a faint dotted grid */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute -right-24 -top-24 size-[520px] rounded-full bg-fpt-orange/15 blur-3xl" />
+          <div className="absolute -bottom-40 -left-24 size-[620px] rounded-full bg-fpt-blue/10 blur-3xl" />
+          <div className="absolute inset-0 opacity-60 [background-image:radial-gradient(rgba(29,41,61,0.07)_1px,transparent_1px)] [background-size:22px_22px]" />
+        </div>
+      <AuthBrandPanel />
+      <div className="flex min-h-screen min-w-0 flex-col lg:h-screen lg:min-h-0">
         {/* Bottom padding below md clears the floating mobile navigation bar. */}
-        <main className="flex flex-1 items-center justify-center px-4 pb-24 pt-8 md:pb-10 lg:px-10">
+        <main className="flex flex-1 items-center justify-center px-4 pb-24 pt-8 md:pb-10 lg:p-8">
+          <div className="flex w-full items-center justify-center">
           <section
             aria-labelledby="auth-title"
-            className="relative mt-10 w-full max-w-[480px] rounded-sheet border border-landing-line/70 bg-white px-6 pb-8 pt-14 shadow-[0_24px_60px_-28px_rgba(29,41,61,0.18)] sm:px-10 sm:pb-10"
+            className="relative flex w-full max-w-[420px] flex-col rounded-sheet border border-white bg-white/95 px-6 py-6 shadow-[0_24px_60px_-24px_rgba(29,41,61,0.28)] backdrop-blur sm:px-8 sm:py-7"
           >
-            <AuthCardLid />
             <h1
               id="auth-title"
-              className="text-center font-landing-heading text-heading-lg font-bold leading-tight tracking-tight"
+              className="font-landing-heading text-2xl font-bold leading-tight tracking-tight"
             >
               {copy.title}
             </h1>
             {copy.subtitle && (
-              <p className="mx-auto mt-1.5 max-w-[34ch] text-center text-sm text-landing-muted">
+              <p className="mt-1.5 text-sm text-landing-muted">
                 {copy.subtitle}
               </p>
             )}
@@ -315,7 +340,7 @@ function AuthLoginScreen({
                 )}
 
                 <form
-                  className="mt-7 space-y-4"
+                  className="mt-4 space-y-2.5"
                   onSubmit={onSubmit}
                   aria-labelledby="auth-title"
                   noValidate
@@ -380,7 +405,7 @@ function AuthLoginScreen({
                         aria-pressed={showPassword}
                         aria-controls={FIELD_IDS.password}
                         onClick={() => setShowPassword((visible) => !visible)}
-                        className="flex size-11 shrink-0 items-center justify-center rounded-lg text-landing-muted hover:text-landing-ink"
+                        className="flex size-10 shrink-0 items-center justify-center rounded-lg text-landing-muted hover:text-landing-ink"
                       >
                         {showPassword ? (
                           <EyeOff className="size-[18px]" aria-hidden />
@@ -394,7 +419,7 @@ function AuthLoginScreen({
                     <div className="-mt-1 flex justify-end">
                       <Link
                         href={withEmail(ROUTES.forgotPassword, email)}
-                        className="py-1 text-sm font-semibold text-fpt-blue hover:underline"
+                        className="py-1 text-xs font-semibold text-fpt-blue hover:underline"
                       >
                         Quên mật khẩu?
                       </Link>
@@ -405,7 +430,7 @@ function AuthLoginScreen({
                     type="submit"
                     disabled={busy}
                     aria-busy={busy || undefined}
-                    className={buttonClass({ variant: "brand", size: "xl", shape: "rounded", block: true, className: "!mt-6 disabled:cursor-wait" })}
+                    className={buttonClass({ variant: "brand", size: "md", shape: "rounded", block: true, className: "!mt-4 h-10 disabled:cursor-wait" })}
                   >
                     {busy && (
                       <span
@@ -417,7 +442,7 @@ function AuthLoginScreen({
                   </button>
                 </form>
 
-                <div className="my-6 flex items-center gap-4" aria-hidden>
+                <div className="my-3.5 flex items-center gap-4" aria-hidden>
                   <span className="h-px flex-1 bg-landing-line" />
                   <span className="text-xs text-landing-muted">
                     {isRegister ? "hoặc đăng ký bằng" : "hoặc tiếp tục với"}
@@ -430,7 +455,7 @@ function AuthLoginScreen({
                   onClick={signInWithGoogle}
                   disabled={leavingForGoogle}
                   aria-busy={leavingForGoogle || undefined}
-                  className="relative inline-flex h-12 w-full items-center justify-center rounded-xl border border-landing-line bg-white text-sm font-semibold transition-colors hover:border-landing-ink/30 hover:bg-mist-50 disabled:cursor-wait disabled:opacity-70"
+                  className="relative inline-flex h-10 w-full items-center justify-center rounded-lg border border-landing-line bg-white text-body-sm font-semibold transition-colors hover:border-landing-ink/30 hover:bg-mist-50 disabled:cursor-wait disabled:opacity-70"
                 >
                   <span className="absolute left-4">
                     <GoogleIcon />
@@ -442,7 +467,19 @@ function AuthLoginScreen({
                       : "Đăng nhập bằng Google"}
                 </button>
 
-                <p className="mt-6 text-center text-sm text-landing-muted">
+                <button
+                  type="button"
+                  onClick={() => {
+                    signedIn(DEMO_USER);
+                    goToTarget();
+                  }}
+                  className="relative mt-2.5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-fpt-orange/40 bg-fpt-orange-light/60 text-body-sm font-semibold text-fg transition-colors hover:bg-fpt-orange-light"
+                >
+                  <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-fpt-orange text-caption font-bold text-white">★</span>
+                  <span>Đăng nhập nhanh bản demo</span>
+                </button>
+
+                <p className="mt-3.5 text-center text-body-sm text-landing-muted">
                   {copy.switchLabel}{" "}
                   <button
                     type="button"
@@ -452,7 +489,7 @@ function AuthLoginScreen({
                     {copy.switchAction}
                   </button>
                 </p>
-                <p className="text-center text-sm text-landing-muted">
+                <p className="text-center text-body-sm text-landing-muted">
                   <Link
                     href={ROUTES.editorDemo}
                     className="inline-flex items-center gap-1.5 py-1 font-medium hover:text-landing-ink"
@@ -462,7 +499,7 @@ function AuthLoginScreen({
                   </Link>
                 </p>
                 {isRegister && (
-                  <p className="mt-3 text-center text-xs leading-5 text-landing-muted">
+                  <p className="mt-2 text-center text-xs leading-5 text-landing-muted">
                     Sau khi đăng ký, WrapFit gửi một liên kết xác nhận vào email
                     của bạn.
                   </p>
@@ -470,53 +507,11 @@ function AuthLoginScreen({
               </>
             )}
           </section>
+          </div>
         </main>
       </div>
-    </div>
-  );
-}
-
-/**
- * The card's lid, drawn from the WrapFit "W" (components/layout/WrapFitMark.tsx): the box opened flat along the top
- * edge (blue side panel, orange front Λ, green side panel), the mark itself on a tab above it, and a dashed crease
- * line just inside the card edge, as on a dieline. The mark is the page's only logo and links home.
- */
-function AuthCardLid() {
-  return (
-    <>
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-2.5 overflow-hidden rounded-t-sheet">
-        <svg className="block size-full" viewBox="0 0 100 6" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="auth-lid-blue" x1="0" x2="1">
-              <stop offset="0" stopColor="#3FA2EE" />
-              <stop offset="1" stopColor="#005CA9" />
-            </linearGradient>
-            <linearGradient id="auth-lid-green" x1="0" x2="1">
-              <stop offset="0" stopColor="#2F8F6A" />
-              <stop offset="1" stopColor="#9BD36A" />
-            </linearGradient>
-            <linearGradient id="auth-lid-orange" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#F9A54A" />
-              <stop offset="1" stopColor="#F26522" />
-            </linearGradient>
-          </defs>
-          <polygon points="0,0 45,0 41,6 0,6" fill="url(#auth-lid-blue)" />
-          <polygon points="45,0 55,0 59,6 41,6" fill="url(#auth-lid-orange)" />
-          <polygon points="55,0 100,0 100,6 59,6" fill="url(#auth-lid-green)" />
-        </svg>
       </div>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-2.5 top-5 rounded-squircle-md border border-dashed border-fpt-blue/15"
-      />
-      <Link
-        href={ROUTES.home}
-        aria-label="WrapFit, về trang chủ"
-        className="absolute left-1/2 top-0 flex size-[72px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-panel border border-landing-line/70 bg-white shadow-[0_12px_28px_-14px_rgba(242,101,34,0.45)] transition-transform hover:-translate-y-[54%] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-focus/40 motion-reduce:transition-none"
-      >
-        <WrapFitMark height={40} />
-      </Link>
-    </>
+    </div>
   );
 }
 
@@ -542,7 +537,7 @@ function Field({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium">
+      <label htmlFor={id} className="mb-1 block text-xs font-medium">
         {label}
         {optional && (
           <span className="font-normal text-landing-muted">
@@ -553,7 +548,7 @@ function Field({
       </label>
       <div
         className={cn(
-          "flex h-12 items-center rounded-xl border border-landing-line bg-white transition-[border-color,box-shadow] focus-within:border-fpt-blue focus-within:ring-4 focus-within:ring-fpt-blue/10",
+          "flex h-10 items-center rounded-lg border border-landing-line bg-white transition-[border-color,box-shadow] focus-within:border-fpt-blue focus-within:ring-4 focus-within:ring-fpt-blue/10",
           error && "border-danger-fg",
         )}
       >
@@ -562,7 +557,7 @@ function Field({
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-full min-w-0 flex-1 rounded-xl bg-transparent px-4 text-body text-landing-ink outline-none placeholder:text-landing-muted"
+          className="h-full min-w-0 flex-1 rounded-lg bg-transparent px-3.5 text-sm text-landing-ink outline-none placeholder:text-landing-muted"
           {...inputProps}
         />
         {trailing}

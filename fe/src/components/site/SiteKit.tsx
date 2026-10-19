@@ -12,10 +12,7 @@ import { cn } from "@/utils/helpers";
 // Building blocks of the company and marketing pages (features, compare, press, careers, legal, status…), after the
 // sub-pages of pack.ly (help center, blog, careers): a left-aligned display title with a muted second line, large
 // photos with 2–3rem corners, section titles with the round arrow chip, the lime closing band, and the orange call to
-// action of limeButton. Photos come from the project library (public/stitch/img, described in components/home/content).
-
-/** A photo of public/stitch/img. */
-export const photo = (id: string) => `/stitch/img/${id}.jpg`;
+// action of limeButton.
 
 /** Header, page body on the landing canvas, footer. */
 /**

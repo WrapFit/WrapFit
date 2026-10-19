@@ -7,8 +7,14 @@ import "@/assets/styles/globals.css";
 export const metadata = {
   title: "WrapFit",
   description: "Make Every Present, Present. Thiết kế chiếc hộp bao quanh món quà với 100% khả thi sản xuất.",
-  // Favicon: the folded-box W mark (same drawing as components/layout/WrapFitMark.tsx)
-  icons: { icon: "/branding/wrapfit-mark.svg" },
+  // Favicon: the orange hexagon mark (same drawing as components/layout/WrapFitMark.tsx). `?v=` busts the old W icon in browser caches.
+  icons: {
+    icon: [
+      { url: "/branding/wrapfit-mark.svg?v=2", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=2", sizes: "48x48" },
+    ],
+    apple: "/apple-touch-icon.png?v=2",
+  },
 };
 
 export default function RootLayout({

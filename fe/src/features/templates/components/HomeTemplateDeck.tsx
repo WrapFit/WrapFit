@@ -65,7 +65,7 @@ export function HomeTemplateDeck() {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-[#133020]"></span>
-            <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">WRAPFIT CURATED · 3D STACKED DECK</span>
+            <span className="font-cad-spec-micro text-cad-spec-micro uppercase tracking-widest text-[#4d6657] font-semibold">WRAPFIT TUYỂN CHỌN</span>
           </div>
           <h2 className="font-headline-lg text-[32px] md:text-[40px] text-brand-forest-deep font-landing-heading font-medium tracking-tight">
             Thư Viện Cấu Trúc Mẫu
@@ -111,7 +111,7 @@ export function HomeTemplateDeck() {
           className="relative w-full h-[500px] md:h-[530px] flex items-center justify-center overflow-visible"
           id="coverflowContainer"
           aria-roledescription="carousel"
-          aria-label="Mẫu WrapFit Curated"
+          aria-label="Mẫu WrapFit tuyển chọn"
           onTouchStart={(event) => (touchX.current = event.touches[0]?.clientX ?? null)}
           onTouchEnd={(event) => {
             const start = touchX.current;
@@ -134,7 +134,7 @@ export function HomeTemplateDeck() {
           ) : !count ? (
             <EmptyState
               title="Thư viện đang được chuẩn bị"
-              description="Các mẫu WrapFit Curated sẽ xuất hiện ở đây."
+              description="Các mẫu WrapFit tuyển chọn sẽ xuất hiện ở đây."
               className="relative z-40"
             />
           ) : (
@@ -243,6 +243,7 @@ function DeckCard({
             structure={card.structure.id}
             dimensions={card.dimensions}
             materialSpec={card.materialSpec}
+            color={card.color}
             alt={`${card.structure.name} ${formatDimensions(card.dimensions)}`}
             className="mix-blend-multiply transition-transform duration-500 pointer-events-none"
           />

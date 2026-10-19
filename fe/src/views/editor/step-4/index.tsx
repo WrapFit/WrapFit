@@ -8,7 +8,7 @@ export default function Step4FitCheckPage() {
   const [zoomLevel, setZoomLevel] = useState<number>(100);
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] flex flex-col justify-between font-['Plus_Jakarta_Sans'] select-none">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] flex flex-col justify-between font-landing-body select-none">
       {/* ================= 1. IMAGE 4 TOP HEADER BAR ================= */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200">
         <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
@@ -24,7 +24,7 @@ export default function Step4FitCheckPage() {
               <span>Quay lại</span>
             </Link>
             <span className="text-neutral-300">|</span>
-            <span className="font-['Playfair_Display'] font-bold text-sm text-neutral-900">
+            <span className="font-landing-heading font-bold text-sm text-neutral-900">
               WRAPFIT Studio v4.2
             </span>
           </div>
@@ -60,12 +60,12 @@ export default function Step4FitCheckPage() {
 
           {/* Right: Certified 100/100 Pass & BOBST Die Spec */}
           <div className="flex items-center gap-2.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold font-['JetBrains_Mono']">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold font-mono tabular-nums">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>✓ 100/100 PASS</span>
             </div>
 
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 border border-stone-200 text-stone-600 font-['JetBrains_Mono'] text-[11px] font-semibold">
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 border border-stone-200 text-stone-600 font-mono tabular-nums text-[11px] font-semibold">
               <span>BOBST 106-PER | MM</span>
             </div>
           </div>
@@ -113,15 +113,15 @@ export default function Step4FitCheckPage() {
           </div>
 
           {/* Center: Standard Lock Code */}
-          <div className="flex items-center gap-2 font-['JetBrains_Mono'] text-xs font-bold text-neutral-800">
+          <div className="flex items-center gap-2 font-mono tabular-nums text-xs font-bold text-neutral-800">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span>• ECMA A20.20 Standard Locked 360 × 240 × 80 mm</span>
           </div>
 
           {/* Right: Technical Paper Specs & Dieline Legend */}
-          <div className="flex items-center gap-3 overflow-x-auto text-[11px] font-['JetBrains_Mono'] text-stone-600">
+          <div className="flex items-center gap-3 overflow-x-auto text-[11px] font-mono tabular-nums text-stone-600">
             <span className="px-2 py-0.5 rounded bg-stone-100 font-semibold">Ivory FBB 350 GSM</span>
-            <span className="px-2 py-0.5 rounded bg-stone-100 font-semibold">Caliper 0.45mm</span>
+            <span className="px-2 py-0.5 rounded bg-stone-100 font-semibold">Độ dày 0.45mm</span>
             <span className="px-2 py-0.5 rounded bg-stone-100 font-semibold">Dung sai ±0.12</span>
 
             <div className="flex items-center gap-2.5 pl-2 border-l border-stone-200">
@@ -162,16 +162,16 @@ export default function Step4FitCheckPage() {
 
           {/* CAD Technical Annotation Callouts */}
           <div className="absolute top-4 left-6 z-10 flex flex-wrap gap-2">
-            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-['JetBrains_Mono'] text-[10px] font-bold shadow-2xs">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono tabular-nums text-cad-spec-micro font-bold shadow-2xs">
               ✓ DAO BẾ CHUẨN ±0.125mm PASS
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-300 font-['JetBrains_Mono'] text-[10px] font-bold shadow-2xs">
+            <span className="px-2.5 py-1 rounded-full bg-blue-100 text-blue-900 border border-blue-300 font-mono tabular-nums text-cad-spec-micro font-bold shadow-2xs">
               ✓ GÂN CẤN 1.5pt 100% GẬP MƯỢT
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-['JetBrains_Mono'] text-[10px] font-bold shadow-2xs">
+            <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono tabular-nums text-cad-spec-micro font-bold shadow-2xs">
               ✓ MÉP KEO 15.0mm (PASS)
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-['JetBrains_Mono'] text-[10px] font-bold shadow-2xs">
+            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-mono tabular-nums text-cad-spec-micro font-bold shadow-2xs">
               ✓ SAFE INSET 3.2mm OK
             </span>
           </div>
@@ -262,7 +262,7 @@ export default function Step4FitCheckPage() {
 
           {/* Floating Zoom & Scale Bar on Bottom Left */}
           <div className="flex items-center justify-between z-10 pt-2 border-t border-stone-200">
-            <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs text-xs font-['JetBrains_Mono']">
+            <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs text-xs font-mono tabular-nums">
               <button
                 type="button"
                 onClick={() => setZoomLevel((prev) => Math.max(50, prev - 10))}
@@ -281,13 +281,13 @@ export default function Step4FitCheckPage() {
               <button
                 type="button"
                 onClick={() => setZoomLevel(100)}
-                className="text-stone-400 hover:text-stone-700 text-[10px] pl-2 border-l border-stone-200"
+                className="text-stone-400 hover:text-stone-700 text-cad-spec-micro pl-2 border-l border-stone-200"
               >
                 Fit to Screen
               </button>
             </div>
 
-            <span className="font-['JetBrains_Mono'] text-xs text-stone-500">
+            <span className="font-mono tabular-nums text-xs text-stone-500">
               X: 360.00 mm | Y: 240.00 mm | Z: 80.00 mm (Caliper: 0.45mm)
             </span>
           </div>
@@ -299,20 +299,20 @@ export default function Step4FitCheckPage() {
             {/* Certificate Header with Gold Medal */}
             <div className="flex items-center justify-between pb-4 border-b border-stone-200">
               <div>
-                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-['JetBrains_Mono'] text-xs font-bold">
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-mono tabular-nums text-xs font-bold">
                   FITCHECK™ CERTIFIED
                 </span>
-                <h3 className="font-['Playfair_Display'] text-xl font-bold text-neutral-900 mt-2">
+                <h3 className="font-landing-heading text-xl font-bold text-neutral-900 mt-2">
                   Chứng Chỉ Xuất Xưởng
                 </h3>
-                <p className="text-xs text-emerald-700 font-semibold font-['JetBrains_Mono'] mt-0.5">
+                <p className="text-xs text-emerald-700 font-semibold font-mono tabular-nums mt-0.5">
                   100/100 PASS • SẴN SÀNG CHẾ BẢN
                 </p>
               </div>
 
               {/* Gold Medal Icon */}
               <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 to-amber-200 text-neutral-900 flex items-center justify-center font-bold shadow-md shrink-0 border border-amber-300">
-                <span className="material-symbols-outlined text-3xl text-amber-900">verified</span>
+                <span className="material-symbols-outlined text-3xl text-amber-900">đã xác minh</span>
               </div>
             </div>
 
@@ -341,7 +341,7 @@ export default function Step4FitCheckPage() {
                   </p>
                   <p className="text-[11px] text-stone-500">Độ rộng đạt chuẩn máy dán tự động</p>
                 </div>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-emerald-700">
+                <span className="font-mono tabular-nums text-xs font-bold text-emerald-700">
                   15.0 mm • PASS
                 </span>
               </div>
@@ -354,7 +354,7 @@ export default function Step4FitCheckPage() {
                   </p>
                   <p className="text-[11px] text-stone-500">Bleed 2.0mm • Safe Inset 3.5mm</p>
                 </div>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-emerald-700">
+                <span className="font-mono tabular-nums text-xs font-bold text-emerald-700">
                   PASS
                 </span>
               </div>
@@ -367,7 +367,7 @@ export default function Step4FitCheckPage() {
                   </p>
                   <p className="text-[11px] text-stone-500">Mục tiêu &gt;2.0kg an toàn</p>
                 </div>
-                <span className="font-['JetBrains_Mono'] text-xs font-bold text-emerald-700">
+                <span className="font-mono tabular-nums text-xs font-bold text-emerald-700">
                   2.8 kg • PASS
                 </span>
               </div>
@@ -375,7 +375,7 @@ export default function Step4FitCheckPage() {
           </div>
 
           {/* Audit Hash & Certification Tag */}
-          <div className="p-3 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-between text-[11px] font-['JetBrains_Mono'] text-stone-600">
+          <div className="p-3 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-between text-[11px] font-mono tabular-nums text-stone-600">
             <span>Mã: WPF-2026-ECMA-A20</span>
             <span className="font-bold text-emerald-800">ISO 12647-2</span>
           </div>
@@ -386,9 +386,9 @@ export default function Step4FitCheckPage() {
       <footer className="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 p-4 px-6 shadow-sm">
         <div className="w-full max-w-[1720px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Left: Cryptographic Verification Stamp */}
-          <div className="flex items-center gap-2 font-['JetBrains_Mono'] text-xs text-stone-500">
+          <div className="flex items-center gap-2 font-mono tabular-nums text-xs text-stone-500">
             <span className="material-symbols-outlined text-[16px] text-emerald-600">lock</span>
-            <span>SHA-256 Verified Signature: e82f3a...91b0c</span>
+            <span>Chữ ký SHA-256 đã xác minh: e82f3a...91b0c</span>
           </div>
 
           {/* Center & Right Actions */}

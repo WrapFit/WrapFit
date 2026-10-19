@@ -4,10 +4,11 @@ import { ArrowRight, Box, FileDown } from "lucide-react";
 import React from "react";
 import { DielineSketch } from "@/features/templates";
 import { cn } from "@/utils/helpers";
+import { PHOTOS } from "@/features/site/photos";
 
 /** The six steps of the studio, with the names of its step bar (Cấu trúc → Xuất file). */
 const STEPS = [
-  { title: "Cấu trúc", body: "Chọn một mẫu ở thư viện này (WrapFit Curated hoặc Cộng đồng), hoặc chọn thẳng một cấu trúc hộp: nắp gài, bao diêm, âm dương, hộp gối.", art: "pick" },
+  { title: "Cấu trúc", body: "Chọn một mẫu ở thư viện này (WrapFit tuyển chọn hoặc Cộng đồng), hoặc chọn thẳng một cấu trúc hộp: nắp gài, bao diêm, âm dương, hộp gối.", art: "pick" },
   { title: "Kích thước", body: "Nhập dài, rộng, cao lọt lòng của món quà theo mm (hoặc cm, inch); khuôn bế dựng lại theo từng milimét, cộng cả độ dày giấy.", art: "size" },
   { title: "Chất liệu", body: "Chọn giấy Ivory, Kraft, Duplex hay Carton bồi; độ dày giấy đổi thì nếp gấp và tai gài tự tính lại.", art: "paper" },
   { title: "Thiết kế", body: "Thêm chữ, logo, sticker, bảng màu hay hoa văn AI lên từng mặt khuôn bế; FitCheck™ soát vùng an toàn 3 mm ngay khi bạn sửa.", art: "design" },
@@ -36,7 +37,7 @@ export function HowItWorks() {
             </p>
             <p>
               Chọn một mẫu, nhập kích thước món quà và tải file in dạng PDF, SVG hay DXF. Thiết kế công khai còn có trang 3D để
-              chia sẻ và để người khác remix.
+              chia sẻ và để người khác phối lại.
             </p>
           </div>
         </div>
@@ -118,9 +119,9 @@ function StepArt({ art }: { art: (typeof STEPS)[number]["art"] }) {
     return (
       <div className={panel}>
         <p className="mb-3 w-fit rounded-md bg-fpt-orange-light px-2 py-1 text-xs font-medium text-fpt-orange-ink">Thiết kế</p>
-        <div className="relative flex aspect-[4/3] items-center justify-center rounded-lg border border-dashed border-dieline-crease bg-library-tile">
-          <span className="text-sm font-semibold text-library-ink">Tiệm nến Hạ</span>
-          <span className="absolute bottom-2 right-2 rounded bg-success-bg px-1.5 text-xs text-success-fg">FitCheck 100</span>
+        <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-dashed border-dieline-crease bg-library-tile">
+          <img src={PHOTOS.candle.src} alt={PHOTOS.candle.alt} loading="lazy" className="size-full object-cover" />
+          <span className="absolute bottom-2 right-2 rounded bg-success-bg px-1.5 text-xs text-success-fg">FitCheck™ 100</span>
         </div>
       </div>
     );
@@ -148,7 +149,7 @@ function StepArt({ art }: { art: (typeof STEPS)[number]["art"] }) {
   );
 }
 
-const MARQUEE = ["Hộp nắp gài", "Hộp bao diêm", "Hộp âm dương", "Hộp gối", "In được", "Tải được", "FitCheck™", "WrapFit Curated"];
+const MARQUEE = ["Hộp nắp gài", "Hộp bao diêm", "Hộp âm dương", "Hộp gối", "In được", "Tải được", "FitCheck™", "WrapFit tuyển chọn"];
 
 /** Black band fixed at the bottom while the grid is on screen: running labels and a button back to the grid. */
 export function StartBar({ visible, onStart }: { visible: boolean; onStart(): void }) {

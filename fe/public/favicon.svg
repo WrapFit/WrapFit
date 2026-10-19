@@ -1,10 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- Top Facet: FPT Orange -->
-  <path d="M16 2 L29 9 L16 16 L3 9 Z" fill="#F26522" />
-  <!-- Left Facet: FPT Blue -->
-  <path d="M3 9 L16 16 L16 30 L3 23 Z" fill="#005CA9" />
-  <!-- Right Facet: FPT Green -->
-  <path d="M16 16 L29 9 L29 23 L16 30 Z" fill="#6DB33F" />
-  <!-- Fold crease highlight -->
-  <path d="M9.5 5.5 L22.5 12.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.85" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11 0 352 352">
+  <!-- Same drawing as src/components/layout/WrapFitMark.tsx -->
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#F9A23C"/><stop offset="1" stop-color="#F7932A"/></linearGradient></defs>
+  <g fill="url(#g)"><path d="M14 86 L160 7 Q165 4 170 7 L318 86 Q323 90 316 92 L140 92 Q85 92 85 128 Z"/><path d="M5 96 L85 143 L85 207 Q85 262 140 262 L158 262 L158 347 L14 250 Q5 244 5 233 Z"/><path d="M183 262 L321 262 Q328 263 322 267 L183 347 Z"/></g>
 </svg>

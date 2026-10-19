@@ -70,7 +70,7 @@ export interface BrandKitProblems {
 export function brandKitProblems(draft: BrandKitDraft): BrandKitProblems {
   const problems: BrandKitProblems = {};
   if (draft.colors.length < MIN_COLORS || draft.colors.length > MAX_COLORS) {
-    problems.colors = `Brand Kit cần từ ${MIN_COLORS} đến ${MAX_COLORS} màu.`;
+    problems.colors = `Bộ nhận diện cần từ ${MIN_COLORS} đến ${MAX_COLORS} màu.`;
   } else if (draft.colors.some((color) => !HEX_COLOR.test(color))) {
     problems.colors = "Mỗi màu phải là mã HEX 6 ký tự, ví dụ #1A362B.";
   }
@@ -84,7 +84,7 @@ export function fontProblem(name: string, fonts: string[]): string | null {
   const trimmed = name.trim();
   if (!trimmed) return "Nhập tên font.";
   if (trimmed.length > FONT_MAX_LENGTH) return `Tên font tối đa ${FONT_MAX_LENGTH} ký tự.`;
-  if (fonts.some((font) => font.toLowerCase() === trimmed.toLowerCase())) return "Font này đã có trong Brand Kit.";
+  if (fonts.some((font) => font.toLowerCase() === trimmed.toLowerCase())) return "Phông này đã có trong bộ nhận diện.";
   if (fonts.length >= MAX_FONTS) return `Tối đa ${MAX_FONTS} font.`;
   return null;
 }

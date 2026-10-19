@@ -267,7 +267,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
               {item.category === "mascot" && item.mascotPose ? (
                 <GoiMascot pose={item.mascotPose} size={48} interactive={false} enableTracking={false} />
               ) : item.category === "wax_seal" ? (
-                <div className="w-10 h-10 rounded-full bg-red-700 text-amber-200 flex items-center justify-center font-landing-heading text-[8px] font-bold text-center border-2 border-amber-300 shadow-sm leading-tight p-0.5">
+                <div className="w-10 h-10 rounded-full bg-red-700 text-amber-200 flex items-center justify-center font-landing-heading text-cad-spec-micro font-bold text-center border-2 border-amber-300 shadow-sm leading-tight p-0.5">
                   WAX SEAL
                 </div>
               ) : item.category === "qr_barcode" ? (
@@ -279,7 +279,7 @@ export const StickerAssetBank: React.FC<StickerAssetBankProps> = ({
                   </div>
                 )
               ) : (
-                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex items-center justify-center p-1 text-[8px] font-bold text-center leading-none">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex items-center justify-center p-1 text-cad-spec-micro font-bold text-center leading-none">
                   {item.svgContent.slice(0, 14)}
                 </div>
               )}

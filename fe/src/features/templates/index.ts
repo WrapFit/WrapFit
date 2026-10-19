@@ -14,3 +14,4 @@ export {
 export { useBoxStructures, useCommunityTemplates, useCuratedTemplates } from "./hooks";
 export type { HubFilters } from "./hooks";
 export * from "./labels";
+export * from "./demoData";

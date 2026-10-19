@@ -14,10 +14,10 @@ import { cn } from "@/utils/helpers";
 
 const USE_CASES: { id: string; label: string; image: SitePhoto }[] = [
   { id: "all", label: "Tất cả", image: PHOTOS.kraftTuck },
-  { id: "nen", label: "Nến thơm", image: PHOTOS.candleBox },
+  { id: "nen", label: "Nến thơm", image: PHOTOS.candle },
   { id: "gom", label: "Gốm sứ & decor", image: PHOTOS.whiteBox },
   { id: "banh", label: "Bánh & trà", image: PHOTOS.chocolate },
-  { id: "doanh-nghiep", label: "Quà doanh nghiệp", image: PHOTOS.lacquerBox },
+  { id: "doanh-nghiep", label: "Quà doanh nghiệp", image: PHOTOS.luxuryLid },
 ];
 
 const RESEARCH: { quote: string; who: string; detail: string; useCase: string }[] = [
@@ -31,9 +31,9 @@ const RESEARCH: { quote: string; who: string; detail: string; useCase: string }[
 ];
 
 const VIDEOS = [
-  { title: "Hộp quà Tết thắt nơ, mở bằng mã QR", image: PHOTOS.tetGift },
-  { title: "Khuyên tai bạc trong hộp gối kraft", image: PHOTOS.kraftPillow },
-  { title: "Hộp nắp rời ép kim cho set mỹ phẩm", image: PHOTOS.greenLid },
+  { title: "Quà Tết mở bằng mã QR", image: PHOTOS.tet },
+  { title: "Dây chuyền trong hộp giấy", image: PHOTOS.necklaceBox },
+  { title: "Hộp âm dương niêm sáp", image: PHOTOS.luxuryLid },
 ];
 
 export default function TestimonialsPage() {
@@ -48,9 +48,9 @@ export default function TestimonialsPage() {
         lead="WrapFit bắt đầu từ những câu chuyện thật: hộp không vừa, xưởng không nhận đơn nhỏ, màu in lệch. Đây là tiếng nói đã định hình sản phẩm."
         aside={
           <div className="grid h-[420px] grid-cols-2 grid-rows-2 gap-3 lg:h-[480px]">
-            <PhotoFrame image={PHOTOS.candleBox} className="row-span-2" />
-            <PhotoFrame image={PHOTOS.kraftPillow} />
-            <PhotoFrame image={PHOTOS.teaBags} />
+            <PhotoFrame image={PHOTOS.candle} className="row-span-2" />
+            <PhotoFrame image={PHOTOS.jewelry} />
+            <PhotoFrame image={PHOTOS.tea} />
           </div>
         }
       />

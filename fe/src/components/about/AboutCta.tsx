@@ -23,17 +23,17 @@ export function AboutCta() {
                 <GoiMascot pose="waving" size={32} />
               </div>
               <span className="text-xs sm:text-sm font-medium text-white/85 text-center">
-                Bé Gói: &ldquo;Bạn đã sẵn sàng tạo chiếc hộp độc bản cho món quà của mình chưa?&rdquo;
+                Gói: &ldquo;Mình cùng làm hộp cho món quà nhé?&rdquo;
               </span>
             </div>
 
             <h2 className="font-landing-heading text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight">
-              Bắt Đầu Tạo Chiếc Hộp <br className="hidden sm:inline" />
-              <span className="text-fpt-orange">Vừa Khít Món Quà</span> Của Bạn
+              Tạo chiếc hộp <br className="hidden sm:inline" />
+              <span className="text-fpt-orange">vừa khít món quà</span>
             </h2>
 
             <p className="mt-4 text-base sm:text-xl text-white/75 max-w-2xl leading-relaxed">
-              Trải nghiệm thiết kế 3D trực quan, kiểm tra dung sai với FitCheck™ và đặt in từ 20 chiếc hộp không tốn tiền khuôn bế ngay hôm nay.
+              Thiết kế miễn phí, xem 3D, in từ 20 hộp.
             </p>
 
             {/* Action Buttons */}
@@ -44,7 +44,7 @@ export function AboutCta() {
                 className={buttonClass({ variant: "brand", size: "xl", className: "w-full px-8 sm:w-auto" })}
               >
                 <Box className="size-5" />
-                Vào Studio Thiết Kế 3D
+                Vào Studio
                 <ArrowRight className="size-4" />
               </Link>
 
@@ -62,15 +62,15 @@ export function AboutCta() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-caption text-white/75">
               <span className="inline-flex items-center gap-1.5">
                 <Check className="size-4 text-fpt-orange" />
-                Hoàn toàn miễn phí thiết kế
+                Thiết kế miễn phí
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Check className="size-4 text-fpt-orange" />
-                Không cần cài đặt phần mềm
+                Không cần cài đặt
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Check className="size-4 text-fpt-orange" />
-                Sản xuất tối thiểu từ 20 hộp
+                In từ 20 hộp
               </span>
             </div>
           </div>
