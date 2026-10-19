@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { landingFontVariables } from "@/assets/fonts/landing";
@@ -27,7 +28,8 @@ import {
   Ruler,
   type LucideIcon,
 } from "lucide-react";
-import { buttonClass } from "@/components/ui";
+import { buttonClass, hasSeenTour, ProductTour, TourReplayButton, useTourContinuation } from "@/components/ui";
+import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
 import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
@@ -48,7 +50,6 @@ import {
   CURATED_FONT_PRESETS,
   FontPresetCard,
 } from "@/features/studio/components/FontSelectorCards";
-import { StickerAssetBank } from "@/features/studio/components/StickerAssetBank";
 import { Step1BoxTemplatePicker } from "@/features/studio/components/Step1BoxTemplatePicker";
 import { Step2DimensionAndMaterial } from "@/features/studio/components/Step2DimensionAndMaterial";
 import { Step3PaperFinish } from "@/features/studio/components/Step3PaperFinish";
@@ -56,12 +57,6 @@ import { Step5Model3DWithEnvironments } from "@/features/studio/components/Step5
 import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExport";
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
-import { VersionConflictDialog } from "@/features/studio/components/sync/VersionConflictDialog";
-import { AiPatternPanel } from "@/features/studio/components/ai-pattern/AiPatternPanel";
-import { ExportDialog } from "@/features/studio/components/export/ExportDialog";
-import { ShareDialog } from "@/features/studio/components/share/ShareDialog";
-import { SnapshotsDialog } from "@/features/studio/components/snapshots/SnapshotsDialog";
-import { UnboxingDialog } from "@/features/studio/components/unboxing/UnboxingDialog";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
@@ -69,8 +64,18 @@ import { renderThumbnail } from "@/features/studio/utils/thumbnail";
 import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
-import type { BoxStructure, ProjectDetail } from "@/types/api";
+import type { BoxStructure, ProjectDetail, SnapshotSummary } from "@/types/api";
 import { FormulaUpgrade } from "@/features/studio/components/formula/FormulaUpgrade";
+
+// Code splitting: panels and dialogs opened on demand load their own chunk the first time they are needed, so the
+// studio's first paint only waits for the dieline canvas and the 3D view.
+const StickerAssetBank = dynamic<React.ComponentProps<typeof import("@/features/studio/components/StickerAssetBank").StickerAssetBank>>(() => import("@/features/studio/components/StickerAssetBank").then((m) => m.StickerAssetBank), { ssr: false });
+const AiPatternPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/ai-pattern/AiPatternPanel").AiPatternPanel>>(() => import("@/features/studio/components/ai-pattern/AiPatternPanel").then((m) => m.AiPatternPanel), { ssr: false });
+const VersionConflictDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/sync/VersionConflictDialog").VersionConflictDialog>>(() => import("@/features/studio/components/sync/VersionConflictDialog").then((m) => m.VersionConflictDialog), { ssr: false });
+const ExportDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/export/ExportDialog").ExportDialog>>(() => import("@/features/studio/components/export/ExportDialog").then((m) => m.ExportDialog), { ssr: false });
+const ShareDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/share/ShareDialog").ShareDialog>>(() => import("@/features/studio/components/share/ShareDialog").then((m) => m.ShareDialog), { ssr: false });
+const SnapshotsDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/snapshots/SnapshotsDialog").SnapshotsDialog>>(() => import("@/features/studio/components/snapshots/SnapshotsDialog").then((m) => m.SnapshotsDialog), { ssr: false });
+const UnboxingDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/unboxing/UnboxingDialog").UnboxingDialog>>(() => import("@/features/studio/components/unboxing/UnboxingDialog").then((m) => m.UnboxingDialog), { ssr: false });
 
 /** Formats the image upload accepts: photos (purpose IMAGE) and vector logos (purpose LOGO). */
 const PHOTO_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -190,6 +195,11 @@ export function StudioWorkspace({
   const toast = useToast();
   const searchParams = useSearchParams();
   const isDemo = project === null;
+
+  // Guided tour: the overview of the screen once, then a short guide the first time each step opens.
+  const tourContinued = useTourContinuation();
+  const [introSeen, setIntroSeen] = useState(true);
+  useEffect(() => setIntroSeen(hasSeenTour(STUDIO_INTRO_TOUR_ID)), []);
 
   // Query parameter overrides for demo mode (e.g. from /editor/new or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
@@ -613,11 +623,14 @@ export function StudioWorkspace({
                 setCurrentStep(6);
               }}
               title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
+              data-tour="studio-fitcheck"
               className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-orange-50 text-fpt-orange-ink border border-orange-200/60 text-sm font-semibold transition-colors hover:bg-orange-100/80"
             >
               <ShieldCheck className="w-4 h-4 text-fpt-orange" />
               <span>FitCheck: {displayReport.score}/100</span>
             </button>
+
+            <TourReplayButton tourId={studioStepTourId(currentStep)} label="Hướng dẫn" variant="ghost" size="sm" className="hidden md:inline-flex" />
 
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
             {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
@@ -724,6 +737,13 @@ export function StudioWorkspace({
         </div>
       )}
 
+      {!introSeen ? (
+        <ProductTour id={STUDIO_INTRO_TOUR_ID} steps={STUDIO_INTRO_TOUR} force={tourContinued} onClose={() => setIntroSeen(true)} />
+      ) : (
+        // Keyed by step: each step has its own tour, started on its first visit.
+        <ProductTour key={currentStep} id={studioStepTourId(currentStep)} steps={STUDIO_STEP_TOURS[currentStep]} />
+      )}
+
       {/* ================= 2. DYNAMIC STEP VIEW CONTENT ================= */}
       {/* `inert`: a trashed project can be looked at, not edited */}
       <main className="flex-1 w-full flex flex-col" inert={readOnly || undefined}>
@@ -804,7 +824,7 @@ export function StudioWorkspace({
                     <span className="hidden sm:inline">Đang tải ảnh…</span>
                   </span>
                 )}
-                <button type="button" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "min-h-11" })}>
+                <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "min-h-11" })}>
                   <span>
                     Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
                   </span>
@@ -866,7 +886,7 @@ export function StudioWorkspace({
             </div>
 
             {/* ── Centre: the stage ── */}
-            <div className="relative z-10 h-[62vh] min-h-[420px] overflow-hidden rounded-sheet bg-surface-raised/40 ring-1 ring-line/50 lg:absolute lg:inset-auto lg:bottom-[84px] lg:left-[84px] lg:right-[396px] lg:top-[124px] lg:h-auto lg:min-h-0 lg:overflow-visible lg:rounded-none lg:bg-transparent lg:ring-0">
+            <div data-tour="studio-stage" className="relative z-10 h-[62vh] min-h-[420px] overflow-hidden rounded-sheet bg-surface-raised/40 ring-1 ring-line/50 lg:absolute lg:inset-auto lg:bottom-[84px] lg:left-[84px] lg:right-[396px] lg:top-[124px] lg:h-auto lg:min-h-0 lg:overflow-visible lg:rounded-none lg:bg-transparent lg:ring-0">
               {artView === "2d" ? (
                 <DielineCanvas2D
                   variant="stage"
@@ -1209,7 +1229,7 @@ export function StudioWorkspace({
           flush={sync.flush}
           replace={sync.replace}
           renderPreview={renderPreview}
-          onRestored={(restored, backup, snapshotName) => onReplaced?.(restored, { snapshotName, backupId: backup.id })}
+          onRestored={(restored: ProjectDetail, backup: SnapshotSummary, snapshotName: string) => onReplaced?.(restored, { snapshotName, backupId: backup.id })}
           onClose={() => setDialog(null)}
         />
       )}
