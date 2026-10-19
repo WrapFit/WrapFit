@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   ArrowRight,
   Award,
@@ -79,21 +80,7 @@ export function BoxCatalog() {
           </div>
         </Container>
 
-        {/* Section 2: Packaging by Industry & Occasions (Smart Multitasking Cards) */}
-        <Container>
-          <div id={ANCHORS.industries} className="flex scroll-mt-28 flex-col gap-5 sm:gap-6">
-            <SectionHeading {...INDUSTRIES_SECTION} />
-            <Carousel label={INDUSTRIES_SECTION.title} bleed="none" slideClassName="w-[82vw] sm:w-[280px] md:w-[300px] lg:w-[320px]">
-              {INDUSTRY_CARDS.map((card) => (
-                <IndustrySmartCard
-                  key={card.title}
-                  card={card}
-                  onQuickPreview={(struct) => openQuickPreview(struct, "M")}
-                />
-              ))}
-            </Carousel>
-          </div>
-        </Container>
+        {/* The "by industry" carousel left the home page: the industries are the photo tiles of the hero. */}
       </section>
 
       {/* Interactive 3D Quick Preview Modal */}
@@ -335,11 +322,12 @@ function IndustrySmartCard({
     <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-line/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-landing-ink/20 hover:shadow-soft-16">
       {/* Cover Image & Hover Quick Action Overlay */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-landing-tile">
-        <img
+        <Image
           src={card.image}
           alt={card.title}
-          loading="lazy"
-          className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fill
+          sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
         {/* Top Badge: Safe inside top-3.5 right-3.5, never clipped */}

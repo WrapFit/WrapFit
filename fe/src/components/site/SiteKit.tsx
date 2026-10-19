@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowRight, Check, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -110,7 +111,7 @@ export function PageHero({ breadcrumb, kicker, kickerIcon, title, subtitle, lead
 export function PhotoFrame({ image, className, children }: { image: HeroImage; className?: string; children?: React.ReactNode }) {
   return (
     <div className={cn("relative overflow-hidden rounded-card bg-surface-sunken lg:rounded-card-lg", className)}>
-      <img src={image.src} alt={image.alt} loading="lazy" className="absolute inset-0 size-full object-cover" />
+      <Image src={image.src} alt={image.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
       {image.caption && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-5 pt-16 sm:p-8 sm:pt-20">
           <p className="max-w-xl font-landing-heading text-title font-semibold text-white sm:text-heading-sm">{image.caption}</p>

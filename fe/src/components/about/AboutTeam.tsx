@@ -102,6 +102,8 @@ export function AboutTeam() {
                   <img
                     src={member.avatar}
                     alt={member.name}
+                    loading="lazy"
+                    decoding="async"
                     className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
