@@ -6,14 +6,14 @@
  * `GET /auth/me` and `GET /storage/usage`.
  */
 
-import { ArrowRight, BadgeCheck, KeyRound, MailWarning, Palette } from 'lucide-react';
+import { ArrowRight, BadgeCheck, KeyRound, MailWarning, Palette, Shield } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
 import { displayName } from '@/components/layout/account';
 import { outlineButton } from '@/components/library';
 import { Badge, Meter, Panel, PanelTitle, WorkspaceShell } from '@/components/workspace';
 import { ROLE_LABELS, ROUTES, TIER_LABELS } from '@/constants';
-import { RequireAuth, useAuth } from '@/features/auth';
+import { isRealAdmin, RequireAuth, useAuth } from '@/features/auth';
 import { formatBytes, formatDate, usagePercent, useStorageUsage } from '@/features/dashboard';
 import { AvatarEditor, ProfileForm } from '@/features/profile';
 import type { SafeUser } from '@/types/api';
@@ -72,14 +72,44 @@ function DashboardProfileScreen() {
 
         <div className="flex flex-col gap-6 lg:col-span-8">
           <ProfileForm user={user} />
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <PlanPanel user={user} />
-            <BrandKitPanel user={user} />
-          </div>
+          {isRealAdmin(user) ? (
+            <AdminPermissionsPanel />
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <PlanPanel user={user} />
+              <BrandKitPanel user={user} />
+            </div>
+          )}
           <SecurityPanel user={user} />
         </div>
       </div>
     </WorkspaceShell>
+  );
+}
+
+function AdminPermissionsPanel() {
+  return (
+    <Panel>
+      <PanelTitle>Quyền hạn Quản trị viên</PanelTitle>
+      <div className="mt-3 space-y-2.5 text-sm text-library-sub">
+        <p className="flex items-start gap-2.5">
+          <Shield className="mt-0.5 size-4 shrink-0 text-brand-forest-deep" aria-hidden />
+          <span>Toàn quyền quản trị tài khoản người dùng, phân quyền vai trò và chính sách bảo mật hệ thống.</span>
+        </p>
+        <p className="flex items-start gap-2.5">
+          <Shield className="mt-0.5 size-4 shrink-0 text-brand-forest-deep" aria-hidden />
+          <span>Quản lý kho khuôn bế, thẩm định mẫu thiết kế cộng đồng và kiểm duyệt cấu trúc hộp.</span>
+        </p>
+        <p className="flex items-start gap-2.5">
+          <Shield className="mt-0.5 size-4 shrink-0 text-brand-forest-deep" aria-hidden />
+          <span>Theo dõi doanh thu, đối tác xưởng in và trạng thái hạ tầng hệ thống render 3D.</span>
+        </p>
+      </div>
+      <Link href="/admin" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-fpt-orange-ink hover:underline">
+        Mở Bảng điều khiển Quản trị
+        <ArrowRight className="size-4" aria-hidden />
+      </Link>
+    </Panel>
   );
 }
 

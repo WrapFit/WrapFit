@@ -27,7 +27,7 @@ import {
   useProjectList,
 } from '@/features/dashboard';
 import { DielineSketch, useBoxStructures } from '@/features/templates';
-import { Banner } from '@/components/ui';
+import { Banner, ProductTour, Skeleton, TourReplayButton, type TourStep } from '@/components/ui';
 
 export default function DashboardPage() {
   return <DashboardScreen />;
@@ -38,6 +38,47 @@ const SHORTCUTS = [
   { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Mẫu WrapFit tuyển chọn và thiết kế đạt FitCheck™ của cộng đồng.' },
   { href: '/support', title: 'Trung tâm hỗ trợ', text: 'Kích thước, FitCheck™, file in, mã QR mở hộp.' },
   { href: '/pricing', title: 'Gói dịch vụ', text: 'Dung lượng lưu trữ và lượt tạo hoa văn AI của từng gói.' },
+];
+
+const TOUR_ID = 'dashboard-v1';
+
+/** First visit of the workspace: the five places a new user needs. */
+const TOUR_STEPS: TourStep[] = [
+  {
+    title: 'Chào mừng tới không gian làm việc',
+    body: 'Mình là Bé Gói. Mất chừng 30 giây để mình chỉ bạn những chỗ quan trọng nhất, bạn có thể bỏ qua bất cứ lúc nào.',
+    mascot: 'waving',
+  },
+  {
+    target: '[data-tour="create-box"]',
+    title: 'Tạo hộp theo kích thước món quà',
+    body: 'Nhập dài × rộng × cao của món quà (mm), WrapFit dựng khuôn bế 2D và hộp 3D vừa khít, đã tính độ dày giấy.',
+    mascot: 'measuring',
+  },
+  {
+    target: '[data-tour="structures"]',
+    title: 'Hoặc bắt đầu từ một cấu trúc',
+    body: 'Hộp nắp gài, bao diêm, âm dương, hộp gối: chọn kiểu gần với món quà để xem các mẫu của nó.',
+    mascot: 'presenting',
+  },
+  {
+    target: '[data-tour="recent-projects"]',
+    title: 'Dự án gần đây',
+    body: 'Các hộp bạn sửa gần nhất nằm ở đây. Bấm vào thẻ để mở lại trong Studio 2D + 3D.',
+    mascot: 'folding',
+  },
+  {
+    target: '[data-tour="workspace-nav"]',
+    title: 'Mọi thứ khác ở thanh bên',
+    body: 'Bộ nhận diện thương hiệu, vật liệu, đơn in và gói dịch vụ. Trên điện thoại, vuốt hàng thẻ này sang ngang.',
+    placement: 'right',
+  },
+  {
+    target: '[data-tour="tour-replay"]',
+    title: 'Cần xem lại?',
+    body: 'Nút này mở lại hướng dẫn bất cứ lúc nào. Chúc bạn gói quà thật đẹp!',
+    mascot: 'celebration',
+  },
 ];
 
 function DashboardScreen() {
@@ -101,19 +142,21 @@ function DashboardScreen() {
       description={user ? `Chào ${displayName(user)}, đây là các hộp bạn đang làm.` : "Không gian làm việc trải nghiệm — mở hộp bất kỳ trong Studio 3D hoặc tạo mới theo kích thước."}
       actions={
         <>
+          <TourReplayButton tourId={TOUR_ID} data-tour="tour-replay" variant="ghost" />
           {latest && (
             <Link href={ROUTES.editor(latest.id)} className={outlineButton} title={`Mở “${latest.title}”`}>
               <Box className="size-4" aria-hidden />
               Tiếp tục dự án gần nhất
             </Link>
           )}
-          <Link href={ROUTES.editorNew} className={createBoxButton}>
+          <Link href={ROUTES.editorNew} className={createBoxButton} data-tour="create-box">
             <Plus className="size-4" aria-hidden />
             Tạo hộp mới
           </Link>
         </>
       }
     >
+      <ProductTour id={TOUR_ID} steps={TOUR_STEPS} ready={!recent.isPending || isGuestOrOffline} />
       {isGuest && (
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-fpt-orange/30 bg-orange-50/80 p-4 text-sm text-landing-ink">
           <div className="flex items-center gap-2.5">
@@ -149,7 +192,7 @@ function DashboardScreen() {
                 Chọn kiểu hộp gần nhất với món quà, xem các mẫu của nó rồi đổi kích thước theo từng milimét.
               </p>
             </div>
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-tour="structures">
               {(structures.data ?? []).map((structure) => (
                 <li key={structure.id}>
                   <Link
@@ -164,7 +207,12 @@ function DashboardScreen() {
                 </li>
               ))}
               {structures.isPending &&
-                [0, 1, 2, 3].map((index) => <li key={index} aria-hidden className="aspect-square animate-pulse rounded-xl bg-white/70" />)}
+                [0, 1, 2, 3].map((index) => (
+                  <li key={index} aria-hidden className="flex flex-col gap-2 rounded-xl border border-library-line bg-white p-3">
+                    <Skeleton className="aspect-[4/3] rounded-lg" />
+                    <Skeleton shape="text" className="w-3/4" />
+                  </li>
+                ))}
             </ul>
           </div>
         </HeroPanel>
@@ -180,7 +228,7 @@ function DashboardScreen() {
           />
         </section>
 
-        <section aria-labelledby="recent-projects-title">
+        <section aria-labelledby="recent-projects-title" data-tour="recent-projects">
           <PanelTitle
             id="recent-projects-title"
             action={
