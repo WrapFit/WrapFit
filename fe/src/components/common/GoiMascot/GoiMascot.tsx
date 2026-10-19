@@ -244,17 +244,28 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
       setDirection(CLOCKWISE[sector]);
     };
 
+    // Pointer moves and scrolls fire far more often than the screen paints: measure at most once per frame.
+    let frame = 0;
+    const scheduleAim = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        aim();
+      });
+    };
+
     const onPointerMove = (e: PointerEvent) => {
       pointer = { x: e.clientX, y: e.clientY };
-      aim();
+      scheduleAim();
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("scroll", aim, { passive: true });
+    window.addEventListener("scroll", scheduleAim, { passive: true });
 
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("scroll", aim);
+      window.removeEventListener("scroll", scheduleAim);
     };
   }, [enableTracking]);
 
