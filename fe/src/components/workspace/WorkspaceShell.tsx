@@ -16,13 +16,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React from "react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useEffect } from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { primaryButton } from "@/components/library";
-import { MainFooter, MainHeader } from "@/components/layout";
+import { AdminHeader, MainFooter, MainHeader } from "@/components/layout";
 import { ROUTES, TIER_LABELS } from "@/constants";
-import { useAuth } from "@/features/auth";
+import { ADMIN_HOME, isAccountPage, isRealAdmin, useAuth } from "@/features/auth";
+import { WorkspaceSkeleton } from "./WorkspaceSkeleton";
+import { ADMIN_NAV, HealthCard } from "./AdminShell";
 import { formatBytes, usagePercent, useStorageUsage } from "@/features/dashboard";
 import { cn } from "@/utils/helpers";
 
@@ -76,6 +78,29 @@ interface WorkspaceShellProps {
 
 /** Site header, workspace menu on the left (tabs on small screens), title row, then the page. */
 export function WorkspaceShell(props: WorkspaceShellProps) {
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  // The maker workspace is not the administrator's: send them to the console (their profile and settings stay open).
+  const redirectAdmin = isRealAdmin(user) && !isAccountPage(pathname);
+  useEffect(() => {
+    if (redirectAdmin) router.replace(ADMIN_HOME);
+  }, [redirectAdmin, router]);
+  if (redirectAdmin) return <WorkspaceSkeleton label="Đang mở trang quản trị…" isAdmin={true} />;
+
+  // An administrator on account pages (profile, settings) sees the admin console layout and system health.
+  if (isRealAdmin(user)) {
+    return (
+      <ShellLayout
+        {...props}
+        nav={ADMIN_NAV}
+        root={{ label: "Quản trị", href: ADMIN_HOME }}
+        sidebarBottom={<HealthCard />}
+        isAdmin={true}
+      />
+    );
+  }
+
   return (
     <ShellLayout
       {...props}
@@ -88,6 +113,7 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
         </Link>
       }
       sidebarBottom={<PlanCard />}
+      isAdmin={false}
     />
   );
 }
@@ -98,22 +124,43 @@ interface ShellLayoutProps extends WorkspaceShellProps {
   root: { label: string; href: string };
   sidebarTop?: React.ReactNode;
   sidebarBottom?: React.ReactNode;
+  isAdmin?: boolean;
 }
 
 /** Layout shared by the workspace and the admin console. */
-export function ShellLayout({ title, description, actions, children, nav, root, sidebarTop, sidebarBottom }: ShellLayoutProps) {
+export function ShellLayout({
+  title,
+  description,
+  actions,
+  children,
+  nav,
+  root,
+  sidebarTop,
+  sidebarBottom,
+  isAdmin: isAdminProp,
+}: ShellLayoutProps) {
   const pathname = usePathname();
   const items = nav.flatMap((group) => group.items);
+  const isAdminLayout = isAdminProp ?? (root.href === ADMIN_HOME || pathname.startsWith("/admin"));
+
   return (
     <>
-      <MainHeader />
+      {isAdminLayout ? <AdminHeader /> : <MainHeader />}
       <div className={`${landingFontVariables} min-h-screen bg-white pt-16 font-landing-heading text-library-text`}>
         {/* Bottom padding below md clears the floating mobile navigation bar. */}
-        <div className="mx-auto flex w-full max-w-[1440px] gap-8 px-4 pb-28 pt-6 sm:px-6 md:pb-16 lg:px-10">
-          <aside className="hidden w-[248px] shrink-0 lg:block" aria-label={root.label}>
+        <div
+          className={cn(
+            "flex w-full gap-6 pb-28 pt-6 sm:px-6 md:pb-16 lg:px-8",
+            isAdminLayout ? "px-4" : "mx-auto max-w-[1440px] gap-8 px-4 lg:px-10"
+          )}
+        >
+          <aside
+            className={cn("hidden shrink-0 lg:block", isAdminLayout ? "w-[240px]" : "w-[248px]")}
+            aria-label={root.label}
+          >
             <div className="sticky top-24 flex max-h-[calc(100vh-7rem)] flex-col gap-5 overflow-y-auto pb-4 pr-1">
               {sidebarTop}
-              <nav className="flex flex-col gap-4">
+              <nav className="flex flex-col gap-4" data-tour="workspace-nav">
                 {nav.map((group) => (
                   <div key={group.title}>
                     <p className="px-3 pb-1.5 text-xs text-library-muted">{group.title}</p>
@@ -132,11 +179,12 @@ export function ShellLayout({ title, description, actions, children, nav, root, 
           </aside>
 
           <main className="min-w-0 flex-1">
-            <nav aria-label={root.label} className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
+            <nav aria-label={root.label} data-tour="workspace-nav" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
               {items.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   aria-current={pathname === item.href ? "page" : undefined}
                   className={cn(
                     "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm",
@@ -168,7 +216,16 @@ export function ShellLayout({ title, description, actions, children, nav, root, 
           </main>
         </div>
       </div>
-      <MainFooter />
+      {isAdminLayout ? (
+        <footer className="border-t border-library-line bg-library-tile/60 py-6 text-xs text-library-muted">
+          <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+            <span>© 2026 WrapFit Platform Administration Console · EXE101</span>
+            <span>Bảo mật hệ thống · Giám sát tự động 24/7</span>
+          </div>
+        </footer>
+      ) : (
+        <MainFooter />
+      )}
     </>
   );
 }
@@ -178,6 +235,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   return (
     <Link
       href={item.href}
+      prefetch={true}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex h-10 items-center gap-2.5 rounded-lg border-[1.5px] px-3 text-body text-library-ink transition-colors",

@@ -8,10 +8,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listCommunityTemplates, listCuratedTemplates } from "@/api/templates";
 import { landingFontVariables } from "@/assets/fonts/landing";
-import { EmptyState, ErrorState, PageLoader } from "@/components/common/StatusViews";
+import { EmptyState, ErrorState } from "@/components/common/StatusViews";
 import { MainFooter, MainHeader } from "@/components/layout";
-import { HowItWorks, LibraryCard, LibraryCardSkeleton, Pagination, StartBar } from "@/components/library";
-import { Breadcrumb, Tab, TabList, TabPanel, Tabs } from "@/components/ui";
+import { HowItWorks, LibraryBodySkeleton, LibraryCard, LibraryCardSkeleton, Pagination, StartBar } from "@/components/library";
+import { Breadcrumb, ProductTour, Tab, TabList, TabPanel, Tabs, type TourStep } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import {
   DielineSketch,
@@ -37,7 +37,7 @@ import {
   paginateTemplates,
 } from "@/features/templates";
 import { useHydrated, useInView } from "@/hooks/dom";
-import { queryKeys } from "@/hooks/data";
+import { queryKeys, usePrefetchTemplate } from "@/hooks/data";
 import type { CommunityCard, CuratedCard, Industry, Occasion, Paginated } from "@/types/api";
 import { cn } from "@/utils/helpers";
 
@@ -93,7 +93,7 @@ export default function TemplatesPage() {
       <MainHeader />
       {/* Bottom padding clears the floating mobile navigation bar. */}
       <main className={`${landingFontVariables} min-h-screen bg-white pb-28 pt-24 font-landing-heading text-library-text md:pb-0`}>
-        <Suspense fallback={<PageLoader label="Đang mở thư viện mẫu…" />}>
+        <Suspense fallback={<LibraryBodySkeleton />}>
           <HydratedLibrary />
         </Suspense>
       </main>
@@ -107,7 +107,7 @@ export default function TemplatesPage() {
  * after hydration, so the first client render always matches the server's loader.
  */
 function HydratedLibrary() {
-  return useHydrated() ? <TemplateLibrary /> : <PageLoader label="Đang mở thư viện mẫu…" />;
+  return useHydrated() ? <TemplateLibrary /> : <LibraryBodySkeleton />;
 }
 
 function TemplateLibrary() {
@@ -164,19 +164,21 @@ function TemplateLibrary() {
     gridRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
   };
 
+  const prefetchTemplate = usePrefetchTemplate();
   const sidebar = <SideFilters filters={filters} tab={tab} onChange={update} />;
 
   return (
     <>
       <div className="mx-auto flex w-full max-w-[1440px] gap-8 px-4 sm:px-6 lg:px-10">
-        <aside className="hidden w-[302px] shrink-0 lg:block" aria-label="Bộ lọc thư viện">
+        <ProductTour id={LIBRARY_TOUR_ID} steps={LIBRARY_TOUR} ready={!curated.isPending} />
+        <aside className="hidden w-[302px] shrink-0 lg:block" aria-label="Bộ lọc thư viện" data-tour="library-filters">
           <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-6 pr-2 pt-2">{sidebar}</div>
         </aside>
 
         <div className="min-w-0 flex-1 pt-2">
           <HeroCard total={libraryTotal} filters={filters} onChange={update} />
 
-          <details className="group mt-4 rounded-2xl border border-library-ink bg-white lg:hidden">
+          <details className="group mt-4 rounded-2xl border border-library-ink bg-white lg:hidden" data-tour="library-filters">
             <summary className="flex h-12 cursor-pointer list-none items-center justify-between px-4 text-base text-library-ink [&::-webkit-details-marker]:hidden">
               <span className="inline-flex items-center gap-2">
                 <SlidersHorizontal className="size-4" aria-hidden />
@@ -202,6 +204,7 @@ function TemplateLibrary() {
                   )}
                 </p>
                 {/* Curated first: most visitors start from a ready-made template. */}
+                <div data-tour="library-tabs">
                 <TabList label="Nguồn mẫu">
                   <Tab value="curated" count={effectiveCurated.meta.total}>
                     WrapFit tuyển chọn
@@ -210,6 +213,7 @@ function TemplateLibrary() {
                     Cộng đồng
                   </Tab>
                 </TabList>
+                </div>
               </div>
 
               <TabPanel value="curated">
@@ -227,6 +231,7 @@ function TemplateLibrary() {
                     <LibraryCard
                       key={item.id}
                       href={templateHref(item.id)}
+                      intent={prefetchTemplate(item.id)}
                       title={item.title}
                       label={`Dùng mẫu ${item.title}, ${item.structure.name} ${formatDimensions(item.dimensions)}`}
                       structure={item.structure.id}
@@ -283,6 +288,35 @@ function TemplateLibrary() {
   );
 }
 
+const LIBRARY_TOUR_ID = "library-v1";
+
+/** First visit of the library: search, filters, the two sources, then a card. */
+const LIBRARY_TOUR: TourStep[] = [
+  {
+    target: '[data-tour="library-search"]',
+    title: "Tìm theo tên hoặc thẻ",
+    body: "Gõ “tết”, “kraft”, “mỹ phẩm”… Kết quả đổi sau khi bạn ngừng gõ một chút, không cần bấm Enter.",
+    mascot: "presenting",
+  },
+  {
+    target: '[data-tour="library-filters"]',
+    title: "Lọc theo cấu trúc, dịp, ngành hàng",
+    body: "Mỗi lựa chọn kèm số mẫu còn lại, nên bạn biết trước bộ lọc nào ra kết quả.",
+    placement: "right",
+  },
+  {
+    target: '[data-tour="library-tabs"]',
+    title: "Mẫu tuyển chọn hoặc của cộng đồng",
+    body: "WrapFit tuyển chọn là mẫu sẵn sàng in. Cộng đồng là thiết kế công khai đạt FitCheck™ từ 90 điểm.",
+  },
+  {
+    target: '[data-tour="library-grid"] a',
+    title: "Mở mẫu và đổi kích thước",
+    body: "Bên trái là khuôn bế phẳng, bên phải là hộp đã gấp. Bấm vào để mở trong Studio rồi đổi từng milimét theo món quà.",
+    mascot: "measuring",
+  },
+];
+
 // ---------------------------------------------------------------- hero
 
 function HeroCard({ total, filters, onChange }: { total: number | null; filters: Filters; onChange(patch: Patch): void }) {
@@ -330,6 +364,7 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
             onChange({ q: search.trim() || null });
           }}
           className="mt-6"
+          data-tour="library-search"
         >
           <label className="flex h-12 items-center gap-2 rounded-control border-[0.8px] border-library-ink bg-white px-3 focus-within:shadow-hard-sm">
             <ScanSearch className="size-5 shrink-0 text-library-muted" aria-hidden />
@@ -644,7 +679,7 @@ function LibraryGrid<T>({
   }
   return (
     <>
-      <div aria-busy={query.isPlaceholderData} className={cn(gridClass, "transition-opacity", query.isPlaceholderData && "opacity-60")}>
+      <div data-tour="library-grid" aria-busy={query.isPlaceholderData} className={cn(gridClass, "transition-opacity", query.isPlaceholderData && "opacity-60")}>
         {data.items.map(renderCard)}
       </div>
       <Pagination page={data.meta.page} totalPages={data.meta.totalPages} busy={query.isFetching} onPage={onPage} />

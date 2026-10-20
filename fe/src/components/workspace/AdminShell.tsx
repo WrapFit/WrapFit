@@ -11,8 +11,10 @@ import {
   Images,
   LayoutDashboard,
   ReceiptText,
+  Settings,
   ShieldCheck,
   SlidersHorizontal,
+  UserRound,
   Users,
 } from "lucide-react";
 import React from "react";
@@ -56,6 +58,13 @@ export const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/system-config", label: "Cấu hình", icon: SlidersHorizontal },
     ],
   },
+  {
+    title: "Quản trị viên",
+    items: [
+      { href: "/dashboard/profile", label: "Hồ sơ", icon: UserRound },
+      { href: "/dashboard/settings", label: "Cài đặt", icon: Settings },
+    ],
+  },
 ];
 
 interface AdminShellProps {
@@ -66,13 +75,21 @@ interface AdminShellProps {
 }
 
 export function AdminShell(props: AdminShellProps) {
-  return <ShellLayout {...props} nav={ADMIN_NAV} root={{ label: "Quản trị", href: "/admin" }} sidebarBottom={<HealthCard />} />;
+  return (
+    <ShellLayout
+      {...props}
+      nav={ADMIN_NAV}
+      root={{ label: "Quản trị", href: "/admin" }}
+      sidebarBottom={<HealthCard />}
+      isAdmin={true}
+    />
+  );
 }
 
 const DOT: Record<string, string> = { up: "bg-fpt-orange", down: "bg-danger", unknown: "bg-library-muted" };
 
 /** Database, Redis and export worker at a glance (`GET /health/details`). */
-function HealthCard() {
+export function HealthCard() {
   const health = useHealthDetails();
   const services = health.data
     ? [

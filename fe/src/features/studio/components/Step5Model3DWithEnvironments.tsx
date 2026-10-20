@@ -261,7 +261,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
           </button>
         }
         next={
-          <button type="button" onClick={onNext} className={PRIMARY_PILL}>
+          <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
             Kiểm tra & xuất file
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>

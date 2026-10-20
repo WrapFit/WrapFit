@@ -14,6 +14,8 @@ export function AccountAvatar({ user, className }: { user: SafeUser; className: 
         src={user.avatarUrl}
         alt=""
         referrerPolicy="no-referrer"
+        loading="lazy"
+        decoding="async"
         onError={() => setFailedUrl(user.avatarUrl)}
         className={`${className} object-cover`}
       />

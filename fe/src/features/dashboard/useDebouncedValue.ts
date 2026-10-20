@@ -1,13 +1,2 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
-/** `value`, once it has stopped changing for `delayMs`. */
-export function useDebouncedValue<T>(value: T, delayMs = 300): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(timer);
-  }, [value, delayMs]);
-  return debounced;
-}
+/** Moved to `@/hooks/shared`; kept so older imports still work. */
+export { useDebouncedValue } from "@/hooks/shared/useDebouncedValue";

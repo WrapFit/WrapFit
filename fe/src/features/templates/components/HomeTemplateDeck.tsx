@@ -163,8 +163,8 @@ export function HomeTemplateDeck() {
                 className="group flex h-11 w-11 items-center justify-center"
               >
                 <span
-                  className={`block transition-all duration-300 rounded-full ${
-                    current === idx ? "h-2.5 w-7 bg-[#133020]" : "w-2.5 h-2.5 bg-[#cfc5b3] group-hover:bg-[#8e8574]"
+                  className={`block h-2.5 w-7 rounded-full transition-[transform,background-color] duration-300 ${
+                    current === idx ? "bg-[#133020]" : "scale-x-[0.36] bg-[#cfc5b3] group-hover:bg-[#8e8574]"
                   }`}
                 />
               </button>

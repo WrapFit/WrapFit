@@ -98,8 +98,9 @@ export function BoxJourney() {
                     {/* The dot stays small; the button around it is the 24 px target. */}
                     <span
                       className={cn(
-                        "h-1.5 rounded-full transition-all duration-300",
-                        index === active ? "w-7 bg-fpt-orange" : "w-2.5 bg-line-strong/50 group-hover/dot:bg-line-strong"
+                        // Fixed width, scaled: the active dot grows with transform only, no layout per frame.
+                        "h-1.5 w-7 rounded-full transition-[transform,background-color] duration-300",
+                        index === active ? "bg-fpt-orange" : "scale-x-[0.36] bg-line-strong/50 group-hover/dot:bg-line-strong"
                       )}
                     />
                   </button>

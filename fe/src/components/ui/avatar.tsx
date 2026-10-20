@@ -50,6 +50,7 @@ export function Avatar({ src, name, size = "md", status, fallbackClassName, deco
           src={src!}
           alt={decorative ? "" : `Ảnh đại diện của ${name}`}
           referrerPolicy="no-referrer"
+          decoding="async"
           onError={() => setFailed(src!)}
           className={cn(SIZES[size], "rounded-full object-cover ring-1 ring-fg/10")}
         />

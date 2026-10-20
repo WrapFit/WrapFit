@@ -75,6 +75,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
   const history = useQuery({
     queryKey: queryKeys.projects.exports(projectId),
     queryFn: () => listProjectExports(projectId),
+    enabled: Boolean(projectId && projectId !== "demo-project" && projectId !== "demo"),
   });
 
   const current = job.data;

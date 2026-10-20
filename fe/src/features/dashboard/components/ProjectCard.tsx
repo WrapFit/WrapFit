@@ -2,8 +2,9 @@
 
 import { ArchiveRestore, Box, Trash2 } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { memo } from "react";
 import { ROUTES } from "@/constants";
+import { usePrefetchStudio } from "@/hooks/data";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
 import type { ProjectStatus, ProjectSummary } from "@/types/api";
 import { cn } from "@/utils/helpers";
@@ -85,9 +86,10 @@ export function ProjectTile({ project, children }: { project: ProjectSummary; ch
   );
 }
 
-/** One project of the grid. */
-export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove, onDeletePermanently }: ProjectCardProps) {
+/** One project of the grid. Memoised: a page of cards re-renders only the card whose project or busy flag changed. */
+export const ProjectCard = memo(function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove, onDeletePermanently }: ProjectCardProps) {
   const inTrash = project.status === "DELETED";
+  const prefetch = usePrefetchStudio();
   const menu: MenuAction[] = [
     { id: "duplicate", label: "Nhân bản", icon: "content_copy", onSelect: () => onDuplicate(project) },
     { id: "move", label: "Chuyển thư mục…", icon: "drive_file_move", onSelect: () => onMove(project) },
@@ -102,7 +104,7 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
       {inTrash ? (
         <ProjectTile project={project} />
       ) : (
-        <Link href={ROUTES.editor(project.id)} aria-label={`Mở “${project.title}” trong studio`} className="group block rounded-2xl outline-none focus-visible:shadow-hard-sm">
+        <Link href={ROUTES.editor(project.id)} {...prefetch(project.id)} aria-label={`Mở “${project.title}” trong studio`} className="group block rounded-2xl outline-none focus-visible:shadow-hard-sm">
           <div className="transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm rounded-2xl motion-reduce:transition-none">
             <ProjectTile project={project} />
           </div>
@@ -167,4 +169,4 @@ export function ProjectCard({ project, busy, onChangeStatus, onDuplicate, onMove
       </div>
     </article>
   );
-}
+});

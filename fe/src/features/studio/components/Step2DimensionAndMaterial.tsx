@@ -244,7 +244,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
         {/* Left Column: Dimension Inputs & Presets */}
         <div className="flex flex-col gap-4">
           {/* Card 1: Kích thước */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+          <div data-tour="s2-size" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
             {/* Row 1: Heading & Unit Segmented Switch */}
             <div className="flex items-center justify-between pb-3">
               <h2 className="font-landing-heading text-title font-bold text-slate-900">
@@ -338,7 +338,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           </div>
 
           {/* Card 2: Món quà mẫu */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+          <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
               <h2 className="font-landing-heading text-title font-bold text-slate-900">
                 Món quà mẫu
@@ -504,7 +504,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           </div>
         }
         next={
-          <button type="button" onClick={onNext} disabled={busy || errors.length > 0} className={PRIMARY_PILL}>
+          <button type="button" data-tour="studio-next" onClick={onNext} disabled={busy || errors.length > 0} className={PRIMARY_PILL}>
             {nextLabel}
             <ArrowRight className="size-4" aria-hidden />
           </button>
