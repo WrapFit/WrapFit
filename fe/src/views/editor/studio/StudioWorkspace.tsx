@@ -217,7 +217,10 @@ export function StudioWorkspace({
 
   // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export.
   const firstStep: StudioStep = isDemo ? 1 : 2;
+  const paramStepRaw = searchParams.get("step");
+  const paramStep = paramStepRaw ? Number(paramStepRaw) : null;
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
+    if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
     if (hasParamDims || paramStructure) return 4;
     return 1;
@@ -319,7 +322,8 @@ export function StudioWorkspace({
   }, []);
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const [dialog, setDialog] = useState<StudioDialogId | null>(null);
+  const paramDialog = searchParams.get("dialog") as StudioDialogId | null;
+  const [dialog, setDialog] = useState<StudioDialogId | null>(() => paramDialog ?? null);
   const [restoreNotice, setRestoreNotice] = useState<RestoreNotice | null>(notice);
   const [undoing, setUndoing] = useState<boolean>(false);
 
@@ -1215,9 +1219,9 @@ export function StudioWorkspace({
       )}
 
       {/* ================= 3. PROJECT DIALOGS ================= */}
-      {project && dialog === "export" && (
+      {dialog === "export" && (
         <ExportDialog
-          projectId={project.id}
+          projectId={project?.id ?? "demo-project"}
           flush={sync.flush}
           onBlocked={showBlockingReport}
           onClose={() => setDialog(null)}
