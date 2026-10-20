@@ -13,6 +13,7 @@ import { useToast } from "@/components/common/Toast";
 import { MainHeader } from "@/components/layout";
 import { primaryButton } from "@/components/library";
 import { Badge, SegmentedControl, WorkspaceError } from "@/components/workspace";
+import { ProductTour, TourReplayButton, useTourContinuation, type TourStep } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useAuth } from "@/features/auth";
 import { BoxStage3D } from "@/features/showcase";
@@ -120,6 +121,7 @@ function presetFrom(params: Pick<URLSearchParams, "get">): Preset {
 }
 
 function NewBoxDesigner({ structures, template, preset }: { structures: BoxStructure[]; template: TemplateDetail | null; preset: Preset | null }) {
+  const continued = useTourContinuation();
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -234,6 +236,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
 
   return (
     <Page>
+      <ProductTour id={NEW_BOX_TOUR_ID} steps={NEW_BOX_TOUR} force={continued} />
       <p className="text-sm text-library-muted">
         <Link href="/" className="hover:text-library-ink hover:underline">
           Trang chủ
@@ -252,8 +255,11 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
             Nhập kích thước lọt lòng theo milimét và chọn giấy: khuôn bế và hộp 3D cập nhật ngay, đúng công thức của file in.
           </p>
         </div>
-        <span className="font-mono text-sm text-library-sub">
-          {dimensions.length} × {dimensions.width} × {dimensions.height} mm · t {dimensions.paperThickness.toFixed(2)}
+        <span className="flex flex-wrap items-center gap-3">
+          <TourReplayButton tourId={NEW_BOX_TOUR_ID} variant="ghost" size="sm" />
+          <span className="font-mono text-sm text-library-sub">
+            {dimensions.length} × {dimensions.width} × {dimensions.height} mm · t {dimensions.paperThickness.toFixed(2)}
+          </span>
         </span>
       </div>
 
@@ -277,7 +283,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* Stage: stays in view while the settings on the right scroll. */}
         <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
-          <section aria-label="Xem trước" className="overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard">
+          <section aria-label="Xem trước" data-tour="new-preview" className="overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-library-ink/15 px-4 py-3">
               <SegmentedControl<"2d" | "3d">
                 label="Chế độ xem"
@@ -342,7 +348,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
             </div>
           </section>
 
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-tour="new-stats">
             <Stat label="Khổ phôi trải phẳng" value={sheets.map((s) => `${s.width} × ${s.height}`).join(" + ") + " mm"} />
             <Stat label="Bù độ dày giấy mỗi nếp" value={`+${dimensions.paperThickness.toFixed(2)} mm`} />
             <Stat
@@ -368,7 +374,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
 
         {/* Settings */}
         <aside aria-label="Tuỳ chỉnh hộp" className="h-fit rounded-2xl border border-library-line bg-white">
-          <Section title="Cấu trúc hộp" hint={template ? "Do mẫu thiết kế quy định" : undefined}>
+          <Section tour="new-structure" title="Cấu trúc hộp" hint={template ? "Do mẫu thiết kế quy định" : undefined}>
             <div className="grid grid-cols-2 gap-2.5">
               {structures.map((item) => {
                 const active = item.id === structure;
@@ -394,8 +400,8 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
             </div>
           </Section>
 
-          <Section title="Kích thước lọt lòng" hint="mm">
-            <label className="mb-4 flex flex-col gap-1.5">
+          <Section tour="new-size" title="Kích thước lọt lòng" hint="mm">
+            <label className="mb-4 flex flex-col gap-1.5" data-tour="new-preset">
               <span className="text-sm text-library-muted">Món quà mẫu</span>
               <select
                 value={presetId}
@@ -414,6 +420,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
               </select>
             </label>
             <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4" data-tour="new-sides">
               {SIDES.map(({ field, label }) => {
                 const { min, max } = range(field);
                 return (
@@ -440,8 +447,10 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                 );
               })}
 
+              </div>
+
               {/* Gift weight input & Crash-lock intelligent recommendation */}
-              <div className="pt-2 border-t border-library-line">
+              <div className="pt-2 border-t border-library-line" data-tour="new-weight">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-library-ink font-medium">Khối lượng quà tặng</span>
                   <div className="flex items-center gap-1">
@@ -522,7 +531,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
             </div>
           </Section>
 
-          <Section title="Giấy" hint={`t = ${dimensions.paperThickness.toFixed(2)} mm`}>
+          <Section tour="new-paper" title="Giấy" hint={`t = ${dimensions.paperThickness.toFixed(2)} mm`}>
             <div role="radiogroup" aria-label="Giấy" className="flex flex-col gap-2">
               {PAPER_STOCKS.map((paper) => {
                 const active = paper.theme === material;
@@ -579,6 +588,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
               type="button"
               onClick={handleCreateOrExplore}
               disabled={busy || errors.length > 0}
+              data-tour="new-create"
               className={cn(primaryButton, "h-12 w-full disabled:cursor-not-allowed")}
             >
               {busy && <span aria-hidden className="size-4 animate-spin rounded-full border-2 border-fpt-orange/30 border-t-fpt-orange motion-reduce:animate-none" />}
@@ -601,9 +611,78 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
   );
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+const NEW_BOX_TOUR_ID = "editor-new-v1";
+
+/**
+ * First visit of "Tạo hộp mới", written for someone who has never designed a box: one decision per step, in the order
+ * of the page (structure → size → weight → paper → check → create). The last step is done by pressing the real button.
+ */
+const NEW_BOX_TOUR: TourStep[] = [
+  {
+    title: "Làm chiếc hộp đầu tiên chỉ với 4 việc",
+    body: "Chọn kiểu hộp, nhập kích thước món quà, chọn giấy rồi bấm tạo. Mình sẽ chỉ từng chỗ một, bạn cứ làm theo nhé.",
+    mascot: "thumbs_up",
+  },
+  {
+    target: '[data-tour="new-structure"]',
+    title: "Việc 1: Chọn kiểu hộp",
+    body: "Hộp nắp gài hợp với mỹ phẩm, nến; hộp âm dương sang trọng cho quà tặng; hộp kéo bao diêm cho trang sức nhỏ; hộp gối cho phụ kiện. Bấm vào hình để chọn, bản vẽ bên trái đổi theo.",
+    mascot: "presenting",
+    placement: "left",
+  },
+  {
+    target: '[data-tour="new-preset"]',
+    title: "Chưa đo món quà? Chọn món gần giống",
+    body: "Danh sách có sẵn kích thước của các món quà phổ biến (hũ nến thơm, chai nước hoa, hộp trang sức…). Chọn một món là kích thước tự điền.",
+    mascot: "measuring",
+    placement: "left",
+  },
+  {
+    target: '[data-tour="new-sides"]',
+    title: "Việc 2: Nhập kích thước món quà",
+    body: "Dùng thước đo món quà theo milimét (1 cm = 10 mm): Dài, Rộng và Cao. Đây là khoảng trống bên trong hộp, nên cộng thêm 2–3 mm cho dễ bỏ quà vào. Gõ số vào ô hoặc kéo thanh trượt.",
+    mascot: "measuring",
+    placement: "left",
+  },
+  {
+    target: '[data-tour="new-weight"]',
+    title: "Món quà nặng bao nhiêu?",
+    body: "Nhập khối lượng theo gam. Quà nặng hơn 300 g thì WrapFit gợi ý đáy khoá chắc hơn để hộp không bục khi vận chuyển.",
+    mascot: "measuring",
+    placement: "left",
+  },
+  {
+    target: '[data-tour="new-paper"]',
+    title: "Việc 3: Chọn giấy",
+    body: "Mỗi loại giấy có màu và độ dày khác nhau. Không chắc thì cứ giữ loại đang chọn, sau này vẫn đổi được trong Studio.",
+    mascot: "folding",
+    placement: "left",
+  },
+  {
+    target: '[data-tour="new-preview"]',
+    title: "Xem trước chiếc hộp",
+    body: "“Khuôn bế 2D” là bản vẽ trải phẳng để in và cắt: nét đỏ là đường cắt, nét xanh đứt là đường gấp. Bấm “Hộp 3D” để xem hộp đã gấp, kéo thanh “Gấp hộp” để xem từng nếp.",
+    mascot: "folding",
+  },
+  {
+    target: '[data-tour="new-stats"]',
+    title: "Kiểm tra trước khi in",
+    body: "FitCheck™ chấm điểm khuôn: từ 90 điểm trở lên là in được. Khổ phôi cho biết tờ giấy cần to bao nhiêu.",
+    mascot: "thumbs_up",
+  },
+  {
+    target: '[data-tour="new-create"]',
+    title: "Việc 4: Tạo dự án",
+    body: "Xong rồi! Bấm nút này để lưu chiếc hộp và mở Studio, nơi bạn thêm chữ, logo, hoa văn rồi xuất file in.",
+    mascot: "celebration",
+    placement: "left",
+    clickTarget: true,
+  },
+];
+
+function Section({ title, hint, tour, children }: { title: string; hint?: string; tour?: string; children: React.ReactNode }) {
   return (
-    <section className="border-b border-library-line p-5">
+    <section className="border-b border-library-line p-5" data-tour={tour}>
       <h2 className="mb-3 flex items-center justify-between gap-2 text-base font-medium text-library-ink">
         {title}
         {hint && <span className="text-xs font-normal text-library-muted">{hint}</span>}

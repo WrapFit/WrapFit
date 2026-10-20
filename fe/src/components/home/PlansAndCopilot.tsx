@@ -42,19 +42,19 @@ export function CopilotCard() {
   const [mascotSize, setMascotSize] = useState(190);
 
   useEffect(() => {
-    const updateSize = () => {
-      setMascotSize(window.innerWidth < 640 ? 140 : 190);
-    };
+    // A media query fires once when the breakpoint is crossed, not on every pixel of a resize.
+    const small = window.matchMedia("(max-width: 639px)");
+    const updateSize = () => setMascotSize(small.matches ? 140 : 190);
     updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    small.addEventListener("change", updateSize);
+    return () => small.removeEventListener("change", updateSize);
   }, []);
 
   return (
     <Reveal>
       <Container>
         <FeatureCard className="bg-landing-ink ring-white/10">
-          <article id={COPILOT.id} className="grid scroll-mt-28 grid-cols-1 items-center gap-8 lg:grid-cols-2">
+          <article id={COPILOT.id} data-tour="home-copilot" className="grid scroll-mt-28 grid-cols-1 items-center gap-8 lg:grid-cols-2">
             {/* Left column: Text & action buttons */}
             <div className="flex flex-col justify-center gap-6">
               <div className="flex flex-col gap-4">

@@ -18,7 +18,7 @@ export const DEMO_USER: SafeUser = {
   fullName: "Nhà Sáng Tạo WrapFit (Demo)",
   avatarUrl: null,
   shopName: "WrapFit Craft Studio",
-  role: "ADMIN",
+  role: "MAKER",
   subscriptionTier: "PRO_BUSINESS",
   brandKit: {
     logoUrl: null,
@@ -32,8 +32,25 @@ export const DEMO_USER: SafeUser = {
   updatedAt: "2026-10-16T12:00:00Z",
 };
 
+export const DEMO_ADMIN_USER: SafeUser = {
+  id: "usr-admin-seed",
+  email: "admin@wrapfit.vn",
+  emailVerifiedAt: "2026-01-01T00:00:00Z",
+  fullName: "WrapFit Administrator",
+  shopName: "WrapFit Platform Operations",
+  avatarUrl: null,
+  role: "ADMIN",
+  subscriptionTier: "PRO_BUSINESS",
+  brandKit: null,
+  referralCode: "ADMIN2026",
+  isActive: true,
+  createdAt: "2026-01-01T00:00:00Z",
+  updatedAt: "2026-10-17T00:00:00Z",
+};
+
 export const DEMO_USERS: SafeUser[] = [
   DEMO_USER,
+  DEMO_ADMIN_USER,
   {
     id: "usr-lecturer",
     email: "thanhntl2@fpt.edu.vn",

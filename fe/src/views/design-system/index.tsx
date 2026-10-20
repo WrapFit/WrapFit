@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, Box, ChevronDown, CircleAlert, Download, FileDown, Heart, Layers, Package, Plus, Ruler, Settings, Share2, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   BREAKPOINTS,
   GRID,
@@ -56,7 +56,11 @@ import {
   Tabs,
   Textarea,
   Tooltip,
+  ProductTour,
+  VirtualList,
+  startTour,
   type DateRange,
+  type TourStep,
 } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 
@@ -171,6 +175,15 @@ function Demo({ title, note, children, className }: { title: string; note?: Reac
   );
 }
 
+const DEMO_TOUR_ID = "design-system-demo";
+const DEMO_TOUR: TourStep[] = [
+  { target: '[data-tour="ds-tour-start"]', title: "Một tính năng được làm nổi bật", body: "Phần còn lại tối đi, tooltip nằm cạnh phần tử, tự đổi phía khi thiếu chỗ.", mascot: "presenting" },
+  { target: '[data-tour="ds-tour-badge"]', title: "Gắn data-tour lên phần tử", body: "Mỗi bước trỏ tới một bộ chọn CSS; phần tử không có trên màn hình thì bước đó được bỏ qua.", mascot: "folding" },
+  { title: "Bước không có đích", body: "Thẻ nằm giữa màn hình: dùng cho lời chào và lời kết.", mascot: "celebration" },
+];
+
+const VIRTUAL_ROWS = Array.from({ length: 5000 }, (_, index) => ({ id: index + 1, name: `Hộp nắp gài · đơn ${index + 1}` }));
+
 const ROWS = [
   { id: "1", name: "Hộp nắp gài · Nến thơm", format: "PDF CMYK", status: "Đã xuất", score: 96, date: new Date(2026, 9, 12) },
   { id: "2", name: "Hộp âm dương · Trà", format: "DXF", status: "Đang xử lý", score: 88, date: new Date(2026, 9, 14) },
@@ -192,6 +205,7 @@ export default function DesignSystemPage() {
   const [drawer, setDrawer] = useState(false);
   const [alertOpen, setAlertOpen] = useState(true);
   const [loaded, setLoaded] = useState(true);
+  const virtualScrollRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<ThemeMode>("light");
   const [vision, setVision] = useState<(typeof VISION)[number]["id"]>("none");
   const [openFolds, setOpenFolds] = useState<ReadonlySet<string>>(() => new Set());
@@ -780,6 +794,36 @@ export default function DesignSystemPage() {
             <div className="flex items-center gap-4">
               <Spinner label="Đang tải" />
               <LoadingState label="Đang xuất file in…" detail="Thường mất khoảng 20 giây." mascot="delivery" delayMs={0} className="py-2" />
+            </div>
+          </Demo>
+
+          <Demo title="Product tour" note="Lần đầu vào trang: màn hình tối đi, một tính năng được khoét sáng, tooltip giải thích. Phím → / ← / Esc, Tab nằm trong tooltip; đã xem thì không tự mở lại.">
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="brand" size="sm" onClick={() => startTour(DEMO_TOUR_ID)} data-tour="ds-tour-start">
+                Chạy thử hướng dẫn
+              </Button>
+              <span data-tour="ds-tour-badge">
+                <Badge tone="info">data-tour=&quot;…&quot;</Badge>
+              </span>
+            </div>
+            <ProductTour id={DEMO_TOUR_ID} steps={DEMO_TOUR} autoStart={false} />
+          </Demo>
+
+          <Demo title="VirtualList" note="5 000 dòng nhưng chỉ vài chục dòng gần màn hình nằm trong DOM; chiều cao từng dòng được đo khi hiện ra, vị trí dùng transform.">
+            <div ref={virtualScrollRef} className="h-72 overflow-y-auto rounded-panel border border-line" tabIndex={0} aria-label="Danh sách 5 000 file in mẫu">
+              <VirtualList
+                items={VIRTUAL_ROWS}
+                getKey={(row) => row.id}
+                estimateHeight={48}
+                scrollRef={virtualScrollRef}
+                aria-label="File in mẫu"
+                renderItem={(row) => (
+                  <div className="flex h-12 items-center justify-between border-b border-line px-4 text-body-sm">
+                    <span className="text-fg">{row.name}</span>
+                    <span className="font-mono text-caption tabular-nums text-fg-muted">#{row.id}</span>
+                  </div>
+                )}
+              />
             </div>
           </Demo>
 

@@ -142,12 +142,18 @@ function DashboardProjectsScreen() {
     }
   }, [folder, collections.data]);
 
-  const actions: ProjectCardActions = {
-    onChangeStatus: (project, next) => changeStatus.mutate({ project, status: next }),
-    onDuplicate: (project) => duplicate.mutate(project),
-    onMove: (project) => setDialog({ kind: 'move', project }),
-    onDeletePermanently: (project) => setDialog({ kind: 'purge', project }),
-  };
+  // Stable handlers (`mutate` keeps its identity), so the memoised cards skip renders their props did not cause.
+  const changeProject = changeStatus.mutate;
+  const duplicateProject = duplicate.mutate;
+  const actions: ProjectCardActions = useMemo(
+    () => ({
+      onChangeStatus: (project, next) => changeProject({ project, status: next }),
+      onDuplicate: (project) => duplicateProject(project),
+      onMove: (project) => setDialog({ kind: 'move', project }),
+      onDeletePermanently: (project) => setDialog({ kind: 'purge', project }),
+    }),
+    [changeProject, duplicateProject],
+  );
 
   const clearFilters = () => {
     setSearch('');

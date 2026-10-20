@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -51,7 +52,7 @@ function Tile({ title, text, proof, href, cta, visual, className, visualClass }:
   );
 }
 
-const photoFill = (image: { src: string; alt: string }) => <img src={image.src} alt={image.alt} loading="lazy" className="absolute inset-0 size-full object-cover" />;
+const photoFill = (image: { src: string; alt: string }) => <Image src={image.src} alt={image.alt} fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover" />;
 
 const TRACKS = [
   {

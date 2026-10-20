@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useThrottledCallback } from "@/hooks/shared";
 import { cn } from "@/utils/helpers";
 import { roundButton } from "./ui";
 
@@ -47,18 +48,21 @@ export function Carousel({ label, children, slideClassName, bleed = "none", indi
     setPosition({ first: (visible[0]?.i ?? 0) + 1, last: (visible[visible.length - 1]?.i ?? 0) + 1 });
   }, []);
 
+  // Scroll events come several times per frame; the layout reads of `measure` run once per frame at most.
+  const measureOnFrame = useThrottledCallback(measure, "frame");
+
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
     measure();
-    track.addEventListener("scroll", measure, { passive: true });
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    track.addEventListener("scroll", measureOnFrame, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measureOnFrame);
     observer?.observe(track);
     return () => {
-      track.removeEventListener("scroll", measure);
+      track.removeEventListener("scroll", measureOnFrame);
       observer?.disconnect();
     };
-  }, [measure]);
+  }, [measure, measureOnFrame]);
 
   const scrollByPage = (direction: 1 | -1) => {
     const track = trackRef.current;
@@ -135,8 +139,8 @@ export function Carousel({ label, children, slideClassName, bleed = "none", indi
         <div className="mt-1 flex items-center gap-3 px-2" aria-live="polite">
           <div className="h-1 flex-1 overflow-hidden rounded-full bg-line/70" aria-hidden>
             <div
-              className="h-full rounded-full bg-fg transition-[width] duration-200 motion-reduce:transition-none"
-              style={{ width: `${(position.last / children.length) * 100}%` }}
+              className="h-full w-full origin-left rounded-full bg-fg transition-transform duration-200 motion-reduce:transition-none"
+              style={{ transform: `scaleX(${position.last / children.length})` }}
             />
           </div>
           <span className="shrink-0 font-mono text-caption tabular-nums text-fg-muted">

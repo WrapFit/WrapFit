@@ -1,5 +1,6 @@
 /** Blocks of the home page, in page order. */
 export { HomeHero } from "./HomeHero";
+export { MainFlowSection } from "./MainFlowSection";
 export { BoxCatalog } from "./BoxCatalog";
 export { PhotoReel } from "./PhotoReel";
 export { FeatureShowcase } from "./FeatureShowcase";

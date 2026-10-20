@@ -32,7 +32,7 @@ export function SectionHeading({ title, subtitle, href }: { title: string; subti
   return (
     <div className="flex flex-col gap-1">
       <Link href={href} className="group flex w-fit items-center gap-2 text-landing-ink">
-        <h2 className="relative font-landing-heading text-heading-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-landing-ink after:transition-all after:duration-300 group-hover:after:w-full">
+        <h2 className="relative font-landing-heading text-heading-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-landing-ink after:transition-transform after:duration-300 group-hover:after:scale-x-100">
           {title}
         </h2>
         <span className="inline-flex size-8 items-center justify-center rounded-full bg-surface-sunken transition-transform group-hover:translate-x-1">

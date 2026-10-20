@@ -21,9 +21,9 @@ export const ANCHORS = {
 } as const;
 
 export const HERO = {
-  slogan: "Make Every Present, Present.",
-  title: "Make Every Present,",
-  highlight: "Present.",
+  slogan: "Mỗi món quà, trọn vẹn tâm ý.",
+  title: "Mỗi món quà,",
+  highlight: "Trọn vẹn tâm ý.",
   cta: { label: "Tất cả mẫu hộp", href: ROUTES.templates },
 };
 
@@ -58,8 +58,8 @@ export const INDUSTRY_TILES: IndustryTile[] = [
 ];
 
 export const STRUCTURES_SECTION = {
-  title: "Hộp theo cấu trúc",
-  subtitle: "Chọn kiểu hộp hợp với món quà của bạn.",
+  title: "Cấu trúc hộp chuẩn xưởng sản xuất",
+  subtitle: "4 cấu trúc hình học được may đo tham số chính xác theo milimét, tối ưu hóa cơ học và 100% khả thi khi cắt bế xưởng.",
   href: ROUTES.templates,
 };
 

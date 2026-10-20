@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ArrowRight, Bookmark, Eye, Plus, Ruler, Wand2 } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -149,7 +150,7 @@ export function CardsAlmanacSection() {
             {ALMANAC_PRODUCTS.map((item, index) => (
               <div
                 key={item.id}
-                className="sticky transition-all duration-300"
+                className="sticky"
                 style={{
                   top: `calc(4.75rem + ${index * 16}px)`,
                   zIndex: index + 10,
@@ -219,11 +220,12 @@ function AlmanacCard({
       <div className="flex flex-col sm:flex-row items-stretch gap-4 sm:gap-6 lg:gap-8">
         {/* Cover Photo (Left) */}
         <div className="relative aspect-[4/3] w-full sm:w-[42%] lg:w-[40%] shrink-0 overflow-hidden rounded-2xl bg-surface-sunken">
-          <img
+          <Image
             src={item.image}
             alt={item.alt}
-            loading="lazy"
-            className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            fill
+            sizes="(min-width: 1024px) 400px, (min-width: 640px) 42vw, 100vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
 
           {/* Quick 3D Peek Badge on Image */}

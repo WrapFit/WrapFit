@@ -204,7 +204,7 @@ export function Step3PaperFinish({
           </>
         }
         next={
-          <button type="button" onClick={onNext} className={PRIMARY_PILL}>
+          <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
             Tiếp tục: thiết kế
             <ArrowRight className="size-4" aria-hidden />
           </button>

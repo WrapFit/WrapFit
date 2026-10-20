@@ -6,6 +6,7 @@ import Link from "next/link";
 import React from "react";
 import { DesignThumb, DielineSketch } from "@/features/templates";
 import { buttonClass, Skeleton } from "@/components/ui";
+import type { IntentHandlers } from "@/hooks/data";
 import { cn } from "@/utils/helpers";
 
 // Building blocks of the template library and the shared design page, after pacdora.com (grey tiles with a black
@@ -30,6 +31,8 @@ export interface LibraryCardProps {
   color?: string;
   /** Read by screen readers instead of the title alone. */
   label?: string;
+  /** Hover / focus / touch handlers that prefetch the page the card opens (`usePrefetchTemplate`). */
+  intent?: IntentHandlers;
 }
 
 /** A design of the library: its flat dieline on the left, the box on the right, tags in the corner, title below. */
@@ -43,9 +46,10 @@ export function LibraryCard({
   tags,
   color,
   label,
+  intent,
 }: LibraryCardProps) {
   return (
-    <Link href={href} aria-label={label ?? title} className="group block outline-none">
+    <Link href={href} {...intent} aria-label={label ?? title} className="group block outline-none">
       <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-library-ink bg-library-tile transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50 motion-reduce:transition-none">
         <div className="absolute inset-0 grid grid-cols-2">
           <div className="flex items-center justify-center p-3 pr-1.5">

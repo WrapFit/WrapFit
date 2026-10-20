@@ -25,6 +25,18 @@ const nextConfig = {
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei", "@wrapfit/shared"],
   // Tắt source maps trong production để tiết kiệm RAM build
   productionBrowserSourceMaps: false,
+  experimental: {
+    // Route changes run inside document.startViewTransition, so React's <ViewTransition> (layouts/main) cross-fades
+    // the old page into the new one. Browsers without the API simply swap pages.
+    viewTransition: true,
+  },
+  images: {
+    // next/image serves AVIF, then WebP, resized to the width the layout asks for (`sizes`).
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 768, 1024, 1280, 1600],
+    imageSizes: [64, 128, 256, 384],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+  },
   async headers() {
     return [{ source: "/((?!api/).*)", headers: securityHeaders }];
   },

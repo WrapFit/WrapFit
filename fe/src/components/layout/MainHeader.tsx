@@ -1,12 +1,13 @@
 'use client';
 
-import { ArrowRight, Bell, ChevronDown, FolderOpen, Menu, User, X } from 'lucide-react';
+import { ArrowRight, Bell, ChevronDown, FolderOpen, Menu, Shield, User, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+import { ViewTransition } from '@/components/common/ViewTransition';
 import { landingFontVariables } from '@/assets/fonts/landing';
 import { ROUTES } from '@/constants';
-import { useAuth } from '@/features/auth';
+import { ADMIN_HOME, homeForRole, isRealAdmin, useAuth } from '@/features/auth';
 import { useProjectCount } from '@/features/dashboard/useProjects';
 import { useBoxStructures } from '@/features/templates/hooks';
 import { useHydrated } from '@/hooks/dom';
@@ -96,7 +97,9 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
   };
 
   return (
-    // data-app-tokens: inside a Stitch screen the header keeps the app's fonts and colours, not the screen's.
+    // Named view transition: the header stays still while the page under it cross-fades (globals.css).
+    <ViewTransition name="site-header">
+    {/* data-app-tokens: inside a Stitch screen the header keeps the app's fonts and colours, not the screen's. */}
     <header
       ref={headerRef}
       data-app-tokens
@@ -136,6 +139,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
           {showCta && (
             <Link
               href={ROUTES.editorNew}
+              data-tour="header-start"
               className={buttonClass({ variant: "brand", className: "hidden px-4 sm:inline-flex" })}
             >
               Bắt đầu
@@ -156,7 +160,18 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
               <User className="size-[18px]" strokeWidth={1.75} aria-hidden />
             </Link>
           )}
-          {user && <ProjectsPill />}
+          {user && !isRealAdmin(user) && <ProjectsPill />}
+          {user && isRealAdmin(user) && (
+            <Link
+              href={ADMIN_HOME}
+              className="hidden h-10 items-center gap-1.5 rounded-full border border-brand-forest-deep/20 bg-brand-forest-deep/5 px-3.5 text-xs font-semibold text-brand-forest-deep transition-all hover:bg-brand-forest-deep hover:text-white sm:inline-flex"
+              aria-label="Bảng điều khiển quản trị"
+              title="Bảng điều khiển quản trị"
+            >
+              <Shield className="size-4" aria-hidden />
+              <span>Quản trị</span>
+            </Link>
+          )}
           <button
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
@@ -173,12 +188,15 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
       {mobileOpen && (
         <MobileMenu
           groups={groups}
+          isAdmin={isRealAdmin(user)}
+          targetHref={user ? homeForRole(user.role) : loginHref(pathname)}
           userName={user ? displayName(user) : null}
           loginHref={loginHref(pathname)}
           onNavigate={() => setMobileOpen(false)}
         />
       )}
     </header>
+    </ViewTransition>
   );
 }
 
@@ -228,11 +246,15 @@ function ProjectsPill() {
 
 function MobileMenu({
   groups,
+  isAdmin,
+  targetHref,
   userName,
   loginHref: login,
   onNavigate,
 }: {
   groups: NavGroup[];
+  isAdmin: boolean;
+  targetHref: string;
   userName: string | null;
   loginHref: string;
   onNavigate(): void;
@@ -267,18 +289,21 @@ function MobileMenu({
         ))}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
-            href={userName ? ROUTES.dashboard : login}
+            href={targetHref}
             onClick={onNavigate}
-            className="inline-flex h-11 items-center justify-center truncate rounded-full bg-landing-tile px-3 text-sm font-medium"
+            className={cn(
+              "inline-flex h-11 items-center justify-center truncate rounded-full px-3 text-sm font-medium",
+              isAdmin ? "bg-brand-forest-deep text-white" : "bg-landing-tile text-fg"
+            )}
           >
-            {userName ?? 'Đăng nhập'}
+            {isAdmin ? "Quản trị" : (userName ?? 'Đăng nhập')}
           </Link>
           <Link
-            href={ROUTES.editorNew}
+            href={isAdmin ? "/admin" : ROUTES.editorNew}
             onClick={onNavigate}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-fpt-orange text-sm font-semibold text-white hover:bg-fpt-orange-dark"
           >
-            Bắt đầu
+            {isAdmin ? "Bảng quản trị" : "Bắt đầu"}
             <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>

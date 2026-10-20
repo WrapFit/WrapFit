@@ -366,3 +366,44 @@ input[type="range"].dimension-range::-moz-range-thumb:active {
 @media (prefers-reduced-motion: reduce) {
   .text-tricolor { animation: none; background-position: 30% 50%; }
 }
+
+/* ---------------------------------------------------------------- page transitions
+ * layouts/main/MainLayout wraps each page in React's <ViewTransition default="page">: on navigation the old page
+ * fades out and the new one fades in rising 8 px. Only opacity and transform animate (composited, no layout).
+ * The header and the mobile bar carry their own names (site-header, bottom-nav) and stay still.
+ */
+@keyframes page-out {
+  to { opacity: 0; }
+}
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+::view-transition-old(.page) {
+  animation: 140ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+}
+::view-transition-new(.page) {
+  animation: 260ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms both page-in;
+}
+/* Pages differ in height: no morph of the box, only the cross-fade above. */
+::view-transition-group(.page) {
+  animation: none;
+}
+::view-transition-old(site-header),
+::view-transition-new(site-header),
+::view-transition-old(bottom-nav),
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Password fields have their own show/hide button (auth forms): hide the one Edge and IE add, so only one eye shows. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
