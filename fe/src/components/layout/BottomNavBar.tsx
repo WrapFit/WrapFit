@@ -45,7 +45,7 @@ export const BottomNavBar: React.FC = () => {
     <ViewTransition name="bottom-nav">
     <nav
       className="md:hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[92vw] max-w-[360px] bg-white/90 backdrop-blur-xl border border-white/80 shadow-[0_10px_35px_-5px_rgba(30,86,160,0.18)] rounded-full px-3 py-1.5 flex items-center justify-between select-none"
-      aria-label="Mobile Bottom Navigation"
+      aria-label="Điều hướng chính"
     >
       {/* 1. Home Tab */}
       <Link

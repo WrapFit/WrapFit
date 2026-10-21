@@ -34,6 +34,7 @@ import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
 import { autoFixElements, BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
+import { AiCopilotAssistant } from "@/features/studio/components/copilot/AiCopilotAssistant";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
@@ -217,7 +218,10 @@ export function StudioWorkspace({
 
   // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export.
   const firstStep: StudioStep = isDemo ? 1 : 2;
+  const paramStepRaw = searchParams.get("step");
+  const paramStep = paramStepRaw ? Number(paramStepRaw) : null;
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
+    if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
     if (hasParamDims || paramStructure) return 4;
     return 1;
@@ -319,7 +323,8 @@ export function StudioWorkspace({
   }, []);
   const [uploading, setUploading] = useState<boolean>(false);
 
-  const [dialog, setDialog] = useState<StudioDialogId | null>(null);
+  const paramDialog = searchParams.get("dialog") as StudioDialogId | null;
+  const [dialog, setDialog] = useState<StudioDialogId | null>(() => paramDialog ?? null);
   const [restoreNotice, setRestoreNotice] = useState<RestoreNotice | null>(notice);
   const [undoing, setUndoing] = useState<boolean>(false);
 
@@ -521,7 +526,8 @@ export function StudioWorkspace({
 
   // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
   const openDialog = (id: StudioDialogId) => {
-    if (!project) {
+    // Export and the QR code are built in the browser when there is no saved project (demo, Vercel).
+    if (!project && id !== "export" && id !== "unboxing") {
       toast.show({
         tone: "info",
         title: "Bản dùng thử chưa lưu lên Cloud",
@@ -1205,6 +1211,15 @@ export function StudioWorkspace({
         )}
       </main>
 
+      {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}
+      <AiCopilotAssistant
+        currentDimensions={dimensions}
+        onApplyDimensions={setDimensions}
+        fitCheckReport={displayReport}
+        onAutoFixFitCheck={handleAutoFix}
+        defaultExpanded={searchParams.get("copilot") === "open"}
+      />
+
       {/* Another tab saved first: reload its version or overwrite it */}
       {sync.conflict && (
         <VersionConflictDialog
@@ -1215,12 +1230,14 @@ export function StudioWorkspace({
       )}
 
       {/* ================= 3. PROJECT DIALOGS ================= */}
-      {project && dialog === "export" && (
+      {dialog === "export" && (
         <ExportDialog
-          projectId={project.id}
+          projectId={project?.id ?? "demo-project"}
           flush={sync.flush}
           onBlocked={showBlockingReport}
           onClose={() => setDialog(null)}
+          design={{ title: projectTitle, structure: boxType, formulaVersion: project?.formulaVersion, dimensions, elements }}
+          report={fitcheckReport}
         />
       )}
       {project && dialog === "snapshots" && (
@@ -1241,7 +1258,13 @@ export function StudioWorkspace({
           onClose={() => setDialog(null)}
         />
       )}
-      {project && dialog === "unboxing" && <UnboxingDialog projectId={project.id} onClose={() => setDialog(null)} />}
+      {dialog === "unboxing" && (
+        <UnboxingDialog
+          projectId={project?.id ?? "demo"}
+          onClose={() => setDialog(null)}
+          box={{ title: projectTitle, structure: boxType, dimensions, materialTheme: activeMaterial }}
+        />
+      )}
     </div>
   );
 }

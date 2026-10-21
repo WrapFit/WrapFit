@@ -7,6 +7,7 @@ import {
   BoxCatalog,
   CustomerVoices,
   HomeHero,
+  MainFlowSection,
   PlansAndCopilot,
 } from "@/components/home";
 import { MainFooter, MainHeader } from "@/components/layout";
@@ -64,6 +65,7 @@ export default function HomePage() {
       </Suspense>
       <main className={`${landingFontVariables} w-full bg-landing-canvas font-landing-body text-landing-ink antialiased`}>
         <HomeHero />
+        <MainFlowSection />
         <BoxCatalog />
         <PlansAndCopilot />
         <CustomerVoices />

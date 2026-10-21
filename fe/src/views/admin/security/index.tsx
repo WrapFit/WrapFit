@@ -42,7 +42,7 @@ function Security() {
     <AdminShell title="Bảo mật" description="Các quy tắc đăng nhập và link tài khoản mà API đang áp dụng.">
       <div className="flex flex-col gap-6">
         <Panel aria-labelledby="security-policies">
-          <PanelTitle id="security-policies" action={<Badge tone="green">Theo API</Badge>}>
+          <PanelTitle id="security-policies" action={<Badge tone="green">Dữ liệu thật</Badge>}>
             Chính sách đăng nhập
           </PanelTitle>
           <DataTable<Policy>

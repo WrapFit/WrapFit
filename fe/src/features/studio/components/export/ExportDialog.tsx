@@ -11,6 +11,7 @@ import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
 import type { ExportFileType, ExportJob } from "@/types/api";
 import { StudioDialog } from "../dialog/StudioDialog";
+import { buildPrintFile, fileNameFor, isDemoProjectId, OFFLINE_DEMO, saveFile, type ExportDesign } from "./offline";
 
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
@@ -55,39 +56,97 @@ interface ExportDialogProps {
   /** 422: FitCheck of the server found errors that would ruin the print. */
   onBlocked: (report: FitCheckReport) => void;
   onClose: () => void;
+  /** The design on screen, for the files built in the browser when there is no backend (demo, Vercel). */
+  design?: ExportDesign;
+  /** FitCheck of the design on screen: the browser export blocks on errors like the server does. */
+  report?: FitCheckReport;
 }
 
+/** A file built in the browser: an ExportJob with a blob URL. */
+type LocalJob = ExportJob & { url?: string };
+
+/** Files built in the browser during this visit, by project (the blob URLs live as long as the page). */
+const localHistory = new Map<string, LocalJob[]>();
+
+/** Steps of the browser export, so it reads like the server queue (and Gói has time to deliver). */
+const LOCAL_STEP_MS = 700;
+
 /** Print files on the BullMQ queue (docs/06 §7): request, poll every 2 seconds, download, history. */
-export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDialogProps) {
+export function ExportDialog({ projectId, flush, onBlocked, onClose, design, report }: ExportDialogProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [starting, setStarting] = useState<ExportFileType | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<FitCheckReport | null>(null);
+  // No backend (Vercel, demo project, API unreachable): the files are built in the browser from the design on screen.
+  const [offline, setOffline] = useState(() => Boolean(design) && (OFFLINE_DEMO || isDemoProjectId(projectId)));
+  const [localJob, setLocalJob] = useState<LocalJob | null>(null);
+  const [localJobs, setLocalJobs] = useState<LocalJob[]>(() => localHistory.get(projectId) ?? []);
 
   // Polling stops on its own when the job is done or the dialog closes.
   const job = useQuery({
     queryKey: queryKeys.exportJob(jobId ?? ""),
     queryFn: () => getExportJob(jobId!),
-    enabled: jobId !== null,
+    enabled: jobId !== null && !offline,
     refetchInterval: (query) => (isRunning(query.state.data) || !query.state.data ? 2000 : false),
   });
   const history = useQuery({
     queryKey: queryKeys.projects.exports(projectId),
     queryFn: () => listProjectExports(projectId),
+    enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
   });
 
-  const current = job.data;
+  const current: LocalJob | undefined = offline ? localJob ?? undefined : job.data;
   const status = current?.status;
   useEffect(() => {
-    if (status === "COMPLETED" || status === "FAILED") {
+    if (!offline && (status === "COMPLETED" || status === "FAILED")) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.exports(projectId) });
     }
-  }, [status, projectId, queryClient]);
+  }, [status, projectId, queryClient, offline]);
+
+  const startLocal = async (fileType: ExportFileType) => {
+    if (!design) return;
+    const errors = report?.violations.filter((v) => v.severity === "error") ?? [];
+    if (report && errors.length > 0) {
+      setBlocked(report);
+      return;
+    }
+    const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+    const base: LocalJob = {
+      id: `local-${Date.now()}`,
+      projectId,
+      fileType,
+      status: "PENDING",
+      fileName: fileNameFor(design.title, fileType),
+      createdAt: new Date().toISOString(),
+    } as LocalJob;
+    setJobId(base.id);
+    setLocalJob(base);
+    await wait(LOCAL_STEP_MS);
+    setLocalJob({ ...base, status: "PROCESSING" });
+    try {
+      const [file] = await Promise.all([buildPrintFile(design, fileType), wait(LOCAL_STEP_MS * 1.5)]);
+      const done: LocalJob = { ...base, status: "COMPLETED", fileName: file.fileName, url: URL.createObjectURL(file.blob) };
+      setLocalJob(done);
+      const next = [done, ...(localHistory.get(projectId) ?? [])].slice(0, 6);
+      localHistory.set(projectId, next);
+      setLocalJobs(next);
+    } catch (err) {
+      setLocalJob({ ...base, status: "FAILED", error: err instanceof Error ? err.message : "Không dựng được file." } as LocalJob);
+    }
+  };
 
   const start = async (fileType: ExportFileType) => {
     setStarting(fileType);
     setBlocked(null);
+    if (offline) {
+      try {
+        await startLocal(fileType);
+      } finally {
+        setStarting(null);
+      }
+      return;
+    }
     try {
       if (!(await flush())) {
         toast.show({
@@ -103,6 +162,10 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
     } catch (err) {
       if (err instanceof ApiError && err.status === 422 && err.fitCheck) {
         setBlocked(err.fitCheck);
+      } else if (design && !(err instanceof ApiError && err.status < 500)) {
+        // The API cannot be reached (offline demo, server down): build the file in the browser instead.
+        setOffline(true);
+        await startLocal(fileType);
       } else {
         toast.error(err, "Chưa xuất được file");
       }
@@ -111,7 +174,11 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
     }
   };
 
-  const download = async (exportJob: ExportJob, fetchedAt: number) => {
+  const download = async (exportJob: LocalJob, fetchedAt: number) => {
+    if (exportJob.url) {
+      saveFile(exportJob.url, exportJob.fileName ?? "wrapfit-print");
+      return;
+    }
     let url = exportJob.downloadUrl;
     const expiresAt = fetchedAt + (exportJob.downloadExpiresIn ?? 0) * 1000 - LINK_MARGIN_MS;
     if (!url || Date.now() > expiresAt) {
@@ -126,7 +193,10 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
     if (url) window.location.assign(url);
   };
 
-  const waiting = starting !== null || isRunning(current) || (jobId !== null && !current && !job.error);
+  const waiting = starting !== null || isRunning(current) || (!offline && jobId !== null && !current && !job.error);
+  const historyItems: LocalJob[] | undefined = offline ? localJobs : history.data;
+  const historyPending = !offline && history.isPending && !isDemoProjectId(projectId);
+  const historyError = !offline && history.error;
   const pose = current?.status === "COMPLETED" ? "celebration" : waiting ? "delivery" : null;
 
   return (
@@ -255,20 +325,20 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose }: ExportDia
         <h3 id="export-history" className="font-landing-heading text-base font-bold text-landing-ink pt-3">
           Lần xuất gần đây
         </h3>
-        {history.isPending ? (
+        {historyPending ? (
           <p className="text-xs text-landing-muted">Đang tải…</p>
-        ) : history.error ? (
+        ) : historyError ? (
           <p className="text-xs text-landing-muted">
             Chưa tải được lịch sử.{" "}
             <button type="button" onClick={() => void history.refetch()} className="font-semibold text-fpt-orange-ink underline">
               Thử lại
             </button>
           </p>
-        ) : history.data.length === 0 ? (
+        ) : !historyItems || historyItems.length === 0 ? (
           <p className="text-xs text-landing-muted">Chưa có lần xuất nào.</p>
         ) : (
           <ul className="divide-y divide-landing-line">
-            {history.data.slice(0, 6).map((item) => (
+            {historyItems.slice(0, 6).map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3 py-2">
                 <div className="min-w-0 text-xs">
                   <span className="font-mono font-semibold text-landing-ink">{FORMAT_NAMES[item.fileType]}</span>
