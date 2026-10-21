@@ -1,23 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import {
-  ArrowRight,
-  Award,
-  Candy,
-  Coffee,
-  Droplets,
-  Eye,
-  Flame,
-  Gem,
-  Gift,
-  Package,
-  Shirt,
-  ShoppingBag,
-  Sparkles,
-  Watch,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, Box, Hand, Ruler } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
@@ -31,81 +15,37 @@ import { buttonClass } from "@/components/ui";
 
 const CORE_BOX_IDS = ["tuck-top", "sleeve-drawer", "lid-base", "pillow"] as const;
 
-interface BentoStructureCardData {
-  id: string;
-  categoryPill: string;
-  pillColor: string;
+interface StructureCardMeta {
   heroImage: string;
   imageAlt: string;
+  /** One line: what the structure does well. */
   shortDesc: string;
-  templateCount: string;
 }
 
-const BENTO_CARDS_DATA: Record<string, BentoStructureCardData> = {
+const CARD_META: Record<(typeof CORE_BOX_IDS)[number], StructureCardMeta> = {
   "tuck-top": {
-    id: "tuck-top",
-    categoryPill: "Phổ biến nhất",
-    pillColor: "text-fpt-orange-ink ring-fpt-orange/40 bg-fpt-orange-light/95",
     heroImage: "/photos/kraft-boxes.jpg",
-    imageAlt: "Hộp Nắp Gài Đáy Khóa (Tuck Top Box)",
-    shortDesc: "Khóa đáy đan chéo chịu lực đến 1.5kg, nắp gài tiện lợi không cần dùng keo dán.",
-    templateCount: "45+",
+    imageAlt: "Hộp nắp gài đáy khóa bằng giấy kraft",
+    shortDesc: "Nắp gài và đáy khóa đan chéo, gấp không cần keo.",
   },
   "sleeve-drawer": {
-    id: "sleeve-drawer",
-    categoryPill: "Trải nghiệm mở quà",
-    pillColor: "text-fpt-blue ring-fpt-blue/40 bg-fpt-blue/10",
     heroImage: "/photos/kraft-drawer.jpg",
-    imageAlt: "Hộp Bao Diêm (Sleeve & Drawer Box)",
-    shortDesc: "Cơ chế trượt 2 mảnh êm ái, tạo ấn tượng tò mò và bất ngờ khi rút quà.",
-    templateCount: "32+",
+    imageAlt: "Hộp bao diêm với khay kéo",
+    shortDesc: "Vỏ ngoài và khay trượt, tạo khoảnh khắc rút quà.",
   },
   "lid-base": {
-    id: "lid-base",
-    categoryPill: "Cao cấp · VIP",
-    pillColor: "text-brand-forest ring-brand-forest/40 bg-brand-forest/10",
     heroImage: "/photos/luxury-lid.jpg",
-    imageAlt: "Hộp Âm Dương (Lid & Base Box)",
-    shortDesc: "Thân và nắp độc lập ôm khít, kết cấu vuông vức bề thế chuẩn quà tặng VIP.",
-    templateCount: "28+",
+    imageAlt: "Hộp âm dương nắp rời cao cấp",
+    shortDesc: "Nắp và đáy rời ôm khít, vuông vức cho quà cao cấp.",
   },
-  "pillow": {
-    id: "pillow",
-    categoryPill: "Gấp nhanh 3s",
-    pillColor: "text-purple-700 ring-purple-300 bg-purple-50",
+  pillow: {
     heroImage: "/photos/pillow-box.jpg",
-    imageAlt: "Hộp Gối (Pillow Box)",
-    shortDesc: "Đường gân cong bán nguyệt tự khóa, gấp thành phẩm siêu nhanh không tốn keo.",
-    templateCount: "24+",
+    imageAlt: "Hộp gối với hai đầu cong",
+    shortDesc: "Hai đầu cong tự khóa, gấp nhanh cho phụ kiện nhỏ.",
   },
 };
 
-/** Icon of a recommended gift, picked from its Vietnamese name. */
-const GIFT_ICONS: Array<[RegExp, LucideIcon]> = [
-  [/nến/i, Flame],
-  [/nước hoa|tinh dầu/i, Droplets],
-  [/mỹ phẩm|dưỡng/i, Sparkles],
-  [/đồng hồ/i, Watch],
-  [/trang sức|vòng|nhẫn/i, Gem],
-  [/kỷ niệm|chương/i, Award],
-  [/socola|macaron|kẹo|bánh/i, Candy],
-  [/khăn|cà vạt|lụa/i, Shirt],
-  [/cốc|gốm/i, Coffee],
-  [/túi/i, ShoppingBag],
-  [/hộp|lọ/i, Package],
-];
-
-function giftIcon(gift: string): LucideIcon {
-  return GIFT_ICONS.find(([pattern]) => pattern.test(gift))?.[1] ?? Gift;
-}
-
-/**
- * Clean & Minimal Bento Grid Showcase for 4 Core Box Structures:
- * - Tuck Top Box (Hộp Nắp Gài Đáy Khóa)
- * - Sleeve & Drawer Box (Hộp Bao Diêm)
- * - Lid & Base Box (Hộp Âm Dương)
- * - Pillow Box (Hộp Gối)
- */
+/** The four structures of the MVP, each with its photo, default size and a way into the studio or the 3D preview. */
 export function BoxCatalog() {
   const [previewStructure, setPreviewStructure] = useState<BoxStructureOption | null>(null);
 
@@ -114,53 +54,35 @@ export function BoxCatalog() {
     setPreviewStructure(structure);
   };
 
-  const closeQuickPreview = () => {
-    setPreviewStructure(null);
-  };
-
-  const coreStructures = CORE_BOX_IDS.map((id) =>
-    BOX_STRUCTURES.find((s) => s.id === id)
-  ).filter((s): s is BoxStructureOption => Boolean(s));
+  const coreStructures = CORE_BOX_IDS.map((id) => BOX_STRUCTURES.find((s) => s.id === id)).filter(
+    (s): s is BoxStructureOption => Boolean(s),
+  );
 
   return (
     <>
-      <section className="flex flex-col gap-8 overflow-x-clip pt-8 pb-12 lg:gap-10 lg:pt-12 lg:pb-16">
+      <section className="overflow-x-clip pb-12 pt-8 lg:pb-16 lg:pt-12">
         <Container>
-          <div id={ANCHORS.structures} className="flex scroll-mt-28 flex-col gap-6 sm:gap-8">
-            {/* Section Header */}
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-fpt-orange-light px-3 py-1 text-label-sm font-semibold text-fpt-orange-ink ring-1 ring-inset ring-fpt-orange/30">
-                  <Package className="size-3.5" aria-hidden />
-                  CẤU TRÚC HỘP VẬT LÝ
-                </span>
-              </div>
-              <SectionHeading {...STRUCTURES_SECTION} />
-            </div>
+          <div id={ANCHORS.structures} className="flex scroll-mt-28 flex-col gap-8 lg:gap-10">
+            <SectionHeading {...STRUCTURES_SECTION} />
 
-            {/* 2x2 Clean Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-              {coreStructures.map((structure) => {
-                const meta = BENTO_CARDS_DATA[structure.id];
-                if (!meta) return null;
-                return (
-                  <BentoBoxCard
-                    key={structure.id}
+            <ol className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:gap-6 xl:grid-cols-4">
+              {coreStructures.map((structure) => (
+                <li key={structure.id} className="flex">
+                  <StructureCard
                     structure={structure}
-                    meta={meta}
+                    meta={CARD_META[structure.id as (typeof CORE_BOX_IDS)[number]]}
                     onQuickPreview={() => openQuickPreview(structure)}
                   />
-                );
-              })}
-            </div>
+                </li>
+              ))}
+            </ol>
           </div>
         </Container>
       </section>
 
-      {/* Interactive 3D Quick Preview Modal */}
       <BoxQuickPreviewModal
         isOpen={Boolean(previewStructure)}
-        onClose={closeQuickPreview}
+        onClose={() => setPreviewStructure(null)}
         structure={previewStructure}
         initialSizeLabel="M"
       />
@@ -168,120 +90,83 @@ export function BoxCatalog() {
   );
 }
 
-/**
- * Minimalist Bento Grid Card:
- * - High-resolution packaging photography
- * - Category badge & 3D Interactive Modal trigger
- * - Single punchy description line
- * - Subtle gift tags
- * - Direct "May đo ngay" CTA
- */
-function BentoBoxCard({
+function StructureCard({
   structure,
   meta,
   onQuickPreview,
 }: {
   structure: BoxStructureOption;
-  meta: BentoStructureCardData;
+  meta: StructureCardMeta;
   onQuickPreview: () => void;
 }) {
-  const studioUrl = `${ROUTES.editorNew}?structure=${structure.id}&l=${structure.defaultDims.length}&w=${structure.defaultDims.width}&d=${structure.defaultDims.height}`;
+  const { length, width, height } = structure.defaultDims;
+  const studioUrl = `${ROUTES.editorNew}?structure=${structure.id}&l=${length}&w=${width}&d=${height}`;
   const templatesUrl = `${ROUTES.templates}?structure=${structure.id}`;
 
   return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-[28px] sm:rounded-[32px] border border-line/80 bg-white shadow-soft-8 transition-all duration-300 hover:-translate-y-1 hover:border-fpt-orange/50 hover:shadow-soft-16">
-      {/* Visual Header: 100% clean photo, no dark bottom pills */}
-      <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full overflow-hidden bg-surface-sunken">
+    <article className="group flex w-full flex-col overflow-hidden rounded-card border border-line/70 bg-surface-raised shadow-soft-8 transition-[transform,box-shadow,border-color] duration-500 ease-out hover:-translate-y-1 hover:border-line hover:shadow-soft-16 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+      {/* Photo */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-surface-sunken">
         <Image
           src={meta.heroImage}
           alt={meta.imageAlt}
           fill
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04] motion-reduce:transition-none"
         />
+        <button
+          type="button"
+          onClick={onQuickPreview}
+          aria-label={`Xem hộp 3D: ${structure.vietnameseName}`}
+          className="absolute right-3 top-3 inline-flex h-11 items-center gap-1.5 rounded-full bg-white/90 px-3.5 text-label font-semibold text-fg shadow-soft-8 backdrop-blur-sm transition-colors hover:bg-white hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          <Box className="size-4" aria-hidden />
+          3D
+        </button>
 
-        {/* Top Floating Bar */}
-        <div className="absolute inset-x-4 top-4 z-10 flex items-center justify-between gap-2">
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-label-sm font-semibold shadow-xs ring-1 backdrop-blur-md",
-              meta.pillColor
-            )}
-          >
-            {meta.categoryPill}
-          </span>
-
-          <button
-            type="button"
-            onClick={onQuickPreview}
-            aria-label={`Xem mô hình 3D gập ${structure.vietnameseName}`}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-label-sm font-medium text-fg shadow-soft-8 backdrop-blur-md ring-1 ring-line/80 transition-all hover:scale-105 hover:bg-white hover:text-fpt-orange-ink active:scale-95 outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
-          >
-            <Eye className="size-3.5 text-fpt-orange" aria-hidden />
-            <span>Xem 3D</span>
-          </button>
-        </div>
       </div>
 
-      {/* Body Content: Minimal, breathable, zero clutter */}
-      <div className="flex flex-1 flex-col justify-between p-5 sm:p-6">
-        <div className="flex flex-col gap-3">
-          {/* Title & English Subtitle */}
-          <div>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="font-landing-heading text-xl sm:text-2xl font-bold tracking-tight text-landing-ink transition-colors group-hover:text-fpt-orange-ink">
-                {structure.vietnameseName}
-              </h3>
-              <span className="shrink-0 text-caption font-mono uppercase tracking-wider text-fg-muted">
-                {structure.name}
-              </span>
-            </div>
-            <p className="mt-1.5 text-body-sm text-fg-muted line-clamp-1" title={meta.shortDesc}>
-              {meta.shortDesc}
-            </p>
-          </div>
+      {/* Body */}
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <h3 className="font-landing-heading text-heading-sm font-bold tracking-tight text-fg">{structure.vietnameseName}</h3>
+        <p className="mt-1.5 text-body-sm text-fg-muted">{meta.shortDesc}</p>
 
-          {/* Clean Gift Tags with matching min-height */}
-          <div className="flex min-h-[50px] flex-wrap items-center gap-1.5 pt-0.5">
-            <span className="text-caption font-medium text-fg-muted mr-1">Phù hợp:</span>
-            {structure.recommendedGifts.slice(0, 4).map((gift) => {
-              const GiftIcon = giftIcon(gift);
-              return (
-                <span
-                  key={gift}
-                  className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-2.5 py-0.5 text-caption font-medium text-fg ring-1 ring-inset ring-line/60"
-                >
-                  <GiftIcon className="size-3 text-fpt-orange-ink" aria-hidden />
-                  {gift}
-                </span>
-              );
-            })}
+        <dl className="mt-5 divide-y divide-line/60 border-y border-line/60 text-body-sm">
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <dt className="flex items-center gap-2 text-fg-muted">
+              <Ruler className="size-4 text-fg-muted" aria-hidden />
+              Cỡ chuẩn
+            </dt>
+            <dd className="whitespace-nowrap font-semibold tabular-nums text-fg">
+              {length} × {width} × {height} mm
+            </dd>
           </div>
-        </div>
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <dt className="flex items-center gap-2 text-fg-muted">
+              <Hand className="size-4 text-fg-muted" aria-hidden />
+              Độ khó gấp
+            </dt>
+            <dd className="font-semibold text-fg">{structure.foldDifficulty}</dd>
+          </div>
+        </dl>
 
-        {/* Card Footer Actions */}
-        <div className="mt-5 flex items-center justify-between gap-3 border-t border-line/60 pt-4">
+        <div className="mt-auto flex items-center justify-between gap-3 pt-6">
           <Link
             href={templatesUrl}
-            className="inline-flex items-center gap-1 text-body-sm font-semibold text-fg-muted transition-colors hover:text-fpt-orange-ink"
+            className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap text-body-sm font-semibold text-fg-muted underline-offset-4 transition-colors hover:text-accent hover:underline"
           >
-            <span>Mẫu sẵn ({meta.templateCount})</span>
-            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+            Xem mẫu
           </Link>
-
           <Link
             href={studioUrl}
             onClick={() => tactileAudio.playSquishyTap()}
-            className={cn(
-              buttonClass({ variant: "brand", size: "sm" }),
-              "shadow-soft-8 transition-transform group-hover:scale-102"
-            )}
+            className={cn(buttonClass({ variant: "brand", size: "sm" }), "gap-1.5")}
           >
-            <span>May đo ngay</span>
-            <ArrowRight className="size-4" />
+            Thiết kế hộp này
+            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
           </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

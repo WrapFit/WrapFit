@@ -34,6 +34,7 @@ import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
 import { autoFixElements, BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
+import { AiCopilotAssistant } from "@/features/studio/components/copilot/AiCopilotAssistant";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
@@ -525,7 +526,8 @@ export function StudioWorkspace({
 
   // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
   const openDialog = (id: StudioDialogId) => {
-    if (!project) {
+    // Export and the QR code are built in the browser when there is no saved project (demo, Vercel).
+    if (!project && id !== "export" && id !== "unboxing") {
       toast.show({
         tone: "info",
         title: "Bản dùng thử chưa lưu lên Cloud",
@@ -1209,6 +1211,15 @@ export function StudioWorkspace({
         )}
       </main>
 
+      {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}
+      <AiCopilotAssistant
+        currentDimensions={dimensions}
+        onApplyDimensions={setDimensions}
+        fitCheckReport={displayReport}
+        onAutoFixFitCheck={handleAutoFix}
+        defaultExpanded={searchParams.get("copilot") === "open"}
+      />
+
       {/* Another tab saved first: reload its version or overwrite it */}
       {sync.conflict && (
         <VersionConflictDialog
@@ -1225,6 +1236,8 @@ export function StudioWorkspace({
           flush={sync.flush}
           onBlocked={showBlockingReport}
           onClose={() => setDialog(null)}
+          design={{ title: projectTitle, structure: boxType, formulaVersion: project?.formulaVersion, dimensions, elements }}
+          report={fitcheckReport}
         />
       )}
       {project && dialog === "snapshots" && (
@@ -1245,7 +1258,13 @@ export function StudioWorkspace({
           onClose={() => setDialog(null)}
         />
       )}
-      {project && dialog === "unboxing" && <UnboxingDialog projectId={project.id} onClose={() => setDialog(null)} />}
+      {dialog === "unboxing" && (
+        <UnboxingDialog
+          projectId={project?.id ?? "demo"}
+          onClose={() => setDialog(null)}
+          box={{ title: projectTitle, structure: boxType, dimensions, materialTheme: activeMaterial }}
+        />
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCurrentUser } from "@/api/auth";
 import { isApiError } from "@/services/api";
 import type { SafeUser } from "@/types/api";
-import { DEMO_USER } from "@/features/dashboard/demoData";
+import { DEMO_ADMIN_USER, DEMO_USER } from "@/features/dashboard/demoData";
 import { queryKeys } from "./queryKeys";
 
 /**
@@ -23,6 +23,10 @@ export function useMe() {
       }
       if (typeof window !== "undefined" && window.sessionStorage?.getItem("wrapfit_demo_logged_out") === "1") {
         return null;
+      }
+      // Offline demo: keep the role picked with "Đăng nhập nhanh bản demo" (user or admin) across refetches.
+      if (typeof window !== "undefined" && window.sessionStorage?.getItem("wrapfit_demo_role") === "admin") {
+        return DEMO_ADMIN_USER;
       }
       return DEMO_USER;
     },

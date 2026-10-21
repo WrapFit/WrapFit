@@ -98,11 +98,15 @@ export function ContactFormSection() {
                   <span className="text-xs font-semibold uppercase text-fg-muted">Đường dây nóng</span>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
                     <span className="text-fg-muted">Tư vấn in ấn, kỹ thuật:</span>
-                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
+                    <a href="tel:0387687323" className="inline-flex min-h-6 items-center font-medium text-fg hover:text-fpt-blue transition-colors">
+                      0387687323
+                    </a>
                   </div>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
                     <span className="text-fg-muted">Hợp tác xưởng in, báo giá:</span>
-                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
+                    <a href="tel:0816778393" className="inline-flex min-h-6 items-center font-medium text-fg hover:text-fpt-blue transition-colors">
+                      0816778393
+                    </a>
                   </div>
                 </div>
               </div>
@@ -116,11 +120,9 @@ export function ContactFormSection() {
                   <span className="text-xs font-semibold uppercase text-fg-muted">Hòm thư điện tử</span>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
                     <span className="text-fg-muted">Hỗ trợ người dùng:</span>
-                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1">
-                    <span className="text-fg-muted">Hợp tác, đối tác:</span>
-                    <span className="inline-flex min-h-6 items-center text-fg-muted">Đang cập nhật</span>
+                    <a href="mailto:contact.wrapfit@gmail.com" className="inline-flex min-h-6 items-center font-medium text-fg hover:text-fpt-blue transition-colors">
+                      contact.wrapfit@gmail.com
+                    </a>
                   </div>
                 </div>
               </div>

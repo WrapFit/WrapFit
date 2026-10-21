@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import { animate } from "animejs";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
+import styles from "./GoiMascot.module.css";
 
 export type MascotPose =
   | "waving"
@@ -28,62 +29,69 @@ export interface GoiMascotProps {
   showBubbleOnBoop?: boolean;
   bubblePlacement?: "top" | "top-right" | "top-left";
   soundEnabled?: boolean;
+  /** @deprecated Gói no longer uses sprite sheets; ignored. */
   directionsSheet?: string;
+  /** @deprecated Gói no longer uses sprite sheets; ignored. */
   reactionsSheet?: string;
   label?: string;
   onBoop?: (reaction: string, count: number) => void;
 }
 
-const DIRECTIONS = [
-  "up-left",
-  "up",
-  "up-right",
-  "left",
-  "center",
-  "right",
-  "down-left",
-  "down",
-  "down-right",
-] as const;
+/** Expression of a click, reported through `onBoop`. */
+type Reaction = "blink" | "heart" | "sparkle" | "surprised" | "wink" | "bashful" | "sleepy" | "dizzy" | "delighted";
 
-type Direction = (typeof DIRECTIONS)[number];
+/** The three drawings of Gói, cut from one artwork onto the same canvas (feet on one baseline). */
+const ART = {
+  ruler: "/mascots/goi-ruler.webp",
+  magnifier: "/mascots/goi-magnifier.webp",
+  cheer: "/mascots/goi-cheer.webp",
+} as const;
+type Art = keyof typeof ART;
+const ARTS = Object.keys(ART) as Art[];
 
-const REACTIONS = [
-  "blink",      // 0: (0% 0%) - wink / blink
-  "heart",      // 1: (50% 0%) - heart eyes
-  "sparkle",    // 2: (100% 0%) - sparkle stars
-  "surprised",  // 3: (0% 50%) - surprised O mouth
-  "wink",       // 4: (50% 50%) - cheeky wink
-  "bashful",    // 5: (100% 50%) - blushing rosy cheeks
-  "sleepy",     // 6: (0% 100%) - sleepy zzz
-  "dizzy",      // 7: (50% 100%) - squashed dented box with dizzy eyes
-  "delighted",  // 8: (100% 100%) - celebration unboxing pop with confetti
-] as const;
+type Extra = "zzz" | "sparkle" | "lines" | null;
 
-type Reaction = (typeof REACTIONS)[number];
+/** What Gói holds and does for each task of the app (motions in GoiMascot.module.css). */
+const POSE_ACTION: Record<MascotPose, { art: Art; motion: string; extra: Extra }> = {
+  waving: { art: "ruler", motion: styles.wave, extra: null },
+  thumbs_up: { art: "cheer", motion: styles.hop, extra: null },
+  measuring: { art: "ruler", motion: styles.measure, extra: null },
+  folding: { art: "magnifier", motion: styles.fold, extra: null },
+  presenting: { art: "magnifier", motion: styles.scan, extra: "sparkle" },
+  delivery: { art: "magnifier", motion: styles.walk, extra: "lines" },
+  celebration: { art: "cheer", motion: styles.jump, extra: "sparkle" },
+  unboxing_pop: { art: "cheer", motion: styles.pop, extra: "sparkle" },
+  chilling: { art: "ruler", motion: styles.breathe, extra: "zzz" },
+};
 
-// Clockwise from the right, matching atan2 with y pointing down
-const CLOCKWISE: Direction[] = [
-  "right",
-  "down-right",
-  "down",
-  "down-left",
-  "left",
-  "up-left",
-  "up",
-  "up-right",
-];
-
-const SECTOR = (Math.PI * 2) / CLOCKWISE.length;
-const HYSTERESIS = 0.12;
-const DEAD_ZONE = 60;
 const PAYOFFS: Reaction[] = ["heart", "sparkle", "delighted", "wink", "bashful"];
-const BOOP_PAYOFF = 140;
-const BOOP_END = 620;
 const SQUASH_MS = 420;
 const DIZZY_AFTER = 4;
 const DIZZY_WINDOW = 1600;
-const DIZZY_END = 1200;
+const REACT_MS = 700;
+const DIZZY_MS = 1200;
+
+/* One-shot reactions, played with Web Animations on their own layer: the looping action underneath never stops. */
+const JUMP_KEYFRAMES: Keyframe[] = [
+  { transform: "translateY(0) rotate(0deg)" },
+  { transform: "translateY(-22%) rotate(-8deg)", offset: 0.4 },
+  { transform: "translateY(0) rotate(4deg)", offset: 0.7 },
+  { transform: "translateY(0) rotate(0deg)" },
+];
+const DIZZY_KEYFRAMES: Keyframe[] = [
+  { transform: "rotate(0deg)" },
+  { transform: "rotate(-14deg) translateX(-4%)", offset: 0.15 },
+  { transform: "rotate(12deg) translateX(4%)", offset: 0.35 },
+  { transform: "rotate(-9deg)", offset: 0.55 },
+  { transform: "rotate(6deg)", offset: 0.75 },
+  { transform: "rotate(0deg)" },
+];
+
+function prefersMotion() {
+  return typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+/** Pointer distance (px) giving the full lean. */
+const REACH = 420;
 
 const SQUASH_KEYFRAMES: Keyframe[] = [
   { transform: "scale(1, 1)", easing: "ease-in" },
@@ -92,16 +100,6 @@ const SQUASH_KEYFRAMES: Keyframe[] = [
   { transform: "scale(1.04, 0.96)", offset: 0.72, easing: "ease-in-out" },
   { transform: "scale(1, 1)" },
 ];
-
-function cell(index: number): React.CSSProperties {
-  return {
-    backgroundPosition: `${(index % 3) * 50}% ${Math.floor(index / 3) * 50}%`,
-  };
-}
-
-function wrap(angle: number) {
-  return Math.atan2(Math.sin(angle), Math.cos(angle));
-}
 
 const POSE_METADATA: Record<
   MascotPose,
@@ -175,118 +173,82 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
   showBubbleOnBoop = true,
   bubblePlacement = "top",
   soundEnabled = true,
-  directionsSheet,
-  reactionsSheet,
-  label = "Gói - Mascot Packaging Copilot",
+  label = "Bé Gói, trợ lý thiết kế bao bì",
   onBoop,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const lookRef = useRef<HTMLSpanElement>(null);
   const squashRef = useRef<HTMLSpanElement>(null);
   const timersRef = useRef<number[]>([]);
   const boopsRef = useRef<{ count: number; at: number }>({ count: 0, at: 0 });
 
-  // Official sprite sheets for Gói (Packaging Box Mascot Copilot)
-  const activeDirections = directionsSheet || "/mascots/box-directions.webp";
-  const activeReactions = reactionsSheet || "/mascots/box-reactions.webp";
+  const poseInfo = POSE_METADATA[pose] || POSE_METADATA.waving;
+  const action = POSE_ACTION[pose] || POSE_ACTION.waving;
 
-  const [direction, setDirection] = useState<Direction>("center");
-  const [reaction, setReaction] = useState<Reaction | null>(null);
+  const reactRef = useRef<HTMLSpanElement>(null);
   const [showBubble, setShowBubble] = useState<boolean>(false);
   const [bubbleMessage, setBubbleMessage] = useState<string>("");
 
-  const poseInfo = POSE_METADATA[pose] || POSE_METADATA.waving;
+  /** Drawing picked by clicks; it stays until the next click (or a new task). */
+  const [picked, setPicked] = useState<Art | null>(null);
+  const art = picked ?? action.art;
 
-  // React to pose changes by briefly demonstrating the pose's reaction
+  // A new task: a short hop announces the new action.
   useEffect(() => {
-    if (!pose) return;
-    const targetReaction = poseInfo.reaction;
-    setReaction(targetReaction);
-    const t = window.setTimeout(() => {
-      setReaction(null);
-    }, 1400);
-    return () => window.clearTimeout(t);
-  }, [pose, poseInfo.reaction]);
+    setPicked(null);
+    if (prefersMotion()) reactRef.current?.animate(JUMP_KEYFRAMES, { duration: REACT_MS, easing: "cubic-bezier(0.3, 0, 0.3, 1)" });
+  }, [pose]);
 
-  // Pointer tracking across window (page-mascot algorithm)
+  // Gói leans towards the pointer (fine pointers only). Written as CSS variables: no re-render per move.
   useEffect(() => {
     if (!enableTracking) return;
     if (typeof window === "undefined") return;
     if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
 
-    let sector = -1;
     let pointer: { x: number; y: number } | null = null;
-
-    const aim = () => {
-      const container = containerRef.current;
-      if (!container || !pointer) return;
-
-      const box = container.getBoundingClientRect();
-      const dx = pointer.x - (box.left + box.width / 2);
-      const dy = pointer.y - (box.top + box.height / 2);
-
-      if (Math.hypot(dx, dy) < DEAD_ZONE) {
-        sector = -1;
-        setDirection("center");
-        return;
-      }
-
-      // Hold current sector until pointer crosses edge
-      const angle = Math.atan2(dy, dx);
-      if (
-        sector !== -1 &&
-        Math.abs(wrap(angle - sector * SECTOR)) < SECTOR / 2 + HYSTERESIS
-      ) {
-        return;
-      }
-
-      sector =
-        (Math.round(angle / SECTOR) + CLOCKWISE.length) % CLOCKWISE.length;
-      setDirection(CLOCKWISE[sector]);
-    };
-
-    // Pointer moves and scrolls fire far more often than the screen paints: measure at most once per frame.
     let frame = 0;
-    const scheduleAim = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        aim();
-      });
+    const aim = () => {
+      frame = 0;
+      const look = lookRef.current;
+      const container = containerRef.current;
+      if (!look || !container || !pointer) return;
+      const box = container.getBoundingClientRect();
+      const dx = Math.max(-1, Math.min(1, (pointer.x - (box.left + box.width / 2)) / REACH));
+      const dy = Math.max(-1, Math.min(1, (pointer.y - (box.top + box.height / 2)) / REACH));
+      look.style.setProperty("--goi-tilt", `${(dx * 8).toFixed(2)}deg`);
+      look.style.setProperty("--goi-x", `${(dx * 4).toFixed(2)}%`);
+      look.style.setProperty("--goi-y", `${(Math.min(0, dy) * 3).toFixed(2)}%`);
     };
-
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(aim);
+    };
     const onPointerMove = (e: PointerEvent) => {
       pointer = { x: e.clientX, y: e.clientY };
-      scheduleAim();
+      schedule();
     };
-
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("scroll", scheduleAim, { passive: true });
-
+    window.addEventListener("scroll", schedule, { passive: true });
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("scroll", scheduleAim);
+      window.removeEventListener("scroll", schedule);
     };
   }, [enableTracking]);
 
-  // Cleanup timers
   useEffect(() => {
     return () => {
       timersRef.current.forEach((t) => window.clearTimeout(t));
     };
   }, []);
 
-  // Boop / Poke interaction (Sound + Reaction + Squash + Bubble)
+  // Click: sound, squash, a jump (a wobble after a burst of clicks), a bubble.
   const boop = useCallback(() => {
     if (!interactive) return;
 
     timersRef.current.forEach((t) => window.clearTimeout(t));
     timersRef.current = [];
-
-    const later = (ms: number, next: Reaction | null) => {
-      timersRef.current.push(
-        window.setTimeout(() => setReaction(next), ms) as unknown as number
-      );
+    const later = (ms: number, fn: () => void) => {
+      timersRef.current.push(window.setTimeout(fn, ms) as unknown as number);
     };
 
     const now = Date.now();
@@ -294,37 +256,30 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
     boops.count = now - boops.at < DIZZY_WINDOW ? boops.count + 1 : 1;
     boops.at = now;
 
-    // Tactile sound trigger
     if (soundEnabled) {
-      if (boops.count >= DIZZY_AFTER) {
-        tactileAudio.playCreaseSnap();
-      } else if (boops.count === 3) {
-        tactileAudio.playPaperSnap();
-      } else {
-        tactileAudio.playSquishyTap();
-      }
+      if (boops.count >= DIZZY_AFTER) tactileAudio.playCreaseSnap();
+      else if (boops.count === 3) tactileAudio.playPaperSnap();
+      else tactileAudio.playSquishyTap();
     }
 
-    // Reaction selection
     let currentReaction: Reaction;
     if (boops.count >= DIZZY_AFTER) {
       boops.count = 0;
       currentReaction = "dizzy";
-      setReaction("dizzy");
-      later(DIZZY_END, null);
+      if (prefersMotion()) reactRef.current?.animate(DIZZY_KEYFRAMES, { duration: DIZZY_MS, easing: "ease-in-out" });
       setBubbleMessage("Ui da! Hộp carton bị móp rồi nè... 🌀");
     } else {
       currentReaction = PAYOFFS[(boops.count - 1) % PAYOFFS.length];
-      setReaction("blink");
-      later(BOOP_PAYOFF, currentReaction);
-      later(BOOP_END, null);
+      // Next drawing, kept until the next click.
+      setPicked(ARTS[(ARTS.indexOf(art) + 1) % ARTS.length]);
+      if (prefersMotion()) reactRef.current?.animate(JUMP_KEYFRAMES, { duration: REACT_MS, easing: "cubic-bezier(0.3, 0, 0.3, 1)" });
 
       const phrases = [
         bubbleText || poseInfo.label,
         poseInfo.tip,
         "Chất liệu: Thùng hộp carton Kraft tự nhiên 📦",
         "Có tem dễ vỡ 🍷 và băng dính niêm phong chuẩn!",
-        "Gói luôn xoay theo con trỏ chuột của bạn! 👀",
+        "Gói luôn nghiêng theo con trỏ chuột của bạn! 👀",
         "Sẵn sàng biến quà tặng thành trải nghiệm mở hộp đỉnh cao!",
       ];
       setBubbleMessage(phrases[(boops.count - 1) % phrases.length]);
@@ -332,62 +287,29 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
 
     onBoop?.(currentReaction, boops.count);
 
-    // Squash and stretch spring effect
-    if (
-      typeof window !== "undefined" &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      squashRef.current?.animate(SQUASH_KEYFRAMES, {
-        duration: SQUASH_MS,
-        easing: "linear",
-      });
+    if (prefersMotion()) {
+      squashRef.current?.animate(SQUASH_KEYFRAMES, { duration: SQUASH_MS, easing: "linear" });
     }
 
-    // Display speech bubble if enabled
     if (showBubbleOnBoop) {
       setShowBubble(true);
-      timersRef.current.push(
-        window.setTimeout(() => {
-          setShowBubble(false);
-        }, 4500) as unknown as number
-      );
+      later(4500, () => setShowBubble(false));
     }
-  }, [
-    interactive,
-    soundEnabled,
-    bubbleText,
-    showBubbleOnBoop,
-    poseInfo.label,
-    poseInfo.tip,
-    onBoop,
-  ]);
+  }, [interactive, soundEnabled, bubbleText, showBubbleOnBoop, poseInfo.label, poseInfo.tip, art, onBoop]);
 
   const handlePointerEnter = () => {
     if (!interactive || !containerRef.current) return;
-    if (soundEnabled) {
-      tactileAudio.playSquishyTap();
-    }
-    animate(containerRef.current, {
-      scale: 1.06,
-      translateY: -3,
-      duration: 300,
-      ease: "outQuad",
-    });
+    if (soundEnabled) tactileAudio.playSquishyTap();
+    animate(containerRef.current, { scale: 1.06, translateY: -3, duration: 300, ease: "outQuad" });
   };
 
   const handlePointerLeave = () => {
     if (!interactive || !containerRef.current) return;
-    animate(containerRef.current, {
-      scale: 1,
-      translateY: 0,
-      duration: 260,
-      ease: "outCubic",
-    });
+    animate(containerRef.current, { scale: 1, translateY: 0, duration: 260, ease: "outCubic" });
   };
 
-  const dirIndex = DIRECTIONS.indexOf(direction);
-  const reactIndex = REACTIONS.indexOf(reaction ?? "blink");
   const MascotRoot = interactive ? "button" : "span";
+  const extraSize = Math.max(10, Math.round(size * 0.2));
 
   return (
     <div
@@ -412,11 +334,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
           <div
             className={cn(
               "flex items-center gap-1.5 font-landing-body",
-              bubblePlacement === "top-right"
-                ? "justify-start"
-                : bubblePlacement === "top-left"
-                ? "justify-end"
-                : "justify-center"
+              bubblePlacement === "top-right" ? "justify-start" : bubblePlacement === "top-left" ? "justify-end" : "justify-center"
             )}
           >
             <span className="w-2 h-2 shrink-0 rounded-full bg-vibrant-cobalt animate-ping" />
@@ -425,11 +343,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
           <div
             className={cn(
               "absolute -bottom-1.5 w-3 h-3 bg-white/95 border-b border-r border-paper-kraft rotate-45",
-              bubblePlacement === "top-right"
-                ? "left-8"
-                : bubblePlacement === "top-left"
-                ? "right-8"
-                : "left-1/2 -translate-x-1/2"
+              bubblePlacement === "top-right" ? "left-8" : bubblePlacement === "top-left" ? "right-8" : "left-1/2 -translate-x-1/2"
             )}
           />
         </div>
@@ -438,51 +352,52 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
       {/* Mascot Paper Button / Container. A plain image when not interactive, so it can sit inside another button. */}
       <MascotRoot
         {...(interactive
-          ? { type: "button" as const, onClick: boop, title: `Gói (Packaging Box Mascot) — Nhấn để tương tác!` }
+          ? { type: "button" as const, onClick: boop, title: `Bé Gói — nhấn để trò chuyện` }
           : { role: "img" })}
         aria-label={label}
-        className={`relative block flex-shrink-0 p-0 border-0 bg-transparent focus:outline-none transition-transform ${
+        className={`relative block flex-shrink-0 p-0 border-0 bg-transparent rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 ${
           interactive ? "cursor-pointer" : ""
         }`}
-        style={{
-          width: size,
-          height: size,
-        }}
+        style={{ width: size, height: size }}
       >
-        <span
-          ref={squashRef}
-          className="relative block w-full h-full"
-          style={{
-            transformOrigin: "50% 78%",
-            filter:
-              "drop-shadow(0 4px 6px rgba(45, 30, 20, 0.10)) drop-shadow(0 1px 2px rgba(45, 30, 20, 0.08))",
-          }}
-        >
-          {/* Head Directions Layer (Follows Mouse Cursor) */}
+        <span ref={lookRef} className={cn("absolute inset-0 block", styles.look)}>
           <span
-            className="absolute inset-0 bg-no-repeat transition-opacity duration-150"
+            ref={squashRef}
+            className="absolute inset-0 block"
             style={{
-              backgroundImage: `url(${activeDirections})`,
-              backgroundSize: "300% 300%",
-              ...cell(dirIndex),
-              opacity: reaction ? 0 : 1,
+              transformOrigin: "50% 92%",
+              filter: "drop-shadow(0 4px 6px rgba(45, 30, 20, 0.14)) drop-shadow(0 1px 2px rgba(45, 30, 20, 0.1))",
             }}
-          />
-
-          {/* Reaction Expressions Layer (Blinks / Hearts / Dizzy / Confetti Unbox Pop) */}
-          <span
-            className="absolute inset-0 bg-no-repeat transition-opacity duration-150"
-            style={{
-              backgroundImage: `url(${activeReactions})`,
-              backgroundSize: "300% 300%",
-              ...cell(reactIndex),
-              opacity: reaction ? 1 : 0,
-            }}
-          />
+          >
+            <span ref={reactRef} className={cn("absolute inset-0 block", styles.react)}>
+              <span className={cn("absolute inset-0 block", styles.motion, action.motion)}>
+                {ARTS.map((a) => (
+                  // All three stay mounted (already decoded): a swap is a cross-fade, never a blank frame.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={a} src={ART[a]} alt="" draggable={false} className={styles.art} style={{ opacity: a === art ? 1 : 0 }} />
+                ))}
+              </span>
+            </span>
+          </span>
         </span>
 
-        {/* Status / Emoji Badge */}
-        {showPhotoBadge && (
+        {/* Extras of some tasks */}
+        {action.extra === "zzz" && !picked && (
+          <span aria-hidden style={{ fontSize: extraSize }}>
+            <span className={cn(styles.extra, styles.zzz)}>z</span>
+            <span className={cn(styles.extra, styles.zzz)}>z</span>
+          </span>
+        )}
+        {action.extra === "sparkle" && (
+          <span aria-hidden style={{ fontSize: extraSize }}>
+            <span className={cn(styles.extra, styles.sparkle)} style={{ left: "2%", top: "10%" }}>✦</span>
+            <span className={cn(styles.extra, styles.sparkle)} style={{ right: "0%", top: "28%", animationDelay: "0.5s" }}>✦</span>
+          </span>
+        )}
+        {action.extra === "lines" && !picked && <span aria-hidden className={cn(styles.extra, styles.lines)} />}
+
+        {/* Status / Emoji Badge; it would hide a small Gói, so only from 64 px */}
+        {showPhotoBadge && size >= 64 && (
           <div
             className="absolute -bottom-1 -right-1 z-20 w-6 h-6 rounded-full bg-white shadow-tactile border border-paper-kraft flex items-center justify-center text-xs transform scale-95 hover:scale-110 transition-transform pointer-events-none"
             title={poseInfo.label}
@@ -495,7 +410,7 @@ export const GoiMascot: React.FC<GoiMascotProps> = ({
         {showMaterialBadge && (
           <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
             <span className="px-2 py-0.5 rounded-full text-cad-spec-micro font-mono font-bold bg-paper-cotton text-brand-forest border border-paper-kraft shadow-xs">
-              Kraft Box 📦
+              Hộp kraft 📦
             </span>
           </div>
         )}

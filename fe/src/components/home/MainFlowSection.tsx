@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Maximize2 } from "lucide-react";
+import { ChevronRight, Maximize2 } from "lucide-react";
+import { GoiMascot } from "@/components/common/GoiMascot";
 import { Container, Reveal } from "@/components/landing";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { FlowStepModal } from "./FlowStepModal";
@@ -22,7 +23,7 @@ export function MainFlowSection() {
 
   return (
     <>
-      <section id="quy-trinh" className="relative scroll-mt-24 border-b border-line/60 bg-[#F8FAFC] py-14 lg:py-24">
+      <section id="quy-trinh" className="relative scroll-mt-24 border-b border-line/60 bg-canvas py-14 lg:py-24">
         <Container>
           {/* Section Header */}
           <Reveal variant="text" className="mx-auto max-w-3xl text-center mb-12 lg:mb-16">
@@ -56,7 +57,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(0);
               }}
               title="Nhấn để phóng to xem giao diện & tính năng Đo kích thước quà"
-              className="group relative flex flex-col justify-between rounded-[28px] border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -66,28 +67,28 @@ export function MainFlowSection() {
               </div>
 
               <div>
-                <span className="font-mono text-xs font-semibold text-fg-muted">Step 01</span>
+                <span className="font-mono text-xs font-semibold text-fg-muted">Bước 01</span>
                 <h3 className="font-landing-heading text-xl font-bold text-landing-ink mt-1">
                   Đo kích thước quà
                 </h3>
 
                 {/* Dimension Inputs (L x W x H) */}
                 <div className="mt-3">
-                  <p className="text-xs font-medium text-fg-muted mb-1.5">Gift dimension (mm)</p>
+                  <p className="text-xs font-medium text-fg-muted mb-1.5">Kích thước món quà (mm)</p>
                   <div className="flex items-center justify-between gap-1.5 text-center font-landing-body text-xs">
                     <div className="flex-1 rounded-xl border border-line/80 bg-white py-1.5 shadow-2xs">
                       <span className="font-semibold text-fg">L</span>
-                      <span className="block text-[10px] text-fg-muted">mm</span>
+                      <span className="block text-caption text-fg-muted">mm</span>
                     </div>
                     <span className="text-fg-muted text-xs">×</span>
                     <div className="flex-1 rounded-xl border border-line/80 bg-white py-1.5 shadow-2xs">
                       <span className="font-semibold text-fg">W</span>
-                      <span className="block text-[10px] text-fg-muted">mm</span>
+                      <span className="block text-caption text-fg-muted">mm</span>
                     </div>
                     <span className="text-fg-muted text-xs">×</span>
                     <div className="flex-1 rounded-xl border border-line/80 bg-white py-1.5 shadow-2xs">
                       <span className="font-semibold text-fg">H</span>
-                      <span className="block text-[10px] text-fg-muted">mm</span>
+                      <span className="block text-caption text-fg-muted">mm</span>
                     </div>
                   </div>
                 </div>
@@ -107,7 +108,7 @@ export function MainFlowSection() {
                 <p className="font-landing-heading text-base font-bold text-landing-ink">
                   Đo kích thước quà
                 </p>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-block mt-1 text-caption font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
                   Xem chi tiết tính năng ↗
                 </span>
               </div>
@@ -115,7 +116,7 @@ export function MainFlowSection() {
 
             {/* Connector Arrow 1 -> 2 (Desktop) */}
             <div className="hidden xl:flex absolute top-1/2 left-[24.3%] -translate-y-1/2 -translate-x-1/2 z-10 pointer-events-none text-line-strong/60">
-              <span className="text-xl font-light">→</span>
+              <span className="flex size-9 items-center justify-center rounded-full border border-line bg-surface-raised text-accent shadow-soft-8"><ChevronRight className="size-4" strokeWidth={2.5} aria-hidden /></span>
             </div>
 
             {/* ================= CARD 02 ================= */}
@@ -127,7 +128,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(1);
               }}
               title="Nhấn để phóng to xem giao diện & tính năng Thiết kế 2D & Mô phỏng 3D"
-              className="group relative flex flex-col justify-between rounded-[28px] border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -137,7 +138,7 @@ export function MainFlowSection() {
               </div>
 
               <div>
-                <span className="font-mono text-xs font-semibold text-fg-muted">Step 02</span>
+                <span className="font-mono text-xs font-semibold text-fg-muted">Bước 02</span>
                 <h3 className="font-landing-heading text-xl font-bold text-landing-ink mt-1 leading-snug">
                   Thiết kế 2D &<br className="hidden sm:inline" /> Mô phỏng 3D
                 </h3>
@@ -158,7 +159,7 @@ export function MainFlowSection() {
                 <p className="font-landing-heading text-base font-bold text-landing-ink">
                   Thiết kế 2D & Mô phỏng 3D
                 </p>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-block mt-1 text-caption font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
                   Xem chi tiết tính năng ↗
                 </span>
               </div>
@@ -166,7 +167,7 @@ export function MainFlowSection() {
 
             {/* Connector Arrow 2 -> 3 (Desktop) */}
             <div className="hidden xl:flex absolute top-1/2 left-[49.5%] -translate-y-1/2 -translate-x-1/2 z-10 pointer-events-none text-line-strong/60">
-              <span className="text-xl font-light">→</span>
+              <span className="flex size-9 items-center justify-center rounded-full border border-line bg-surface-raised text-accent shadow-soft-8"><ChevronRight className="size-4" strokeWidth={2.5} aria-hidden /></span>
             </div>
 
             {/* ================= CARD 03 ================= */}
@@ -177,8 +178,8 @@ export function MainFlowSection() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(2);
               }}
-              title="Nhấn để phóng to xem giao diện & tính năng FitCheck™ AI Copilot"
-              className="group relative flex flex-col justify-between rounded-[28px] border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              title="Nhấn để xem giao diện kiểm tra FitCheck™"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -188,37 +189,33 @@ export function MainFlowSection() {
               </div>
 
               <div>
-                <span className="font-mono text-xs font-semibold text-fg-muted">Step 03</span>
+                <span className="font-mono text-xs font-semibold text-fg-muted">Bước 03</span>
                 <h3 className="font-landing-heading text-xl font-bold text-landing-ink mt-1">
-                  FitCheck™ AI Copilot
+                  Kiểm tra in FitCheck™
                 </h3>
 
                 {/* Pre-press Chips */}
                 <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className="rounded-full border border-success/40 bg-success-bg/80 px-2.5 py-0.5 text-[11px] font-medium text-success-fg">
-                    Safe margin 3mm
+                  <span className="rounded-full border border-success/40 bg-success-bg/80 px-2.5 py-0.5 text-caption font-medium text-success-fg">
+                    Lề an toàn 3 mm
                   </span>
-                  <span className="rounded-full border border-success/40 bg-success-bg/80 px-2.5 py-0.5 text-[11px] font-medium text-success-fg">
+                  <span className="rounded-full border border-success/40 bg-success-bg/80 px-2.5 py-0.5 text-caption font-medium text-success-fg">
                     Bleed 2mm
                   </span>
                 </div>
               </div>
 
-              {/* 3D Bé Gói Mascot Artwork */}
-              <div className="my-5 flex h-[160px] w-full items-center justify-center">
-                <img
-                  src="/branding/flow-art-3.png"
-                  alt="Bé Gói FitCheck™ AI Copilot"
-                  className="max-h-[155px] w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                />
+              {/* Bé Gói measuring the margins; not interactive: the whole card opens the step. */}
+              <div className="my-5 flex h-[160px] w-full items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <GoiMascot pose="measuring" size={150} interactive={false} showPhotoBadge={false} enableTracking={false} label="Bé Gói kiểm tra lề an toàn" />
               </div>
 
               {/* Bottom Label */}
               <div className="text-center pt-2">
                 <p className="font-landing-heading text-base font-bold text-landing-ink leading-tight">
-                  Bé Gói<br />FitCheck™ AI Copilot
+                  Bé Gói soát lỗi<br />trước khi in
                 </p>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-block mt-1 text-caption font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
                   Xem chi tiết tính năng ↗
                 </span>
               </div>
@@ -226,7 +223,7 @@ export function MainFlowSection() {
 
             {/* Connector Arrow 3 -> 4 (Desktop) */}
             <div className="hidden xl:flex absolute top-1/2 left-[74.7%] -translate-y-1/2 -translate-x-1/2 z-10 pointer-events-none text-line-strong/60">
-              <span className="text-xl font-light">→</span>
+              <span className="flex size-9 items-center justify-center rounded-full border border-line bg-surface-raised text-accent shadow-soft-8"><ChevronRight className="size-4" strokeWidth={2.5} aria-hidden /></span>
             </div>
 
             {/* ================= CARD 04 ================= */}
@@ -238,7 +235,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(3);
               }}
               title="Nhấn để phóng to xem giao diện & tính năng Xuất file in & Cắt bế"
-              className="group relative flex flex-col justify-between rounded-[28px] border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -248,7 +245,7 @@ export function MainFlowSection() {
               </div>
 
               <div>
-                <span className="font-mono text-xs font-semibold text-fg-muted">Step 04</span>
+                <span className="font-mono text-xs font-semibold text-fg-muted">Bước 04</span>
                 <h3 className="font-landing-heading text-xl font-bold text-landing-ink mt-1">
                   Xuất file in & Cắt bế
                 </h3>
@@ -256,10 +253,10 @@ export function MainFlowSection() {
                 {/* Vector PDF Chip */}
                 <div className="flex items-center gap-2 mt-3">
                   <span className="inline-flex items-center gap-1.5 rounded-lg border border-line/70 bg-surface-sunken/60 px-2.5 py-1 text-xs font-medium text-fg">
-                    <span className="rounded bg-red-600 px-1 py-0.5 text-[9px] font-bold text-white uppercase leading-none">
+                    <span className="rounded bg-red-600 px-1 py-0.5 text-cad-spec-micro font-bold text-white uppercase leading-none">
                       PDF
                     </span>
-                    <span>Vector PDF 300 DPI</span>
+                    <span>PDF vector 300 DPI</span>
                   </span>
                 </div>
               </div>
@@ -278,7 +275,7 @@ export function MainFlowSection() {
                 <p className="font-landing-heading text-base font-bold text-landing-ink">
                   Xuất file in & Cắt bế
                 </p>
-                <span className="inline-block mt-1 text-[11px] font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-block mt-1 text-caption font-semibold text-fpt-orange opacity-0 group-hover:opacity-100 transition-opacity">
                   Xem chi tiết tính năng ↗
                 </span>
               </div>

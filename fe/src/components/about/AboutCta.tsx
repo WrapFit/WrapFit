@@ -19,8 +19,8 @@ export function AboutCta() {
           <div className="relative z-10 mx-auto max-w-4xl text-center flex flex-col items-center">
             {/* Mascot Copilot Greeting */}
             <div className="mb-6 flex flex-col sm:flex-row items-center gap-3 rounded-full bg-white/10 backdrop-blur-md px-5 py-2 border border-white/15">
-              <div className="size-8 flex items-center justify-center">
-                <GoiMascot pose="waving" size={32} />
+              <div className="size-10 flex items-center justify-center">
+                <GoiMascot pose="waving" size={40} showPhotoBadge={false} showBubbleOnBoop={false} />
               </div>
               <span className="text-xs sm:text-sm font-medium text-white/85 text-center">
                 Gói: &ldquo;Mình cùng làm hộp cho món quà nhé?&rdquo;

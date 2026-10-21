@@ -12,5 +12,5 @@ export const SOCIAL_LINKS: SocialLink[] = [
   { id: "instagram", label: "Instagram", href: "https://www.instagram.com/wrapfit.vn" },
   { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@wrapfit.vn" },
   { id: "zalo", label: "Zalo", href: "https://zalo.me" },
-  { id: "email", label: "Email", href: "mailto:contact@wrapfit.vn" },
+  { id: "email", label: "Email", href: "mailto:contact.wrapfit@gmail.com" },
 ];

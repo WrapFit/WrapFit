@@ -33,7 +33,7 @@ function VaultQuotas() {
     <AdminShell title="Hạn mức lưu trữ" description="Dung lượng và lượt tạo hoa văn AI mà API áp cho từng gói, cùng giới hạn của từng loại tệp tải lên.">
       <div className="flex flex-col gap-6">
         <Panel aria-labelledby="quota-tiers">
-          <PanelTitle id="quota-tiers" action={<Badge tone="green">Theo API</Badge>}>
+          <PanelTitle id="quota-tiers" action={<Badge tone="green">Dữ liệu thật</Badge>}>
             Hạn mức theo gói
           </PanelTitle>
           <DataTable<Plan>

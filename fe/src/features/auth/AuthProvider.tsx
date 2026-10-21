@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter } from "next/navigation";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from "react";
 import * as authApi from "@/api/auth";
 import { useToast } from "@/components/common/Toast";
@@ -9,6 +10,22 @@ import { SESSION_EXPIRED_EVENT } from "@/services/api";
 import type { SafeUser } from "@/types/api";
 
 import { DEMO_USER } from "@/features/dashboard/demoData";
+import { ADMIN_HOME, isAccountPage, isRealAdmin } from "./roles";
+
+/** Set once an administrator has been sent to /admin in this tab: afterwards they may browse the site freely. */
+const ADMIN_LANDED_KEY = "wrapfit_admin_landed";
+
+/** Set when this tab signed in (form, Google, demo buttons); unset for the demo account given to every visitor. */
+export const SIGNED_IN_KEY = "wrapfit_signed_in";
+
+/** True when the user chose to sign in in this tab (a real account always counts, see the sign-in page). */
+export function signedInOnPurpose(): boolean {
+  try {
+    return typeof window !== "undefined" && window.sessionStorage.getItem(SIGNED_IN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export type AuthStatus = "loading" | "authenticated" | "anonymous" | "error";
 
@@ -60,7 +77,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (typeof window !== "undefined") {
         if (user) {
           window.sessionStorage?.removeItem("wrapfit_demo_logged_out");
+          // Signed in on purpose in this tab (not the demo account every visitor gets): the sign-in page moves on.
+          window.sessionStorage?.setItem(SIGNED_IN_KEY, "1");
+          if (user.role === "ADMIN") window.sessionStorage?.setItem("wrapfit_demo_role", "admin");
+          else window.sessionStorage?.removeItem("wrapfit_demo_role");
         } else {
+          window.sessionStorage?.removeItem("wrapfit_demo_role");
+          window.sessionStorage?.removeItem(ADMIN_LANDED_KEY);
+          window.sessionStorage?.removeItem(SIGNED_IN_KEY);
           window.sessionStorage?.setItem("wrapfit_demo_logged_out", "1");
         }
       }
@@ -121,5 +145,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [me.data, me.error, me.errorUpdateCount, me.isError, me.isFetching, queryClient, setUser]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <AdminLanding user={value.user} />
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+/**
+ * Opening the site with an administrator session (a fresh tab, `npm run dev`) lands straight on the admin console
+ * instead of the maker's pages. Only the first page of the tab is redirected, so the admin can still visit the site.
+ */
+function AdminLanding({ user }: { user: SafeUser | null }) {
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
+  useEffect(() => {
+    if (!isRealAdmin(user)) return;
+    try {
+      if (window.sessionStorage.getItem(ADMIN_LANDED_KEY) === "1") return;
+      window.sessionStorage.setItem(ADMIN_LANDED_KEY, "1");
+    } catch {
+      return;
+    }
+    if (pathname.startsWith(ADMIN_HOME) || pathname.startsWith("/auth/") || isAccountPage(pathname)) return;
+    router.replace(ADMIN_HOME);
+  }, [user, pathname, router]);
+  return null;
 }
