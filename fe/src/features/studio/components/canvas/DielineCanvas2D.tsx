@@ -1191,7 +1191,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 <span>Thêm Văn Bản / Lời Chúc Mừng</span>
               </h3>
               <span className="text-cad-spec-micro font-mono text-fpt-orange bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
-                Pretext Engine
+                Tự ngắt dòng
               </span>
             </div>
 
@@ -1229,7 +1229,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               <div className="text-caption text-landing-muted bg-landing-canvas p-2.5 rounded-xl border border-landing-line flex items-start gap-1.5">
                 <Info className="w-3.5 h-3.5 text-fpt-orange flex-shrink-0 mt-0.5" />
                 <span>
-                  Công nghệ <strong>Pretext Layout</strong> tự động tính toán số dòng và ngắt câu vừa vặn
+                  WrapFit tự động tính toán số dòng và ngắt câu vừa vặn
                   theo milimet của mặt hộp mà không làm đơ giật trình duyệt.
                 </span>
               </div>

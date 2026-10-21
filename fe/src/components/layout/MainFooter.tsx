@@ -81,8 +81,8 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Mail className="size-4 shrink-0 text-white/80" aria-hidden />
-                  <a href="mailto:contact@wrapfit.vn" className="hover:text-wf-orange-200 transition-colors">
-                    contact@wrapfit.vn
+                  <a href="mailto:contact.wrapfit@gmail.com" className="hover:text-wf-orange-200 transition-colors">
+                    contact.wrapfit@gmail.com
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">

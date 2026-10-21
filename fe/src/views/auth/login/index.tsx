@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import React, {
   Suspense,
   useCallback,
@@ -15,13 +16,13 @@ import { googleSignInUrl, login, register } from "@/api/auth";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 import { ROUTES } from "@/constants";
-import { ADMIN_HOME, afterSignInTarget, ONBOARDING_TOUR_ID, useAuth } from "@/features/auth";
-import { DEMO_USER, DEMO_USERS } from "@/features/dashboard/demoData";
+import { ADMIN_HOME, afterSignInTarget, isDemoUser, ONBOARDING_TOUR_ID, signedInOnPurpose, useAuth } from "@/features/auth";
+import { DEMO_ADMIN_USER, DEMO_USER, DEMO_USERS } from "@/features/dashboard/demoData";
 import { useHydrated } from "@/hooks/dom";
 import { ApiError, isApiError } from "@/services/api";
 import type { LoginRequest, RegisterRequest, SafeUser } from "@/types/api";
 import { cn } from "@/utils/helpers";
-import { buttonClass } from "@/components/ui";
+import { buttonClass, Dialog } from "@/components/ui";
 import {
   ApiErrorAlert,
   FULL_NAME_MAX_LENGTH,
@@ -156,6 +157,7 @@ function AuthLoginScreen({
   // The query-string banners describe how the user got here: hide them once they act.
   const [submitted, setSubmitted] = useState(false);
   const [leavingForGoogle, setLeavingForGoogle] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   const redirected = useRef(false);
   const goToTarget = useCallback((user?: SafeUser | null) => {
@@ -165,10 +167,13 @@ function AuthLoginScreen({
     router.replace(afterSignInTarget(redirectParam, user));
   }, [redirectParam, router]);
 
+  // The demo account every visitor gets is not a sign-in: the visitor came here to sign in (or to pick a demo).
+  const alreadySignedIn = status === "authenticated" && (!isDemoUser(currentUser) || signedInOnPurpose());
+
   // A signed-in user has nothing to do here (also covers the session set by a successful login below).
   useEffect(() => {
-    if (status === "authenticated") goToTarget(currentUser);
-  }, [status, currentUser, goToTarget]);
+    if (alreadySignedIn) goToTarget(currentUser);
+  }, [alreadySignedIn, currentUser, goToTarget]);
 
   // Back from Google through the back/forward cache: the button must work again.
   useEffect(() => {
@@ -319,7 +324,7 @@ function AuthLoginScreen({
               </p>
             )}
 
-            {hydrated && status === "authenticated" ? (
+            {hydrated && alreadySignedIn ? (
               <div
                 role="status"
                 className="mt-8 flex items-center gap-3 rounded-xl border border-landing-line bg-mist-50 px-4 py-3.5 text-sm"
@@ -471,22 +476,56 @@ function AuthLoginScreen({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    // Demo: always replay the onboarding, so the guided tour can be shown and tested every time.
-                    try {
-                      window.localStorage.removeItem(`wrapfit.tour.${ONBOARDING_TOUR_ID}`);
-                    } catch {
-                      // Storage blocked: the tour still starts, it just cannot be remembered.
-                    }
-                    redirected.current = true;
-                    signedIn(DEMO_USER);
-                    router.replace(`${ROUTES.home}?welcome=1`);
-                  }}
+                  aria-haspopup="dialog"
+                  onClick={() => setDemoOpen(true)}
                   className="mt-2.5 relative inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-fpt-orange/40 bg-fpt-orange-light/60 text-body-sm font-semibold text-fg transition-colors hover:bg-fpt-orange-light"
                 >
                   <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-fpt-orange text-caption font-bold text-white">★</span>
                   <span>Đăng nhập nhanh bản demo</span>
                 </button>
+                {/* Portal: the form card is a containing block (backdrop blur), the dialog must cover the page. */}
+                {demoOpen && createPortal(
+                  <Dialog
+                    title="Đăng nhập nhanh bản demo"
+                    description="Chọn vai trò để xem giao diện tương ứng. Không cần tài khoản."
+                    onClose={() => setDemoOpen(false)}
+                    size="lg"
+                  >
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <DemoChoice
+                        image="/mascots/goi-cheer.webp"
+                        title="Demo người dùng"
+                        body="Thiết kế hộp, thư viện mẫu, Studio 2D/3D và dự án của bạn."
+                        tone="orange"
+                        onSelect={() => {
+                          // Demo: always replay the onboarding, so the guided tour can be shown and tested every time.
+                          try {
+                            window.localStorage.removeItem(`wrapfit.tour.${ONBOARDING_TOUR_ID}`);
+                          } catch {
+                            // Storage blocked: the tour still starts, it just cannot be remembered.
+                          }
+                          redirected.current = true;
+                          setDemoOpen(false);
+                          signedIn(DEMO_USER);
+                          router.replace(`${ROUTES.home}?welcome=1`);
+                        }}
+                      />
+                      <DemoChoice
+                        image="/mascots/goi-magnifier.webp"
+                        title="Demo quản trị viên"
+                        body="Bảng điều khiển admin: tài khoản, mẫu hộp, xưởng in, doanh thu."
+                        tone="blue"
+                        onSelect={() => {
+                          redirected.current = true;
+                          setDemoOpen(false);
+                          signedIn(DEMO_ADMIN_USER);
+                          router.replace(ADMIN_HOME);
+                        }}
+                      />
+                    </div>
+                  </Dialog>,
+                  document.body,
+                )}
 
                 <p className="mt-3.5 text-center text-body-sm text-landing-muted">
                   {copy.switchLabel}{" "}
@@ -607,5 +646,25 @@ function GoogleIcon() {
         fill="#34A853"
       />
     </svg>
+  );
+}
+
+/** One role of the demo dialog: Gói, the role and what it opens. */
+function DemoChoice({ image, title, body, tone, onSelect }: { image: string; title: string; body: string; tone: "orange" | "blue"; onSelect(): void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "group flex flex-col items-center gap-2 rounded-panel border-2 p-4 text-center transition-all hover:-translate-y-0.5 hover:shadow-soft-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+        tone === "orange" ? "border-fpt-orange/40 bg-fpt-orange-light/50 hover:border-fpt-orange" : "border-fpt-blue/30 bg-info-bg hover:border-fpt-blue",
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={image} alt="" draggable={false} className="size-24 object-contain transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110 motion-reduce:transition-none" />
+      <span className="font-landing-heading text-title font-bold text-fg">{title}</span>
+      <span className="text-body-sm text-fg-muted">{body}</span>
+      <span className={cn("mt-1 text-label font-semibold", tone === "orange" ? "text-accent" : "text-fpt-blue")}>Vào ngay →</span>
+    </button>
   );
 }

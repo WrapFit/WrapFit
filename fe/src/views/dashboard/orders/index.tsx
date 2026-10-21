@@ -181,10 +181,10 @@ function OrdersScreen() {
         sortValue: (row) => row.projectTitle,
         render: ({ job, projectId, projectTitle }) => (
           <span className="block max-w-[260px]">
-            <Link href={ROUTES.editor(projectId)} className="block truncate font-medium text-library-ink hover:underline">
+            <Link href={ROUTES.editor(projectId)} className="block truncate font-medium text-library-ink hover:underline" title={projectTitle}>
               {projectTitle}
             </Link>
-            {job.fileName && <span className="block truncate font-mono text-caption text-library-muted">{job.fileName}</span>}
+            {job.fileName && <span className="block truncate font-mono text-caption text-library-muted" title={job.fileName}>{job.fileName}</span>}
           </span>
         ),
       },
@@ -196,7 +196,7 @@ function OrdersScreen() {
         render: ({ job }) => (
           <>
             <Badge tone={STATUS_BADGES[job.status].tone}>{STATUS_BADGES[job.status].label}</Badge>
-            {job.status === 'FAILED' && job.error && <span className="mt-1 block max-w-[200px] truncate text-caption text-danger-fg">{job.error}</span>}
+            {job.status === 'FAILED' && job.error && <span className="mt-1 block max-w-[200px] truncate text-caption text-danger-fg" title={job.error}>{job.error}</span>}
           </>
         ),
       },
@@ -225,13 +225,13 @@ function OrdersScreen() {
           ) : null,
       },
     ];
-    body = <DataTable label="File in đã xuất" columns={columns} rows={rows} rowKey={(row) => row.job.id} mobile="cards" initialSort={{ key: 'time', direction: 'desc' }} search={{ label: 'Lọc file in', placeholder: 'Tên dự án, định dạng…', text: (row) => `${row.projectTitle} ${FILE_LABELS[row.job.fileType]} ${STATUS_BADGES[row.job.status].label}` }} />;
+    body = <DataTable label="File in đã xuất" columns={columns} rows={rows} rowKey={(row) => `${row.projectId}:${row.job.id}`} mobile="cards" initialSort={{ key: 'time', direction: 'desc' }} search={{ label: 'Lọc file in', placeholder: 'Tên dự án, định dạng…', text: (row) => `${row.projectTitle} ${FILE_LABELS[row.job.fileType]} ${STATUS_BADGES[row.job.status].label}` }} />;
   }
 
   return (
     <WorkspaceShell
       title="Đơn hàng & File In"
-      description="Quản lý file in công nghiệp đã xuất và theo dõi đơn đặt in mẫu thử 01 hộp (Physical Proof)."
+      description="Quản lý file in công nghiệp đã xuất và theo dõi đơn đặt in mẫu thử 01 hộp."
     >
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="min-w-0 xl:col-span-8 flex flex-col gap-6">
@@ -246,7 +246,7 @@ function OrdersScreen() {
                 </Link>
               }
             >
-              Đơn in mẫu thử (Sample Box Proofs)
+              Đơn in mẫu thử
             </PanelTitle>
 
             {sampleOrders.length === 0 ? (
@@ -275,7 +275,7 @@ function OrdersScreen() {
                       return (
                         <tr key={order.id}>
                           <td className="py-3 pr-3 font-medium text-library-ink">
-                            <span className="block truncate max-w-[200px]">{order.projectTitle}</span>
+                            <span className="block truncate max-w-[200px]" title={order.projectTitle}>{order.projectTitle}</span>
                             <span className="block font-mono text-cad-spec-micro text-library-muted">#{order.id.slice(0, 8)}</span>
                           </td>
                           <td className="px-3 py-3 text-library-sub text-xs">{shopName}</td>

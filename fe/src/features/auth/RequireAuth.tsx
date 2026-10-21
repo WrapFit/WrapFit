@@ -5,9 +5,15 @@ import React, { useMemo } from "react";
 import { ErrorState } from "@/components/common/StatusViews";
 import { ROUTES } from "@/constants";
 import type { Role } from "@/types/api";
-import { DEMO_USER } from "@/features/dashboard/demoData";
+import { DEMO_ADMIN_USER, DEMO_USER } from "@/features/dashboard/demoData";
 import { AuthContext, useAuth, type AuthContextValue } from "./AuthProvider";
 import { homeForRole, isRealAdmin } from "./roles";
+
+/**
+ * The Vercel deployment has no backend: graders open /admin with the offline admin account. Vercel sets
+ * NEXT_PUBLIC_VERCEL_ENV on every build; NEXT_PUBLIC_DEMO_ADMIN=1 turns it on elsewhere.
+ */
+const DEMO_ADMIN_ALLOWED = !!process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_DEMO_ADMIN === "1";
 
 interface RequireAuthProps {
   children: React.ReactNode;
@@ -24,6 +30,12 @@ export function RequireAuth({ children, role }: RequireAuthProps) {
   const auth = useAuth();
   const { user } = auth;
   const requiresAdmin = role === "ADMIN" || (Array.isArray(role) && role.includes("ADMIN"));
+
+  // Demo deployment: an admin page opens with the offline admin account instead of an access error.
+  if (requiresAdmin && DEMO_ADMIN_ALLOWED && !isRealAdmin(user)) {
+    const demoAdminValue: AuthContextValue = { ...auth, user: DEMO_ADMIN_USER, status: "authenticated", error: null, isChecking: false };
+    return <AuthContext.Provider value={demoAdminValue}>{children}</AuthContext.Provider>;
+  }
 
   // Real signed-in user
   if (user) {
@@ -58,7 +70,7 @@ export function RequireAuth({ children, role }: RequireAuthProps) {
           title="Yêu cầu quyền Quản trị viên"
           description="Vui lòng đăng nhập với tài khoản Quản trị viên (admin@wrapfit.vn) để mở trang này."
           action={
-            <Link href="/login?redirect=/admin" className="text-sm font-semibold text-fpt-orange-ink underline-offset-4 hover:underline">
+            <Link href={`${ROUTES.login}?redirect=/admin`} className="text-sm font-semibold text-fpt-orange-ink underline-offset-4 hover:underline">
               Đăng nhập tài khoản Quản trị
             </Link>
           }

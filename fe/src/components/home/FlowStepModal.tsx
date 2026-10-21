@@ -116,7 +116,7 @@ export function FlowStepModal({
         }
       }}
     >
-      <div className="relative w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-[28px] bg-white border border-line shadow-popover flex flex-col animate-pop-in">
+      <div className="relative w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-sheet bg-white border border-line shadow-popover flex flex-col animate-pop-in">
         {/* ================= MODAL HEADER: DEDICATED STEP ONLY ================= */}
         <div className="flex items-center justify-between border-b border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
           <div className="flex items-center gap-2">

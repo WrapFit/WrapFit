@@ -162,8 +162,8 @@ export function StartBar({ visible, onStart }: { visible: boolean; onStart(): vo
         visible ? "translate-y-0" : "pointer-events-none translate-y-full"
       )}
     >
-      <div className="relative h-11 overflow-hidden bg-fpt-orange">
-        <div className="flex w-max animate-marquee items-center gap-10 whitespace-nowrap py-3 text-sm text-white/90 motion-reduce:animate-none">
+      <div className="relative h-12 overflow-hidden bg-fg">
+        <div className="flex w-max animate-marquee items-center gap-10 whitespace-nowrap py-3.5 text-sm text-white/70 motion-reduce:animate-none">
           {[...MARQUEE, ...MARQUEE, ...MARQUEE, ...MARQUEE].map((label, index) => (
             <span key={index} className="inline-flex items-center gap-10">
               {label}
@@ -177,7 +177,7 @@ export function StartBar({ visible, onStart }: { visible: boolean; onStart(): vo
           type="button"
           tabIndex={visible ? 0 : -1}
           onClick={onStart}
-          className="absolute top-1/2 left-1/2 inline-flex h-8 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-md bg-fpt-orange px-4 text-sm font-medium text-white shadow-panel"
+          className="absolute top-1/2 left-1/2 inline-flex h-9 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-fpt-orange px-5 text-sm font-semibold text-white shadow-[0_0_0_10px_rgb(29_41_61)] transition-colors hover:bg-fpt-orange-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           Chọn một mẫu hộp để bắt đầu
           <ArrowRight className="size-4" aria-hidden />

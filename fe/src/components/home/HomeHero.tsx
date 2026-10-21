@@ -18,9 +18,9 @@ export function HomeHero() {
           <div className="group inline-flex items-center gap-2.5 rounded-full border border-line/90 bg-white/95 px-4 py-1.5 shadow-2xs backdrop-blur-md transition-[border-color,box-shadow] duration-300 hover:border-fpt-orange/40 hover:shadow-soft-8">
             {/* 3 iconic FPT colored frames/dots */}
             <span className="flex items-center gap-1.5" aria-hidden>
-              <span className="size-2 rounded-full bg-fpt-blue ring-2 ring-fpt-blue/25" title="FPT Blue" />
-              <span className="size-2 rounded-full bg-fpt-orange ring-2 ring-fpt-orange/25 animate-pulse" title="FPT Orange" />
-              <span className="size-2 rounded-full bg-fpt-green ring-2 ring-fpt-green/25" title="FPT Green" />
+              <span className="size-2 rounded-full bg-fpt-blue ring-2 ring-fpt-blue/25" title="Xanh dương FPT" />
+              <span className="size-2 rounded-full bg-fpt-orange ring-2 ring-fpt-orange/25 animate-pulse" title="Cam FPT" />
+              <span className="size-2 rounded-full bg-fpt-green ring-2 ring-fpt-green/25" title="Xanh lá FPT" />
             </span>
             <span className="text-xs sm:text-sm font-semibold tracking-wide text-fg">
               Nền tảng thiết kế hộp quà thông minh
@@ -32,7 +32,8 @@ export function HomeHero() {
             <br />
             <span
               className={cn(
-                "inline-block bg-clip-text py-1 text-[2.75rem] leading-[1.15] text-transparent md:text-6xl xl:text-7xl 2xl:text-8xl",
+                "inline-block bg-clip-text pb-3 pt-2 text-[2.75rem] leading-[1.35] text-transparent md:text-6xl xl:text-7xl 2xl:text-8xl",
+                // Tall line box and padding: the gradient is clipped to the box, Vietnamese stacked marks (ý, ọ, ẹ) need the room.
                 // FPT blue, orange and green drifting through the word (globals.css .text-tricolor); every stop is ≥ 3:1 for large text.
                 "text-tricolor bg-gradient-to-r from-fpt-blue from-15% via-fpt-orange via-50% to-fpt-green-dark to-85%"
               )}

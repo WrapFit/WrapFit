@@ -109,6 +109,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                   <button
                     type="button"
                     aria-pressed={isSelected}
+                    title={`${item.apiName} · ${item.badge}`}
                     onClick={() => onSelectStructure(item.id)}
                     className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors ${
                       isSelected ? "bg-orange-50 ring-2 ring-fpt-orange" : "hover:bg-landing-canvas"
