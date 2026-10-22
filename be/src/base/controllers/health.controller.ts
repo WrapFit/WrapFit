@@ -1,10 +1,9 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Controller, Get, Req, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Queue } from 'bullmq';
-import type { Request } from 'express';
 import { ACCESS_COOKIE, Public, Roles } from '../../common';
 import { PrismaService } from '../../shared/prisma';
 import { EXPORT_QUEUE, WORKER_HEARTBEAT_KEY } from '../../export';
@@ -46,12 +45,9 @@ export class HealthController {
   @Get('details')
   @Roles(Role.ADMIN)
   @ApiCookieAuth(ACCESS_COOKIE)
-  @ApiOperation({ summary: 'Health with the export queue sizes, the uptime and the client IP seen by the API (admin)' })
-  async details(@Req() request: Request) {
-    // `client.ip` is what rate limits use: when it is a proxy address instead of the admin's own IP, TRUST_PROXY is
-    // lower than the number of proxies in `forwardedFor`.
-    const client = { ip: request.ip, forwardedFor: request.get('x-forwarded-for') ?? null };
-    return { ...(await this.inspect()), client };
+  @ApiOperation({ summary: 'Health with the export queue sizes and the uptime (admin)' })
+  details() {
+    return this.inspect();
   }
 
   /** The worker and the export queue are reported for monitoring, the worker being a separate process. */

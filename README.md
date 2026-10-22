@@ -12,7 +12,7 @@
 
 ## 📌 Bối cảnh & Nỗi đau thị trường (The Problem)
 
-- **MOQ & Chi phí khuôn bế quá cao**: Các shop quà tặng handmade và cá nhân muốn đặt hộp riêng thường bị xưởng in từ chối do số lượng tối thiểu (thường từ 500 - 1.000 hộp) hoặc chi phí làm khuôn dao bế riêng dao động từ 1.500.000đ - 2.000.000đ (1,5 - 2 triệu đồng)/kích thước.
+- **MOQ & Chi phí khuôn bế quá cao**: Các shop quà tặng handmade và cá nhân muốn đặt hộp riêng thường bị xưởng in từ chối do số lượng tối thiểu (thường từ 500 - 1.000 hộp) hoặc chi phí làm khuôn dao bế riêng dao động từ 1.000.000đ - 3.000.000đ/kích thước.
 - **Công cụ thiết kế 2D "mù" về vật lý bao bì**: Các phần mềm như Canva hay Photoshop không hiểu đường cấn gấp (crease line), mép dán (glue flap) hay độ co giãn của vật liệu (GSM/caliper), dẫn đến việc file thiết kế đẹp trên màn hình nhưng khi in và bế ra thực tế bị rách, lệch khớp hoặc đứt chữ.
 
 ---
@@ -122,8 +122,7 @@ container Docker vẫn chạy. Chạy lại sau mỗi lần pull code.
   `STORAGE_PORT` trong `.env` gốc và sửa cổng tương ứng trong `be/.env`.
 - Chỉ bật phần Docker + database: `npm run dev:setup`. Từng process riêng: `npm run dev:be`, `npm run dev:worker`, `npm run dev:fe`.
 
-Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md). Deploy miễn phí (Vercel +
-Render + Neon + Redis Cloud + R2 + Brevo): [`docs/17_FREE_CLOUD_DEPLOY.md`](docs/17_FREE_CLOUD_DEPLOY.md).
+Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md).
 
 ---
 

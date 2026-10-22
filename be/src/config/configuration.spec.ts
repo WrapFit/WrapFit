@@ -11,17 +11,10 @@ describe('configuration', () => {
     const config = configuration({ ...valid, NODE_ENV: 'development', PORT: '4000', STORAGE_FORCE_PATH_STYLE: 'true' });
     expect(config.app.port).toBe(4000);
     expect(config.app.swaggerEnabled).toBe(true);
-    expect(config.app.trustProxy).toBe(0);
+    expect(config.app.trustProxy).toBe(false);
     expect(config.auth.jwt.accessTtlSeconds).toBe(900);
     expect(config.storage.forcePathStyle).toBe(true);
     expect(config.mail.smtp).toMatchObject({ host: 'localhost', port: 1025, secure: false });
-  });
-
-  it('reads TRUST_PROXY as a number of proxies', () => {
-    expect(configuration({ ...valid, TRUST_PROXY: 'true' }).app.trustProxy).toBe(1);
-    expect(configuration({ ...valid, TRUST_PROXY: '3' }).app.trustProxy).toBe(3);
-    expect(() => configuration({ ...valid, TRUST_PROXY: '0' })).toThrow(/TRUST_PROXY/);
-    expect(() => configuration({ ...valid, TRUST_PROXY: 'yes' })).toThrow(/TRUST_PROXY/);
   });
 
   it('fails like env.validation on an invalid environment', () => {

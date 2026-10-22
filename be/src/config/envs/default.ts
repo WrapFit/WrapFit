@@ -12,8 +12,8 @@ export const config = (env: EnvironmentVariables) => ({
     /** Where the browser lands after Google login and where email links point (the Next.js frontend). */
     frontendUrl: env.FRONTEND_URL,
     corsOrigins: env.CORS_ORIGINS,
-    /** Number of reverse proxies in front of the API (0 = none): rate limits and sessions use the client IP. */
-    trustProxy: env.TRUST_PROXY === 'true' ? 1 : env.TRUST_PROXY === 'false' ? 0 : Number(env.TRUST_PROXY),
+    /** Behind a reverse proxy (Caddy in production): rate limits and sessions use the client IP. */
+    trustProxy: env.TRUST_PROXY === 'true',
     swaggerEnabled: env.SWAGGER_ENABLED === 'true',
   },
   auth: {

@@ -7,7 +7,6 @@ import {
   IsNotEmpty,
   IsString,
   IsUrl,
-  Matches,
   Max,
   Min,
   MinLength,
@@ -149,12 +148,8 @@ export class EnvironmentVariables {
   @IsIn(['', 'json', 'text'])
   LOG_FORMAT: string = '';
 
-  /**
-   * Proxies in front of the API, for the client IP of rate limits and sessions: `true` = one (Caddy in production), or
-   * their number when there are more (Vercel rewrite + the proxies of the host). Never more than really exist: each
-   * extra hop lets a client choose its own IP with an X-Forwarded-For header.
-   */
-  @Matches(/^(true|false|[1-9])$/, { message: 'TRUST_PROXY must be true, false or a number of proxies from 1 to 9' })
+  /** `true` behind a reverse proxy (Caddy in production): rate limits and sessions use the client IP. */
+  @IsIn(['true', 'false'])
   TRUST_PROXY: string = 'false';
 
   /** Redis for the BullMQ queues (export). `rediss://` enables TLS. */
