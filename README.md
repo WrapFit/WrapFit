@@ -122,7 +122,8 @@ container Docker vẫn chạy. Chạy lại sau mỗi lần pull code.
   `STORAGE_PORT` trong `.env` gốc và sửa cổng tương ứng trong `be/.env`.
 - Chỉ bật phần Docker + database: `npm run dev:setup`. Từng process riêng: `npm run dev:be`, `npm run dev:worker`, `npm run dev:fe`.
 
-Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md).
+Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md). Deploy miễn phí (Vercel +
+Render + Neon + Redis Cloud + R2 + Brevo): [`docs/17_FREE_CLOUD_DEPLOY.md`](docs/17_FREE_CLOUD_DEPLOY.md).
 
 ---
 

@@ -31,8 +31,9 @@ export function middleware(app: INestApplication): void {
   app.use(cookieParser());
   // Canvas states (up to 300 elements) can exceed the 100 kB default. Images go to object storage, not the body.
   (app as NestExpressApplication).useBodyParser('json', { limit: '1mb' });
-  // Behind Caddy every request comes from the proxy: trust one hop so req.ip is the client (rate limits, sessions).
-  if (config.get('app.trustProxy')) (app as NestExpressApplication).set('trust proxy', 1);
+  // Behind Caddy every request comes from the proxy: trust its hops so req.ip is the client (rate limits, sessions).
+  const proxyHops = config.get('app.trustProxy');
+  if (proxyHops) (app as NestExpressApplication).set('trust proxy', proxyHops);
   app.enableCors({ origin: origins, credentials: origins !== '*' });
 
   // Every route lives under /api/* so the Next.js frontend can proxy it same-origin (`rewrites: /api/:path*`).

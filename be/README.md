@@ -150,7 +150,7 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `CORS_ORIGINS` | `app.corsOrigins` | `*` | Danh sách origin, ngăn cách bằng dấu phẩy. Phải là origin cụ thể (vd. `http://localhost:3000`) để trình duyệt gửi cookie |
 | `FRONTEND_URL` | `app.frontendUrl` | `http://localhost:3000` | Trang frontend: đích sau khi đăng nhập Google, gốc của link trong email và mã QR |
 | `SWAGGER_ENABLED` | `app.swaggerEnabled` | `true` | Bật/tắt `/api/docs` |
-| `TRUST_PROXY` | `app.trustProxy` | `false` | `true` khi chạy sau reverse proxy (Caddy) |
+| `TRUST_PROXY` | `app.trustProxy` | `false` | Số proxy đứng trước API: `true` = 1 (Caddy), hoặc số từ 1 đến 9 (Vercel + Render, docs/17 mục 9). `GET /api/health/details` (admin) cho biết IP API nhận được |
 | `THROTTLE_TTL_SECONDS` / `THROTTLE_LIMIT` | `throttle.ttlSeconds` / `throttle.limit` | `60` / `100` | Rate limit mặc định (theo IP) |
 | `STORAGE_BUCKET` | `storage.bucket` | *(trống)* | Bucket S3 / R2; để trống = tắt upload (API trả `503`) |
 | `STORAGE_PRIVATE_BUCKET` | `storage.privateBucket` | *(= `STORAGE_BUCKET`)* | Bucket **không có URL công khai** chứa file xuất in (key `private/...`), chỉ tải qua link pre-signed 15 phút. Để trống = dùng bucket công khai (log cảnh báo); `docker-compose.prod.yml` bắt buộc đặt |
@@ -170,6 +170,7 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `SMTP_USER` / `SMTP_PASS` | `mail.smtp.user` / `.pass` | *(trống)* | Đặt cả hai hoặc để trống cả hai (không xác thực) |
 | `MAIL_FROM` | `mail.from` | `WrapFit <no-reply@wrapfit.local>` | Người gửi; ở production tên miền cần bản ghi SPF / DKIM |
 | `LOG_FORMAT` | – (logger đọc trực tiếp) | *(tự động)* | `json` (một dòng JSON mỗi log) hoặc `text`; trống = `json` ở production |
+| `RUN_WORKER` | – (`docker-entrypoint.sh`) | *(trống)* | `true` = container API chạy luôn worker (host chỉ có một service free, như Render). Heap: `API_MAX_OLD_SPACE_MB` (256), `WORKER_MAX_OLD_SPACE_MB` (160) |
 
 ## API hiện có
 
@@ -372,6 +373,9 @@ npm --workspace=be run test:e2e
 **Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
 
 ## Triển khai production (VPS + HTTPS)
+
+Bản miễn phí không cần VPS hay tên miền (Vercel + Render + Neon + Redis Cloud + R2 + Brevo):
+[`docs/17_FREE_CLOUD_DEPLOY.md`](../docs/17_FREE_CLOUD_DEPLOY.md).
 
 1. VPS có Docker (Compose ≥ 2.24), mở cổng 80/443, bản ghi DNS `A` của domain trỏ về VPS. Clone repo vào `~/WrapFit`.
 2. `cp .env.example .env`, điền `APP_DOMAIN` (vd. `wrapfit.vn`), `ACME_EMAIL`, `JWT_*_SECRET`, `POSTGRES_PASSWORD` và `REDIS_PASSWORD` (`openssl rand -hex 32`, phải an toàn trong URL), các biến `STORAGE_*` của Cloudflare R2 (cả `STORAGE_PRIVATE_BUCKET`), `SMTP_*` / `MAIL_FROM`, (tùy chọn) `ANTHROPIC_API_KEY`, `GOOGLE_*`, `SEED_ADMIN_*`. Thiếu biến bắt buộc nào thì `docker compose` dừng trước khi thay container, không bao giờ rơi về mặc định của môi trường dev (mật khẩu `password`, Redis không mật khẩu, khóa SeaweedFS).

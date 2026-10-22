@@ -1,0 +1,78 @@
+# Render Blueprint: the WrapFit API + worker on one free web service (docs/17_FREE_CLOUD_DEPLOY.md).
+# Render free has no background worker, so RUN_WORKER=true starts the worker in the same container.
+# Values marked `sync: false` are asked once when the Blueprint is created; change them later in the dashboard.
+services:
+  - type: web
+    name: wrapfit-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./be/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "8080"
+      - key: RUN_WORKER
+        value: "true"
+      - key: EXPORT_CONCURRENCY
+        value: "1"
+      - key: SWAGGER_ENABLED
+        value: "false"
+      # Vercel rewrite + Render's own proxies; check with GET /api/health/details as admin (docs/17).
+      - key: TRUST_PROXY
+        value: "4"
+      # https://<project>.vercel.app, the same value for both
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      # Neon (direct connection, ?sslmode=require&connect_timeout=15)
+      - key: DATABASE_URL
+        sync: false
+      # Redis Cloud: redis://default:<password>@<host>:<port>
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: AUTH_TOKEN_SECRET
+        generateValue: true
+      # Cloudflare R2
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_REGION
+        value: auto
+      - key: STORAGE_BUCKET
+        value: wrapfit
+      - key: STORAGE_PRIVATE_BUCKET
+        value: wrapfit-private
+      - key: STORAGE_ACCESS_KEY_ID
+        sync: false
+      - key: STORAGE_SECRET_ACCESS_KEY
+        sync: false
+      - key: STORAGE_PUBLIC_URL
+        sync: false
+      - key: STORAGE_FORCE_PATH_STYLE
+        value: "false"
+      # Brevo SMTP relay: Render free blocks the ports 25, 465 and 587, not 2525
+      - key: SMTP_HOST
+        value: smtp-relay.brevo.com
+      - key: SMTP_PORT
+        value: "2525"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      # Admin created on the first start (the seed never resets an existing password)
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
