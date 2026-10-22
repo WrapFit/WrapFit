@@ -1,6 +1,6 @@
 "use client";
 
-import { Github, GraduationCap, Linkedin } from "lucide-react";
+import { Github, Linkedin } from "lucide-react";
 import React from "react";
 import { Container } from "@/components/landing";
 
@@ -18,57 +18,57 @@ interface TeamMember {
 const TEAM_MEMBERS: TeamMember[] = [
   {
     name: "Võ Lê Đức Phát",
-    role: "Trưởng nhóm, kiến trúc kỹ thuật",
-    bio: "Định hướng công nghệ và thuật toán dựng khuôn bế.",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop",
+    role: "Trưởng nhóm · Kỹ sư thuật toán khuôn bế",
+    bio: "Xây dựng thư viện lõi @wrapfit/shared: công thức tham số dựng khuôn bế cho 4 kiểu hộp từ L × W × H, bù độ dày giấy 250–350 GSM, bộ luật FitCheck™ và động cơ xuất file in PDF CMYK, SVG, DXF.",
+    avatar: "/team/vo-le-duc-phat.png",
     education: "Công nghệ Thông tin — Đại học FPT",
-    skills: ["Kiến trúc hệ thống", "Khuôn bế", "Toàn bộ hệ thống", "Dẫn dắt nhóm"],
+    skills: ["Thuật toán khuôn bế", "FitCheck™", "Xuất file in", "TypeScript"],
     github: "https://github.com",
     linkedin: "https://linkedin.com",
   },
   {
     name: "Nguyễn Chí Trung",
-    role: "Kỹ sư giao diện",
-    bio: "Xây Studio thiết kế 2D và công cụ soát lỗi FitCheck™.",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop",
+    role: "Kỹ sư Frontend · Studio 2D/3D",
+    bio: "Phát triển toàn bộ giao diện Next.js: Studio chỉnh khuôn bế 2D, mô phỏng gập hộp 3D bằng Three.js, bảng FitCheck™, thư viện mẫu, trang xem 3D công khai và trang mở hộp qua mã QR.",
+    avatar: "/team/nguyen-chi-trung.png",
     education: "Công nghệ Thông tin — Đại học FPT",
-    skills: ["Next.js", "TypeScript", "Thiết kế 2D", "FitCheck™"],
+    skills: ["Next.js & React", "Three.js / R3F", "Studio 2D", "UI/UX"],
     github: "https://github.com",
   },
   {
     name: "Nguyễn Quang Thổ",
-    role: "Kỹ sư đồ họa 3D",
-    bio: "Mô phỏng gập mở hộp 3D và tính độ dày giấy.",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=800&auto=format&fit=crop",
+    role: "Kỹ sư Backend · Hạ tầng",
+    bio: "Xây dựng API NestJS và CSDL PostgreSQL: đăng nhập Google/JWT, quản lý dự án và mốc phiên bản, lưu trữ S3/R2, hàng đợi BullMQ xuất file in, sinh hoa văn AI, mã QR mở hộp và CI/CD.",
+    avatar: "/team/nguyen-quang-tho.png",
     education: "Công nghệ Thông tin — Đại học FPT",
-    skills: ["Three.js", "Gập hộp 3D", "Xuất file in", "Xử lý nền"],
+    skills: ["NestJS", "PostgreSQL & Prisma", "Redis BullMQ", "CI/CD"],
     github: "https://github.com",
   },
   {
     name: "Lê Minh Quốc",
-    role: "Nghiên cứu khách hàng, tiếp thị",
-    bio: "Khảo sát 109 chủ tiệm thủ công, lên kế hoạch tiếp cận khách hàng.",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop",
+    role: "Marketing · Nghiên cứu thị trường",
+    bio: "Khảo sát nhu cầu của chủ shop handmade và người tặng quà, định vị WrapFit là công cụ bao bì chuyên biệt, xây dựng kênh tiếp cận và chiến dịch lan tỏa qua trải nghiệm mở hộp 3D và Remix mẫu.",
+    avatar: "/team/le-minh-quoc.png",
     education: "Quản trị Kinh doanh — Đại học FPT",
-    skills: ["Khảo sát", "Tiếp thị", "Kết nối nghệ nhân", "Phân tích"],
+    skills: ["Nghiên cứu thị trường", "Định vị thương hiệu", "Tiếp thị số", "Lan tỏa tự nhiên"],
     linkedin: "https://linkedin.com",
   },
   {
     name: "Đỗ Hồng Nghĩa",
-    role: "Mô hình kinh doanh, vận hành",
-    bio: "Thiết kế bảng giá và mạng lưới xưởng in đối tác.",
-    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800&auto=format&fit=crop",
+    role: "Kinh tế · Mô hình kinh doanh & đối tác in",
+    bio: "Thiết kế mô hình doanh thu theo gói (Free, Lượt xuất, Pro, Business) và lượt xuất file, kết nối xưởng in đối tác để chủ shop in số lượng nhỏ, không phải đặt tối thiểu 500–1.000 hộp.",
+    avatar: "/team/do-hong-nghia.png",
     education: "Quản trị Kinh doanh — Đại học FPT",
-    skills: ["Mô hình kinh doanh", "Chuỗi cung ứng", "Định giá", "Đối tác"],
+    skills: ["Mô hình kinh doanh", "Chiến lược định giá", "Đối tác xưởng in", "Vận hành"],
     linkedin: "https://linkedin.com",
   },
   {
     name: "Trần Thị Trúc Phương",
-    role: "Phân tích tài chính, thị trường",
-    bio: "Phân tích quy mô thị trường và dự báo dòng tiền.",
-    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=800&auto=format&fit=crop",
+    role: "Kinh tế · Tài chính & kế hoạch",
+    bio: "Lập dự phóng tài chính và dòng tiền, tính chi phí đơn vị so với phương án in truyền thống (khuôn dao 1,5–2 triệu đồng), xây dựng ngân sách và đánh giá tính khả thi của dự án.",
+    avatar: "/team/tran-thi-truc-phuong.png",
     education: "Tài chính — Ngân hàng — Đại học FPT",
-    skills: ["Tài chính", "Quy mô thị trường", "Chi phí đơn vị", "Nghiên cứu thị trường"],
+    skills: ["Mô hình tài chính", "Dự báo dòng tiền", "Chi phí đơn vị", "Thẩm định dự án"],
     linkedin: "https://linkedin.com",
   },
 ];
@@ -106,11 +106,6 @@ export function AboutTeam() {
                     decoding="async"
                     className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                </div>
-
-                <div className="flex items-center gap-1.5 text-caption font-semibold text-fpt-orange-ink bg-fpt-orange-light px-2.5 py-0.5 rounded-full w-fit border border-fpt-orange/40 mb-2">
-                  <GraduationCap className="size-3 text-fpt-orange-ink" />
-                  {member.education}
                 </div>
 
                 <h3 className="font-landing-heading text-xl font-bold text-fg">

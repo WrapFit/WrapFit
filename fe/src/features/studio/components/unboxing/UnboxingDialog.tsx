@@ -15,6 +15,13 @@ import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
 import type { ParticleEffect, UnboxingConfig } from "@/types/api";
 import { StudioDialog } from "../dialog/StudioDialog";
+import { isDemoProjectId, OFFLINE_DEMO } from "../export/offline";
+import {
+  createOfflineUnboxing,
+  loadOfflineUnboxing,
+  storeOfflineUnboxing,
+  type OfflineGift,
+} from "@/features/showcase/offlineGift";
 
 const MAX_NAME = 100;
 const MAX_NOTE = 2000;
@@ -34,25 +41,38 @@ const FIELD_CLASS =
 interface UnboxingDialogProps {
   projectId: string;
   onClose: () => void;
+  /** The box on screen: the offline QR code (no backend) carries it to the recipient's page. */
+  box?: Pick<OfflineGift, "title" | "structure" | "dimensions" | "materialTheme" | "senderName">;
 }
 
+/** The API cannot be reached (offline demo, server down), as opposed to an answer of the server. */
+const unreachable = (err: unknown) => !(err instanceof ApiError) || err.status >= 500;
+
 /** 3D unboxing page of the gift and its QR code (docs/06 §10): create, edit, download the QR, delete. */
-export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
+export function UnboxingDialog({ projectId, onClose, box }: UnboxingDialogProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const key = queryKeys.projects.unboxing(projectId);
+  // No backend (Vercel, demo project, API unreachable): the gift is packed into the QR link itself.
+  const [offline, setOffline] = useState(() => Boolean(box) && (OFFLINE_DEMO || isDemoProjectId(projectId)));
   const config = useQuery({
-    queryKey: key,
+    queryKey: [...key, offline ? "offline" : "api"],
     // 404 = no unboxing page yet.
     queryFn: async (): Promise<UnboxingConfig | null> => {
+      if (offline) return loadOfflineUnboxing(projectId);
       try {
         return await getProjectUnboxing(projectId);
       } catch (err) {
         if (err instanceof ApiError && err.status === 404) return null;
+        if (box && unreachable(err)) {
+          setOffline(true);
+          return loadOfflineUnboxing(projectId);
+        }
         throw err;
       }
     },
   });
+  const setConfig = (value: UnboxingConfig | null) => queryClient.setQueryData([...key, offline ? "offline" : "api"], value);
 
   const [recipientName, setRecipientName] = useState("");
   const [giftNote, setGiftNote] = useState("");
@@ -74,17 +94,42 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
-    try {
-      const saved = await saveProjectUnboxing(projectId, {
-        recipientName: recipientName.trim(),
-        giftNote: giftNote.trim(),
-        particleEffect,
-        // No track picker yet: keep the one already saved.
-        audioTrackUrl: loaded?.audioTrackUrl ?? null,
-      });
-      queryClient.setQueryData(key, saved);
+    const saveOffline = async () => {
+      if (!box) return;
+      const { shortened, ...saved } = await createOfflineUnboxing(
+        { ...box, recipientName: recipientName.trim(), giftNote: giftNote.trim(), particleEffect },
+        loaded ?? null,
+      );
+      storeOfflineUnboxing(projectId, saved);
+      queryClient.setQueryData([...key, "offline"], saved);
+      setOffline(true);
       setEditing(false);
-      toast.show({ tone: "success", title: loaded ? "Đã cập nhật trang mở hộp" : "Đã tạo mã QR mở hộp" });
+      toast.show({
+        tone: "success",
+        title: loaded ? "Đã cập nhật mã QR mở hộp" : "Đã tạo mã QR mở hộp",
+        description: shortened ? "Lời chúc dài nên được rút gọn để mã QR vẫn quét được." : "Quét mã bằng điện thoại để thử mở hộp.",
+      });
+    };
+    try {
+      if (offline) {
+        await saveOffline();
+        return;
+      }
+      try {
+        const saved = await saveProjectUnboxing(projectId, {
+          recipientName: recipientName.trim(),
+          giftNote: giftNote.trim(),
+          particleEffect,
+          // No track picker yet: keep the one already saved.
+          audioTrackUrl: loaded?.audioTrackUrl ?? null,
+        });
+        setConfig(saved);
+        setEditing(false);
+        toast.show({ tone: "success", title: loaded ? "Đã cập nhật trang mở hộp" : "Đã tạo mã QR mở hộp" });
+      } catch (err) {
+        if (box && unreachable(err)) await saveOffline();
+        else throw err;
+      }
     } catch (err) {
       toast.error(err, "Chưa lưu được trang mở hộp");
     } finally {
@@ -95,8 +140,9 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
   const remove = async () => {
     setDeleting(true);
     try {
-      await deleteProjectUnboxing(projectId);
-      queryClient.setQueryData(key, null);
+      if (offline) storeOfflineUnboxing(projectId, null);
+      else await deleteProjectUnboxing(projectId);
+      setConfig(null);
       setRecipientName("");
       setGiftNote("");
       setParticleEffect("confetti");
@@ -217,6 +263,8 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={config.data.qrCodeUrl ?? unboxingQrDownloadUrl(projectId, "png")}
+                  width={160}
+                  height={160}
                   alt={`Mã QR mở hộp quà cho ${config.data.recipientName}`}
                   className="w-40 h-40 object-contain"
                 />
@@ -232,15 +280,15 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
 
             <div className="grid grid-cols-2 gap-2">
               <a
-                href={unboxingQrDownloadUrl(projectId, "png")}
-                download
+                href={offline && config.data.qrCodeUrl ? config.data.qrCodeUrl : unboxingQrDownloadUrl(projectId, "png")}
+                download="wrapfit-qr-mo-hop.png"
                 className="min-h-[44px] px-4 rounded-full bg-fpt-orange hover:bg-fpt-orange-dark text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs"
               >
                 <Download className="w-4 h-4" aria-hidden /> QR PNG
               </a>
               <a
-                href={unboxingQrDownloadUrl(projectId, "svg")}
-                download
+                href={offline && config.data.qrCodeSvgUrl ? config.data.qrCodeSvgUrl : unboxingQrDownloadUrl(projectId, "svg")}
+                download="wrapfit-qr-mo-hop.svg"
                 className="min-h-[44px] px-4 rounded-full border border-landing-line hover:bg-landing-canvas text-landing-ink text-xs font-semibold flex items-center justify-center gap-1.5"
               >
                 <Download className="w-4 h-4" aria-hidden /> QR SVG (in)
@@ -254,7 +302,7 @@ export function UnboxingDialog({ projectId, onClose }: UnboxingDialogProps) {
               className="flex items-center justify-between gap-2 p-3 rounded-xl bg-landing-canvas border border-landing-line text-xs text-landing-ink hover:border-landing-ink/30"
             >
               <span className="font-mono truncate" title={config.data.unboxUrl}>
-                {config.data.unboxUrl}
+                {offline ? config.data.unboxUrl.split("#")[0] : config.data.unboxUrl}
               </span>
               <ExternalLink className="w-4 h-4 flex-shrink-0" aria-hidden />
             </a>

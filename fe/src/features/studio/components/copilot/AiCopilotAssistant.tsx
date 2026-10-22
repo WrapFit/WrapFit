@@ -111,6 +111,8 @@ interface AiCopilotAssistantProps {
   onAutoFixFitCheck?: () => void;
   activeTab?: string;
   onSwitchTab?: (tab: "2d" | "3d") => void;
+  /** Open on first render (the "Trò chuyện với Gói" link of the home page adds `?copilot=open`). */
+  defaultExpanded?: boolean;
   className?: string;
 }
 
@@ -121,10 +123,11 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
   onAutoFixFitCheck,
   activeTab,
   onSwitchTab,
+  defaultExpanded = false,
   className = "",
 }) => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [pose, setPose] = useState<MascotPose>("waving");
+  const [isExpanded, setIsExpanded] = useState<boolean>(defaultExpanded);
+  const [pose, setPose] = useState<MascotPose>(defaultExpanded ? "presenting" : "waving");
   const [headline, setHeadline] = useState<string>("Chào bạn, mình là Gói!");
   const [message, setMessage] = useState<string>(
     "Trợ lý AI đóng gói bao bì thông minh. Bạn định đựng món quà gì hôm nay?"
@@ -268,7 +271,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
         isExpanded
           ? "bottom-16 right-4 md:bottom-6 md:right-6 w-[94vw] sm:w-[410px]"
           : "bottom-16 right-4 md:bottom-6 md:right-6 w-auto"
-      } ${className}`}
+      } ${isExpanded ? "" : "hidden md:block"} ${className}`}
     >
       {/* Floating Dynamic Island Container */}
       <div className="relative rounded-3xl bg-white/95 backdrop-blur-md border border-landing-line shadow-soft-16 overflow-hidden transition-all duration-300">
@@ -279,15 +282,16 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
         >
           <div className="flex items-center gap-2.5 min-w-0">
             {/* Mascot Avatar with lively pose */}
-            <GoiMascot pose={pose} size={36} />
+            {/* Not a button of its own: the whole bar opens and closes the panel. */}
+            <GoiMascot pose={pose} size={36} interactive={false} className="shrink-0" />
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-landing-ink tracking-tight font-landing-heading truncate">
-                  Gói — AI packaging copilot
+                  Bé Gói — trợ lý thiết kế
                 </span>
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-caption font-bold bg-fpt-orange/10 text-fpt-orange-ink">
-                  BETA
+                  Thử nghiệm
                 </span>
               </div>
               <p className="text-caption text-landing-muted truncate max-w-[190px] sm:max-w-[240px]">

@@ -219,7 +219,7 @@ export function ShellLayout({
       {isAdminLayout ? (
         <footer className="border-t border-library-line bg-library-tile/60 py-6 text-xs text-library-muted">
           <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-            <span>© 2026 WrapFit Platform Administration Console · EXE101</span>
+            <span>© 2026 WrapFit · Trang quản trị · EXE101</span>
             <span>Bảo mật hệ thống · Giám sát tự động 24/7</span>
           </div>
         </footer>

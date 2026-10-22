@@ -58,7 +58,7 @@ export default function AdminPrintShopsPage() {
   return (
     <SampleScreen<DisplayPrintShop>
       title="Xưởng in đối tác"
-      description="Mạng lưới xưởng in đối tác nhận file PDF CMYK từ WrapFit: nhận in mẫu thử 01 hộp và sản xuất theo lô nhỏ (Zero MOQ)."
+      description="Mạng lưới xưởng in đối tác nhận file PDF CMYK từ WrapFit: nhận in mẫu thử 01 hộp và sản xuất theo lô nhỏ, không cần số lượng tối thiểu."
       note="Dữ liệu được đồng bộ từ backend service /api/print-shops; xưởng in đối tác được kết nối trực tiếp với quy trình nhận đơn mẫu thử."
       stats={[
         { label: 'Xưởng đối tác', value: String(shops.length) },

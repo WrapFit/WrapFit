@@ -6,6 +6,7 @@ import { Gift, Music2, QrCode, RotateCcw, VolumeX } from "lucide-react";
 import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getPublicUnboxing } from "@/api/public";
+import { giftFromLocation, giftToPublic } from "@/features/showcase/offlineGift";
 import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
 import { WorkspaceError } from "@/components/workspace";
 import { ROUTES } from "@/constants";
@@ -22,7 +23,11 @@ export default function UnboxView({ slug }: { slug: string }) {
   const validSlug = isShareSlug(slug);
   const unboxing = useQuery({
     queryKey: queryKeys.public.unboxing(slug),
-    queryFn: () => getPublicUnboxing(slug),
+    // The offline QR code (Vercel demo) carries the gift after `#`: no request at all.
+    queryFn: async () => {
+      const packed = await giftFromLocation();
+      return packed ? giftToPublic(packed) : getPublicUnboxing(slug);
+    },
     enabled: validSlug,
     // Every read counts a view: read once per visit.
     staleTime: Infinity,

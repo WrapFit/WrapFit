@@ -24,6 +24,7 @@ export const ROUTES = {
   editorNew: "/editor/new",
   /** The studio without an account: nothing is saved. */
   editorDemo: "/editor/demo",
+  support: "/support",
   editor: (projectId: string) => {
     if (projectId === "demo-tuck-top") return "/editor/demo?structure=tuck-top&l=85&w=85&h=110&paper=ivory";
     if (projectId === "demo-sleeve") return "/editor/demo?structure=sleeve&l=120&w=80&h=35&paper=kraft";

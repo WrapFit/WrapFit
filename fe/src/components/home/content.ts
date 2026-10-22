@@ -59,7 +59,7 @@ export const INDUSTRY_TILES: IndustryTile[] = [
 
 export const STRUCTURES_SECTION = {
   title: "Cấu trúc hộp chuẩn xưởng sản xuất",
-  subtitle: "4 cấu trúc hình học được may đo tham số chính xác theo milimét, tối ưu hóa cơ học và 100% khả thi khi cắt bế xưởng.",
+  subtitle: "4 cấu trúc dựng theo kích thước món quà đến từng milimét, sẵn sàng cho xưởng cắt bế.",
   href: ROUTES.templates,
 };
 
@@ -185,8 +185,8 @@ export const COPILOT = {
   title: "Gói luôn ở cạnh bạn",
   body: "Gói gợi ý kiểu hộp theo món quà, nhắc khi chữ lấn vùng an toàn và sửa giúp bằng một cú bấm.",
   actions: [
-    { label: "Trò chuyện với Gói", href: ROUTES.editorDemo, icon: "chat" as const },
-    { label: "Trung tâm hỗ trợ", href: "/support", icon: "help" as const },
+    { label: "Trò chuyện với Gói", href: `${ROUTES.editorDemo}?copilot=open`, icon: "chat" as const },
+    { label: "Trung tâm hỗ trợ", href: ROUTES.support, icon: "help" as const },
   ],
   image: PHOTOS.designer,
   bubble: "Chữ đang cách nếp gấp 1,8 mm — để mình đẩy vào 3 mm nhé?",
