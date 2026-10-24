@@ -46,4 +46,20 @@ export const FILE_FORMATS = {
   PDF_A4_PRINT: { extension: 'pdf', contentType: 'application/pdf' },
   SVG: { extension: 'svg', contentType: 'image/svg+xml' },
   DXF: { extension: 'dxf', contentType: 'application/dxf' },
+  PRINT_PACKAGE: { extension: 'zip', contentType: 'application/zip' },
 } as const;
+
+/** Turns a project title into a safe file name: "Hộp nến Tết" -> "hop-nen-tet". */
+export function titleSlug(title: string): string {
+  return (
+    title
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'wrapfit'
+  );
+}

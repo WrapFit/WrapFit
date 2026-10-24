@@ -1,15 +1,16 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
+import { PRINT_DPI, type BoxDimensions, type CanvasElement } from '@wrapfit/shared';
 import { Job } from 'bullmq';
 import { ConfigService, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
-import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, UNFINISHED_EXPORT } from './export.constants';
+import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
+import { renderPrintPackage } from './rendering/print-package';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
-import { Artwork, canEmbedInPdf, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';
+import { Artwork, imageResolutions, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';
 
 export const EXPORT_COMPLETED = 'export.completed';
 
@@ -94,14 +95,15 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     });
 
     const format = FILE_FORMATS[job.fileType];
-    const isPdf = job.fileType === 'PDF_CMYK' || job.fileType === 'PDF_A4_PRINT';
-    const artwork = job.fileType === 'DXF' ? new Map() : await this.loadArtwork(layout, isPdf);
+    const artwork = job.fileType === 'DXF' ? new Map() : await this.loadArtwork(layout);
     const body =
       job.fileType === 'PDF_CMYK'
         ? await renderPdf(layout, artwork)
         : job.fileType === 'PDF_A4_PRINT'
-        ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
-        : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork) : renderDxf(layout));
+          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
+          : job.fileType === 'PRINT_PACKAGE'
+            ? await renderPrintPackage(layout, artwork, titleSlug(project.title))
+            : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork) : renderDxf(layout));
 
     // Private bucket: the file is only handed out through the 15-minute links of ExportService.
     const storageKey = `${PRIVATE_KEY_PREFIX}projects/${project.id}/exports/${exportJobId}.${format.extension}`;
@@ -144,8 +146,9 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
   /**
    * Downloads the images of the layout from storage. Only files uploaded to our bucket are used (never an arbitrary
    * URL: no requests to other hosts from the worker). A missing file fails the export rather than print without it.
+   * Images under the print resolution at their real size are logged (FitCheck already warned the user).
    */
-  private async loadArtwork(layout: PrintLayout, forPdf: boolean): Promise<Artwork> {
+  private async loadArtwork(layout: PrintLayout): Promise<Artwork> {
     const artwork: Artwork = new Map();
     let total = 0;
     for (const { url } of layout.images) {
@@ -162,10 +165,10 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       if (total > MAX_ARTWORK_BYTES) {
         throw new Error(`The images of this design exceed ${MAX_ARTWORK_BYTES / 1024 / 1024} MB; use smaller files`);
       }
-      if (forPdf && !canEmbedInPdf(file.body)) {
-        this.logger.warn(`The PDF leaves out ${url} (${file.contentType}): only PNG and JPEG can be embedded`);
-      }
       artwork.set(url, file);
+    }
+    for (const { url, dpi } of await imageResolutions(layout, artwork)) {
+      if (dpi !== null && dpi < PRINT_DPI) this.logger.warn(`Image ${url} prints at ${dpi} DPI (print standard ${PRINT_DPI})`);
     }
     return artwork;
   }

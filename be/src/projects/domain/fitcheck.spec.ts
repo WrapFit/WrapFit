@@ -177,8 +177,8 @@ describe('auto-fix', () => {
       height: H - 2,
     });
     const [fixed] = autoFixElements(tuckTop, [pattern]);
-    expect(fixed).toMatchObject({ x: 0, y: -2, width: W });
-    expect(fixed.height).toBeCloseTo(H + 4, 6);
+    expect(fixed).toMatchObject({ x: 0, y: -3, width: W }); // BLEED_BOX_MM: 3 mm, inside the 2–3 mm bleed
+    expect(fixed.height).toBeCloseTo(H + 6, 6);
     expect(checkBox(tuckTop, [fixed]).violations).toEqual([]);
   });
 });

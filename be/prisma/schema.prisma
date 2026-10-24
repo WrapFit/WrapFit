@@ -84,6 +84,7 @@ enum ExportFileType {
   PDF_A4_PRINT // PDF A4/A3 có dấu xén (crop marks) để tự in tại nhà / văn phòng (Luồng của Linh)
   SVG // SVG cho máy cắt Cricut / Laser
   DXF // DXF cho máy bế CNC
+  PRINT_PACKAGE // ZIP bàn giao nhà in: file gốc .ai (tương thích PDF) + PDF in + JPG đối chiếu + SVG/DXF + phiếu kiểm tra
 }
 
 model User {

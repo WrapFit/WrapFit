@@ -28,7 +28,8 @@ describe('curated design templates of the seed', () => {
         expect(panels.map((panel) => panel.id)).toContain(element.panelId);
       }
       const report = checkBox(pieces, elements);
-      expect(report.violations).toEqual([]);
+      // Notes (serif hairlines) do not count against the template.
+      expect(report.violations.filter((v) => v.severity !== 'info')).toEqual([]);
     },
   );
 });

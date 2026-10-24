@@ -2,6 +2,7 @@
 // Geometry comes from the parametric engine of IT2 (`@wrapfit/shared`); nothing here depends on NestJS.
 import {
   fontSizeMmOf,
+  PT_TO_MM,
   segmentPoints,
   type BoxDimensions,
   type CanvasElement,
@@ -52,6 +53,8 @@ export interface PrintLayout {
     width: number;
     height: number;
     fontSizeMm: number;
+    /** Size in points: large black texts print in rich black. */
+    fontSizePt: number;
     fontFamily: string | undefined;
     fontSize: number | undefined;
     color: string;
@@ -62,7 +65,18 @@ export interface PrintLayout {
    * Logos, images and patterns (by URL) placed on the sheet, drawn under the texts (mm, top-left of the box). The file
    * keeps its proportions, centred in the box; rotation is around the centre of the box.
    */
-  images: { url: string; x: number; y: number; width: number; height: number; rotation: number }[];
+  images: {
+    url: string;
+    /** Photos and patterns print near-black as rich black; logos keep plain K. */
+    type: CanvasElement['type'];
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+  }[];
+  /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white (mm, top-left of the box). */
+  barcodes: { content: string; x: number; y: number; width: number; height: number; rotation: number }[];
   /** Cut and crease lines joined end to end: die makers need unbroken cut lines. */
   strokes: Stroke[];
 }
@@ -187,33 +201,40 @@ export function buildPrintLayout(input: {
 
   const texts: PrintLayout['texts'] = [];
   const images: PrintLayout['images'] = [];
+  const barcodes: PrintLayout['barcodes'] = [];
   for (const element of input.elements) {
     const isText = element.type === 'text';
-    if (isText ? !element.content.trim() : !IMAGE_TYPES.has(element.type) || !/^https?:\/\//.test(element.content)) {
-      continue; // barcodes are not rendered yet
-    }
+    const isBarcode = element.type === 'barcode';
+    const drawn =
+      isText || isBarcode ? !!element.content.trim() : IMAGE_TYPES.has(element.type) && /^https?:\/\//.test(element.content);
+    if (!drawn) continue;
     // The first piece that has the panel wins (see matchesPanel for the accepted ids).
     const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
     const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
     if (!piece || !panel) continue;
     const x = piece.x + panel.bounds.x + element.x;
     const y = piece.y + panel.bounds.y + element.y;
-    if (isText) {
+    if (isBarcode) {
+      const content = element.content.trim();
+      barcodes.push({ content, x, y, width: element.width, height: element.height, rotation: element.rotation });
+    } else if (isText) {
+      // Font sizes are points in the editor.
+      const fontSizeMm = fontSizeMmOf(element);
       texts.push({
         content: element.content,
         x,
         y,
         width: element.width,
         height: element.height,
-        // Font sizes are points in the editor.
-        fontSizeMm: fontSizeMmOf(element),
+        fontSizeMm,
+        fontSizePt: fontSizeMm / PT_TO_MM,
         fontFamily: element.style?.fontFamily,
         fontSize: element.style?.fontSize,
         color: element.style?.color ?? '#000000',
         rotation: element.rotation,
       });
     } else {
-      images.push({ url: element.content, x, y, width: element.width, height: element.height, rotation: element.rotation });
+      images.push({ url: element.content, type: element.type, x, y, width: element.width, height: element.height, rotation: element.rotation });
     }
   }
 
@@ -226,6 +247,7 @@ export function buildPrintLayout(input: {
     pieces,
     texts,
     images,
+    barcodes,
     strokes: pieces.flatMap(strokesOf),
   };
 }
