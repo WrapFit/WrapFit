@@ -12,3 +12,7 @@ export * from "./parametric/fold";
 export * from "./parametric/paper";
 export * from "./fitcheck/validator";
 export * from "./print/text-layout";
+export * from "./print/prepress";
+export * from "./print/barcode";
+export * from "./print/outline";
+export * from "./print/package-readme";
