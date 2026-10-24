@@ -15,9 +15,14 @@ import { buildPrintFile, fileNameFor, isDemoProjectId, OFFLINE_DEMO, saveFile, t
 
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
+    type: "PRINT_PACKAGE",
+    title: "Gói gửi nhà in (.ai + PDF + JPG)",
+    hint: "File gốc .ai tương thích Illustrator, bản PDF in, bản JPG đối chiếu, SVG/DXF và phiếu kiểm tra 7 tiêu chuẩn in.",
+  },
+  {
     type: "PDF_CMYK",
     title: "PDF in CMYK nhiều lớp (Offset / Công nghiệp)",
-    hint: "Cho xưởng in: lớp Artwork, Crease (#3182CE), CutContour (#E53E3E), Dimensions; 300 DPI nhúng font và hình in.",
+    hint: "Cho xưởng in: lớp Artwork, Crease (#3182CE), CutContour (#E53E3E), Dimensions; chữ đã outline, ảnh CMYK nhúng sẵn, tràn lề 3 mm.",
   },
   {
     type: "PDF_A4_PRINT",
@@ -33,6 +38,7 @@ const FORMAT_NAMES: Record<ExportFileType, string> = {
   PDF_A4_PRINT: "PDF In A4/A3",
   SVG: "SVG",
   DXF: "DXF",
+  PRINT_PACKAGE: "Gói nhà in (ZIP)",
 };
 
 const STATUS_LABELS: Record<ExportJob["status"], string> = {
@@ -202,7 +208,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   return (
     <StudioDialog
       title="Xuất file in"
-      subtitle="CMYK · vector · nét cắt #E53E3E · nét gấp #3182CE"
+      subtitle="CMYK · chữ outline · ảnh nhúng · nét cắt #E53E3E · nét gấp #3182CE"
       icon={<Download className="w-5 h-5" aria-hidden />}
       onClose={onClose}
       widthClass="max-w-lg"

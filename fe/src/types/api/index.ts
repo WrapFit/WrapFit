@@ -432,7 +432,7 @@ export interface StorageUsage {
 
 // ---------------------------------------------------------------- exports
 
-export type ExportFileType = "PDF_CMYK" | "PDF_A4_PRINT" | "SVG" | "DXF";
+export type ExportFileType = "PDF_CMYK" | "PDF_A4_PRINT" | "SVG" | "DXF" | "PRINT_PACKAGE";
 export type ExportStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export interface ExportStarted {

@@ -2,7 +2,7 @@ import type React from "react";
 
 /** Print resolution of a pattern placed on a panel; lowered for big panels so the PNG stays under MAX_SIDE_PX. */
 const TARGET_DPI = 300;
-const MAX_SIDE_PX = 3600;
+const MAX_SIDE_PX = 4800; // 300 DPI up to 406 mm
 /** Printed size of one repeat of the tile. */
 export const PATTERN_TILE_MM = 25;
 

@@ -3,6 +3,7 @@
 import {
   fontSizeMmOf,
   matchesPanel,
+  PT_TO_MM,
   segmentPoints,
   type BoxDimensions,
   type CanvasElement,
@@ -47,12 +48,17 @@ export interface PrintLayout {
     width: number;
     height: number;
     fontSizeMm: number;
+    /** Size in points: large black texts print in rich black. */
+    fontSizePt: number;
     fontFamily: string | undefined;
     fontSize: number | undefined;
     color: string;
     rotation: number;
   }[];
-  images: { url: string; x: number; y: number; width: number; height: number; rotation: number }[];
+  /** Photos and patterns print near-black as rich black; logos keep plain K. */
+  images: { url: string; type: CanvasElement["type"]; x: number; y: number; width: number; height: number; rotation: number }[];
+  /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white. */
+  barcodes: { content: string; x: number; y: number; width: number; height: number; rotation: number }[];
   strokes: Stroke[];
 }
 
@@ -168,31 +174,39 @@ export function buildPrintLayout(input: {
 
   const texts: PrintLayout["texts"] = [];
   const images: PrintLayout["images"] = [];
+  const barcodes: PrintLayout["barcodes"] = [];
   for (const element of input.elements) {
     const isText = element.type === "text";
-    if (isText ? !element.content.trim() : !IMAGE_TYPES.has(element.type) || !/^(https?:|data:image\/|blob:|\/)/.test(element.content)) {
-      continue; // barcodes are not rendered yet
-    }
+    const isBarcode = element.type === "barcode";
+    const drawn =
+      isText || isBarcode
+        ? !!element.content.trim()
+        : IMAGE_TYPES.has(element.type) && /^(https?:|data:image\/|blob:|\/)/.test(element.content);
+    if (!drawn) continue;
     const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
     const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
     if (!piece || !panel) continue;
     const x = piece.x + panel.bounds.x + element.x;
     const y = piece.y + panel.bounds.y + element.y;
-    if (isText) {
+    if (isBarcode) {
+      barcodes.push({ content: element.content.trim(), x, y, width: element.width, height: element.height, rotation: element.rotation });
+    } else if (isText) {
+      const fontSizeMm = fontSizeMmOf(element);
       texts.push({
         content: element.content,
         x,
         y,
         width: element.width,
         height: element.height,
-        fontSizeMm: fontSizeMmOf(element),
+        fontSizeMm,
+        fontSizePt: fontSizeMm / PT_TO_MM,
         fontFamily: element.style?.fontFamily,
         fontSize: element.style?.fontSize,
         color: element.style?.color ?? "#000000",
         rotation: element.rotation,
       });
     } else {
-      images.push({ url: element.content, x, y, width: element.width, height: element.height, rotation: element.rotation });
+      images.push({ url: element.content, type: element.type, x, y, width: element.width, height: element.height, rotation: element.rotation });
     }
   }
 
@@ -205,6 +219,7 @@ export function buildPrintLayout(input: {
     pieces,
     texts,
     images,
+    barcodes,
     strokes: pieces.flatMap(strokesOf),
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { BLEED_MM, MIN_DPI, SAFE_MARGIN_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport } from "@wrapfit/shared";
+import { BLEED_MM, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport } from "@wrapfit/shared";
 import { AlertTriangle, ArrowLeft, Box, Check, Download, Gift, Grid3x3, QrCode, Sparkles, Wand2 } from "lucide-react";
 import React, { useState } from "react";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
@@ -23,10 +23,12 @@ const ENVIRONMENTS: { id: Environment; name: string; color: string }[] = [
 
 /** The rules of the shared FitCheck, grouped as a print shop reads them. */
 const RULES: { title: string; detail: string; codes: FitCheckErrorCode[] }[] = [
-  { title: "Vùng an toàn", detail: `Chữ, logo cách đường cắt và nếp gấp ≥ ${SAFE_MARGIN_MM} mm`, codes: ["CUT_OVERLAP", "CREASE_OVERLAP"] },
-  { title: "Tràn lề", detail: `Nền phủ ra ngoài đường cắt ≥ ${BLEED_MM} mm`, codes: ["BLEED_INSUFFICIENT"] },
+  { title: "Vùng an toàn", detail: `Chữ, logo, mã vạch cách đường cắt ≥ ${SAFE_MARGIN_CUT_MM} mm, nếp gấp ≥ ${SAFE_MARGIN_CREASE_MM} mm`, codes: ["CUT_OVERLAP", "CREASE_OVERLAP"] },
+  { title: "Tràn lề", detail: `Nền phủ ra ngoài đường cắt ${BLEED_MM}–3 mm`, codes: ["BLEED_INSUFFICIENT"] },
   { title: "Mép dán keo", detail: "Không có mực trên mép dán", codes: ["GLUE_CONTAMINATED"] },
-  { title: "Độ phân giải ảnh", detail: `Ảnh ≥ ${MIN_DPI} DPI ở kích thước in`, codes: ["LOW_DPI"] },
+  { title: "Độ phân giải ảnh", detail: `Ảnh ≥ ${MIN_DPI} DPI ở kích thước in (dưới ${HARD_MIN_DPI} DPI chặn xuất)`, codes: ["LOW_DPI"] },
+  { title: "Độ dày nét", detail: `Nét chữ mảnh nhất ≥ ${MIN_LINE_MM} mm`, codes: ["LINE_TOO_THIN"] },
+  { title: "Mã vạch & QR", detail: "Đủ lớn để quét, đúng số kiểm tra; in đen K100 trên nền trắng", codes: ["BARCODE_UNREADABLE"] },
   { title: "Khổ phôi", detail: "Phôi trải phẳng vừa khổ B1 1020 × 720 mm", codes: ["DIMENSION_OUT_OF_BOUNDS"] },
   { title: "Phần tử trên mặt hộp", detail: "Mọi phần tử nằm trên một mặt của khuôn", codes: ["NO_PANEL"] },
 ];
@@ -220,12 +222,13 @@ export function Step6ReviewExport({
           </StudioCard>
 
           <StudioCard data-tour="s6-checks" className="p-5">
-            <CardTitle action={<span className="text-xs text-landing-muted">{RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code))).length}/{RULES.length} đạt</span>}>
+            <CardTitle action={<span className="text-xs text-landing-muted">{RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code) && v.severity !== "info")).length}/{RULES.length} đạt</span>}>
               Quy tắc sản xuất
             </CardTitle>
             <ul className="mt-3 flex flex-col gap-2">
               {RULES.map((rule) => {
-                const hits = report.violations.filter((v) => rule.codes.includes(v.code));
+                // Notes (info) do not fail a rule.
+                const hits = report.violations.filter((v) => rule.codes.includes(v.code) && v.severity !== "info");
                 const error = hits.some((v) => v.severity === "error");
                 return (
                   <li key={rule.title} className="flex items-start gap-3 rounded-2xl bg-landing-canvas p-3">

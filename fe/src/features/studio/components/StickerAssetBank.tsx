@@ -155,7 +155,7 @@ export const STICKER_BANK_ITEMS: StickerAssetItem[] = [
     previewType: "svg",
     defaultWidthMm: 42,
     defaultHeightMm: 22,
-    svgContent: "8938501234567",
+    svgContent: "8938501234568", // valid EAN-13 check digit
   },
 ];
 

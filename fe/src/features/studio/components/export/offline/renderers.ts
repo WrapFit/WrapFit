@@ -1,30 +1,133 @@
-// Print files built in the browser when there is no backend (the Vercel demo). SVG and DXF are ports of
-// be/src/export/rendering/print-renderers.ts. The PDF is written by hand (no PDFKit in the browser): vector cut and
-// crease lines as the spot colours CutContour / Crease (CMYK alternates, overprinted) on their own layers, TrimBox and
-// a 2 mm BleedBox, and the artwork (texts, images) drawn at 300 DPI on the Artwork layer.
-import { layoutTextBox, PRINT_FONTS, TEXT_FONT_WEIGHT, type PrintFontId } from "@wrapfit/shared";
-import { cssFontFamily, measureInBrowser } from "@/features/studio/components/canvas/boxText";
+// Print files built in the browser when there is no backend (the Vercel demo), following the same prepress rules as
+// be/src/export/rendering/print-renderers.ts (`print/prepress.ts` of @wrapfit/shared):
+// - artwork in CMYK: every image is decoded and converted to DeviceCMYK pixel by pixel (rich black on photos and
+//   patterns), texts and barcodes are filled with CMYK inks; dielines are the spot colours CutContour / Crease
+//   (overprinted) on their own layers;
+// - every text is outlined with the print font files (fontkit), so the files hold no font at all;
+// - images are embedded (PDF XObjects, SVG data URIs) up to 450 DPI at their printed size, SVG logos at 600 DPI;
+// - barcodes and QR codes are vectors in K100 on a white knockout; TrimBox = dielines, BleedBox +3 mm.
+import {
+  barcodeArt,
+  BLEED_BOX_MM,
+  ean13Digits,
+  effectiveDpi,
+  K100,
+  layoutTextBox,
+  outlineAdvanceMm,
+  outlineText,
+  pixelsFor,
+  rgbaToCmyk,
+  textCmyk,
+  type Cmyk,
+  type MeasureText,
+  type OutlineFont,
+  type PrintFontId,
+} from "@wrapfit/shared";
+import { create as openFont } from "fontkit";
+import { zlibSync } from "fflate";
+import QRCode from "qrcode";
 import type { PrintLayout } from "./printLayout";
 
 const COLORS = { cut: "#E53E3E", crease: "#3182CE", info: "#64748B" };
 const LINE_MM = 0.25;
 const DASH_MM = 4;
-export const BLEED_MM = 2;
 const PT_PER_MM = 72 / 25.4;
 const INFO_FONT_MM = 3.5;
-/** Resolution of the artwork layer of the PDF. */
-const ARTWORK_DPI = 300;
-/** Upper bound of the artwork bitmap (pixels), so a big sheet does not exhaust the browser's memory. */
-const MAX_ARTWORK_PIXELS = 24_000_000;
+/** Raster images are downsampled to this at their printed size; SVG logos are rasterised at VECTOR_DPI. */
+const MAX_EMBED_DPI = 450;
+const VECTOR_DPI = 600;
+/** Upper bound of one embedded bitmap (pixels), so a big pattern does not exhaust the browser's memory. */
+const MAX_IMAGE_PIXELS = 24_000_000;
+const CMYK_INFO: Cmyk = [0, 0, 0, 60];
+
+/** The very files the editor draws box texts with (src/assets/fonts/print). */
+const FONT_URLS: Record<PrintFontId, string> = {
+  "be-vietnam-pro": new URL("../../../../../assets/fonts/print/BeVietnamPro_700Bold.ttf", import.meta.url).href,
+  "playfair-display": new URL("../../../../../assets/fonts/print/PlayfairDisplay_700Bold.ttf", import.meta.url).href,
+  "cormorant-garamond": new URL("../../../../../assets/fonts/print/CormorantGaramond_700Bold.ttf", import.meta.url).href,
+  "big-shoulders-display": new URL("../../../../../assets/fonts/print/BigShouldersDisplay_700Bold.ttf", import.meta.url).href,
+  inter: new URL("../../../../../assets/fonts/print/Inter_700Bold.ttf", import.meta.url).href,
+};
+/** Labels of the Dimensions layer and the ruler. */
+const INFO_FONT: PrintFontId = "be-vietnam-pro";
+/** Digits under an EAN-13. */
+const BARCODE_FONT: PrintFontId = "inter";
+
+const fontCache = new Map<PrintFontId, Promise<OutlineFont>>();
+function loadFont(id: PrintFontId): Promise<OutlineFont> {
+  if (!fontCache.has(id)) {
+    const loading = fetch(FONT_URLS[id])
+      .then((response) => {
+        if (!response.ok) throw new Error(`Không tải được font ${id}`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => openFont(new Uint8Array(buffer)) as unknown as OutlineFont);
+    loading.catch(() => fontCache.delete(id));
+    fontCache.set(id, loading);
+  }
+  return fontCache.get(id)!;
+}
+
+/** Everything the renderers need besides the layout: font outlines and the image files. */
+export interface PrintAssets {
+  fonts: Record<PrintFontId, OutlineFont>;
+  /** Image files by URL, as data URIs (embedded in the SVG) and decoded bitmaps (converted for the PDF). */
+  images: Map<string, { dataUri: string | null; bitmap: HTMLImageElement | null }>;
+}
 
 const n = (value: number) => Number(value.toFixed(3)).toString();
 const escapeXml = (text: string) =>
   text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
-/** ASCII only (the PDF info text uses a standard font). */
+/** ASCII only (PDF info dictionary strings). */
 const ascii = (text: string) =>
   text.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").replace(/[^\x20-\x7e]/g, "");
 const specLine = (layout: PrintLayout) =>
   `WrapFit — ${layout.title} — ${layout.structure} ${layout.dimensions.length} x ${layout.dimensions.width} x ${layout.dimensions.height} mm, giấy ${layout.dimensions.paperThickness} mm`;
+
+function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const timer = window.setTimeout(() => resolve(null), 8000);
+    img.onload = () => {
+      window.clearTimeout(timer);
+      resolve(img);
+    };
+    img.onerror = () => {
+      window.clearTimeout(timer);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+async function dataUriOf(url: string): Promise<string | null> {
+  if (url.startsWith("data:")) return url;
+  try {
+    const blob = await (await fetch(url)).blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null; // no CORS: the SVG links the file instead
+  }
+}
+
+/** Loads the fonts and image files of a layout. */
+export async function loadPrintAssets(layout: PrintLayout): Promise<PrintAssets> {
+  const ids = Object.keys(FONT_URLS) as PrintFontId[];
+  const loaded = await Promise.all(ids.map(loadFont));
+  const fonts = Object.fromEntries(ids.map((id, i) => [id, loaded[i]])) as Record<PrintFontId, OutlineFont>;
+  const images: PrintAssets["images"] = new Map();
+  for (const url of new Set(layout.images.map((image) => image.url))) {
+    const [dataUri, bitmap] = await Promise.all([dataUriOf(url), loadImage(url)]);
+    images.set(url, { dataUri, bitmap });
+  }
+  return { fonts, images };
+}
 
 /** Area of the dielines on the sheet (mm): the trim box of the print file. */
 function trimArea(layout: PrintLayout) {
@@ -53,50 +156,93 @@ function dimensionMarks(layout: PrintLayout) {
   return { lines, labels, info };
 }
 
-/** Layered SVG (artwork, crease, cut, dimensions) for cutting plotters (Cricut, laser), same as the server file. */
-export function renderSvg(layout: PrintLayout): string {
-  const images = layout.images.map((image) => {
-    const rotate = image.rotation
-      ? ` transform="rotate(${n(image.rotation)} ${n(image.x + image.width / 2)} ${n(image.y + image.height / 2)})"`
-      : "";
-    return `<image x="${n(image.x)}" y="${n(image.y)}" width="${n(image.width)}" height="${n(image.height)}" preserveAspectRatio="xMidYMid meet"${rotate} href="${escapeXml(image.url)}"/>`;
-  });
-  const texts = layout.texts.map((t) => {
-    const box = layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t }, measureInBrowser);
-    const rotate = t.rotation ? ` transform="rotate(${n(t.rotation)} ${n(t.x + t.width / 2)} ${n(t.y + t.height / 2)})"` : "";
-    const lines = box.lines
+/** Outlines of a one-line label whose baseline starts (or, `centred`, is centred) at (x, y). */
+function labelPath(font: OutlineFont, text: string, x: number, y: number, sizeMm: number, centred: boolean) {
+  return outlineText(font, text, centred ? x - outlineAdvanceMm(font, text, sizeMm) / 2 : x, y, sizeMm);
+}
+
+/** Every text element as outlines (one path per element) with its print ink. */
+function textOutlines(layout: PrintLayout, assets: PrintAssets) {
+  const measure: MeasureText = (text, font, sizeMm) => outlineAdvanceMm(assets.fonts[font], text, sizeMm);
+  return layout.texts.map((t) => {
+    const box = layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t }, measure);
+    const d = box.lines
       .filter((line) => line.text)
-      .map((line) => `<text x="${n(t.x + line.x)}" y="${n(t.y + line.baseline)}">${escapeXml(line.text)}</text>`);
+      .map((line) => outlineText(assets.fonts[box.font], line.text, t.x + line.x, t.y + line.baseline, box.fontSizeMm))
+      .join(" ");
+    return { d, color: t.color, cmyk: textCmyk(t.color, t.fontSizePt), rotation: t.rotation, cx: t.x + t.width / 2, cy: t.y + t.height / 2 };
+  });
+}
+
+/** Every barcode element as vectors: white knockout box, black modules, digits as outlines. */
+function barcodeVectors(layout: PrintLayout, assets: PrintAssets) {
+  return layout.barcodes.flatMap((b) => {
+    let qr = null;
+    if (!ean13Digits(b.content)) {
+      try {
+        qr = QRCode.create(b.content, { errorCorrectionLevel: "M" }).modules;
+      } catch {
+        return [];
+      }
+    }
+    const art = barcodeArt(b.content, b.width, b.height, qr);
+    if (!art) return [];
+    const bars = art.bars.map((bar) => {
+      const [x, y] = [b.x + bar.x, b.y + bar.y];
+      return `M ${n(x)} ${n(y)} H ${n(x + bar.width)} V ${n(y + bar.height)} H ${n(x)} Z`;
+    });
+    const digits = art.digits.map((digit) =>
+      labelPath(assets.fonts[BARCODE_FONT], digit.text, b.x + digit.x, b.y + digit.baseline, digit.sizeMm, true),
+    );
+    const knockout = `M ${n(b.x)} ${n(b.y)} H ${n(b.x + b.width)} V ${n(b.y + b.height)} H ${n(b.x)} Z`;
+    return [{ box: b, knockout, d: [...bars, ...digits].join(" "), rotation: b.rotation, cx: b.x + b.width / 2, cy: b.y + b.height / 2 }];
+  });
+}
+
+/** Layered SVG (artwork, crease, cut, dimensions) for cutting plotters (Cricut, laser), same as the server file. */
+export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
+  const rotate = (deg: number, cx: number, cy: number) => (deg ? ` transform="rotate(${n(deg)} ${n(cx)} ${n(cy)})"` : "");
+  const images = layout.images.map((image) => {
+    const href = assets.images.get(image.url)?.dataUri ?? image.url;
     return (
-      `<g font-family="${escapeXml(PRINT_FONTS[box.font])}, sans-serif" font-weight="${TEXT_FONT_WEIGHT}" font-size="${n(box.fontSizeMm)}"` +
-      ` fill="${escapeXml(t.color)}"${rotate}>${lines.join("")}</g>`
+      `<image x="${n(image.x)}" y="${n(image.y)}" width="${n(image.width)}" height="${n(image.height)}" preserveAspectRatio="xMidYMid meet"` +
+      `${rotate(image.rotation, image.x + image.width / 2, image.y + image.height / 2)} href="${escapeXml(href)}"/>`
     );
   });
+  const texts = textOutlines(layout, assets)
+    .filter((t) => t.d)
+    .map((t) => `<path d="${t.d}" fill="${escapeXml(t.color)}"${rotate(t.rotation, t.cx, t.cy)}/>`);
+  const barcodes = barcodeVectors(layout, assets).map(
+    (b) =>
+      `<g${rotate(b.rotation, b.cx, b.cy)}><rect x="${n(b.box.x)}" y="${n(b.box.y)}" width="${n(b.box.width)}" height="${n(b.box.height)}" fill="#FFFFFF"/>` +
+      `<path d="${b.d}" fill="#000000"/></g>`,
+  );
   const strokes = (type: "cut" | "crease") =>
     layout.strokes.filter((s) => s.type === type).map((s) => `<path d="${escapeXml(s.d)}"/>`).join("");
   const marks = dimensionMarks(layout);
+  const info = assets.fonts[INFO_FONT];
   const layer = (id: string, label: string, attributes: string, content: string) =>
     `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${label}"${attributes}>${content}</g>`;
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n(layout.width)}mm" height="${n(layout.height)}mm" viewBox="0 0 ${n(layout.width)} ${n(layout.height)}">`,
-    layer("artwork", "Artwork", "", images.join("") + texts.join("")),
+    layer("artwork", "Artwork", "", images.join("") + texts.join("") + barcodes.join("")),
     layer("crease", "Crease", ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes("crease")),
     layer("cut", "CutContour", ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes("cut")),
     layer(
       "dimensions",
       "Dimensions",
-      ` font-family="Be Vietnam Pro, sans-serif" font-size="${INFO_FONT_MM}" fill="${COLORS.info}" stroke="${COLORS.info}" stroke-width="0.15"`,
+      ` fill="${COLORS.info}" stroke="${COLORS.info}" stroke-width="0.15"`,
       marks.lines.map(([x1, y1, x2, y2]) => `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}"/>`).join("") +
         marks.labels
           .map(
             (label) =>
-              `<text x="${n(label.x)}" y="${n(label.y)}" text-anchor="middle" stroke="none"` +
+              `<path stroke="none" d="${labelPath(info, label.text, label.x, label.y, INFO_FONT_MM, true)}"` +
               (label.vertical ? ` transform="rotate(-90 ${n(label.x)} ${n(label.y)})"` : "") +
-              `>${escapeXml(label.text)}</text>`,
+              "/>",
           )
           .join("") +
-        `<text x="${n(marks.info.x)}" y="${n(marks.info.y)}" stroke="none">${escapeXml(marks.info.text)}</text>`,
+        `<path stroke="none" d="${labelPath(info, marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM, false)}"/>`,
     ),
     "</svg>",
   ].join("\n");
@@ -169,84 +315,56 @@ export function renderDxf(layout: PrintLayout): string {
 
 // ---------------------------------------------------------------- PDF
 
-function loadImage(url: string): Promise<HTMLImageElement | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    const timer = window.setTimeout(() => resolve(null), 8000);
-    img.onload = () => {
-      window.clearTimeout(timer);
-      resolve(img);
-    };
-    img.onerror = () => {
-      window.clearTimeout(timer);
-      resolve(null);
-    };
-    img.src = url;
+/** Printed size (mm) of an image in its box: the file keeps its proportions, centred. */
+const printedSize = (box: { width: number; height: number }, source: { width: number; height: number }) => {
+  const scale = Math.min(box.width / source.width, box.height / source.height);
+  return { width: source.width * scale, height: source.height * scale };
+};
+
+const isSvgUrl = (url: string, dataUri: string | null) => /\.svg(\?|#|$)/i.test(url) || !!dataUri?.startsWith("data:image/svg");
+
+/** Resolution of each image at its printed size (null: vector or unreadable). */
+export function imageResolutions(layout: PrintLayout, assets: PrintAssets) {
+  return layout.images.map((image) => {
+    const file = assets.images.get(image.url);
+    const bitmap = file?.bitmap;
+    const vector = isSvgUrl(image.url, file?.dataUri ?? null);
+    if (!bitmap?.naturalWidth || vector) return { url: image.url, dpi: null, vector };
+    const source = { width: bitmap.naturalWidth, height: bitmap.naturalHeight };
+    return { url: image.url, dpi: effectiveDpi(source.width, printedSize(image, source).width), vector };
   });
 }
 
-/** Texts and images of the sheet as a JPEG at 300 DPI (white paper), or null when the design has no artwork. */
-async function artworkJpeg(layout: PrintLayout): Promise<{ bytes: Uint8Array; width: number; height: number } | null> {
-  if (layout.texts.length === 0 && layout.images.length === 0) return null;
-  let pxPerMm = ARTWORK_DPI / 25.4;
-  const pixels = layout.width * layout.height * pxPerMm * pxPerMm;
-  if (pixels > MAX_ARTWORK_PIXELS) pxPerMm *= Math.sqrt(MAX_ARTWORK_PIXELS / pixels);
+/** An image of the layout as CMYK pixels for the PDF, or null when it cannot be read (no CORS, broken file). */
+function prepareImage(image: PrintLayout["images"][number], assets: PrintAssets) {
+  const file = assets.images.get(image.url);
+  const bitmap = file?.bitmap;
+  if (!bitmap) return null;
+  const vector = isSvgUrl(image.url, file.dataUri);
+  // SVGs without a size report 0: take the box proportions.
+  const source = bitmap.naturalWidth && bitmap.naturalHeight ? { width: bitmap.naturalWidth, height: bitmap.naturalHeight } : image;
+  const printed = printedSize(image, source);
+  let width = vector ? pixelsFor(printed.width, VECTOR_DPI) : Math.min(source.width, pixelsFor(printed.width, MAX_EMBED_DPI));
+  let height = Math.max(1, Math.round((width * printed.height) / printed.width));
+  const pixels = width * height;
+  if (pixels > MAX_IMAGE_PIXELS) {
+    const shrink = Math.sqrt(MAX_IMAGE_PIXELS / pixels);
+    width = Math.floor(width * shrink);
+    height = Math.floor(height * shrink);
+  }
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(layout.width * pxPerMm);
-  canvas.height = Math.round(layout.height * pxPerMm);
+  canvas.width = Math.max(1, width);
+  canvas.height = Math.max(1, height);
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.scale(pxPerMm, pxPerMm);
-
-  const fonts = [...new Set(layout.texts.map((t) => layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t }, measureInBrowser).font))];
-  if (document.fonts) {
-    await Promise.all(fonts.map((font: PrintFontId) => document.fonts.load(`${TEXT_FONT_WEIGHT} 16px ${cssFontFamily(font)}`).catch(() => undefined)));
-  }
-
-  const rotated = (x: number, y: number, w: number, h: number, deg: number, draw: () => void) => {
-    ctx.save();
-    if (deg) {
-      ctx.translate(x + w / 2, y + h / 2);
-      ctx.rotate((deg * Math.PI) / 180);
-      ctx.translate(-(x + w / 2), -(y + h / 2));
-    }
-    draw();
-    ctx.restore();
-  };
-
-  for (const image of layout.images) {
-    const img = await loadImage(image.url);
-    if (!img) continue;
-    const scale = Math.min(image.width / img.naturalWidth, image.height / img.naturalHeight);
-    const w = img.naturalWidth * scale;
-    const h = img.naturalHeight * scale;
-    rotated(image.x, image.y, image.width, image.height, image.rotation, () =>
-      ctx.drawImage(img, image.x + (image.width - w) / 2, image.y + (image.height - h) / 2, w, h),
-    );
-  }
-  for (const t of layout.texts) {
-    const box = layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t }, measureInBrowser);
-    rotated(t.x, t.y, t.width, t.height, t.rotation, () => {
-      // Canvas fonts below 1 px misbehave: draw at 10× and scale back.
-      ctx.scale(0.1, 0.1);
-      ctx.font = `${TEXT_FONT_WEIGHT} ${box.fontSizeMm * 10}px ${cssFontFamily(box.font)}`;
-      ctx.fillStyle = t.color;
-      ctx.textBaseline = "alphabetic";
-      for (const line of box.lines) if (line.text) ctx.fillText(line.text, (t.x + line.x) * 10, (t.y + line.baseline) * 10);
-    });
-  }
-
-  let blob: Blob | null;
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   try {
-    blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    // Rich black on photos and patterns; logos (often small black lettering) stay on the K plate.
+    return { width: canvas.width, height: canvas.height, printed, ...rgbaToCmyk(data, { richBlack: image.type !== "logo" }) };
   } catch {
     return null; // an image without CORS tainted the canvas
   }
-  if (!blob) return null;
-  return { bytes: new Uint8Array(await blob.arrayBuffer()), width: canvas.width, height: canvas.height };
 }
 
 /** Absolute SVG path data (M L H V C S Q T Z; arcs become lines) to PDF path operators in points. */
@@ -348,7 +466,7 @@ export interface PdfOptions {
 const enc = new TextEncoder();
 
 /** The print PDF (see the file header). Everything is written as PDF objects by hand. */
-export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): Promise<Blob> {
+export async function renderPdf(layout: PrintLayout, assets: PrintAssets, options: PdfOptions = {}): Promise<Blob> {
   const trim = trimArea(layout);
   // Page: the sheet itself, or A4 / A3 (portrait or landscape) holding it at 1:1 for home printing.
   let pageW = layout.width;
@@ -367,18 +485,59 @@ export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): 
   const oy = options.homePrint ? Math.max(5, (pageH - layout.height - 15) / 2) : 0;
   const k = PT_PER_MM;
   const map = (x: number, y: number): [number, number] => [(x + ox) * k, (pageH - (y + oy)) * k];
+  /** `map` after turning the point `deg` degrees (clockwise on the sheet, like SVG) around (cx, cy). */
+  const turned = (deg: number, cx: number, cy: number) => {
+    if (!deg) return map;
+    const a = (deg * Math.PI) / 180;
+    const [cos, sin] = [Math.cos(a), Math.sin(a)];
+    return (x: number, y: number) => map(cx + (x - cx) * cos - (y - cy) * sin, cy + (x - cx) * sin + (y - cy) * cos);
+  };
   const f = (v: number) => v.toFixed(3);
+  const ink = ([c, m, y, kk]: Cmyk) => `${[c, m, y, kk].map((v) => f(v / 100)).join(" ")} k`;
+  const info = assets.fonts[INFO_FONT];
 
-  const art = await artworkJpeg(layout);
-  const marks = dimensionMarks(layout);
+  // ---- objects
+  const objects: (string | Uint8Array[])[] = [];
+  const add = (body: string | Uint8Array[]) => {
+    objects.push(body);
+    return objects.length;
+  };
+  const stream = (dict: string, bytes: Uint8Array) => [enc.encode(`<< ${dict} /Length ${bytes.length} >>\nstream\n`), bytes, enc.encode("\nendstream")];
+  const catalogId = 1;
+  objects.push(""); // catalog, filled below
+  const pagesId = add("");
 
   const content: string[] = [];
-  if (art) {
-    content.push(
-      "/OC /OCart BDC q",
-      `${f(layout.width * k)} 0 0 ${f(layout.height * k)} ${f(ox * k)} ${f((pageH - oy - layout.height) * k)} cm /Art Do Q EMC`,
-    );
+  const xobjects: string[] = [];
+
+  // Artwork: images (CMYK XObjects), texts (outlines), barcodes (K100 on a white knockout).
+  content.push("/OC /OCart BDC");
+  for (const image of layout.images) {
+    const prepared = prepareImage(image, assets);
+    if (!prepared) continue;
+    const common = `/Type /XObject /Subtype /Image /Width ${prepared.width} /Height ${prepared.height} /BitsPerComponent 8 /Filter /FlateDecode`;
+    const smask = prepared.alpha ? add(stream(`${common} /ColorSpace /DeviceGray`, zlibSync(prepared.alpha, { level: 6 }))) : 0;
+    const id = add(stream(`${common} /ColorSpace /DeviceCMYK${smask ? ` /SMask ${smask} 0 R` : ""}`, zlibSync(prepared.cmyk, { level: 6 })));
+    const name = `Im${xobjects.length + 1}`;
+    xobjects.push(`/${name} ${id} 0 R`);
+    // Image space: (0,0) bottom-left, (1,0) bottom-right, (0,1) top-left of the printed image.
+    const x0 = image.x + (image.width - prepared.printed.width) / 2;
+    const y0 = image.y + (image.height - prepared.printed.height) / 2;
+    const at = turned(image.rotation, image.x + image.width / 2, image.y + image.height / 2);
+    const [e, g] = at(x0, y0 + prepared.printed.height);
+    const [rx, ry] = at(x0 + prepared.printed.width, y0 + prepared.printed.height);
+    const [tx, ty] = at(x0, y0);
+    content.push(`q ${[rx - e, ry - g, tx - e, ty - g, e, g].map(f).join(" ")} cm /${name} Do Q`);
   }
+  for (const t of textOutlines(layout, assets)) {
+    if (t.d) content.push(`q ${ink(t.cmyk)}`, pathToPdf(t.d, turned(t.rotation, t.cx, t.cy)), "f Q");
+  }
+  for (const b of barcodeVectors(layout, assets)) {
+    const at = turned(b.rotation, b.cx, b.cy);
+    content.push(`q ${ink([0, 0, 0, 0])}`, pathToPdf(b.knockout, at), "f", ink(K100), pathToPdf(b.d, at), "f Q");
+  }
+  content.push("EMC");
+
   const strokeLayer = (type: "cut" | "crease", ocg: string, cs: string, dash: string) => {
     const paths = layout.strokes.filter((s) => s.type === type).map((s) => pathToPdf(s.d, map) + " S");
     content.push(`/OC /${ocg} BDC q /GSop gs /${cs} CS 1 SCN ${f(LINE_MM * k)} w ${dash} 1 J 1 j`, ...paths, "Q EMC");
@@ -386,21 +545,16 @@ export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): 
   strokeLayer("crease", "OCcrease", "CsCrease", `[${f(DASH_MM * k)} ${f(DASH_MM * k)}] 0 d`);
   strokeLayer("cut", "OCcut", "CsCut", "[] 0 d");
 
-  const label = (text: string, x: number, y: number, sizeMm: number, vertical = false, center = true) => {
-    const s = ascii(text);
-    const width = s.length * sizeMm * 0.5; // Helvetica, close enough to centre a label
-    const [px, py] = map(x, y);
-    const size = sizeMm * k;
-    if (vertical) return `BT /F1 ${f(size)} Tf 0 1 -1 0 ${f(px)} ${f(py - (center ? (width * k) / 2 : 0))} Tm (${s}) Tj ET`;
-    return `BT /F1 ${f(size)} Tf ${f(px - (center ? (width * k) / 2 : 0))} ${f(py)} Td (${s}) Tj ET`;
-  };
-  content.push(`/OC /OCdim BDC q 0 0 0 0.6 K 0 0 0 0.6 k ${f(0.15 * k)} w`);
+  const marks = dimensionMarks(layout);
+  content.push(`/OC /OCdim BDC q ${ink(CMYK_INFO)} ${ink(CMYK_INFO).replace(/k$/, "K")} ${f(0.15 * k)} w`);
   for (const [x1, y1, x2, y2] of marks.lines) content.push(`${map(x1, y1).map(f).join(" ")} m ${map(x2, y2).map(f).join(" ")} l S`);
-  for (const l of marks.labels) content.push(label(l.text, l.x, l.y, INFO_FONT_MM * 0.85, l.vertical));
-  content.push(label(marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM * 0.85, false, false), "Q EMC");
+  for (const l of marks.labels) {
+    content.push(pathToPdf(labelPath(info, l.text, l.x, l.y, INFO_FONT_MM, true), turned(l.vertical ? -90 : 0, l.x, l.y)), "f");
+  }
+  content.push(pathToPdf(labelPath(info, marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM, false), map), "f", "Q EMC");
 
   if (options.homePrint) {
-    // Crop marks at the trim corners and a 50 mm ruler to check the printer kept 1:1.
+    // Crop marks at the trim corners and a 50 mm ruler to check the printer kept 1:1 (printed, plain black).
     content.push(`q 0 0 0 1 K 0 0 0 1 k ${f(0.2 * k)} w`);
     const gap = 3;
     const len = 6;
@@ -417,18 +571,9 @@ export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): 
     const ry = pageH - oy - 8;
     content.push(`${map(rx, ry).map(f).join(" ")} m ${map(rx + 50, ry).map(f).join(" ")} l S`);
     for (let mm = 0; mm <= 50; mm += 10) content.push(`${map(rx + mm, ry - (mm % 50 === 0 ? 2.5 : 1.5)).map(f).join(" ")} m ${map(rx + mm, ry).map(f).join(" ")} l S`);
-    content.push(label("50 mm - in o ty le 100% (khong co gian)", rx + 54, ry + 1, 3, false, false), "Q");
+    content.push(pathToPdf(labelPath(info, "50 mm — in đúng tỷ lệ 100% (không co giãn)", rx + 54, ry + 1, 3, false), map), "f Q");
   }
 
-  // ---- objects
-  const objects: (string | Uint8Array[])[] = [];
-  const add = (body: string | Uint8Array[]) => {
-    objects.push(body);
-    return objects.length;
-  };
-  const catalogId = 1;
-  objects.push(""); // catalog, filled below
-  const pagesId = add("");
   const ocgs = [
     ["OCart", "Artwork", true],
     ["OCcrease", "Crease", true],
@@ -441,18 +586,8 @@ export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): 
   const tint = (cmyk: string) => `<< /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${cmyk}] /N 1 >>`;
   const cutFn = add(tint("0 1 0 0"));
   const creaseFn = add(tint("1 0 0 0"));
-  const fontId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
   const gsId = add("<< /Type /ExtGState /OP true /op true /OPM 1 >>");
-  let artId = 0;
-  if (art) {
-    artId = add([
-      enc.encode(`<< /Type /XObject /Subtype /Image /Width ${art.width} /Height ${art.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${art.bytes.length} >>\nstream\n`),
-      art.bytes,
-      enc.encode("\nendstream"),
-    ]);
-  }
-  const stream = enc.encode(content.join("\n"));
-  const contentId = add([enc.encode(`<< /Length ${stream.length} >>\nstream\n`), stream, enc.encode("\nendstream")]);
+  const contentId = add(stream("/Filter /FlateDecode", zlibSync(enc.encode(content.join("\n")), { level: 6 })));
   const box = (l: number, t: number, r: number, b: number) => {
     const [x1, y1] = map(l, b);
     const [x2, y2] = map(r, t);
@@ -462,10 +597,10 @@ export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): 
   const pageId = add(
     `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${f(pageW * k)} ${f(pageH * k)}]` +
       ` /TrimBox ${box(trim.left, trim.top, trim.right, trim.bottom)}` +
-      ` /BleedBox ${box(trim.left - BLEED_MM, trim.top - BLEED_MM, trim.right + BLEED_MM, trim.bottom + BLEED_MM)}` +
-      ` /Resources << /Font << /F1 ${fontId} 0 R >> /ExtGState << /GSop ${gsId} 0 R >>` +
+      ` /BleedBox ${box(trim.left - BLEED_BOX_MM, trim.top - BLEED_BOX_MM, trim.right + BLEED_BOX_MM, trim.bottom + BLEED_BOX_MM)}` +
+      ` /Resources << /ExtGState << /GSop ${gsId} 0 R >>` +
       ` /ColorSpace << /CsCut [/Separation /CutContour /DeviceCMYK ${cutFn} 0 R] /CsCrease [/Separation /Crease /DeviceCMYK ${creaseFn} 0 R] >>` +
-      (art ? ` /XObject << /Art ${artId} 0 R >>` : "") +
+      (xobjects.length ? ` /XObject << ${xobjects.join(" ")} >>` : "") +
       ` /Properties << ${props} >> >> /Contents ${contentId} 0 R >>`,
   );
   objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`;
@@ -490,4 +625,32 @@ export async function renderPdf(layout: PrintLayout, options: PdfOptions = {}): 
   const xref = [`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`, ...offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`)].join("");
   parts.push(enc.encode(`${xref}trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R /Info ${infoId} 0 R >>\nstartxref\n${offset}\n%%EOF\n`));
   return new Blob(parts as BlobPart[], { type: "application/pdf" });
+}
+
+/** The SVG of the sheet as a JPG on white paper (150 DPI), for checking the print file against; null if the browser refuses. */
+export async function renderProofJpeg(svg: string, dpi = 150): Promise<Blob | null> {
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const image = await loadImage(url);
+    if (!image) return null;
+    const widthMm = Number(/width="([\d.]+)mm"/.exec(svg)?.[1] ?? 0);
+    const heightMm = Number(/height="([\d.]+)mm"/.exec(svg)?.[1] ?? 0);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, pixelsFor(widthMm, dpi));
+    canvas.height = Math.max(1, pixelsFor(heightMm, dpi));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return await new Promise<Blob | null>((resolve) => {
+      try {
+        canvas.toBlob(resolve, "image/jpeg", 0.9);
+      } catch {
+        resolve(null);
+      }
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
