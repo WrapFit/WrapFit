@@ -16,3 +16,7 @@ export * from "./print/prepress";
 export * from "./print/barcode";
 export * from "./print/outline";
 export * from "./print/package-readme";
+export * from "./library/art";
+export * from "./library/catalog";
+export * from "./library/templates";
+export * from "./library/icons";
