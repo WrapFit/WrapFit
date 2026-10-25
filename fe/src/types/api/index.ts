@@ -588,3 +588,56 @@ export interface CreateSampleOrderRequest {
   quantity?: number;
   paperStock?: string;
 }
+
+// ---------------------------------------------------------------- shared library (be/src/library)
+
+export type LibraryAssetCategory = "STICKER" | "LABEL" | "ILLUSTRATION" | "BACKGROUND" | "ICON";
+
+/** An asset an admin imported from a licensed source; `url` is the file every user may place on a box. */
+export interface LibraryAsset {
+  id: string;
+  category: LibraryAssetCategory;
+  title: string;
+  url: string | null;
+  contentType: string;
+  isVector: boolean;
+  widthPx: number | null;
+  heightPx: number | null;
+  /** Longest side printable at 300 DPI, mm (null: vector). */
+  maxPrintMm: number | null;
+  license: string;
+  sourceUrl: string | null;
+  attribution: string | null;
+  tags: string[];
+  occasions: Occasion[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibraryLicense {
+  id: string;
+  name: string;
+  attribution: boolean;
+}
+
+export interface LibraryQuery {
+  category?: LibraryAssetCategory;
+  occasion?: Occasion;
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateLibraryAsset {
+  fileUrl: string;
+  title: string;
+  category: LibraryAssetCategory;
+  license: string;
+  sourceUrl?: string;
+  attribution?: string;
+  tags?: string[];
+  occasions?: Occasion[];
+}
+
+export type UpdateLibraryAsset = Partial<Omit<CreateLibraryAsset, "fileUrl">> & { isActive?: boolean };

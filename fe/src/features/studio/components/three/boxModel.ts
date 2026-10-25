@@ -19,6 +19,7 @@ import {
   type PanelFace,
 } from "@wrapfit/shared";
 import { cssFontFamily, layoutBoxText } from "../canvas/boxText";
+import { drawArt, elementArt } from "../library/elementArt";
 
 /**
  * 3D model of a box built from its dieline (docs/12 Phase 8, H6): every printable panel is a sheet of paper folded on
@@ -237,7 +238,10 @@ function panelTexture(
       ctx.translate(el.x + el.width / 2, el.y + el.height / 2);
       ctx.rotate(((el.rotation || 0) * Math.PI) / 180);
       ctx.translate(-el.width / 2, -el.height / 2);
-      if (IMAGE_TYPES.has(el.type)) {
+      const art = elementArt(el);
+      if (art) {
+        drawArt(ctx, art); // library stickers, labels, backgrounds and barcodes: vectors
+      } else if (IMAGE_TYPES.has(el.type)) {
         const image = images.get(el.content);
         if (image) drawContained(ctx, image, el.width, el.height);
       } else if (el.type === "text") {

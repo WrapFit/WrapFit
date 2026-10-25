@@ -2,12 +2,14 @@
 // builds the same sheet as the export worker: same pieces, same placement, same joined cut / crease strokes.
 import {
   fontSizeMmOf,
+  libraryArt,
   matchesPanel,
   PT_TO_MM,
   segmentPoints,
   type BoxDimensions,
   type CanvasElement,
   type DielineGeometry,
+  type VectorArt,
 } from "@wrapfit/shared";
 import { dielinePiecesOf } from "@/features/studio/utils/dieline";
 
@@ -59,6 +61,8 @@ export interface PrintLayout {
   images: { url: string; type: CanvasElement["type"]; x: number; y: number; width: number; height: number; rotation: number }[];
   /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white. */
   barcodes: { content: string; x: number; y: number; width: number; height: number; rotation: number }[];
+  /** Vector art of the built-in library (`wf-art:`), at the element size; backgrounds under the images. */
+  arts: { art: VectorArt; background: boolean; x: number; y: number; width: number; height: number; rotation: number }[];
   strokes: Stroke[];
 }
 
@@ -175,20 +179,24 @@ export function buildPrintLayout(input: {
   const texts: PrintLayout["texts"] = [];
   const images: PrintLayout["images"] = [];
   const barcodes: PrintLayout["barcodes"] = [];
+  const arts: PrintLayout["arts"] = [];
   for (const element of input.elements) {
     const isText = element.type === "text";
     const isBarcode = element.type === "barcode";
+    const art = IMAGE_TYPES.has(element.type) ? libraryArt(element.content, element.width, element.height) : null;
     const drawn =
       isText || isBarcode
         ? !!element.content.trim()
-        : IMAGE_TYPES.has(element.type) && /^(https?:|data:image\/|blob:|\/)/.test(element.content);
+        : IMAGE_TYPES.has(element.type) && (!!art || /^(https?:|data:image\/|blob:|\/)/.test(element.content));
     if (!drawn) continue;
     const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
     const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
     if (!piece || !panel) continue;
     const x = piece.x + panel.bounds.x + element.x;
     const y = piece.y + panel.bounds.y + element.y;
-    if (isBarcode) {
+    if (art) {
+      arts.push({ art, background: element.type === "pattern", x, y, width: element.width, height: element.height, rotation: element.rotation });
+    } else if (isBarcode) {
       barcodes.push({ content: element.content.trim(), x, y, width: element.width, height: element.height, rotation: element.rotation });
     } else if (isText) {
       const fontSizeMm = fontSizeMmOf(element);
@@ -220,6 +228,7 @@ export function buildPrintLayout(input: {
     texts,
     images,
     barcodes,
+    arts,
     strokes: pieces.flatMap(strokesOf),
   };
 }

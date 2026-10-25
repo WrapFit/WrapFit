@@ -11,6 +11,7 @@ import {
   BLEED_BOX_MM,
   ean13Digits,
   effectiveDpi,
+  hexToCmyk,
   K100,
   layoutTextBox,
   outlineAdvanceMm,
@@ -199,6 +200,32 @@ function barcodeVectors(layout: PrintLayout, assets: PrintAssets) {
   });
 }
 
+/** Library art (`layout.arts`) of one kind, with its texts outlined, in the coordinates of the element. */
+function artVectors(layout: PrintLayout, assets: PrintAssets, background: boolean) {
+  return layout.arts
+    .filter((a) => a.background === background)
+    .map((a) => ({
+      ...a,
+      cx: a.x + a.width / 2,
+      cy: a.y + a.height / 2,
+      texts: a.art.texts.map((t) => ({ d: labelPath(assets.fonts[t.font], t.text, t.x, t.baseline, t.size, t.anchor === "middle"), color: t.color })),
+    }));
+}
+
+/** SVG group of library art: placed on the sheet, turned around the centre of its element. */
+function artSvg(a: ReturnType<typeof artVectors>[number]): string {
+  const turn = a.rotation ? `rotate(${n(a.rotation)} ${n(a.cx)} ${n(a.cy)}) ` : "";
+  const shapes = a.art.shapes.map(
+    (s) =>
+      `<path d="${s.d}" fill="${escapeXml(s.fill ?? "none")}"` +
+      (s.stroke ? ` stroke="${escapeXml(s.stroke)}" stroke-width="${n(s.strokeWidth ?? LINE_MM)}"` : "") +
+      (s.round ? ' stroke-linecap="round" stroke-linejoin="round"' : "") +
+      "/>",
+  );
+  const texts = a.texts.filter((t) => t.d).map((t) => `<path d="${t.d}" fill="${escapeXml(t.color)}"/>`);
+  return `<g transform="${turn}translate(${n(a.x)} ${n(a.y)})">${shapes.join("")}${texts.join("")}</g>`;
+}
+
 /** Layered SVG (artwork, crease, cut, dimensions) for cutting plotters (Cricut, laser), same as the server file. */
 export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
   const rotate = (deg: number, cx: number, cy: number) => (deg ? ` transform="rotate(${n(deg)} ${n(cx)} ${n(cy)})"` : "");
@@ -226,7 +253,16 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n(layout.width)}mm" height="${n(layout.height)}mm" viewBox="0 0 ${n(layout.width)} ${n(layout.height)}">`,
-    layer("artwork", "Artwork", "", images.join("") + texts.join("") + barcodes.join("")),
+    layer(
+      "artwork",
+      "Artwork",
+      "",
+      artVectors(layout, assets, true).map(artSvg).join("") +
+        images.join("") +
+        artVectors(layout, assets, false).map(artSvg).join("") +
+        texts.join("") +
+        barcodes.join(""),
+    ),
     layer("crease", "Crease", ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes("crease")),
     layer("cut", "CutContour", ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes("cut")),
     layer(
@@ -510,8 +546,26 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
   const content: string[] = [];
   const xobjects: string[] = [];
 
-  // Artwork: images (CMYK XObjects), texts (outlines), barcodes (K100 on a white knockout).
+  /** Library art: shapes filled / stroked in CMYK, then its outlined texts (element coordinates moved onto the sheet). */
+  const drawArt = (a: ReturnType<typeof artVectors>[number]) => {
+    const sheet = turned(a.rotation, a.cx, a.cy);
+    const at = (x: number, y: number) => sheet(a.x + x, a.y + y);
+    content.push("q");
+    for (const shape of a.art.shapes) {
+      const path = pathToPdf(shape.d, at);
+      const fill = shape.fill ? ink(hexToCmyk(shape.fill)) : "";
+      const stroke = shape.stroke
+        ? `${ink(hexToCmyk(shape.stroke)).replace(/k$/, "K")} ${f((shape.strokeWidth ?? LINE_MM) * k)} w ${shape.round ? "1 J 1 j" : "0 J 0 j"}`
+        : "";
+      content.push([fill, stroke].filter(Boolean).join(" "), path, shape.fill && shape.stroke ? "B" : shape.stroke ? "S" : "f");
+    }
+    for (const t of a.texts) if (t.d) content.push(ink(hexToCmyk(t.color)), pathToPdf(t.d, at), "f");
+    content.push("Q");
+  };
+
+  // Artwork: library backgrounds, images (CMYK XObjects), library stickers, texts (outlines), barcodes (K100 on white).
   content.push("/OC /OCart BDC");
+  for (const a of artVectors(layout, assets, true)) drawArt(a);
   for (const image of layout.images) {
     const prepared = prepareImage(image, assets);
     if (!prepared) continue;
@@ -529,6 +583,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     const [tx, ty] = at(x0, y0);
     content.push(`q ${[rx - e, ry - g, tx - e, ty - g, e, g].map(f).join(" ")} cm /${name} Do Q`);
   }
+  for (const a of artVectors(layout, assets, false)) drawArt(a);
   for (const t of textOutlines(layout, assets)) {
     if (t.d) content.push(`q ${ink(t.cmyk)}`, pathToPdf(t.d, turned(t.rotation, t.cx, t.cy)), "f Q");
   }

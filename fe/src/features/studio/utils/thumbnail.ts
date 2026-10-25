@@ -7,6 +7,7 @@ import {
   type DielinePiece,
 } from "@wrapfit/shared";
 import { layoutBoxText } from "../components/canvas/boxText";
+import { artMarkup, elementArt } from "../components/library/elementArt";
 
 /** Paper colour of each look of the editor (BoxMaterialTheme). */
 const PAPER_FILL: Record<string, string> = {
@@ -130,6 +131,8 @@ function pieceSvg(
       const x = panel.bounds.x + el.x;
       const y = panel.bounds.y + el.y;
       const rotate = el.rotation ? ` transform="rotate(${el.rotation} ${x + el.width / 2} ${y + el.height / 2})"` : "";
+      const art = elementArt(el);
+      if (art) return artMarkup(art, x, y, rotate);
       if ((el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content)) {
         const href = images.get(el.content);
         return href

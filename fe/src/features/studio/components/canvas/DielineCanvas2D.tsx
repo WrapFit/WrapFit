@@ -2,9 +2,10 @@
 
 import { stageBarButton } from "@/features/studio/components/studioUi";
 import React, { useId, useMemo, useState, useRef } from "react";
-import { BLEED_BOX_MM, DielineGeometry, CanvasElement, matchesPanel, safeMarginsOf, SAFE_MARGIN_CUT_MM, SAFE_MARGIN_CREASE_MM, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
+import { artDesignOf, BLEED_BOX_MM, DielineGeometry, CanvasElement, ean13Digits, matchesPanel, parseLibraryArt, safeMarginsOf, SAFE_MARGIN_CUT_MM, SAFE_MARGIN_CREASE_MM, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
 import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Info } from "lucide-react";
 import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
+import { ArtShapes, elementArt } from "../library/elementArt";
 import { formatMm } from "@/features/studio/utils/dieline";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
@@ -16,6 +17,15 @@ const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, 
 const NEW_TEXT_MARGIN_MM = SAFE_MARGIN_CUT_MM + 1;
 /** Loaded ahead, so the first text added is measured with its real font. */
 const NEW_TEXT_FONTS = [printFontOf(NEW_TEXT_STYLE.fontFamily)];
+/** Name of an element for the toolbar: its words, the name of its library design, or what kind of file it is. */
+function elementLabel(el: CanvasElement): string {
+  if (el.type === "text") return el.content || "Chữ";
+  if (el.type === "barcode") return ean13Digits(el.content) ? "Mã vạch" : "Mã QR";
+  const ref = parseLibraryArt(el.content);
+  if (ref) return artDesignOf(ref.design)?.name ?? "Tem";
+  return el.type === "pattern" ? "Hoa văn" : el.type === "logo" ? "Logo" : "Hình ảnh";
+}
+
 /** Bleed of the print file: the artwork may run this far past the cut lines. */
 const BLEED_MM = BLEED_BOX_MM;
 
@@ -100,7 +110,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     onTextComposerOpenChange?.(open);
   };
   // Changes once the fonts of the texts are loaded: texts first measured with a fallback font are laid out again.
-  const fontsVersion = useBoxFonts(elements, NEW_TEXT_FONTS);
+  // Fonts of the texts, of the library art (stickers, labels) and of the next text added.
+  const artFonts = useMemo(
+    () => [...NEW_TEXT_FONTS, ...elements.flatMap((el) => elementArt(el)?.texts.map((t) => t.font) ?? [])],
+    [elements]
+  );
+  const fontsVersion = useBoxFonts(elements, artFonts);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
   const padding = 35; // 35mm margin
@@ -425,7 +440,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <div className="flex items-center gap-2 pr-2.5 border-r border-white/20">
             <Move className="w-3.5 h-3.5 text-fpt-orange-ink animate-pulse" />
             <span className="font-semibold text-fpt-orange-ink truncate max-w-[110px]">
-              {selectedEl.content || "Phần tử"}
+              {elementLabel(selectedEl)}
             </span>
             <span className="font-mono text-cad-spec-micro text-landing-muted">
               {formatMm(selectedEl.width)}×{formatMm(selectedEl.height)}mm
@@ -844,6 +859,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
             // FitCheck flags it (safe margin on every side, bleed, glue flap…)
             const isMarginBreached = flaggedElementIds?.has(el.id) ?? false;
+            // Library art and barcodes are vectors, drawn like the print files.
+            const art = elementArt(el);
 
             return (
               <g
@@ -882,8 +899,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   <circle cx={elX + el.width} cy={elY} r="2.5" fill="#FF6B6B" />
                 )}
 
-                {/* Content: Image/Logo or Text */}
-                {el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
+                {/* Content: library art / barcode, Image/Logo, or Text */}
+                {art ? (
+                  <ArtShapes art={art} x={elX} y={elY} />
+                ) : el.type === "barcode" ? null : el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
                   <image
                     href={el.content}
                     x={elX}
