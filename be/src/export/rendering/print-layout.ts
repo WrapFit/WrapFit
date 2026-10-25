@@ -2,11 +2,14 @@
 // Geometry comes from the parametric engine of IT2 (`@wrapfit/shared`); nothing here depends on NestJS.
 import {
   fontSizeMmOf,
+  libraryArt,
+  MASCOT_FILES,
   PT_TO_MM,
   segmentPoints,
   type BoxDimensions,
   type CanvasElement,
   type DielineGeometry,
+  type VectorArt,
 } from '@wrapfit/shared';
 import { dielinePieces, matchesPanel } from '../../projects';
 
@@ -77,6 +80,11 @@ export interface PrintLayout {
   }[];
   /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white (mm, top-left of the box). */
   barcodes: { content: string; x: number; y: number; width: number; height: number; rotation: number }[];
+  /**
+   * Vector art of the built-in library (`wf-art:` contents), generated at the element size. Backgrounds print under the
+   * images, stickers and labels over them (mm, top-left of the element box; rotation around its centre).
+   */
+  arts: { art: VectorArt; background: boolean; x: number; y: number; width: number; height: number; rotation: number }[];
   /** Cut and crease lines joined end to end: die makers need unbroken cut lines. */
   strokes: Stroke[];
 }
@@ -202,11 +210,14 @@ export function buildPrintLayout(input: {
   const texts: PrintLayout['texts'] = [];
   const images: PrintLayout['images'] = [];
   const barcodes: PrintLayout['barcodes'] = [];
+  const arts: PrintLayout['arts'] = [];
   for (const element of input.elements) {
     const isText = element.type === 'text';
     const isBarcode = element.type === 'barcode';
-    const drawn =
-      isText || isBarcode ? !!element.content.trim() : IMAGE_TYPES.has(element.type) && /^https?:\/\//.test(element.content);
+    const art = IMAGE_TYPES.has(element.type) ? libraryArt(element.content, element.width, element.height) : null;
+    // Files: uploads (by URL) and Gói's drawings, which the worker ships.
+    const isFile = /^https?:\/\//.test(element.content) || (MASCOT_FILES as readonly string[]).includes(element.content);
+    const drawn = isText || isBarcode ? !!element.content.trim() : IMAGE_TYPES.has(element.type) && (!!art || isFile);
     if (!drawn) continue;
     // The first piece that has the panel wins (see matchesPanel for the accepted ids).
     const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
@@ -214,7 +225,10 @@ export function buildPrintLayout(input: {
     if (!piece || !panel) continue;
     const x = piece.x + panel.bounds.x + element.x;
     const y = piece.y + panel.bounds.y + element.y;
-    if (isBarcode) {
+    if (art) {
+      const { width, height, rotation } = element;
+      arts.push({ art, background: element.type === 'pattern', x, y, width, height, rotation });
+    } else if (isBarcode) {
       const content = element.content.trim();
       barcodes.push({ content, x, y, width: element.width, height: element.height, rotation: element.rotation });
     } else if (isText) {
@@ -248,6 +262,7 @@ export function buildPrintLayout(input: {
     texts,
     images,
     barcodes,
+    arts,
     strokes: pieces.flatMap(strokesOf),
   };
 }

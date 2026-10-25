@@ -149,6 +149,32 @@ function barcodeVectors(layout: PrintLayout) {
   });
 }
 
+/** Library art (`layout.arts`) of one kind: its shapes, and its texts outlined, in the coordinates of the element. */
+function artVectors(layout: PrintLayout, background: boolean) {
+  return layout.arts
+    .filter((a) => a.background === background)
+    .map((a) => ({
+      ...a,
+      cx: a.x + a.width / 2,
+      cy: a.y + a.height / 2,
+      texts: a.art.texts.map((t) => ({ d: labelPath(t.text, t.x, t.baseline, t.size, t.anchor === 'middle', t.font), color: t.color })),
+    }));
+}
+
+/** SVG group of library art: placed on the sheet, turned around the centre of its element. */
+function artSvg(a: ReturnType<typeof artVectors>[number]): string {
+  const turn = a.rotation ? `rotate(${n(a.rotation)} ${n(a.cx)} ${n(a.cy)}) ` : '';
+  const shapes = a.art.shapes.map(
+    (s) =>
+      `<path d="${s.d}" fill="${escapeXml(s.fill ?? 'none')}"` +
+      (s.stroke ? ` stroke="${escapeXml(s.stroke)}" stroke-width="${n(s.strokeWidth ?? LINE_MM)}"` : '') +
+      (s.round ? ' stroke-linecap="round" stroke-linejoin="round"' : '') +
+      '/>',
+  );
+  const texts = a.texts.filter((t) => t.d).map((t) => `<path d="${t.d}" fill="${escapeXml(t.color)}"/>`);
+  return `<g transform="${turn}translate(${n(a.x)} ${n(a.y)})">${shapes.join('')}${texts.join('')}</g>`;
+}
+
 /** Layered SVG (layers: artwork, crease, cut, dimensions) for cutting plotters such as Cricut or laser cutters. */
 export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): string {
   const rotate = (deg: number, cx: number, cy: number) => (deg ? ` transform="rotate(${n(deg)} ${n(cx)} ${n(cy)})"` : '');
@@ -179,7 +205,16 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): st
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n(layout.width)}mm" height="${n(layout.height)}mm" viewBox="0 0 ${n(layout.width)} ${n(layout.height)}">`,
-    layer('artwork', 'Artwork', '', images.join('') + texts.join('') + barcodes.join('')),
+    layer(
+      'artwork',
+      'Artwork',
+      '',
+      artVectors(layout, true).map(artSvg).join('') +
+        images.join('') +
+        artVectors(layout, false).map(artSvg).join('') +
+        texts.join('') +
+        barcodes.join(''),
+    ),
     layer('crease', 'Crease', ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes('crease')),
     layer('cut', 'CutContour', ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes('cut')),
     layer(
@@ -401,7 +436,22 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
   doc.scale(PT_PER_MM); // draw in mm from here on
   if (offsetX !== 0 || offsetY !== 0) doc.translate(offsetX, offsetY);
 
+  /** Library art in CMYK: shapes (fill and / or stroke), then its outlined texts. */
+  const drawArt = (a: ReturnType<typeof artVectors>[number]) =>
+    turned(a.rotation, a.cx, a.cy, () => {
+      doc.translate(a.x, a.y);
+      for (const shape of a.art.shapes) {
+        doc.lineCap(shape.round ? 'round' : 'butt').lineJoin(shape.round ? 'round' : 'miter');
+        doc.path(shape.d);
+        if (shape.fill && shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(hexToCmyk(shape.fill), hexToCmyk(shape.stroke));
+        else if (shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).stroke(hexToCmyk(shape.stroke));
+        else doc.fill(hexToCmyk(shape.fill ?? '#FFFFFF'));
+      }
+      for (const t of a.texts) if (t.d) doc.path(t.d).fill(hexToCmyk(t.color));
+    });
+
   beginLayer('Artwork');
+  for (const a of artVectors(layout, true)) drawArt(a);
   for (const image of layout.images) {
     const file = artwork.get(image.url);
     const prepared = file && (await prepareImage(file, image));
@@ -415,6 +465,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
       doc.addContent(`/${label} Do`);
     });
   }
+  for (const a of artVectors(layout, false)) drawArt(a);
   for (const t of textOutlines(layout)) {
     if (t.d) turned(t.rotation, t.cx, t.cy, () => doc.path(t.d).fill(t.cmyk));
   }

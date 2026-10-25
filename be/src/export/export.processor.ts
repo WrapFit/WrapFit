@@ -8,6 +8,7 @@ import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
+import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
 import { Artwork, imageResolutions, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';
@@ -153,6 +154,11 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     let total = 0;
     for (const { url } of layout.images) {
       if (artwork.has(url)) continue;
+      const builtIn = libraryFile(url);
+      if (builtIn) {
+        artwork.set(url, builtIn);
+        continue;
+      }
       const key = this.storage.uploadedKeyOf(url);
       if (!key) {
         this.logger.warn(`Export leaves out an image that is not an upload of this platform: ${url}`);

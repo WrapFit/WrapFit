@@ -5,6 +5,7 @@
   "entryFile": "app",
   "compilerOptions": {
     "deleteOutDir": true,
+    "assets": [{ "include": "export/rendering/library/**/*.webp", "outDir": "dist" }],
     "plugins": [
       {
         "name": "@nestjs/swagger",
