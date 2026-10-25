@@ -5,7 +5,7 @@ import type {
   MaterialSpecification,
   MaterialType,
 } from "@wrapfit/shared";
-import { caliperOf } from "@wrapfit/shared";
+import { caliperOf, dressTemplate, generatedTemplates } from "@wrapfit/shared";
 import type {
   BoxStructure,
   CommunityCard,
@@ -34,7 +34,8 @@ export const DEMO_BOX_STRUCTURES: BoxStructure[] = BOX_STRUCTURES.map((s) => ({
   },
 }));
 
-export const DEMO_CURATED_TEMPLATES: CuratedCard[] = [
+/** Hand-written demo cards (sizes and looks); their artwork is dressed from the style kits when opened. */
+const DEMO_CURATED_CARDS: CuratedCard[] = [
   // --- HỘP ÂM DƯƠNG (LID & BASE) ---
   {
     id: "curated-tet-luxury",
@@ -672,13 +673,49 @@ const DEFAULT_LIMITS: DimensionLimits = {
   paperThickness: { min: 0.15, max: 0.8 },
 };
 
+let curated: CuratedCard[] | null = null;
+
+/**
+ * Curated templates without the API: the demo cards, then the templates generated from the style kits of
+ * @wrapfit/shared (the API seeds the same ones, with the same ids). Built on first use.
+ */
+export function demoCuratedTemplates(): CuratedCard[] {
+  if (!curated) {
+    const names = new Map(DEMO_BOX_STRUCTURES.map((s) => [s.id, s.name]));
+    curated = [
+      ...DEMO_CURATED_CARDS,
+      ...generatedTemplates().map((t, i): CuratedCard => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        structure: { id: t.structure, name: names.get(t.structure) ?? t.structure },
+        occasion: t.occasion,
+        industry: t.industry,
+        dimensions: t.dimensions,
+        materialSpec: t.materialSpec,
+        color: t.color,
+        thumbnailUrl: null,
+        tags: t.tags,
+        usesCount: 30 + ((i * 37) % 260),
+      })),
+    ];
+  }
+  return curated;
+}
+
 export function getDemoTemplateDetail(id: string): TemplateDetail | null {
-  const card = DEMO_CURATED_TEMPLATES.find((t) => t.id === id) ?? DEMO_CURATED_TEMPLATES[0];
+  const all = demoCuratedTemplates();
+  const card = all.find((t) => t.id === id) ?? all[0];
   if (!card) return null;
+  // Generated templates carry their artwork; the demo cards get a style kit of their occasion dressed on their box.
+  const generated = generatedTemplates().find((t) => t.id === card.id);
+  const elements =
+    generated?.canvasState.elements ??
+    dressTemplate({ structure: card.structure.id, dimensions: card.dimensions, occasion: card.occasion, title: card.title, seed: card.id });
   return {
     ...card,
     canvasState: {
-      elements: [],
+      elements,
       backgroundPattern: null,
       backgroundTheme: null,
       materialTheme: card.materialSpec.type === "kraft" ? "kraft" : "ivory",
@@ -730,7 +767,7 @@ export function getDemoPublicProject(slug: string): PublicProject | null {
 }
 
 export function filterCuratedTemplates(filters: Partial<HubFilters>): CuratedCard[] {
-  return DEMO_CURATED_TEMPLATES.filter((item) => {
+  return demoCuratedTemplates().filter((item) => {
     if (filters.structure && item.structure.id !== filters.structure) return false;
     if (filters.occasion && item.occasion !== filters.occasion) return false;
     if (filters.industry && item.industry !== filters.industry) return false;
@@ -793,7 +830,7 @@ export function getStructureTemplateCounts(tab: "curated" | "community"): Record
     "sticker-label": 0,
   };
 
-  const list = tab === "curated" ? DEMO_CURATED_TEMPLATES : DEMO_COMMUNITY_TEMPLATES;
+  const list = tab === "curated" ? demoCuratedTemplates() : DEMO_COMMUNITY_TEMPLATES;
   for (const item of list) {
     if (item.structure.id in counts) {
       counts[item.structure.id]++;

@@ -70,7 +70,7 @@ import { FormulaUpgrade } from "@/features/studio/components/formula/FormulaUpgr
 
 // Code splitting: panels and dialogs opened on demand load their own chunk the first time they are needed, so the
 // studio's first paint only waits for the dieline canvas and the 3D view.
-const StickerAssetBank = dynamic<React.ComponentProps<typeof import("@/features/studio/components/StickerAssetBank").StickerAssetBank>>(() => import("@/features/studio/components/StickerAssetBank").then((m) => m.StickerAssetBank), { ssr: false });
+const LibraryPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/library/LibraryPanel").LibraryPanel>>(() => import("@/features/studio/components/library/LibraryPanel").then((m) => m.LibraryPanel), { ssr: false });
 const AiPatternPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/ai-pattern/AiPatternPanel").AiPatternPanel>>(() => import("@/features/studio/components/ai-pattern/AiPatternPanel").then((m) => m.AiPatternPanel), { ssr: false });
 const VersionConflictDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/sync/VersionConflictDialog").VersionConflictDialog>>(() => import("@/features/studio/components/sync/VersionConflictDialog").then((m) => m.VersionConflictDialog), { ssr: false });
 const ExportDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/export/ExportDialog").ExportDialog>>(() => import("@/features/studio/components/export/ExportDialog").then((m) => m.ExportDialog), { ssr: false });
@@ -1140,7 +1140,26 @@ export function StudioWorkspace({
                 {/* TAB 2: STICKERS & ASSET BANK */}
                 {activeInspectorTab === "stickers" && placementPanel && (
                   <div className="animate-fadeIn">
-                    <StickerAssetBank activePanelId={placementPanel.id} onAddElement={handleAddElement} />
+                    <LibraryPanel
+                      panel={placementPanel}
+                      geometry={dieline}
+                      onAddElement={(element: CanvasElement) => {
+                        // Backgrounds go under the other elements of the panel, like AI patterns.
+                        if (element.type === "pattern") handleInsertPattern(element);
+                        else handleAddElement(element);
+                        setSelectedElementId(element.id);
+                      }}
+                      selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
+                      onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
+                      box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
+                      onApplyKit={(kitElements: CanvasElement[]) =>
+                        // The previous kit's elements go, the user's own stay; the kit's backgrounds go under them.
+                        setElements((prev) => {
+                          const own = prev.filter((el) => !el.id.startsWith("kit_"));
+                          return [...kitElements.filter((el) => el.type === "pattern"), ...own, ...kitElements.filter((el) => el.type !== "pattern")];
+                        })
+                      }
+                    />
                   </div>
                 )}
 
