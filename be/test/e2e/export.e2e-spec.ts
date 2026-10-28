@@ -206,7 +206,7 @@ describe('Print export (e2e)', () => {
             elements: [
               element('on-base', 'text', 'base_front'),
               element('on-lid', 'text', 'lid_top'),
-              element('blurry', 'image', 'lid_top', { x: 10, y: 10, dpi: 120 }),
+              element('blurry', 'image', 'lid_top', { x: 10, y: 10, dpi: 200 }),
             ],
           },
         })
