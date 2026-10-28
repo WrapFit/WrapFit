@@ -13,6 +13,8 @@ import { artMarkup, elementArt } from "../components/library/elementArt";
 const PAPER_FILL: Record<string, string> = {
   ivory: "#FDFBF7",
   kraft: "#E3CBB2",
+  duplex: "#F7F7F3",
+  rigid: "#FBFAF6",
   forest: "#1A362B",
   gold_foil: "#F4E7C1",
 };

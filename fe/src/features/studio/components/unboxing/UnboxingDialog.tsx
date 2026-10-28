@@ -43,13 +43,15 @@ interface UnboxingDialogProps {
   onClose: () => void;
   /** The box on screen: the offline QR code (no backend) carries it to the recipient's page. */
   box?: Pick<OfflineGift, "title" | "structure" | "dimensions" | "materialTheme" | "senderName">;
+  /** Puts the QR code of `url` on the box as a printed vector element (studio step 5). */
+  onPlaceOnBox?: (url: string) => void;
 }
 
 /** The API cannot be reached (offline demo, server down), as opposed to an answer of the server. */
 const unreachable = (err: unknown) => !(err instanceof ApiError) || err.status >= 500;
 
 /** 3D unboxing page of the gift and its QR code (docs/06 §10): create, edit, download the QR, delete. */
-export function UnboxingDialog({ projectId, onClose, box }: UnboxingDialogProps) {
+export function UnboxingDialog({ projectId, onClose, box, onPlaceOnBox }: UnboxingDialogProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const key = queryKeys.projects.unboxing(projectId);
@@ -294,6 +296,19 @@ export function UnboxingDialog({ projectId, onClose, box }: UnboxingDialogProps)
                 <Download className="w-4 h-4" aria-hidden /> QR SVG (in)
               </a>
             </div>
+
+            {onPlaceOnBox && (
+              <button
+                type="button"
+                onClick={() => {
+                  onPlaceOnBox(config.data!.unboxUrl);
+                  onClose();
+                }}
+                className="min-h-[44px] w-full px-4 rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold flex items-center justify-center gap-1.5"
+              >
+                <QrCode className="w-4 h-4" aria-hidden /> Đặt mã lên hộp (in vector đen K100)
+              </button>
+            )}
 
             <a
               href={config.data.unboxUrl}

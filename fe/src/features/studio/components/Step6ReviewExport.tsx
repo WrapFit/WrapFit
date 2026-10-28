@@ -1,25 +1,18 @@
 "use client";
 
-import { BLEED_MM, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, Download, Gift, Grid3x3, QrCode, Sparkles, Wand2 } from "lucide-react";
+import { BLEED_MM, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
+import { AlertTriangle, ArrowLeft, Box, Check, Download, Gift, Grid3x3, Sparkles, Wand2 } from "lucide-react";
 import React, { useState } from "react";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
-import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
+import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
+import { QuoteCard } from "./QuoteCard";
 
-type Environment = "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow";
 
-const ENVIRONMENTS: { id: Environment; name: string; color: string }[] = [
-  { id: "studio", name: "Studio", color: "#ECE8E1" },
-  { id: "marble", name: "Đá cẩm thạch", color: "#F8FAFC" },
-  { id: "kraft_wood", name: "Gỗ mộc", color: "#C29B61" },
-  { id: "forest_velvet", name: "Nhung xanh", color: "#064E3B" },
-  { id: "festive_glow", name: "Không khí Tết", color: "#FED7AA" },
-];
 
 /** The rules of the shared FitCheck, grouped as a print shop reads them. */
 const RULES: { title: string; detail: string; codes: FitCheckErrorCode[] }[] = [
@@ -38,6 +31,7 @@ interface Step6ReviewExportProps {
   boxType: BoxStructureType;
   dimensions: BoxDimensions;
   activeMaterial: BoxMaterialTheme;
+  finishes: QuoteFinish[];
   elements: CanvasElement[];
   backgroundPatternSvg: string | null;
   formulaVersion?: number;
@@ -45,46 +39,54 @@ interface Step6ReviewExportProps {
   report: FitCheckReport;
   /** The server refused the last export with this report. */
   blocked: boolean;
+  /** Title of the design (quote summary) and its project (null: offline demo). */
+  title: string;
+  projectId: string | null;
   onBack(): void;
   onAutoFix(): void;
   onExport(): void;
-  onOpenQr(): void;
+  /** Back to the design step with the library open (an empty box). */
+  onDesign(): void;
 }
 
-/** Step 6: the print file as the shop gets it, the FitCheck™ certificate, then the export. */
+/** Step 6: the print file as the shop gets it, the FitCheck™ certificate, the quote and the sample order, the export. */
 export function Step6ReviewExport({
   structureName,
   boxType,
   dimensions,
   activeMaterial,
+  finishes,
   elements,
   backgroundPatternSvg,
   formulaVersion,
   pieces,
   report,
   blocked,
+  title,
+  projectId,
   onBack,
   onAutoFix,
   onExport,
-  onOpenQr,
+  onDesign,
 }: Step6ReviewExportProps) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [pieceIndex, setPieceIndex] = useState(0);
-  const [env, setEnv] = useState<Environment>("studio");
   const [fold, setFold] = useState(100);
   const [open, setOpen] = useState(false);
-  const paper = PAPER_STOCKS.find((item) => item.theme === activeMaterial) ?? PAPER_STOCKS[0];
+  const paper = paperStockOf(activeMaterial);
   const fits = sheetFits(pieces);
   const errors = report.violations.filter((v) => v.severity === "error").length;
-  const warnings = report.violations.length - errors;
+  const warnings = report.violations.filter((v) => v.severity === "warning").length;
   const passed = errors === 0;
+  // No artwork: a plain box can be printed, but it is not "print-ready art".
+  const empty = report.violations.some((v) => v.code === "EMPTY_DESIGN");
   const fixable = report.violations.some((v) => ["CUT_OVERLAP", "CREASE_OVERLAP", "BLEED_INSUFFICIENT"].includes(v.code));
   const piece = pieces[pieceIndex] ?? pieces[0];
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
       <StepHeader
-        title="Sẵn sàng gửi xưởng in"
+        title="Kiểm tra & đặt in"
         subtitle={`${structureName} · ${dimensions.length} × ${dimensions.width} × ${dimensions.height} mm · ${paper.name}`}
       />
 
@@ -109,26 +111,6 @@ export function Step6ReviewExport({
                 options={pieces.map((p, index) => ({ value: String(index), label: p.name }))}
               />
             )}
-            {view === "3d" && (
-              <div role="radiogroup" aria-label="Bối cảnh" className="flex flex-wrap gap-1.5">
-                {ENVIRONMENTS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={env === item.id}
-                    onClick={() => setEnv(item.id)}
-                    className={cn(
-                      "inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium transition-colors",
-                      env === item.id ? "bg-landing-green-night text-white" : "bg-landing-canvas text-landing-ink hover:bg-landing-tile",
-                    )}
-                  >
-                    <span aria-hidden className="size-3.5 rounded-full ring-1 ring-black/15" style={{ backgroundColor: item.color }} />
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="relative mx-4 flex-1 overflow-hidden rounded-squircle-md bg-landing-canvas">
@@ -145,7 +127,6 @@ export function Step6ReviewExport({
                   elements={elements}
                   backgroundPatternSvg={backgroundPatternSvg}
                   formulaVersion={formulaVersion}
-                  environment={env}
                   interactiveOpenState={open}
                   showHud={false}
                   showStatusBar={false}
@@ -199,7 +180,20 @@ export function Step6ReviewExport({
 
         {/* Report */}
         <div className="flex flex-col gap-4">
-          <StudioCard data-tour="s6-status" className={cn("p-5", passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
+          <StudioCard data-tour="s6-status" className={cn("p-5", empty ? "bg-surface-sunken" : passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
+            {empty ? (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
+                  <p className="mt-1 font-landing-heading text-xl font-bold text-landing-ink">Hộp trơn, chưa có hình in</p>
+                  <p className="mt-1 text-sm text-landing-muted">In được như một hộp màu giấy. Thêm chữ, tem hoặc áp một phong cách để FitCheck kiểm tra hình in.</p>
+                </div>
+                <button type="button" onClick={onDesign} className={`${SECONDARY_PILL} w-full bg-surface-raised`}>
+                  <Sparkles className="size-4" aria-hidden />
+                  Áp phong cách cho hộp
+                </button>
+              </div>
+            ) : (
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
@@ -213,6 +207,7 @@ export function Step6ReviewExport({
                 <span className="text-base font-semibold text-landing-muted">/100</span>
               </p>
             </div>
+            )}
             {blocked && (
               <p role="alert" className="mt-3 flex gap-2 rounded-2xl bg-white p-3 text-sm text-danger-fg">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -259,17 +254,17 @@ export function Step6ReviewExport({
             )}
           </StudioCard>
 
-          <StudioCard data-tour="s6-qr" className="bg-stone-900 p-5 text-white">
-            <p className="flex items-center gap-2 font-landing-heading text-lg font-bold">
-              <QrCode className="size-5 text-fpt-orange" aria-hidden />
-              Mã QR mở hộp
-            </p>
-            <p className="mt-1.5 text-sm leading-6 text-white/80">In mã lên hộp: người nhận quét để mở hộp 3D cùng lời chúc của bạn.</p>
-            <button type="button" onClick={onOpenQr} className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-fpt-orange text-sm font-semibold text-white transition-colors hover:bg-fpt-orange-dark shadow-xs">
-              <Sparkles className="size-4" aria-hidden />
-              Tạo lời chúc & mã QR
-            </button>
-          </StudioCard>
+          <QuoteCard
+            structure={boxType}
+            pieces={pieces}
+            dimensions={dimensions}
+            formulaVersion={formulaVersion}
+            material={activeMaterial}
+            finishes={finishes}
+            title={title}
+            projectId={projectId}
+            blocked={!passed}
+          />
         </div>
       </div>
 
@@ -277,19 +272,19 @@ export function Step6ReviewExport({
         back={
           <button type="button" onClick={onBack} className={SECONDARY_PILL}>
             <ArrowLeft className="size-4" aria-hidden />
-            Sửa thiết kế
+            Quà & mở hộp
           </button>
         }
         summary={
           <>
-            <span className="block text-xs">Định dạng file in</span>
-            <span className="text-landing-ink">PDF CMYK 300 DPI · SVG · DXF</span>
+            <span className="block text-xs">Gói file in</span>
+            <span className="text-landing-ink">.ai · PDF CMYK · JPG đối chiếu · SVG · DXF</span>
           </>
         }
         next={
           <button type="button" data-tour="s6-export" onClick={onExport} disabled={!passed} title={passed ? undefined : "Sửa các lỗi FitCheck trước khi xuất"} className={PRIMARY_PILL}>
             <Download className="size-4" aria-hidden />
-            Xuất file in
+            Tải gói file in
           </button>
         }
       />

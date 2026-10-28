@@ -10,6 +10,7 @@
     "build:shared": "npm run build --prefix ../shared",
     "build": "next build",
     "start": "next start",
+    "demo": "next build && next start -p 3000",
     "lint": "next lint",
     "stitch:sync": "node scripts/stitch/sync.mjs",
     "stitch:parity": "node scripts/stitch/visual-parity.mjs",
