@@ -113,7 +113,10 @@ describe('FitCheck (shared by the editor and the server)', () => {
       { ...dimensions, length: 320, width: 220 },
       3,
     );
-    expect(codes([], big)).toEqual([['DIMENSION_OUT_OF_BOUNDS', 'warning']]);
+    expect(codes([], big)).toEqual([
+      ['DIMENSION_OUT_OF_BOUNDS', 'warning'],
+      ['EMPTY_DESIGN', 'info'],
+    ]);
   });
 
   it('scores 100 − 30 per error − 10 per warning', () => {

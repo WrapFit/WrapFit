@@ -200,4 +200,11 @@ export class CanvasStateDto implements CanvasState {
   @IsOptional()
   @Matches(PRESET_ID, { message: PRESET_ID_MESSAGE })
   materialTheme?: string | null;
+
+  @ApiPropertyOptional({ type: [String], example: ['matte-lamination', 'foil'], description: 'Finishes of the print shop (QuoteFinish)' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @IsIn(['matte-lamination', 'gloss-lamination', 'soft-touch-lamination', 'foil', 'spot-uv'], { each: true })
+  finishes?: string[];
 }
