@@ -42,6 +42,7 @@ src/
   worker.ts                # khởi động worker BullMQ (không mở cổng HTTP) -> dist/worker.js
   repl.ts                  # shell tương tác trên module API: npm run start:repl
   mail-test.ts             # gửi thử 1 email bằng cấu hình SMTP hiện tại
+  storage-check.ts         # kiểm tra kết nối bucket R2 / S3 và Cloudinary (chỉ đọc): npm run storage:check
   app.middleware.ts        # cấu hình dùng chung (request id, helmet, CORS, prefix /api, ValidationPipe)
   app.module.ts            # ghép module + guard/filter/interceptor toàn cục
   swagger.ts
@@ -57,6 +58,7 @@ src/
     prisma/                # PrismaModule (global) + PrismaService
     queue/                 # kết nối BullMQ (Redis)
     redis/                 # RedisModule (global): client ioredis `REDIS` cho bộ đếm nhỏ (đăng nhập sai, lượt xem)
+    cloudinary/            # CloudinaryModule (global): CloudinaryService, CDN ảnh công khai (chưa dùng)
   auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
   base/                    # GET /api/health
   users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
@@ -160,6 +162,9 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | `storage.accessKeyId` / `.secretAccessKey` | – | Khóa API của bucket (R2: *R2 API Token*) |
 | `STORAGE_PUBLIC_URL` | `storage.publicUrl` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
 | `STORAGE_FORCE_PATH_STYLE` | `storage.forcePathStyle` | `false` | `true` cho SeaweedFS |
+| `STORAGE_BACKUP_BUCKET` | `storage.backupBucket` | *(trống)* | Bucket R2 không công khai chứa bản dump DB đã mã hóa; job backup ghi, API không dùng. Chỉ `storage:check` đọc |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | `cloudinary.cloudName` / `.apiKey` / `.apiSecret` | *(trống)* | CDN ảnh công khai (`shared/cloudinary`). Đặt cả ba hoặc để trống cả ba (= tắt). Hiện chỉ có kết nối, chưa có dữ liệu nào đi qua |
+| `CLOUDINARY_FOLDER` | `cloudinary.folder` | `wrapfit` | Thư mục gốc của môi trường trên Cloudinary, vd. `wrapfit-dev` ở máy dev |
 | `ANTHROPIC_API_KEY` | `ai.anthropicApiKey` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
 | `AI_MODEL` | `ai.model` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
 | `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
@@ -304,6 +309,16 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 4. **Create bucket** thứ hai `wrapfit-private` cho file xuất in: **không** gắn Custom Domain, **không** bật `r2.dev`. CORS chỉ cần `GET` từ `https://wrapfit.vn` (trình duyệt tải file qua link pre-signed).
 5. **R2** → **Manage R2 API Tokens** → **Create API token**, quyền *Object Read & Write*, chỉ hai bucket `wrapfit` và `wrapfit-private` → lấy *Access Key ID* / *Secret Access Key*. *Account ID* nằm trong endpoint `https://<account-id>.r2.cloudflarestorage.com`.
 6. Điền vào `.env`: `STORAGE_ENDPOINT`, `STORAGE_REGION=auto`, `STORAGE_BUCKET=wrapfit`, `STORAGE_PRIVATE_BUCKET=wrapfit-private`, hai khóa, `STORAGE_PUBLIC_URL`, `STORAGE_FORCE_PATH_STYLE=false`.
+7. (Tùy chọn, cho backup DB) **Create bucket** thứ ba `wrapfit-backups`: không Custom Domain, không `r2.dev`, không CORS; thêm **Lifecycle rule** xóa object sau 30 ngày. Job backup nên dùng một API token riêng chỉ có quyền ghi bucket này. Đặt `STORAGE_BACKUP_BUCKET=wrapfit-backups`.
+8. Kiểm tra: `npm --workspace=be run storage:check` (container: `docker compose exec backend node dist/storage-check.js`) gọi `HeadBucket` trên từng bucket đã khai báo và báo `OK` hoặc mã lỗi HTTP (403 = token thiếu quyền bucket đó, 404 = sai tên bucket). Không ghi gì.
+
+**Cloudinary (CDN ảnh công khai)**: theo kế hoạch lưu trữ hybrid (`docs/wrapfit_architecture_security_blueprint.md`, mục 4), avatar, logo, texture AI và thumbnail sẽ chuyển sang Cloudinary (resize, `f_auto,q_auto`); file xuất in và backup ở lại R2. Hiện mới có kết nối (`src/shared/cloudinary`, `CloudinaryService` toàn cục), **chưa** có upload hay URL nào của ứng dụng đi qua Cloudinary: mọi file vẫn nằm trên R2 như trên.
+
+1. Tạo tài khoản tại [cloudinary.com](https://cloudinary.com) (gói Free). **Dashboard** → *Product Environment* hiện *Cloud name*.
+2. **Settings** → **API Keys** → **Generate New API Key** → lấy *API Key* / *API Secret*. Không commit secret.
+3. **Settings** → **Security**: bật *Strict transformations* (chỉ cho phép transformation đã khai báo, chống người lạ dùng hạn mức) và tắt *Allow delivery of PDF and ZIP files* (để mặc định tắt).
+4. Điền vào `.env`: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER` (`wrapfit-dev` ở máy dev, `wrapfit` ở production để không lẫn file).
+5. `npm --workspace=be run storage:check` phải báo `Cloudinary "<cloud name>": OK`.
 
 File xuất in tạo trước khi có bucket riêng tư (key `projects/<id>/exports/...`) vẫn nằm trong bucket công khai và vẫn tải được; chúng bị xóa cùng dự án như trước.
 

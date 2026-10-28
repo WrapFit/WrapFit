@@ -51,6 +51,15 @@ export const config = (env: EnvironmentVariables) => ({
     secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
     publicUrl: env.STORAGE_PUBLIC_URL,
     forcePathStyle: env.STORAGE_FORCE_PATH_STYLE === 'true',
+    /** Encrypted database dumps, written by the backup job. Empty = none. */
+    backupBucket: env.STORAGE_BACKUP_BUCKET,
+  },
+  /** Public image CDN (shared/cloudinary). `cloudName` empty = disabled. */
+  cloudinary: {
+    cloudName: env.CLOUDINARY_CLOUD_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
+    folder: env.CLOUDINARY_FOLDER,
   },
   /** `anthropicApiKey` empty = built-in procedural patterns only. */
   ai: {

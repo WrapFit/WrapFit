@@ -158,6 +158,12 @@ services:
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
       STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+      STORAGE_BACKUP_BUCKET: ${STORAGE_BACKUP_BUCKET:-}
+      # Optional: Cloudinary public image CDN (all three empty = disabled)
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-wrapfit}
       # Optional: AI pattern generator (empty key = procedural patterns only)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-claude-opus-5-5}

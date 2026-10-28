@@ -41,4 +41,12 @@ describe('validateEnv', () => {
       /STORAGE_SECRET_ACCESS_KEY, STORAGE_PUBLIC_URL/,
     );
   });
+
+  it('allows Cloudinary to be disabled, but not half configured', () => {
+    expect(validateEnv(valid).CLOUDINARY_CLOUD_NAME).toBe('');
+    expect(validateEnv(valid).CLOUDINARY_FOLDER).toBe('wrapfit');
+    expect(() => validateEnv({ ...valid, CLOUDINARY_CLOUD_NAME: 'wrapfit', CLOUDINARY_API_KEY: 'key' })).toThrow(
+      /CLOUDINARY_API_SECRET/,
+    );
+  });
 });
