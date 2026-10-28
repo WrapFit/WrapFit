@@ -86,12 +86,16 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
               className={`p-3 rounded-xl border text-xs space-y-1 ${
                 v.severity === "error"
                   ? "bg-danger-bg/60 border-danger/30 text-danger-fg"
-                  : "bg-warning-bg/60 border-warning/30 text-warning-fg"
+                  : v.severity === "info"
+                    ? "bg-info-bg/60 border-info/30 text-info-fg"
+                    : "bg-warning-bg/60 border-warning/30 text-warning-fg"
               }`}
             >
               <div className="flex items-center gap-1.5 font-bold">
                 {v.severity === "error" ? (
                   <AlertCircle className="w-3.5 h-3.5 text-danger-fg flex-shrink-0" />
+                ) : v.severity === "info" ? (
+                  <Info className="w-3.5 h-3.5 text-info-fg flex-shrink-0" />
                 ) : (
                   <AlertTriangle className="w-3.5 h-3.5 text-warning-fg flex-shrink-0" />
                 )}

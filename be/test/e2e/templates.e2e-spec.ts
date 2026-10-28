@@ -98,7 +98,9 @@ describe('Template hub (e2e)', () => {
     it('combines filters', async () => {
       const body = await hub('occasion=TET&industry=CANDLES&structure=tuck-top&material=kraft&limit=49');
       expect(body.items.map((c: { id: string }) => c.id)).toContain(TET_CANDLE);
-      expect((await hub('occasion=TET&industry=JEWELRY&limit=48')).items).toEqual([]);
+      const jewelry = (await hub('occasion=TET&industry=JEWELRY&limit=48')).items;
+      for (const c of jewelry) expect(c).toMatchObject({ occasion: 'TET', industry: 'JEWELRY' });
+      expect((await hub('occasion=TET&industry=JEWELRY&structure=lid-base&material=kraft&limit=48')).items).toEqual([]);
     });
 
     it('validates the filters', async () => {

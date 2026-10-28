@@ -24,6 +24,7 @@ import { BaseModule } from './base';
 import { ProjectsModule } from './projects';
 import { PublicShowcaseModule } from './public-showcase';
 import { StorageMaintenanceModule, StorageModule } from './storage';
+import { LibraryModule } from './library';
 import { TemplatesModule } from './templates';
 import { UnboxingModule } from './unboxing';
 import { UsersModule } from './users';
@@ -55,6 +56,7 @@ import { RedisModule } from './shared/redis';
     CollectionsModule,
     PublicShowcaseModule,
     TemplatesModule,
+    LibraryModule,
     AiModule,
     UnboxingModule,
     ExportModule,

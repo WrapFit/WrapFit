@@ -99,11 +99,19 @@ jobs:
             chrislusf/seaweedfs:4.48 server -dir=/data -s3 -s3.port=8333 \
             -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=64
           for i in $(seq 1 30); do
-            docker exec wrapfit-storage wget -q -O /dev/null http://127.0.0.1:9333/cluster/status && break
+            if docker exec wrapfit-storage wget -q -O /dev/null http://127.0.0.1:9333/cluster/status && \
+               docker exec wrapfit-storage wget -q -O /dev/null http://127.0.0.1:8888/; then
+              break
+            fi
             sleep 2
           done
           for b in wrapfit wrapfit-private; do
-            echo "s3.bucket.create -name $b" | docker exec -i wrapfit-storage weed shell -master=127.0.0.1:9333
+            for i in $(seq 1 15); do
+              if echo "s3.bucket.create -name $b" | docker exec -i wrapfit-storage weed shell -master=127.0.0.1:9333; then
+                break
+              fi
+              sleep 2
+            done
           done
 
       - name: Install Dependencies

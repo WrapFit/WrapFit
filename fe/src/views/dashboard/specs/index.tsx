@@ -6,7 +6,7 @@
  * `@wrapfit/shared` (the same validator runs in the editor and on the server).
  */
 
-import { BLEED_MM, MAX_SHEET_MM, MIN_DPI, SAFE_MARGIN_MM } from '@wrapfit/shared';
+import { BLEED_MM, HARD_MIN_DPI, MAX_SHEET_MM, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM } from '@wrapfit/shared';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
@@ -32,15 +32,17 @@ const LAYERS = [
   { name: 'Đường cắt (CutContour)', text: 'Viền dao bế bên ngoài.', stroke: '#E53E3E', dash: undefined },
   { name: 'Đường gấp (Crease)', text: 'Nơi giấy được cấn để gấp.', stroke: '#3182CE', dash: '4 4' },
   { name: `Tràn lề ≥ ${BLEED_MM} mm`, text: 'Nền in kéo ra ngoài đường cắt.', stroke: '#38A169', dash: '1 3' },
-  { name: `Vùng an toàn ≥ ${SAFE_MARGIN_MM} mm`, text: 'Chữ, logo, mã vạch nằm trong vùng này.', stroke: '#D4AF37', dash: '6 3' },
+  { name: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm (cắt) / ${SAFE_MARGIN_CREASE_MM} mm (gấp)`, text: 'Chữ, logo, mã vạch nằm trong vùng này.', stroke: '#D4AF37', dash: '6 3' },
 ] as const;
 
 /** Rules of `checkBox`: severity and what it costs on the score. */
 const RULES = [
-  { title: 'Phần tử chạm đường cắt hoặc nếp gấp', text: `Cách mép dưới ${SAFE_MARGIN_MM} mm là cảnh báo, dưới 1 mm là lỗi.`, severity: 'error' as const },
+  { title: 'Phần tử chạm đường cắt hoặc nếp gấp', text: `Cách đường cắt dưới ${SAFE_MARGIN_CUT_MM} mm hoặc nếp gấp dưới ${SAFE_MARGIN_CREASE_MM} mm là cảnh báo, dưới 1 mm là lỗi.`, severity: 'error' as const },
   { title: 'Hình in lên mép dán', text: 'Mực trên mép dán làm keo không bám.', severity: 'error' as const },
   { title: 'Thiếu tràn lề', text: `Nền chưa phủ ra ngoài đường cắt ${BLEED_MM} mm.`, severity: 'warning' as const },
-  { title: 'Ảnh độ phân giải thấp', text: `Ảnh dưới ${MIN_DPI} DPI ở kích thước in.`, severity: 'warning' as const },
+  { title: 'Ảnh độ phân giải thấp', text: `Ảnh dưới ${MIN_DPI} DPI ở kích thước in; dưới ${HARD_MIN_DPI} DPI là lỗi.`, severity: 'warning' as const },
+  { title: 'Nét chữ quá mảnh', text: `Font có chân cỡ nhỏ có nét mảnh dưới ${MIN_LINE_MM} mm: ghi chú, không trừ điểm.`, severity: 'warning' as const },
+  { title: 'Mã vạch / QR không quét được', text: 'Mã quá nhỏ (cảnh báo) hoặc sai số kiểm tra EAN-13 (lỗi).', severity: 'error' as const },
   { title: 'Phôi lớn hơn khổ B1', text: `Phôi trải phẳng vượt ${MAX_SHEET_MM.long} × ${MAX_SHEET_MM.short} mm.`, severity: 'warning' as const },
   { title: 'Phần tử nằm ngoài mặt hộp', text: 'Phần tử không thuộc mặt nào của khuôn bế.', severity: 'warning' as const },
 ];

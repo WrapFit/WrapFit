@@ -3,6 +3,8 @@
 // speaking URLs (`thumbnailUrl`, `avatarUrl`, canvas `content`): they are built here when a row is read and turned
 // back into keys when a request is saved. Plain functions so mappers and the worker can use them without DI.
 
+import { parseLibraryArt } from '@wrapfit/shared';
+
 /** Canvas element types whose `content` is the URL of a file (an upload, a static asset or an external image). */
 const FILE_ELEMENT_TYPES = new Set(['logo', 'image', 'pattern']);
 
@@ -62,7 +64,8 @@ function pointsElsewhere(content: string): boolean {
  * data URL: the public pages (`/p/<slug>`, unboxing) would load it in the browser of every viewer.
  */
 export function isAllowedFileContent(content: string): boolean {
-  return isUploadKey(content) || uploadKeyOf(content) !== null || !pointsElsewhere(content);
+  // Built-in library art (`wf-art:<design>?…`) is drawn from code, never fetched.
+  return isUploadKey(content) || uploadKeyOf(content) !== null || !pointsElsewhere(content) || parseLibraryArt(content) !== null;
 }
 
 /** Media played by a public page (unboxing music): an upload of WrapFit or a path of the frontend. */

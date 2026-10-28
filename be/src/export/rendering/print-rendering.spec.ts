@@ -10,11 +10,13 @@ import {
   UnsupportedStructureError,
 } from './print-layout';
 import { CURRENT_FORMULA_VERSION, layoutTextBox, printFontOf, PT_TO_MM } from '@wrapfit/shared';
+import { strFromU8, unzipSync } from 'fflate';
+import { renderPrintPackage } from './print-package';
 import {
   Artwork,
-  BLEED_MM,
-  canEmbedInPdf,
+  BLEED_BOX_MM,
   hexToCmyk,
+  imageResolutions,
   PRINT_LAYERS,
   renderDxf,
   renderPdf,
@@ -94,18 +96,19 @@ describe('print layout', () => {
     expect(layoutOf('tuck-top', [{ ...greeting, panelId: 'nowhere' }]).texts).toEqual([]);
   });
 
-  it('places logos, images and patterns given by URL; skips barcodes and inline content', () => {
+  it('places logos, images and patterns given by URL, and barcodes; skips inline content', () => {
     const logo = { ...greeting, id: 'l', type: 'logo' as const, content: 'https://cdn/users/u/logo.png', height: 15 };
     const layout = layoutOf('lid-base', [
       { ...logo, panelId: 'lid_top', rotation: 15 },
-      { ...logo, id: 'b', type: 'barcode' as const },
+      { ...logo, id: 'b', type: 'barcode' as const, panelId: 'lid_top' },
       { ...logo, id: 'p', type: 'pattern' as const, content: '<svg/>' },
     ]);
     const lid = layout.pieces[1];
     const top = lid.geometry.panels.find((p) => p.id === 'lid_top')!;
     expect(layout.images).toEqual([
-      { url: logo.content, x: lid.x + top.bounds.x + 10, y: lid.y + top.bounds.y + 12, width: 60, height: 15, rotation: 15 },
+      { url: logo.content, type: 'logo', x: lid.x + top.bounds.x + 10, y: lid.y + top.bounds.y + 12, width: 60, height: 15, rotation: 15 },
     ]);
+    expect(layout.barcodes).toEqual([expect.objectContaining({ content: logo.content, width: 60, height: 15 })]);
     expect(layout.texts).toEqual([]);
   });
 
@@ -127,10 +130,10 @@ describe('print renderers', () => {
     for (const layer of ['artwork', 'crease', 'cut', 'dimensions']) expect(svg).toContain(`<g id="${layer}"`);
     expect(svg).toContain('stroke="#E53E3E"');
     expect(svg).toContain('stroke-dasharray="4,4"');
-    // Bold, the font of the element (none: Be Vietnam Pro), wrapped inside the 60 mm box, escaped.
-    expect(svg).toContain('font-family="Be Vietnam Pro, sans-serif" font-weight="700"');
-    expect(svg).toContain('>Chúc mừng năm mới</text><text ');
-    expect(svg).toContain('>&lt;Tết&gt; &amp; an khang</text>');
+    // Texts are outlined: filled paths in the colour of the element, no font needed to open the file.
+    expect(svg).not.toContain('<text');
+    expect(svg).not.toContain('font-family');
+    expect(svg).toMatch(/<path d="M [^"]+Z" fill="#C0392B"\/>/);
     // Curved segments (pillow box) keep their curve commands, moved to the piece position.
     expect(renderSvg(layoutOf('pillow'))).toMatch(/<path d="M [\d. ]+Q /);
   });
@@ -184,12 +187,13 @@ describe('print renderers', () => {
     expect(svg.match(new RegExp(`rotate\\(30 ${centre}\\)`, 'g'))).toHaveLength(2);
   });
 
-  it('writes a vector PDF of the sheet size with the Vietnamese font embedded', async () => {
+  it('writes a vector PDF of the sheet size with every text outlined (no font in the file)', async () => {
     const layout = layoutOf('lid-base');
+    const home = await renderPdf(layout, new Map(), { withCropMarks: true });
     const pdf = await renderPdf(layout);
     expect(pdf.subarray(0, 8).toString()).toBe('%PDF-1.6');
+    for (const file of [home, pdf]) expect(file.toString('latin1')).not.toMatch(/\/FontFile|\/Type \/Font/);
     const text = pdf.toString('latin1');
-    expect(text).toContain('BeVietnamPro');
     const [width, height] = /\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(text)!.slice(1).map(Number);
     expect(width).toBeCloseTo((layout.width * 72) / 25.4, 1);
     expect(height).toBeCloseTo((layout.height * 72) / 25.4, 1);
@@ -200,7 +204,6 @@ describe('print renderers', () => {
     const text = (await renderPdf(layout)).toString('latin1');
     for (const layer of PRINT_LAYERS) expect(text).toMatch(new RegExp(`/Type /OCG\\s+/Name \\(${layer}\\)`));
     expect(text).toContain('/OCProperties');
-    expect(text).toContain('BeVietnamPro-Bold'); // the text, bold like on the canvas
     // Dimensions is shown on screen, never printed.
     expect(text).toMatch(/\/Name \(Dimensions\)\s+\/Usage <<\s+\/Print <<\s+\/PrintState \/OFF/);
     expect(text).toMatch(/\[\/Separation \/CutContour \/DeviceCMYK/);
@@ -215,18 +218,25 @@ describe('print renderers', () => {
     expect(trim[2]).toBeCloseTo(pt(piece.x + piece.geometry.totalBoundingBox.width), 2);
     expect(trim[3]).toBeCloseTo(pt(layout.height - piece.y), 2);
     const bleed = box('BleedBox');
-    expect(bleed[0]).toBeCloseTo(trim[0] - pt(BLEED_MM), 2);
-    expect(bleed[3]).toBeCloseTo(trim[3] + pt(BLEED_MM), 2);
+    expect(bleed[0]).toBeCloseTo(trim[0] - pt(BLEED_BOX_MM), 2);
+    expect(bleed[3]).toBeCloseTo(trim[3] + pt(BLEED_BOX_MM), 2);
   });
 
-  it('embeds the font chosen in the editor', async () => {
+  it('outlines the texts with the font chosen in the editor', () => {
     const styled = { ...greeting, style: { ...greeting.style, fontFamily: "'Cormorant Garamond', serif" } };
-    const text = (await renderPdf(layoutOf('tuck-top', [styled]))).toString('latin1');
-    expect(text).toContain('CormorantGaramond-Bold');
-    expect(text).not.toContain('PlayfairDisplay');
+    const pathOf = (svg: string) => /<path d="([^"]+)" fill="#C0392B"/.exec(svg)![1];
+    expect(pathOf(renderSvg(layoutOf('tuck-top', [styled])))).not.toBe(pathOf(renderSvg(layoutOf('tuck-top'))));
   });
 
-  it('embeds the artwork: every image format in the SVG, PNG / JPEG in the PDF', async () => {
+  it('draws barcodes as vectors: EAN-13 bars and QR modules in black on a white box', () => {
+    const code = { ...greeting, id: 'ean', type: 'barcode' as const, content: '8938501234567', width: 42, height: 22 };
+    const qr = { ...code, id: 'qr', content: 'https://wrapfit.vn/u/abc', width: 28, height: 28, x: 30 };
+    const svg = renderSvg(layoutOf('tuck-top', [code, qr]));
+    expect(svg.match(/<rect [^>]*fill="#FFFFFF"\/><path d="M [^"]+" fill="#000000"\/>/g)).toHaveLength(2);
+    expect(svg).not.toContain('<image');
+  });
+
+  it('embeds the artwork: every image format, in CMYK in the PDF', async () => {
     const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 64 });
     const elements = [
       { ...greeting, id: 'png', type: 'image' as const, content: 'https://cdn/users/u/a.png' },
@@ -235,21 +245,39 @@ describe('print renderers', () => {
     const layout = layoutOf('tuck-top', elements);
     const artwork: Artwork = new Map([
       ['https://cdn/users/u/a.png', { body: png, contentType: 'image/png' }],
-      ['https://cdn/users/u/b.svg', { body: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), contentType: 'image/svg+xml' }],
+      ['https://cdn/users/u/b.svg', { body: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>'), contentType: 'image/svg+xml' }],
     ]);
 
     const svg = renderSvg(layout, artwork);
     expect(svg.match(/<image /g)).toHaveLength(2);
     expect(svg).toContain('href="data:image/svg+xml;base64,');
 
-    expect(canEmbedInPdf(png)).toBe(true);
-    expect(canEmbedInPdf(artwork.get('https://cdn/users/u/b.svg')!.body)).toBe(false);
+    const [resolution] = await imageResolutions(layout, artwork);
+    // 64 px over the 10 mm the square image prints at (it fits the 10 mm height of its box): 163 DPI, under 300.
+    expect(resolution.dpi).toBe(163);
     const pdfWith = async (files: Artwork) => (await renderPdf(layout, files)).toString('latin1');
-    expect(await pdfWith(artwork)).toContain('/Subtype /Image');
-    // The SVG logo cannot go into the PDF, and without artwork nothing is drawn.
+    const both = await pdfWith(artwork);
+    expect(both.match(/\/ColorSpace \/DeviceCMYK/g)).toHaveLength(2);
+    expect(both).not.toContain('/DeviceRGB');
+    // The SVG logo is rasterised for the PDF too; without artwork nothing is drawn.
     artwork.delete('https://cdn/users/u/a.png');
-    expect(await pdfWith(artwork)).not.toContain('/Subtype /Image');
+    expect(await pdfWith(artwork)).toContain('/Subtype /Image');
     expect(await pdfWith(new Map())).not.toContain('/Subtype /Image');
+  });
+
+  it('packs the .ai source, the PDF, a JPG proof, SVG, DXF and the checklist for the print shop', async () => {
+    const zip = unzipSync(await renderPrintPackage(layoutOf('tuck-top'), new Map(), 'hop-nen-tet'));
+    expect(Object.keys(zip).sort()).toEqual([
+      'DOC-TRUOC-KHI-IN.txt',
+      'hop-nen-tet-print.pdf',
+      'hop-nen-tet-proof.jpg',
+      'hop-nen-tet.ai',
+      'hop-nen-tet.dxf',
+      'hop-nen-tet.svg',
+    ]);
+    expect(strFromU8(zip['hop-nen-tet.ai'].subarray(0, 5))).toBe('%PDF-');
+    expect([...zip['hop-nen-tet-proof.jpg'].subarray(0, 2)]).toEqual([0xff, 0xd8]);
+    expect(strFromU8(zip['DOC-TRUOC-KHI-IN.txt'])).toContain('CMYK');
   });
 
   it('writes a DXF in mm with CUT and CREASE layers', () => {

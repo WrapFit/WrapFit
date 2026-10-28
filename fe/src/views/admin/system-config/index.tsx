@@ -5,7 +5,7 @@
  * thresholds, dieline formulas, paper thickness and export formats. Read-only: they change with a release.
  */
 
-import { BLEED_MM, CALIPER_MM_PER_GSM, CURRENT_FORMULA_VERSION, MAX_SHEET_MM, MIN_DPI, SAFE_MARGIN_MM } from '@wrapfit/shared';
+import { BLEED_MM, CALIPER_MM_PER_GSM, CURRENT_FORMULA_VERSION, HARD_MIN_DPI, MAX_SHEET_MM, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM } from '@wrapfit/shared';
 import React from 'react';
 import { AdminShell, Badge, DataTable, Panel, PanelTitle } from '@/components/workspace';
 import { RequireAuth } from '@/features/auth';
@@ -26,9 +26,11 @@ interface Setting {
 }
 
 const PRODUCTION: Setting[] = [
-  { key: 'SAFE_MARGIN_MM', name: 'Vùng an toàn', value: `${SAFE_MARGIN_MM} mm`, detail: 'Chữ, logo, mã vạch cách đường cắt và nếp gấp ít nhất chừng này.' },
+  { key: 'SAFE_MARGIN_CUT_MM', name: 'Vùng an toàn (nét cắt)', value: `${SAFE_MARGIN_CUT_MM} mm`, detail: 'Chữ, logo, mã vạch cách đường cắt ít nhất chừng này.' },
+  { key: 'SAFE_MARGIN_CREASE_MM', name: 'Vùng an toàn (nếp gấp)', value: `${SAFE_MARGIN_CREASE_MM} mm`, detail: 'Chữ, logo, mã vạch cách nếp gấp ít nhất chừng này.' },
   { key: 'BLEED_MM', name: 'Tràn lề', value: `${BLEED_MM} mm`, detail: 'Nền in kéo ra ngoài đường cắt.' },
-  { key: 'MIN_DPI', name: 'Độ phân giải ảnh', value: `${MIN_DPI} DPI`, detail: 'Ảnh thấp hơn ở kích thước in là cảnh báo.' },
+  { key: 'MIN_DPI', name: 'Độ phân giải ảnh', value: `${MIN_DPI} DPI`, detail: `Ảnh thấp hơn ở kích thước in là cảnh báo, dưới ${HARD_MIN_DPI} DPI là lỗi.` },
+  { key: 'MIN_LINE_MM', name: 'Độ dày nét tối thiểu', value: `${MIN_LINE_MM} mm`, detail: 'Nét mảnh hơn mực khó bám, bị đứt khi in.' },
   { key: 'MAX_SHEET_MM', name: 'Khổ phôi tối đa', value: `${MAX_SHEET_MM.long} × ${MAX_SHEET_MM.short} mm`, detail: 'Khổ B1 của phần lớn xưởng in.' },
   { key: 'CALIPER_MM_PER_GSM', name: 'Độ dày giấy', value: `GSM × ${CALIPER_MM_PER_GSM}`, detail: 'Độ dày t tính từ định lượng, 300 GSM → 0,42 mm.' },
   { key: 'CURRENT_FORMULA_VERSION', name: 'Công thức khuôn bế', value: `v${CURRENT_FORMULA_VERSION}`, detail: 'Dự án cũ được đề nghị nâng cấp, kèm mốc phiên bản để hoàn tác.' },

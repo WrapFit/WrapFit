@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
 import { usePrefersReducedMotion } from "@/hooks/dom";
 import { cn } from "@/utils/helpers";
+import { isPresenting } from "@/features/demo/presentMode";
 import { Button, buttonClass, type ButtonStyleProps } from "./button";
 
 /**
@@ -260,7 +261,8 @@ export function ProductTour({ id, steps, autoStart = true, ready = true, startDe
 
   // First visit: start once the page is ready and has settled.
   useEffect(() => {
-    if (!ready || (!force && (!autoStart || hasSeenTour(id)))) return;
+    // Presenter mode (?present=1): tours only start from their replay button.
+    if (!ready || (!force && (!autoStart || hasSeenTour(id) || isPresenting()))) return;
     const timer = window.setTimeout(start, startDelayMs);
     return () => window.clearTimeout(timer);
   }, [autoStart, ready, force, id, start, startDelayMs]);

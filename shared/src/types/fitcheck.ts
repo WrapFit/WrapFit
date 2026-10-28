@@ -10,7 +10,10 @@ export type FitCheckErrorCode =
   | "LOW_DPI"
   | "GLUE_CONTAMINATED"
   | "DIMENSION_OUT_OF_BOUNDS"
-  | "NO_PANEL";
+  | "NO_PANEL"
+  | "LINE_TOO_THIN"
+  | "BARCODE_UNREADABLE"
+  | "EMPTY_DESIGN";
 
 export type SeverityLevel = "error" | "warning" | "info";
 

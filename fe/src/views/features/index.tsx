@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import { BLEED_MM, MIN_DPI, SAFE_MARGIN_MM } from "@wrapfit/shared";
+import { BLEED_MM, MIN_DPI, SAFE_MARGIN_CUT_MM } from "@wrapfit/shared";
 import { Container, Reveal } from "@/components/landing";
 import { CheckList, PageHero, PhotoFrame, PRIMARY_CTA, SECONDARY_CTA, Section, SitePage, StatGrid } from "@/components/site";
 import { formatVnd, PLANS } from "@/features/pricing";
@@ -119,7 +119,7 @@ export default function FeaturesPage() {
         <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           <Tile
             title="FitCheck™ trước khi in"
-            text={`Vùng an toàn ${SAFE_MARGIN_MM} mm, tràn lề ${BLEED_MM} mm, ảnh ${MIN_DPI} DPI, mép dán sạch mực. Sửa lỗi bằng một cú bấm.`}
+            text={`Vùng an toàn ${SAFE_MARGIN_CUT_MM} mm, tràn lề ${BLEED_MM} mm, ảnh ${MIN_DPI} DPI, mép dán sạch mực. Sửa lỗi bằng một cú bấm.`}
             proof={{ value: "74,3%", text: "thấy hữu ích" }}
             href="/support?a=fitcheck-kiem-tra-gi"
             cta="Đọc thêm"

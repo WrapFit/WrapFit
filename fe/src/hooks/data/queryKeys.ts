@@ -38,6 +38,12 @@ export const queryKeys = {
   storageUsage: ["storage", "usage"] as const,
   aiUsage: ["ai", "usage"] as const,
 
+  library: {
+    all: ["library"] as const,
+    assets: (query: object) => ["library", "assets", query] as const,
+    manage: (query: object) => ["library", "manage", query] as const,
+    licenses: ["library", "licenses"] as const,
+  },
   printShops: {
     all: ["printShops"] as const,
     detail: (id: string) => ["printShops", id] as const,

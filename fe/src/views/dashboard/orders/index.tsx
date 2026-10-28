@@ -37,6 +37,7 @@ const FILE_LABELS: Record<ExportFileType, string> = {
   PDF_A4_PRINT: 'PDF A4/A3 In Thủ Công',
   SVG: 'SVG',
   DXF: 'DXF',
+  PRINT_PACKAGE: 'Gói nhà in (.ai + PDF + JPG)',
 };
 
 const STATUS_BADGES: Record<ExportStatus, { tone: 'green' | 'grey' | 'red'; label: string }> = {
