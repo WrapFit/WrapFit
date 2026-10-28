@@ -136,6 +136,8 @@ const MAIN_PANEL: Record<Product["structure"], string> = {
   "lid-base": "lid_top",
   pillow: "pillow_front",
 };
+/** The face that sells the box (title, label), or null for a structure without one. */
+export const mainPanelOf = (structure: string): string | null => MAIN_PANEL[structure as Product["structure"]] ?? null;
 const INFO_PANEL: Partial<Record<Product["structure"], string>> = {
   "tuck-top": "panel_back",
   "sleeve-drawer": "sleeve_bottom",
@@ -232,10 +234,20 @@ function artElement(id: string, panelId: string, type: "logo" | "pattern", conte
 
 /** Background over every panel of every piece (bleed past the cut sides), except panels that hold a glue area. */
 function backgrounds(pieces: DielinePiece[], kit: StyleKit, mainPanelId: string): CanvasElement[] {
-  if (!kit.background) return [];
-  const content = libraryArtContent(kit.background);
-  // The face with the title stays plain (same palette), so the words never sit on the motifs.
-  const plain = libraryArtContent({ design: "bg-solid", palette: kit.background.palette });
+  return kit.background ? boxBackgrounds(pieces, kit.background, mainPanelId) : [];
+}
+
+/**
+ * A library background over every panel of every piece, bleeding past the cut sides, except panels holding a glue area
+ * (ink there stops the glue). `plainPanelId`: that face gets a solid fill of the palette, so a title on it stays readable.
+ */
+export function boxBackgrounds(
+  pieces: DielinePiece[],
+  background: { design: string; palette: string },
+  plainPanelId?: string
+): CanvasElement[] {
+  const content = libraryArtContent(background);
+  const plain = libraryArtContent({ design: "bg-solid", palette: background.palette });
   const elements: CanvasElement[] = [];
   for (const piece of pieces) {
     for (const panel of piece.geometry.panels) {
@@ -252,7 +264,7 @@ function backgrounds(pieces: DielinePiece[], kit: StyleKit, mainPanelId: string)
         (g) => onSheet.x < g.x + g.width && g.x < onSheet.x + onSheet.width && onSheet.y < g.y + g.height && g.y < onSheet.y + onSheet.height
       );
       // Exact sizes (not rounded): a background that only touches a glue flap must not grow onto it.
-      if (!glued) elements.push({ id: `bg_${panel.id}`, type: "pattern", panelId: panel.id, ...box, rotation: 0, content: panel.id === mainPanelId ? plain : content });
+      if (!glued) elements.push({ id: `bg_${panel.id}`, type: "pattern", panelId: panel.id, ...box, rotation: 0, content: panel.id === plainPanelId ? plain : content });
     }
   }
   return elements;

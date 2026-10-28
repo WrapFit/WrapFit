@@ -170,6 +170,18 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
     }
   }
 
+  // A box without artwork prints as plain paper: allowed (a plain box is a real order), but never "print-ready art".
+  if (elements.length === 0) {
+    violations.push({
+      id: "empty_design",
+      code: "EMPTY_DESIGN",
+      severity: "info",
+      title: "Hộp chưa có hình in",
+      message: "Hộp sẽ được in trơn, chỉ có màu giấy. FitCheck chỉ kiểm tra hình in khi bạn thêm chữ, tem hoặc ảnh.",
+      suggestion: "Áp một phong cách cả hộp hoặc thêm chữ, tem từ thư viện.",
+    });
+  }
+
   for (const element of elements) {
     const label = labelOf(element);
     const found = locate(pieces, element.panelId);

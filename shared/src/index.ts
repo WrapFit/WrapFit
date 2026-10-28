@@ -20,3 +20,5 @@ export * from "./library/art";
 export * from "./library/catalog";
 export * from "./library/templates";
 export * from "./library/icons";
+export * from "./library/recolor";
+export * from "./pricing/quote";

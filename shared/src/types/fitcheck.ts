@@ -12,7 +12,8 @@ export type FitCheckErrorCode =
   | "DIMENSION_OUT_OF_BOUNDS"
   | "NO_PANEL"
   | "LINE_TOO_THIN"
-  | "BARCODE_UNREADABLE";
+  | "BARCODE_UNREADABLE"
+  | "EMPTY_DESIGN";
 
 export type SeverityLevel = "error" | "warning" | "info";
 
