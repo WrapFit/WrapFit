@@ -100,7 +100,8 @@ describe('Print export (e2e)', () => {
     expect(file.headers.get('content-disposition')).toBe('attachment; filename="hop-nen-tet-pdf-cmyk.pdf"');
     const pdf = Buffer.from(await file.arrayBuffer());
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(pdf.toString('latin1')).toContain('BeVietnamPro');
+    // Texts are outlined (prepress rule 2): no font in the file.
+    expect(pdf.toString('latin1')).not.toMatch(/\/FontFile|\/Type \/Font/);
 
     // The file sits in the private bucket: only the signed link reads it, never a public URL.
     expect(url.pathname).toMatch(/^\/wrapfit-private\/private\/projects\/[0-9a-f-]{36}\/exports\/[0-9a-f-]{36}\.pdf$/);
@@ -113,7 +114,10 @@ describe('Print export (e2e)', () => {
     const svg = await exportAs('SVG');
     const svgText = await (await fetch(svg.downloadUrl)).text();
     expect(svgText).toContain('<g id="crease"');
-    expect(svgText).toContain('An khang thịnh vượng');
+    // The text is outlined: a filled path in the artwork layer, never a <text> with a font.
+    expect(svgText).not.toContain('An khang thịnh vượng');
+    expect(svgText).not.toContain('<text');
+    expect(svgText).toMatch(/<g id="artwork"[^>]*><path d="M /);
 
     const dxf = await exportAs('DXF');
     expect(await (await fetch(dxf.downloadUrl)).text()).toMatch(/^0\nSECTION\n2\nHEADER/);
