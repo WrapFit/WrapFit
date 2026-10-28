@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import type { BoxDimensions, BoxStructureType, FitCheckReport } from "@wrapfit/shared";
-import { createProject, getTemplate, listBoxStructures } from "@/api";
+import { ApiError, createProject, getTemplate, listBoxStructures } from "@/api";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { PageLoader } from "@/components/common/StatusViews";
 import { useToast } from "@/components/common/Toast";
@@ -215,16 +215,27 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
       router.replace(ROUTES.editor(project.id));
     },
-    onError: (err) => toast.error(err, "Chưa tạo được dự án"),
+    onError: (err) => {
+      // No backend (offline demo, server down): open the same box in the browser-only studio instead of a dead end.
+      if (!(err instanceof ApiError) || err.status === 0 || err.status >= 500) {
+        toast.show({ tone: "info", title: "Mở bản dùng thử", description: "Chưa kết nối được máy chủ: thiết kế chạy ngay trên trình duyệt, chưa lưu lên cloud." });
+        router.push(demoUrl());
+        return;
+      }
+      toast.error(err, "Chưa tạo được dự án");
+    },
   });
   const busy = create.isPending || create.isSuccess;
+
+  /** The studio without a project, on this box and the template it starts from. */
+  const demoUrl = () =>
+    `${ROUTES.editorDemo}?structure=${structure}&l=${dimensions.length}&w=${dimensions.width}&h=${dimensions.height}&paper=${material}` +
+    (template ? `&template=${encodeURIComponent(template.id)}` : "");
 
   const handleCreateOrExplore = () => {
     if (status !== "authenticated") {
       toast.show({ tone: "info", title: "Đang mở Studio 3D (Chế độ trải nghiệm khách)..." });
-      router.push(
-        `${ROUTES.editorDemo}?structure=${structure}&l=${dimensions.length}&w=${dimensions.width}&h=${dimensions.height}&paper=${material}`
-      );
+      router.push(demoUrl());
       return;
     }
     create.mutate();

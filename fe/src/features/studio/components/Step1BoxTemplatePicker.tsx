@@ -6,9 +6,10 @@ import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { CardTitle, MetricRow, PRIMARY_PILL, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
-import { BoxStructureType, caliperOf, type CanvasElement, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
+import { BoxStructureType, caliperOf, type CanvasElement, type GeneratedTemplate, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
 import type { BoxStructure } from "@/types/api";
 import { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
+import { QuickStart } from "./QuickStart";
 
 export { BOX_STRUCTURES, type BoxStructureOption } from "@/features/studio/utils/boxStructures";
 
@@ -68,6 +69,8 @@ interface Step1BoxTemplatePickerProps {
   onNext: () => void;
   /** Structures of the API; omitted in the offline demo. */
   structures?: BoxStructure[];
+  /** "Bắt đầu nhanh": a finished template dresses the box. */
+  onQuickStart?: (template: GeneratedTemplate) => void;
 }
 
 export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
@@ -75,6 +78,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   onSelectStructure,
   onNext,
   structures,
+  onQuickStart,
 }) => {
   const cards = structureCards(structures);
   const current = cards.find((s) => s.id === selectedStructure) || cards[0];
@@ -93,9 +97,15 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6">
       <StepHeader
-        title="Chọn cấu trúc hộp"
-        subtitle="Mỗi cấu trúc là một bộ công thức khuôn bế. Xem hộp gấp và khuôn trải phẳng trước khi nhập kích thước."
+        title="Khởi đầu"
+        subtitle="Bắt đầu từ một mẫu đã thiết kế, hoặc chọn cấu trúc hộp trống. Mỗi cấu trúc là một bộ công thức khuôn bế."
       />
+
+      {onQuickStart && (
+        <div className="mt-6">
+          <QuickStart onPick={onQuickStart} />
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_320px]">
         {/* Structures */}
