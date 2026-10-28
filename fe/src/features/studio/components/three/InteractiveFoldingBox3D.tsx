@@ -8,11 +8,12 @@ import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared"
 import { Box, Gift, Pause, Play, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 import { stageBarButton } from "../studioUi";
+import { BACKDROPS, type Backdrop, type BoxEnvironment } from "./backdrops";
 import { AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, type DimensionAxis, type DimensionGuides } from "./guides";
 
 export type { BoxMaterialTheme } from "./boxModel";
 export type { BoxStructureType };
-export type BoxEnvironment = "studio" | "marble" | "kraft_wood" | "forest_velvet" | "festive_glow" | "transparent";
+export type { BoxEnvironment } from "./backdrops";
 
 export type { DimensionAxis, DimensionGuides } from "./guides";
 
@@ -63,70 +64,15 @@ interface InteractiveFoldingBox3DProps {
   chrome?: "overlay" | "bar";
   barStart?: React.ReactNode;
   barEnd?: React.ReactNode;
+  /**
+   * Filled with a function that renders a frame and returns the WebGL canvas (transparent background). Read it at
+   * once, in the same task: the drawing buffer is not kept (mockup images).
+   */
+  captureRef?: React.MutableRefObject<(() => HTMLCanvasElement) | null>;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Stage looks
-
-interface Backdrop {
-  /** CSS background of the stage, painted behind the transparent WebGL canvas. */
-  css: string;
-  /** Opacity of the contact shadow under the box and of the cast shadow. */
-  shadow: number;
-  key: string;
-  rim: string;
-  rimIntensity: number;
-  dark?: boolean;
-}
-
-const BACKDROPS: Record<Exclude<BoxEnvironment, "transparent">, Backdrop> = {
-  studio: {
-    css: "radial-gradient(120% 85% at 50% 28%, #FFFFFF 0%, #F4F6F2 52%, #E3E8E0 100%)",
-    shadow: 0.34,
-    key: "#FFFFFF",
-    rim: "#FFFFFF",
-    rimIntensity: 0.45,
-  },
-  marble: {
-    css: [
-      "linear-gradient(118deg, transparent 44%, rgba(148,163,184,0.16) 46%, transparent 49%)",
-      "linear-gradient(28deg, transparent 62%, rgba(148,163,184,0.12) 63.5%, transparent 66%)",
-      "radial-gradient(110% 80% at 35% 20%, #FFFFFF 0%, #F1F3F6 50%, #DCE1E8 100%)",
-    ].join(", "),
-    shadow: 0.3,
-    key: "#F4F8FF",
-    rim: "#FFFFFF",
-    rimIntensity: 0.5,
-  },
-  kraft_wood: {
-    css: [
-      "repeating-linear-gradient(90deg, rgba(120,72,30,0.05) 0 2px, transparent 2px 26px)",
-      "radial-gradient(120% 90% at 50% 25%, #F8EAD3 0%, #EBD3AE 55%, #D6B385 100%)",
-    ].join(", "),
-    shadow: 0.36,
-    key: "#FFF1DE",
-    rim: "#FFD9A8",
-    rimIntensity: 0.4,
-  },
-  forest_velvet: {
-    css: "radial-gradient(110% 85% at 50% 28%, #2F6B52 0%, #183D2E 55%, #0B2017 100%)",
-    shadow: 0.55,
-    key: "#F1FFF6",
-    rim: "#98E665",
-    rimIntensity: 0.9,
-    dark: true,
-  },
-  festive_glow: {
-    css: [
-      "radial-gradient(55% 45% at 50% 38%, rgba(255,214,140,0.7) 0%, transparent 70%)",
-      "radial-gradient(120% 90% at 50% 30%, #FFF6E8 0%, #FDE3C0 60%, #F4C38A 100%)",
-    ].join(", "),
-    shadow: 0.34,
-    key: "#FFE9C9",
-    rim: "#FF9F5A",
-    rimIntensity: 0.8,
-  },
-};
+// Labels of the stage (its scenes are in ./backdrops)
 
 const STRUCTURE_LABEL: Record<BoxStructureType, string> = {
   "tuck-top": "Hộp nắp gài đáy khoá",
@@ -147,6 +93,8 @@ const OPEN_LABEL: Record<BoxStructureType, [string, string]> = {
 const PAPER_LABEL: Record<BoxMaterialTheme, string> = {
   ivory: "Ivory",
   kraft: "Kraft",
+  duplex: "Duplex",
+  rigid: "Carton bồi",
   forest: "Xanh rừng",
   gold_foil: "Ép kim vàng",
 };
@@ -294,6 +242,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   chrome = "overlay",
   barStart,
   barEnd,
+  captureRef,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   /** Labels of the dimension guides, placed by the render loop. */
@@ -743,11 +692,17 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       },
     };
     stageRef.current = api;
+    if (captureRef)
+      captureRef.current = () => {
+        renderer.render(scene, camera);
+        return renderer.domElement;
+      };
     loop();
 
     return () => {
       cancelAnimationFrame(frame);
       stageRef.current = null;
+      if (captureRef) captureRef.current = null;
       resizeObserver.disconnect();
       visibility.disconnect();
       el.removeEventListener("pointerdown", onPointerDown);

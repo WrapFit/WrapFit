@@ -1,79 +1,39 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowLeft, ArrowRight, Box, Gift, Palette, QrCode, Sliders } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Box, CheckCircle2, Download, Gift, Image as ImageIcon, QrCode, Sliders } from "lucide-react";
+import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
+import { useToast } from "@/components/common/Toast";
 import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, stageBarButton } from "@/features/studio/components/studioUi";
-import { BoxDimensions, CanvasElement } from "@wrapfit/shared";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
-
-import { GoiMascot } from "@/components/common/GoiMascot";
-
-export type EnvironmentType =
-  | "studio"
-  | "marble"
-  | "kraft_wood"
-  | "forest_velvet"
-  | "festive_glow";
-
-interface EnvironmentOption {
-  id: EnvironmentType;
-  name: string;
-  category: string;
-  badge: string;
-  dotColor: string;
-}
-
-const ENVIRONMENTS: EnvironmentOption[] = [
-  {
-    id: "studio",
-    name: "Studio tối giản",
-    category: "Nền trơn chụp sản phẩm",
-    badge: "Tiêu Chuẩn",
-    dotColor: "#ECE8E1",
-  },
-  {
-    id: "marble",
-    name: "Bàn đá cẩm thạch",
-    category: "Đá trắng bóng",
-    badge: "Bóng Bẩy",
-    dotColor: "#F8FAFC",
-  },
-  {
-    id: "kraft_wood",
-    name: "Bàn gỗ mộc",
-    category: "Gỗ sồi thủ công",
-    badge: "Thủ Công",
-    dotColor: "#C29B61",
-  },
-  {
-    id: "forest_velvet",
-    name: "Nhung xanh rừng",
-    category: "Xanh ngọc sang trọng",
-    badge: "Quý Tộc",
-    dotColor: "#064E3B",
-  },
-  {
-    id: "festive_glow",
-    name: "Không khí Tết",
-    category: "Ánh vàng ấm",
-    badge: "Tết 2026",
-    dotColor: "#FED7AA",
-  },
-];
+import { BACKDROPS, SCENE_IDS, sceneForOccasion, type SceneId } from "@/features/studio/components/three/backdrops";
+import { fileSlug, MOCKUP_FORMATS, renderMockup, saveBlob, type MockupFormat } from "@/features/studio/utils/mockup";
+import { paperStockOf } from "@/features/studio/utils/paperStocks";
+import { cn } from "@/utils/helpers";
+import { useBoxFonts } from "./canvas/boxText";
+import { FacePreview } from "./library/FacePreview";
+import type { BoxMaterialTheme } from "./three/InteractiveFoldingBox3D";
 
 interface Step5Model3DWithEnvironmentsProps {
   dimensions: BoxDimensions;
   boxType?: string;
-  activeMaterial?: string;
+  activeMaterial?: BoxMaterialTheme;
   backgroundPatternSvg?: string | null;
   elements?: CanvasElement[];
   /** Dieline formulas of the project: the 3D box is folded from the same dieline. */
   formulaVersion?: number;
+  /** Occasion of the design (library occasions): the scene that suits it is suggested. */
+  occasion?: string | null;
+  /** Name of the mockup files. */
+  title: string;
   onBack: () => void;
   onNext: () => void;
   onOpenQrModal?: () => void;
+  /** The box already carries the QR code of its unboxing page. */
+  hasUnboxingQr?: boolean;
 }
 
+/** Step 5: the gift (wishes and the QR code of the unboxing page) and product photos of the box in a scene. */
 export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironmentsProps> = ({
   dimensions,
   boxType = "tuck-top",
@@ -81,30 +41,49 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   backgroundPatternSvg,
   elements = [],
   formulaVersion,
+  occasion,
+  title,
   onBack,
   onNext,
   onOpenQrModal,
+  hasUnboxingQr = false,
 }) => {
-  const [foldProgress, setFoldProgress] = useState<number>(0.85);
-  const [selectedEnv, setSelectedEnv] = useState<EnvironmentType>("studio");
+  const toast = useToast();
+  const suggested = sceneForOccasion(occasion);
+  const [foldProgress, setFoldProgress] = useState<number>(1);
+  const [scene, setScene] = useState<SceneId>(suggested);
   const [isLidOpen, setIsLidOpen] = useState<boolean>(false);
+  const [saving, setSaving] = useState<MockupFormat["id"] | null>(null);
+  const capture = useRef<(() => HTMLCanvasElement) | null>(null);
+  const paper = paperStockOf(activeMaterial);
+  const occasionLabel = LIBRARY_OCCASIONS.find((o) => o.id === occasion)?.label;
+  useBoxFonts(elements);
 
   const handleFoldChange = (val: number) => {
-    if (Math.abs(val - foldProgress) > 0.08) {
-      
-    }
     setFoldProgress(val);
-    if (val < 0.9) {
-      setIsLidOpen(false);
-    }
+    if (val < 0.9) setIsLidOpen(false);
   };
-
   const handleToggleLid = () => {
-    
     const next = !isLidOpen;
     setIsLidOpen(next);
-    if (next) {
-      setFoldProgress(1.0);
+    if (next) setFoldProgress(1);
+  };
+
+  const downloadMockup = async (format: MockupFormat) => {
+    const frame = capture.current?.();
+    if (!frame) {
+      toast.show({ tone: "error", title: "Chưa chụp được ảnh", description: "Hộp 3D chưa hiện xong, thử lại sau một giây." });
+      return;
+    }
+    setSaving(format.id);
+    try {
+      const blob = await renderMockup(frame, BACKDROPS[scene], format);
+      saveBlob(blob, `${fileSlug(title)}-${scene}-${format.width}x${format.height}.png`);
+      toast.show({ tone: "success", title: "Đã tải ảnh mockup", description: `${format.label}, ${format.width} × ${format.height} px, ${BACKDROPS[scene].name}.` });
+    } catch {
+      toast.show({ tone: "error", title: "Chưa tạo được ảnh", description: "Trình duyệt không xuất được ảnh PNG." });
+    } finally {
+      setSaving(null);
     }
   };
 
@@ -126,30 +105,32 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6 px-4 py-8 sm:px-6 lg:px-10">
-      {/* Step header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink sm:text-4xl">Hộp quà hoàn chỉnh</h1>
+          <h1 className="font-landing-heading text-3xl font-bold tracking-tight text-landing-ink sm:text-4xl">Quà &amp; mở hộp</h1>
           <p className="mt-1.5 text-sm text-landing-muted">
-            {structureName} · {dimensions.length} × {dimensions.width} × {dimensions.height} mm · giấy {activeMaterial === "gold_foil" ? "carton bồi" : activeMaterial === "forest" ? "duplex" : activeMaterial}
+            Viết lời chúc, đặt mã QR lên hộp để người nhận mở hộp 3D trên điện thoại; chụp ảnh hộp trong bối cảnh để đăng bán.
+            <span className="block">
+              {structureName} · {dimensions.length} × {dimensions.width} × {dimensions.height} mm · {paper.name}
+            </span>
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* 3D stage */}
-        <div className="relative flex flex-col overflow-hidden rounded-sheet bg-white lg:col-span-9">
-          <div className="relative h-[580px] w-full overflow-hidden bg-landing-canvas">
+        <div className="relative flex flex-col overflow-hidden rounded-sheet bg-white lg:col-span-8">
+          <div className="relative h-[520px] w-full overflow-hidden bg-landing-canvas">
             <Box3DView
               dimensions={dimensions}
               foldProgress={foldProgress}
               boxType={boxType as any}
-              theme={activeMaterial as any}
+              theme={activeMaterial}
               elements={elements}
               formulaVersion={formulaVersion}
               backgroundPatternSvg={backgroundPatternSvg}
-              environment={selectedEnv}
+              environment={scene}
               interactiveOpenState={isLidOpen}
+              captureRef={capture}
               showHud={false}
               showStatusBar={false}
               frameless
@@ -158,7 +139,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               barStart={
                 <span className="inline-flex items-center gap-1.5 font-semibold text-fg">
                   <Box className="size-4 text-fg-muted" aria-hidden />
-                  {structureName}
+                  {structureName} · {BACKDROPS[scene].name}
                 </span>
               }
               barEnd={
@@ -174,12 +155,11 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             />
           </div>
 
-          {/* Fold scrubber */}
           <label className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <span className="flex items-center gap-3 text-sm font-semibold text-landing-ink">
               <Sliders className="h-4 w-4 text-fpt-orange" aria-hidden />
               Gấp hộp
-              <span className="rounded-full bg-orange-50 px-2.5 py-0.5 font-mono text-xs text-fpt-orange-ink font-semibold">{foldPercent}%</span>
+              <span className="rounded-full bg-orange-50 px-2.5 py-0.5 font-mono text-xs font-semibold text-fpt-orange-ink">{foldPercent}%</span>
               <span className="hidden text-xs font-normal text-landing-muted sm:inline">
                 {foldProgress === 0 ? "Khuôn bế trải phẳng" : foldProgress === 1 ? "Đã gấp xong" : "Đang gấp theo nếp"}
               </span>
@@ -197,59 +177,101 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
           </label>
         </div>
 
-        {/* Right panel */}
-        <div className="space-y-5 lg:col-span-3">
-          <section aria-labelledby="step4-scenes" className="space-y-3 rounded-sheet bg-white p-5">
-            <h2 id="step4-scenes" className="flex items-center gap-2 font-landing-heading text-base font-bold text-landing-ink">
-              <Palette className="h-4 w-4 text-fpt-orange" aria-hidden />
-              Bối cảnh
+        <div className="space-y-5 lg:col-span-4">
+          <section aria-labelledby="step5-gift" className="space-y-3 rounded-sheet bg-stone-900 p-5 text-white">
+            <h2 id="step5-gift" className="flex items-center gap-2 font-landing-heading text-base font-bold">
+              <QrCode className="h-4 w-4 text-fpt-orange" aria-hidden />
+              Lời chúc &amp; mã QR mở hộp
             </h2>
-            <div className="space-y-2">
-              {ENVIRONMENTS.map((item) => {
-                const isSelected = selectedEnv === item.id;
+            <p className="text-sm leading-6 text-white/80">Người nhận quét mã trên hộp bằng điện thoại để xem hộp mở ra 3D cùng lời chúc của bạn.</p>
+            {hasUnboxingQr ? (
+              <p role="status" className="flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold">
+                <CheckCircle2 className="h-4 w-4 text-fpt-orange" aria-hidden />
+                Mã QR đã có trên hộp
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onOpenQrModal?.()}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-fpt-orange text-sm font-semibold text-white shadow-xs transition-colors hover:bg-fpt-orange-dark"
+            >
+              <Gift className="h-4 w-4" aria-hidden />
+              {hasUnboxingQr ? "Sửa lời chúc" : "Viết lời chúc & tạo mã QR"}
+            </button>
+          </section>
+
+          <section aria-labelledby="step5-scenes" className="space-y-3 rounded-sheet bg-white p-5">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 id="step5-scenes" className="flex items-center gap-2 font-landing-heading text-base font-bold text-landing-ink">
+                <ImageIcon className="h-4 w-4 text-fpt-orange" aria-hidden />
+                Bối cảnh chụp
+              </h2>
+              <span className="text-caption text-fg-muted">{SCENE_IDS.length} bối cảnh</span>
+            </div>
+            <div role="radiogroup" aria-label="Bối cảnh" className="grid grid-cols-3 gap-2">
+              {SCENE_IDS.map((id) => {
+                const look = BACKDROPS[id];
+                const selected = scene === id;
                 return (
                   <button
-                    key={item.id}
+                    key={id}
                     type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => setSelectedEnv(item.id)}
-                    className={`flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-colors ${
-                      isSelected ? "bg-orange-50 ring-2 ring-fpt-orange" : "bg-landing-canvas hover:bg-landing-tile"
-                    }`}
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={`${look.name}: ${look.hint}`}
+                    onClick={() => setScene(id)}
+                    className={cn(
+                      "group flex flex-col overflow-hidden rounded-control border-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 motion-reduce:transition-none",
+                      selected ? "border-fpt-orange-ink" : "border-transparent hover:border-line-strong"
+                    )}
                   >
-                    <span aria-hidden className="h-6 w-6 shrink-0 rounded-full ring-1 ring-landing-ink/15" style={{ backgroundColor: item.dotColor }} />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-landing-ink">{item.name}</span>
-                      <span className="block truncate text-xs text-landing-muted">{item.category}</span>
+                    {/* The front of this very box standing in the scene's light. */}
+                    <span aria-hidden className="relative flex aspect-square items-end justify-center pb-[14%]" style={{ background: look.css }}>
+                      <span className="absolute bottom-[10%] h-[8%] w-[56%] rounded-[50%] bg-black/20 blur-[3px]" />
+                      <span className="relative block h-[62%] w-[52%] drop-shadow-[0_4px_6px_rgba(0,0,0,0.18)]">
+                        <FacePreview
+                          structure={boxType}
+                          dimensions={dimensions}
+                          formulaVersion={formulaVersion}
+                          elements={elements}
+                          paper={paper.swatch.outside}
+                          className="h-full w-full"
+                        />
+                      </span>
+                      {id === suggested && occasionLabel && (
+                        <span className="absolute left-1 top-1 rounded-full bg-white/90 px-1.5 py-0.5 text-label-sm font-semibold text-fg">Hợp {occasionLabel}</span>
+                      )}
                     </span>
+                    <span className="bg-surface-raised px-1.5 py-1 text-caption font-semibold leading-tight text-fg">{look.name}</span>
                   </button>
                 );
               })}
             </div>
-          </section>
 
-          <section aria-labelledby="step4-qr" className="space-y-3 rounded-sheet bg-stone-900 p-5 text-white">
-            <h2 id="step4-qr" className="flex items-center gap-2 font-landing-heading text-base font-bold">
-              <QrCode className="h-4 w-4 text-fpt-orange" aria-hidden />
-              Mã QR mở hộp
-            </h2>
-            <p className="text-sm leading-6 text-white/80">In mã lên hộp: người nhận quét bằng điện thoại để mở hộp 3D cùng lời chúc của bạn.</p>
-            <button
-              type="button"
-              onClick={() => onOpenQrModal?.()}
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-fpt-orange text-sm font-semibold text-white transition-colors hover:bg-fpt-orange-dark shadow-xs"
-            >
-              <QrCode className="h-4 w-4" aria-hidden />
-              Tạo mã QR
-            </button>
-          </section>
-
-          <section className="flex items-center gap-3 rounded-sheet bg-white p-4">
-            <GoiMascot pose="celebration" size={48} />
-            <p className="text-sm leading-6 text-landing-muted">
-              <span className="block font-semibold text-landing-ink">Sẵn sàng in</span>
-              Bước cuối kiểm tra FitCheck™ rồi xuất PDF CMYK, SVG hoặc DXF.
-            </p>
+            <div className="border-t border-line pt-3">
+              <p className="text-body-sm font-semibold text-fg">Tải ảnh mockup</p>
+              <p className="text-caption text-fg-muted">Ảnh PNG của hộp đang xem, đúng góc xoay và bối cảnh, để đăng bán hoặc gửi khách duyệt.</p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {MOCKUP_FORMATS.map((format) => (
+                  <button
+                    key={format.id}
+                    type="button"
+                    onClick={() => downloadMockup(format)}
+                    disabled={saving !== null}
+                    title={format.hint}
+                    className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border border-line-strong bg-surface-raised px-1 py-1.5 text-center transition-colors hover:border-fg disabled:opacity-60"
+                  >
+                    <span className="inline-flex items-center gap-1 text-caption font-semibold text-fg">
+                      <Download className="size-3.5" aria-hidden />
+                      {format.label}
+                    </span>
+                    <span className="text-label-sm tabular-nums text-fg-muted">
+                      {saving === format.id ? "Đang tạo…" : `${format.width}×${format.height}`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </section>
         </div>
       </div>
@@ -262,7 +284,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
         }
         next={
           <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
-            Kiểm tra & xuất file
+            Kiểm tra & đặt in
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
         }
