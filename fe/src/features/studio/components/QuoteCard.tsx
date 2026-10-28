@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { Copy, PackageCheck, Scissors, Truck } from "lucide-react";
+import { Clock, Copy, PackageCheck, Scissors } from "lucide-react";
 import { FINISH_LABELS, quote, quoteSaving, type BoxDimensions, type DielinePiece, type QuoteFinish } from "@wrapfit/shared";
 import { Button, buttonClass } from "@/components/ui";
 import { useToast } from "@/components/common/Toast";
@@ -28,12 +28,25 @@ interface QuoteCardProps {
   projectId: string | null;
   /** Errors of FitCheck: nothing can be ordered. */
   blocked: boolean;
+  quantity: number;
+  onQuantityChange(quantity: number): void;
 }
 
 /** Step 6: estimated price by quantity, the cheaper size when there is one, and the sample order. */
-export function QuoteCard({ structure, pieces, dimensions, formulaVersion, material, finishes, title, projectId, blocked }: QuoteCardProps) {
+export function QuoteCard({
+  structure,
+  pieces,
+  dimensions,
+  formulaVersion,
+  material,
+  finishes,
+  title,
+  projectId,
+  blocked,
+  quantity,
+  onQuantityChange: setQuantity,
+}: QuoteCardProps) {
   const toast = useToast();
-  const [quantity, setQuantity] = useState(50);
   const [sampleRequested, setSampleRequested] = useState(false);
   const paper = paperStockOf(material).quotePaper;
   const result = useMemo(() => quote({ structure, pieces, quantity, paper, finishes }), [structure, pieces, quantity, paper, finishes]);
@@ -47,9 +60,12 @@ export function QuoteCard({ structure, pieces, dimensions, formulaVersion, mater
     `Báo giá ước tính WrapFit: ${title}`,
     `${dimensions.length} × ${dimensions.width} × ${dimensions.height} mm · ${paperStockOf(material).name}${finishes.length ? ` · ${finishes.map((f) => FINISH_LABELS[f]).join(", ")}` : ""}`,
     `${result.quantity} hộp · ${result.methodLabel}`,
-    ...result.lines.map((line) => `- ${line.label}: ${formatVnd(line.vnd)}`),
-    `Tổng: ${formatVnd(result.total)} (${formatVnd(result.perBox)}/hộp) · khoảng ${result.leadDays} ngày làm việc`,
-    "Đơn giá giả định cho bản demo, chưa gồm VAT.",
+    ...result.groups.flatMap((group) => [
+      `${group.label}: ${formatVnd(group.vnd)}`,
+      ...result.lines.filter((line) => line.group === group.group).map((line) => `  - ${line.label}: ${formatVnd(line.vnd)} (${line.detail})`),
+    ]),
+    `Tổng: ${formatVnd(result.total)} (${formatVnd(result.perBox)}/hộp) · sản xuất khoảng ${result.leadDays} ngày làm việc`,
+    "Giá hộp hoàn thiện, chưa gồm VAT, vận chuyển và lưu kho (thỏa thuận với xưởng). Đơn giá giả định cho bản demo.",
   ].join("\n");
   const copy = async () => {
     try {
@@ -104,8 +120,8 @@ export function QuoteCard({ structure, pieces, dimensions, formulaVersion, mater
           </p>
         </div>
         <p className="text-right text-caption text-fg-muted">
-          <Truck className="mr-1 inline size-3.5" aria-hidden />
-          khoảng {result.leadDays} ngày
+          <Clock className="mr-1 inline size-3.5" aria-hidden />
+          sản xuất khoảng {result.leadDays} ngày
         </p>
       </div>
 
@@ -121,18 +137,12 @@ export function QuoteCard({ structure, pieces, dimensions, formulaVersion, mater
         </p>
       )}
 
-      <details className="mt-3 rounded-control bg-surface-sunken px-3 py-2 text-body-sm">
-        <summary className="cursor-pointer font-semibold text-fg">Chi tiết từng khoản</summary>
-        <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
-          {result.lines.map((line) => (
-            <React.Fragment key={line.label}>
-              <dt className="text-fg-muted">{line.label}</dt>
-              <dd className="text-right tabular-nums text-fg">{formatVnd(line.vnd)}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
-        <p className="mt-2 text-caption text-fg-muted">Đơn giá giả định cho bản demo, chưa gồm VAT; giá chốt theo báo giá của xưởng in đối tác.</p>
-      </details>
+      <p className="mt-3 text-caption leading-5 text-fg-muted">
+        Giá hộp hoàn thiện tại xưởng đối tác, chưa gồm VAT. Vận chuyển và lưu kho bạn thỏa thuận trực tiếp với xưởng.
+      </p>
+      <a href="#quote-detail" className="mt-2 inline-flex min-h-9 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
+        Xem từng khoản và giá theo số lượng
+      </a>
 
       <div className="mt-4 grid gap-2">
         {sampleRequested ? (

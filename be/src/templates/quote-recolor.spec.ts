@@ -12,6 +12,7 @@ import {
   parseLibraryArt,
   QUOTE_PRICES,
   quote,
+  quoteLadder,
   quoteSaving,
   recolorDesign,
 } from '@wrapfit/shared';
@@ -20,17 +21,29 @@ const gift = { length: 90, width: 90, height: 110, paperThickness: 0.42 };
 const pieces = generateDielinePieces('tuck-top', gift);
 
 describe('quote', () => {
-  it('prints digitally up to the threshold, offset above it', () => {
-    expect(quote({ structure: 'tuck-top', pieces, quantity: DIGITAL_MAX_QUANTITY, paper: 'ivory' }).method).toBe('digital');
+  it('picks the cheaper method, digital only up to the longest digital run', () => {
+    for (const quantity of [1, 50, 200, 250, 300, 500, DIGITAL_MAX_QUANTITY]) {
+      const chosen = quote({ structure: 'tuck-top', pieces, quantity, paper: 'ivory' });
+      const other = quote({ structure: 'tuck-top', pieces, quantity, paper: 'ivory', method: chosen.method === 'digital' ? 'offset' : 'digital' });
+      expect(chosen.total).toBeLessThanOrEqual(other.total);
+    }
+    expect(quote({ structure: 'tuck-top', pieces, quantity: 50, paper: 'ivory' }).method).toBe('digital');
     expect(quote({ structure: 'tuck-top', pieces, quantity: DIGITAL_MAX_QUANTITY + 1, paper: 'ivory' }).method).toBe('offset');
+    // Small boxes stay digital longer: no jump in price at the old 300-box threshold.
+    const small = generateDielinePieces('tuck-top', { length: 40, width: 40, height: 60, paperThickness: 0.42 });
+    const at300 = quote({ structure: 'tuck-top', pieces: small, quantity: 300, paper: 'ivory' });
+    const at301 = quote({ structure: 'tuck-top', pieces: small, quantity: 301, paper: 'ivory' });
+    expect(at301.perBox).toBeLessThanOrEqual(at300.perBox + 100);
   });
 
-  it('charges the digital minimum for one box, plus partner share and shipping', () => {
+  it('charges the digital minimum for one box, without shipping or a commission line', () => {
     const one = quote({ structure: 'tuck-top', pieces, quantity: 1, paper: 'ivory' });
     expect(one.lines.some((line) => line.label === 'Bù đơn tối thiểu')).toBe(true);
-    const floor = QUOTE_PRICES.digitalMinimum * (1 + QUOTE_PRICES.partnerShare) + QUOTE_PRICES.shipping;
-    expect(Math.abs(one.total - floor)).toBeLessThanOrEqual(300);
+    expect(Math.abs(one.total - QUOTE_PRICES.digitalMinimum)).toBeLessThanOrEqual(300);
     expect(one.perBox).toBe(one.total);
+    expect(one.lines.some((line) => line.id === 'partner' || line.id === 'shipping')).toBe(false);
+    // The commission comes out of the partner's price.
+    expect(one.commissionVnd).toBe(Math.round((one.total * QUOTE_PRICES.partnerShare) / 100) * 100);
   });
 
   it('gets cheaper per box with quantity, and the lines add up', () => {
@@ -41,6 +54,36 @@ describe('quote', () => {
       expect(price.perSheet).toBeGreaterThan(0);
     }
     expect(prices[3].lines.some((line) => line.label.startsWith('Khuôn bế'))).toBe(true);
+  });
+
+  it('splits the total into box material, printing, converting and finishing, each line with its formula', () => {
+    for (const quantity of [1, 50, 500]) {
+      const q = quote({ structure: 'tuck-top', pieces, quantity, paper: 'kraft', finishes: ['matte-lamination', 'foil'] });
+      expect(q.groups.map((g) => g.group)).toEqual(['material', 'print', 'converting']);
+      expect(q.groups.reduce((sum, g) => sum + g.vnd, 0)).toBe(q.total);
+      expect(q.groups.reduce((sum, g) => sum + g.share, 0)).toBeCloseTo(1, 6);
+      expect(q.fixedVnd + q.variableVnd).toBe(q.total);
+      for (const line of q.lines) expect(line.detail.length).toBeGreaterThan(0);
+      expect(q.lines.find((line) => line.id === 'paper')!.group).toBe('material');
+      // Foil: its block once, then per box.
+      expect(q.lines.find((line) => line.id === 'foil-setup')!.kind).toBe('fixed');
+      expect(q.lines.find((line) => line.id === 'foil')!.kind).toBe('perUnit');
+    }
+    const offset = quote({ structure: 'tuck-top', pieces, quantity: 500, paper: 'ivory' });
+    expect(offset.lines.filter((line) => line.kind === 'fixed').map((line) => line.id)).toEqual(['setup', 'die']);
+  });
+
+  it('compares quantities: price per box and how much it drops', () => {
+    const ladder = quoteLadder({ structure: 'tuck-top', pieces, paper: 'ivory' }, [500, 1, 50, 50, 1000]);
+    expect(ladder.map((step) => step.quantity)).toEqual([1, 50, 500, 1000]);
+    expect(ladder[0].savingVsOne).toBe(0);
+    expect(ladder[0].savingVsPrevious).toBeNull();
+    for (let i = 1; i < ladder.length; i++) {
+      expect(ladder[i].perBox).toBeLessThan(ladder[i - 1].perBox);
+      expect(ladder[i].savingVsPrevious).toBeCloseTo(1 - ladder[i].perBox / ladder[i - 1].perBox, 6);
+      expect(ladder[i].savingVsOne).toBeGreaterThan(ladder[i - 1].savingVsOne);
+    }
+    expect(ladder.map((step) => step.method)).toEqual(['digital', 'digital', 'offset', 'offset']);
   });
 
   it('suggests trimming a side when more boxes then fit on a sheet', () => {

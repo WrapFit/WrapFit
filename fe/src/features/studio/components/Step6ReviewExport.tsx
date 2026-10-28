@@ -10,6 +10,7 @@ import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, Stu
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
+import { QuoteBreakdown } from "./QuoteBreakdown";
 import { QuoteCard } from "./QuoteCard";
 
 
@@ -73,6 +74,8 @@ export function Step6ReviewExport({
   const [pieceIndex, setPieceIndex] = useState(0);
   const [fold, setFold] = useState(100);
   const [open, setOpen] = useState(false);
+  /** Boxes of the quote: the card and the breakdown below follow the same number. */
+  const [quantity, setQuantity] = useState(50);
   const paper = paperStockOf(activeMaterial);
   const fits = sheetFits(pieces);
   const errors = report.violations.filter((v) => v.severity === "error").length;
@@ -264,8 +267,21 @@ export function Step6ReviewExport({
             title={title}
             projectId={projectId}
             blocked={!passed}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
           />
         </div>
+      </div>
+
+      <div className="mt-4">
+        <QuoteBreakdown
+          structure={boxType}
+          pieces={pieces}
+          material={activeMaterial}
+          finishes={finishes}
+          quantity={quantity}
+          onQuantityChange={setQuantity}
+        />
       </div>
 
       <StepActionBar
