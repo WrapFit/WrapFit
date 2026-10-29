@@ -35,7 +35,7 @@ describe('AI pattern (e2e)', () => {
 
   it('reports that AI is off and how much of the plan is used', async () => {
     const res = await api().get('/api/ai/usage').set('Cookie', cookie).expect(200);
-    expect(res.body).toEqual({ tier: 'FREE', used: 0, limit: 10, aiEnabled: false });
+    expect(res.body).toEqual({ tier: 'FREE', used: 0, limit: 10, aiEnabled: false, budgetReached: false });
   });
 
   it('returns a palette and a seamless SVG tile', async () => {
@@ -59,6 +59,20 @@ describe('AI pattern (e2e)', () => {
   it('validates the request', async () => {
     await api().post('/api/ai/pattern').set('Cookie', cookie).send({ theme: '   ' }).expect(400);
     await api().post('/api/ai/pattern').set('Cookie', cookie).send({ theme: 'x', preferredColors: ['red'] }).expect(400);
+  });
+
+  // Before the burst test: every POST counts against the 5 per minute.
+  it('keeps premium quality for paid plans', async () => {
+    const res = await api()
+      .post('/api/ai/pattern')
+      .set('Cookie', cookie)
+      .send({ theme: 'Tết', quality: 'premium' })
+      .expect(403);
+    expect(res.body).toMatchObject({
+      code: 'PLAN_FEATURE_REQUIRED',
+      feature: 'ai.premium',
+      requiredPlan: 'PAY_PER_EXPORT',
+    });
   });
 
   it('limits bursts to 5 requests per minute', async () => {

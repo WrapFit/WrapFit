@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -161,9 +162,26 @@ export class EnvironmentVariables {
   @IsString()
   ANTHROPIC_API_KEY: string = '';
 
+  /** Model of the default `fast` quality (every plan). */
   @IsString()
   @IsNotEmpty()
-  AI_MODEL: string = 'claude-opus-5-5';
+  AI_MODEL_FAST: string = 'claude-haiku-5-5';
+
+  /** Model of the `premium` quality (paid plans only). */
+  @IsString()
+  @IsNotEmpty()
+  AI_MODEL_PREMIUM: string = 'claude-opus-5-5';
+
+  /** Deprecated alias of AI_MODEL_FAST, used only when AI_MODEL_FAST is not set. */
+  @IsString()
+  AI_MODEL: string = '';
+
+  /**
+   * Cost fuse in USD per calendar month (Vietnam time), estimated from the tokens in `ai_generations`. Once reached,
+   * every request gets the procedural generator until the next month. Empty = no limit.
+   */
+  @Matches(/^(\d+(\.\d+)?)?$/, { message: 'AI_MONTHLY_BUDGET_USD must be a number of USD such as 20 or 7.5, or empty' })
+  AI_MONTHLY_BUDGET_USD: string = '';
 
   @IsInt()
   @Min(1000)
@@ -255,5 +273,6 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
       'Invalid environment variables:\n - CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set together (or all left empty)',
     );
   }
+  if (!config.AI_MODEL_FAST && validated.AI_MODEL) validated.AI_MODEL_FAST = validated.AI_MODEL;
   return validated;
 }

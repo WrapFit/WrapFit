@@ -61,11 +61,12 @@ export const config = (env: EnvironmentVariables) => ({
     apiSecret: env.CLOUDINARY_API_SECRET,
     folder: env.CLOUDINARY_FOLDER,
   },
-  /** `anthropicApiKey` empty = built-in procedural patterns only. */
+  /** `anthropicApiKey` empty = built-in procedural patterns only. `monthlyBudgetUsd` null = no cost fuse. */
   ai: {
     anthropicApiKey: env.ANTHROPIC_API_KEY,
-    model: env.AI_MODEL,
+    models: { fast: env.AI_MODEL_FAST, premium: env.AI_MODEL_PREMIUM },
     timeoutMs: env.AI_TIMEOUT_MS,
+    monthlyBudgetUsd: env.AI_MONTHLY_BUDGET_USD ? Number(env.AI_MONTHLY_BUDGET_USD) : null,
   },
   redis: {
     url: env.REDIS_URL,

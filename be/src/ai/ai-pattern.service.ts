@@ -1,6 +1,7 @@
-import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { SubscriptionTier } from '@prisma/client';
 import { PrismaService } from '../shared/prisma';
+import { AiCostGuard } from './ai-cost.guard';
 import { GeneratePatternDto } from './dto/generate-pattern.dto';
 import { renderPatternSvg } from './pattern/pattern-svg';
 import type { GeneratedPattern, PatternGenerator } from './pattern/pattern.types';
@@ -21,8 +22,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export type PatternSource = 'ai' | 'procedural';
 
 /**
- * Pattern & palette generator (IT3-09). Uses Claude when configured, within a daily quota per subscription tier;
- * falls back to the built-in procedural generator (free, unlimited) when AI is off or fails.
+ * Pattern & palette generator (IT3-09). Uses Claude when configured, within a daily quota per subscription tier and
+ * the monthly cost fuse of WrapFit (AiCostGuard); falls back to the built-in procedural generator (free, unlimited)
+ * when AI is off, the budget is spent or the call fails. `premium` quality (stronger model) needs a paid plan.
  */
 @Injectable()
 export class AiPatternService {
@@ -31,16 +33,27 @@ export class AiPatternService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly costGuard: AiCostGuard,
     @Inject(AI_PATTERN_GENERATOR) private readonly ai: PatternGenerator | null,
   ) {}
 
   async generate(userId: string, dto: GeneratePatternDto) {
-    const request = { theme: dto.theme, preferredColors: dto.preferredColors ?? [] };
+    const quality = dto.quality ?? 'fast';
+    const request = { theme: dto.theme, preferredColors: dto.preferredColors ?? [], quality };
     const quota = await this.quota(userId);
+    if (quality === 'premium' && quota.tier === SubscriptionTier.FREE) {
+      throw new ForbiddenException({
+        code: 'PLAN_FEATURE_REQUIRED',
+        feature: 'ai.premium',
+        requiredPlan: SubscriptionTier.PAY_PER_EXPORT,
+        message: 'Premium AI patterns need a paid plan',
+      });
+    }
 
     let source: PatternSource = 'procedural';
     let result: GeneratedPattern | undefined;
-    if (this.ai) {
+    // Budget spent: procedural for everyone until next month, without counting against the daily quota.
+    if (this.ai && !quota.budgetReached) {
       if (quota.used >= quota.limit) {
         throw new HttpException(
           `Daily AI limit reached (${quota.limit} per 24 h on the ${quota.tier} plan)`,
@@ -59,6 +72,7 @@ export class AiPatternService {
 
     if (result.usage) {
       await this.prisma.aiGeneration.create({ data: { userId, theme: dto.theme, ...result.usage } });
+      await this.costGuard.record(result.usage.model, result.usage.inputTokens, result.usage.outputTokens);
       quota.used += 1;
     }
 
@@ -74,10 +88,17 @@ export class AiPatternService {
   }
 
   async quota(userId: string) {
-    const [user, used] = await Promise.all([
+    const [user, used, budgetReached] = await Promise.all([
       this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { subscriptionTier: true } }),
       this.prisma.aiGeneration.count({ where: { userId, createdAt: { gt: new Date(Date.now() - DAY_MS) } } }),
+      this.ai ? this.costGuard.budgetReached() : false,
     ]);
-    return { tier: user.subscriptionTier, used, limit: DAILY_AI_LIMIT[user.subscriptionTier], aiEnabled: this.ai !== null };
+    return {
+      tier: user.subscriptionTier,
+      used,
+      limit: DAILY_AI_LIMIT[user.subscriptionTier],
+      aiEnabled: this.ai !== null,
+      budgetReached,
+    };
   }
 }

@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { assertValidDesign, TILE_SIZE } from './pattern-svg';
-import type { GeneratedPattern, PatternDesign, PatternGenerator, PatternRequest } from './pattern.types';
+import type { AiQuality, GeneratedPattern, PatternDesign, PatternGenerator, PatternRequest } from './pattern.types';
 
 /** The model can decline a request (safety classifiers) or return something unusable. */
 export class PatternGenerationError extends Error {}
@@ -52,9 +52,12 @@ Rules:
 
 export interface ClaudeGeneratorOptions {
   apiKey: string;
-  model: string;
+  models: Record<AiQuality, string>;
   timeoutMs: number;
 }
+
+/** Haiku has no server-side refusal fallback: a declined request stays declined, so the parameter is not sent. */
+const hasServerFallback = (model: string) => !model.startsWith('claude-haiku');
 
 /** Calls the Claude API with structured outputs; the design is validated before it is returned. */
 export class ClaudePatternGenerator implements PatternGenerator {
@@ -64,16 +67,16 @@ export class ClaudePatternGenerator implements PatternGenerator {
     this.client = new Anthropic({ apiKey: options.apiKey, timeout: options.timeoutMs, maxRetries: 1 });
   }
 
-  async generate({ theme, preferredColors }: PatternRequest): Promise<GeneratedPattern> {
+  async generate({ theme, preferredColors, quality = 'fast' }: PatternRequest): Promise<GeneratedPattern> {
     const colors = preferredColors.length ? `\nBrand colors: ${preferredColors.join(', ')}` : '';
+    const model = this.options.models[quality];
     const response = await this.client.beta.messages.create({
-      model: this.options.model,
+      model,
       max_tokens: 16000,
       // Simple, well-specified task: low effort keeps it fast and cheap.
       output_config: { effort: 'low', format: { type: 'json_schema', schema: DESIGN_SCHEMA } },
       // If a safety classifier declines, Anthropic re-runs the request on its recommended fallback model.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
+      ...(hasServerFallback(model) && { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }),
       system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: `Theme: ${theme}${colors}` }],
     });
