@@ -1,6 +1,7 @@
 # 17 — Kế hoạch hoàn thiện Market-Test-Ready MVP (Path 2)
 
-> Ngày lập: 2026-10-29 · Nhánh gốc: `feat/fe-be-integration` (22df863) · Trạng thái: **chờ duyệt**.
+> Ngày lập: 2026-10-29 · Nhánh gốc: `feat/fe-be-integration` (22df863) · Trạng thái: **đã duyệt 2026-10-29** (M1–M9; Q1–Q4 dùng mặc định
+> cho tới khi có trả lời).
 > Nguồn yêu cầu: Google Doc CP4, tab "Phân Công → IT", "Nội Dung → IT-ndung", "MVP", "CP4 YÊU CẦU → Path 2".
 > Đặc tả nền: [`16_PRICING_ENTITLEMENTS_SPEC.md`](16_PRICING_ENTITLEMENTS_SPEC.md). Kế hoạch này chỉ lấy phần
 > docs/16 cần cho Path 2 và ghi rõ chỗ làm gọn hơn docs/16.
@@ -305,4 +306,4 @@ mới.
 
 | Phiên | Ngày | Nhánh / commit | Đã xong | Còn dở / ghi chú cho phiên sau |
 |---|---|---|---|---|
-| Lập plan | 2026-10-29 | `feat/fe-be-integration` | Đối chiếu tab IT với code (§1), lập plan S1–S8 | Chờ duyệt §2.1 và trả lời §2.2 |
+| Lập plan | 2026-10-29 | `feat/path2-mvp` | Đối chiếu tab IT với code (§1), lập plan S1–S8; plan được duyệt | Đợt 1 (S1, S3, S4, S7) khởi chạy song song, mỗi phiên một worktree tách từ `feat/path2-mvp` |
