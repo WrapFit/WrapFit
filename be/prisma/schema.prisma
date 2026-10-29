@@ -120,6 +120,10 @@ model User {
   projectLikes  ProjectLike[]
   storedFiles   StoredFile[]
   aiGenerations AiGeneration[]
+  payments      Payment[]
+  creditLots    CreditLot[]
+  exportUnlocks ExportUnlock[]
+  subscriptions Subscription[]
 
   @@index([referredById])
   @@map("users")
@@ -266,6 +270,7 @@ model PackagingProject {
   likes          ProjectLike[]
   files          StoredFile[]
   fileRefs       ProjectFileRef[]
+  exportUnlocks  ExportUnlock[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -350,10 +355,14 @@ model ExportJob {
   errorLog    String?        @map("error_log")
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   completedAt DateTime?      @map("completed_at") @db.Timestamptz(3)
+  watermarked Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
+  unlockId    String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unlock  ExportUnlock?    @relation(fields: [unlockId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
+  @@index([unlockId])
   @@map("export_jobs")
 }
 
@@ -464,4 +473,150 @@ model AiGeneration {
 
   @@index([userId, createdAt])
   @@map("ai_generations")
+}
+
+// ============================================================================
+// Billing core (docs/16 §6, trimmed by docs/17 S1). Money is an Int in VND. Export credits are a ledger: lots with an
+// expiry (`credit_lots`) spent by debit rows (`credit_debits`); `users.subscription_tier` is only a cache written by
+// PlanService.sync. CHECK constraints live in migration 20261030000100_billing_core.
+// ============================================================================
+
+enum PaymentPurpose {
+  EXPORT_1 // 1 lượt xuất, 19.000đ
+  EXPORT_5 // 5 lượt xuất, 79.000đ
+  EXPORT_15 // 15 lượt xuất, 199.000đ
+  PRO_MONTH // Pro 30 ngày, 99.000đ
+  SAMPLE_ORDER // Đơn in mẫu (số tiền theo đơn)
+}
+
+enum PaymentStatus {
+  PENDING // Chờ chuyển khoản, hết hạn sau 15 phút
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+enum CreditKind {
+  EXPORT // Lượt xuất file sạch (credit AI theo lô chưa làm: docs/17 M2)
+}
+
+enum CreditSource {
+  PURCHASE // Mua gói lượt: tính là gói Lượt xuất khi còn hạn
+  ADMIN // Admin cấp tay (tài khoản demo, bồi thường): không đổi gói
+}
+
+enum CreditDebitReason {
+  EXPORT_UNLOCK // Mở khóa một bản thiết kế (project, version)
+  ADMIN_ADJUSTMENT
+}
+
+enum SubscriptionStatus {
+  ACTIVE // Trong chu kỳ đã trả
+  EXPIRED // Hết chu kỳ (không gia hạn tự động: docs/17 M4)
+}
+
+// One payment request (VietQR transfer, simulated in the CP4 demo). `reference` is the transfer content.
+model Payment {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  purpose   PaymentPurpose
+  amountVnd Int            @map("amount_vnd")
+  reference String         @unique // "WF" + 6 ký tự [A-Z0-9] (CHECK), khớp nội dung chuyển khoản
+  status    PaymentStatus  @default(PENDING)
+  expiresAt DateTime       @map("expires_at") @db.Timestamptz(3)
+  paidAt    DateTime?      @map("paid_at") @db.Timestamptz(3)
+  metadata  Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditLots    CreditLot[]
+  subscriptions Subscription[]
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt]) // Đánh dấu EXPIRED
+  @@map("payments")
+}
+
+// A batch of credits with an expiry. Balance = sum of `remaining` over the lots not expired.
+model CreditLot {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  kind      CreditKind
+  source    CreditSource
+  quantity  Int // Số lượt cấp
+  remaining Int // Còn lại: chỉ CreditsService sửa, trong transaction có khóa dòng
+  expiresAt DateTime?    @map("expires_at") @db.Timestamptz(3) // null = không hết hạn (chỉ lô ADMIN)
+  paymentId String?      @map("payment_id") @db.Uuid
+  note      String?
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  debits  CreditDebit[]
+
+  @@index([userId, kind, expiresAt])
+  @@index([paymentId])
+  @@map("credit_lots")
+}
+
+// One debit may take from several lots: the rows of one operation share `operationId`.
+model CreditDebit {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  operationId String            @map("operation_id") @db.Uuid
+  lotId       String            @map("lot_id") @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  quantity    Int
+  reason      CreditDebitReason
+  refId       String?           @map("ref_id") // vd. export_unlocks.id
+  refundedAt  DateTime?         @map("refunded_at") @db.Timestamptz(3) // Hoàn đúng một lần
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  lot CreditLot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([operationId, lotId])
+  @@index([lotId])
+  @@index([userId, createdAt])
+  @@map("credit_debits")
+}
+
+// One credit unlocks every clean format of one design version (project, version) for `export.unlockDays` days.
+model ExportUnlock {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  projectId        String    @map("project_id") @db.Uuid
+  projectVersion   Int       @map("project_version")
+  userId           String    @map("user_id") @db.Uuid // Người trả lượt
+  debitOperationId String    @map("debit_operation_id") @db.Uuid
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(3)
+  refundedAt       DateTime? @map("refunded_at") @db.Timestamptz(3) // Xuất lỗi, đã hoàn lượt
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  project    PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exportJobs ExportJob[]
+
+  @@index([projectId, projectVersion])
+  @@index([userId])
+  @@index([debitOperationId])
+  @@map("export_unlocks")
+}
+
+// A paid plan period. At most one ACTIVE row per user (partial unique index in the migration).
+model Subscription {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  plan               SubscriptionTier // Chỉ STARTER | PRO_BUSINESS (CHECK)
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime           @map("current_period_start") @db.Timestamptz(3)
+  currentPeriodEnd   DateTime           @map("current_period_end") @db.Timestamptz(3)
+  paymentId          String?            @map("payment_id") @db.Uuid // Thanh toán gần nhất (tạo / gia hạn)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([paymentId])
+  @@map("subscriptions")
 }

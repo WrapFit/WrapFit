@@ -62,6 +62,8 @@ src/
   auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
   base/                    # GET /api/health
   users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
+  billing/                 # gói hiệu lực, sổ cái lượt xuất (lô + dòng trừ), GET /api/billing/me; BillingCoreModule
+                           # (CreditsService, PlanService, EntitlementsService) dùng ở cả API và worker
   projects/                # CRUD dự án, 4 tầng: presentation / application / domain / infrastructure
   collections/             # thư mục dự án (CRUD gọn: controller -> service -> Prisma)
   public-showcase/         # trang công khai /p/[slug], Remix (fork), thả tim
