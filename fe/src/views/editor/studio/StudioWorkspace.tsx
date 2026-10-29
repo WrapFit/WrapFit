@@ -60,6 +60,7 @@ import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExpor
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
+import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useStudioHeartbeat";
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
@@ -210,6 +211,7 @@ export function StudioWorkspace({
   const searchParams = useSearchParams();
   const isDemo = project === null;
   const presenting = usePresentMode();
+  useStudioHeartbeat(project?.id ?? null);
 
   // Guided tour: the overview of the screen once, then a short guide the first time each step opens.
   const tourContinued = useTourContinuation();
@@ -431,8 +433,9 @@ export function StudioWorkspace({
 
   // 1-click fix of the safe margin and bleed breaches, on every side of every panel (rules of the shared FitCheck)
   const handleAutoFix = useCallback(() => {
+    recordAutoFix(project?.id ?? null, pieces, elements);
     setElements((prev) => autoFixElements(pieces, prev));
-  }, [pieces]);
+  }, [pieces, elements, project?.id]);
 
   // Background over the whole box (all pieces), in the design's palette; null leaves the paper.
   const boxBackgroundDesign = useMemo(() => {

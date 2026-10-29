@@ -5,6 +5,7 @@
 
 import * as adminApi from "./admin";
 import * as aiApi from "./ai";
+import * as analyticsApi from "./analytics";
 import * as authApi from "./auth";
 import * as collectionsApi from "./collections";
 import * as commonApi from "./common";
@@ -21,6 +22,7 @@ import * as usersApi from "./users";
 
 export * from "./admin";
 export * from "./ai";
+export * from "./analytics";
 export * from "./auth";
 export * from "./collections";
 export * from "./common";
@@ -38,6 +40,7 @@ export * from "./users";
 export const apiClient = {
   ...adminApi,
   ...aiApi,
+  ...analyticsApi,
   ...authApi,
   ...collectionsApi,
   ...libraryApi,

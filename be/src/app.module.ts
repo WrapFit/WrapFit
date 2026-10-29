@@ -18,6 +18,7 @@ import { AuthModule, JwtAuthGuard } from './auth';
 import { configuration, validateEnv } from './config';
 import { AiModule } from './ai';
 import { BillingModule } from './billing';
+import { AnalyticsModule } from './analytics';
 import { ExportModule } from './export';
 import { CollectionsModule } from './collections';
 import { EventsModule } from './events';
@@ -62,6 +63,7 @@ import { CloudinaryModule } from './shared/cloudinary';
     TemplatesModule,
     LibraryModule,
     AiModule,
+    AnalyticsModule,
     UnboxingModule,
     ExportModule,
     EventsModule,

@@ -115,6 +115,7 @@ model User {
   refreshTokens RefreshToken[]
   authTokens    AuthToken[]
   projects      PackagingProject[]
+  productEvents ProductEvent[]
   collections   ProjectCollection[]
   mockups       SocialMockup[]
   projectLikes  ProjectLike[]
@@ -266,6 +267,7 @@ model PackagingProject {
   forkedFrom     PackagingProject?   @relation("ProjectForks", fields: [forkedFromId], references: [id], onDelete: SetNull)
   forks          PackagingProject[]  @relation("ProjectForks")
   exportJobs     ExportJob[]
+  productEvents  ProductEvent[]
   unboxingConfig UnboxingExperience?
   socialMockups  SocialMockup[]
   snapshots      ProjectSnapshot[]
@@ -715,4 +717,31 @@ model PrintShopMember {
 
   @@index([printShopId])
   @@map("print_shop_members")
+}
+
+// Analytics (docs/17 S7): append-only product events behind the dashboard numbers. user_id / project_id become null when
+// the user or the project is deleted, so totals of WrapFit stay correct.
+enum ProductEventType {
+  PROJECT_CREATED // payload { templateId, source: "new" | "duplicate" | "fork" | "backfill" }
+  EXPORT_BLOCKED_FITCHECK // payload { errors, fileType }: số vi phạm mức error làm xuất file bị chặn (422)
+  AUTO_FIX_APPLIED // payload { fixed }: số vi phạm Auto-Fix đã sửa
+  EXPORT_COMPLETED // payload { exportJobId, fileType, watermarked }
+  STUDIO_ACTIVE // payload { seconds }: thời gian có thao tác trong studio, tối đa 60 giây mỗi nhịp
+}
+
+model ProductEvent {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String?          @map("user_id") @db.Uuid
+  projectId String?          @map("project_id") @db.Uuid
+  type      ProductEventType
+  payload   Json             @default("{}")
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt]) // Khối "Toàn WrapFit"
+  @@index([userId, type, createdAt]) // Khối "Của bạn"
+  @@index([projectId, type]) // Thời gian tạo hộp: nhịp studio và lần xuất đầu tiên của từng dự án
+  @@map("product_events")
 }

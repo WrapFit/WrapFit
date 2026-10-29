@@ -3,6 +3,7 @@
  * entries: e.g. `queryKeys.projects.all` covers every project list and detail.
  */
 
+import type { AnalyticsPeriod, AnalyticsScope } from "@wrapfit/shared";
 import type { HubQuery, PageQuery, ProjectListQuery } from "@/types/api";
 
 export const queryKeys = {
@@ -37,6 +38,10 @@ export const queryKeys = {
 
   storageUsage: ["storage", "usage"] as const,
   aiUsage: ["ai", "usage"] as const,
+  analytics: {
+    all: ["analytics"] as const,
+    summary: (scope: AnalyticsScope, days: AnalyticsPeriod) => ["analytics", "summary", scope, days] as const,
+  },
 
   library: {
     all: ["library"] as const,
