@@ -72,6 +72,8 @@ src/
   export/                  # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
   mail/                    # MailService (đưa vào hàng đợi) + MailProcessor (worker gửi SMTP)
   events/                  # WebSocket gateway (thông báo realtime)
+  print-shops/             # danh sách xưởng in đối tác (dữ liệu tĩnh trong code)
+  orders/                  # đơn in mẫu (PostgreSQL): đặt, xem, vòng đời trạng thái (order-status.ts) cho ADMIN / PRINT_SHOP
 test/
   e2e/                     # e2e test (*.e2e-spec.ts) + helpers/
 ```

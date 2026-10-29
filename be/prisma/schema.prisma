@@ -120,6 +120,8 @@ model User {
   projectLikes  ProjectLike[]
   storedFiles   StoredFile[]
   aiGenerations AiGeneration[]
+  orders        Order[]
+  shopMember    PrintShopMember?
 
   @@index([referredById])
   @@map("users")
@@ -266,6 +268,7 @@ model PackagingProject {
   likes          ProjectLike[]
   files          StoredFile[]
   fileRefs       ProjectFileRef[]
+  orderItems     OrderItem[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -464,4 +467,97 @@ model AiGeneration {
 
   @@index([userId, createdAt])
   @@map("ai_generations")
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Đơn in mẫu gửi xưởng đối tác (docs/17, S4). Xưởng in là danh sách tĩnh trong PrintShopsService: lưu id dạng chuỗi.
+
+enum OrderStatus {
+  PENDING_PAYMENT // Đã đặt, chờ thanh toán (VietQR mô phỏng, S5)
+  PAID // Đã thanh toán, chờ xưởng nhận in
+  IN_PRODUCTION // Xưởng đang in
+  SHIPPED // Đang giao
+  DELIVERED // Đã giao
+  CANCELLED // Đã hủy (trước khi xưởng in)
+}
+
+model Order {
+  id              String      @id @default(uuid(7)) @db.Uuid
+  orderCode       String      @unique @map("order_code") // WF-<năm>-<4 số>, năm theo giờ Việt Nam
+  userId          String      @map("user_id") @db.Uuid
+  printShopId     String      @map("print_shop_id") // id xưởng trong PrintShopsService (ps-sg-01...)
+  recipientName   String      @map("recipient_name")
+  recipientPhone  String      @map("recipient_phone")
+  shippingAddress String      @map("shipping_address")
+  notes           String?
+  subtotalVnd     Int         @map("subtotal_vnd")
+  shippingVnd     Int         @default(0) @map("shipping_vnd")
+  totalVnd        Int         @map("total_vnd") // = subtotal + shipping (CHECK trong migration)
+  status          OrderStatus @default(PENDING_PAYMENT)
+  paymentId       String?     @map("payment_id") @db.Uuid // Khóa ngoại tới payments do S5 thêm
+  paidAt          DateTime?   @map("paid_at") @db.Timestamptz(3)
+  shippedAt       DateTime?   @map("shipped_at") @db.Timestamptz(3)
+  deliveredAt     DateTime?   @map("delivered_at") @db.Timestamptz(3)
+  cancelledAt     DateTime?   @map("cancelled_at") @db.Timestamptz(3)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   OrderItem[]
+  history OrderStatusHistory[]
+
+  @@index([userId, createdAt]) // GET /orders/my-orders
+  @@index([printShopId, status, createdAt]) // Hàng đợi của xưởng / trang quản trị
+  @@index([paymentId])
+  @@map("orders")
+}
+
+// Một thiết kế trong đơn. Chụp lại tên, cấu trúc, kích thước, phiên bản lúc đặt: dự án sửa hay xóa sau đó không đổi đơn.
+model OrderItem {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  orderId        String  @map("order_id") @db.Uuid
+  projectId      String? @map("project_id") @db.Uuid // null khi dự án đã bị xóa vĩnh viễn
+  projectVersion Int     @map("project_version")
+  projectTitle   String  @map("project_title")
+  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow)
+  dimensions     Json // { length, width, height, paperThickness } lúc đặt
+  paperStock     String  @map("paper_stock")
+  quantity       Int // 1–10 (CHECK)
+  unitPriceVnd   Int     @map("unit_price_vnd") // Giá hộp đầu; mỗi hộp thêm 25.000đ, tổng ở line_total_vnd
+  lineTotalVnd   Int     @map("line_total_vnd")
+
+  order   Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([projectId])
+  @@map("order_items")
+}
+
+// Nhật ký chuyển trạng thái (cả lúc tạo: from = null). changed_by không có khóa ngoại: giữ nguyên khi tài khoản bị xóa.
+model OrderStatusHistory {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  orderId     String       @map("order_id") @db.Uuid
+  fromStatus  OrderStatus? @map("from_status")
+  toStatus    OrderStatus  @map("to_status")
+  changedById String?      @map("changed_by_id") @db.Uuid
+  note        String?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}
+
+// Tài khoản PRINT_SHOP thuộc xưởng nào (một tài khoản, một xưởng). Admin gán bằng seed / SQL ở MVP.
+model PrintShopMember {
+  userId      String   @id @map("user_id") @db.Uuid
+  printShopId String   @map("print_shop_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([printShopId])
+  @@map("print_shop_members")
 }

@@ -18,9 +18,10 @@ import { Badge, Panel, PanelTitle, WorkspaceEmpty, WorkspaceError, WorkspaceShel
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
 import { RECENT_PROJECTS_QUERY, formatRelative, useProjectList } from '@/features/dashboard';
+import { orderStatusBadge } from '@/features/orders';
 import { formatVnd } from '@/features/pricing';
 import { queryKeys } from '@/hooks/data/queryKeys';
-import type { ExportFileType, ExportJob, ExportStatus } from '@/types/api';
+import type { ExportFileType, ExportJob, ExportStatus, SampleOrder } from '@/types/api';
 import { cn } from '@/utils/helpers';
 import { Alert, DataTable, DatePicker, startOfDay, type DataColumn, type DateRange } from '@/components/ui';
 
@@ -45,18 +46,6 @@ const STATUS_BADGES: Record<ExportStatus, { tone: 'green' | 'grey' | 'red'; labe
   PROCESSING: { tone: 'grey', label: 'Đang xử lý' },
   PENDING: { tone: 'grey', label: 'Đang chờ' },
   FAILED: { tone: 'red', label: 'Lỗi' },
-};
-
-const ORDER_STATUS_MAP: Record<string, { tone: 'green' | 'grey' | 'amber'; label: string }> = {
-  pending: { tone: 'amber', label: 'Chờ xưởng duyệt' },
-  confirmed: { tone: 'green', label: 'Đã xác nhận' },
-  in_production: { tone: 'amber', label: 'Đang in mẫu thử' },
-  shipped: { tone: 'green', label: 'Đang giao hàng' },
-  delivered: { tone: 'green', label: 'Đã giao' },
-  SUBMITTED: { tone: 'amber', label: 'Chờ xưởng duyệt' },
-  IN_PRODUCTION: { tone: 'amber', label: 'Đang in mẫu thử' },
-  SHIPPED: { tone: 'green', label: 'Đang giao hàng' },
-  DELIVERED: { tone: 'green', label: 'Đã giao' },
 };
 
 /** Projects whose exports are listed. */
@@ -229,6 +218,56 @@ function OrdersScreen() {
     body = <DataTable label="File in đã xuất" columns={columns} rows={rows} rowKey={(row) => `${row.projectId}:${row.job.id}`} mobile="cards" initialSort={{ key: 'time', direction: 'desc' }} search={{ label: 'Lọc file in', placeholder: 'Tên dự án, định dạng…', text: (row) => `${row.projectTitle} ${FILE_LABELS[row.job.fileType]} ${STATUS_BADGES[row.job.status].label}` }} />;
   }
 
+  const orderColumns: DataColumn<SampleOrder>[] = [
+    {
+      key: 'project',
+      label: 'Dự án',
+      primary: true,
+      sortValue: (order) => order.projectTitle,
+      render: (order) => (
+        <span className="block max-w-[220px]">
+          {order.projectId ? (
+            <Link href={ROUTES.editor(order.projectId)} className="block truncate font-medium text-library-ink hover:underline" title={order.projectTitle}>
+              {order.projectTitle}
+            </Link>
+          ) : (
+            <span className="block truncate font-medium text-library-ink" title={order.projectTitle}>{order.projectTitle}</span>
+          )}
+          <span className="block font-mono text-caption text-library-muted tabular-nums">{order.orderCode}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'shop',
+      label: 'Xưởng in',
+      sortValue: (order) => order.printShopName ?? '',
+      render: (order) => <span className="text-library-sub">{order.printShopName || order.partnerShop?.name || 'Xưởng đối tác WrapFit'}</span>,
+    },
+    { key: 'quantity', label: 'Số lượng', sortValue: (order) => order.quantity, render: (order) => <span className="tabular-nums">{order.quantity} hộp</span> },
+    {
+      key: 'total',
+      label: 'Tổng phí',
+      align: 'right',
+      sortValue: (order) => order.totalVnd ?? 0,
+      render: (order) => <span className="font-semibold tabular-nums text-library-ink">{formatVnd(order.totalVnd ?? order.sampleFeeVnd ?? 0)}</span>,
+    },
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      sortValue: (order) => orderStatusBadge(order.status).label,
+      render: (order) => {
+        const badge = orderStatusBadge(order.status);
+        return <Badge tone={badge.tone}>{badge.label}</Badge>;
+      },
+    },
+    {
+      key: 'time',
+      label: 'Đặt lúc',
+      sortValue: (order) => new Date(order.createdAt),
+      render: (order) => <span className="whitespace-nowrap text-library-sub">{formatRelative(order.createdAt)}</span>,
+    },
+  ];
+
   return (
     <WorkspaceShell
       title="Đơn hàng & File In"
@@ -250,47 +289,37 @@ function OrdersScreen() {
               Đơn in mẫu thử
             </PanelTitle>
 
-            {sampleOrders.length === 0 ? (
+            {sampleOrdersQuery.isError ? (
+              <WorkspaceError
+                error={sampleOrdersQuery.error}
+                title="Không tải được đơn in mẫu"
+                onRetry={() => void sampleOrdersQuery.refetch()}
+                retrying={sampleOrdersQuery.isFetching}
+              />
+            ) : sampleOrdersQuery.isPending ? (
+              <div aria-busy="true" className="flex flex-col gap-2">
+                <span role="status" className="sr-only">
+                  Đang tải đơn in mẫu…
+                </span>
+                {[0, 1].map((index) => (
+                  <div key={index} aria-hidden className="h-12 animate-pulse rounded-xl bg-library-panel motion-reduce:animate-none" />
+                ))}
+              </div>
+            ) : sampleOrders.length === 0 ? (
               <div className="py-6 text-center text-sm text-library-muted">
                 <PackageCheck className="size-8 mx-auto mb-2 text-library-sub opacity-60" />
                 <p>Bạn chưa có đơn đặt in mẫu thử nào.</p>
                 <p className="text-xs text-library-sub mt-1">In 01 hộp thực tế gửi tận tay để kiểm định màu in và khớp nối trước khi sản xuất hàng loạt.</p>
               </div>
             ) : (
-              <div className="relative overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-library-line text-library-muted">
-                      <th scope="col" className="py-2.5 pr-3 font-normal">Dự án</th>
-                      <th scope="col" className="px-3 py-2.5 font-normal">Xưởng in</th>
-                      <th scope="col" className="px-3 py-2.5 font-normal">Số lượng</th>
-                      <th scope="col" className="px-3 py-2.5 font-normal">Tổng phí</th>
-                      <th scope="col" className="px-3 py-2.5 font-normal">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-library-line">
-                    {sampleOrders.map((order) => {
-                      const st = ORDER_STATUS_MAP[order.status] ?? { tone: 'grey', label: order.status };
-                      const shopName = order.printShopName || order.partnerShop?.name || 'Xưởng đối tác WrapFit';
-                      const fee = order.totalVnd ?? order.sampleFeeVnd ?? 49_000;
-                      return (
-                        <tr key={order.id}>
-                          <td className="py-3 pr-3 font-medium text-library-ink">
-                            <span className="block truncate max-w-[200px]" title={order.projectTitle}>{order.projectTitle}</span>
-                            <span className="block font-mono text-cad-spec-micro text-library-muted">#{order.id.slice(0, 8)}</span>
-                          </td>
-                          <td className="px-3 py-3 text-library-sub text-xs">{shopName}</td>
-                          <td className="px-3 py-3 font-mono text-xs">{order.quantity} hộp</td>
-                          <td className="px-3 py-3 font-semibold text-library-ink">{formatVnd(fee)}</td>
-                          <td className="px-3 py-3">
-                            <Badge tone={st.tone}>{st.label}</Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                label="Đơn in mẫu thử"
+                columns={orderColumns}
+                rows={sampleOrders}
+                rowKey={(order) => order.id}
+                mobile="cards"
+                initialSort={{ key: 'time', direction: 'desc' }}
+              />
             )}
           </Panel>
 
