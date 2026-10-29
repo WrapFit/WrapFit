@@ -1,5 +1,6 @@
 /** App-wide constants: route paths, storage keys, limits, labels. */
 
+import { PLAN_LABELS } from "@wrapfit/shared";
 import type { Role, SubscriptionTier } from "@/types/api";
 
 /**
@@ -56,9 +57,10 @@ export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Quản trị viên",
 };
 
+/** "Gói Miễn phí", "Gói Lượt xuất", "Gói Pro", "Gói Business": the plan names of @wrapfit/shared/billing. */
 export const TIER_LABELS: Record<SubscriptionTier, string> = {
-  FREE: "Gói Miễn phí",
-  PAY_PER_EXPORT: "Từng lần xuất (19k)",
-  STARTER: "Gói Tháng (99k)",
-  PRO_BUSINESS: "Doanh Nghiệp",
+  FREE: `Gói ${PLAN_LABELS.FREE}`,
+  PAY_PER_EXPORT: `Gói ${PLAN_LABELS.PAY_PER_EXPORT}`,
+  STARTER: `Gói ${PLAN_LABELS.STARTER}`,
+  PRO_BUSINESS: `Gói ${PLAN_LABELS.PRO_BUSINESS}`,
 };

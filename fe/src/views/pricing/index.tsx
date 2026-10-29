@@ -3,11 +3,11 @@
 import React from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { MainFooter, MainHeader } from "@/components/layout";
-import { VisualSparkPricingCards } from "@/components/pricing";
+import { PlanComparison, PlanFaq, VisualSparkPricingCards } from "@/components/pricing";
 
 /**
- * `/pricing`: Pricing page in the VisualSpark layout:
- * - 3-tier pricing cards with monthly/yearly toggle and payment guarantees.
+ * `/pricing`: Pricing page in the VisualSpark layout: the four plan cards (prices from @wrapfit/shared/billing), the
+ * comparison table and the FAQ.
  */
 export default function PricingPage() {
   return (
@@ -17,6 +17,8 @@ export default function PricingPage() {
         className={`${landingFontVariables} w-full bg-white font-landing-body text-landing-ink antialiased pb-12 sm:pb-16 lg:pb-24`}
       >
         <VisualSparkPricingCards />
+        <PlanComparison />
+        <PlanFaq />
       </main>
       <MainFooter />
     </>

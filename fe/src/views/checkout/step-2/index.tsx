@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/checkout/step-2?plan=&billing=`: invoice details and payment method. There is no billing API yet: the details are
+ * `/checkout/step-2?plan=&pack=`: invoice details and payment method. There is no billing API yet: the details are
  * prefilled from the account (`GET /auth/me`), checked here and never sent; no card number is asked.
  */
 
@@ -31,7 +31,7 @@ const METHODS = [
 function Payment() {
   const router = useRouter();
   const { user } = useAuth();
-  const { tier, billing, query } = useCheckoutParams();
+  const { tier, pack, query } = useCheckoutParams();
   const [name, setName] = useState(user?.fullName ?? '');
   const [company, setCompany] = useState(user?.shopName ?? '');
   const [taxCode, setTaxCode] = useState('');
@@ -53,7 +53,7 @@ function Payment() {
   };
 
   return (
-    <CheckoutShell step={2} tier={tier} billing={billing} query={query()}>
+    <CheckoutShell step={2} tier={tier} pack={pack} query={query()}>
       <form onSubmit={onSubmit} noValidate aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Thông tin thanh toán

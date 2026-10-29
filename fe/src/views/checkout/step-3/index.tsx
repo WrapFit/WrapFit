@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/checkout/step-3?plan=&billing=`: what the upgrade changes, from the current quotas of the account (`GET /auth/me`,
+ * `/checkout/step-3?plan=&pack=`: what the upgrade changes, from the current quotas of the account (`GET /auth/me`,
  * `GET /storage/usage`) to the ones of the chosen plan. The payment gateway is not open yet: nothing is activated.
  */
 
@@ -25,7 +25,7 @@ export default function CheckoutStep3Page() {
 function Review() {
   const { user } = useAuth();
   const storage = useStorageUsage();
-  const { tier, billing, query } = useCheckoutParams();
+  const { tier, pack, query } = useCheckoutParams();
   const current = PLANS[user?.subscriptionTier ?? 'FREE'];
   const next = PLANS[tier];
 
@@ -36,7 +36,7 @@ function Review() {
   ];
 
   return (
-    <CheckoutShell step={3} tier={tier} billing={billing} query={query()}>
+    <CheckoutShell step={3} tier={tier} pack={pack} query={query()}>
       <section aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <span className="flex size-14 items-center justify-center rounded-2xl bg-fpt-orange text-white">
           <Clock className="size-6" aria-hidden />

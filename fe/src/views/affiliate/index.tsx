@@ -13,8 +13,8 @@ import { formatVnd, PLANS } from "@/features/pricing";
 
 const RATE = 0.15;
 const TIERS = [
-  { name: "Gói Tháng (Pro)", base: PLANS.STARTER.price.monthly, unit: "/tháng" },
-  { name: "Gói Doanh nghiệp", base: PLANS.PRO_BUSINESS.price.monthly, unit: "/tháng" },
+  { name: `Gói ${PLANS.STARTER.name}`, base: PLANS.STARTER.price.monthly, unit: "/tháng" },
+  { name: `Gói ${PLANS.PRO_BUSINESS.name}`, base: PLANS.PRO_BUSINESS.price.monthly, unit: "/tháng" },
   { name: "Đơn in mẫu đầu tiên", base: 49_000, unit: "/đơn" },
 ];
 
@@ -53,7 +53,7 @@ export default function AffiliatePage() {
           <PhotoFrame image={PHOTOS.kraftTwine} className="aspect-[4/3] lg:aspect-[5/4]">
             <div className="absolute bottom-4 left-4 right-4 rounded-3xl bg-white/95 p-5 shadow-soft-16 backdrop-blur sm:bottom-6 sm:left-6 sm:right-auto sm:w-72">
               <p className="flex items-center gap-2 text-sm font-semibold text-landing-muted">
-                <BadgePercent className="size-4 text-fpt-orange-ink" aria-hidden /> Mỗi shop dùng Gói Tháng
+                <BadgePercent className="size-4 text-fpt-orange-ink" aria-hidden /> Mỗi shop dùng gói {PLANS.STARTER.name}
               </p>
               <p className="mt-1 font-landing-heading text-3xl font-bold">{formatVnd(Math.round(PLANS.STARTER.price.monthly * RATE))}<span className="text-base text-landing-muted">/tháng</span></p>
               <p className="text-xs text-landing-muted">về tài khoản của bạn, 12 tháng liền</p>
@@ -124,7 +124,7 @@ export default function AffiliatePage() {
             <Wallet className="size-6 text-fpt-orange-ink" aria-hidden />
             <p className="mt-3 font-landing-heading text-xl font-bold">Ví dụ</p>
             <p className="mt-2 text-sm leading-relaxed text-landing-muted">
-              Bạn giới thiệu 20 shop dùng Gói Tháng: mỗi tháng nhận 20 × {formatVnd(Math.round(PLANS.STARTER.price.monthly * RATE))} ={" "}
+              Bạn giới thiệu 20 shop dùng gói {PLANS.STARTER.name}: mỗi tháng nhận 20 × {formatVnd(Math.round(PLANS.STARTER.price.monthly * RATE))} ={" "}
               <strong className="text-landing-ink">{formatVnd(20 * Math.round(PLANS.STARTER.price.monthly * RATE))}</strong>, trong 12 tháng.
             </p>
             <CheckList className="mt-4" items={["Không giới hạn số khách giới thiệu", "Bảng theo dõi lượt nhấp và đơn hằng tháng", "Thanh toán qua chuyển khoản ngân hàng nội địa"]} />
