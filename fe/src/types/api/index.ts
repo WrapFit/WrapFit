@@ -512,6 +512,8 @@ export interface GeneratePatternRequest {
   theme: string;
   /** ≤ 5 brand colors `#RRGGBB`. */
   preferredColors?: string[];
+  /** Default `fast` (every plan); `premium` = stronger model, paid plans only (403 `PLAN_FEATURE_REQUIRED` on Free). */
+  quality?: "fast" | "premium";
 }
 
 export interface AiPatternResult {
@@ -531,6 +533,8 @@ export interface AiUsage {
   used: number;
   limit: number;
   aiEnabled: boolean;
+  /** The monthly AI budget of WrapFit is spent: patterns are procedural until next month. */
+  budgetReached: boolean;
 }
 
 // ---------------------------------------------------------------- print-shops & orders

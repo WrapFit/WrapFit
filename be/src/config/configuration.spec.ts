@@ -17,6 +17,12 @@ describe('configuration', () => {
     expect(config.mail.smtp).toMatchObject({ host: 'localhost', port: 1025, secure: false });
   });
 
+  it('reads the AI cost fuse as a number of USD, or null when empty', () => {
+    expect(configuration(valid).ai.monthlyBudgetUsd).toBeNull();
+    expect(configuration({ ...valid, AI_MONTHLY_BUDGET_USD: '20' }).ai.monthlyBudgetUsd).toBe(20);
+    expect(configuration(valid).ai.models).toEqual({ fast: 'claude-haiku-5-5', premium: 'claude-opus-5-5' });
+  });
+
   it('fails like env.validation on an invalid environment', () => {
     expect(() => configuration({ ...valid, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
   });

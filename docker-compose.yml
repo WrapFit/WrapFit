@@ -166,7 +166,11 @@ services:
       CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-wrapfit}
       # Optional: AI pattern generator (empty key = procedural patterns only)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+      # AI_MODEL is the old name of AI_MODEL_FAST (still read when AI_MODEL_FAST is unset)
+      AI_MODEL_FAST: ${AI_MODEL_FAST:-${AI_MODEL:-claude-haiku-5-5}}
+      AI_MODEL_PREMIUM: ${AI_MODEL_PREMIUM:-claude-opus-5-5}
+      # Monthly AI cost fuse in USD (empty = no limit); once spent, patterns are procedural until next month
+      AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:

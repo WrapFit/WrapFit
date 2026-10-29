@@ -166,7 +166,10 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | `cloudinary.cloudName` / `.apiKey` / `.apiSecret` | *(trống)* | CDN ảnh công khai (`shared/cloudinary`). Đặt cả ba hoặc để trống cả ba (= tắt). Hiện chỉ có kết nối, chưa có dữ liệu nào đi qua |
 | `CLOUDINARY_FOLDER` | `cloudinary.folder` | `wrapfit` | Thư mục gốc của môi trường trên Cloudinary, vd. `wrapfit-dev` ở máy dev |
 | `ANTHROPIC_API_KEY` | `ai.anthropicApiKey` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
-| `AI_MODEL` | `ai.model` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
+| `AI_MODEL_FAST` | `ai.models.fast` | `claude-haiku-5-5` | Model của chất lượng `fast` (mặc định, mọi gói) |
+| `AI_MODEL_PREMIUM` | `ai.models.premium` | `claude-opus-5-5` | Model của chất lượng `premium` (gói khác `FREE`) |
+| `AI_MODEL` | – | *(trống)* | **Tên cũ** của `AI_MODEL_FAST`, chỉ được đọc khi `AI_MODEL_FAST` không đặt. Sẽ bỏ sau CP4: đổi tên biến trong `.env` của VPS |
+| `AI_MONTHLY_BUDGET_USD` | `ai.monthlyBudgetUsd` | *(trống)* | Cầu chì chi phí AI (USD / tháng dương lịch giờ Việt Nam). Để trống = không giới hạn |
 | `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
 | `REDIS_URL` | `redis.url` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
 | `EXPORT_CONCURRENCY` | `export.concurrency` | `2` | Số job xuất file một worker chạy song song |
@@ -324,12 +327,14 @@ File xuất in tạo trước khi có bucket riêng tư (key `projects/<id>/expo
 
 ## AI sinh hoa văn
 
-`POST /api/ai/pattern { theme, preferredColors? }` trả bảng màu và **một ô hoa văn SVG lặp liền mạch** (`tile.svg`, dùng làm `background-image` hoặc phần tử `pattern` trên canvas).
+`POST /api/ai/pattern { theme, preferredColors?, quality? }` trả bảng màu và **một ô hoa văn SVG lặp liền mạch** (`tile.svg`, dùng làm `background-image` hoặc phần tử `pattern` trên canvas).
 
-- **Claude** (`ANTHROPIC_API_KEY` có giá trị): gọi model `AI_MODEL` với *structured outputs* — model chỉ trả **danh sách hình** (tròn, chữ nhật, đường, path) theo JSON schema, không trả SVG. Backend kiểm tra từng giá trị (màu `#RRGGBB`, toạ độ trong ô, `d` chỉ gồm lệnh path và số) rồi tự dựng SVG, nên SVG không thể chứa script, link hay tài nguyên ngoài. Ô được vẽ 9 lần (ô + 8 ô bên cạnh) và cắt theo `viewBox` để hình tràn mép xuất hiện lại ở mép đối diện → lặp không lộ đường nối.
-- Request bật `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`): nếu bộ lọc an toàn của model từ chối, Anthropic tự chạy lại trên model dự phòng. Effort `low` vì đây là việc đơn giản. System prompt được cache.
+- **Chất lượng**: `quality` = `fast` (mặc định, `AI_MODEL_FAST`, mọi gói) hoặc `premium` (`AI_MODEL_PREMIUM`, chỉ gói khác `FREE`; gói Free nhận `403 PLAN_FEATURE_REQUIRED { feature: 'ai.premium', requiredPlan: 'PAY_PER_EXPORT' }`, kể cả khi AI tắt).
+- **Claude** (`ANTHROPIC_API_KEY` có giá trị): gọi model theo `quality` với *structured outputs* — model chỉ trả **danh sách hình** (tròn, chữ nhật, đường, path) theo JSON schema, không trả SVG. Backend kiểm tra từng giá trị (màu `#RRGGBB`, toạ độ trong ô, `d` chỉ gồm lệnh path và số) rồi tự dựng SVG, nên SVG không thể chứa script, link hay tài nguyên ngoài. Ô được vẽ 9 lần (ô + 8 ô bên cạnh) và cắt theo `viewBox` để hình tràn mép xuất hiện lại ở mép đối diện → lặp không lộ đường nối.
+- Request bật `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`): nếu bộ lọc an toàn của model từ chối, Anthropic tự chạy lại trên model dự phòng. Haiku không có fallback phía server nên request tới Haiku không gửi tham số này; bị từ chối thì dùng hoa văn thuật toán. Effort `low` vì đây là việc đơn giản. System prompt được cache.
 - **Dự phòng**: chưa có API key, hoặc Claude lỗi / hết thời gian / trả kết quả không hợp lệ → dùng bộ sinh hoa văn bằng thuật toán (theo từ khóa Tết, Noel, cưới, Valentine, sinh nhật, tối giản; cùng chủ đề luôn ra cùng hoa văn). Trường `source` cho biết `ai` hay `procedural`.
-- **Giới hạn**: lượt gọi Claude trong 24 giờ: FREE 10, STARTER 50, PRO_BUSINESS 300 (hết → `429`; `GET /api/ai/usage`). Thêm giới hạn 5 lần / phút. Mỗi lượt được ghi vào bảng `ai_generations` kèm số token để theo dõi chi phí.
+- **Giới hạn**: lượt gọi Claude trong 24 giờ: FREE 10, STARTER 50, PRO_BUSINESS 300 (hết → `429`; `GET /api/ai/usage`). Thêm giới hạn 5 lần / phút. Mỗi lượt được ghi vào bảng `ai_generations` kèm model trả lời và số token để theo dõi chi phí.
+- **Cầu chì chi phí** (`AiCostGuard`, `src/ai/ai-cost.guard.ts`): khi đặt `AI_MONTHLY_BUDGET_USD`, cộng chi phí ước tính (token × bảng giá trong `src/ai/ai-pricing.ts`) của các lượt từ đầu tháng dương lịch theo giờ Việt Nam; tổng được cache 5 phút mỗi process (lượt mới của chính process được cộng ngay). Chạm ngưỡng → mọi request dùng hoa văn thuật toán, không tính vào lượt 24 giờ, log mức `error` mỗi lần làm mới cache; `GET /api/ai/usage` trả `budgetReached: true`. Model lạ (vd. fallback mới) được tính theo giá model đắt nhất trong bảng. Đổi giá Anthropic → sửa `AI_MODEL_PRICES`.
 - Lấy API key: [platform.claude.com](https://platform.claude.com) → *API Keys*. Không commit key; test e2e luôn tắt AI.
 
 ## WebSocket

@@ -435,6 +435,7 @@ export const DEMO_AI_USAGE: AiUsage = {
   used: 2,
   limit: 5,
   aiEnabled: true,
+  budgetReached: false,
 };
 
 export const DEMO_PRINT_SHOPS: PrintShop[] = [
