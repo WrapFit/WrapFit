@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { ToastProvider } from "@/components/common/Toast";
 import { AuthProvider } from "@/features/auth";
+import { PresentModeBoot } from "@/features/demo/presentMode";
 import { ApiError } from "@/services/api";
 
 /** Server down or unreachable: worth another try. A 4xx answer will not change by asking again. */
@@ -27,7 +28,10 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <PresentModeBoot />
+          {children}
+        </AuthProvider>
       </ToastProvider>
     </QueryClientProvider>
   );

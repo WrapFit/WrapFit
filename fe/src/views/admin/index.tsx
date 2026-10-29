@@ -27,6 +27,7 @@ const SECTION_NOTES: Record<string, string> = {
   '/admin/gpu-cluster': 'Máy chủ dựng ảnh 3D',
   '/admin/dieline-vault': 'Cấu trúc hộp và mẫu WrapFit',
   '/admin/appraisal': 'Thiết kế cộng đồng đang hiển thị',
+  '/admin/library': 'Sticker, nhãn, nền có giấy phép in',
   '/admin/media': 'Ảnh, logo và file đã tải lên',
   '/admin/revenue': 'Doanh thu theo gói',
   '/admin/ledger': 'Giao dịch thanh toán',

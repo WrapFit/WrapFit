@@ -105,7 +105,8 @@ export const SECONDARY_PILL = buttonClass({ variant: "secondary", size: "xl", cl
 /** Bar at the bottom of a step: back on the left, the current spec, the next step on the right. */
 export function StepActionBar({ back, summary, next }: { back?: React.ReactNode; summary?: React.ReactNode; next: React.ReactNode }) {
   return (
-    <div className="sticky bottom-24 z-30 mt-6 md:bottom-4">
+    // md:mr-20 leaves the corner to the folded Gói button (fixed, 56 px, 24 px from the edge): it never covers "next".
+    <div className="sticky bottom-24 z-30 mt-6 md:bottom-4 md:mr-20">
       <div className="flex flex-col items-stretch gap-3 rounded-sheet bg-white/95 p-3 shadow-soft-16 ring-1 ring-landing-line/60 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:pl-4">
         <div className="flex items-center gap-3">{back}</div>
         {summary && <div className="hidden min-w-0 text-right text-body-sm text-landing-muted md:block">{summary}</div>}

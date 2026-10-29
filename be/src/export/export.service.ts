@@ -19,6 +19,7 @@ import {
   EXPORT_QUEUE,
   ExportJobData,
   FILE_FORMATS,
+  titleSlug,
   RENDER_JOB,
 } from './export.constants';
 import { checkProject } from '../projects';
@@ -37,19 +38,9 @@ const jobSelect = {
 
 type JobRow = Prisma.ExportJobGetPayload<{ select: typeof jobSelect }>;
 
-/** Turns a project title into a safe file name: "Hộp nến Tết" -> "hop-nen-tet". */
+/** Download name of an export: "Hộp nến Tết" + PDF_CMYK -> "hop-nen-tet-pdf-cmyk.pdf". */
 export function fileNameFor(title: string, fileType: ExportFileType): string {
-  const base =
-    title
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 60) || 'wrapfit';
-  return `${base}-${fileType.toLowerCase().replace('_', '-')}.${FILE_FORMATS[fileType].extension}`;
+  return `${titleSlug(title)}-${fileType.toLowerCase().replace('_', '-')}.${FILE_FORMATS[fileType].extension}`;
 }
 
 /**

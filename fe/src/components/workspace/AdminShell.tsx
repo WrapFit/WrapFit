@@ -9,6 +9,7 @@ import {
   FolderArchive,
   HardDrive,
   Images,
+  Library,
   LayoutDashboard,
   ReceiptText,
   Settings,
@@ -38,6 +39,7 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { href: "/admin/dieline-vault", label: "Kho khuôn bế", icon: FolderArchive },
       { href: "/admin/appraisal", label: "Thẩm định mẫu", icon: ClipboardCheck },
+      { href: "/admin/library", label: "Thư viện tài nguyên", icon: Library },
       { href: "/admin/media", label: "Thư viện media", icon: Images },
     ],
   },

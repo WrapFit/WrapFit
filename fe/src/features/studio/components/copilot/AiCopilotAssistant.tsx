@@ -5,7 +5,6 @@ import { animate } from "animejs";
 import {
   Sparkles,
   ChevronDown,
-  ChevronUp,
   Wand2,
   AlertTriangle,
   CheckCircle2,
@@ -134,6 +133,30 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
   );
   const [userQuery, setUserQuery] = useState<string>("");
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
+  /** Gói said something new while folded: a dot on the button instead of a bar over the page. */
+  const [unread, setUnread] = useState<boolean>(false);
+  const expandedRef = useRef(isExpanded);
+  expandedRef.current = isExpanded;
+  const firstHeadline = useRef(true);
+  useEffect(() => {
+    if (firstHeadline.current) {
+      firstHeadline.current = false;
+      return;
+    }
+    if (!expandedRef.current) setUnread(true);
+  }, [headline]);
+  // Escape folds the open panel back into its button.
+  useEffect(() => {
+    if (!isExpanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsExpanded(false);
+        setPose("chilling");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isExpanded]);
 
   const islandRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -183,6 +206,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
     
     const nextState = !isExpanded;
     setIsExpanded(nextState);
+    if (nextState) setUnread(false);
 
     if (islandRef.current) {
       animate(islandRef.current, {
@@ -252,6 +276,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
   // Listen for mobile dock trigger
   useEffect(() => {
     const handleToggleEvent = () => {
+      setUnread(false);
       setIsExpanded((prev) => {
         const next = !prev;
         setPose(next ? "presenting" : "chilling");
@@ -264,71 +289,72 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
     }
   }, []);
 
+  // Folded: one round button in the corner (the step bars leave room for it), never a bar over the page's buttons.
+  if (!isExpanded) {
+    return (
+      <div ref={islandRef} className={`fixed bottom-6 right-6 z-50 hidden md:block ${className}`}>
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          aria-expanded={false}
+          aria-label={unread ? `Mở trợ lý Bé Gói: ${headline}` : "Mở trợ lý Bé Gói"}
+          title={headline}
+          className="relative flex size-14 items-center justify-center rounded-full border border-landing-line bg-white/95 shadow-soft-16 backdrop-blur-md transition hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 motion-reduce:transition-none"
+        >
+          <GoiMascot pose={pose} size={40} interactive={false} />
+          {unread && (
+            <span aria-hidden className="absolute right-0.5 top-0.5 size-3.5 rounded-full border-2 border-white bg-fpt-orange" />
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={islandRef}
-      className={`fixed z-50 transition-all duration-300 font-sans ${
-        isExpanded
-          ? "bottom-16 right-4 md:bottom-6 md:right-6 w-[94vw] sm:w-[410px]"
-          : "bottom-16 right-4 md:bottom-6 md:right-6 w-auto"
-      } ${isExpanded ? "" : "hidden md:block"} ${className}`}
+      role="dialog"
+      aria-label="Trợ lý Bé Gói"
+      className={`fixed bottom-16 right-4 z-50 w-[94vw] font-sans md:bottom-6 md:right-6 sm:w-[410px] ${className}`}
     >
       {/* Floating Dynamic Island Container */}
-      <div className="relative rounded-3xl bg-white/95 backdrop-blur-md border border-landing-line shadow-soft-16 overflow-hidden transition-all duration-300">
-        {/* Top Header Pill Bar */}
-        <div
-          onClick={toggleExpanded}
-          className="px-3.5 py-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-landing-canvas transition select-none"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            {/* Mascot Avatar with lively pose */}
-            {/* Not a button of its own: the whole bar opens and closes the panel. */}
+      <div className="relative overflow-hidden rounded-3xl border border-landing-line bg-white/95 shadow-soft-16 backdrop-blur-md">
+        <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+          <div className="flex min-w-0 items-center gap-2.5">
             <GoiMascot pose={pose} size={36} interactive={false} className="shrink-0" />
-
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-landing-ink tracking-tight font-landing-heading truncate">
-                  Bé Gói — trợ lý thiết kế
-                </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-caption font-bold bg-fpt-orange/10 text-fpt-orange-ink">
-                  Thử nghiệm
-                </span>
+                <span className="truncate font-landing-heading text-xs font-bold tracking-tight text-landing-ink">Bé Gói — trợ lý thiết kế</span>
+                <span className="inline-flex items-center rounded-full bg-fpt-orange/10 px-1.5 py-0.5 text-caption font-bold text-fpt-orange-ink">Thử nghiệm</span>
               </div>
-              <p className="text-caption text-landing-muted truncate max-w-[190px] sm:max-w-[240px]">
-                {headline}
-              </p>
+              <p className="max-w-[190px] truncate text-caption text-landing-muted sm:max-w-[240px]">{headline}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Audio Toggle Button */}
             <button
               type="button"
               onClick={toggleAudio}
-              className="p-1.5 text-landing-muted hover:text-landing-ink rounded-lg hover:bg-landing-canvas transition"
-              title={isAudioMuted ? "Bật âm thanh tactile" : "Tắt âm thanh tactile"}
+              aria-pressed={!isAudioMuted}
+              aria-label={isAudioMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+              className="flex size-9 items-center justify-center rounded-lg text-landing-muted transition hover:bg-landing-canvas hover:text-landing-ink"
             >
-              {isAudioMuted ? (
-                <VolumeX className="w-3.5 h-3.5" />
-              ) : (
-                <Volume2 className="w-3.5 h-3.5 text-landing-ink" />
-              )}
+              {isAudioMuted ? <VolumeX className="size-4" aria-hidden /> : <Volume2 className="size-4 text-landing-ink" aria-hidden />}
             </button>
-
-            {/* Expand / Collapse Icon */}
-            <div className="w-6 h-6 rounded-full bg-landing-canvas flex items-center justify-center text-landing-muted">
-              {isExpanded ? (
-                <ChevronDown className="w-3.5 h-3.5" />
-              ) : (
-                <ChevronUp className="w-3.5 h-3.5" />
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={toggleExpanded}
+              aria-expanded
+              aria-label="Thu gọn trợ lý"
+              className="flex size-9 items-center justify-center rounded-full bg-landing-canvas text-landing-muted transition hover:text-landing-ink"
+            >
+              <ChevronDown className="size-4" aria-hidden />
+            </button>
           </div>
         </div>
 
         {/* Expanded Intelligence Body */}
-        {isExpanded && (
-          <div ref={contentRef} className="px-4 pb-4 pt-1 space-y-3.5 border-t border-paper-linen">
+        <div ref={contentRef} className="px-4 pb-4 pt-1 space-y-3.5 border-t border-paper-linen">
             {/* AI Speech Bubble */}
             <div className="bg-paper-cotton p-3 rounded-3xl border border-landing-line relative">
               <div className="flex items-start gap-2.5">
@@ -405,8 +431,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
                 <Send className="w-3 h-3" />
               </button>
             </form>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import {
   type PanelFace,
 } from "@wrapfit/shared";
 import { cssFontFamily, layoutBoxText } from "../canvas/boxText";
+import { drawArt, elementArt } from "../library/elementArt";
 
 /**
  * 3D model of a box built from its dieline (docs/12 Phase 8, H6): every printable panel is a sheet of paper folded on
@@ -27,12 +28,18 @@ import { cssFontFamily, layoutBoxText } from "../canvas/boxText";
  * shows the elements placed on it, drawn like the 2D canvas. Flaps and glue tabs are not modelled (they sit inside).
  */
 
-export type BoxMaterialTheme = "kraft" | "ivory" | "forest" | "gold_foil";
+/**
+ * Look of the paper. The studio prints on ivory, kraft, duplex (white, grey back) and rigid board (printed paper laminated
+ * on grey board); `forest` and `gold_foil` are showcase looks of the marketing pages.
+ */
+export type BoxMaterialTheme = "kraft" | "ivory" | "duplex" | "rigid" | "forest" | "gold_foil";
 
 /** Printed side and inside of the paper for each look of the editor. */
 const PAPER: Record<BoxMaterialTheme, { outside: string; inside: string; ink: string }> = {
   ivory: { outside: "#FAF6EE", inside: "#EFE8DC", ink: "#1C1917" },
   kraft: { outside: "#D9B897", inside: "#CDAA85", ink: "#2B1E16" },
+  duplex: { outside: "#F7F7F3", inside: "#B9BCB7", ink: "#1C1917" },
+  rigid: { outside: "#FBFAF6", inside: "#8E8A82", ink: "#1C1917" },
   forest: { outside: "#1A362B", inside: "#E8E2D6", ink: "#F5E7B2" },
   gold_foil: { outside: "#D4AF37", inside: "#EFE8DC", ink: "#382205" },
 };
@@ -65,6 +72,8 @@ type MakePrinted = (map: THREE.Texture | null, side: THREE.Side, panelId: string
 const FINISH: Record<BoxMaterialTheme, THREE.MeshPhysicalMaterialParameters & { edge: string }> = {
   ivory: { roughness: 0.74, metalness: 0, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color("#FFFFFF"), envMapIntensity: 0.55, edge: "#B8AC98" },
   kraft: { roughness: 0.9, metalness: 0, sheen: 0.25, sheenRoughness: 0.7, sheenColor: new THREE.Color("#FFF1DC"), envMapIntensity: 0.45, edge: "#8C6B4B" },
+  duplex: { roughness: 0.66, metalness: 0, sheen: 0.3, sheenRoughness: 0.55, sheenColor: new THREE.Color("#FFFFFF"), envMapIntensity: 0.55, edge: "#8E918C" },
+  rigid: { roughness: 0.58, metalness: 0, sheen: 0.3, sheenRoughness: 0.5, sheenColor: new THREE.Color("#FFFFFF"), envMapIntensity: 0.6, edge: "#6F6A62" },
   forest: { roughness: 0.62, metalness: 0, sheen: 0.8, sheenRoughness: 0.45, sheenColor: new THREE.Color("#6FA58A"), envMapIntensity: 0.5, edge: "#0B1F16" },
   gold_foil: { roughness: 0.3, metalness: 0.88, clearcoat: 0.45, clearcoatRoughness: 0.25, envMapIntensity: 1.15, edge: "#8F6E17" },
 };
@@ -237,7 +246,10 @@ function panelTexture(
       ctx.translate(el.x + el.width / 2, el.y + el.height / 2);
       ctx.rotate(((el.rotation || 0) * Math.PI) / 180);
       ctx.translate(-el.width / 2, -el.height / 2);
-      if (IMAGE_TYPES.has(el.type)) {
+      const art = elementArt(el);
+      if (art) {
+        drawArt(ctx, art); // library stickers, labels, backgrounds and barcodes: vectors
+      } else if (IMAGE_TYPES.has(el.type)) {
         const image = images.get(el.content);
         if (image) drawContained(ctx, image, el.width, el.height);
       } else if (el.type === "text") {

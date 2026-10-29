@@ -113,7 +113,10 @@ describe('FitCheck (shared by the editor and the server)', () => {
       { ...dimensions, length: 320, width: 220 },
       3,
     );
-    expect(codes([], big)).toEqual([['DIMENSION_OUT_OF_BOUNDS', 'warning']]);
+    expect(codes([], big)).toEqual([
+      ['DIMENSION_OUT_OF_BOUNDS', 'warning'],
+      ['EMPTY_DESIGN', 'info'],
+    ]);
   });
 
   it('scores 100 − 30 per error − 10 per warning', () => {
@@ -177,8 +180,8 @@ describe('auto-fix', () => {
       height: H - 2,
     });
     const [fixed] = autoFixElements(tuckTop, [pattern]);
-    expect(fixed).toMatchObject({ x: 0, y: -2, width: W });
-    expect(fixed.height).toBeCloseTo(H + 4, 6);
+    expect(fixed).toMatchObject({ x: 0, y: -3, width: W }); // BLEED_BOX_MM: 3 mm, inside the 2–3 mm bleed
+    expect(fixed.height).toBeCloseTo(H + 6, 6);
     expect(checkBox(tuckTop, [fixed]).violations).toEqual([]);
   });
 });

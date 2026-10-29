@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { Boxes, FileDown, HardDrive, QrCode, ShieldCheck, Sparkles } from "lucide-react";
-import { BLEED_MM, MIN_DPI, SAFE_MARGIN_MM } from "@wrapfit/shared";
+import { BLEED_MM, MIN_DPI, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM } from "@wrapfit/shared";
 import { ROUTES } from "@/constants";
 import { PLANS, formatQuota, formatUsd } from "@/features/pricing";
 import type { SubscriptionTier } from "@/types/api";
@@ -126,7 +126,7 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "FitCheck™ kiểm tra những gì?",
-    answer: `Chữ, logo, ảnh cách đường cắt và đường gấp tối thiểu ${SAFE_MARGIN_MM} mm; nền tràn qua đường cắt ${BLEED_MM} mm; ảnh từ ${MIN_DPI} DPI; không gì nằm đè lên tai dán. FitCheck™ chạy ở mọi gói, trước mỗi lần xuất file.`,
+    answer: `Chữ, logo, ảnh cách đường cắt tối thiểu ${SAFE_MARGIN_CUT_MM} mm và đường gấp ${SAFE_MARGIN_CREASE_MM} mm; nền tràn qua đường cắt ${BLEED_MM} mm; ảnh từ ${MIN_DPI} DPI; không gì nằm đè lên tai dán. FitCheck™ chạy ở mọi gói, trước mỗi lần xuất file.`,
   },
   {
     question: "Tôi nhận được file in dạng nào?",

@@ -2,9 +2,10 @@
 
 import { stageBarButton } from "@/features/studio/components/studioUi";
 import React, { useId, useMemo, useState, useRef } from "react";
-import { DielineGeometry, CanvasElement, matchesPanel, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
+import { artDesignOf, BLEED_BOX_MM, DielineGeometry, CanvasElement, ean13Digits, matchesPanel, parseLibraryArt, safeMarginsOf, SAFE_MARGIN_CUT_MM, SAFE_MARGIN_CREASE_MM, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
 import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Info } from "lucide-react";
 import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
+import { ArtShapes, elementArt } from "../library/elementArt";
 import { formatMm } from "@/features/studio/utils/dieline";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
@@ -12,12 +13,21 @@ import { Checkbox } from "@/components/ui";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
 const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
-/** FitCheck safe margin: new texts start this far inside the panel. */
-const NEW_TEXT_MARGIN_MM = 4;
+/** FitCheck safe margin (5 mm from a cut line) with room to spare: new texts start this far inside the panel. */
+const NEW_TEXT_MARGIN_MM = SAFE_MARGIN_CUT_MM + 1;
 /** Loaded ahead, so the first text added is measured with its real font. */
 const NEW_TEXT_FONTS = [printFontOf(NEW_TEXT_STYLE.fontFamily)];
-/** FitCheck bleed: the artwork runs this far past the cut lines. */
-const BLEED_MM = 2;
+/** Name of an element for the toolbar: its words, the name of its library design, or what kind of file it is. */
+function elementLabel(el: CanvasElement): string {
+  if (el.type === "text") return el.content || "Chữ";
+  if (el.type === "barcode") return ean13Digits(el.content) ? "Mã vạch" : "Mã QR";
+  const ref = parseLibraryArt(el.content);
+  if (ref) return artDesignOf(ref.design)?.name ?? "Tem";
+  return el.type === "pattern" ? "Hoa văn" : el.type === "logo" ? "Logo" : "Hình ảnh";
+}
+
+/** Bleed of the print file: the artwork may run this far past the cut lines. */
+const BLEED_MM = BLEED_BOX_MM;
 
 
 interface DielineCanvas2DProps {
@@ -52,6 +62,8 @@ interface DragState {
   startElY: number;
   startElWidth: number;
   startElHeight: number;
+  /** Print resolution of a raster when the drag started (recomputed from it, never from a rounded value). */
+  startElDpi?: number;
   startPanelBounds: { x: number; y: number; width: number; height: number };
   mode: "move" | "resize";
   resizeHandle?: "tl" | "tr" | "bl" | "br";
@@ -98,7 +110,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     onTextComposerOpenChange?.(open);
   };
   // Changes once the fonts of the texts are loaded: texts first measured with a fallback font are laid out again.
-  const fontsVersion = useBoxFonts(elements, NEW_TEXT_FONTS);
+  // Fonts of the texts, of the library art (stickers, labels) and of the next text added.
+  const artFonts = useMemo(
+    () => [...NEW_TEXT_FONTS, ...elements.flatMap((el) => elementArt(el)?.texts.map((t) => t.font) ?? [])],
+    [elements]
+  );
+  const fontsVersion = useBoxFonts(elements, artFonts);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
   const padding = 35; // 35mm margin
@@ -147,6 +164,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       startElY: el.y,
       startElWidth: el.width,
       startElHeight: el.height,
+      startElDpi: el.dpi,
       startPanelBounds: panelBounds,
       mode,
       resizeHandle,
@@ -208,8 +226,16 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       const newW = Math.max(15, Math.round(dragState.startElWidth + deltaW));
       const newH = Math.max(10, Math.round(dragState.startElHeight + deltaH));
 
+      // A raster printed bigger has fewer pixels per inch: FitCheck reads the DPI at the new size.
       const updated = elements.map((item) =>
-        item.id === el.id ? { ...item, width: newW, height: newH } : item
+        item.id === el.id
+          ? {
+              ...item,
+              width: newW,
+              height: newH,
+              ...(dragState.startElDpi ? { dpi: Math.round((dragState.startElDpi * dragState.startElWidth) / newW) } : {}),
+            }
+          : item
       );
       onElementsChange(updated);
     }
@@ -414,7 +440,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <div className="flex items-center gap-2 pr-2.5 border-r border-white/20">
             <Move className="w-3.5 h-3.5 text-fpt-orange-ink animate-pulse" />
             <span className="font-semibold text-fpt-orange-ink truncate max-w-[110px]">
-              {selectedEl.content || "Phần tử"}
+              {elementLabel(selectedEl)}
             </span>
             <span className="font-mono text-cad-spec-micro text-landing-muted">
               {formatMm(selectedEl.width)}×{formatMm(selectedEl.height)}mm
@@ -697,7 +723,9 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             const py = panel.bounds.y + padding;
             const pw = panel.bounds.width;
             const ph = panel.bounds.height;
-            const safeInset = 3; // 3mm safe margin
+            // FitCheck safe area: 5 mm inside the cut lines, 3 mm inside the folds.
+            const safe = safeMarginsOf(panel, dieline);
+            const safeInset = Math.min(safe.top, safe.left);
             const isPanelActive = panel.id === activePanelId;
             const isHovered = panel.id === hoveredPanelId;
             // Labels scale with the panel, within a readable range (mm of the sheet).
@@ -727,13 +755,13 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   className="transition-[fill] duration-150"
                 />
 
-                {/* Safe margin (≥ 3 mm), strongest on the selected panel */}
-                {showLayers.safeMargin && pw > 8 && ph > 8 && (
+                {/* Safe margin (≥ 5 mm from cuts, ≥ 3 mm from folds), strongest on the selected panel */}
+                {showLayers.safeMargin && pw > safe.left + safe.right + 2 && ph > safe.top + safe.bottom + 2 && (
                   <rect
-                    x={px + safeInset}
-                    y={py + safeInset}
-                    width={pw - 2 * safeInset}
-                    height={ph - 2 * safeInset}
+                    x={px + safe.left}
+                    y={py + safe.top}
+                    width={pw - safe.left - safe.right}
+                    height={ph - safe.top - safe.bottom}
                     fill="none"
                     stroke="#D97706"
                     strokeOpacity={isPanelActive ? 0.9 : isHovered ? 0.55 : 0.28}
@@ -831,6 +859,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
             // FitCheck flags it (safe margin on every side, bleed, glue flap…)
             const isMarginBreached = flaggedElementIds?.has(el.id) ?? false;
+            // Library art and barcodes are vectors, drawn like the print files.
+            const art = elementArt(el);
 
             return (
               <g
@@ -869,8 +899,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   <circle cx={elX + el.width} cy={elY} r="2.5" fill="#FF6B6B" />
                 )}
 
-                {/* Content: Image/Logo or Text */}
-                {el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
+                {/* Content: library art / barcode, Image/Logo, or Text */}
+                {art ? (
+                  <ArtShapes art={art} x={elX} y={elY} />
+                ) : el.type === "barcode" ? null : el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
                   <image
                     href={el.content}
                     x={elX}
@@ -1115,7 +1147,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 { key: "cut", label: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
                 { key: "crease", label: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
                 { key: "bleed", label: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
-                { key: "safeMargin", label: "Vùng an toàn ≥ 3 mm", swatch: "h-0 border-b-2 border-dashed border-warning" },
+                { key: "safeMargin", label: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
               ] as const
             ).map((layer) => {
               const on = showLayers[layer.key];

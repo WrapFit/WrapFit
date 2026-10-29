@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Wand2 } from "lucide-react";
-import { BLEED_MM, cutSidesOf, type CanvasElement, type DielineGeometry, type PanelFace } from "@wrapfit/shared";
+import { BLEED_BOX_MM, cutSidesOf, type CanvasElement, type DielineGeometry, type PanelFace } from "@wrapfit/shared";
 import { ApiError, generateAiPattern, getAiUsage, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
@@ -78,9 +78,9 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
     if (!result || !panel) return;
     setInserting(true);
     try {
-      // A background covers the panel and runs BLEED_MM past its cut lines (FitCheck); folds need no bleed.
+      // A background covers the panel and runs BLEED_BOX_MM (3 mm) past its cut lines (bleed 2–3 mm); folds need no bleed.
       const cut = cutSidesOf(panel, geometry);
-      const bleed = (side: "top" | "right" | "bottom" | "left") => (cut.has(side) ? BLEED_MM : 0);
+      const bleed = (side: "top" | "right" | "bottom" | "left") => (cut.has(side) ? BLEED_BOX_MM : 0);
       const x = -bleed("left");
       const y = -bleed("top");
       const width = panel.bounds.width + bleed("left") + bleed("right");

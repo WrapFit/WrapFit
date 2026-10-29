@@ -30,7 +30,7 @@ import {
   type HubFilters,
   DEMO_BOX_STRUCTURES,
   DEMO_COMMUNITY_TEMPLATES,
-  DEMO_CURATED_TEMPLATES,
+  demoCuratedTemplates,
   filterCommunityTemplates,
   filterCuratedTemplates,
   getStructureTemplateCounts,
@@ -156,7 +156,7 @@ function TemplateLibrary() {
   const effectiveCommunity = community.data ?? fallbackCommunity;
 
   const libraryTotal =
-    (allCurated.data?.meta.total ?? DEMO_CURATED_TEMPLATES.length) +
+    (allCurated.data?.meta.total ?? demoCuratedTemplates().length) +
     (allCommunity.data?.meta.total ?? DEMO_COMMUNITY_TEMPLATES.length);
 
   const scrollToGrid = () => {
@@ -466,7 +466,7 @@ function SideFilters({ filters, tab, onChange }: { filters: Filters; tab: Sectio
     structureOptions.push({ value: filters.structure, label: filters.structure, count: undefined });
   }
 
-  const list = tab === "curated" ? DEMO_CURATED_TEMPLATES : DEMO_COMMUNITY_TEMPLATES;
+  const list = tab === "curated" ? demoCuratedTemplates() : DEMO_COMMUNITY_TEMPLATES;
 
   const occasionCounts = useMemo(() => {
     const acc: Record<string, number> = {};

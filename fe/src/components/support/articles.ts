@@ -1,4 +1,4 @@
-import { BLEED_MM, MAX_SHEET_MM, MIN_DPI, SAFE_MARGIN_MM } from "@wrapfit/shared";
+import { BLEED_MM, HARD_MIN_DPI, MAX_SHEET_MM, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM } from "@wrapfit/shared";
 import { ROUTES } from "@/constants";
 import { PLANS, formatQuota } from "@/features/pricing";
 
@@ -111,7 +111,8 @@ export const CATEGORIES: ArticleCategory[] = [
         id: "fitcheck-kiem-tra-gi",
         title: "FitCheck™ kiểm tra những gì?",
         body: [
-          `Chữ, logo, ảnh và mã vạch phải cách đường cắt và đường gấp tối thiểu ${SAFE_MARGIN_MM} mm. Hình nền chạm đường cắt phải tràn qua ${BLEED_MM} mm. Ảnh cần từ ${MIN_DPI} DPI theo kích thước in thật (300 DPI là lý tưởng).`,
+          `Chữ, logo, ảnh và mã vạch phải cách đường cắt tối thiểu ${SAFE_MARGIN_CUT_MM} mm và cách đường gấp ${SAFE_MARGIN_CREASE_MM} mm. Hình nền chạm đường cắt phải tràn qua ${BLEED_MM}–3 mm. Ảnh cần đạt ${MIN_DPI} DPI theo kích thước in thật; nét chữ mảnh nhất từ ${MIN_LINE_MM} mm.`,
+          "File xuất ra đã đạt chuẩn nhà in: hình in CMYK, chữ chuyển thành đường nét vector (không cần font), ảnh nhúng sẵn, mã vạch và QR in đen K100 trên nền trắng. Gói gửi nhà in có file gốc .ai kèm PDF và JPG để đối chiếu.",
           "FitCheck™ còn báo khi một thành phần đè lên tai dán, hay khi tấm khuôn lớn hơn khổ giấy. Mỗi lỗi chỉ rõ vị trí trên khuôn và Gói đề xuất cách sửa.",
         ],
       },
@@ -120,7 +121,7 @@ export const CATEGORIES: ArticleCategory[] = [
         title: "Điểm FitCheck™ và vì sao chưa xuất được file",
         body: [
           "Mỗi lần lưu, thiết kế được chấm điểm trên thang 100: mỗi lỗi trừ 30 điểm, mỗi cảnh báo trừ 10. Lỗi (một thành phần cách nét cắt hay nếp gấp dưới 1 mm, mực in lấn lên tai dán) chặn việc xuất file in cho đến khi được sửa.",
-          `Cảnh báo (cách nét 1–3 mm, ảnh dưới ${MIN_DPI} DPI, khuôn lớn hơn khổ B1) không chặn xuất file nhưng nên xem lại trước khi in.`,
+          `Cảnh báo (chưa đủ vùng an toàn, ảnh ${HARD_MIN_DPI}–${MIN_DPI - 1} DPI, nét chữ quá mảnh, khuôn lớn hơn khổ B1) không chặn xuất file nhưng nên xem lại trước khi in. Ảnh dưới ${HARD_MIN_DPI} DPI là lỗi.`,
           "Thiết kế công khai đạt từ 90 điểm sẽ được đưa vào thư viện cộng đồng.",
         ],
       },

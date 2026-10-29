@@ -7,12 +7,12 @@ import { CheckCircle2, Lock } from "lucide-react";
 export type StudioStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 export const STUDIO_STEPS: { step: StudioStep; label: string }[] = [
-  { step: 1, label: "Cấu trúc" },
+  { step: 1, label: "Khởi đầu" },
   { step: 2, label: "Kích thước" },
-  { step: 3, label: "Chất liệu" },
+  { step: 3, label: "Giấy & hoàn thiện" },
   { step: 4, label: "Thiết kế" },
-  { step: 5, label: "Xem 3D" },
-  { step: 6, label: "Xuất file" },
+  { step: 5, label: "Quà & mở hộp" },
+  { step: 6, label: "Đặt in" },
 ];
 const STEPS = STUDIO_STEPS;
 

@@ -1,7 +1,7 @@
 // Data of the seed (be/prisma/seed.ts): box structures and the curated designs of the template hub. Kept apart from
 // the script so tests can check it without a database (src/templates/seed-data.spec.ts).
 import { Prisma } from '@prisma/client';
-import { CURRENT_FORMULA_VERSION } from '@wrapfit/shared';
+import { CURRENT_FORMULA_VERSION, generatedTemplates } from '@wrapfit/shared';
 
 // Kích thước tối thiểu (mm) khớp với IT1-02: L >= 40, W >= 30, H >= 20.
 const dimensionParams = {
@@ -245,3 +245,25 @@ export const designTemplates: Prisma.DesignTemplateUncheckedCreateInput[] = [
     sortOrder: 60,
   },
 ];
+
+/**
+ * Templates generated from the style kits of @wrapfit/shared (library/templates.ts): every kit dressed on the products
+ * of its industries, each passing FitCheck. Stable ids, so every start of the seed updates the same rows.
+ */
+designTemplates.push(
+  ...generatedTemplates().map(
+    (template, index): Prisma.DesignTemplateUncheckedCreateInput => ({
+      id: template.id,
+      boxTemplateId: template.structure,
+      title: template.title,
+      description: template.description,
+      occasion: template.occasion,
+      industry: template.industry,
+      dimensions: template.dimensions as unknown as Prisma.InputJsonObject,
+      materialSpec: template.materialSpec as unknown as Prisma.InputJsonObject,
+      canvasState: template.canvasState as unknown as Prisma.InputJsonObject,
+      tags: template.tags,
+      sortOrder: 100 + index,
+    }),
+  ),
+);

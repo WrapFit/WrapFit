@@ -2,9 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useState } from "react";
-import { ApiError, getProject, listBoxStructures } from "@/api";
+import { ApiError, getProject, getTemplate, listBoxStructures } from "@/api";
 import { ErrorState, PRIMARY_BUTTON } from "@/components/common/StatusViews";
 import { ROUTES } from "@/constants";
 import { RequireAuth } from "@/features/auth";
@@ -48,12 +48,28 @@ export default function EditorPage() {
 function EditorRouteHandler() {
   // Next.js passes route params to pages as a Promise; a client component reads them with useParams().
   const { id } = useParams<{ id: string }>();
-  if (id === DEMO_ID) return <StudioWorkspace project={null} structures={FALLBACK_STRUCTURES} />;
+  if (id === DEMO_ID) return <DemoEditor />;
   return (
     <RequireAuth>
       <ProjectEditor key={id} projectId={id} />
     </RequireAuth>
   );
+}
+
+/**
+ * The offline demo, optionally on a template (`?template=<id>`, from the template hub or /editor/new without a backend):
+ * `getTemplate` falls back to the templates built into the app, so this works with no API at all.
+ */
+function DemoEditor() {
+  const templateId = useSearchParams().get("template");
+  const template = useQuery({
+    queryKey: queryKeys.templates.detail(templateId ?? ""),
+    queryFn: () => getTemplate(templateId!),
+    enabled: !!templateId,
+    staleTime: 5 * 60_000,
+  });
+  if (templateId && template.isLoading) return <StudioSkeleton label="Đang mở mẫu…" />;
+  return <StudioWorkspace project={null} structures={FALLBACK_STRUCTURES} demoTemplate={template.data ?? null} />;
 }
 
 /** 404 for another user's project too; 400 for an id that is not a UUID. */

@@ -84,6 +84,7 @@ enum ExportFileType {
   PDF_A4_PRINT // PDF A4/A3 có dấu xén (crop marks) để tự in tại nhà / văn phòng (Luồng của Linh)
   SVG // SVG cho máy cắt Cricut / Laser
   DXF // DXF cho máy bế CNC
+  PRINT_PACKAGE // ZIP bàn giao nhà in: file gốc .ai (tương thích PDF) + PDF in + JPG đối chiếu + SVG/DXF + phiếu kiểm tra
 }
 
 model User {
@@ -374,6 +375,7 @@ model StoredFile {
   user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   refs    ProjectFileRef[]
+  library LibraryAsset?
 
   @@index([userId])
   @@index([projectId])
@@ -397,6 +399,47 @@ model ProjectFileRef {
 }
 
 // Object trên bucket không xóa được (lỗi S3) sau khi dòng DB đã bị xóa: StorageMaintenanceTask thử xóa lại.
+// Loại tài nguyên trong thư viện do admin nhập.
+enum LibraryAssetCategory {
+  STICKER // Tem, sticker
+  LABEL // Nhãn, khung nhãn
+  ILLUSTRATION // Hình minh họa
+  BACKGROUND // Nền, hoa văn
+  ICON // Biểu tượng
+}
+
+// Tài nguyên thư viện admin nhập từ nguồn có giấy phép rõ ràng (CC0, OFL, MIT, tự vẽ...), dùng chung cho mọi người
+// dùng. File là một upload của admin (purpose LOGO / IMAGE): dòng này giữ file không bị dọn như upload bỏ quên và cho
+// phép canvas của người khác hiển thị nó. Mỗi file được kiểm tra khi nhập: SVG không có script hay liên kết ra ngoài,
+// ảnh raster đủ điểm ảnh để in 300 DPI ở `maxPrintMm`.
+model LibraryAsset {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  category     LibraryAssetCategory
+  title        String
+  storedFileId String               @unique @map("stored_file_id") @db.Uuid
+  fileKey      String               @map("file_key")
+  contentType  String               @map("content_type")
+  isVector     Boolean              @default(false) @map("is_vector")
+  widthPx      Int?                 @map("width_px")
+  heightPx     Int?                 @map("height_px")
+  // Cạnh dài nhất in được ở 300 DPI (mm); null với file vector
+  maxPrintMm   Float?               @map("max_print_mm")
+  license      String // Mã giấy phép: CC0-1.0, OFL-1.1, MIT, CC-BY-4.0, OWN-WORK...
+  sourceUrl    String?              @map("source_url")
+  attribution  String? // Bắt buộc với giấy phép yêu cầu ghi nguồn (CC-BY)
+  tags         String[]             @default([])
+  occasions    Occasion[]           @default([])
+  isActive     Boolean              @default(true) @map("is_active")
+  createdById  String               @map("created_by_id") @db.Uuid
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  storedFile StoredFile @relation(fields: [storedFileId], references: [id], onDelete: Restrict)
+
+  @@index([isActive, category])
+  @@map("library_assets")
+}
+
 model OrphanedObject {
   key       String   @id
   attempts  Int      @default(0)

@@ -247,12 +247,19 @@ export class StorageService implements IProjectFiles {
 
   /**
    * A saved canvas may show the caller's own logos and images, and the uploads it already showed (a remix keeps the
-   * images of the original author). Anything else is refused: pointing at another user's file would keep it alive
-   * after its owner deleted it.
+   * images of the original author), and the files of the shared library (LibraryAsset, active). Anything else is
+   * refused: pointing at another user's file would keep it alive after its owner deleted it.
    */
   async assertCanvasUploads(keys: string[], userId: string, alreadyShown: string[]): Promise<void> {
     const shown = new Set(alreadyShown);
-    const added = keys.filter((key) => !shown.has(key));
+    let added = keys.filter((key) => !shown.has(key));
+    if (!added.length) return;
+    const library = await this.prisma.libraryAsset.findMany({
+      where: { fileKey: { in: added }, isActive: true },
+      select: { fileKey: true },
+    });
+    const shared = new Set(library.map((asset) => asset.fileKey));
+    added = added.filter((key) => !shared.has(key));
     if (!added.length) return;
     const owned = await this.prisma.storedFile.count({
       where: { key: { in: added }, userId, purpose: { in: ['LOGO', 'IMAGE'] } },
@@ -435,6 +442,7 @@ export class StorageService implements IProjectFiles {
           AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.thumbnail_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM project_snapshots s WHERE s.preview_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM social_mockups m WHERE m.render_key = f.key)
+          AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)
         ORDER BY f.created_at
         LIMIT ${MAINTENANCE_BATCH}
         FOR UPDATE SKIP LOCKED

@@ -99,7 +99,7 @@ describe('ProjectsService', () => {
         dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.42 },
         materialSpec: { type: 'ivory', gsm: 300, caliper: 0.42, finish: 'matte' },
         canvasState: { elements: [] },
-        fitCheck: expect.objectContaining({ isValidForProduction: true, score: 100, violations: [] }),
+        fitCheck: expect.objectContaining({ isValidForProduction: true, score: 100, violations: [expect.objectContaining({ code: 'EMPTY_DESIGN', severity: 'info' })] }),
         tags: [],
         occasion: null,
         industry: null,

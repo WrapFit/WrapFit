@@ -33,7 +33,8 @@ import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepT
 import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
-import { autoFixElements, BoxDimensions, CanvasElement, FitCheckReport } from "@wrapfit/shared";
+import { artPaletteOf, autoFixElements, type QuoteFinish, boxBackgrounds, BoxDimensions, CanvasElement, FitCheckReport, mainPanelOf, parseLibraryArt, recolorDesign, safeMarginsOf } from "@wrapfit/shared";
+import { usePresentMode } from "@/features/demo/presentMode";
 import { AiCopilotAssistant } from "@/features/studio/components/copilot/AiCopilotAssistant";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
@@ -42,9 +43,9 @@ import { FitCheckDrawer } from "@/features/studio/components/fitcheck/FitCheckDr
 import { StudioToolDock, StudioToolId } from "@/features/studio/components/StudioToolDock";
 import { PanelNavigator } from "@/features/studio/components/PanelNavigator";
 import {
+  BoxBackgroundPicker,
   ColorPaletteSelector,
-  CURATED_COLOR_FRAMES,
-  ColorPaletteFrame,
+  paletteColors,
 } from "@/features/studio/components/ColorPaletteSelector";
 import {
   FontSelectorCards,
@@ -60,17 +61,17 @@ import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
-import { materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
+import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
 import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
-import type { BoxStructure, ProjectDetail, SnapshotSummary } from "@/types/api";
+import type { BoxStructure, ProjectDetail, SnapshotSummary, TemplateDetail } from "@/types/api";
 import { FormulaUpgrade } from "@/features/studio/components/formula/FormulaUpgrade";
 
 // Code splitting: panels and dialogs opened on demand load their own chunk the first time they are needed, so the
 // studio's first paint only waits for the dieline canvas and the 3D view.
-const StickerAssetBank = dynamic<React.ComponentProps<typeof import("@/features/studio/components/StickerAssetBank").StickerAssetBank>>(() => import("@/features/studio/components/StickerAssetBank").then((m) => m.StickerAssetBank), { ssr: false });
+const LibraryPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/library/LibraryPanel").LibraryPanel>>(() => import("@/features/studio/components/library/LibraryPanel").then((m) => m.LibraryPanel), { ssr: false });
 const AiPatternPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/ai-pattern/AiPatternPanel").AiPatternPanel>>(() => import("@/features/studio/components/ai-pattern/AiPatternPanel").then((m) => m.AiPatternPanel), { ssr: false });
 const VersionConflictDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/sync/VersionConflictDialog").VersionConflictDialog>>(() => import("@/features/studio/components/sync/VersionConflictDialog").then((m) => m.VersionConflictDialog), { ssr: false });
 const ExportDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/export/ExportDialog").ExportDialog>>(() => import("@/features/studio/components/export/ExportDialog").then((m) => m.ExportDialog), { ssr: false });
@@ -99,13 +100,22 @@ const INSPECTOR_TABS: { id: InspectorTab; label: string; icon: LucideIcon }[] = 
   { id: "fitcheck", label: "FitCheck", icon: ShieldCheck },
 ];
 
-/** Seamless patterns drawn by DielineCanvas2D (its `pattern-*` defs) under the artwork. */
-const SEAMLESS_PATTERNS = [
-  { id: "tet", label: "Hoa mai Tết", dot: "bg-brand-gold" },
-  { id: "xmas", label: "Giáng Sinh", dot: "bg-brand-forest" },
-  { id: "botanical", label: "Lá khuynh diệp", dot: "bg-success" },
-  { id: "gold", label: "Art Deco vàng", dot: "bg-warning" },
-];
+/** Seamless patterns of older designs (`canvasState.backgroundPattern`), shown on screen only: converted to printed
+ *  library backgrounds when the design opens. */
+const LEGACY_PATTERNS: Record<string, { design: string; palette: string }> = {
+  tet: { design: "bg-blossoms", palette: "son-do" },
+  xmas: { design: "bg-stripes", palette: "rung-thong" },
+  botanical: { design: "bg-dots", palette: "xanh-reu" },
+  gold: { design: "bg-diamonds", palette: "kim-ngan" },
+};
+/** Faces that take the unboxing QR code, in order of preference (back or bottom first). */
+const QR_PANELS = ["panel_back", "sleeve_bottom", "pillow_back", "base_bottom", "lid_top", "panel_front", "sleeve_top", "pillow_front"];
+/** The QR code of the gift's unboxing page (online `/unbox/<slug>`, offline `/unbox/demo#g=…`). */
+const isUnboxingQr = (el: CanvasElement) => el.type === "barcode" && el.content.includes("/unbox/");
+/** Palette of a background chosen before any palette. */
+const DEFAULT_BACKGROUND_PALETTE = "kem-sua";
+/** Library backgrounds (`bg-*` art on a pattern element). */
+const isLibraryBackground = (el: CanvasElement) => el.type === "pattern" && !!parseLibraryArt(el.content)?.design.startsWith("bg-");
 
 /** Icon button of the dark view dock under the stage: 40 px, lime when on. */
 const darkDockButton = (on: boolean, className?: string) =>
@@ -182,6 +192,8 @@ interface StudioWorkspaceProps {
   onReplaced?: (project: ProjectDetail, notice: RestoreNotice | null) => void;
   /** Shown after a restore, with an undo button. */
   notice?: RestoreNotice | null;
+  /** Offline demo only: the template it starts from (`/editor/demo?template=<id>`). */
+  demoTemplate?: TemplateDetail | null;
 }
 
 /** Steps 1–4 of the studio for one design. Mount it again (new `key`) to load another state of the project. */
@@ -192,10 +204,12 @@ export function StudioWorkspace({
   reloading = false,
   onReplaced,
   notice = null,
+  demoTemplate = null,
 }: StudioWorkspaceProps) {
   const toast = useToast();
   const searchParams = useSearchParams();
   const isDemo = project === null;
+  const presenting = usePresentMode();
 
   // Guided tour: the overview of the screen once, then a short guide the first time each step opens.
   const tourContinued = useTourContinuation();
@@ -207,7 +221,7 @@ export function StudioWorkspace({
   const initialStructure =
     isDemo && paramStructure && BOX_STRUCTURES.some((s) => s.id === paramStructure)
       ? paramStructure
-      : (project?.template.id ?? "tuck-top");
+      : (project?.template.id ?? demoTemplate?.structure.id ?? "tuck-top");
 
   const paramL = Number(searchParams.get("l") || searchParams.get("length"));
   const paramW = Number(searchParams.get("w") || searchParams.get("width"));
@@ -223,28 +237,42 @@ export function StudioWorkspace({
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
     if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
-    if (hasParamDims || paramStructure) return 4;
+    if (hasParamDims || paramStructure || demoTemplate) return 4;
     return 1;
   });
 
   // Project Core State: a saved project fills it once, on mount
-  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? "Bao bì quà tặng sang trọng");
+  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoTemplate?.title ?? "Bao bì quà tặng sang trọng");
   const [boxType, setBoxType] = useState<BoxStructureType>(initialStructure);
   const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(() => {
     if (project) return materialThemeOf(project.canvasState?.materialTheme, project.materialSpec);
     if (isDemo && paramPaper && ["ivory", "kraft", "black_matte", "white_gloss", "metallics"].includes(paramPaper)) {
       return paramPaper;
     }
+    if (demoTemplate) return materialThemeOf(demoTemplate.canvasState?.materialTheme, demoTemplate.materialSpec);
     return "ivory";
   });
+  // The design before the last palette change; offered back while that change is still the last edit.
+  const [paletteUndo, setPaletteUndo] = useState<{ paletteId: string | null; elements: CanvasElement[]; applied: CanvasElement[] } | null>(null);
+  // Occasion of the design (template, quick start): the scenes of step 5 suggest the one that suits it.
+  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoTemplate?.occasion ?? null);
+  // Finishes of the print shop (lamination, foil, spot UV): priced in steps 3 and 6, stored with the canvas.
+  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoTemplate?.canvasState?.finishes));
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
-    project?.canvasState?.backgroundPattern ?? null
+    project?.canvasState?.backgroundPattern ?? demoTemplate?.canvasState?.backgroundPattern ?? null
   );
 
   // Image 2 Inspired Palette & Typography states
-  const [selectedPalette, setSelectedPalette] = useState<ColorPaletteFrame>(
-    () => CURATED_COLOR_FRAMES.find((frame) => frame.id === project?.canvasState?.backgroundTheme) ?? CURATED_COLOR_FRAMES[0]
-  );
+  // Palette of the design (a library palette); choosing one recolours the printed artwork. Null until one is chosen.
+  const [paletteId, setPaletteId] = useState<string | null>(() => {
+    const canvas = project?.canvasState ?? demoTemplate?.canvasState;
+    if (canvas?.backgroundTheme && artPaletteOf(canvas.backgroundTheme)) return canvas.backgroundTheme;
+    for (const el of canvas?.elements ?? []) {
+      const ref = parseLibraryArt(el.content);
+      if (ref && el.type === "pattern") return ref.palette;
+    }
+    return null;
+  });
   const [selectedFont, setSelectedFont] = useState<FontPresetCard>(CURATED_FONT_PRESETS[0]);
 
   // Box Dimensions in mm
@@ -258,6 +286,7 @@ export function StudioWorkspace({
         paperThickness: 0.38, // 300 GSM
       };
     }
+    if (demoTemplate) return { ...demoTemplate.dimensions };
     return {
       length: 120,
       width: 80,
@@ -285,7 +314,7 @@ export function StudioWorkspace({
 
   // Artwork Canvas Elements
   const [elements, setElements] = useState<CanvasElement[]>(
-    project ? (project.canvasState?.elements ?? []) : DEMO_ELEMENTS
+    project ? (project.canvasState?.elements ?? []) : (demoTemplate?.canvasState?.elements ?? DEMO_ELEMENTS)
   );
 
   // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
@@ -362,15 +391,16 @@ export function StudioWorkspace({
     () => ({
       title: projectTitle.trim() || "Dự án chưa đặt tên",
       dimensions,
-      materialSpec: materialSpecFor(activeMaterial, dimensions.paperThickness),
+      materialSpec: materialSpecFor(activeMaterial, dimensions.paperThickness, finishes),
       canvasState: {
         elements,
         backgroundPattern: backgroundPatternSvg,
-        backgroundTheme: selectedPalette.id,
+        backgroundTheme: paletteId,
         materialTheme: activeMaterial,
+        finishes,
       },
     }),
-    [projectTitle, dimensions, activeMaterial, elements, backgroundPatternSvg, selectedPalette]
+    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId]
   );
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
   const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
@@ -403,6 +433,66 @@ export function StudioWorkspace({
   const handleAutoFix = useCallback(() => {
     setElements((prev) => autoFixElements(pieces, prev));
   }, [pieces]);
+
+  // Background over the whole box (all pieces), in the design's palette; null leaves the paper.
+  const boxBackgroundDesign = useMemo(() => {
+    const designs = elements.filter(isLibraryBackground).map((el) => parseLibraryArt(el.content)!.design);
+    return designs.find((d) => d !== "bg-solid") ?? designs[0] ?? null;
+  }, [elements]);
+  const applyBoxBackground = useCallback(
+    (design: string | null) => {
+      const palette = paletteId ?? DEFAULT_BACKGROUND_PALETTE;
+      if (!paletteId && design) setPaletteId(palette);
+      setElements((prev) => {
+        const kept = prev.filter((el) => !isLibraryBackground(el));
+        if (!design) return kept;
+        const fills = boxBackgrounds(pieces, { design, palette }, mainPanelOf(boxType) ?? undefined).map((el) => ({ ...el, id: `fill_${el.id}` }));
+        return [...fills, ...kept];
+      });
+    },
+    [paletteId, pieces, boxType]
+  );
+  // Older designs: their screen-only seamless pattern becomes a printed background once.
+  useEffect(() => {
+    const legacy = backgroundPatternSvg ? LEGACY_PATTERNS[backgroundPatternSvg] : null;
+    if (!legacy) return;
+    setBackgroundPatternSvg(null);
+    if (!paletteId) setPaletteId(legacy.palette);
+    setElements((prev) =>
+      prev.some(isLibraryBackground) ? prev : [...boxBackgrounds(pieces, legacy, mainPanelOf(boxType) ?? undefined).map((el) => ({ ...el, id: `fill_${el.id}` })), ...prev]
+    );
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // QR code of the unboxing page, printed on the box (one at a time): the back or bottom face, lower-right corner of its
+  // safe area, so it stays out of the way of the front design.
+  const placeUnboxingQr = useCallback(
+    (url: string) => {
+      for (const panelId of QR_PANELS) {
+        const piece = pieces.find((p) => p.geometry.panels.some((panel) => panel.id === panelId));
+        const panel = piece?.geometry.panels.find((item) => item.id === panelId);
+        if (!piece || !panel) continue;
+        const m = safeMarginsOf(panel, piece.geometry);
+        const size = Math.round(Math.min(24, panel.bounds.width - m.left - m.right - 2, panel.bounds.height - m.top - m.bottom - 2));
+        if (size < 15) continue; // FitCheck's smallest QR that scans
+        const qr: CanvasElement = {
+          id: `qr_unbox_${Date.now().toString(36)}`,
+          type: "barcode",
+          panelId: panel.id,
+          x: Math.round((panel.bounds.width - m.right - 1 - size) * 10) / 10,
+          y: Math.round((panel.bounds.height - m.bottom - 1 - size) * 10) / 10,
+          width: size,
+          height: size,
+          rotation: 0,
+          content: url,
+        };
+        setElements((prev) => [...prev.filter((el) => !isUnboxingQr(el)), qr]);
+        toast.show({ tone: "success", title: "Đã đặt mã QR lên hộp", description: `${panel.name.replace(/\s*\(.*\)$/, "")}, ${size} × ${size} mm, in đen K100.` });
+        return;
+      }
+      toast.show({ tone: "error", title: "Chưa đặt được mã QR", description: "Hộp không có mặt nào đủ chỗ cho mã QR 15 mm." });
+    },
+    [pieces, toast]
+  );
 
   // Add Element from Sticker Bank or Image Upload
   const handleAddElement = useCallback((newEl: CanvasElement) => {
@@ -762,6 +852,21 @@ export function StudioWorkspace({
               setPieceIndex(0);
             }}
             onNext={() => setCurrentStep(2)}
+            onQuickStart={(template) => {
+              // A finished design: its box, paper, artwork and palette, then on to the size of the gift.
+              setBoxType(template.structure);
+              setDimensions({ ...template.dimensions });
+              setActiveMaterial(materialThemeOf(template.canvasState.materialTheme, template.materialSpec));
+              setProjectTitle(template.title);
+              setOccasion(template.occasion);
+              setElements(template.canvasState.elements);
+              setPaletteId(template.canvasState.elements.map((el) => parseLibraryArt(el.content)).find((ref) => ref && ref.design.startsWith("bg-"))?.palette ?? null);
+              const nextPieces = dielinePiecesOf(template.structure, template.dimensions, project?.formulaVersion);
+              setPieceIndex(Math.max(0, pieceIndexOfPanel(nextPieces, mainPanelOf(template.structure) ?? "")));
+              setActivePanelId(mainPanelOf(template.structure) ?? "panel_front");
+              setSelectedElementId(null);
+              setCurrentStep(2);
+            }}
           />
         )}
 
@@ -791,6 +896,9 @@ export function StudioWorkspace({
             onDimensionsChange={setDimensions}
             activeMaterial={activeMaterial}
             onMaterialChange={setActiveMaterial}
+            finishes={finishes}
+            onFinishesChange={setFinishes}
+            pieces={pieces}
             limits={limits}
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
@@ -1042,10 +1150,10 @@ export function StudioWorkspace({
               </div>
             </div>
 
-            {/* ── Right: inspector ── */}
+            {/* ── Right: inspector; it ends above the folded Gói button of the corner (lg:bottom-24) ── */}
             <aside
               aria-label="Bảng thuộc tính"
-              className="z-20 flex flex-col overflow-hidden rounded-sheet bg-surface-raised/95 shadow-popover ring-1 ring-line/70 backdrop-blur-xl lg:absolute lg:bottom-4 lg:right-4 lg:top-[76px] lg:w-[364px]"
+              className="z-20 flex flex-col overflow-hidden rounded-sheet bg-surface-raised/95 shadow-popover ring-1 ring-line/70 backdrop-blur-xl lg:absolute lg:bottom-24 lg:right-4 lg:top-[76px] lg:w-[364px]"
             >
               <div className="border-b border-line/70 p-3">
                 <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 rounded-full bg-surface-sunken p-1 text-label-sm">
@@ -1091,56 +1199,66 @@ export function StudioWorkspace({
                     />
 
                     <ColorPaletteSelector
-                      selectedPaletteId={selectedPalette.id}
-                      onSelectPalette={(palette) => {
-                        setSelectedPalette(palette);
-                        if (palette.id === "olive") setActiveMaterial("ivory");
-                        if (palette.id === "forest") setActiveMaterial("forest");
-                        if (palette.id === "kraft") setActiveMaterial("kraft");
+                      selectedPaletteId={paletteId}
+                      onSelectPalette={(id) => {
+                        const next = recolorDesign(elements, id);
+                        setPaletteUndo({ paletteId, elements, applied: next });
+                        setPaletteId(id);
+                        setElements(next);
                       }}
+                      undo={
+                        paletteUndo && paletteUndo.applied === elements
+                          ? {
+                              paletteName: artPaletteOf(paletteUndo.paletteId ?? "")?.name ?? "màu cũ",
+                              onUndo: () => {
+                                setPaletteId(paletteUndo.paletteId);
+                                setElements(paletteUndo.elements);
+                                setPaletteUndo(null);
+                              },
+                            }
+                          : null
+                      }
                     />
+
+                    <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={applyBoxBackground} />
 
                     <div className="border-t border-line pt-4">
                       <AiPatternPanel
                         projectId={project?.id ?? null}
                         panel={placementPanel}
                         geometry={dieline}
-                        colors={selectedPalette.colors}
+                        colors={paletteColors(paletteId)}
                         onInsert={handleInsertPattern}
                       />
                     </div>
 
-                    <div className="space-y-2 border-t border-line pt-4">
-                      <span className="block font-landing-heading text-title font-bold text-fg">Hoa văn lặp</span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {SEAMLESS_PATTERNS.map((pat) => {
-                          const on = backgroundPatternSvg === pat.id;
-                          return (
-                            <button
-                              key={pat.id}
-                              type="button"
-                              aria-pressed={on}
-                              onClick={() => setBackgroundPatternSvg(on ? null : pat.id)}
-                              className={`flex min-h-11 items-center gap-2 rounded-control px-3 text-left text-label-sm transition-colors ${
-                                on ? "bg-fg font-semibold text-fg-inverse shadow-xs" : "bg-surface-sunken text-fg hover:bg-line/60"
-                              }`}
-                            >
-                              <span className={`size-2.5 shrink-0 rounded-full ${pat.dot}`} aria-hidden />
-                              <span className="truncate" title={pat.label}>
-                                {pat.label}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
                   </div>
                 )}
 
                 {/* TAB 2: STICKERS & ASSET BANK */}
                 {activeInspectorTab === "stickers" && placementPanel && (
                   <div className="animate-fadeIn">
-                    <StickerAssetBank activePanelId={placementPanel.id} onAddElement={handleAddElement} />
+                    <LibraryPanel
+                      panel={placementPanel}
+                      geometry={dieline}
+                      onAddElement={(element: CanvasElement) => {
+                        // Backgrounds go under the other elements of the panel, like AI patterns.
+                        if (element.type === "pattern") handleInsertPattern(element);
+                        else handleAddElement(element);
+                        setSelectedElementId(element.id);
+                      }}
+                      selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
+                      onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
+                      box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
+                      onApplyKit={(kitElements: CanvasElement[]) =>
+                        // The previous kit's elements go, the user's own stay; the kit's backgrounds go under them.
+                        setElements((prev) => {
+                          const kitHasBackground = kitElements.some((el) => el.type === "pattern");
+                          const own = prev.filter((el) => !el.id.startsWith("kit_") && !(kitHasBackground && isLibraryBackground(el)));
+                          return [...kitElements.filter((el) => el.type === "pattern"), ...own, ...kitElements.filter((el) => el.type !== "pattern")];
+                        })
+                      }
+                    />
                   </div>
                 )}
 
@@ -1184,9 +1302,12 @@ export function StudioWorkspace({
             backgroundPatternSvg={backgroundPatternSvg}
             elements={elements}
             formulaVersion={project?.formulaVersion}
+            occasion={occasion}
+            title={projectTitle}
             onBack={() => setCurrentStep(4)}
             onNext={() => setCurrentStep(6)}
             onOpenQrModal={() => openDialog("unboxing")}
+            hasUnboxingQr={elements.some(isUnboxingQr)}
           />
         )}
 
@@ -1197,6 +1318,7 @@ export function StudioWorkspace({
             boxType={boxType}
             dimensions={dimensions}
             activeMaterial={activeMaterial}
+            finishes={finishes}
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
             formulaVersion={project?.formulaVersion}
@@ -1206,19 +1328,24 @@ export function StudioWorkspace({
             onBack={() => setCurrentStep(5)}
             onAutoFix={handleAutoFix}
             onExport={() => openDialog("export")}
-            onOpenQr={() => openDialog("unboxing")}
+            title={projectTitle}
+            projectId={project?.id ?? null}
+            onDesign={() => {
+              setCurrentStep(4);
+              setActiveInspectorTab("stickers");
+            }}
           />
         )}
       </main>
 
       {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}
-      <AiCopilotAssistant
+      {!presenting && <AiCopilotAssistant
         currentDimensions={dimensions}
         onApplyDimensions={setDimensions}
         fitCheckReport={displayReport}
         onAutoFixFitCheck={handleAutoFix}
         defaultExpanded={searchParams.get("copilot") === "open"}
-      />
+      />}
 
       {/* Another tab saved first: reload its version or overwrite it */}
       {sync.conflict && (
@@ -1263,6 +1390,7 @@ export function StudioWorkspace({
           projectId={project?.id ?? "demo"}
           onClose={() => setDialog(null)}
           box={{ title: projectTitle, structure: boxType, dimensions, materialTheme: activeMaterial }}
+          onPlaceOnBox={placeUnboxingQr}
         />
       )}
     </div>

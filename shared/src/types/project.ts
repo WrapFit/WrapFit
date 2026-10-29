@@ -48,6 +48,8 @@ export interface CanvasState {
   backgroundTheme?: string | null;
   /** Paper look of the editor ("ivory" | "kraft" | "forest" | "gold_foil"); the printable stock is `materialSpec`. */
   materialTheme?: string | null;
+  /** Finishes of the print shop (`QuoteFinish`: lamination, foil, spot UV), priced by the quote. */
+  finishes?: string[];
 }
 
 /**

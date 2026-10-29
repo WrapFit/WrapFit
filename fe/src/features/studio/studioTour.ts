@@ -21,7 +21,7 @@ export const STUDIO_INTRO_TOUR: TourStep[] = [
   {
     target: 'nav[aria-label="Các bước thiết kế"]',
     title: "6 bước, đi từ trái sang phải",
-    body: "Cấu trúc → Kích thước → Chất liệu → Thiết kế → Xem 3D → Xuất file. Bước đang làm được tô đậm; bấm tên một bước để quay lại sửa.",
+    body: "Khởi đầu → Kích thước → Giấy & hoàn thiện → Thiết kế → Quà & mở hộp → Đặt in. Bước đang làm được tô đậm; bấm tên một bước để quay lại sửa.",
     mascot: "presenting",
   },
   {
@@ -40,6 +40,12 @@ export const STUDIO_INTRO_TOUR: TourStep[] = [
 
 export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
   1: [
+    {
+      target: '[aria-labelledby="quick-start-title"]',
+      title: "Bắt đầu nhanh từ một mẫu",
+      body: "Chọn dịp và loại sản phẩm, rồi bấm một mẫu: hộp đã có sẵn hình in, bạn chỉ cần chỉnh kích thước và chữ.",
+      mascot: "presenting",
+    },
     {
       target: '[aria-label="Cấu trúc hộp"]',
       title: "Chọn kiểu hộp",
@@ -85,13 +91,13 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[role="radiogroup"][aria-label="Giấy"]',
       title: "Chọn giấy",
-      body: "Mỗi ô là một loại giấy: màu bên ngoài ở trên, màu bên trong ở dưới. Kraft mộc mạc, Ivory trắng sang, giấy dày hơn thì hộp cứng hơn.",
+      body: "Mỗi dòng là một loại giấy: mẫu giấy, độ cứng và giá mỗi hộp. Nhãn “Đề xuất” là giấy hợp với kích thước hộp của bạn.",
       mascot: "folding",
     },
     {
-      target: 'section[aria-label^="Thông số"]',
-      title: "Thông số của giấy",
-      body: "Độ dày và định lượng (GSM) của giấy đang chọn. Không cần nhớ: WrapFit tự tính khuôn theo độ dày này.",
+      target: '[aria-labelledby="finish-title"]',
+      title: "Hoàn thiện ở xưởng in",
+      body: "Cán màng mờ, bóng hay nhung, thêm ép kim hoặc UV. Mỗi lựa chọn ghi rõ giá cộng thêm mỗi hộp. Không chắc thì cứ để “Không cán”.",
       mascot: "measuring",
     },
     {
@@ -139,13 +145,13 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
   ],
   5: [
     {
-      target: '[aria-label="Mức gấp hộp"]',
-      title: "Xem hộp 3D",
-      body: "Kéo thanh này để gấp hoặc mở hộp. Dùng chuột kéo trên hình để xoay hộp, lăn chuột để phóng to.",
-      mascot: "folding",
+      target: '[aria-labelledby="step5-gift"]',
+      title: "Lời chúc và mã QR",
+      body: "Viết lời chúc, rồi đặt mã QR lên hộp: người nhận quét là thấy hộp mở 3D cùng lời chúc trên điện thoại.",
+      mascot: "unboxing_pop",
     },
     {
-      target: '[aria-labelledby="step4-scenes"]',
+      target: '[aria-labelledby="step5-scenes"]',
       title: "Đặt hộp vào bối cảnh",
       body: "Chọn một khung cảnh để xem hộp như ảnh chụp thật, tiện gửi khách duyệt.",
       mascot: "presenting",
@@ -153,7 +159,7 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: NEXT,
       title: "Ưng rồi thì sang bước cuối",
-      body: "Bấm để kiểm tra lần cuối và xuất file in.",
+      body: "Bấm để kiểm tra lần cuối, xem báo giá và đặt in.",
       mascot: "thumbs_up",
       clickTarget: true,
     },
@@ -172,10 +178,10 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
       mascot: "measuring",
     },
     {
-      target: '[data-tour="s6-qr"]',
-      title: "Mã QR mở hộp",
-      body: "Tạo mã QR in lên hộp: người nhận quét là thấy lời chúc và hộp 3D trên điện thoại.",
-      mascot: "unboxing_pop",
+      target: '[data-tour="s6-quote"]',
+      title: "Báo giá theo số lượng",
+      body: "Chọn số hộp cần in: WrapFit tính giá mỗi hộp, cách in (in kỹ thuật số hay offset) và số ngày làm. Có thể đặt in thử 1 hộp trước.",
+      mascot: "delivery",
     },
     {
       target: '[data-tour="s6-export"]',
