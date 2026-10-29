@@ -555,11 +555,20 @@ export interface PrintShop {
   status?: 'active' | 'review' | 'paused';
 }
 
+/** Lifecycle of a sample print order (`be/src/orders/order-status.ts`). */
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+/** A sample print order (`be/src/orders`). `status` is `orderStatus` in lower case. */
 export interface SampleOrder {
   id: string;
+  orderCode: string;
   userId: string;
-  projectId: string;
+  /** null once the project was deleted for good: the order keeps its title, structure and size. */
+  projectId: string | null;
   projectTitle: string;
+  projectVersion?: number;
+  structure?: string;
+  dimensions?: { length: number; width: number; height: number; paperThickness?: number } | null;
   printShopId?: string;
   printShopName?: string;
   partnerShop?: {
@@ -569,16 +578,33 @@ export interface SampleOrder {
     contactPhone?: string;
   };
   quantity: number;
+  paperStock?: string;
   recipientName: string;
   phone?: string;
   recipientPhone?: string;
   shippingAddress: string;
   notes?: string | null;
+  subtotalVnd?: number;
+  shippingVnd?: number;
   totalVnd?: number;
   sampleFeeVnd?: number;
-  status: 'pending' | 'confirmed' | 'in_production' | 'shipped' | 'delivered' | 'SUBMITTED' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED';
-  orderCode?: string;
+  status: Lowercase<OrderStatus>;
+  orderStatus?: OrderStatus;
+  estimatedDeliveryDays?: string;
+  paymentId?: string | null;
+  paidAt?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  cancelledAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
+}
+
+/** Filters of `GET /orders` (ADMIN, PRINT_SHOP). */
+export interface StaffOrdersQuery {
+  status?: OrderStatus;
+  printShopId?: string;
+  limit?: number;
 }
 
 export interface CreateSampleOrderRequest {

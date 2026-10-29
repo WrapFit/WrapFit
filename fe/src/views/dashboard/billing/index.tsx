@@ -33,7 +33,10 @@ export default function BillingPage() {
 }
 
 /** Sample orders are paid on delivery: an order is paid once it was delivered. */
-const PAID = new Set(['delivered', 'DELIVERED']);
+/** Order statuses after the payment (`SampleOrder.status`). */
+const PAID = new Set<SampleOrder['status']>(['paid', 'in_production', 'shipped', 'delivered']);
+const paymentBadge = (status: SampleOrder['status']) =>
+  status === 'cancelled' ? { tone: 'grey' as const, label: 'Đã hủy' } : PAID.has(status) ? { tone: 'green' as const, label: 'Đã thu' } : { tone: 'amber' as const, label: 'Chờ thu' };
 
 const METHODS = [
   // Each method shows the same brand mark as the footer.
@@ -149,7 +152,7 @@ function BillingScreen() {
                     { key: 'code', label: 'Mã', render: (row) => <span className="font-mono text-xs">{row.orderCode ?? row.id}</span> },
                     { key: 'method', label: 'Cách trả', render: () => <span className="text-library-sub">Khi nhận hàng</span> },
                     { key: 'total', label: 'Số tiền', align: 'right', render: (row) => formatVnd(row.totalVnd ?? row.sampleFeeVnd ?? 0) },
-                    { key: 'paid', label: 'Thanh toán', align: 'right', render: (row) => <Badge tone={PAID.has(row.status) ? 'green' : 'amber'}>{PAID.has(row.status) ? 'Đã thu' : 'Chờ thu'}</Badge> },
+                    { key: 'paid', label: 'Thanh toán', align: 'right', render: (row) => <Badge tone={paymentBadge(row.status).tone}>{paymentBadge(row.status).label}</Badge> },
                   ]}
                 />
               )}

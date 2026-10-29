@@ -51,6 +51,7 @@ export const queryKeys = {
   orders: {
     all: ["orders"] as const,
     myOrders: ["orders", "my"] as const,
+    staff: (query: object = {}) => ["orders", "staff", query] as const,
     detail: (id: string) => ["orders", id] as const,
   },
 
