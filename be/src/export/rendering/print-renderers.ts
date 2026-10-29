@@ -18,6 +18,10 @@ import {
   pixelsFor,
   rgbaToCmyk,
   textCmyk,
+  fitWatermark,
+  WATERMARK_COLOR,
+  WATERMARK_TEXT,
+  watermarkPlacement,
   type Cmyk,
   type MeasureText,
   type OutlineFont,
@@ -50,17 +54,18 @@ const VECTOR_DPI = 600;
 /** Layers of the PDF (Optional Content Groups) and the SVG, bottom to top. `Dimensions` is not printed. */
 export const PRINT_LAYERS = ['Artwork', 'Crease', 'CutContour', 'Dimensions'] as const;
 
-/** Bold font files, the weight the editor draws texts with (TEXT_FONT_WEIGHT). */
-const FONT_FILES: Record<PrintFontId | 'info', string> = {
+/** Bold font files, the weight the editor draws texts with (TEXT_FONT_WEIGHT); `info` and `watermark` are not texts of the design. */
+const FONT_FILES: Record<PrintFontId | 'info' | 'watermark', string> = {
   'be-vietnam-pro': require.resolve('@expo-google-fonts/be-vietnam-pro/700Bold/BeVietnamPro_700Bold.ttf'),
   'playfair-display': require.resolve('@expo-google-fonts/playfair-display/700Bold/PlayfairDisplay_700Bold.ttf'),
   'cormorant-garamond': require.resolve('@expo-google-fonts/cormorant-garamond/700Bold/CormorantGaramond_700Bold.ttf'),
   'big-shoulders-display': require.resolve('@expo-google-fonts/big-shoulders-display/BigShouldersDisplay_700Bold.ttf'),
   inter: require.resolve('@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf'),
   info: require.resolve('@expo-google-fonts/be-vietnam-pro/400Regular/BeVietnamPro_400Regular.ttf'),
+  watermark: require.resolve('@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf'),
 };
 const fonts = new Map<string, OutlineFont>();
-const fontOf = (id: PrintFontId | 'info'): OutlineFont => {
+const fontOf = (id: PrintFontId | 'info' | 'watermark'): OutlineFont => {
   if (!fonts.has(id)) fonts.set(id, openSync(FONT_FILES[id]));
   return fonts.get(id)!;
 };
@@ -109,6 +114,24 @@ function dimensionMarks(layout: PrintLayout) {
 function labelPath(text: string, x: number, y: number, sizeMm: number, centred: boolean, font: PrintFontId | 'info' = 'info') {
   const left = centred ? x - outlineAdvanceMm(fontOf(font), text, sizeMm) / 2 : x;
   return outlineText(fontOf(font), text, left, y, sizeMm);
+}
+
+/**
+ * Outlines of the watermark of the free A4 PDF (docs/16 §5.4), already turned and placed on the sheet (mm), so the
+ * path coordinates are sheet coordinates. Null when the layout has nowhere to put it.
+ */
+export function watermarkOutline(layout: PrintLayout) {
+  const placement = watermarkPlacement(layout.pieces);
+  if (!placement) return null;
+  const font = fontOf('watermark');
+  const fit = fitWatermark(placement, (sizeMm) => outlineAdvanceMm(font, WATERMARK_TEXT, sizeMm));
+  const { origin, rotation } = fit;
+  // outlineText writes every point as "x y": turn each pair around the start of the baseline (-90: x' = y, y' = -x).
+  const d = outlineText(font, WATERMARK_TEXT, 0, 0, fit.sizeMm).replace(/(-?[\d.]+) (-?[\d.]+)/g, (_, px: string, py: string) => {
+    const [x, y] = rotation === -90 ? [Number(py), -Number(px)] : [Number(px), Number(py)];
+    return `${n(origin.x + x)} ${n(origin.y + y)}`;
+  });
+  return { d, placement, sizeMm: fit.sizeMm };
 }
 
 /** Every text element as outlines (one path per element) with its print ink. */
@@ -330,6 +353,8 @@ type RawPage = {
 export interface PdfRenderOptions {
   withCropMarks?: boolean;
   paperSize?: 'A4' | 'A3';
+  /** Free A4 export without an export credit: draws the WrapFit watermark on a glue flap (docs/16 §5.4). */
+  watermarked?: boolean;
 }
 
 /**
@@ -475,6 +500,14 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
       doc.rect(b.box.x, b.box.y, b.box.width, b.box.height).fill(PAPER);
       doc.path(b.d).fill(K100);
     });
+  }
+  const watermark = options?.watermarked ? watermarkOutline(layout) : null;
+  if (watermark) {
+    // ActualText: the outlines read as the sentence when the PDF is searched or its text copied.
+    const actualText = `FEFF${Buffer.from(WATERMARK_TEXT, 'utf16le').swap16().toString('hex').toUpperCase()}`;
+    doc.addContent(`/Span <</ActualText <${actualText}>>> BDC`);
+    doc.path(watermark.d).fill(hexToCmyk(WATERMARK_COLOR));
+    doc.addContent('EMC');
   }
   endLayer();
 
