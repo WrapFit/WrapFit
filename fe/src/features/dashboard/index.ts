@@ -4,6 +4,7 @@
  * (uploads, dialogs, formatting).
  */
 export { CollectionDialog } from "./components/CollectionDialog";
+export { DesignStats, formatDuration } from "./components/DesignStats";
 export { ConfirmDialog, DIALOG_CANCEL, DIALOG_DANGER, DIALOG_PANEL } from "./components/ConfirmDialog";
 export { FolderBar, NO_FOLDER } from "./components/FolderBar";
 export type { FolderFilter } from "./components/FolderBar";
@@ -57,6 +58,7 @@ export {
   useProjectList,
 } from "./useProjects";
 export { usagePercent, useAiUsage, useStorageUsage } from "./useUsage";
+export { useAnalyticsSummary } from "./useAnalytics";
 export {
   DEMO_AI_USAGE,
   DEMO_COLLECTIONS,

@@ -19,6 +19,7 @@ describe('ExportProcessor', () => {
   let prisma: {
     exportJob: { update: jest.Mock; updateMany: jest.Mock };
     projectSnapshot: { create: jest.Mock };
+    productEvent: { create: jest.Mock };
     $transaction: jest.Mock;
     $executeRaw: jest.Mock;
   };
@@ -32,6 +33,7 @@ describe('ExportProcessor', () => {
     prisma = {
       exportJob: { update: jest.fn().mockResolvedValue({ fileType: 'DXF', project }), updateMany: jest.fn() },
       projectSnapshot: { create: jest.fn() },
+      productEvent: { create: jest.fn() },
       // Interactive transaction: the callback receives the same mocks as its transaction client.
       $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
       $executeRaw: jest.fn().mockResolvedValue(0),
@@ -66,6 +68,14 @@ describe('ExportProcessor', () => {
     expect(prisma.projectSnapshot.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ projectId: 'p-1', name: expect.stringMatching(/^Bản xuất in DXF /), isAutomatic: true }) }),
     );
+    expect(prisma.productEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: 'EXPORT_COMPLETED',
+        userId: 'u-1',
+        projectId: 'p-1',
+        payload: { exportJobId: 'job-1', fileType: 'DXF', watermarked: false },
+      }),
+    });
     // Only the newest automatic snapshots are kept.
     expect(prisma.$executeRaw.mock.calls[0][0].join('?')).toContain('DELETE FROM project_snapshots');
     expect(events.emit).toHaveBeenCalledWith(EXPORT_COMPLETED, { exportJobId: 'job-1', projectId: 'p-1', userId: 'u-1' });

@@ -10,6 +10,7 @@ import {
 import { ExportFileType, Prisma } from '@prisma/client';
 import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
+import { ProductEventsService } from '../analytics';
 import { currentRequestId, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { StorageService } from '../storage';
@@ -54,6 +55,7 @@ export class ExportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly events: ProductEventsService,
     @InjectQueue(EXPORT_QUEUE) private readonly queue: Queue<ExportJobData>,
   ) {}
 
@@ -62,7 +64,7 @@ export class ExportService {
 
     const project = await this.prisma.packagingProject.findUniqueOrThrow({
       where: { id: projectId },
-      select: { status: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
+      select: { userId: true, status: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
     });
     if (project.status === 'DELETED') {
       throw new ConflictException('Restore the project from the trash before exporting it');
@@ -80,6 +82,12 @@ export class ExportService {
       data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject, fitcheckScore: fitCheck.score },
     });
     if (!fitCheck.isValidForProduction) {
+      // Analytics dashboard (decision M9): errors that would have reached the printer.
+      await this.events.record('EXPORT_BLOCKED_FITCHECK', {
+        userId: project.userId,
+        projectId,
+        payload: { errors: fitCheck.violations.filter((v) => v.severity === 'error').length, fileType },
+      });
       throw new UnprocessableEntityException({
         message: 'FitCheck found errors that would ruin the print; fix them before exporting',
         fitCheck,

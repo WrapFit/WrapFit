@@ -11,6 +11,8 @@ export * from "./parametric/segments";
 export * from "./parametric/fold";
 export * from "./parametric/paper";
 export * from "./fitcheck/validator";
+export * from "./analytics/studio-activity";
+export * from "./analytics/summary";
 export * from "./print/text-layout";
 export * from "./print/prepress";
 export * from "./print/barcode";

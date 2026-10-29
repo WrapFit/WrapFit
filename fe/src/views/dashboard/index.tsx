@@ -3,7 +3,7 @@
 /**
  * `/dashboard`: the workspace home of a signed-in user, in the pacdora.com style. Recent projects, project counts,
  * storage and AI usage come from the API (`GET /projects`, `/storage/usage`, `/ai/usage`); the structures of the quick
- * start from `GET /templates/structures`.
+ * start from `GET /templates/structures`; the design numbers ("Số liệu thiết kế") from `GET /analytics/summary`.
  */
 
 import { ArrowRight, Box, FolderOpen, Plus } from 'lucide-react';
@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth';
 import {
   AiUsageTile,
   DEMO_PROJECTS,
+  DesignStats,
   RECENT_PROJECTS_QUERY,
   RecentProjectCard,
   RecentProjectSkeleton,
@@ -227,6 +228,9 @@ function DashboardScreen() {
             hint="Trong 24 giờ"
           />
         </section>
+
+        {/* Real numbers only: guests see no analytics block (the API needs a session). */}
+        {!isGuest && <DesignStats />}
 
         <section aria-labelledby="recent-projects-title" data-tour="recent-projects">
           <PanelTitle

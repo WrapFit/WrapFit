@@ -124,6 +124,16 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
         where: { id: exportJobId },
         data: { status: 'COMPLETED', storageKey, completedAt },
       });
+      // Analytics dashboard (docs/17 S7), in the same transaction: a retried job never counts twice.
+      await tx.productEvent.create({
+        data: {
+          type: 'EXPORT_COMPLETED',
+          userId: project.userId,
+          projectId: project.id,
+          payload: { exportJobId, fileType: job.fileType, watermarked: false },
+          createdAt: completedAt,
+        },
+      });
       // UC-07: every print export leaves a version the user can come back to (stored canvas, keys included).
       await tx.projectSnapshot.create({
         data: {
