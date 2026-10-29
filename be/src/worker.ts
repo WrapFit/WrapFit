@@ -5,6 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { configuration, createAppLogger, validateEnv } from './config';
 import { queueRootModule } from './shared/queue';
 import { CommonModule } from './common';
+import { BillingCoreModule } from './billing';
 import { ExportWorkerModule } from './export';
 import { MailWorkerModule } from './mail';
 import { StorageModule } from './storage';
@@ -22,6 +23,7 @@ import { PrismaModule } from './shared/prisma';
     PrismaModule,
     StorageModule,
     queueRootModule('worker'),
+    BillingCoreModule, // refunds the export credit of a failed job (docs/16 section 5.3)
     ExportWorkerModule,
     MailWorkerModule,
   ],

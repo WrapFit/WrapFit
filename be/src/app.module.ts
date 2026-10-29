@@ -17,6 +17,7 @@ import { queueRootModule } from './shared/queue';
 import { AuthModule, JwtAuthGuard } from './auth';
 import { configuration, validateEnv } from './config';
 import { AiModule } from './ai';
+import { BillingModule } from './billing';
 import { ExportModule } from './export';
 import { CollectionsModule } from './collections';
 import { EventsModule } from './events';
@@ -54,6 +55,7 @@ import { CloudinaryModule } from './shared/cloudinary';
     queueRootModule('producer'), // BullMQ (Redis): jobs are processed by src/worker.ts
     AuthModule,
     UsersModule,
+    BillingModule,
     ProjectsModule,
     CollectionsModule,
     PublicShowcaseModule,
