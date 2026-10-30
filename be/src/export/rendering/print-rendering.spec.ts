@@ -138,6 +138,22 @@ describe('print renderers', () => {
     expect(renderSvg(layoutOf('pillow'))).toMatch(/<path d="M [\d. ]+Q /);
   });
 
+  it('prints the spec line (L x W x H, paper) on the Artwork layer, in the margin below the cut and the bleed', () => {
+    const layout = layoutOf('tuck-top');
+    const svg = renderSvg(layout);
+    const group = (id: string) => svg.slice(svg.indexOf(`<g id="${id}"`), svg.indexOf('</g>', svg.indexOf(`<g id="${id}"`)));
+    expect(group('artwork')).toContain('fill="#64748B"');
+    expect(group('dimensions')).not.toContain('fill="#64748B" d=');
+    const bottom = Math.max(...layout.pieces.map((p) => p.y + p.geometry.totalBoundingBox.height));
+    const ys = /fill="#64748B" d="([^"]+)"/
+      .exec(group('artwork'))![1]
+      .match(/-?\d+(\.\d+)?/g)!
+      .map(Number)
+      .filter((_, i) => i % 2 === 1);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(bottom + 5);
+    expect(Math.max(...ys)).toBeLessThan(layout.height);
+  });
+
   it('joins the cut segments of a box into one closed line', () => {
     const layout = buildPrintLayout({ title: 'x', structure: 'tuck-top', formulaVersion: 3, dimensions, elements: [] });
     const cut = layout.strokes.filter((stroke) => stroke.type === 'cut');

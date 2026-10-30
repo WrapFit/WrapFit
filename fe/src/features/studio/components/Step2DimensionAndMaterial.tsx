@@ -434,6 +434,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   dimensions={committed.current}
                   liveDimensions={draft}
                   foldProgress={1}
+                  faceLabels
                   boxType={boxType}
                   theme={activeMaterial as never}
                   elements={elements}

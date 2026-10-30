@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared";
-import { Box, Gift, Pause, Play, ZoomIn, ZoomOut } from "lucide-react";
-import { buildBoxModel, type BoxMaterialTheme, type BoxModel } from "./boxModel";
+import { Box, Gift, Pause, Play, Tag, ZoomIn, ZoomOut } from "lucide-react";
+import { buildBoxModel, foldablePieces, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 import { stageBarButton } from "../studioUi";
 import { BACKDROPS, type Backdrop, type BoxEnvironment } from "./backdrops";
 import { AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, type DimensionAxis, type DimensionGuides } from "./guides";
@@ -69,7 +69,18 @@ interface InteractiveFoldingBox3DProps {
    * once, in the same task: the drawing buffer is not kept (mockup images).
    */
   captureRef?: React.MutableRefObject<(() => HTMLCanvasElement) | null>;
+  /**
+   * Names of the faces (Nắp, Đáy, Mặt trước…) on the model, with a toggle in the dock: on by default once the box is
+   * folded to FACE_LABELS_FROM or more (studio).
+   */
+  faceLabels?: boolean;
 }
+
+/** Fold progress from which the face labels show by themselves. */
+const FACE_LABELS_FROM = 0.8;
+
+/** "Nắp trên (Top Lid)" → "Nắp trên": the Vietnamese part of a panel name. */
+const shortFaceName = (name: string) => name.replace(/\s*\([^)]*\)/g, "").trim();
 
 // ---------------------------------------------------------------------------------------------------------------
 // Labels of the stage (its scenes are in ./backdrops)
@@ -206,6 +217,7 @@ interface StageApi {
   setModel(model: BoxModel, pop: boolean, dimensions: BoxDimensions): void;
   setPreview(dimensions: BoxDimensions | null): void;
   setGuides(on: boolean, active: DimensionAxis | null): void;
+  setFaceLabels(on: boolean): void;
   setTargets(progress: number, open: number): void;
   setBackdrop(backdrop: Backdrop | null): void;
   setAutoRotate(on: boolean): void;
@@ -243,10 +255,14 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   barStart,
   barEnd,
   captureRef,
+  faceLabels = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   /** Labels of the dimension guides, placed by the render loop. */
   const labelRefs = useRef<Partial<Record<DimensionAxis, HTMLDivElement | null>>>({});
+  /** Face labels by panel id, placed by the render loop. */
+  const faceLabelRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [faceLabelMode, setFaceLabelMode] = useState<"auto" | "on" | "off">("auto");
   const stageRef = useRef<StageApi | null>(null);
   const [open, setOpen] = useState(false);
   /** Preset the camera sits on; null once the user turned the box by hand. */
@@ -392,9 +408,38 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       dirty = true;
     };
 
+    let faceLabelsOn = false;
+    const faceRay = new THREE.Raycaster();
+    const faceBox = new THREE.Box3();
+    const faceCenter = new THREE.Vector3();
+    /** Each face label sits on the middle of its panel and hides when another panel is in front of it. */
+    const placeFaceLabels = (width: number, height: number) => {
+      const labels = Object.entries(faceLabelRefs.current);
+      if (labels.length === 0) return;
+      for (const [id, label] of labels) {
+        if (!label) continue;
+        const mesh = faceLabelsOn && model ? (model.group.getObjectByName(id) as THREE.Mesh | undefined) : undefined;
+        if (!mesh?.geometry) {
+          label.style.opacity = "0";
+          continue;
+        }
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        faceBox.copy(mesh.geometry.boundingBox!).applyMatrix4(mesh.matrixWorld);
+        faceBox.getCenter(faceCenter);
+        const distance = faceCenter.distanceTo(camera.position);
+        faceRay.set(camera.position, faceCenter.clone().sub(camera.position).normalize());
+        const [hit] = faceRay.intersectObject(model!.group, true);
+        const seen = !hit || hit.object.name === id || hit.distance >= distance - 0.5;
+        const point = faceCenter.clone().project(camera);
+        label.style.opacity = seen && point.z < 1 ? "1" : "0";
+        label.style.transform = `translate(${((point.x + 1) / 2) * width}px, ${((1 - point.y) / 2) * height}px) translate(-50%, -50%)`;
+      }
+    };
+
     const placeLabels = () => {
       const width = container.clientWidth;
       const height = container.clientHeight;
+      placeFaceLabels(width, height);
       for (const part of guideParts) {
         const label = labelRefs.current[part.axis];
         if (!label) continue;
@@ -683,6 +728,10 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         previewDims = dims;
         applyPreview();
       },
+      setFaceLabels(on) {
+        faceLabelsOn = on;
+        dirty = true;
+      },
       setGuides(on, active) {
         guidesOn = on;
         activeAxis = active;
@@ -768,6 +817,18 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   useEffect(() => {
     stageRef.current?.setGuides(Boolean(guides), guides?.active ?? null);
   }, [guides === null, guides?.active]);
+  // Faces of the box, named as in the dieline (Mặt trước, Nắp trên…); not shown on a flat or half-folded sheet by default.
+  const faces = useMemo(
+    () =>
+      faceLabels
+        ? foldablePieces(boxType, dimensions, formulaVersion).flatMap((piece) => piece.geometry.panels.map((panel) => ({ id: panel.id, name: shortFaceName(panel.name) })))
+        : [],
+    [faceLabels, boxType, dimensions, formulaVersion]
+  );
+  const faceLabelsShown = faceLabels && (faceLabelMode === "auto" ? foldProgress >= FACE_LABELS_FROM : faceLabelMode === "on");
+  useEffect(() => {
+    stageRef.current?.setFaceLabels(faceLabelsShown);
+  }, [faceLabelsShown, faces]);
   useEffect(() => {
     stageRef.current?.setAutoRotate(spinning);
   }, [spinning]);
@@ -828,6 +889,19 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         </button>
       ))}
       <span className={`mx-0.5 h-4 w-px ${bar ? "bg-line" : dark ? "bg-white/20" : "bg-landing-line"}`} aria-hidden />
+      {faceLabels && (
+        <button
+          type="button"
+          onClick={() => setFaceLabelMode(faceLabelsShown ? "off" : "on")}
+          aria-pressed={faceLabelsShown}
+          className={button(faceLabelsShown)}
+          title={faceLabelsShown ? "Ẩn tên các mặt hộp" : "Hiện tên các mặt hộp"}
+        >
+          <Tag className="size-3.5" aria-hidden />
+          <span className="hidden md:inline">Nhãn mặt</span>
+          <span className="sr-only md:hidden">Nhãn mặt</span>
+        </button>
+      )}
       <button
         type="button"
         onClick={() => setSpinning((value) => !value)}
@@ -856,6 +930,23 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   const stage = (
     <>
       <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
+
+      {faces.length > 0 && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          {faces.map((face) => (
+            <div
+              key={face.id}
+              ref={(node) => {
+                faceLabelRefs.current[face.id] = node;
+              }}
+              className="absolute left-0 top-0 whitespace-nowrap rounded-full bg-fg/85 px-2 py-0.5 text-caption font-semibold text-fg-inverse shadow-soft-4 transition-opacity duration-150"
+              style={{ opacity: 0 }}
+            >
+              {face.name}
+            </div>
+          ))}
+        </div>
+      )}
 
       {guides && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
