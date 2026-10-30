@@ -32,6 +32,7 @@ import { UnboxingModule } from './unboxing';
 import { UsersModule } from './users';
 import { PrintShopsModule } from './print-shops';
 import { OrdersModule } from './orders';
+import { PaymentsModule } from './payments';
 import { PrismaModule } from './shared/prisma';
 import { RedisModule } from './shared/redis';
 import { CloudinaryModule } from './shared/cloudinary';
@@ -69,6 +70,7 @@ import { CloudinaryModule } from './shared/cloudinary';
     EventsModule,
     PrintShopsModule,
     OrdersModule,
+    PaymentsModule,
     BaseModule,
   ],
   providers: [

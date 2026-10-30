@@ -76,6 +76,8 @@ src/
   events/                  # WebSocket gateway (thông báo realtime)
   print-shops/             # danh sách xưởng in đối tác (dữ liệu tĩnh trong code)
   orders/                  # đơn in mẫu (PostgreSQL): đặt, xem, vòng đời trạng thái (order-status.ts) cho ADMIN / PRINT_SHOP
+  payments/                # thanh toán VietQR (vietqr.ts dựng chuỗi EMVCo + QR SVG), hạn 15 phút, xác nhận giả lập
+                           # cấp lô lượt xuất / Pro 30 ngày / chuyển đơn in sang PAID
 test/
   e2e/                     # e2e test (*.e2e-spec.ts) + helpers/
 ```
@@ -175,6 +177,10 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `AI_MODEL` | – | *(trống)* | **Tên cũ** của `AI_MODEL_FAST`, chỉ được đọc khi `AI_MODEL_FAST` không đặt. Sẽ bỏ sau CP4: đổi tên biến trong `.env` của VPS |
 | `AI_MONTHLY_BUDGET_USD` | `ai.monthlyBudgetUsd` | *(trống)* | Cầu chì chi phí AI (USD / tháng dương lịch giờ Việt Nam). Để trống = không giới hạn |
 | `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
+| `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs/17 M6). `false` → route giả lập trả 404 |
+| `VIETQR_BANK_BIN` | `payments.vietqr.bankBin` | *(trống)* | BIN NAPAS 6 số của ngân hàng nhận tiền. Ba biến `VIETQR_*` đặt cùng nhau; để trống cả ba = tài khoản mẫu, giao diện ghi "Mô phỏng" |
+| `VIETQR_ACCOUNT_NO` | `payments.vietqr.accountNo` | *(trống)* | Số tài khoản nhận tiền |
+| `VIETQR_ACCOUNT_NAME` | `payments.vietqr.accountName` | *(trống)* | Tên chủ tài khoản, viết hoa không dấu |
 | `REDIS_URL` | `redis.url` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
 | `EXPORT_CONCURRENCY` | `export.concurrency` | `2` | Số job xuất file một worker chạy song song |
 | `SMTP_HOST` / `SMTP_PORT` | `mail.smtp.host` / `.port` | `localhost` / `1025` | SMTP của worker; mặc định là Mailpit trong `docker-compose.yml` (thư bị giữ lại, xem tại `http://localhost:8025`) |
@@ -205,6 +211,10 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 | DELETE | `/api/users/:id` | ADMIN | Xoá user |
 | GET | `/api/health` | public | Kiểm tra server: `status`, `database`, `redis`, `worker` (up / down) |
 | GET | `/api/health/details` | ADMIN | Như trên, thêm số job của hàng đợi xuất file và uptime |
+| GET | `/api/billing/me` | đã đăng nhập | Gói hiệu lực, hạn mức, số lượt xuất còn lại, gói Pro đang chạy, `paymentSimulation` |
+| POST | `/api/payments` | đã đăng nhập | Tạo thanh toán VietQR `{ purpose: EXPORT_1 \| EXPORT_5 \| EXPORT_15 \| PRO_MONTH \| SAMPLE_ORDER, orderId? }`: `reference` `WF` + 6 ký tự, hạn 15 phút, `vietqr.payload` (EMVCo NAPAS) + `vietqr.qrSvg` |
+| GET | `/api/payments/:id` | chủ thanh toán | Trạng thái (`PENDING` / `PAID` / `EXPIRED`); quá hạn thì đổi `EXPIRED` |
+| POST | `/api/payments/:id/simulate-confirm` | chủ thanh toán | Chỉ khi `PAYMENT_SIMULATION=true` (ngược lại 404): `PAID` và cấp lô lượt / Pro 30 ngày / đơn in `PAID` trong một transaction; gọi lại không cấp thêm |
 
 Định dạng lỗi thống nhất (tài liệu 07, Mục 4.3):
 

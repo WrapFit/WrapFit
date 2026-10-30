@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SubscriptionStatus, SubscriptionTier } from '@prisma/client';
 import { ENTITLEMENTS, type Entitlements } from '@wrapfit/shared';
+import { ConfigService } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { CreditsService, type CreditLotView } from './credits.service';
 import type { GrantCreditsDto } from './dto/grant-credits.dto';
@@ -18,6 +19,8 @@ export interface BillingSummary {
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
   } | null;
+  /** PAYMENT_SIMULATION: the checkout shows "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). */
+  paymentSimulation: boolean;
 }
 
 /** HTTP side of billing: the summary of `GET /billing/me` and the admin grant. */
@@ -29,6 +32,7 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly credits: CreditsService,
     private readonly plans: PlanService,
+    private readonly config: ConfigService,
   ) {}
 
   async me(userId: string): Promise<BillingSummary> {
@@ -41,7 +45,13 @@ export class BillingService {
       }),
     ]);
     const balance = lots.reduce((sum, lot) => sum + lot.remaining, 0);
-    return { tier, entitlements: ENTITLEMENTS[tier], exportCredits: { balance, lots }, subscription };
+    return {
+      tier,
+      entitlements: ENTITLEMENTS[tier],
+      exportCredits: { balance, lots },
+      subscription,
+      paymentSimulation: this.config.get('payments.simulation'),
+    };
   }
 
   /** Credits granted by hand (demo accounts, compensation): source ADMIN, so the plan does not change. */
