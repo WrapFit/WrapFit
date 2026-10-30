@@ -57,13 +57,15 @@ describe('Analytics (e2e)', () => {
 
     ana = await signUp(app, `ana-${run}@e2e.test`);
     ben = await signUp(app, `ben-${run}@e2e.test`);
+    // Clean SVG exports need Pro or an export credit since docs/17 S2; a tier set by hand is kept without a subscription.
+    await prisma.user.update({ where: { id: ana.id }, data: { subscriptionTier: 'STARTER' } });
   });
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
-    await worker.close();
+    await worker.close(); // waits for the BullMQ worker's blocking connection: several seconds
     await app.close();
-  });
+  }, 30_000);
 
   it('starts empty: every day of the period, the four box types, no creation time', async () => {
     const body = await summary(ana);
