@@ -60,6 +60,7 @@ import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExpor
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
+import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useStudioHeartbeat";
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
@@ -210,6 +211,7 @@ export function StudioWorkspace({
   const searchParams = useSearchParams();
   const isDemo = project === null;
   const presenting = usePresentMode();
+  useStudioHeartbeat(project?.id ?? null);
 
   // Guided tour: the overview of the screen once, then a short guide the first time each step opens.
   const tourContinued = useTourContinuation();
@@ -431,8 +433,9 @@ export function StudioWorkspace({
 
   // 1-click fix of the safe margin and bleed breaches, on every side of every panel (rules of the shared FitCheck)
   const handleAutoFix = useCallback(() => {
+    recordAutoFix(project?.id ?? null, pieces, elements);
     setElements((prev) => autoFixElements(pieces, prev));
-  }, [pieces]);
+  }, [pieces, elements, project?.id]);
 
   // Background over the whole box (all pieces), in the design's palette; null leaves the paper.
   const boxBackgroundDesign = useMemo(() => {
@@ -685,7 +688,7 @@ export function StudioWorkspace({
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
           {/* Left: logo */}
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 shrink-0">
             <LandingLogo size="sm" />
           </div>
 
@@ -696,8 +699,8 @@ export function StudioWorkspace({
             locked={isDemo ? {} : { 1: "Cấu trúc hộp cố định sau khi tạo dự án. Tạo dự án mới để đổi kiểu hộp." }}
           />
 
-          {/* Right: Cloud Save Status, FitCheck & Export */}
-          <div className="flex items-center gap-2">
+          {/* Right: Cloud Save Status, FitCheck & Export. Never shrinks: the stepper scrolls instead. */}
+          <div className="flex items-center gap-2 shrink-0">
             {/* Save status: the label from 2xl, a dot below (only for saved projects) */}
             {!isDemo && (
               <div
@@ -720,13 +723,26 @@ export function StudioWorkspace({
               }}
               title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
               data-tour="studio-fitcheck"
-              className="hidden sm:flex items-center gap-1.5 h-10 px-4 rounded-full whitespace-nowrap bg-orange-50 text-fpt-orange-ink border border-orange-200/60 text-sm font-semibold transition-colors hover:bg-orange-100/80"
+              aria-label={`FitCheck: ${displayReport.score}/100`}
+              className="hidden sm:flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-full whitespace-nowrap bg-orange-50 text-fpt-orange-ink border border-orange-200/60 text-sm font-semibold tabular-nums transition-colors hover:bg-orange-100/80"
             >
               <ShieldCheck className="w-4 h-4 text-fpt-orange" />
-              <span>FitCheck: {displayReport.score}/100</span>
+              {/* Laptops and tablets: the score alone */}
+              <span aria-hidden>
+                <span className="hidden xl:inline">FitCheck: </span>
+                {displayReport.score}
+                <span className="hidden xl:inline">/100</span>
+              </span>
             </button>
 
-            <TourReplayButton tourId={studioStepTourId(currentStep)} label="Hướng dẫn" variant="ghost" size="sm" className="hidden md:inline-flex" />
+            <TourReplayButton
+              tourId={studioStepTourId(currentStep)}
+              label={<span className="sr-only xl:not-sr-only">Hướng dẫn</span>}
+              title="Hướng dẫn"
+              variant="ghost"
+              size="sm"
+              className="hidden md:inline-flex"
+            />
 
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
             {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
@@ -1026,6 +1042,7 @@ export function StudioWorkspace({
                 <Box3DView
                   dimensions={dimensions}
                   foldProgress={foldProgress}
+                  faceLabels
                   boxType={boxType}
                   theme={activeMaterial}
                   elements={elements}

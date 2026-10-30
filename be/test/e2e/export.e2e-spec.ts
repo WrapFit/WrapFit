@@ -1,9 +1,14 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import QRCode from 'qrcode';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
+import { inflateSync } from 'zlib';
+import { WATERMARK_TEXT } from '@wrapfit/shared';
+import { CreditsService } from '../../src/billing';
+import { buildPrintLayout } from '../../src/export/rendering/print-layout';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { WorkerModule } from '../../src/worker';
@@ -18,8 +23,9 @@ describe('Print export (e2e)', () => {
   let prisma: PrismaService;
 
   const run = Date.now();
-  let pia: { cookie: string };
-  let quinn: { cookie: string };
+  let pia: { id: string; cookie: string };
+  let quinn: { id: string; cookie: string };
+  let credits: CreditsService;
   let projectId: string;
 
   const api = () => request(app.getHttpServer());
@@ -35,9 +41,9 @@ describe('Print export (e2e)', () => {
   };
 
   /** Polls like the frontend does (docs 07: every 2 s; faster here). */
-  const waitFor = async (jobId: string) => {
+  const waitFor = async (jobId: string, user = pia) => {
     for (let i = 0; i < 100; i++) {
-      const res = await as(pia).get(`/api/exports/${jobId}`).expect(200);
+      const res = await as(user).get(`/api/exports/${jobId}`).expect(200);
       if (res.body.status === 'COMPLETED' || res.body.status === 'FAILED') return res.body;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -58,8 +64,11 @@ describe('Print export (e2e)', () => {
     const workerRef = await Test.createTestingModule({ imports: [WorkerModule] }).compile();
     worker = await workerRef.createNestApplication().init();
 
+    credits = app.get(CreditsService);
     pia = await register('pia');
     quinn = await register('quinn');
+    // Pia is on Pro (a tier set by hand is kept while she has no subscription row): clean files without credits.
+    await prisma.user.update({ where: { id: pia.id }, data: { subscriptionTier: 'STARTER' } });
     projectId = (
       await as(pia)
         .post('/api/projects')
@@ -79,9 +88,9 @@ describe('Print export (e2e)', () => {
 
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
-    await worker.close();
+    await worker.close(); // waits for the BullMQ worker's blocking connection: several seconds
     await app.close();
-  });
+  }, 30_000);
 
   it('renders a CMYK PDF in the worker and returns a 15-minute download link', async () => {
     const job = await exportAs('PDF_CMYK');
@@ -247,6 +256,128 @@ describe('Print export (e2e)', () => {
     await as(quinn).get(`/api/exports/${latest.id}`).expect(404);
     await as(pia).get('/api/exports/not-a-uuid').expect(400);
     await api().get(`/api/exports/${latest.id}`).expect(401);
+  });
+
+  describe('free plan: watermark and export credits (docs/16 §5)', () => {
+    let rae: { id: string; cookie: string };
+    let design: string;
+    const exportOf = (body: Record<string, unknown>, user = rae) =>
+      as(user).post(`/api/projects/${design}/exports`).send(body);
+    /** Content streams of a PDF, inflated. */
+    const contentOf = (pdf: Buffer) => {
+      const text = pdf.toString('latin1');
+      const out: string[] = [];
+      for (const match of text.matchAll(/stream\s/g)) {
+        const start = match.index! + match[0].length;
+        try {
+          out.push(inflateSync(pdf.subarray(start, text.indexOf('endstream', start))).toString('latin1'));
+        } catch {
+          // raw stream
+        }
+      }
+      return out.join(' ');
+    };
+
+    // POST /exports allows 10 requests a minute per IP, and every test here comes from one: start each with a fresh budget.
+    beforeEach(() => {
+      // The in-memory store keeps the hits in a second map next to `storage`: reset both.
+      const store = app.get(ThrottlerStorage) as unknown as { storage: Map<string, unknown>; hitExpirations: Map<string, unknown> };
+      store.storage.clear();
+      store.hitExpirations.clear();
+    });
+
+    beforeAll(async () => {
+      rae = await register('rae');
+      design = (
+        await as(rae)
+          .post('/api/projects')
+          .send({ templateId: 'tuck-top', title: 'Hộp quà Rae', dimensions: { length: 120, width: 80, height: 60 }, canvasState: { elements: [] } })
+          .expect(201)
+      ).body.id;
+    });
+
+    // Several jobs here are queued without waiting for them: let the worker finish before the project is deleted.
+    afterAll(async () => {
+      for (let i = 0; i < 200; i++) {
+        const running = await prisma.exportJob.count({ where: { projectId: design, status: { in: ['PENDING', 'PROCESSING'] } } });
+        if (running === 0) return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }, 30_000);
+
+    it('exports the A4 PDF for free with the watermark on the glue flap', async () => {
+      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toEqual({
+        mode: 'FREE_A4',
+        unlocked: false,
+        unlockExpiresAt: null,
+        balance: 0,
+      });
+      const started = (await exportOf({ fileType: 'PDF_A4_PRINT' }).expect(202)).body;
+      expect(started).toMatchObject({ watermarked: true, charged: false, exportCredits: { balance: 0 } });
+      const job = await waitFor(started.jobId, rae);
+      expect(job).toMatchObject({ status: 'COMPLETED', watermarked: true });
+
+      const content = contentOf(Buffer.from(await (await fetch(job.downloadUrl)).arrayBuffer()));
+      const hex = `FEFF${Buffer.from(WATERMARK_TEXT, 'utf16le').swap16().toString('hex').toUpperCase()}`;
+      const start = content.indexOf(`/Span <</ActualText <${hex}>>> BDC`);
+      expect(start).toBeGreaterThan(-1);
+      // Every point of the outlined sentence lies on the glue flap of the box (sheet coordinates, mm).
+      const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: design } });
+      const layout = buildPrintLayout({
+        title: stored.title,
+        structure: stored.templateId,
+        formulaVersion: stored.formulaVersion,
+        dimensions: stored.dimensions as never,
+        elements: [],
+      });
+      const [piece] = layout.pieces;
+      const [glue] = piece.geometry.glueAreas!;
+      const body = content.slice(start, content.indexOf('EMC', start));
+      const points = [...body.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) [mlc]/g)].map((m) => [Number(m[1]), Number(m[2])]);
+      expect(points.length).toBeGreaterThan(50);
+      const onGlue = ([x, y]: number[]) =>
+        x >= piece.x + glue.x && x <= piece.x + glue.x + glue.width && y >= piece.y + glue.y && y <= piece.y + glue.y + glue.height;
+      expect(points.filter((point) => !onGlue(point))).toEqual([]);
+    });
+
+    it('answers 402 for a clean format until a credit is spent, then exports every format of that version', async () => {
+      expect((await exportOf({ fileType: 'SVG' }).expect(402)).body).toMatchObject({ code: 'EXPORT_CREDIT_REQUIRED', balance: 0 });
+      expect((await exportOf({ fileType: 'SVG', useCredit: true }).expect(402)).body).toMatchObject({ code: 'INSUFFICIENT_CREDITS', balance: 0 });
+
+      await credits.grant(rae.id, { quantity: 2, source: 'ADMIN', expiresAt: null });
+      expect((await exportOf({ fileType: 'DXF' }).expect(402)).body).toMatchObject({ code: 'EXPORT_CREDIT_REQUIRED', balance: 2 });
+
+      const paid = (await exportOf({ fileType: 'SVG', useCredit: true }).expect(202)).body;
+      expect(paid).toMatchObject({ watermarked: false, charged: true, exportCredits: { balance: 1 } });
+      expect(await waitFor(paid.jobId, rae)).toMatchObject({ status: 'COMPLETED', watermarked: false });
+      for (const fileType of ['DXF', 'PDF_A4_PRINT']) {
+        expect((await exportOf({ fileType }).expect(202)).body).toMatchObject({ watermarked: false, charged: false, exportCredits: { balance: 1 } });
+      }
+      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toMatchObject({ unlocked: true, balance: 1 });
+    });
+
+    it('charges again after an edit, once for two requests at the same time', async () => {
+      const text = { id: 't', type: 'text', panelId: 'panel_front', x: 10, y: 10, width: 40, height: 10, rotation: 0, content: 'Rae' };
+      await as(rae).patch(`/api/projects/${design}`).send({ canvasState: { elements: [text] } }).expect(200);
+      await exportOf({ fileType: 'SVG' }).expect(402);
+      // The project row is locked while the first request pays: the second one finds its unlock.
+      const [a, b] = await Promise.all([
+        exportOf({ fileType: 'SVG', useCredit: true }).expect(202),
+        exportOf({ fileType: 'DXF', useCredit: true }).expect(202),
+      ]);
+      expect([a.body.charged, b.body.charged].sort()).toEqual([false, true]);
+      expect(await credits.balance(rae.id)).toBe(0);
+    });
+
+    it('lets only the owner export or read the access: 404 for others, no credit spent', async () => {
+      // docs/17 asked for 403; ProjectOwnerGuard answers 404 so other users cannot tell the project exists.
+      await credits.grant(quinn.id, { quantity: 1, source: 'ADMIN', expiresAt: null });
+      await exportOf({ fileType: 'SVG', useCredit: true }, quinn).expect(404);
+      await as(quinn).get(`/api/projects/${design}/exports/access`).expect(404);
+      expect(await credits.balance(quinn.id)).toBe(1);
+      await api().post(`/api/projects/${design}/exports`).send({ fileType: 'SVG' }).expect(401);
+      await exportOf({ fileType: 'SVG', useCredit: 'yes' }).expect(400);
+    });
   });
 
   it('deletes the exported files with the project', async () => {

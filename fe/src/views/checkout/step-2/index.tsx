@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * `/checkout/step-2?plan=&billing=`: invoice details and payment method. There is no billing API yet: the details are
- * prefilled from the account (`GET /auth/me`), checked here and never sent; no card number is asked.
+ * `/checkout/step-2?plan=&pack=`: invoice details and payment method. The details are prefilled from the account
+ * (`GET /auth/me`), checked here and not sent yet; no card number is asked. VietQR is the only method open (S5): the
+ * card and wallets are shown as coming soon.
  */
 
 import { ArrowLeft, ArrowRight, Building2, CreditCard, Wallet } from 'lucide-react';
@@ -23,19 +24,19 @@ export default function CheckoutStep2Page() {
 }
 
 const METHODS = [
-  { id: 'card', label: 'Thẻ quốc tế', text: 'Visa, Mastercard, JCB', icon: CreditCard },
-  { id: 'bank', label: 'Chuyển khoản ngân hàng', text: 'Mã QR VietQR, kích hoạt khi nhận tiền', icon: Building2 },
-  { id: 'wallet', label: 'Ví điện tử', text: 'MoMo, ZaloPay', icon: Wallet },
+  { id: 'bank', label: 'Chuyển khoản ngân hàng', text: 'Mã QR VietQR, kích hoạt khi nhận tiền', icon: Building2, open: true },
+  { id: 'card', label: 'Thẻ quốc tế', text: 'Visa, Mastercard, JCB · sắp có', icon: CreditCard, open: false },
+  { id: 'wallet', label: 'Ví điện tử', text: 'MoMo, ZaloPay · sắp có', icon: Wallet, open: false },
 ] as const;
 
 function Payment() {
   const router = useRouter();
   const { user } = useAuth();
-  const { tier, billing, query } = useCheckoutParams();
+  const { tier, pack, query } = useCheckoutParams();
   const [name, setName] = useState(user?.fullName ?? '');
   const [company, setCompany] = useState(user?.shopName ?? '');
   const [taxCode, setTaxCode] = useState('');
-  const [method, setMethod] = useState<(typeof METHODS)[number]['id']>('card');
+  const [method, setMethod] = useState<(typeof METHODS)[number]['id']>('bank');
   const [errors, setErrors] = useState<{ name?: string; taxCode?: string }>({});
 
   const onSubmit = (event: React.FormEvent) => {
@@ -53,7 +54,7 @@ function Payment() {
   };
 
   return (
-    <CheckoutShell step={2} tier={tier} billing={billing} query={query()}>
+    <CheckoutShell step={2} tier={tier} pack={pack} query={query()}>
       <form onSubmit={onSubmit} noValidate aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Thông tin thanh toán
@@ -101,8 +102,12 @@ function Payment() {
                   type="button"
                   role="radio"
                   aria-checked={active}
+                  disabled={!item.open}
                   onClick={() => setMethod(item.id)}
-                  className={cn('flex flex-col items-start gap-2 rounded-2xl p-4 text-left transition-shadow', active ? 'ring-2 ring-landing-ink' : 'ring-1 ring-landing-ink/10 hover:ring-landing-ink/40')}
+                  className={cn(
+                    'flex flex-col items-start gap-2 rounded-2xl p-4 text-left transition-shadow disabled:cursor-not-allowed disabled:opacity-50',
+                    active ? 'ring-2 ring-landing-ink' : 'ring-1 ring-landing-ink/10 hover:ring-landing-ink/40',
+                  )}
                 >
                   <span className={cn('flex size-9 items-center justify-center rounded-xl', active ? 'bg-fpt-orange text-white' : 'bg-mist-200 text-landing-ink')}>
                     <item.icon className="size-5" aria-hidden />
@@ -113,7 +118,7 @@ function Payment() {
               );
             })}
           </div>
-          <p className="mt-3 text-sm text-landing-muted">Bạn sẽ thanh toán trên trang của cổng thanh toán; WrapFit không lưu số thẻ.</p>
+          <p className="mt-3 text-sm text-landing-muted">Ở bước sau, quét mã VietQR bằng ứng dụng ngân hàng bất kỳ; mã có hiệu lực 15 phút.</p>
         </fieldset>
 
         <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">

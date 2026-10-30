@@ -22,6 +22,18 @@
 import { BoxDimensions, DielineGeometry, PanelFace, Point2D } from "../types/dieline";
 import { segmentWriter } from "./segments";
 
+/** Gifts heavier than this (grams) get the crash-lock bottom (FEFCO 0215) unless the user picks the tuck bottom. */
+export const LOCK_BOTTOM_MIN_WEIGHT_G = 300;
+
+/**
+ * Whether the tuck-top box closes with a crash-lock bottom: asked for (`bottomType: "lock"`), or a gift over
+ * LOCK_BOTTOM_MIN_WEIGHT_G without `bottomType: "tuck"` overriding it.
+ */
+export function usesLockBottom({ giftWeight, bottomType }: Pick<BoxDimensions, "giftWeight" | "bottomType">): boolean {
+  if (bottomType) return bottomType === "lock";
+  return giftWeight !== undefined && giftWeight > LOCK_BOTTOM_MIN_WEIGHT_G;
+}
+
 export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeometry {
   const { length, width, height, paperThickness: t } = dimensions;
   const L = length + t;
@@ -41,7 +53,7 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
   const xFront = xLeft + W;
   const xRight = xFront + L;
   const xEnd = xRight + W;
-  const isLockBottom = dimensions.bottomType === "lock" || (dimensions.giftWeight !== undefined && dimensions.giftWeight > 300 && dimensions.bottomType !== "tuck");
+  const isLockBottom = usesLockBottom(dimensions);
 
   // Rows: tuck | lid W | body H | bottom W | tuck
   const yLid = tuck;

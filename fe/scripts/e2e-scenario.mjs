@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
  * The end-to-end scenario of docs/12 §7, clicked through in headless Chrome at real phone and desktop sizes, with a
- * screenshot of every checkpoint. Each size runs the whole story with its own new account.
+ * screenshot of every checkpoint. Each size runs the whole story with its own new account. Steps 16–18 are the paid part
+ * of the CP4 demo (docs/17 §5): the backend must run with PAYMENT_SIMULATION=true.
  *
  * Needs the frontend, the backend, the worker (mail, exports) and Mailpit (http://localhost:8025).
- *   node fe/scripts/e2e-scenario.mjs                         steps 1–14 at M and X+
+ *   node fe/scripts/e2e-scenario.mjs                         steps 1–14 and 16–18 at M and X+
  *   node fe/scripts/e2e-scenario.mjs --sizes=X+ --steps=4-7  some steps (step 4 creates the project the later ones use)
  *   node fe/scripts/e2e-scenario.mjs --steps=15 --backend-down   step 15, with the backend stopped
  * Options: --base-url=http://localhost:3000  --mailpit=http://localhost:8025  --keep (keep the accounts it made)
@@ -16,7 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { PNG } from 'pngjs';
-import { AppSession, SHOTS_DIR, seedAdmin } from './lib/app-session.mjs';
+import { AppSession, SHOTS_DIR, backendEnv, seedAdmin } from './lib/app-session.mjs';
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => {
@@ -38,7 +39,7 @@ const sizes = String(option('sizes', 'M,X+')).split(',').map((code) => {
   return { code, ...SIZES[code] };
 });
 const steps = (() => {
-  const value = String(option('steps', backendDown ? '15' : '1-14'));
+  const value = String(option('steps', backendDown ? '15' : '1-14,16-18'));
   const picked = new Set();
   for (const part of value.split(',')) {
     const [from, to = from] = part.split('-').map(Number);
@@ -54,6 +55,11 @@ const PASSWORD = 'S8-test-2026';
 const NEW_PASSWORD = 'S8-reset-2026';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const DIALOG = '[role="dialog"], [role="alertdialog"]';
+/** Ids of the guided tours of the app (`<TourReplayButton tourId>`, `*_TOUR_ID` constants). */
+const TOURS = [
+  'home-v1', 'dashboard-v1', 'editor-new-v1', 'library-v1', 'studio-intro-v1', 'design-system-demo',
+  ...[1, 2, 3, 4, 5, 6].map((step) => `studio-step-${step}-v1`),
+];
 
 // ---------------------------------------------------------------- Chrome (DevTools Protocol, one socket, many tabs)
 
@@ -71,9 +77,11 @@ class Browser {
     const chromePath = CHROME_CANDIDATES.find((p) => fs.existsSync(p));
     if (!chromePath) throw new Error('No Chrome/Edge found. Set CHROME_PATH.');
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'wrapfit-e2e-'));
-    const port = 9300 + Math.floor(Math.random() * 600);
+    // Port 0: Chrome picks a free port and writes it to DevToolsActivePort (as in page-shots.mjs). A fixed range
+    // collides with the ports Windows reserves for Hyper-V / Docker.
+    const portFile = path.join(profile, 'DevToolsActivePort');
     const child = spawn(chromePath, [
-      '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run',
+      '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
       '--no-default-browser-check', '--hide-scrollbars', '--force-device-scale-factor=1',
       // Every tab paints and runs its timers, as a foreground one does.
       '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows',
@@ -82,6 +90,7 @@ class Browser {
     let endpoint;
     for (let i = 0; i < 50 && !endpoint; i++) {
       try {
+        const port = fs.readFileSync(portFile, 'utf8').split(/\r?\n/)[0].trim();
         endpoint = (await (await fetch(`http://127.0.0.1:${port}/json/version`)).json()).webSocketDebuggerUrl;
       } catch {}
       if (!endpoint) await sleep(200);
@@ -249,6 +258,10 @@ class Page {
     await this.send('Emulation.setTouchEmulationEnabled', { enabled: Boolean(mobile), maxTouchPoints: mobile ? 5 : 1 });
     if (mobile) await this.send('Emulation.setUserAgentOverride', { userAgent: MOBILE_UA });
     await this.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+    // The guided tours (components/ui/tour.tsx) would cover the controls: mark them all as seen.
+    await this.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `try { for (const id of ${JSON.stringify(TOURS)}) localStorage.setItem('wrapfit.tour.' + id, 'skipped'); } catch {}`,
+    });
   }
 
   async front() {
@@ -334,10 +347,14 @@ class Page {
         this.browser.covered.push(`${point.covered} over ${query.text ?? query.selector}`);
       }
       if (point && !point.disabled && !point.covered) {
-        // Still moving (a bottom sheet sliding in): measure again until it stands still.
-        await sleep(120);
-        const again = await this.eval(`(${LOCATE})(${JSON.stringify(query)})`);
-        if (again && Math.abs(again.x - point.x) < 1 && Math.abs(again.y - point.y) < 1) break;
+        // Still moving (a bottom sheet sliding in, a dialog springing open): measure twice more until it stands still.
+        let still = true;
+        for (let i = 0; i < 2 && still; i++) {
+          await sleep(200);
+          const again = await this.eval(`(${LOCATE})(${JSON.stringify(query)})`);
+          still = Boolean(again) && Math.abs(again.x - point.x) < 0.5 && Math.abs(again.y - point.y) < 0.5;
+        }
+        if (still) break;
         continue;
       }
       if (Date.now() - start > timeout) {
@@ -401,6 +418,15 @@ class Page {
       await this.send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: codes[key], text: key === 'Enter' ? '\r' : undefined });
     }
     await sleep(300);
+  }
+
+  /** Closes the open dialog: Escape, then its "Đóng" button when Escape did not (focus inside a field). */
+  async closeDialog() {
+    const open = () => this.eval(`Boolean([...document.querySelectorAll(${JSON.stringify(DIALOG)})].some((el) => el.checkVisibility()))`);
+    await this.key('Escape');
+    await sleep(400);
+    if (await open()) await this.click({ selector: '[aria-label="Đóng"]', in: DIALOG });
+    await this.waitFor(`!(${'[...document.querySelectorAll(' + JSON.stringify(DIALOG) + ')].some((el) => el.checkVisibility())'})`, 'the dialog to close', 10000);
   }
 
   async upload(selector, file) {
@@ -477,9 +503,26 @@ async function projectOf(api, id) {
 /** Adds a text through the studio's "Chèn Vào Mặt Hộp" form. */
 async function addText(page, text) {
   const open = await page.eval(`[...document.querySelectorAll('textarea[placeholder^="Ví dụ"]')].some((el) => el.checkVisibility())`);
-  if (!open) await page.click('Thêm Chữ / Lời Chúc');
+  if (!open) await page.click('Thêm chữ');
   await page.type('textarea[placeholder^="Ví dụ"]', text);
   await page.click('Chèn Vào Mặt Hộp');
+}
+
+/**
+ * Checks that the old session is gone: the API answers 401 with the page's cookies, and the page shows the login page
+ * or the guest workspace that workspace pages give visitors without a session (features/auth/RequireAuth.tsx), never
+ * the account's name. Returns which page.
+ */
+async function signedOut(page, name) {
+  const status = await (await page.context.api()).request('/auth/me').then(() => 200, (error) => error.status);
+  if (status !== 401) throw new Error(`the old session still answers ${status} on /auth/me`);
+  return page.waitFor(
+    `location.pathname.startsWith('/auth/login') ? 'login page'
+      : document.body.innerText.includes('Không gian làm việc khách') ? 'guest workspace'
+      : document.readyState === 'complete' && document.querySelector('main h1') && !document.body.innerHTML.includes(${JSON.stringify(name)}) && 'guest workspace (example projects)'`,
+    'the signed-out page',
+    30000,
+  );
 }
 
 /** Waits until the studio says the canvas is saved. */
@@ -510,7 +553,7 @@ function scenario(size, browser, report) {
       await page.type('#input-name', user.name);
       await page.type('#input-email', user.email);
       await page.type('#input-password', user.password);
-      await page.click({ selector: '#submit-btn' });
+      await page.click({ selector: 'form button[type="submit"]' });
       await page.waitUrl(/\/check-email/);
       await page.waitText('Gửi lại email');
       log.shots.push(await page.shot('01-check-email'));
@@ -522,7 +565,7 @@ function scenario(size, browser, report) {
       const page = state.ownerPage;
       await page.goto(`/auth/login?email=${encodeURIComponent(user.email)}`);
       await page.type('#input-password', user.password);
-      await page.click({ selector: '#submit-btn' });
+      await page.click({ selector: 'form button[type="submit"]' });
       await page.waitUrl(/\/check-email/);
       log.shots.push(await page.shot('02-login-unverified'));
       // The backend sends one email of each kind per user per minute.
@@ -542,7 +585,7 @@ function scenario(size, browser, report) {
       await page.waitUrl(/\/auth\/login/);
       await page.type('#input-email', user.email);
       await page.type('#input-password', user.password);
-      await page.click({ selector: '#submit-btn' });
+      await page.click({ selector: 'form button[type="submit"]' });
       await page.waitFor(`!location.pathname.startsWith('/auth') && location.pathname`, 'leaving the login page');
       await page.settle();
       const named = await page.eval(`document.body.innerHTML.includes(${JSON.stringify(user.name)})`);
@@ -570,28 +613,35 @@ function scenario(size, browser, report) {
       user.password = NEW_PASSWORD;
       await owner.front();
       await owner.goto('/dashboard/projects');
-      await owner.waitUrl(/\/auth\/login/, 30000);
-      log.notes.push(`old window → ${new URL(await owner.url()).pathname}`);
+      log.notes.push(`old window → ${await signedOut(owner, user.name)}`);
       log.shots.push(await owner.shot('03-old-session-out'));
+      // The workspace may still be handling the expired session (toast, guest data): sign in from a fresh login page.
+      await owner.goto('/auth/login');
+      await owner.waitSelector('#input-email', 30000);
       await owner.type('#input-email', user.email);
       await owner.type('#input-password', user.password);
-      await owner.click({ selector: '#submit-btn' });
-      await owner.waitUrl(/\/dashboard\/projects/);
+      await owner.click({ selector: 'form button[type="submit"]' });
+      await owner.waitFor(`!location.pathname.startsWith('/auth') && location.pathname`, 'leaving the login page');
+      await owner.goto('/dashboard/projects');
+      await owner.waitFor(`document.body.innerHTML.includes(${JSON.stringify(user.name)})`, 'the account in the header');
     },
     /** 4: new tuck-top 120 × 80 × 60, a text and a PNG, still there after F5. */
     4: async (log) => {
       if (!state.owner) await signedInOwner();
       const page = state.ownerPage;
+      // Step 18 checks that the global block of /dashboard grew after this account's exports.
+      state.globalBefore = await (await state.owner.api())
+        .request('/analytics/summary', { query: { scope: 'global', days: 30 } })
+        .catch(() => null);
       await page.goto('/editor/new');
       await page.click({ text: 'nắp gài' });
-      await page.click({ text: 'Tiếp' });
       for (const [nth, value] of [120, 80, 60].entries()) await page.type('input[aria-label$="(mm)"]', String(value), { nth, enter: true });
       log.shots.push(await page.shot('04-new-dimensions'));
-      await page.click('Tạo Dự Án');
+      await page.click('Tạo dự án & mở studio');
       const url = await page.waitUrl(/\/editor\/[0-9a-f-]{36}/, 30000);
       state.projectId = url.match(/\/editor\/([0-9a-f-]{36})/)[1];
       await page.settle();
-      await page.upload('#logo-upload-hidden', pngFile());
+      await page.upload('input[type="file"][accept*="image"]', pngFile());
       await page.waitFor(`document.querySelectorAll('image, img[src*="wrapfit"]').length > 0`, 'the uploaded image on the canvas', 30000);
       // After the image, so the text is placed in the free space beside it.
       await addText(page, 'Chúc mừng sinh nhật');
@@ -637,7 +687,7 @@ function scenario(size, browser, report) {
       await page.click({ text: 'Lưu mốc', in: DIALOG });
       await page.waitSelector('[aria-label="Khôi phục mốc Mốc S8"]');
       log.shots.push(await page.shot('06-snapshot-saved'));
-      await page.key('Escape');
+      await page.closeDialog();
       await addText(page, 'Sau mốc');
       await saved(page);
       await page.click('Mốc phiên bản');
@@ -666,36 +716,37 @@ function scenario(size, browser, report) {
       await api.request(`/projects/${state.projectId}`, { method: 'PATCH', json: { version: project.version, canvasState: { ...project.canvasState, elements } } });
       await page.reload();
       await saved(page);
-      await page.click({ selector: '[aria-label="Xuất File In"]' });
+      await openExportDialog(page);
       await page.click({ text: 'PDF in CMYK nhiều lớp', in: DIALOG });
       await page.waitText('Mở FitCheck để sửa', 30000);
       log.shots.push(await page.shot('07-export-blocked'));
       await page.click('Mở FitCheck để sửa');
-      await page.click('1-Click: Tự Động Sửa');
+      await page.click('Tự sửa lề an toàn');
       await saved(page);
       log.shots.push(await page.shot('07-fitcheck-fixed'));
-      for (const [format, title] of [['PDF_CMYK', 'PDF in CMYK nhiều lớp'], ['SVG', 'SVG nhiều lớp'], ['DXF', 'DXF']]) {
-        if (!(await page.eval(`Boolean(document.querySelector('[role="dialog"]'))`))) await page.click({ selector: '[aria-label="Xuất File In"]' });
-        const known = new Set((await api.request(`/projects/${state.projectId}/exports`)).map((job) => job.id));
-        await page.click({ text: title, in: DIALOG });
-        const job = await waitForJob(api, state.projectId, format, known);
-        const file = await fetch(job.downloadUrl.startsWith('http') ? job.downloadUrl : baseUrl + job.downloadUrl);
-        const bytes = Buffer.from(await file.arrayBuffer());
-        log.notes.push(`${format} ${file.status} ${bytes.length} B`);
-        if (!file.ok || bytes.length < 200) throw new Error(`${format} download: HTTP ${file.status}, ${bytes.length} bytes`);
-        await page.waitText('Tải về', 30000);
-        log.shots.push(await page.shot(`07-export-${format.toLowerCase()}`));
-      }
-      await page.key('Escape');
+      // A new account is Free (docs/16 §5.2): the home-print PDF is free with a watermark on the glue flap, the clean
+      // formats need a credit. Step 16 buys it; here the free file only.
+      await openExportDialog(page);
+      await page.waitText('Có watermark');
+      log.shots.push(await page.shot('07-export-dialog-free'));
+      const a4 = await exportFile(page, api, state.projectId, 'PDF_A4_PRINT', 'PDF A4/A3 In Thủ Công');
+      if (!a4.job.watermarked) throw new Error('the Free PDF A4 is not watermarked');
+      log.notes.push(`PDF_A4_PRINT ${a4.bytes} B, watermarked`);
+      log.shots.push(await page.shot('07-export-pdf-a4-watermarked'));
+      await page.closeDialog();
     },
     /** 8: unlisted link opened by a guest (noindex), then liked and remixed by another account. */
     8: async (log) => {
       const page = state.ownerPage;
+      // Step 7 ends on the print step; on a phone the share button sits in the design step's toolbar.
+      await page.click({ selector: '[aria-label="Bước 4: Thiết kế"]' });
       await page.click('Chia sẻ');
       await page.click({ text: 'Có link', in: DIALOG });
+      const ownerApi = await state.owner.api();
+      await waitFor(async () => (await projectOf(ownerApi, state.projectId)).visibility === 'UNLISTED', 'the unlisted link');
       await page.waitText('/p/', 20000);
       log.shots.push(await page.shot('08-share-unlisted'));
-      await page.key('Escape');
+      await page.closeDialog();
       const { slug, visibility } = await projectOf(await state.owner.api(), state.projectId);
       if (visibility !== 'UNLISTED') throw new Error(`visibility is ${visibility}`);
       const visitor = await newContext();
@@ -706,18 +757,23 @@ function scenario(size, browser, report) {
       if (!/noindex/.test(robots)) throw new Error(`robots meta is "${robots}"`);
       log.notes.push(`robots "${robots}"`);
       log.shots.push(await guest.shot('08-guest-view'));
-      await visitor.signIn(admin.email, admin.password);
+      // A maker likes and remixes: a signed-in admin is kept inside /admin (WorkspaceShell).
+      const other = backendEnv('SEED_DEMO_PASSWORD')
+        ? { email: backendEnv('SEED_DEMO_EMAIL') || 'demo@wrapfit.vn', password: backendEnv('SEED_DEMO_PASSWORD') }
+        : null;
+      if (!other) throw new Error('step 8 needs a second maker: set SEED_DEMO_PASSWORD in be/.env and seed the demo account');
+      await visitor.signIn(other.email, other.password);
       await guest.reload();
       await guest.click('Thả tim');
       await guest.waitText('Đã thích');
       log.shots.push(await guest.shot('08-liked'));
-      await guest.click('Remix thiết kế này');
+      await guest.click('Phối lại thiết kế này');
       const remix = await guest.waitUrl(/\/editor\/[0-9a-f-]{36}/, 30000);
       const remixId = remix.match(/\/editor\/([0-9a-f-]{36})/)[1];
       await saved(guest);
       log.notes.push(`remix ${remixId}`);
       log.shots.push(await guest.shot('08-remix-opened'));
-      // The remix belongs to the admin: remove it for good.
+      // The remix belongs to the other account: remove it for good.
       const adminApi = await visitor.api();
       await adminApi.request(`/projects/${remixId}/status`, { method: 'PATCH', json: { status: 'DELETED' } }).catch(() => {});
       await adminApi.request(`/projects/${remixId}`, { method: 'DELETE' }).catch(() => {});
@@ -725,8 +781,10 @@ function scenario(size, browser, report) {
     /** 9: QR unboxing page, opened by a guest. */
     9: async (log) => {
       const page = state.ownerPage;
-      await page.click({ selector: '[aria-label="4. Phối Cảnh 3D"]' });
-      await page.click('Xem & Tải Mã QR In Ấn');
+      await page.click({ selector: '[aria-label="Bước 5: Quà & mở hộp"]' });
+      await page.click('Viết lời chúc & tạo mã QR');
+      await page.waitSelector('input[placeholder="Mẹ yêu"]');
+      await page.settle(800);
       await page.type('input[placeholder="Mẹ yêu"]', 'Mai Anh');
       await page.type('textarea[placeholder^="Chúc mẹ"]', 'Chúc Mai Anh tuổi mới thật rực rỡ!');
       await page.click({ text: 'Trái tim', in: DIALOG });
@@ -734,7 +792,7 @@ function scenario(size, browser, report) {
       await page.waitText('Sửa lời chúc', 30000);
       await page.settle();
       log.shots.push(await page.shot('09-qr-created'));
-      await page.key('Escape');
+      await page.closeDialog();
       const unboxing = await (await state.owner.api()).request(`/projects/${state.projectId}/unboxing`);
       const guest = await (await newContext()).newPage(size);
       await guest.goto(unboxing.unboxUrl.replace(/^https?:\/\/[^/]+/, baseUrl));
@@ -753,9 +811,9 @@ function scenario(size, browser, report) {
         await page.click({ text: action, in: '[role="menu"]' });
       };
       const tab = async (label) => {
-        const active = `document.querySelector('#statusFilterPills [aria-pressed="true"]')?.textContent.includes(${JSON.stringify(label)})`;
+        const active = `document.querySelector('[aria-label="Trạng thái dự án"] [aria-checked="true"]')?.textContent.includes(${JSON.stringify(label)})`;
         for (let attempt = 0; attempt < 3 && !(await page.eval(active)); attempt++) {
-          await page.click({ text: label, in: '#statusFilterPills' }, { wait: 800 });
+          await page.click({ text: label, in: '[aria-label="Trạng thái dự án"]' }, { wait: 800 });
         }
         await page.waitFor(active, `the "${label}" tab`);
       };
@@ -809,12 +867,12 @@ function scenario(size, browser, report) {
     11: async (log) => {
       const page = state.ownerPage;
       await page.goto('/dashboard/brand-kit');
-      await page.waitText('Lưu Brand Kit');
+      await page.waitText('Lưu bộ nhận diện');
       await page.upload('input[type="file"]', pngFile());
       await page.waitText('có logo', 30000);
       const colors = ['#1a362b', '#d4af37', '#ff6b6b'];
       for (const [nth, color] of colors.entries()) await page.setValue('input[type="color"]', color, nth);
-      await page.click('Lưu Brand Kit');
+      await page.click('Lưu bộ nhận diện');
       await page.settle();
       await page.reload();
       await page.waitText('có logo');
@@ -827,12 +885,12 @@ function scenario(size, browser, report) {
     12: async (log) => {
       const page = state.ownerPage;
       await page.goto('/templates');
-      await page.click('Dùng mẫu này');
+      await page.click({ selector: '[aria-label^="Dùng mẫu "]' });
       const url = await page.waitUrl(/template=/, 20000);
       const templateId = new URL(url).searchParams.get('template');
       await page.settle();
       log.shots.push(await page.shot('12-template-start'));
-      await page.click('Tạo Dự Án');
+      await page.click('Tạo dự án & mở studio');
       const studio = await page.waitUrl(/\/editor\/[0-9a-f-]{36}/, 30000);
       const projectId = studio.match(/\/editor\/([0-9a-f-]{36})/)[1];
       await saved(page);
@@ -861,8 +919,7 @@ function scenario(size, browser, report) {
       log.shots.push(await adminPage.shot('13-admin-locked'));
       await page.front();
       await page.goto('/dashboard/projects');
-      await page.waitUrl(/\/auth\/login/, 30000);
-      log.notes.push('maker → 403 page; locked account → /auth/login; unlocked again');
+      log.notes.push(`maker → 403 page; locked account → ${await signedOut(page, user.name)}; unlocked again`);
       log.shots.push(await page.shot('13-locked-user-out'));
       await adminPage.front();
       await adminPage.click({ selector: `[aria-label="Mở khoá tài khoản ${user.name}"]` });
@@ -884,6 +941,105 @@ function scenario(size, browser, report) {
       log.notes.push('refresh 200, still signed in');
       log.shots.push(await page.shot('14-after-refresh'));
     },
+    /**
+     * 16 (docs/17 §5): a clean SVG needs a credit (402), one is bought through the VietQR checkout in simulation
+     * mode, the SVG comes out clean; PDF CMYK and DXF of the same version cost nothing more.
+     */
+    16: async (log) => {
+      const page = state.ownerPage;
+      const api = await state.owner.api();
+      await openStudio(page, api);
+      const before = await api.request(`/projects/${state.projectId}/exports/access`);
+      if (before.unlocked || before.balance !== 0) throw new Error(`expected a locked design and no credit, got ${JSON.stringify(before)}`);
+      await openExportDialog(page);
+      await page.waitText('Cần 1 lượt xuất');
+      await page.click({ text: 'SVG nhiều lớp', in: DIALOG });
+      await page.waitText('Bạn đã hết lượt xuất', 30000);
+      log.shots.push(await page.shot('16-export-402'));
+      const known = new Set((await api.request(`/projects/${state.projectId}/exports`)).map((job) => job.id));
+      await page.click({ text: 'Mua 1 lượt', in: DIALOG });
+      await page.waitText('Giả lập đã thanh toán', 30000);
+      const reference = await page.eval(`document.body.innerText.match(/WF[A-Z2-9]{6}/)?.[0] ?? null`);
+      if (!reference) throw new Error('the checkout shows no WF reference');
+      log.shots.push(await page.shot('16-checkout-vietqr'));
+      await page.click({ text: 'Giả lập đã thanh toán', in: DIALOG });
+      await page.waitText('Thanh toán thành công', 30000);
+      log.shots.push(await page.shot('16-checkout-paid'));
+      await page.click({ text: 'Xuất SVG ngay', in: DIALOG });
+      const svg = await downloadJob(await waitForJob(api, state.projectId, 'SVG', known), 'SVG');
+      if (svg.job.watermarked) throw new Error('the SVG paid with a credit is watermarked');
+      await page.waitText('Tải về', 30000);
+      log.shots.push(await page.shot('16-export-svg-clean'));
+      const after = await api.request(`/projects/${state.projectId}/exports/access`);
+      if (!after.unlocked || after.balance !== 0) throw new Error(`after paying: ${JSON.stringify(after)}`);
+      const notes = [`paid ${reference}`, `SVG ${svg.bytes} B clean`];
+      for (const [format, title] of [['PDF_CMYK', 'PDF in CMYK nhiều lớp'], ['DXF', 'DXF']]) {
+        const { job, bytes } = await exportFile(page, api, state.projectId, format, title);
+        if (job.watermarked) throw new Error(`${format} of the unlocked design is watermarked`);
+        notes.push(`${format} ${bytes} B`);
+        log.shots.push(await page.shot(`16-export-${format.toLowerCase()}`));
+      }
+      const balance = (await api.request(`/projects/${state.projectId}/exports/access`)).balance;
+      if (balance !== 0) throw new Error(`balance ${balance} after the free re-exports`);
+      log.notes.push(...notes, 'same version: no second credit');
+      await page.closeDialog();
+    },
+    /** 17 (docs/17 §5 step 5): a 49.000đ sample order from the export dialog, paid by VietQR simulation → PAID. */
+    17: async (log) => {
+      const page = state.ownerPage;
+      const api = await state.owner.api();
+      await openStudio(page, api);
+      await openExportDialog(page);
+      await page.click({ text: 'Đặt in mẫu 1 hộp', in: DIALOG });
+      await page.waitUrl(/\/cart/);
+      await page.waitText('Đặt in mẫu ·', 30000);
+      await page.type('input[autocomplete="name"]', 'Nguyễn Mai Anh');
+      await page.type('input[autocomplete="tel"]', '0901234567');
+      await page.type('input[autocomplete="street-address"]', '12 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh');
+      log.shots.push(await page.shot('17-cart'));
+      await page.click({ selector: 'form button[type="submit"]' });
+      await page.waitText('Giả lập đã thanh toán', 30000);
+      const amount = await page.eval(`document.querySelector('[role="dialog"]')?.innerText.match(/[\\d.]+\\s?đ/)?.[0] ?? null`);
+      log.shots.push(await page.shot('17-checkout-vietqr'));
+      await page.click({ text: 'Giả lập đã thanh toán', in: DIALOG });
+      await page.waitText('Thanh toán thành công', 30000);
+      log.shots.push(await page.shot('17-checkout-paid'));
+      await page.click({ text: 'Xong', in: DIALOG });
+      const orders = (await api.request('/orders/my-orders')).filter((o) => o.projectId === state.projectId);
+      const order = orders.find((o) => o.orderStatus === 'PAID');
+      if (!order) throw new Error(`orders of the project: ${orders.map((o) => `${o.orderCode} ${o.orderStatus}`).join(', ') || 'none'}`);
+      await page.goto('/dashboard/orders');
+      await page.waitText(order.orderCode, 30000);
+      log.notes.push(`order ${order.orderCode} ${amount ?? ''} PAID`);
+      log.shots.push(await page.shot('17-orders-paid'));
+    },
+    /** 18 (docs/17 §5 step 7): /dashboard counts what this account just did; the global block grew too. */
+    18: async (log) => {
+      const page = state.ownerPage;
+      const api = await state.owner.api();
+      const me = await api.request('/analytics/summary', { query: { scope: 'me', days: 30 } });
+      const exported = Object.fromEntries(me.exports.byFormat.map((f) => [f.fileType, f.count]));
+      const problems = [
+        me.boxes.total < 1 && `boxes ${me.boxes.total}`,
+        me.fitcheck.prevented < 1 && `FitCheck prevented ${me.fitcheck.prevented}`,
+        !(exported.SVG >= 1 && exported.PDF_A4_PRINT >= 1) && `exports ${JSON.stringify(exported)}`,
+      ].filter(Boolean);
+      if (problems.length) throw new Error(`analytics of this account: ${problems.join(', ')}`);
+      if (state.globalBefore) {
+        const global = await waitFor(async () => {
+          const now = await api.request('/analytics/summary', { query: { scope: 'global', days: 30 } });
+          // The global block is cached for 60 s.
+          return now.exports.total > state.globalBefore.exports.total && now;
+        }, 'the global export count to grow');
+        log.notes.push(`global exports ${state.globalBefore.exports.total} → ${global.exports.total}`);
+      }
+      await page.goto('/dashboard');
+      await page.waitText('Hộp đã tạo', 30000);
+      await page.eval(`[...document.querySelectorAll('h2, h3')].find((el) => /Số liệu thiết kế/.test(el.textContent))?.scrollIntoView({ block: 'start', behavior: 'instant' })`);
+      await page.settle(1500);
+      log.notes.push(`me: ${me.boxes.total} boxes, ${me.fitcheck.prevented} FitCheck errors stopped, ${me.exports.total} exports`);
+      log.shots.push(await page.shot('18-dashboard-stats'));
+    },
     /** 15 (backend stopped): pages show an error with a retry, never fake data. */
     15: async (log) => {
       const page = await (await newContext()).newPage(size);
@@ -902,6 +1058,14 @@ function scenario(size, browser, report) {
       }
     },
   };
+
+  /** The studio of the scenario's project (with --user and no step 4: the account's newest project). */
+  async function openStudio(page, api) {
+    state.projectId ??= (await api.request('/projects', { query: { limit: 1 } })).items[0]?.id;
+    if (!state.projectId) throw new Error('the account has no project: include step 4');
+    await page.goto(`/editor/${state.projectId}`);
+    await saved(page);
+  }
 
   /** Texts on the saved canvas. */
   async function elementTexts() {
@@ -933,7 +1097,18 @@ function scenario(size, browser, report) {
     }
   }
 
-  return { all, cleanup, user };
+  /** With --user, a step after 4 can run alone: sign in and take the account's newest project. */
+  async function prepare(step) {
+    if (step <= 4 || state.owner || typeof option('user') !== 'string') return;
+    await signedInOwner();
+    state.projectId = (await (await state.owner.api()).request('/projects', { query: { limit: 1 } })).items[0]?.id;
+    if (state.projectId) {
+      await state.ownerPage.goto(`/editor/${state.projectId}`);
+      await saved(state.ownerPage);
+    }
+  }
+
+  return { all, cleanup, user, prepare };
 }
 
 async function findAccount(api, email) {
@@ -958,6 +1133,30 @@ async function waitFor(check, what) {
   throw new Error(`timed out waiting for ${what}`);
 }
 
+async function openExportDialog(page) {
+  if (!(await page.eval(`Boolean(document.querySelector('[role="dialog"]'))`))) await page.click({ selector: '[aria-label="Xuất file in"]' });
+  await page.waitText('Lần xuất gần đây');
+  // The panel springs in (anime.js): a click during the animation lands on a moving button and is lost.
+  await page.settle(1200);
+}
+
+/** Clicks a format of the export dialog, waits for its job and downloads the file. */
+async function exportFile(page, api, projectId, format, title) {
+  await openExportDialog(page);
+  const known = new Set((await api.request(`/projects/${projectId}/exports`)).map((job) => job.id));
+  await page.click({ text: title, in: DIALOG });
+  const result = await downloadJob(await waitForJob(api, projectId, format, known), format);
+  await page.waitText('Tải về', 30000);
+  return result;
+}
+
+async function downloadJob(job, format) {
+  const file = await fetch(job.downloadUrl.startsWith('http') ? job.downloadUrl : baseUrl + job.downloadUrl);
+  const bytes = Buffer.from(await file.arrayBuffer()).length;
+  if (!file.ok || bytes < 200) throw new Error(`${format} download: HTTP ${file.status}, ${bytes} bytes`);
+  return { job, bytes };
+}
+
 /** The export job of `format` that is not in `known`, once COMPLETED (throws on FAILED). */
 async function waitForJob(api, projectId, format, known) {
   const started = await waitFor(
@@ -980,17 +1179,23 @@ const browser = await Browser.launch();
 let failed = false;
 try {
   for (const size of sizes) {
-    const { all, cleanup, user } = scenario(size, browser, report);
+    const { all, cleanup, user, prepare } = scenario(size, browser, report);
     console.log(`\n${size.code} (${size.width}×${size.height})`);
     for (const step of Object.keys(all).map(Number).sort((a, b) => a - b)) {
       if (!steps.has(step)) continue;
       const log = { size: size.code, step, ok: true, notes: [], shots: [] };
       const start = Date.now();
       try {
+        await prepare(step);
         await all[step](log);
       } catch (error) {
         log.ok = false;
         log.error = error.message;
+        // What the page saw last: failed API calls and console errors.
+        const seen = browser.lastPage;
+        const failedCalls = (seen?.responses ?? []).filter((r) => r.status >= 400).slice(-4).map((r) => `${r.status} ${r.url}`);
+        if (failedCalls.length) log.notes.push(`last failed calls: ${failedCalls.join(', ')}`);
+        if (seen?.errors.length) log.notes.push(`console: ${seen.errors.slice(-3).join(' | ')}`);
         failed = true;
         const shot = await browser.lastPage?.shot(`${String(step).padStart(2, '0')}-FAILED`).catch(() => null);
         if (shot) log.shots.push(shot);

@@ -55,7 +55,11 @@ describe('ProceduralPatternGenerator', () => {
 });
 
 describe('ClaudePatternGenerator', () => {
-  const generator = new ClaudePatternGenerator({ apiKey: 'test-key', model: 'claude-opus-5-5', timeoutMs: 1000 });
+  const generator = new ClaudePatternGenerator({
+    apiKey: 'test-key',
+    models: { fast: 'claude-haiku-5-5', premium: 'claude-opus-5-5' },
+    timeoutMs: 1000,
+  });
   const create = jest.fn();
   (generator as unknown as { client: { beta: { messages: { create: jest.Mock } } } }).client = {
     beta: { messages: { create } },
@@ -67,9 +71,9 @@ describe('ClaudePatternGenerator', () => {
     usage: { input_tokens: 900, output_tokens: 400 },
   });
 
-  it('asks for structured output with the fallback chain and returns a validated design', async () => {
+  it('asks the premium model for structured output with the fallback chain and returns a validated design', async () => {
     create.mockResolvedValueOnce(reply(JSON.stringify(design({ circles: [dot] }))));
-    const result = await generator.generate({ theme: 'Tết', preferredColors: ['#C0392B'] });
+    const result = await generator.generate({ theme: 'Tết', preferredColors: ['#C0392B'], quality: 'premium' });
 
     expect(result.usage).toEqual({ model: 'claude-opus-5-5', inputTokens: 900, outputTokens: 400 });
     const params = create.mock.calls[0][0];
@@ -80,6 +84,16 @@ describe('ClaudePatternGenerator', () => {
       output_config: { effort: 'low', format: { type: 'json_schema' } },
       messages: [{ role: 'user', content: 'Theme: Tết\nBrand colors: #C0392B' }],
     });
+  });
+
+  it('uses the fast model by default, without the fallback parameters Haiku does not support', async () => {
+    create.mockResolvedValueOnce(reply(JSON.stringify(design({ circles: [dot] }))));
+    await generator.generate({ theme: 'Tết', preferredColors: [] });
+
+    const params = create.mock.calls.at(-1)[0];
+    expect(params).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'low' } });
+    expect(params).not.toHaveProperty('fallbacks');
+    expect(params).not.toHaveProperty('betas');
   });
 
   it('turns refusals and unsafe output into PatternGenerationError', async () => {

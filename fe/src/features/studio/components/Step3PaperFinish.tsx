@@ -181,6 +181,7 @@ export function Step3PaperFinish({
               <Box3DView
                 dimensions={dimensions}
                 foldProgress={1}
+                faceLabels
                 boxType={boxType}
                 theme={activeMaterial}
                 elements={elements}

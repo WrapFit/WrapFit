@@ -65,14 +65,14 @@ sang `BACKEND_INTERNAL_URL` (mặc định `http://localhost:8080`). Biến môi
 Từ thư mục gốc repo:
 
 ```bash
-docker compose up -d postgres redis seaweedfs storage-init mailpit
 npm install
-npm run build:shared                          # backend đọc shared/dist
-npm --workspace=be run db:migrate && npm --workspace=be run db:seed
-npm run dev:be                                # API http://localhost:8080/api, Swagger /api/docs
-npm --workspace=be run dev:worker             # gửi email, xuất file in
-npm run dev:fe                                # http://localhost:3000
+cp be/.env.example be/.env                    # lần đầu; dùng nguyên được khi chạy local
+npm run dev:all                               # Docker + build shared + migrate + seed, rồi API + worker + FE
 ```
+
+`dev:all` = `dev:setup` (Docker, `build:shared`, `db:generate`, `db:deploy`, `db:seed`) rồi ba process trong một terminal:
+`dev:be` (API `http://localhost:8080/api`, Swagger `/api/docs`), `dev:worker` (gửi email, xuất file in), `dev:fe`
+(`http://localhost:3000`). Muốn mỗi process một terminal: `npm run dev:setup` rồi chạy riêng ba lệnh đó.
 
 - Email (xác nhận, quên mật khẩu) nằm ở Mailpit `http://localhost:8025`; cần worker thì email mới đi.
 - Tài khoản admin seed: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` trong `be/.env`.

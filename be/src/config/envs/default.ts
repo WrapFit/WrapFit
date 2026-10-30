@@ -51,12 +51,32 @@ export const config = (env: EnvironmentVariables) => ({
     secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
     publicUrl: env.STORAGE_PUBLIC_URL,
     forcePathStyle: env.STORAGE_FORCE_PATH_STYLE === 'true',
+    /** Encrypted database dumps, written by the backup job. Empty = none. */
+    backupBucket: env.STORAGE_BACKUP_BUCKET,
   },
-  /** `anthropicApiKey` empty = built-in procedural patterns only. */
+  /** Public image CDN (shared/cloudinary). `cloudName` empty = disabled. */
+  cloudinary: {
+    cloudName: env.CLOUDINARY_CLOUD_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
+    folder: env.CLOUDINARY_FOLDER,
+  },
+  /** `anthropicApiKey` empty = built-in procedural patterns only. `monthlyBudgetUsd` null = no cost fuse. */
   ai: {
     anthropicApiKey: env.ANTHROPIC_API_KEY,
-    model: env.AI_MODEL,
+    models: { fast: env.AI_MODEL_FAST, premium: env.AI_MODEL_PREMIUM },
     timeoutMs: env.AI_TIMEOUT_MS,
+    monthlyBudgetUsd: env.AI_MONTHLY_BUDGET_USD ? Number(env.AI_MONTHLY_BUDGET_USD) : null,
+  },
+  /**
+   * `simulation` = payments can be confirmed by a button instead of a bank transfer (CP4 demo). `vietqr` null = the
+   * sample account of payments/vietqr.ts, shown as "Mô phỏng".
+   */
+  payments: {
+    simulation: env.PAYMENT_SIMULATION === 'true',
+    vietqr: env.VIETQR_BANK_BIN
+      ? { bankBin: env.VIETQR_BANK_BIN, accountNo: env.VIETQR_ACCOUNT_NO, accountName: env.VIETQR_ACCOUNT_NAME }
+      : null,
   },
   redis: {
     url: env.REDIS_URL,

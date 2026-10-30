@@ -148,6 +148,10 @@ services:
       # Optional: creates an admin account on start (never with a default password in production)
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # Optional: the CP4 demo account (5 export credits, the candle jar project with its logo); empty password = none
+      SEED_DEMO_EMAIL: ${SEED_DEMO_EMAIL:-}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+      SEED_DEMO_CREDITS: ${SEED_DEMO_CREDITS:-}
       # Object storage: defaults to the local SeaweedFS above; set these to Cloudflare R2 in production
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
@@ -158,9 +162,24 @@ services:
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
       STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+      STORAGE_BACKUP_BUCKET: ${STORAGE_BACKUP_BUCKET:-}
+      # Optional: Cloudinary public image CDN (all three empty = disabled)
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-wrapfit}
       # Optional: AI pattern generator (empty key = procedural patterns only)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+      # AI_MODEL is the old name of AI_MODEL_FAST (still read when AI_MODEL_FAST is unset)
+      AI_MODEL_FAST: ${AI_MODEL_FAST:-${AI_MODEL:-claude-haiku-5-5}}
+      AI_MODEL_PREMIUM: ${AI_MODEL_PREMIUM:-claude-opus-5-5}
+      # Monthly AI cost fuse in USD (empty = no limit); once spent, patterns are procedural until next month
+      AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
+      # VietQR payments: true only for the CP4 demo ("simulate paid" button); empty VIETQR_* = sample account
+      PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
+      VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
+      VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}
+      VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:

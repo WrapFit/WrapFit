@@ -42,6 +42,7 @@ src/
   worker.ts                # khởi động worker BullMQ (không mở cổng HTTP) -> dist/worker.js
   repl.ts                  # shell tương tác trên module API: npm run start:repl
   mail-test.ts             # gửi thử 1 email bằng cấu hình SMTP hiện tại
+  storage-check.ts         # kiểm tra kết nối bucket R2 / S3 và Cloudinary (chỉ đọc): npm run storage:check
   app.middleware.ts        # cấu hình dùng chung (request id, helmet, CORS, prefix /api, ValidationPipe)
   app.module.ts            # ghép module + guard/filter/interceptor toàn cục
   swagger.ts
@@ -57,9 +58,12 @@ src/
     prisma/                # PrismaModule (global) + PrismaService
     queue/                 # kết nối BullMQ (Redis)
     redis/                 # RedisModule (global): client ioredis `REDIS` cho bộ đếm nhỏ (đăng nhập sai, lượt xem)
+    cloudinary/            # CloudinaryModule (global): CloudinaryService, CDN ảnh công khai (chưa dùng)
   auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
   base/                    # GET /api/health
   users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
+  billing/                 # gói hiệu lực, sổ cái lượt xuất (lô + dòng trừ), GET /api/billing/me; BillingCoreModule
+                           # (CreditsService, PlanService, EntitlementsService) dùng ở cả API và worker
   projects/                # CRUD dự án, 4 tầng: presentation / application / domain / infrastructure
   collections/             # thư mục dự án (CRUD gọn: controller -> service -> Prisma)
   public-showcase/         # trang công khai /p/[slug], Remix (fork), thả tim
@@ -70,6 +74,10 @@ src/
   export/                  # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
   mail/                    # MailService (đưa vào hàng đợi) + MailProcessor (worker gửi SMTP)
   events/                  # WebSocket gateway (thông báo realtime)
+  print-shops/             # danh sách xưởng in đối tác (dữ liệu tĩnh trong code)
+  orders/                  # đơn in mẫu (PostgreSQL): đặt, xem, vòng đời trạng thái (order-status.ts) cho ADMIN / PRINT_SHOP
+  payments/                # thanh toán VietQR (vietqr.ts dựng chuỗi EMVCo + QR SVG), hạn 15 phút, xác nhận giả lập
+                           # cấp lô lượt xuất / Pro 30 ngày / chuyển đơn in sang PAID
 test/
   e2e/                     # e2e test (*.e2e-spec.ts) + helpers/
 ```
@@ -94,6 +102,7 @@ docker compose up -d seaweedfs storage-init  # lưu trữ file S3 local (cổng 
 docker compose up -d redis                   # hàng đợi BullMQ (xuất file in, email)
 docker compose up -d mailpit                 # bắt mọi email (xác minh, quên mật khẩu): xem tại http://localhost:8025
 cp be/.env.example be/.env                   # nhớ đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
+npm run build:shared                         # backend đọc @wrapfit/shared từ shared/dist (chạy lại khi shared/ đổi)
 npm --workspace=be run db:generate
 npm --workspace=be run db:migrate            # áp dụng migration vào database dev
 npm --workspace=be run db:seed               # tạo 4 mẫu hộp + admin: admin@wrapfit.vn / Admin@12345 + dữ liệu mẫu
@@ -102,6 +111,12 @@ npm --workspace=be run dev:worker           # terminal thứ 2: worker xuất fi
 ```
 
 Hoặc `cd be` rồi dùng trực tiếp `npm run <script>`.
+
+Gộp tất cả thành một lệnh (từ gốc repo, sau `npm install` và `cp be/.env.example be/.env`): `npm run dev:all` chạy các bước
+trên (migration bằng `db:deploy`, không hỏi tên migration) rồi API, worker, frontend trong một terminal. `npm run dev:setup`
+chỉ làm phần Docker + database.
+
+`dev` build vào `dist/`, `dev:worker` build vào `dist-worker/` (`tsconfig.worker.json`): `nest start --watch` xóa thư mục build khi khởi động, nên hai process dùng chung `dist/` thì bật process này sẽ làm process kia dừng với `Cannot find module ...dist\worker`.
 
 - API: `http://localhost:8080/api`
 - Swagger: `http://localhost:8080/api/docs`
@@ -117,7 +132,7 @@ cp .env.example .env            # điền JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 docker compose up -d --build
 ```
 
-Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`.
+Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, mỗi lần khởi động nạp lượt xuất cho đủ `SEED_DEMO_CREDITS`, mặc định 5; dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
 
 Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `backend` (API), `worker` (cùng image, lệnh `worker`, chỉ chạy hàng đợi xuất file), `frontend`.
 
@@ -153,9 +168,19 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `STORAGE_ACCESS_KEY_ID` / `STORAGE_SECRET_ACCESS_KEY` | `storage.accessKeyId` / `.secretAccessKey` | – | Khóa API của bucket (R2: *R2 API Token*) |
 | `STORAGE_PUBLIC_URL` | `storage.publicUrl` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
 | `STORAGE_FORCE_PATH_STYLE` | `storage.forcePathStyle` | `false` | `true` cho SeaweedFS |
+| `STORAGE_BACKUP_BUCKET` | `storage.backupBucket` | *(trống)* | Bucket R2 không công khai chứa bản dump DB đã mã hóa; job backup ghi, API không dùng. Chỉ `storage:check` đọc |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | `cloudinary.cloudName` / `.apiKey` / `.apiSecret` | *(trống)* | CDN ảnh công khai (`shared/cloudinary`). Đặt cả ba hoặc để trống cả ba (= tắt). Hiện chỉ có kết nối, chưa có dữ liệu nào đi qua |
+| `CLOUDINARY_FOLDER` | `cloudinary.folder` | `wrapfit` | Thư mục gốc của môi trường trên Cloudinary, vd. `wrapfit-dev` ở máy dev |
 | `ANTHROPIC_API_KEY` | `ai.anthropicApiKey` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
-| `AI_MODEL` | `ai.model` | `claude-opus-5-5` | Model Claude dùng để sinh hoa văn |
+| `AI_MODEL_FAST` | `ai.models.fast` | `claude-haiku-5-5` | Model của chất lượng `fast` (mặc định, mọi gói) |
+| `AI_MODEL_PREMIUM` | `ai.models.premium` | `claude-opus-5-5` | Model của chất lượng `premium` (gói khác `FREE`) |
+| `AI_MODEL` | – | *(trống)* | **Tên cũ** của `AI_MODEL_FAST`, chỉ được đọc khi `AI_MODEL_FAST` không đặt. Sẽ bỏ sau CP4: đổi tên biến trong `.env` của VPS |
+| `AI_MONTHLY_BUDGET_USD` | `ai.monthlyBudgetUsd` | *(trống)* | Cầu chì chi phí AI (USD / tháng dương lịch giờ Việt Nam). Để trống = không giới hạn |
 | `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
+| `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs/17 M6). `false` → route giả lập trả 404 |
+| `VIETQR_BANK_BIN` | `payments.vietqr.bankBin` | *(trống)* | BIN NAPAS 6 số của ngân hàng nhận tiền. Ba biến `VIETQR_*` đặt cùng nhau; để trống cả ba = tài khoản mẫu, giao diện ghi "Mô phỏng" |
+| `VIETQR_ACCOUNT_NO` | `payments.vietqr.accountNo` | *(trống)* | Số tài khoản nhận tiền |
+| `VIETQR_ACCOUNT_NAME` | `payments.vietqr.accountName` | *(trống)* | Tên chủ tài khoản, viết hoa không dấu |
 | `REDIS_URL` | `redis.url` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
 | `EXPORT_CONCURRENCY` | `export.concurrency` | `2` | Số job xuất file một worker chạy song song |
 | `SMTP_HOST` / `SMTP_PORT` | `mail.smtp.host` / `.port` | `localhost` / `1025` | SMTP của worker; mặc định là Mailpit trong `docker-compose.yml` (thư bị giữ lại, xem tại `http://localhost:8025`) |
@@ -186,6 +211,10 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 | DELETE | `/api/users/:id` | ADMIN | Xoá user |
 | GET | `/api/health` | public | Kiểm tra server: `status`, `database`, `redis`, `worker` (up / down) |
 | GET | `/api/health/details` | ADMIN | Như trên, thêm số job của hàng đợi xuất file và uptime |
+| GET | `/api/billing/me` | đã đăng nhập | Gói hiệu lực, hạn mức, số lượt xuất còn lại, gói Pro đang chạy, `paymentSimulation` |
+| POST | `/api/payments` | đã đăng nhập | Tạo thanh toán VietQR `{ purpose: EXPORT_1 \| EXPORT_5 \| EXPORT_15 \| PRO_MONTH \| SAMPLE_ORDER, orderId? }`: `reference` `WF` + 6 ký tự, hạn 15 phút, `vietqr.payload` (EMVCo NAPAS) + `vietqr.qrSvg` |
+| GET | `/api/payments/:id` | chủ thanh toán | Trạng thái (`PENDING` / `PAID` / `EXPIRED`); quá hạn thì đổi `EXPIRED` |
+| POST | `/api/payments/:id/simulate-confirm` | chủ thanh toán | Chỉ khi `PAYMENT_SIMULATION=true` (ngược lại 404): `PAID` và cấp lô lượt / Pro 30 ngày / đơn in `PAID` trong một transaction; gọi lại không cấp thêm |
 
 Định dạng lỗi thống nhất (tài liệu 07, Mục 4.3):
 
@@ -297,17 +326,29 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 4. **Create bucket** thứ hai `wrapfit-private` cho file xuất in: **không** gắn Custom Domain, **không** bật `r2.dev`. CORS chỉ cần `GET` từ `https://wrapfit.vn` (trình duyệt tải file qua link pre-signed).
 5. **R2** → **Manage R2 API Tokens** → **Create API token**, quyền *Object Read & Write*, chỉ hai bucket `wrapfit` và `wrapfit-private` → lấy *Access Key ID* / *Secret Access Key*. *Account ID* nằm trong endpoint `https://<account-id>.r2.cloudflarestorage.com`.
 6. Điền vào `.env`: `STORAGE_ENDPOINT`, `STORAGE_REGION=auto`, `STORAGE_BUCKET=wrapfit`, `STORAGE_PRIVATE_BUCKET=wrapfit-private`, hai khóa, `STORAGE_PUBLIC_URL`, `STORAGE_FORCE_PATH_STYLE=false`.
+7. (Tùy chọn, cho backup DB) **Create bucket** thứ ba `wrapfit-backups`: không Custom Domain, không `r2.dev`, không CORS; thêm **Lifecycle rule** xóa object sau 30 ngày. Job backup nên dùng một API token riêng chỉ có quyền ghi bucket này. Đặt `STORAGE_BACKUP_BUCKET=wrapfit-backups`.
+8. Kiểm tra: `npm --workspace=be run storage:check` (container: `docker compose exec backend node dist/storage-check.js`) gọi `HeadBucket` trên từng bucket đã khai báo và báo `OK` hoặc mã lỗi HTTP (403 = token thiếu quyền bucket đó, 404 = sai tên bucket). Không ghi gì.
+
+**Cloudinary (CDN ảnh công khai)**: theo kế hoạch lưu trữ hybrid (`docs/wrapfit_architecture_security_blueprint.md`, mục 4), avatar, logo, texture AI và thumbnail sẽ chuyển sang Cloudinary (resize, `f_auto,q_auto`); file xuất in và backup ở lại R2. Hiện mới có kết nối (`src/shared/cloudinary`, `CloudinaryService` toàn cục), **chưa** có upload hay URL nào của ứng dụng đi qua Cloudinary: mọi file vẫn nằm trên R2 như trên.
+
+1. Tạo tài khoản tại [cloudinary.com](https://cloudinary.com) (gói Free). **Dashboard** → *Product Environment* hiện *Cloud name*.
+2. **Settings** → **API Keys** → **Generate New API Key** → lấy *API Key* / *API Secret*. Không commit secret.
+3. **Settings** → **Security**: bật *Strict transformations* (chỉ cho phép transformation đã khai báo, chống người lạ dùng hạn mức) và tắt *Allow delivery of PDF and ZIP files* (để mặc định tắt).
+4. Điền vào `.env`: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER` (`wrapfit-dev` ở máy dev, `wrapfit` ở production để không lẫn file).
+5. `npm --workspace=be run storage:check` phải báo `Cloudinary "<cloud name>": OK`.
 
 File xuất in tạo trước khi có bucket riêng tư (key `projects/<id>/exports/...`) vẫn nằm trong bucket công khai và vẫn tải được; chúng bị xóa cùng dự án như trước.
 
 ## AI sinh hoa văn
 
-`POST /api/ai/pattern { theme, preferredColors? }` trả bảng màu và **một ô hoa văn SVG lặp liền mạch** (`tile.svg`, dùng làm `background-image` hoặc phần tử `pattern` trên canvas).
+`POST /api/ai/pattern { theme, preferredColors?, quality? }` trả bảng màu và **một ô hoa văn SVG lặp liền mạch** (`tile.svg`, dùng làm `background-image` hoặc phần tử `pattern` trên canvas).
 
-- **Claude** (`ANTHROPIC_API_KEY` có giá trị): gọi model `AI_MODEL` với *structured outputs* — model chỉ trả **danh sách hình** (tròn, chữ nhật, đường, path) theo JSON schema, không trả SVG. Backend kiểm tra từng giá trị (màu `#RRGGBB`, toạ độ trong ô, `d` chỉ gồm lệnh path và số) rồi tự dựng SVG, nên SVG không thể chứa script, link hay tài nguyên ngoài. Ô được vẽ 9 lần (ô + 8 ô bên cạnh) và cắt theo `viewBox` để hình tràn mép xuất hiện lại ở mép đối diện → lặp không lộ đường nối.
-- Request bật `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`): nếu bộ lọc an toàn của model từ chối, Anthropic tự chạy lại trên model dự phòng. Effort `low` vì đây là việc đơn giản. System prompt được cache.
+- **Chất lượng**: `quality` = `fast` (mặc định, `AI_MODEL_FAST`, mọi gói) hoặc `premium` (`AI_MODEL_PREMIUM`, chỉ gói khác `FREE`; gói Free nhận `403 PLAN_FEATURE_REQUIRED { feature: 'ai.premium', requiredPlan: 'PAY_PER_EXPORT' }`, kể cả khi AI tắt).
+- **Claude** (`ANTHROPIC_API_KEY` có giá trị): gọi model theo `quality` với *structured outputs* — model chỉ trả **danh sách hình** (tròn, chữ nhật, đường, path) theo JSON schema, không trả SVG. Backend kiểm tra từng giá trị (màu `#RRGGBB`, toạ độ trong ô, `d` chỉ gồm lệnh path và số) rồi tự dựng SVG, nên SVG không thể chứa script, link hay tài nguyên ngoài. Ô được vẽ 9 lần (ô + 8 ô bên cạnh) và cắt theo `viewBox` để hình tràn mép xuất hiện lại ở mép đối diện → lặp không lộ đường nối.
+- Request bật `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`): nếu bộ lọc an toàn của model từ chối, Anthropic tự chạy lại trên model dự phòng. Haiku không có fallback phía server nên request tới Haiku không gửi tham số này; bị từ chối thì dùng hoa văn thuật toán. Effort `low` vì đây là việc đơn giản. System prompt được cache.
 - **Dự phòng**: chưa có API key, hoặc Claude lỗi / hết thời gian / trả kết quả không hợp lệ → dùng bộ sinh hoa văn bằng thuật toán (theo từ khóa Tết, Noel, cưới, Valentine, sinh nhật, tối giản; cùng chủ đề luôn ra cùng hoa văn). Trường `source` cho biết `ai` hay `procedural`.
-- **Giới hạn**: lượt gọi Claude trong 24 giờ: FREE 10, STARTER 50, PRO_BUSINESS 300 (hết → `429`; `GET /api/ai/usage`). Thêm giới hạn 5 lần / phút. Mỗi lượt được ghi vào bảng `ai_generations` kèm số token để theo dõi chi phí.
+- **Giới hạn**: lượt gọi Claude trong 24 giờ: FREE 10, STARTER 50, PRO_BUSINESS 300 (hết → `429`; `GET /api/ai/usage`). Thêm giới hạn 5 lần / phút. Mỗi lượt được ghi vào bảng `ai_generations` kèm model trả lời và số token để theo dõi chi phí.
+- **Cầu chì chi phí** (`AiCostGuard`, `src/ai/ai-cost.guard.ts`): khi đặt `AI_MONTHLY_BUDGET_USD`, cộng chi phí ước tính (token × bảng giá trong `src/ai/ai-pricing.ts`) của các lượt từ đầu tháng dương lịch theo giờ Việt Nam; tổng được cache 5 phút mỗi process (lượt mới của chính process được cộng ngay). Chạm ngưỡng → mọi request dùng hoa văn thuật toán, không tính vào lượt 24 giờ, log mức `error` mỗi lần làm mới cache; `GET /api/ai/usage` trả `budgetReached: true`. Model lạ (vd. fallback mới) được tính theo giá model đắt nhất trong bảng. Đổi giá Anthropic → sửa `AI_MODEL_PRICES`.
 - Lấy API key: [platform.claude.com](https://platform.claude.com) → *API Keys*. Không commit key; test e2e luôn tắt AI.
 
 ## WebSocket
@@ -362,7 +403,7 @@ npm --workspace=be run test:e2e
 | `SVG` | Cricut / máy cắt laser | Lớp `info`, `crease`, `cut`, `artwork` (ảnh nhúng data URI + chữ), đơn vị mm |
 | `DXF` | Máy bế CNC | R12, mm, lớp `CUT` (đỏ) và `CREASE` (xanh, nét đứt) |
 
-**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
+**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF nhúng PNG, JPEG, WebP, GIF, TIFF, AVIF và logo SVG (raster hóa, đổi sang CMYK; logo PDF chỉ có trong file SVG); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
 
 ## Triển khai production (VPS + HTTPS)
 

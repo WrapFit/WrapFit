@@ -7,6 +7,7 @@ import { ConfigService, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
+import { ExportCreditRefunds } from './export-credits';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
 import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
@@ -35,6 +36,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     private readonly storage: StorageService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService,
+    private readonly refunds: ExportCreditRefunds,
   ) {
     super();
   }
@@ -57,6 +59,10 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
             where: { id: exportJobId, status: UNFINISHED_EXPORT },
             data: { status: 'FAILED', errorLog: message.slice(0, 2000) },
           });
+          // docs/16 §5.3: the credit paid for this design comes back when nothing was delivered with it.
+          await this.refunds.refundFailed(exportJobId).catch((refundError: Error) =>
+            this.logger.error(`Could not refund the credit of export ${exportJobId}: ${refundError.message}`),
+          );
         }
         throw error; // lets BullMQ schedule the next attempt
       }
@@ -70,6 +76,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       data: { status: 'PROCESSING', errorLog: null },
       select: {
         fileType: true,
+        watermarked: true,
         project: {
           select: {
             id: true,
@@ -101,7 +108,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       job.fileType === 'PDF_CMYK'
         ? await renderPdf(layout, artwork)
         : job.fileType === 'PDF_A4_PRINT'
-          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
+          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4', watermarked: job.watermarked })
           : job.fileType === 'PRINT_PACKAGE'
             ? await renderPrintPackage(layout, artwork, titleSlug(project.title))
             : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork) : renderDxf(layout));
@@ -123,6 +130,16 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       await tx.exportJob.update({
         where: { id: exportJobId },
         data: { status: 'COMPLETED', storageKey, completedAt },
+      });
+      // Analytics dashboard (docs/17 S7), in the same transaction: a retried job never counts twice.
+      await tx.productEvent.create({
+        data: {
+          type: 'EXPORT_COMPLETED',
+          userId: project.userId,
+          projectId: project.id,
+          payload: { exportJobId, fileType: job.fileType, watermarked: job.watermarked },
+          createdAt: completedAt,
+        },
       });
       // UC-07: every print export leaves a version the user can come back to (stored canvas, keys included).
       await tx.projectSnapshot.create({

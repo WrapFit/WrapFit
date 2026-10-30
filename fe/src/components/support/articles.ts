@@ -20,7 +20,7 @@ export interface ArticleCategory {
   articles: Article[];
 }
 
-const { FREE, STARTER, PRO_BUSINESS } = PLANS;
+const { FREE, PAY_PER_EXPORT, STARTER, PRO_BUSINESS } = PLANS;
 
 export const CATEGORIES: ArticleCategory[] = [
   {
@@ -190,8 +190,8 @@ export const CATEGORIES: ArticleCategory[] = [
         id: "han-muc-goi",
         title: "Hạn mức của từng gói",
         body: [
-          `Free: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.aiPatternsPerDay} hoa văn AI mỗi ngày. Starter: ${formatQuota(STARTER.storageBytes)} và ${STARTER.aiPatternsPerDay} hoa văn. Pro Business: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.aiPatternsPerDay} hoa văn.`,
-          "Số dự án không giới hạn ở mọi gói. Mức đã dùng hiện trên trang Tổng quan của bạn.",
+          `${FREE.name}: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.aiPatternsPerDay} hoa văn AI mỗi ngày, xuất PDF A4 có watermark ở tai dán. ${PAY_PER_EXPORT.name}: ${formatQuota(PAY_PER_EXPORT.storageBytes)} và ${PAY_PER_EXPORT.aiPatternsPerDay} hoa văn. ${STARTER.name}: ${formatQuota(STARTER.storageBytes)} và ${STARTER.aiPatternsPerDay} hoa văn. ${PRO_BUSINESS.name}: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.aiPatternsPerDay} hoa văn.`,
+          "Mức đã dùng hiện trên trang Tổng quan của bạn.",
         ],
         action: { label: "Xem bảng giá", href: "/pricing" },
       },

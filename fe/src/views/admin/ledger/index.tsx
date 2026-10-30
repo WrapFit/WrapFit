@@ -18,11 +18,11 @@ interface Transaction {
 }
 
 const ROWS: Transaction[] = [
-  { id: 'WF-24081', date: '13/10/2026 09:42', customer: 'Tiệm nến Mộc', item: 'Starter · tháng', method: 'Thẻ quốc tế', amount: 29, state: 'paid' },
-  { id: 'WF-24080', date: '13/10/2026 08:15', customer: 'Bạc Hà Jewelry', item: 'Pro Business · năm', method: 'Chuyển khoản', amount: 948, state: 'pending' },
-  { id: 'WF-24079', date: '12/10/2026 21:03', customer: 'Minh Khoa Studio', item: 'Starter · năm', method: 'Ví MoMo', amount: 288, state: 'paid' },
-  { id: 'WF-24078', date: '12/10/2026 16:27', customer: 'Trà Shan Hà Giang', item: 'Starter · tháng', method: 'Thẻ quốc tế', amount: 29, state: 'refunded' },
-  { id: 'WF-24077', date: '11/10/2026 10:50', customer: 'Bánh quy Bơ Nhà Làm', item: 'Pro Business · tháng', method: 'Thẻ quốc tế', amount: 99, state: 'paid' },
+  { id: 'WF-24081', date: '13/10/2026 09:42', customer: 'Tiệm nến Mộc', item: 'Pro · 30 ngày', method: 'VietQR', amount: 99_000, state: 'paid' },
+  { id: 'WF-24080', date: '13/10/2026 08:15', customer: 'Bạc Hà Jewelry', item: '15 lượt xuất', method: 'Chuyển khoản', amount: 199_000, state: 'pending' },
+  { id: 'WF-24079', date: '12/10/2026 21:03', customer: 'Minh Khoa Studio', item: '5 lượt xuất', method: 'Ví MoMo', amount: 79_000, state: 'paid' },
+  { id: 'WF-24078', date: '12/10/2026 16:27', customer: 'Trà Shan Hà Giang', item: 'Pro · 30 ngày', method: 'VietQR', amount: 99_000, state: 'refunded' },
+  { id: 'WF-24077', date: '11/10/2026 10:50', customer: 'Bánh quy Bơ Nhà Làm', item: '1 lượt xuất', method: 'VietQR', amount: 19_000, state: 'paid' },
 ];
 
 const STATE = {

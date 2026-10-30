@@ -40,7 +40,9 @@ export type ApiErrorCode =
   | "FILE_URL_NOT_ALLOWED"
   | "FILE_NOT_OWNED"
   | "PROJECT_VERSION_CONFLICT"
-  | "ORIGIN_NOT_ALLOWED";
+  | "ORIGIN_NOT_ALLOWED"
+  | "EXPORT_CREDIT_REQUIRED"
+  | "INSUFFICIENT_CREDITS";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {
@@ -57,6 +59,8 @@ export interface ApiErrorBody {
   currentVersion?: number;
   /** 422 on export: the FitCheck report with the blocking violations. */
   fitCheck?: FitCheckReport;
+  /** 402 EXPORT_CREDIT_REQUIRED / INSUFFICIENT_CREDITS: export credits left. */
+  balance?: number;
 }
 
 export interface HealthStatus {
@@ -439,6 +443,21 @@ export interface ExportStarted {
   jobId: string;
   status: ExportStatus;
   fitCheck: FitCheckReport;
+  /** Free A4 PDF of a design that is not unlocked: WrapFit line on a glue flap. */
+  watermarked: boolean;
+  /** This request spent one export credit (useCredit). */
+  charged: boolean;
+  exportCredits: { balance: number };
+}
+
+/** `GET /projects/:id/exports/access`: what the export dialog shows before a request (docs/16 §5). */
+export interface ExportAccess {
+  /** FREE_A4: only the watermarked A4 PDF without credits; CREDIT: one credit per design version; UNLIMITED: Pro. */
+  mode: "FREE_A4" | "CREDIT" | "UNLIMITED";
+  /** Clean files of the current version need no credit (Pro, or a credit already spent on it). */
+  unlocked: boolean;
+  unlockExpiresAt: string | null;
+  balance: number;
 }
 
 export interface ExportJob {
@@ -446,6 +465,8 @@ export interface ExportJob {
   projectId: string;
   fileType: ExportFileType;
   status: ExportStatus;
+  /** The free A4 PDF with the WrapFit line on a glue flap. */
+  watermarked?: boolean;
   /** Set when FAILED. */
   error: string | null;
   createdAt: string;
@@ -455,6 +476,49 @@ export interface ExportJob {
   /** COMPLETED only; expires after `downloadExpiresIn` seconds: fetch the job again for a new one. */
   downloadUrl: string | null;
   downloadExpiresIn: number | null;
+}
+
+// ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
+
+export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER";
+export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
+
+/** `GET /billing/me`: plan in use, export credits and the Pro period. */
+export interface BillingSummary {
+  tier: SubscriptionTier;
+  exportCredits: {
+    balance: number;
+    lots: { id: string; source: "PURCHASE" | "ADMIN"; quantity: number; remaining: number; expiresAt: string | null; createdAt: string }[];
+  };
+  subscription: { plan: SubscriptionTier; status: "ACTIVE" | "EXPIRED"; currentPeriodStart: string; currentPeriodEnd: string } | null;
+  /** PAYMENT_SIMULATION on the server: the checkout shows "Giả lập đã thanh toán" (CP4 demo). */
+  paymentSimulation: boolean;
+}
+
+/** A VietQR payment (`POST /payments`, `GET /payments/:id`). */
+export interface Payment {
+  id: string;
+  purpose: PaymentPurpose;
+  status: PaymentStatus;
+  amountVnd: number;
+  /** Transfer content: WF + 6 characters. */
+  reference: string;
+  expiresAt: string;
+  paidAt: string | null;
+  createdAt: string;
+  credits: number | null;
+  orderId: string | null;
+  /** Set while PENDING. */
+  vietqr: {
+    payload: string;
+    qrSvg: string;
+    bankBin: string;
+    bankName: string;
+    accountNo: string;
+    accountName: string;
+    /** Placeholder account: the server has no VIETQR_* settings. */
+    sample: boolean;
+  } | null;
 }
 
 // ---------------------------------------------------------------- unboxing
@@ -512,6 +576,8 @@ export interface GeneratePatternRequest {
   theme: string;
   /** ≤ 5 brand colors `#RRGGBB`. */
   preferredColors?: string[];
+  /** Default `fast` (every plan); `premium` = stronger model, paid plans only (403 `PLAN_FEATURE_REQUIRED` on Free). */
+  quality?: "fast" | "premium";
 }
 
 export interface AiPatternResult {
@@ -531,6 +597,8 @@ export interface AiUsage {
   used: number;
   limit: number;
   aiEnabled: boolean;
+  /** The monthly AI budget of WrapFit is spent: patterns are procedural until next month. */
+  budgetReached: boolean;
 }
 
 // ---------------------------------------------------------------- print-shops & orders
@@ -551,11 +619,20 @@ export interface PrintShop {
   status?: 'active' | 'review' | 'paused';
 }
 
+/** Lifecycle of a sample print order (`be/src/orders/order-status.ts`). */
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+/** A sample print order (`be/src/orders`). `status` is `orderStatus` in lower case. */
 export interface SampleOrder {
   id: string;
+  orderCode: string;
   userId: string;
-  projectId: string;
+  /** null once the project was deleted for good: the order keeps its title, structure and size. */
+  projectId: string | null;
   projectTitle: string;
+  projectVersion?: number;
+  structure?: string;
+  dimensions?: { length: number; width: number; height: number; paperThickness?: number } | null;
   printShopId?: string;
   printShopName?: string;
   partnerShop?: {
@@ -565,16 +642,33 @@ export interface SampleOrder {
     contactPhone?: string;
   };
   quantity: number;
+  paperStock?: string;
   recipientName: string;
   phone?: string;
   recipientPhone?: string;
   shippingAddress: string;
   notes?: string | null;
+  subtotalVnd?: number;
+  shippingVnd?: number;
   totalVnd?: number;
   sampleFeeVnd?: number;
-  status: 'pending' | 'confirmed' | 'in_production' | 'shipped' | 'delivered' | 'SUBMITTED' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED';
-  orderCode?: string;
+  status: Lowercase<OrderStatus>;
+  orderStatus?: OrderStatus;
+  estimatedDeliveryDays?: string;
+  paymentId?: string | null;
+  paidAt?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  cancelledAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
+}
+
+/** Filters of `GET /orders` (ADMIN, PRINT_SHOP). */
+export interface StaffOrdersQuery {
+  status?: OrderStatus;
+  printShopId?: string;
+  limit?: number;
 }
 
 export interface CreateSampleOrderRequest {

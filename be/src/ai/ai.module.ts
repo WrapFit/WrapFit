@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '../common';
 import { AiController } from './ai.controller';
+import { AiCostGuard } from './ai-cost.guard';
 import { AI_PATTERN_GENERATOR, AiPatternService } from './ai-pattern.service';
 import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';
 
@@ -9,6 +10,7 @@ import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';
   controllers: [AiController],
   providers: [
     AiPatternService,
+    AiCostGuard,
     {
       provide: AI_PATTERN_GENERATOR,
       inject: [ConfigService],
@@ -17,7 +19,7 @@ import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';
         return apiKey
           ? new ClaudePatternGenerator({
               apiKey,
-              model: config.get('ai.model'),
+              models: config.get('ai.models'),
               timeoutMs: config.get('ai.timeoutMs'),
             })
           : null;

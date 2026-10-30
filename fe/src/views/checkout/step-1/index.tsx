@@ -1,16 +1,16 @@
 'use client';
 
 /**
- * `/checkout/step-1?plan=&billing=`: choose the paid plan and the billing cycle. Prices and quotas come from
- * features/pricing (the quotas the API enforces); the plan in use comes from `GET /auth/me`.
+ * `/checkout/step-1?plan=&pack=`: choose an export pack or Pro. Prices and quotas come from features/pricing (a display
+ * layer over @wrapfit/shared/billing); the plan in use comes from `GET /auth/me`.
  */
 
 import { ArrowRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
-import { CheckoutShell, priceOf, useCheckoutParams, yearlySaving, type Billing, type PaidTier } from '@/components/checkout/CheckoutShell';
+import { CheckoutShell, priceOf, useCheckoutParams, type PaidTier } from '@/components/checkout/CheckoutShell';
 import { RequireAuth, useAuth } from '@/features/auth';
-import { PLANS, PLAN_ORDER, formatQuota, formatUsd } from '@/features/pricing';
+import { EXPORT_PACK_LIST, PLANS, PLAN_ORDER, PRO_PERIOD_DAYS, formatQuota, formatVnd, perExportOf } from '@/features/pricing';
 import { cn } from '@/utils/helpers';
 
 export default function CheckoutStep1Page() {
@@ -21,44 +21,26 @@ export default function CheckoutStep1Page() {
   );
 }
 
-const PAID: PaidTier[] = ['PAY_PER_EXPORT', 'STARTER', 'PRO_BUSINESS'];
+const PAID: PaidTier[] = ['PAY_PER_EXPORT', 'STARTER'];
 
 function ChoosePlan() {
   const { user } = useAuth();
-  const { tier, billing, query } = useCheckoutParams();
+  const { tier, pack, query } = useCheckoutParams();
   const currentIndex = user ? PLAN_ORDER.indexOf(user.subscriptionTier) : 0;
   const owned = (item: PaidTier) => item !== 'PAY_PER_EXPORT' && PLAN_ORDER.indexOf(item) <= currentIndex;
   const blocked = owned(tier);
 
   return (
-    <CheckoutShell step={1} tier={tier} billing={billing} query={query()}>
+    <CheckoutShell step={1} tier={tier} pack={pack} query={query()}>
       <section aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Chọn gói của bạn
         </h1>
-        <p className="mt-2 text-base leading-7 text-landing-muted">Mọi gói đều có đủ studio; gói trả phí nâng dung lượng lưu trữ và lượt tạo hoa văn AI.</p>
+        <p className="mt-2 text-base leading-7 text-landing-muted">Mọi gói đều có đủ studio; gói trả phí mở khóa file in sạch cho xưởng, thêm dung lượng và lượt tạo hoa văn AI.</p>
 
-        <div className="mt-6 inline-flex rounded-full bg-mist-200 p-1" role="radiogroup" aria-label="Chu kỳ thanh toán">
-          {(['monthly', 'yearly'] as Billing[]).map((cycle) => (
-            <Link
-              key={cycle}
-              href={query({ billing: cycle })}
-              replace
-              scroll={false}
-              role="radio"
-              aria-checked={billing === cycle}
-              className={cn('inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors', billing === cycle ? 'bg-white text-landing-ink shadow-sm' : 'text-landing-muted hover:text-landing-ink')}
-            >
-              {cycle === 'monthly' ? 'Theo tháng' : 'Theo năm'}
-              {cycle === 'yearly' && <span className="rounded-full bg-fpt-orange px-2 py-0.5 text-xs text-white">−{yearlySaving(PLANS.STARTER)}%</span>}
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3" role="radiogroup" aria-label="Gói">
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2" role="radiogroup" aria-label="Gói">
           {PAID.map((item) => {
             const plan = PLANS[item];
-            const { perMonth } = priceOf(plan, billing);
             const active = item === tier;
             const isOwned = owned(item);
             const isPerExport = item === 'PAY_PER_EXPORT';
@@ -87,8 +69,8 @@ function ChoosePlan() {
                   </span>
                 </span>
                 <span className="text-xl font-semibold">
-                  {formatUsd(perMonth)}
-                  <span className="ml-1 text-sm font-normal text-landing-muted">{isPerExport ? '/ lần' : '/ tháng'}</span>
+                  {isPerExport ? `từ ${formatVnd(priceOf(item, 'EXPORT_1'))}` : formatVnd(priceOf(item, pack))}
+                  <span className="ml-1 text-sm font-normal text-landing-muted">{isPerExport ? '/ lượt' : `/ ${PRO_PERIOD_DAYS} ngày`}</span>
                 </span>
                 <span className="flex flex-col gap-1.5 text-sm text-landing-muted">
                   <span>{formatQuota(plan.storageBytes)} lưu trữ</span>
@@ -99,6 +81,28 @@ function ChoosePlan() {
             );
           })}
         </div>
+
+        {tier === 'PAY_PER_EXPORT' && (
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Số lượt xuất">
+            {EXPORT_PACK_LIST.map((item) => {
+              const active = item.id === pack;
+              return (
+                <Link
+                  key={item.id}
+                  href={query({ pack: item.id })}
+                  replace
+                  scroll={false}
+                  role="radio"
+                  aria-checked={active}
+                  className={cn('flex flex-col gap-1 rounded-2xl p-4 transition-shadow', active ? 'ring-2 ring-landing-ink' : 'ring-1 ring-landing-ink/10 hover:ring-landing-ink/40')}
+                >
+                  <span className="font-semibold">{item.credits} lượt · {formatVnd(item.priceVnd)}</span>
+                  <span className="text-sm text-landing-muted">{item.credits === 1 ? 'Mua lẻ' : `${formatVnd(perExportOf(item))} mỗi lượt`}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link href="/pricing" className="py-2 text-center text-sm font-medium text-landing-muted hover:text-landing-ink hover:underline">

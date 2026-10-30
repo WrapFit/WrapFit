@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -132,17 +133,77 @@ export class EnvironmentVariables {
   @IsIn(['true', 'false'])
   STORAGE_FORCE_PATH_STYLE: string = 'false';
 
+  /**
+   * R2 bucket of the encrypted database dumps (`pg_dump | age`), with no public URL. Written by the backup job, never
+   * by the API: only `npm run storage:check` reads it for now. Empty = no backup bucket.
+   */
+  @IsString()
+  STORAGE_BACKUP_BUCKET: string = '';
+
+  /**
+   * Cloudinary account of the public image CDN (avatars, logos, AI textures, thumbnails). Set the three together or
+   * leave them all empty (Cloudinary disabled). Dashboard → Settings → API Keys.
+   */
+  @IsString()
+  CLOUDINARY_CLOUD_NAME: string = '';
+
+  @IsString()
+  CLOUDINARY_API_KEY: string = '';
+
+  @IsString()
+  CLOUDINARY_API_SECRET: string = '';
+
+  /** Root folder of this environment's assets, e.g. `wrapfit` in production and `wrapfit-dev` on a laptop. */
+  @IsString()
+  @IsNotEmpty()
+  CLOUDINARY_FOLDER: string = 'wrapfit';
+
   /** Claude API key for the AI pattern generator. Empty = built-in procedural patterns only (free). */
   @IsString()
   ANTHROPIC_API_KEY: string = '';
 
+  /** Model of the default `fast` quality (every plan). */
   @IsString()
   @IsNotEmpty()
-  AI_MODEL: string = 'claude-opus-5-5';
+  AI_MODEL_FAST: string = 'claude-haiku-5-5';
+
+  /** Model of the `premium` quality (paid plans only). */
+  @IsString()
+  @IsNotEmpty()
+  AI_MODEL_PREMIUM: string = 'claude-opus-5-5';
+
+  /** Deprecated alias of AI_MODEL_FAST, used only when AI_MODEL_FAST is not set. */
+  @IsString()
+  AI_MODEL: string = '';
+
+  /**
+   * Cost fuse in USD per calendar month (Vietnam time), estimated from the tokens in `ai_generations`. Once reached,
+   * every request gets the procedural generator until the next month. Empty = no limit.
+   */
+  @Matches(/^(\d+(\.\d+)?)?$/, { message: 'AI_MONTHLY_BUDGET_USD must be a number of USD such as 20 or 7.5, or empty' })
+  AI_MONTHLY_BUDGET_USD: string = '';
 
   @IsInt()
   @Min(1000)
   AI_TIMEOUT_MS: number = 30000;
+
+  /**
+   * `true` = `POST /payments/:id/simulate-confirm` marks a payment paid without a bank transfer, and the checkout shows
+   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken.
+   */
+  @IsIn(['true', 'false'])
+  PAYMENT_SIMULATION: string = 'false';
+
+  /** Account on the VietQR codes: 6-digit NAPAS BIN of the bank. All three empty = a sample account labelled "Mô phỏng". */
+  @Matches(/^(\d{6})?$/, { message: 'VIETQR_BANK_BIN must be the 6-digit NAPAS BIN of the bank, or empty' })
+  VIETQR_BANK_BIN: string = '';
+
+  @Matches(/^[0-9A-Za-z]{0,19}$/, { message: 'VIETQR_ACCOUNT_NO must be letters and digits only (at most 19), or empty' })
+  VIETQR_ACCOUNT_NO: string = '';
+
+  /** Account holder as the bank shows it, upper case without accents, e.g. CONG TY WRAPFIT. */
+  @IsString()
+  VIETQR_ACCOUNT_NAME: string = '';
 
   /** `json` = one JSON object per log line (log collectors), `text` = readable. Empty = json in production. */
   @IsIn(['', 'json', 'text'])
@@ -224,5 +285,18 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
       throw new Error(`Invalid environment variables:\n - STORAGE_BUCKET is set, so ${missing.join(', ')} must be set too`);
     }
   }
+  const cloudinary = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'] as const;
+  if (cloudinary.some((key) => validated[key]) && !cloudinary.every((key) => validated[key])) {
+    throw new Error(
+      'Invalid environment variables:\n - CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set together (or all left empty)',
+    );
+  }
+  const vietqr = ['VIETQR_BANK_BIN', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'] as const;
+  if (vietqr.some((key) => validated[key]) && !vietqr.every((key) => validated[key])) {
+    throw new Error(
+      'Invalid environment variables:\n - VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME must be set together (or all left empty)',
+    );
+  }
+  if (!config.AI_MODEL_FAST && validated.AI_MODEL) validated.AI_MODEL_FAST = validated.AI_MODEL;
   return validated;
 }

@@ -144,14 +144,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Minimal Chrome DevTools Protocol client on the first page target. */
 async function openChrome(profile) {
-  const port = 9300 + Math.floor(Math.random() * 600);
+  // Port 0: Chrome picks a free port and writes it to DevToolsActivePort. A fixed range collides with the ports Windows
+  // reserves for Hyper-V / Docker (netsh interface ipv4 show excludedportrange protocol=tcp).
+  const portFile = path.join(profile, 'DevToolsActivePort');
+  fs.rmSync(portFile, { force: true });
   const child = spawn(chromePath, [
-    '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run',
+    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
     '--no-default-browser-check', '--hide-scrollbars', '--force-device-scale-factor=1', 'about:blank',
   ], { stdio: 'ignore' });
   let target;
   for (let i = 0; i < 50 && !target; i++) {
     try {
+      const port = fs.readFileSync(portFile, 'utf8').split(/\r?\n/)[0].trim();
       target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page');
     } catch {}
     if (!target) await sleep(200);

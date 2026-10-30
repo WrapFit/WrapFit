@@ -28,7 +28,9 @@ import {
 import { CreateProjectDto } from '../presentation/dto/create-project.dto';
 import { BoxDimensionsDto } from '../presentation/dto/project-spec.dto';
 import { NO_COLLECTION, QueryProjectsDto } from '../presentation/dto/query-projects.dto';
+import { RecordProjectEventDto } from '../presentation/dto/record-project-event.dto';
 import { UpdateProjectDto } from '../presentation/dto/update-project.dto';
+import { IProjectEvents, PROJECT_EVENTS, ProjectSource } from './ports/project-events.port';
 import { IProjectFiles, PROJECT_FILES } from './ports/project-files.port';
 import { IProjectRepository, PROJECT_REPOSITORY, ProjectChanges } from './ports/project.repository.port';
 
@@ -48,6 +50,7 @@ export class ProjectsService {
   constructor(
     @Inject(PROJECT_REPOSITORY) private readonly projects: IProjectRepository,
     @Inject(PROJECT_FILES) private readonly files: IProjectFiles,
+    @Inject(PROJECT_EVENTS) private readonly events: IProjectEvents,
   ) {}
 
   async create(userId: string, dto: CreateProjectDto): Promise<ProjectDetail> {
@@ -92,6 +95,7 @@ export class ProjectsService {
       industry: dto.industry ?? null,
     });
     if (design) await this.projects.countTemplateUse(design.id);
+    await this.recordCreated(project.id, userId, template.id, 'new');
     return project;
   }
 
@@ -214,12 +218,12 @@ export class ProjectsService {
    * Same template, dimensions, material, canvas, FitCheck result and tags; new id and slug. The copy starts ACTIVE
    * and PRIVATE; the thumbnail is not shared (its file belongs to the source project).
    */
-  private copy(
+  private async copy(
     source: ProjectDetail,
     userId: string,
     target: { title: string; collectionId: string | null; forkedFromId: string | null },
   ): Promise<ProjectDetail> {
-    return this.projects.create({
+    const project = await this.projects.create({
       userId,
       templateId: source.template.id,
       // A copy keeps the formulas of its source: same cut lines, same FitCheck result.
@@ -233,6 +237,25 @@ export class ProjectsService {
       industry: source.industry,
       ...target,
     });
+    await this.recordCreated(project.id, userId, source.template.id, target.forkedFromId ? 'fork' : 'duplicate');
+    return project;
+  }
+
+  /**
+   * Studio events of the analytics dashboard (docs/17 S7): Auto-Fix repairs and active-time heartbeats. Ownership is
+   * checked before by ProjectOwnerGuard.
+   */
+  async recordEvent(projectId: string, userId: string, dto: RecordProjectEventDto): Promise<void> {
+    if (dto.type === 'STUDIO_ACTIVE') {
+      await this.events.recordStudioActivity(userId, projectId, dto.seconds!);
+    } else {
+      await this.events.record('AUTO_FIX_APPLIED', { userId, projectId, payload: { fixed: dto.fixed! } });
+    }
+  }
+
+  /** Analytics dashboard: every new project counts as a box created (docs/17 S7). */
+  private recordCreated(projectId: string, userId: string, templateId: string, source: ProjectSource): Promise<void> {
+    return this.events.record('PROJECT_CREATED', { userId, projectId, payload: { templateId, source } });
   }
 
   /**
@@ -307,6 +330,8 @@ export class ProjectsService {
       width: dto.width,
       height: dto.height,
       paperThickness: dto.paperThickness ?? material.caliper,
+      ...(dto.giftWeight !== undefined && { giftWeight: dto.giftWeight }),
+      ...(dto.bottomType !== undefined && { bottomType: dto.bottomType }),
     };
   }
 

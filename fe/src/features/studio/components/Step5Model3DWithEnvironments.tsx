@@ -123,6 +123,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             <Box3DView
               dimensions={dimensions}
               foldProgress={foldProgress}
+              faceLabels
               boxType={boxType as any}
               theme={activeMaterial}
               elements={elements}

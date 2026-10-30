@@ -540,7 +540,9 @@ function TooltipArrow({ side, offset }: { side: Side; offset: number }) {
 
 export interface TourReplayButtonProps extends ButtonStyleProps {
   tourId: string;
-  label?: string;
+  label?: React.ReactNode;
+  /** Tooltip, for a label hidden on small screens. */
+  title?: string;
 }
 
 /** "Xem hướng dẫn": replays the tour of the page. Give it `data-tour` to make it the last step. */
