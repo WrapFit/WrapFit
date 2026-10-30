@@ -6,9 +6,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Download, FileDown, RotateCw, ShieldAlert, Ticket } from "lucide-react";
 import type { FitCheckReport } from "@wrapfit/shared";
 import { ApiError, getExportAccess, getExportJob, listProjectExports, requestExport } from "@/api";
-import { Alert, Badge, Button, ButtonLink } from "@/components/ui";
+import { Alert, Badge, Button } from "@/components/ui";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { useToast } from "@/components/common/Toast";
+import { CheckoutDialog } from "@/features/payments";
+import { SINGLE_EXPORT_PRICE, formatVndShort } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import type { ExportFileType, ExportJob } from "@/types/api";
 import { StudioDialog } from "../dialog/StudioDialog";
@@ -97,6 +99,8 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   const [jobId, setJobId] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<FitCheckReport | null>(null);
   const [creditAsk, setCreditAsk] = useState<CreditAsk | null>(null);
+  /** VietQR checkout of one export credit, opened from the "out of credits" box; the export resumes once paid. */
+  const [buying, setBuying] = useState<ExportFileType | null>(null);
   // No backend (Vercel, demo project, API unreachable): the files are built in the browser from the design on screen.
   const [offline, setOffline] = useState(() => Boolean(design) && (OFFLINE_DEMO || isDemoProjectId(projectId)));
   const [localJob, setLocalJob] = useState<LocalJob | null>(null);
@@ -283,10 +287,9 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
           action={
             creditAsk.empty ? (
               <>
-                {/* S5 replaces this link with the VietQR checkout of an export pack. */}
-                <ButtonLink href="/pricing" size="sm">
-                  Mua lượt
-                </ButtonLink>
+                <Button size="sm" onClick={() => setBuying(creditAsk.fileType)}>
+                  Mua 1 lượt · {formatVndShort(SINGLE_EXPORT_PRICE)}
+                </Button>
                 <Button variant="secondary" size="sm" onClick={() => void start("PDF_A4_PRINT")}>
                   Xuất PDF A4 có watermark
                 </Button>
@@ -454,6 +457,14 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
           </ul>
         )}
       </section>
+      {buying && (
+        <CheckoutDialog
+          purpose="EXPORT_1"
+          doneLabel={`Xuất ${FORMAT_NAMES[buying]} ngay`}
+          onPaid={() => void start(buying, true)}
+          onClose={() => setBuying(null)}
+        />
+      )}
     </StudioDialog>
   );
 }

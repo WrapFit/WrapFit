@@ -60,6 +60,9 @@ export const queryKeys = {
     detail: (id: string) => ["orders", id] as const,
   },
 
+  billing: ["billing", "me"] as const,
+  payment: (id: string) => ["payments", id] as const,
+
   admin: {
     users: (query: PageQuery = {}) => ["admin", "users", query] as const,
     user: (id: string) => ["admin", "user", id] as const,

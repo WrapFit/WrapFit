@@ -15,6 +15,7 @@ import { getExportJob, listMyOrders, listProjectExports } from '@/api';
 import { useToast } from '@/components/common/Toast';
 import { outlineButton, primaryButton } from '@/components/library';
 import { Badge, Panel, PanelTitle, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
+import { CheckoutDialog } from '@/features/payments';
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
 import { RECENT_PROJECTS_QUERY, formatRelative, useProjectList } from '@/features/dashboard';
@@ -88,6 +89,8 @@ function OrdersScreen() {
     staleTime: 30_000,
   });
   const sampleOrders = sampleOrdersQuery.data ?? [];
+  /** Sample order whose VietQR checkout is open (an order still waiting for payment). */
+  const [payingOrder, setPayingOrder] = useState<string | null>(null);
 
   // Former links of the studio (?project=…&action=sample) now open the sample-print cart with that project.
   const targetProjectId = searchParams.get('project');
@@ -257,7 +260,16 @@ function OrdersScreen() {
       sortValue: (order) => orderStatusBadge(order.status).label,
       render: (order) => {
         const badge = orderStatusBadge(order.status);
-        return <Badge tone={badge.tone}>{badge.label}</Badge>;
+        return (
+          <span className="inline-flex flex-wrap items-center justify-end gap-2">
+            <Badge tone={badge.tone}>{badge.label}</Badge>
+            {order.status === 'pending_payment' && (
+              <button type="button" onClick={() => setPayingOrder(order.id)} className={cn(primaryButton, 'h-8 px-3 text-xs')}>
+                Thanh toán
+              </button>
+            )}
+          </span>
+        );
       },
     },
     {
@@ -322,6 +334,7 @@ function OrdersScreen() {
               />
             )}
           </Panel>
+          {payingOrder && <CheckoutDialog purpose="SAMPLE_ORDER" orderId={payingOrder} doneLabel="Xong" onClose={() => setPayingOrder(null)} />}
 
           {/* Exported Files Panel */}
           <Panel aria-labelledby="orders-files">

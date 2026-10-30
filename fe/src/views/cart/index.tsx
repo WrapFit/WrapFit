@@ -9,7 +9,9 @@ import { createSampleOrder } from "@/api/orders";
 import { listPrintShops } from "@/api/print-shops";
 import { Container } from "@/components/landing";
 import { Card, PRIMARY_CTA, SECONDARY_CTA, SitePage } from "@/components/site";
+import { Badge, Button } from "@/components/ui";
 import { RequireAuth } from "@/features/auth";
+import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
 import { MAX_QUANTITY, PAPER_STOCKS, PROMO_CODES, sampleFee, useSampleCart } from "@/features/site/cart";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
@@ -47,6 +49,8 @@ function CartScreen() {
   const [form, setForm] = useState({ recipientName: "", phone: "", shippingAddress: "", notes: "" });
   const [formError, setFormError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<SampleOrder[] | null>(null);
+  /** Order whose VietQR checkout is open. */
+  const [paying, setPaying] = useState<SampleOrder | null>(null);
 
   const byId = useMemo(() => new Map((projects.data?.items ?? []).map((project) => [project.id, project])), [projects.data]);
 
@@ -88,6 +92,8 @@ function CartScreen() {
     },
     onSuccess: (orders) => {
       setPlaced(orders);
+      // One order (the usual sample): its VietQR checkout opens right away.
+      if (orders.length === 1) setPaying(orders[0]);
       cart.clear();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
@@ -120,12 +126,19 @@ function CartScreen() {
   };
 
   if (placed) {
+    const markPaid = (id: string) =>
+      setPlaced((current) => current?.map((item) => (item.id === id ? { ...item, status: "paid", orderStatus: "PAID" } : item)) ?? null);
+    const unpaid = placed.filter((item) => item.status === "pending_payment");
     return (
       <Container className="max-w-3xl pb-16 pt-28 sm:pt-32">
         <Card className="text-center sm:p-10">
           <CheckCircle2 className="mx-auto size-12 text-fpt-orange-ink" aria-hidden />
           <h1 className="mt-4 font-landing-heading text-3xl font-bold">Đã gửi {placed.length} đơn in mẫu</h1>
-          <p className="mt-2 text-sm text-landing-muted">Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in.</p>
+          <p className="mt-2 text-sm text-landing-muted">
+            {unpaid.length
+              ? "Thanh toán bằng VietQR để xưởng bắt đầu in. Đơn chưa trả vẫn nằm trong Đơn hàng & file in."
+              : "Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in."}
+          </p>
           <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left">
             {placed.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl bg-landing-canvas px-4 py-3 text-sm">
@@ -133,7 +146,18 @@ function CartScreen() {
                   <span className="block truncate font-semibold">{item.projectTitle}</span>
                   <span className="font-mono text-xs text-landing-muted">{item.orderCode ?? item.id}</span>
                 </span>
-                <span className="shrink-0 font-semibold">{formatVnd(item.totalVnd ?? item.sampleFeeVnd ?? sampleFee(item.quantity))}</span>
+                <span className="flex shrink-0 items-center gap-3">
+                  <span className="font-semibold">{formatVnd(item.totalVnd ?? item.sampleFeeVnd ?? sampleFee(item.quantity))}</span>
+                  {item.status === "pending_payment" ? (
+                    <Button size="sm" onClick={() => setPaying(item)}>
+                      Thanh toán
+                    </Button>
+                  ) : (
+                    <Badge size="sm" tone="success">
+                      Đã thanh toán
+                    </Badge>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
@@ -146,6 +170,15 @@ function CartScreen() {
             </Link>
           </div>
         </Card>
+        {paying && (
+          <CheckoutDialog
+            purpose="SAMPLE_ORDER"
+            orderId={paying.id}
+            doneLabel="Xong"
+            onPaid={() => markPaid(paying.id)}
+            onClose={() => setPaying(null)}
+          />
+        )}
       </Container>
     );
   }
