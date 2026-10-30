@@ -1,5 +1,6 @@
 import type { Queue } from 'bullmq';
 import type { PrismaService } from '../shared/prisma';
+import type { ExportCreditRefunds } from './export-credits';
 import { WORKER_LOST_ERROR } from './export.constants';
 import { ExportReconcileTask } from './export-reconcile.task';
 
@@ -12,6 +13,7 @@ describe('ExportReconcileTask', () => {
   };
   let prisma: { exportJob: { findMany: jest.Mock; updateMany: jest.Mock } };
   let queue: { getJobState: jest.Mock; getJob: jest.Mock };
+  let refunds: { refundFailed: jest.Mock };
   let task: ExportReconcileTask;
 
   beforeEach(() => {
@@ -27,7 +29,8 @@ describe('ExportReconcileTask', () => {
         failedReason: 'job stalled more than allowable limit',
       }),
     };
-    task = new ExportReconcileTask(prisma as unknown as PrismaService, queue as unknown as Queue);
+    refunds = { refundFailed: jest.fn().mockResolvedValue(0) };
+    task = new ExportReconcileTask(prisma as unknown as PrismaService, queue as unknown as Queue, refunds as unknown as ExportCreditRefunds);
     jest.spyOn(task['logger'], 'warn').mockImplementation(() => undefined);
   });
 
@@ -48,6 +51,8 @@ describe('ExportReconcileTask', () => {
       where: { id: 'stalled-job', status: { in: ['PENDING', 'PROCESSING'] } },
       data: { status: 'FAILED', errorLog: WORKER_LOST_ERROR },
     });
+    // docs/16 §5.3: the export credit of a job lost with its worker comes back too.
+    expect(refunds.refundFailed.mock.calls.map(([id]) => id)).toEqual(['stalled-job', 'lost-job']);
   });
 
   it('never throws out of the scheduled run', async () => {
