@@ -537,6 +537,7 @@ model Payment {
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   creditLots    CreditLot[]
   subscriptions Subscription[]
+  orders        Order[]
 
   @@index([userId, createdAt])
   @@index([status, expiresAt]) // Đánh dấu EXPIRED
@@ -651,7 +652,7 @@ model Order {
   shippingVnd     Int         @default(0) @map("shipping_vnd")
   totalVnd        Int         @map("total_vnd") // = subtotal + shipping (CHECK trong migration)
   status          OrderStatus @default(PENDING_PAYMENT)
-  paymentId       String?     @map("payment_id") @db.Uuid // Khóa ngoại tới payments do S5 thêm
+  paymentId       String?     @map("payment_id") @db.Uuid // Thanh toán đã trả đơn (S5)
   paidAt          DateTime?   @map("paid_at") @db.Timestamptz(3)
   shippedAt       DateTime?   @map("shipped_at") @db.Timestamptz(3)
   deliveredAt     DateTime?   @map("delivered_at") @db.Timestamptz(3)
@@ -660,6 +661,7 @@ model Order {
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   items   OrderItem[]
   history OrderStatusHistory[]
 

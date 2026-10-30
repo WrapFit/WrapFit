@@ -2,17 +2,18 @@
 
 /**
  * `/checkout/step-3?plan=&pack=`: what the upgrade changes, from the current quotas of the account (`GET /auth/me`,
- * `GET /storage/usage`) to the ones of the chosen plan. The payment gateway is not open yet: nothing is activated.
+ * `GET /storage/usage`) to the ones of the chosen plan, then the VietQR checkout of the pack or of Pro (docs/17 S5).
  */
 
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight, Clock, QrCode } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
-import { CheckoutShell, useCheckoutParams } from '@/components/checkout/CheckoutShell';
+import React, { useState } from 'react';
+import { CheckoutShell, priceOf, useCheckoutParams } from '@/components/checkout/CheckoutShell';
 import { ROUTES, TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
+import { CheckoutDialog } from '@/features/payments';
 import { formatBytes, useStorageUsage } from '@/features/dashboard';
-import { PLANS, formatQuota } from '@/features/pricing';
+import { PLANS, formatQuota, formatVnd } from '@/features/pricing';
 
 export default function CheckoutStep3Page() {
   return (
@@ -28,6 +29,8 @@ function Review() {
   const { tier, pack, query } = useCheckoutParams();
   const current = PLANS[user?.subscriptionTier ?? 'FREE'];
   const next = PLANS[tier];
+  const [paying, setPaying] = useState(false);
+  const [paid, setPaid] = useState(false);
 
   const rows = [
     { label: 'Gói', from: TIER_LABELS[current.tier], to: TIER_LABELS[next.tier] },
@@ -42,10 +45,12 @@ function Review() {
           <Clock className="size-6" aria-hidden />
         </span>
         <h1 id="checkout-title" className="mt-5 font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
-          Sẵn sàng lên Gói {next.name}
+          {paid ? `Đã kích hoạt Gói ${next.name}` : `Sẵn sàng lên Gói ${next.name}`}
         </h1>
         <p className="mt-2 text-base leading-7 text-landing-muted">
-          Khi cổng thanh toán mở, gói được kích hoạt ngay sau khi thanh toán thành công. Dự án và tệp hiện có của bạn giữ nguyên.
+          {paid
+            ? 'Thanh toán thành công. Dự án và tệp hiện có của bạn giữ nguyên.'
+            : 'Thanh toán bằng VietQR; gói được kích hoạt ngay khi WrapFit nhận tiền. Dự án và tệp hiện có của bạn giữ nguyên.'}
         </p>
 
         <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-landing-ink/10">
@@ -83,18 +88,36 @@ function Review() {
         )}
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href={ROUTES.dashboard}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover"
-          >
-            Về không gian làm việc
-            <ArrowRight className="size-4" aria-hidden />
-          </Link>
+          {paid ? (
+            <Link
+              href={ROUTES.dashboard}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover"
+            >
+              Về không gian làm việc
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPaying(true)}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover"
+            >
+              <QrCode className="size-4" aria-hidden />
+              Thanh toán {formatVnd(priceOf(tier, pack))}
+            </button>
+          )}
           <Link href={`/checkout/step-2${query()}`} className="inline-flex h-12 items-center justify-center rounded-full px-6 text-base font-medium text-landing-ink ring-1 ring-landing-line hover:bg-mist-100">
             Sửa thông tin thanh toán
           </Link>
         </div>
       </section>
+      {paying && (
+        <CheckoutDialog
+          purpose={tier === 'PAY_PER_EXPORT' ? pack : 'PRO_MONTH'}
+          onPaid={() => setPaid(true)}
+          onClose={() => setPaying(false)}
+        />
+      )}
     </CheckoutShell>
   );
 }

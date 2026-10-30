@@ -12,6 +12,7 @@ import * as commonApi from "./common";
 import * as exportsApi from "./exports";
 import * as libraryApi from "./library";
 import * as ordersApi from "./orders";
+import * as paymentsApi from "./payments";
 import * as printShopsApi from "./print-shops";
 import * as projectsApi from "./projects";
 import * as publicApi from "./public";
@@ -29,6 +30,7 @@ export * from "./common";
 export * from "./exports";
 export * from "./library";
 export * from "./orders";
+export * from "./payments";
 export * from "./print-shops";
 export * from "./projects";
 export * from "./public";
@@ -47,6 +49,7 @@ export const apiClient = {
   ...commonApi,
   ...exportsApi,
   ...ordersApi,
+  ...paymentsApi,
   ...printShopsApi,
   ...projectsApi,
   ...publicApi,

@@ -478,6 +478,49 @@ export interface ExportJob {
   downloadExpiresIn: number | null;
 }
 
+// ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
+
+export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER";
+export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
+
+/** `GET /billing/me`: plan in use, export credits and the Pro period. */
+export interface BillingSummary {
+  tier: SubscriptionTier;
+  exportCredits: {
+    balance: number;
+    lots: { id: string; source: "PURCHASE" | "ADMIN"; quantity: number; remaining: number; expiresAt: string | null; createdAt: string }[];
+  };
+  subscription: { plan: SubscriptionTier; status: "ACTIVE" | "EXPIRED"; currentPeriodStart: string; currentPeriodEnd: string } | null;
+  /** PAYMENT_SIMULATION on the server: the checkout shows "Giả lập đã thanh toán" (CP4 demo). */
+  paymentSimulation: boolean;
+}
+
+/** A VietQR payment (`POST /payments`, `GET /payments/:id`). */
+export interface Payment {
+  id: string;
+  purpose: PaymentPurpose;
+  status: PaymentStatus;
+  amountVnd: number;
+  /** Transfer content: WF + 6 characters. */
+  reference: string;
+  expiresAt: string;
+  paidAt: string | null;
+  createdAt: string;
+  credits: number | null;
+  orderId: string | null;
+  /** Set while PENDING. */
+  vietqr: {
+    payload: string;
+    qrSvg: string;
+    bankBin: string;
+    bankName: string;
+    accountNo: string;
+    accountName: string;
+    /** Placeholder account: the server has no VIETQR_* settings. */
+    sample: boolean;
+  } | null;
+}
+
 // ---------------------------------------------------------------- unboxing
 
 export type ParticleEffect = "confetti" | "fireworks" | "hearts" | "petals" | "snow" | "none";

@@ -187,6 +187,24 @@ export class EnvironmentVariables {
   @Min(1000)
   AI_TIMEOUT_MS: number = 30000;
 
+  /**
+   * `true` = `POST /payments/:id/simulate-confirm` marks a payment paid without a bank transfer, and the checkout shows
+   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken.
+   */
+  @IsIn(['true', 'false'])
+  PAYMENT_SIMULATION: string = 'false';
+
+  /** Account on the VietQR codes: 6-digit NAPAS BIN of the bank. All three empty = a sample account labelled "Mô phỏng". */
+  @Matches(/^(\d{6})?$/, { message: 'VIETQR_BANK_BIN must be the 6-digit NAPAS BIN of the bank, or empty' })
+  VIETQR_BANK_BIN: string = '';
+
+  @Matches(/^[0-9A-Za-z]{0,19}$/, { message: 'VIETQR_ACCOUNT_NO must be letters and digits only (at most 19), or empty' })
+  VIETQR_ACCOUNT_NO: string = '';
+
+  /** Account holder as the bank shows it, upper case without accents, e.g. CONG TY WRAPFIT. */
+  @IsString()
+  VIETQR_ACCOUNT_NAME: string = '';
+
   /** `json` = one JSON object per log line (log collectors), `text` = readable. Empty = json in production. */
   @IsIn(['', 'json', 'text'])
   LOG_FORMAT: string = '';
@@ -271,6 +289,12 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
   if (cloudinary.some((key) => validated[key]) && !cloudinary.every((key) => validated[key])) {
     throw new Error(
       'Invalid environment variables:\n - CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set together (or all left empty)',
+    );
+  }
+  const vietqr = ['VIETQR_BANK_BIN', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'] as const;
+  if (vietqr.some((key) => validated[key]) && !vietqr.every((key) => validated[key])) {
+    throw new Error(
+      'Invalid environment variables:\n - VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME must be set together (or all left empty)',
     );
   }
   if (!config.AI_MODEL_FAST && validated.AI_MODEL) validated.AI_MODEL_FAST = validated.AI_MODEL;

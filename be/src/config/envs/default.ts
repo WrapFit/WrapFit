@@ -68,6 +68,16 @@ export const config = (env: EnvironmentVariables) => ({
     timeoutMs: env.AI_TIMEOUT_MS,
     monthlyBudgetUsd: env.AI_MONTHLY_BUDGET_USD ? Number(env.AI_MONTHLY_BUDGET_USD) : null,
   },
+  /**
+   * `simulation` = payments can be confirmed by a button instead of a bank transfer (CP4 demo). `vietqr` null = the
+   * sample account of payments/vietqr.ts, shown as "Mô phỏng".
+   */
+  payments: {
+    simulation: env.PAYMENT_SIMULATION === 'true',
+    vietqr: env.VIETQR_BANK_BIN
+      ? { bankBin: env.VIETQR_BANK_BIN, accountNo: env.VIETQR_ACCOUNT_NO, accountName: env.VIETQR_ACCOUNT_NAME }
+      : null,
+  },
   redis: {
     url: env.REDIS_URL,
   },

@@ -6,11 +6,12 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { Container, Reveal } from "@/components/landing";
 import { PaymentLogos, type PaymentMethodId } from "@/components/layout/PaymentLogos";
-import { Badge, RadioGroup, buttonClass } from "@/components/ui";
+import { Badge, Button, RadioGroup, buttonClass } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useAuth } from "@/features/auth";
+import { CheckoutDialog } from "@/features/payments";
 import { EXPORT_PACK_LIST, PLANS, PLAN_ORDER, formatVnd, formatVndShort, perExportOf } from "@/features/pricing";
-import type { SubscriptionTier } from "@/types/api";
+import type { PaymentPurpose, SubscriptionTier } from "@/types/api";
 import { cn } from "@/utils/helpers";
 import { CONTACT_HREF, DEFAULT_PACK, PLAN_CARDS, PRICING_HERO, checkoutHref } from "./content";
 import { EmeraldPolyhedron, GoldCylinder, KraftBox, PurpleSlantedDisc } from "./GeometricShapes";
@@ -32,12 +33,15 @@ const PAYMENTS: PaymentMethodId[] = ["vietqr", "bank", "momo", "napas"];
 
 /**
  * Top of /pricing, in the VisualSpark layout (3D-illustrated pastel cards): the four plans of @wrapfit/shared/billing
- * (Miễn phí, Lượt xuất with its 1 / 5 / 15 packs, Pro, Business on request), payment methods and the refund rule.
+ * (Miễn phí, Lượt xuất with its 1 / 5 / 15 packs, Pro, Business on request), payment methods and the refund rule. A
+ * signed-in visitor pays a pack or Pro right here with the VietQR checkout; a guest goes through /checkout (sign-in).
  */
 export function VisualSparkPricingCards() {
   const auth = useAuth();
   const currentTier = auth.user?.subscriptionTier ?? null;
   const [pack, setPack] = useState<ExportPackId>(DEFAULT_PACK);
+  const [buying, setBuying] = useState<PaymentPurpose | null>(null);
+  const signedIn = auth.status === "authenticated";
 
   return (
     <section className="bg-white pt-24 sm:pt-32 pb-12 lg:pb-16">
@@ -53,7 +57,7 @@ export function VisualSparkPricingCards() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 lg:gap-6 max-w-7xl mx-auto items-stretch">
           {PLAN_ORDER.map((tier) => (
             <Reveal key={tier} className="h-full">
-              <PlanCard tier={tier} isCurrent={currentTier === tier} signedIn={auth.status === "authenticated"} pack={pack} onPack={setPack} />
+              <PlanCard tier={tier} isCurrent={currentTier === tier} signedIn={signedIn} pack={pack} onPack={setPack} onBuy={setBuying} />
             </Reveal>
           ))}
         </div>
@@ -72,6 +76,7 @@ export function VisualSparkPricingCards() {
           .
         </p>
       </Container>
+      {buying && <CheckoutDialog purpose={buying} onClose={() => setBuying(null)} />}
     </section>
   );
 }
@@ -82,12 +87,15 @@ function PlanCard({
   signedIn,
   pack,
   onPack,
+  onBuy,
 }: {
   tier: SubscriptionTier;
   isCurrent: boolean;
   signedIn: boolean;
   pack: ExportPackId;
   onPack(pack: ExportPackId): void;
+  /** Signed in: pay this plan with the VietQR checkout instead of going to /checkout. */
+  onBuy(purpose: PaymentPurpose): void;
 }) {
   const plan = PLANS[tier];
   const copy = PLAN_CARDS[tier];
@@ -112,6 +120,7 @@ function PlanCard({
         : plan.contactOnly
           ? { href: CONTACT_HREF, label: copy.cta }
           : { href: checkoutHref(tier), label: copy.cta };
+  const purpose: PaymentPurpose | null = !signedIn ? null : plan.isPerExport ? selectedPack.id : tier === "STARTER" ? "PRO_MONTH" : null;
 
   return (
     <article
@@ -181,6 +190,10 @@ function PlanCard({
           <span className={buttonClass({ variant: "secondary", size: "lg", shape: "rounded", block: true, className: "pointer-events-none text-label text-fg-muted" })}>
             Gói đang dùng
           </span>
+        ) : purpose ? (
+          <Button variant={copy.popular ? "brand" : "dark"} size="lg" shape="rounded" block className="text-label" onClick={() => onBuy(purpose)}>
+            {action.label}
+          </Button>
         ) : (
           <Link
             href={action.href}

@@ -171,6 +171,11 @@ services:
       AI_MODEL_PREMIUM: ${AI_MODEL_PREMIUM:-claude-opus-5-5}
       # Monthly AI cost fuse in USD (empty = no limit); once spent, patterns are procedural until next month
       AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
+      # VietQR payments: true only for the CP4 demo ("simulate paid" button); empty VIETQR_* = sample account
+      PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
+      VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
+      VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}
+      VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:

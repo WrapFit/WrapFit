@@ -187,7 +187,7 @@ export class OrdersService {
 
   /**
    * Applies one checked step in a transaction: the update only matches while the order is still in `from`, so two
-   * concurrent changes cannot both win. Payments (S5) call it with `changedById` null.
+   * concurrent changes cannot both win.
    */
   async transition(
     id: string,
@@ -196,23 +196,39 @@ export class OrdersService {
     changedById: string | null,
     note?: string,
   ): Promise<SampleOrderResponse> {
+    return this.prisma.$transaction((tx) => this.transitionIn(tx, id, from, to, { changedById, note }));
+  }
+
+  /**
+   * A payment paid the order (S5): PENDING_PAYMENT → PAID with the payment linked, inside the payment's transaction so
+   * the order and the payment change together. 409 when the order is no longer waiting for payment.
+   */
+  async markPaid(id: string, paymentId: string, tx: Prisma.TransactionClient): Promise<SampleOrderResponse> {
+    return this.transitionIn(tx, id, OrderStatus.PENDING_PAYMENT, OrderStatus.PAID, { changedById: null, paymentId });
+  }
+
+  private async transitionIn(
+    tx: Prisma.TransactionClient,
+    id: string,
+    from: OrderStatus,
+    to: OrderStatus,
+    { changedById, note, paymentId }: { changedById: string | null; note?: string; paymentId?: string },
+  ): Promise<SampleOrderResponse> {
     if (!canTransition(from, to)) {
       throw new ConflictException(`Không thể chuyển đơn từ ${from} sang ${to}`);
     }
     const stamp = STATUS_TIMESTAMP[to];
-    return this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.order.updateMany({
-        where: { id, status: from },
-        data: { status: to, ...(stamp ? { [stamp]: new Date() } : {}) },
-      });
-      if (count === 0) {
-        throw new ConflictException('Đơn hàng vừa được cập nhật, hãy tải lại');
-      }
-      await tx.orderStatusHistory.create({
-        data: { orderId: id, fromStatus: from, toStatus: to, changedById, note: note?.trim() || null },
-      });
-      return this.toResponse(await tx.order.findUniqueOrThrow({ where: { id }, include: ORDER_INCLUDE }));
+    const { count } = await tx.order.updateMany({
+      where: { id, status: from },
+      data: { status: to, ...(stamp ? { [stamp]: new Date() } : {}), ...(paymentId ? { paymentId } : {}) },
     });
+    if (count === 0) {
+      throw new ConflictException('Đơn hàng vừa được cập nhật, hãy tải lại');
+    }
+    await tx.orderStatusHistory.create({
+      data: { orderId: id, fromStatus: from, toStatus: to, changedById, note: note?.trim() || null },
+    });
+    return this.toResponse(await tx.order.findUniqueOrThrow({ where: { id }, include: ORDER_INCLUDE }));
   }
 
   /** Shop of a PRINT_SHOP account. An account not linked to a shop has no orders to see. */

@@ -2,9 +2,9 @@
 
 /**
  * `/dashboard/billing`: plan, quotas, payment and history, in the pacdora.com workspace style. The plan comes from
- * `GET /auth/me` (subscriptionTier), the quotas from `GET /storage/usage` and `GET /ai/usage`, the sample-print orders
- * from `GET /orders/my-orders`. The API has no payment records yet: payment methods, the next charge and cancelling
- * say so and lead to checkout or to the billing team.
+ * `GET /auth/me` (subscriptionTier), export credits and the Pro period from `GET /billing/me`, the quotas from
+ * `GET /storage/usage` and `GET /ai/usage`, the sample-print orders from `GET /orders/my-orders`. Pro and export packs
+ * are paid here with the VietQR checkout (docs/17 S5); cancelling still goes to the billing team.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -12,16 +12,18 @@ import { ArrowRight, Building2, CalendarClock, Landmark, Receipt, Tag } from 'lu
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { listMyOrders } from '@/api/orders';
+import { getBillingSummary } from '@/api/payments';
 import { outlineButton, primaryButton } from '@/components/library';
 import { PaymentMark } from '@/components/layout/PaymentLogos';
 import { Badge, DataTable, Meter, Panel, PanelTitle, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
+import { CheckoutDialog } from '@/features/payments';
 import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
 import { PROMO_CODES } from '@/features/site/cart';
 import { queryKeys } from '@/hooks/data';
-import type { SampleOrder } from '@/types/api';
+import type { PaymentPurpose, SampleOrder } from '@/types/api';
 import { cn } from '@/utils/helpers';
 
 export default function BillingPage() {
@@ -32,7 +34,6 @@ export default function BillingPage() {
   );
 }
 
-/** Sample orders are paid on delivery: an order is paid once it was delivered. */
 /** Order statuses after the payment (`SampleOrder.status`). */
 const PAID = new Set<SampleOrder['status']>(['paid', 'in_production', 'shipped', 'delivered']);
 const paymentBadge = (status: SampleOrder['status']) =>
@@ -56,6 +57,10 @@ function BillingScreen() {
   const ai = useAiUsage();
   const orders = useQuery({ queryKey: queryKeys.orders.myOrders, queryFn: listMyOrders });
   const [cancelOpen, setCancelOpen] = useState(false);
+  const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary });
+  const [buying, setBuying] = useState<PaymentPurpose | null>(null);
+  const proEnd = billing.data?.subscription?.currentPeriodEnd;
+  const nextLotEnd = billing.data?.exportCredits.lots.find((lot) => lot.remaining > 0)?.expiresAt;
 
   const storagePercent = storage.data ? usagePercent(storage.data.usedBytes, storage.data.quotaBytes) : 0;
   const aiPercent = ai.data ? usagePercent(ai.data.used, ai.data.limit) : 0;
@@ -89,10 +94,22 @@ function BillingScreen() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href={plan.contactOnly ? '/contact' : '/checkout/step-1?plan=STARTER'} className={primaryButton}>
-                  {plan.contactOnly ? 'Liên hệ' : tier === 'STARTER' ? 'Gia hạn' : `Nâng lên ${PLANS.STARTER.name}`}
-                  <ArrowRight className="size-4" aria-hidden />
-                </Link>
+                {plan.contactOnly ? (
+                  <Link href="/contact" className={primaryButton}>
+                    Liên hệ
+                    <ArrowRight className="size-4" aria-hidden />
+                  </Link>
+                ) : (
+                  <button type="button" onClick={() => setBuying('PRO_MONTH')} className={primaryButton}>
+                    {tier === 'STARTER' ? 'Gia hạn 30 ngày' : `Nâng lên ${PLANS.STARTER.name}`}
+                    <ArrowRight className="size-4" aria-hidden />
+                  </button>
+                )}
+                {tier !== 'STARTER' && !plan.contactOnly && (
+                  <button type="button" onClick={() => setBuying('EXPORT_5')} className={outlineButton}>
+                    Mua 5 lượt xuất
+                  </button>
+                )}
                 {paid && (
                   <button type="button" onClick={() => setCancelOpen(true)} className={outlineButton}>
                     Huỷ gói
@@ -100,6 +117,12 @@ function BillingScreen() {
                 )}
               </div>
             </div>
+            {billing.data && (tier !== 'STARTER' || billing.data.exportCredits.balance > 0) && (
+              <p className="mt-4 text-sm text-library-sub">
+                Lượt xuất còn lại: <span className="font-medium tabular-nums text-library-ink">{billing.data.exportCredits.balance}</span>
+                {nextLotEnd && ` · lô gần hết hạn nhất dùng tới ${new Date(nextLotEnd).toLocaleDateString('vi-VN')}`}
+              </p>
+            )}
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <div className="mb-1.5 flex justify-between text-sm">
@@ -128,7 +151,9 @@ function BillingScreen() {
                   ? 'Gói Free không có kỳ thanh toán. Bạn chỉ trả khi xuất file in hoặc nâng cấp gói.'
                   : plan.isPerExport
                     ? 'Không có phí định kỳ: mỗi lần xuất file in được tính riêng.'
-                    : 'Trong bản thử nghiệm, gói trả phí được kích hoạt sau khi WrapFit xác nhận chuyển khoản; ngày gia hạn sẽ hiện ở đây khi cổng thanh toán tự động được bật.'}
+                    : proEnd
+                      ? `Gói Pro dùng tới ${new Date(proEnd).toLocaleDateString('vi-VN')}. Không tự gia hạn: thanh toán thêm 30 ngày bằng VietQR khi cần, ngày mới được cộng nối tiếp.`
+                      : 'Gói theo thỏa thuận với WrapFit: không có kỳ thanh toán tự động.'}
               </p>
             </div>
           </Panel>
@@ -152,7 +177,7 @@ function BillingScreen() {
                     { key: 'date', label: 'Ngày', render: (row) => new Date(row.createdAt).toLocaleDateString('vi-VN') },
                     { key: 'item', label: 'Nội dung', render: (row) => <span className="line-clamp-1">In mẫu {row.quantity} hộp · {row.projectTitle}</span> },
                     { key: 'code', label: 'Mã', render: (row) => <span className="font-mono text-xs">{row.orderCode ?? row.id}</span> },
-                    { key: 'method', label: 'Cách trả', render: () => <span className="text-library-sub">Khi nhận hàng</span> },
+                    { key: 'method', label: 'Cách trả', render: () => <span className="text-library-sub">VietQR</span> },
                     { key: 'total', label: 'Số tiền', align: 'right', render: (row) => formatVnd(row.totalVnd ?? row.sampleFeeVnd ?? 0) },
                     { key: 'paid', label: 'Thanh toán', align: 'right', render: (row) => <Badge tone={paymentBadge(row.status).tone}>{paymentBadge(row.status).label}</Badge> },
                   ]}
@@ -202,6 +227,7 @@ function BillingScreen() {
           </p>
         </ConfirmDialog>
       )}
+      {buying && <CheckoutDialog purpose={buying} onClose={() => setBuying(null)} />}
     </WorkspaceShell>
   );
 }
