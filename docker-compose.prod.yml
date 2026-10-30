@@ -3,7 +3,8 @@
 # Needs in .env: APP_DOMAIN, ACME_EMAIL, JWT_*_SECRET, POSTGRES_PASSWORD, REDIS_PASSWORD, the STORAGE_* variables of
 # Cloudflare R2 and the SMTP_* / MAIL_FROM variables of the email provider. A missing one stops `docker compose`
 # before any container is replaced: production never falls back to the development defaults of docker-compose.yml
-# (password "password", Redis without a password, the SeaweedFS keys).
+# (password "password", Redis without a password, the SeaweedFS keys). The CP4 demo also sets PAYMENT_SIMULATION=true,
+# AI_MONTHLY_BUDGET_USD, SEED_DEMO_* and EXTRA_CORS_ORIGINS (docs/18_PATH2_DEPLOY_RUNBOOK.md).
 # Requires Docker Compose >= 2.24 (`!reset`).
 
 # Credentials of the internal services, for the API and the worker. Both passwords go into URLs: use URL-safe values
@@ -81,7 +82,9 @@ services:
     environment:
       <<: [*service-urls, *storage]
       FRONTEND_URL: https://${APP_DOMAIN}
-      CORS_ORIGINS: https://${APP_DOMAIN}
+      # EXTRA_CORS_ORIGINS: other frontends that call this API, comma-separated, e.g. https://wrap-fit.vercel.app
+      # (docs/18). The trailing comma when it is empty is ignored.
+      CORS_ORIGINS: https://${APP_DOMAIN},${EXTRA_CORS_ORIGINS:-}
       COOKIE_SECURE: "true"
       TRUST_PROXY: "true"
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}

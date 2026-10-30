@@ -5,11 +5,11 @@ import { buildPrintLayout } from "./printLayout";
 import { imageResolutions, loadPrintAssets, renderDxf, renderPdf, renderProofJpeg, renderSvg } from "./renderers";
 
 /**
- * Print files without a backend: the Vercel deployment has no API, and the demo project (`/editor/demo`) has nothing
- * saved on the server. Vercel sets NEXT_PUBLIC_VERCEL_ENV on every build; NEXT_PUBLIC_OFFLINE_DEMO=1 turns it on
- * elsewhere. When the API is there but cannot be reached, the dialog falls back to these files too.
+ * Print files without a backend: a build without an API (`OFFLINE_DEMO` of @/config), and the demo project
+ * (`/editor/demo`) has nothing saved on the server. When the API is there but cannot be reached, the dialog falls back
+ * to these files too.
  */
-export const OFFLINE_DEMO = !!process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_OFFLINE_DEMO === "1";
+export { OFFLINE_DEMO } from "@/config";
 
 export const isDemoProjectId = (id: string | undefined) => !id || id === "demo" || id === "demo-project" || id.startsWith("demo-");
 

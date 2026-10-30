@@ -17,6 +17,8 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Whether the /api rewrite below has a real backend: a Vercel build without one runs offline (src/config OFFLINE_DEMO).
+  env: { NEXT_PUBLIC_BACKEND_PROXY: process.env.BACKEND_INTERNAL_URL ? "1" : "" },
   // A second dev server (e.g. a Turbopack trial) needs its own build folder: NEXT_DIST_DIR=.next-turbo.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   reactStrictMode: true,

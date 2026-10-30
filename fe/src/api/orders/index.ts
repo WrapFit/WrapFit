@@ -1,13 +1,12 @@
+import { OFFLINE_DEMO } from "@/config";
 import { ApiError, request } from "@/services/api";
 import type { CreateSampleOrderRequest, OrderStatus, SampleOrder, StaffOrdersQuery } from "@/types/api";
 import { DEMO_ORDERS } from "@/features/dashboard/demoData";
 
 /**
- * The static build without a backend (Vercel sets NEXT_PUBLIC_VERCEL_ENV; NEXT_PUBLIC_OFFLINE_DEMO=1 elsewhere) shows
- * the example orders when the API is unreachable or the visitor uses the demo account. Everywhere else an error stays
- * an error: orders are real records and must never be invented.
+ * The build without a backend (`OFFLINE_DEMO`) shows the example orders when the API is unreachable or the visitor uses
+ * the demo account. Everywhere else an error stays an error: orders are real records and must never be invented.
  */
-const OFFLINE_DEMO = !!process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_OFFLINE_DEMO === "1";
 
 function demoFallback<T>(error: unknown, value: () => T): T {
   const unreachable = error instanceof ApiError && (error.status === 0 || error.status === 401 || error.status >= 502);

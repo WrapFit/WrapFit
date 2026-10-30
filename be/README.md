@@ -132,7 +132,7 @@ cp .env.example .env            # điền JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 docker compose up -d --build
 ```
 
-Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`.
+Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, mỗi lần khởi động nạp lượt xuất cho đủ `SEED_DEMO_CREDITS`, mặc định 5; dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
 
 Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `backend` (API), `worker` (cùng image, lệnh `worker`, chỉ chạy hàng đợi xuất file), `frontend`.
 
@@ -403,7 +403,7 @@ npm --workspace=be run test:e2e
 | `SVG` | Cricut / máy cắt laser | Lớp `info`, `crease`, `cut`, `artwork` (ảnh nhúng data URI + chữ), đơn vị mm |
 | `DXF` | Máy bế CNC | R12, mm, lớp `CUT` (đỏ) và `CREASE` (xanh, nét đứt) |
 
-**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF chỉ nhúng được PNG / JPEG (logo SVG / WebP / PDF có trong file SVG, không có trong PDF); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
+**Giới hạn hiện tại (phụ thuộc IT2 / `@wrapfit/shared`)**: bộ sinh dieline mới tạo **đường gấp**, chưa có **đường cắt bao ngoài** và tai dán; chưa có lớp **bleed** (`LineType` có `bleed` nhưng bộ sinh chưa tạo); chưa có hàm `exportLayeredPDF` nên backend tự vẽ PDF. Ảnh / logo / hoa văn chỉ lấy từ file đã upload lên storage của WrapFit (`users/...`, worker không gọi host khác); PDF nhúng PNG, JPEG, WebP, GIF, TIFF, AVIF và logo SVG (raster hóa, đổi sang CMYK; logo PDF chỉ có trong file SVG); mã vạch chưa vẽ; DXF chỉ có nét cắt / gấp và vẽ đường cong (hộp gối) thành đoạn thẳng. Khi IT2 bổ sung, chỉ cần sửa `be/src/export/rendering/`.
 
 ## Triển khai production (VPS + HTTPS)
 

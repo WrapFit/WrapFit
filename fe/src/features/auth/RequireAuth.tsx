@@ -3,6 +3,7 @@
 import Link from "next/link";
 import React, { useMemo } from "react";
 import { ErrorState } from "@/components/common/StatusViews";
+import { OFFLINE_DEMO } from "@/config";
 import { ROUTES } from "@/constants";
 import type { Role } from "@/types/api";
 import { DEMO_ADMIN_USER, DEMO_USER } from "@/features/dashboard/demoData";
@@ -10,10 +11,11 @@ import { AuthContext, useAuth, type AuthContextValue } from "./AuthProvider";
 import { homeForRole, isRealAdmin } from "./roles";
 
 /**
- * The Vercel deployment has no backend: graders open /admin with the offline admin account. Vercel sets
- * NEXT_PUBLIC_VERCEL_ENV on every build; NEXT_PUBLIC_DEMO_ADMIN=1 turns it on elsewhere.
+ * A build without a backend (`OFFLINE_DEMO`, e.g. a Vercel build with no BACKEND_INTERNAL_URL): graders open /admin
+ * with the offline admin account. NEXT_PUBLIC_DEMO_ADMIN=1 turns it on elsewhere. With a backend, admin pages need a
+ * real admin.
  */
-const DEMO_ADMIN_ALLOWED = !!process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NEXT_PUBLIC_DEMO_ADMIN === "1";
+const DEMO_ADMIN_ALLOWED = OFFLINE_DEMO || process.env.NEXT_PUBLIC_DEMO_ADMIN === "1";
 
 interface RequireAuthProps {
   children: React.ReactNode;
