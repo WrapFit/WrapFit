@@ -47,6 +47,10 @@ const LINE_MM = 0.25;
 const DASH_MM = 4;
 const PT_PER_MM = 72 / 25.4;
 const INFO_FONT_MM = 3.5;
+/** Spec line of the box (name, structure, L x W x H, paper): 6 pt, printed in the margin on the Artwork layer. */
+const SPEC_LINE_FONT_MM = 6 / PT_PER_MM;
+/** Baseline of the spec line below the cut: its top stays at least 5 mm under the cut, clear of the 3 mm bleed. */
+const SPEC_LINE_BELOW_CUT_MM = 5 + SPEC_LINE_FONT_MM;
 /** Raster images are downsampled to this at their printed size (the print shop's RIP would do it anyway). */
 const MAX_EMBED_DPI = 450;
 /** Vector logos (SVG) are rasterised at this resolution for the PDF; the SVG export keeps them as vectors. */
@@ -106,7 +110,7 @@ function dimensionMarks(layout: PrintLayout) {
     lines.push([x, piece.y, x, piece.y + height], [x - tick, piece.y, x + tick, piece.y], [x - tick, piece.y + height, x + tick, piece.y + height]);
     labels.push({ text: `${n(height)} mm`, x: x - 1.5, y: piece.y + height / 2, vertical: true });
   }
-  const info = { text: specLine(layout), x: layout.pieces[0].x, y: trimArea(layout).bottom + 10 };
+  const info = { text: specLine(layout), x: layout.pieces[0].x, y: trimArea(layout).bottom + SPEC_LINE_BELOW_CUT_MM };
   return { lines, labels, info };
 }
 
@@ -236,7 +240,8 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): st
         images.join('') +
         artVectors(layout, false).map(artSvg).join('') +
         texts.join('') +
-        barcodes.join(''),
+        barcodes.join('') +
+        `<path fill="${COLORS.info}" d="${labelPath(marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
     layer('crease', 'Crease', ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes('crease')),
     layer('cut', 'CutContour', ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes('cut')),
@@ -252,8 +257,7 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): st
               (label.vertical ? ` transform="rotate(-90 ${n(label.x)} ${n(label.y)})"` : '') +
               '/>',
           )
-          .join('') +
-        `<path stroke="none" d="${labelPath(marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM, false)}"/>`,
+          .join(''),
     ),
     '</svg>',
   ].join('\n');
@@ -509,6 +513,9 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     doc.path(watermark.d).fill(hexToCmyk(WATERMARK_COLOR));
     doc.addContent('EMC');
   }
+  // Spec line in the margin: printed with the artwork so the print shop and the customer can read the box size.
+  const spec = dimensionMarks(layout).info;
+  doc.path(labelPath(spec.text, spec.x, spec.y, SPEC_LINE_FONT_MM, false)).fill(CMYK_INFO);
   endLayer();
 
   for (const type of ['crease', 'cut'] as const) {
@@ -530,7 +537,6 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
       doc.path(labelPath(label.text, label.x, label.y, INFO_FONT_MM, true)).fill(CMYK_INFO),
     );
   }
-  doc.path(labelPath(marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM, false)).fill(CMYK_INFO);
   doc.restore();
   endLayer();
 

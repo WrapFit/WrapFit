@@ -5,6 +5,7 @@ import Link from "next/link";
 import React from "react";
 import { Container } from "@/components/landing";
 import { Card, PageHero, SitePage, Toc } from "@/components/site";
+import { EXPORT_PACK_LIST, EXPORT_PACK_VALID_MONTHS, PLANS, PRO_PERIOD_DAYS, formatVnd } from "@/features/pricing";
 import { cn } from "@/utils/helpers";
 
 // /legal/privacy, /legal/terms and /legal/cookies. The facts follow the back end: what it stores (be/prisma), the
@@ -176,7 +177,7 @@ const TERMS: LegalDoc = {
     {
       id: "thanh-toan",
       title: "Gói cước và hoàn tiền",
-      body: <P>Gói tháng và gói năm gia hạn tự động cho đến khi bạn huỷ; huỷ có hiệu lực ở cuối kỳ đã trả. Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất 19.000đ đã dùng không được hoàn.</P>,
+      body: <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Lượt xuất mua theo gói ${EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(', ')}, còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng; mỗi lượt mở khóa file in sạch của một bản thiết kế trong 7 ngày. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất đã dùng không được hoàn.</P>,
     },
     {
       id: "cam",

@@ -7,7 +7,7 @@ import React from "react";
 import { BLEED_MM, MIN_DPI, SAFE_MARGIN_CUT_MM } from "@wrapfit/shared";
 import { Container, Reveal } from "@/components/landing";
 import { CheckList, PageHero, PhotoFrame, PRIMARY_CTA, SECONDARY_CTA, Section, SitePage, StatGrid } from "@/components/site";
-import { formatVnd, PLANS } from "@/features/pricing";
+import { formatVnd, PLANS, SINGLE_EXPORT_PRICE } from "@/features/pricing";
 import { PHOTOS } from "@/features/site/photos";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
@@ -59,7 +59,7 @@ const TRACKS = [
     title: "Mới bắt đầu bán quà",
     who: "Người bán một mình hoặc chuẩn bị ra mắt — 65% người trả lời khảo sát",
     image: PHOTOS.candle,
-    price: `Miễn phí · ${formatVnd(PLANS.PAY_PER_EXPORT.price.perExport ?? 19_000)} mỗi lần xuất file`,
+    price: `Miễn phí · ${formatVnd(SINGLE_EXPORT_PRICE)} mỗi lượt xuất file`,
     points: ["Nhập kích thước món quà, có khuôn ngay", "Xem hộp 3D trước khi in", "PDF A4/A3 có dấu xén để in và cắt tại nhà", "In 1 hộp mẫu trước khi đặt 20–50 hộp"],
     href: "/editor/demo",
     cta: "Dùng thử không cần tài khoản",
@@ -71,7 +71,7 @@ const TRACKS = [
     price: `${formatVnd(PLANS.STARTER.price.monthly)}/tháng · xuất file không giới hạn`,
     points: ["Bộ nhận diện: logo, màu, phông chữ dùng lại cho mọi hộp", "FitCheck™ trước mỗi lần gửi xưởng", "PDF CMYK tách lớp, SVG, DXF cho máy cắt", "Đặt in mẫu qua xưởng đối tác"],
     href: "/pricing",
-    cta: "Xem Gói Tháng",
+    cta: `Xem gói ${PLANS.STARTER.name}`,
   },
 ];
 

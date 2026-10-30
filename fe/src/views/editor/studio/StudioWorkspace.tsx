@@ -1029,6 +1029,7 @@ export function StudioWorkspace({
                 <Box3DView
                   dimensions={dimensions}
                   foldProgress={foldProgress}
+                  faceLabels
                   boxType={boxType}
                   theme={activeMaterial}
                   elements={elements}

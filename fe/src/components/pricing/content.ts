@@ -1,128 +1,163 @@
-import type { LucideIcon } from "lucide-react";
-import { Boxes, FileDown, HardDrive, QrCode, ShieldCheck, Sparkles } from "lucide-react";
-import { BLEED_MM, MIN_DPI, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM } from "@wrapfit/shared";
+import { BLEED_MM, ENTITLEMENTS, MIN_DPI, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type ExportPackId } from "@wrapfit/shared";
 import { ROUTES } from "@/constants";
-import { PLANS, formatQuota, formatUsd } from "@/features/pricing";
+import {
+  EXPORT_PACK_LIST,
+  EXPORT_PACK_VALID_MONTHS,
+  PLANS,
+  PLAN_ORDER,
+  PRO_PERIOD_DAYS,
+  SINGLE_EXPORT_PRICE,
+  formatQuota,
+  formatVnd,
+} from "@/features/pricing";
 import type { SubscriptionTier } from "@/types/api";
 
-// Copy of /pricing, laid out after pack.ly's subscription plan page. Every limit comes from features/pricing (the
-// quotas the API enforces) or @wrapfit/shared (FitCheck rules).
-
-export const HERO = {
-  title: "Ứng dụng thiết kế\nhộp quà trực tuyến",
-  subtitle: "Chọn gói của bạn",
-  lead: "Mọi gói đều có đủ studio thiết kế; gói trả phí cho thêm dung lượng và lượt tạo hoa văn AI.",
-};
-
-export interface PlanFeature {
-  icon: LucideIcon;
-  label: string;
-  /** Second line, small and grey. */
-  note?: string;
-  /** Small coloured label after the text. */
-  badge?: string;
-}
-
-export interface PlanCopy {
-  tier: SubscriptionTier;
-  /** Big price line: "Miễn phí" or the amount, then its unit. */
-  price: { amount: string; unit?: string };
-  badge: string;
-  description: string;
-  cta: string;
-  note: string;
-  popular?: boolean;
-  features: PlanFeature[];
-}
+// Copy of /pricing. Names, prices and storage come from features/pricing (a display layer over @wrapfit/shared/billing,
+// the numbers the backend charges and enforces); FitCheck rules from @wrapfit/shared.
 
 const { FREE, PAY_PER_EXPORT, STARTER, PRO_BUSINESS } = PLANS;
+const UNLOCK_DAYS = ENTITLEMENTS.PAY_PER_EXPORT.export.unlockDays;
 
-const quotaFeatures = (tier: SubscriptionTier, note?: string): PlanFeature[] => [
-  { icon: HardDrive, label: `${formatQuota(PLANS[tier].storageBytes)} lưu trữ`, note },
-  { icon: Sparkles, label: `${PLANS[tier].aiPatternsPerDay} hoa văn AI /ngày`, note: "Tính trong 24 giờ gần nhất" },
-];
+/** Export pack chosen first in the "Lượt xuất" card. */
+export const DEFAULT_PACK: ExportPackId = "EXPORT_5";
 
-export const PLAN_COPY: PlanCopy[] = [
-  {
+/** Where the button of a paid plan leads: the checkout, with the plan (and the export pack) chosen. */
+export const checkoutHref = (tier: SubscriptionTier, pack?: ExportPackId) =>
+  `/checkout/step-1?plan=${tier}${pack ? `&pack=${pack}` : ""}`;
+
+export const PRICING_HERO = {
+  eyebrow: "Bảng giá",
+  title: "Thiết kế miễn phí, trả khi cần file in",
+  lead: `Mọi gói đều có đủ studio, FitCheck™ và hộp gấp 3D. Gói Miễn phí xuất PDF A4 in tại nhà có watermark ở tai dán; file in sạch cho xưởng từ ${formatVnd(SINGLE_EXPORT_PRICE)} một lượt.`,
+};
+
+export interface PlanCardCopy {
+  tier: SubscriptionTier;
+  subtitle: string;
+  features: string[];
+  /** Small grey line under the price. */
+  note: string;
+  cta: string;
+  popular?: boolean;
+}
+
+export const PLAN_CARDS: Record<SubscriptionTier, PlanCardCopy> = {
+  FREE: {
     tier: "FREE",
-    price: { amount: "Miễn phí" },
-    badge: "Tính năng thiết yếu",
-    description: "Dành cho những chiếc hộp quà đầu tiên: dựng khuôn, thiết kế, kiểm tra và xuất file in.",
-    cta: "Tạo tài khoản",
+    subtitle: "Thiết kế và thử in tại nhà",
     note: "Không cần thẻ thanh toán",
     features: [
-      { icon: Boxes, label: "Không giới hạn dự án", note: "4 cấu trúc hộp chuẩn" },
-      ...quotaFeatures("FREE"),
-      { icon: ShieldCheck, label: "FitCheck™ trước khi in" },
-      { icon: FileDown, label: "Xuất PDF CMYK · SVG · DXF" },
-      { icon: QrCode, label: "Trang chia sẻ 3D", note: "+ Mã QR mở hộp" },
+      "Studio thiết kế, 4 cấu trúc hộp, hộp gấp 3D",
+      "FitCheck™ và Auto-Fix trước khi in",
+      "PDF A4 in tại nhà, có watermark WrapFit ở tai dán",
+      `${formatQuota(FREE.storageBytes)} lưu trữ · ${FREE.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Trang chia sẻ 3D và mã QR mở hộp",
     ],
+    cta: "Bắt đầu miễn phí",
   },
-  {
+  PAY_PER_EXPORT: {
     tier: "PAY_PER_EXPORT",
-    price: { amount: formatUsd(PAY_PER_EXPORT.price.monthly), unit: "/lần xuất" },
-    badge: "Linh hoạt cho shop nhỏ",
-    description: "Không phí duy trì hàng tháng. Chỉ trả 19.000đ cho mỗi lần xuất file PDF vector chuẩn xưởng hoặc in A4 tại nhà.",
-    cta: "Mua lượt xuất (19k)",
-    note: "Tiết kiệm 95% so với phần mềm quốc tế ($29–$99)",
+    subtitle: "Trả theo lượt, không phí tháng",
+    note: `Hạn dùng ${EXPORT_PACK_VALID_MONTHS} tháng · không phí duy trì`,
     features: [
-      { icon: FileDown, label: "Xuất trọn bộ file chuẩn xưởng", note: "PDF CMYK · SVG · DXF · PDF A4/A3" },
-      ...quotaFeatures("PAY_PER_EXPORT", "Lưu trữ 500 MB dự án"),
-      { icon: ShieldCheck, label: "FitCheck™ toàn diện", note: "Kiểm tra tràn lề & an toàn mm" },
-      { icon: QrCode, label: "Mã QR mở hộp 3D tương tác" },
+      `Mỗi lượt mở khóa một bản thiết kế trong ${UNLOCK_DAYS} ngày`,
+      "PDF CMYK 4 lớp cho xưởng · SVG · DXF · PDF A4/A3, không watermark",
+      `${formatQuota(PAY_PER_EXPORT.storageBytes)} lưu trữ · ${PAY_PER_EXPORT.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Mọi tính năng của gói Miễn phí",
     ],
+    cta: "Mua lượt xuất",
   },
-  {
+  STARTER: {
     tier: "STARTER",
-    price: { amount: formatUsd(STARTER.price.monthly), unit: "/tháng" },
-    badge: "Phổ biến cho Maker & Shop",
-    description: "Lựa chọn hợp lý cho shop handmade thỉnh thoảng làm hộp riêng cho sản phẩm của mình.",
-    cta: "Chọn Starter",
-    note: `${formatUsd(STARTER.price.yearlyPerMonth)}/tháng khi thanh toán theo năm`,
-    popular: true,
+    subtitle: "Cho shop làm hộp mỗi tuần",
+    note: `Trả một lần cho ${PRO_PERIOD_DAYS} ngày, không tự gia hạn`,
     features: [
-      { icon: FileDown, label: "Xuất file không giới hạn", note: "Tất cả định dạng vector & in A4" },
-      ...quotaFeatures("STARTER", `Gói Free: ${formatQuota(FREE.storageBytes)}`),
-      { icon: Boxes, label: "Mọi tính năng của Free" },
+      `Xuất file in sạch không giới hạn trong ${PRO_PERIOD_DAYS} ngày`,
+      "PDF CMYK 4 lớp · SVG · DXF · PDF A4/A3",
+      `${formatQuota(STARTER.storageBytes)} lưu trữ · ${STARTER.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Ưu tiên đặt in hộp mẫu qua xưởng đối tác",
+      "Mọi tính năng của gói Lượt xuất",
     ],
+    cta: `Chọn ${STARTER.name}`,
+    popular: true,
+  },
+  PRO_BUSINESS: {
+    tier: "PRO_BUSINESS",
+    subtitle: "Cho thương hiệu và xưởng in",
+    note: `Tham khảo từ ${formatVnd(PRO_BUSINESS.price.monthly)}/tháng`,
+    features: [
+      `${formatQuota(PRO_BUSINESS.storageBytes)} lưu trữ · ${PRO_BUSINESS.aiPatternsPerDay} hoa văn AI/ngày`,
+      "Nhiều thành viên trong một không gian làm việc",
+      "Kiểm tra hàng loạt file khuôn cho đối tác gia công",
+      "Tư vấn 1-1 với chuyên gia bao bì",
+      `Mọi tính năng của gói ${STARTER.name}`,
+    ],
+    cta: "Liên hệ",
+  },
+};
+
+export const CONTACT_HREF = ROUTES.contact;
+
+/** One row of the comparison table: the value of each plan. */
+export interface ComparisonRow {
+  feature: string;
+  values: Record<SubscriptionTier, string>;
+}
+
+const sameForAll = (value: string) => Object.fromEntries(PLAN_ORDER.map((tier) => [tier, value])) as Record<SubscriptionTier, string>;
+const perTier = (value: (tier: SubscriptionTier) => string) =>
+  Object.fromEntries(PLAN_ORDER.map((tier) => [tier, value(tier)])) as Record<SubscriptionTier, string>;
+
+export const COMPARISON: ComparisonRow[] = [
+  { feature: "Studio, 4 cấu trúc hộp, hộp gấp 3D", values: sameForAll("Có") },
+  { feature: "FitCheck™ và Auto-Fix", values: sameForAll("Có") },
+  {
+    feature: "PDF A4 in tại nhà",
+    values: { FREE: "Có watermark ở tai dán", PAY_PER_EXPORT: "Không watermark", STARTER: "Không watermark", PRO_BUSINESS: "Không watermark" },
   },
   {
-    tier: "PRO_BUSINESS",
-    price: { amount: formatUsd(PRO_BUSINESS.price.monthly), unit: "/tháng" },
-    badge: "Chức năng chuyên nghiệp",
-    description: "Gói lý tưởng cho thương hiệu và xưởng làm nhiều mẫu hộp, cần nhiều dung lượng cho ảnh và file in.",
-    cta: "Chọn Pro Business",
-    note: `${formatUsd(PRO_BUSINESS.price.yearlyPerMonth)}/tháng khi thanh toán theo năm`,
-    features: [
-      ...quotaFeatures("PRO_BUSINESS", `Gói Starter: ${formatQuota(STARTER.storageBytes)}`),
-      { icon: Boxes, label: "Mọi tính năng của Starter" },
-    ],
+    feature: "PDF CMYK 4 lớp cho xưởng · SVG · DXF",
+    values: { FREE: "Không có", PAY_PER_EXPORT: "1 lượt / bản thiết kế", STARTER: "Không giới hạn", PRO_BUSINESS: "Không giới hạn" },
+  },
+  { feature: "Lưu trữ", values: perTier((tier) => formatQuota(PLANS[tier].storageBytes)) },
+  { feature: "Hoa văn AI mỗi 24 giờ", values: perTier((tier) => `${PLANS[tier].aiPatternsPerDay} lượt`) },
+  {
+    feature: "Cách trả tiền",
+    values: {
+      FREE: "Miễn phí",
+      PAY_PER_EXPORT: EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(" · "),
+      STARTER: `${formatVnd(STARTER.price.monthly)} / ${PRO_PERIOD_DAYS} ngày`,
+      PRO_BUSINESS: "Liên hệ",
+    },
   },
 ];
 
-/** Where the button of a paid plan leads: the checkout, with the plan chosen. */
-export const checkoutHref = (tier: SubscriptionTier) => `/checkout/step-1?plan=${tier}`;
+const [PACK_1, , PACK_LARGEST] = EXPORT_PACK_LIST;
 
 export const FAQ: { question: string; answer: string }[] = [
   {
     question: "WrapFit có lợi thế gì về giá so với Pacdora hay phần mềm nước ngoài?",
-    answer: "Pacdora và các công cụ nước ngoài có mức phí từ $29 đến $99/tháng (tương đương 750.000đ – 2.500.000đ/tháng), yêu cầu thẻ thanh toán quốc tế và thiết kế trên khuôn cố định. WrapFit được thiết kế riêng cho người làm quà Việt với mức giá chỉ từ 19.000đ/lần xuất hoặc 99.000đ/tháng, thanh toán thuận tiện qua VietQR/ngân hàng nội địa, hỗ trợ in thủ công A4 tại nhà (persona Chị Linh) và liên kết xưởng in mẫu thử 01 hộp.",
+    answer: `Pacdora và các công cụ nước ngoài có mức phí từ $29 đến $99/tháng (khoảng 750.000đ – 2.500.000đ), cần thẻ thanh toán quốc tế và thiết kế trên khuôn cố định. WrapFit dành riêng cho người làm quà Việt: chỉ từ ${formatVnd(PACK_1.priceVnd)}/lượt xuất hoặc ${formatVnd(STARTER.price.monthly)}/tháng với gói ${STARTER.name}, thanh toán qua VietQR, in thử A4 tại nhà và đặt in hộp mẫu qua xưởng đối tác.`,
   },
   {
-    question: "Có cần trả phí mới thiết kế được hộp không?",
-    answer: `Không. Gói Free có đủ studio: chọn cấu trúc hộp, nhập kích thước, thiết kế, chạy FitCheck™ và xem 3D trực quan. Gói trả phí chỉ nâng dung lượng lưu trữ (${formatQuota(FREE.storageBytes)} → ${formatQuota(PAY_PER_EXPORT.storageBytes)} → ${formatQuota(STARTER.storageBytes)} → ${formatQuota(PRO_BUSINESS.storageBytes)}) và số lượt tạo hoa văn AI mỗi ngày.`,
+    question: "Gói Miễn phí xuất được file gì?",
+    answer: `PDF A4 để in thử tại nhà, có watermark WrapFit nhỏ ở tai dán (phần bị dán khuất khi gấp hộp). File cho xưởng (PDF CMYK 4 lớp, SVG, DXF) và PDF không watermark cần một lượt xuất hoặc gói ${STARTER.name}.`,
   },
   {
-    question: "Dung lượng lưu trữ gồm những gì?",
-    answer: "Mọi tệp bạn tải lên (logo, ảnh, ảnh đại diện, ảnh thu nhỏ của dự án) và các file in đã xuất. Khi đầy, WrapFit từ chối tệp mới cho đến khi bạn xoá bớt hoặc nâng gói; dự án cũ không bị ảnh hưởng.",
+    question: "Một lượt xuất gồm những gì?",
+    answer: `Một lượt mở khóa một bản thiết kế trong ${UNLOCK_DAYS} ngày: bạn tải mọi định dạng (PDF CMYK, SVG, DXF, PDF A4/A3) và tải lại bao nhiêu lần tùy ý trong thời gian đó. Mua lẻ ${formatVnd(PACK_1.priceVnd)}/lượt, hoặc gói ${PACK_LARGEST.credits} lượt ${formatVnd(PACK_LARGEST.priceVnd)}; lượt chưa dùng còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng.`,
+  },
+  {
+    question: `Gói ${STARTER.name} có tự gia hạn không?`,
+    answer: `Không. Gói ${STARTER.name} ${formatVnd(STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán, xuất file sạch không giới hạn. Hết hạn, tài khoản trở về gói Miễn phí (hoặc Lượt xuất nếu còn lượt); dự án không bị xoá.`,
   },
   {
     question: "Lượt tạo hoa văn AI được tính thế nào?",
-    answer: `Mỗi lần bấm tạo hoa văn trong studio là một lượt. Hạn mức tính trên 24 giờ gần nhất, không reset lúc nửa đêm: gói Free ${FREE.aiPatternsPerDay} lượt, Từng lần xuất ${PAY_PER_EXPORT.aiPatternsPerDay} lượt, Starter ${STARTER.aiPatternsPerDay} lượt, Pro Business ${PRO_BUSINESS.aiPatternsPerDay} lượt.`,
+    answer: `Mỗi lần bấm tạo hoa văn trong studio là một lượt. Hạn mức tính trên 24 giờ gần nhất, không reset lúc nửa đêm: ${FREE.name} ${FREE.aiPatternsPerDay} lượt, ${PAY_PER_EXPORT.name} ${PAY_PER_EXPORT.aiPatternsPerDay} lượt, ${STARTER.name} ${STARTER.aiPatternsPerDay} lượt, ${PRO_BUSINESS.name} ${PRO_BUSINESS.aiPatternsPerDay} lượt.`,
   },
   {
-    question: "Có giới hạn số dự án không?",
-    answer: "Không, ở mọi gói. Bạn có thể tạo bao nhiêu dự án tuỳ thích, sắp xếp vào thư mục, nhân bản và lưu nhiều phiên bản cho mỗi dự án.",
+    question: "Dung lượng lưu trữ gồm những gì?",
+    answer: `Mọi tệp bạn tải lên (logo, ảnh, ảnh đại diện, ảnh thu nhỏ của dự án) và các file in đã xuất: ${PLAN_ORDER.map((tier) => `${PLANS[tier].name} ${formatQuota(PLANS[tier].storageBytes)}`).join(", ")}. Khi đầy, WrapFit từ chối tệp mới cho đến khi bạn xoá bớt hoặc nâng gói; dự án cũ không bị ảnh hưởng.`,
   },
   {
     question: "FitCheck™ kiểm tra những gì?",
@@ -130,35 +165,6 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "Tôi nhận được file in dạng nào?",
-    answer: "PDF CMYK tách lớp (nét cắt #E53E3E, nét gấp #3182CE, hình in, kích thước), PDF A4/A3 in tại nhà có dấu xén và thước chuẩn 50mm, SVG và DXF cho máy cắt bế CNC.",
-  },
-  {
-    question: "Thiết kế của tôi có bị công khai không?",
-    answer: "Không, dự án mặc định là riêng tư. Bạn chủ động chuyển sang “Chỉ ai có liên kết” hoặc “Công khai” để chia sẻ trang 3D; thiết kế công khai đạt FitCheck™ từ 90 điểm sẽ xuất hiện trong thư viện cộng đồng.",
-  },
-  {
-    question: "Nâng gói xong, dữ liệu cũ có còn không?",
-    answer: "Còn nguyên. Gói chỉ thay đổi hạn mức của tài khoản; dự án, phiên bản và tệp đã tải lên không bị di chuyển hay xoá.",
+    answer: "PDF CMYK tách lớp (nét cắt #E53E3E, nét gấp #3182CE, hình in, kích thước) có dòng thông số hộp in ở lề, PDF A4/A3 in tại nhà có dấu xén và thước chuẩn 50 mm, SVG và DXF cho máy cắt bế CNC.",
   },
 ];
-
-export const WHY = {
-  title: "Vì sao chọn WrapFit để thiết kế hộp quà?",
-  columns: [
-    [
-      "WrapFit sinh ra để làm một việc: thiết kế chiếc hộp bao quanh món quà. Bạn nhập chiều dài, rộng, cao và độ dày giấy; khuôn bế được dựng lại theo từng milimét, kể cả tai gài và tai dán.",
-      "Bạn không cần biết vẽ khuôn hay dùng phần mềm đồ hoạ chuyên nghiệp. Kéo thả hoa văn, logo và lời chúc lên từng mặt hộp, xem ngay chiếc hộp gấp lại trong 3D.",
-    ],
-    [
-      "Trước khi xuất, FitCheck™ soát vùng an toàn, tràn lề và độ phân giải; Gói đề xuất cách sửa chỉ với một cú bấm. File PDF tách lớp đi thẳng đến xưởng in mà không phải vẽ lại.",
-      "Khi món quà đến tay, người nhận quét mã QR để mở chiếc hộp 3D cùng lời nhắn của bạn.",
-    ],
-  ],
-  cta: { label: "Bắt đầu miễn phí", href: ROUTES.register },
-};
-
-export const CTA_BAND = {
-  title: "Thiết kế. Xem trước. In.",
-  body: "Quản lý cả quy trình làm hộp quà, từ khuôn bế đến file in, trên một nền tảng.",
-  cta: { label: "Tạo hộp ngay", href: ROUTES.editorNew },
-};

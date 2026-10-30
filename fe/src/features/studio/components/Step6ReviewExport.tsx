@@ -125,6 +125,7 @@ export function Step6ReviewExport({
                 <Box3DView
                   dimensions={dimensions}
                   foldProgress={fold / 100}
+                  faceLabels
                   boxType={boxType}
                   theme={activeMaterial}
                   elements={elements}

@@ -18,7 +18,7 @@ import { Badge, DataTable, Meter, Panel, PanelTitle, WORKSPACE_INPUT, WorkspaceE
 import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
-import { PLANS, formatQuota, formatVnd } from '@/features/pricing';
+import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
 import { PROMO_CODES } from '@/features/site/cart';
 import { queryKeys } from '@/hooks/data';
 import type { SampleOrder } from '@/types/api';
@@ -80,15 +80,17 @@ function BillingScreen() {
                 <p className="text-2xl font-medium text-library-ink">{TIER_LABELS[tier]}</p>
                 <p className="mt-1 text-sm text-library-sub">
                   {tier === 'FREE'
-                    ? 'Thiết kế, FitCheck™ và xem 3D không giới hạn; trả 19.000đ khi cần xuất file in.'
+                    ? `Thiết kế, FitCheck™ và xem 3D không giới hạn; PDF A4 có watermark ở tai dán. File in sạch từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`
                     : plan.isPerExport
-                      ? `${formatVnd(plan.price.perExport ?? 19_000)} cho mỗi lần xuất file in.`
-                      : `${formatVnd(plan.price.monthly)}/tháng, hoặc ${formatVnd(plan.price.yearlyPerMonth)}/tháng khi trả theo năm.`}
+                      ? `Mỗi lượt xuất mở khóa file in sạch của một bản thiết kế, từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`
+                      : plan.contactOnly
+                        ? 'Gói theo hợp đồng với WrapFit.'
+                        : `${formatVnd(plan.price.monthly)} cho ${PRO_PERIOD_DAYS} ngày xuất file in không giới hạn.`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href={`/checkout/step-1?plan=${tier === 'PRO_BUSINESS' ? 'PRO_BUSINESS' : 'STARTER'}`} className={primaryButton}>
-                  {tier === 'PRO_BUSINESS' ? 'Gia hạn' : 'Nâng cấp'}
+                <Link href={plan.contactOnly ? '/contact' : '/checkout/step-1?plan=STARTER'} className={primaryButton}>
+                  {plan.contactOnly ? 'Liên hệ' : tier === 'STARTER' ? 'Gia hạn' : `Nâng lên ${PLANS.STARTER.name}`}
                   <ArrowRight className="size-4" aria-hidden />
                 </Link>
                 {paid && (

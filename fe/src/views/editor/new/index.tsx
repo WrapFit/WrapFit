@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import type { BoxDimensions, BoxStructureType, FitCheckReport } from "@wrapfit/shared";
+import { LOCK_BOTTOM_MIN_WEIGHT_G, usesLockBottom } from "@wrapfit/shared";
 import { ApiError, createProject, getTemplate, listBoxStructures } from "@/api";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { PageLoader } from "@/components/common/StatusViews";
@@ -473,11 +474,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                       value={dimensions.giftWeight ?? 250}
                       onChange={(e) => {
                         const weight = Math.max(10, Math.min(3000, Number(e.target.value) || 0));
-                        setDimensions((dims) => ({
-                          ...dims,
-                          giftWeight: weight,
-                          bottomType: weight > 300 ? "lock" : dims.bottomType ?? "tuck",
-                        }));
+                        setDimensions((dims) => ({ ...dims, giftWeight: weight }));
                       }}
                       className="w-20 h-8 rounded-lg border border-library-line px-2 text-right font-mono text-sm text-library-ink outline-none focus:border-fpt-orange"
                     />
@@ -492,11 +489,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                   value={dimensions.giftWeight ?? 250}
                   onChange={(e) => {
                     const weight = Number(e.target.value);
-                    setDimensions((dims) => ({
-                      ...dims,
-                      giftWeight: weight,
-                      bottomType: weight > 300 ? "lock" : dims.bottomType ?? "tuck",
-                    }));
+                    setDimensions((dims) => ({ ...dims, giftWeight: weight }));
                   }}
                   className="mt-1.5 w-full accent-fpt-orange"
                 />
@@ -506,7 +499,17 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                   <span>1500g</span>
                 </div>
 
-                {(dimensions.giftWeight ?? 0) > 300 && structure === "tuck-top" && (
+                {structure === "tuck-top" && (
+                  <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-library-sub" aria-live="polite">
+                    <Badge tone={usesLockBottom(dimensions) ? "amber" : "grey"}>{usesLockBottom(dimensions) ? "Đáy khóa FEFCO 0215" : "Đáy gài thường"}</Badge>
+                    {usesLockBottom(dimensions) && (dimensions.giftWeight ?? 0) > LOCK_BOTTOM_MIN_WEIGHT_G && dimensions.bottomType !== "lock"
+                      ? `vì quà nặng hơn ${LOCK_BOTTOM_MIN_WEIGHT_G} g`
+                      : dimensions.bottomType === "tuck"
+                        ? "bạn đã chọn"
+                        : null}
+                  </p>
+                )}
+                {(dimensions.giftWeight ?? 0) > LOCK_BOTTOM_MIN_WEIGHT_G && structure === "tuck-top" && (
                   <div className="mt-3 rounded-xl border border-warning/30 bg-warning-bg/80 p-3 text-xs leading-relaxed text-warning-fg space-y-2">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="size-4 shrink-0 text-warning-fg mt-0.5" />
@@ -520,13 +523,25 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         type="button"
-                        onClick={() => setDimensions((dims) => ({ ...dims, bottomType: "lock" }))}
+                        aria-pressed={dimensions.bottomType !== "tuck"}
+                        onClick={() => setDimensions((dims) => ({ ...dims, bottomType: undefined }))}
                         className={cn(
                           "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
                           dimensions.bottomType !== "tuck" ? "bg-warning text-white border-warning font-semibold" : "bg-white text-warning-fg border-warning/30 hover:bg-warning-bg",
                         )}
                       >
-                        ✓ Đáy khóa chịu lực (Khuyên dùng)
+                        Đáy khóa chịu lực (khuyên dùng)
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={dimensions.bottomType === "tuck"}
+                        onClick={() => setDimensions((dims) => ({ ...dims, bottomType: "tuck" }))}
+                        className={cn(
+                          "px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors",
+                          dimensions.bottomType === "tuck" ? "bg-warning text-white border-warning font-semibold" : "bg-white text-warning-fg border-warning/30 hover:bg-warning-bg",
+                        )}
+                      >
+                        Đáy gài thường
                       </button>
                       <button
                         type="button"
