@@ -40,7 +40,8 @@ Trình duyệt ── PUT ảnh tải lên / GET ảnh ──► Cloudflare R2 (
    trên `main`, hoặc chạy tay (`workflow_dispatch`); `workflow_run` dùng file workflow của nhánh mặc định.
 2. Kết quả kiểm trên bản gộp local (S8, 2026-10-30): migration áp sạch trên CSDL mới, `prisma migrate diff` không lệch
    schema; `tsc` sạch `shared`, `be`, `fe`; unit `be` 605/605; e2e `be` 187/187 (15 suite); `next build` xanh;
-   `node fe/scripts/e2e-scenario.mjs` (xem nhật ký docs/17 §7 cho kết quả từng bước).
+   `node fe/scripts/e2e-scenario.mjs` xanh trọn 17 bước (1–14, 16–18; gồm 402 → mua lượt VietQR → SVG sạch, đơn in mẫu
+   `PAID`, dashboard tăng số) ở 375 và 1440.
 3. **Sao lưu CSDL production** trước khi container mới áp migration:
 
    ```bash
@@ -216,9 +217,27 @@ S8 không đọc được hóa đơn (không đăng nhập tài khoản nào). S
 | Throttle (100 request / phút / IP, 10 lần đăng nhập) khi cả hội đồng dùng chung Wi-Fi | 429 | Hội đồng thử trên 4G riêng; demo chính dùng một máy |
 | Đăng nhập Google trên bản Vercel | Đăng nhập xong vẫn ở trạng thái khách | Dùng email + mật khẩu (mục 5) |
 | Quét VietQR bằng app ngân hàng thật báo lỗi | App không nhận mã | Chưa kiểm bằng app thật (S5). Demo dùng nút giả lập; kiểm trước bằng mục 6 bước 10 |
+| Phiên hết hạn / tài khoản bị khóa giữa buổi | Trang dự án hiện "Không gian làm việc khách" với dự án mẫu, không về trang đăng nhập | Bấm "Đăng nhập tài khoản" trên dải thông báo, đăng nhập lại; đừng tạo dự án ở chế độ khách (không lưu) |
 | Lộ mật khẩu demo trên màn hình chiếu | — | Đăng nhập trước khi chiếu; mật khẩu chỉ trong `.env` VPS, không vào slide |
 
 ## 9. Ảnh bàn giao cho slide
 
-Chụp bằng `npm --workspace=fe run shots` và `node fe/scripts/e2e-scenario.mjs`, nằm trong `fe/.page-shots/`
-(thư mục bị git bỏ qua: chép sang thư mục slide khi cần). Danh sách và tên file: nhật ký S8 ở docs/17 §7.
+Chụp ở 375 × 812 (`M`) và 1440 × 900 (`Xp`) trên bản local của S8 (2026-10-30), nằm trong `fe/.page-shots/` (git bỏ
+qua thư mục này: chép sang thư mục slide khi cần).
+
+| Nội dung | File |
+|---|---|
+| Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` |
+| Studio 3D có nhãn mặt, hũ nến 80 × 80 × 95 có logo | `s8-studio-3d-labels-demo_wrapfit_vn-{M,Xp}-0.png` |
+| ExportDialog: nhãn "Có watermark" / "Cần 1 lượt xuất" | `e2e/{M,Xp}-07-export-dialog-free.png`, `s8-export-dialog-demo_wrapfit_vn-{M,Xp}-0.png` |
+| PDF A4 có watermark xuất xong | `e2e/{M,Xp}-07-export-pdf-a4-watermarked.png` |
+| SVG → 402 "Bạn đã hết lượt xuất" | `e2e/{M,Xp}-16-export-402.png` |
+| CheckoutDialog VietQR 19.000đ, nút giả lập / đã thanh toán | `e2e/{M,Xp}-16-checkout-vietqr.png`, `e2e/{M,Xp}-16-checkout-paid.png` |
+| SVG sạch sau khi mua lượt | `e2e/{M,Xp}-16-export-svg-clean.png` |
+| CheckoutDialog gói 5 lượt từ `/dashboard/billing` | `s8-checkout-vietqr-demo_wrapfit_vn-{M,Xp}-0.png` |
+| Giỏ in mẫu, VietQR 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` |
+
+Chụp lại trên bản deploy: `node fe/scripts/e2e-scenario.mjs --base-url=https://wrap-fit.vercel.app --steps=…` cần
+Mailpit (chỉ có ở local), nên trên production chạy bằng tài khoản có sẵn: `--user=<email> --password=<mật khẩu>
+--steps=4-14,16-18` (bước 8 cần thêm tài khoản demo). Ảnh từng trang: `npm --workspace=fe run shots -- --routes=<file>`
+với `roles: ["demo@wrapfit.vn"]` và `SHOT_PASSWORD` trong môi trường (không ghi vào file).

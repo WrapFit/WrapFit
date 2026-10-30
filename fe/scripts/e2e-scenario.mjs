@@ -509,12 +509,17 @@ async function addText(page, text) {
 }
 
 /**
- * Waits until the page treats the visitor as signed out: the login page, or the guest workspace that the workspace
- * pages show to visitors without a session (features/auth/RequireAuth.tsx). Returns which one.
+ * Checks that the old session is gone: the API answers 401 with the page's cookies, and the page shows the login page
+ * or the guest workspace that workspace pages give visitors without a session (features/auth/RequireAuth.tsx), never
+ * the account's name. Returns which page.
  */
-async function signedOut(page) {
+async function signedOut(page, name) {
+  const status = await (await page.context.api()).request('/auth/me').then(() => 200, (error) => error.status);
+  if (status !== 401) throw new Error(`the old session still answers ${status} on /auth/me`);
   return page.waitFor(
-    `location.pathname.startsWith('/auth/login') ? 'login page' : document.body.innerText.includes('Không gian làm việc khách') && 'guest workspace'`,
+    `location.pathname.startsWith('/auth/login') ? 'login page'
+      : document.body.innerText.includes('Không gian làm việc khách') ? 'guest workspace'
+      : document.readyState === 'complete' && document.querySelector('main h1') && !document.body.innerHTML.includes(${JSON.stringify(name)}) && 'guest workspace (example projects)'`,
     'the signed-out page',
     30000,
   );
@@ -608,13 +613,17 @@ function scenario(size, browser, report) {
       user.password = NEW_PASSWORD;
       await owner.front();
       await owner.goto('/dashboard/projects');
-      log.notes.push(`old window → ${await signedOut(owner)}`);
+      log.notes.push(`old window → ${await signedOut(owner, user.name)}`);
       log.shots.push(await owner.shot('03-old-session-out'));
-      await owner.goto('/auth/login?redirect=/dashboard/projects');
+      // The workspace may still be handling the expired session (toast, guest data): sign in from a fresh login page.
+      await owner.goto('/auth/login');
+      await owner.waitSelector('#input-email', 30000);
       await owner.type('#input-email', user.email);
       await owner.type('#input-password', user.password);
       await owner.click({ selector: 'form button[type="submit"]' });
-      await owner.waitUrl(/\/dashboard\/projects/);
+      await owner.waitFor(`!location.pathname.startsWith('/auth') && location.pathname`, 'leaving the login page');
+      await owner.goto('/dashboard/projects');
+      await owner.waitFor(`document.body.innerHTML.includes(${JSON.stringify(user.name)})`, 'the account in the header');
     },
     /** 4: new tuck-top 120 × 80 × 60, a text and a PNG, still there after F5. */
     4: async (log) => {
@@ -729,6 +738,8 @@ function scenario(size, browser, report) {
     /** 8: unlisted link opened by a guest (noindex), then liked and remixed by another account. */
     8: async (log) => {
       const page = state.ownerPage;
+      // Step 7 ends on the print step; on a phone the share button sits in the design step's toolbar.
+      await page.click({ selector: '[aria-label="Bước 4: Thiết kế"]' });
       await page.click('Chia sẻ');
       await page.click({ text: 'Có link', in: DIALOG });
       const ownerApi = await state.owner.api();
@@ -908,7 +919,7 @@ function scenario(size, browser, report) {
       log.shots.push(await adminPage.shot('13-admin-locked'));
       await page.front();
       await page.goto('/dashboard/projects');
-      log.notes.push(`maker → 403 page; locked account → ${await signedOut(page)}; unlocked again`);
+      log.notes.push(`maker → 403 page; locked account → ${await signedOut(page, user.name)}; unlocked again`);
       log.shots.push(await page.shot('13-locked-user-out'));
       await adminPage.front();
       await adminPage.click({ selector: `[aria-label="Mở khoá tài khoản ${user.name}"]` });
