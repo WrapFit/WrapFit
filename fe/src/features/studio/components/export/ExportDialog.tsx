@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, Download, FileDown, RotateCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileDown, RotateCw, ShieldAlert, Ticket } from "lucide-react";
 import type { FitCheckReport } from "@wrapfit/shared";
-import { ApiError, getExportJob, listProjectExports, requestExport } from "@/api";
+import { ApiError, getExportAccess, getExportJob, listProjectExports, requestExport } from "@/api";
+import { Alert, Badge, Button, ButtonLink } from "@/components/ui";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
@@ -48,6 +49,17 @@ const STATUS_LABELS: Record<ExportJob["status"], string> = {
   FAILED: "Lỗi",
 };
 
+/** Clean formats: without Pro or an unlocked design they need one export credit (docs/16 §5.2). */
+const isWatermarkable = (type: ExportFileType) => type === "PDF_A4_PRINT";
+
+/** A 402 of the export: confirm spending a credit, or buy one. */
+interface CreditAsk {
+  fileType: ExportFileType;
+  balance: number;
+  /** INSUFFICIENT_CREDITS, or EXPORT_CREDIT_REQUIRED with nothing left: only buying helps. */
+  empty: boolean;
+}
+
 const isRunning = (job: ExportJob | undefined) => job?.status === "PENDING" || job?.status === "PROCESSING";
 
 /** A download link is used up to 30 seconds before it expires; after that the job is fetched again for a new one. */
@@ -84,6 +96,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   const [starting, setStarting] = useState<ExportFileType | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<FitCheckReport | null>(null);
+  const [creditAsk, setCreditAsk] = useState<CreditAsk | null>(null);
   // No backend (Vercel, demo project, API unreachable): the files are built in the browser from the design on screen.
   const [offline, setOffline] = useState(() => Boolean(design) && (OFFLINE_DEMO || isDemoProjectId(projectId)));
   const [localJob, setLocalJob] = useState<LocalJob | null>(null);
@@ -101,6 +114,15 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
     queryFn: () => listProjectExports(projectId),
     enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
   });
+
+  // Watermark label and credit count; the server decides again on every request.
+  const accessKey = [...queryKeys.projects.exports(projectId), "access"] as const;
+  const access = useQuery({
+    queryKey: accessKey,
+    queryFn: () => getExportAccess(projectId),
+    enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
+  });
+  const locked = access.data ? !access.data.unlocked : false;
 
   const current: LocalJob | undefined = offline ? localJob ?? undefined : job.data;
   const status = current?.status;
@@ -142,9 +164,10 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
     }
   };
 
-  const start = async (fileType: ExportFileType) => {
+  const start = async (fileType: ExportFileType, useCredit = false) => {
     setStarting(fileType);
     setBlocked(null);
+    setCreditAsk(null);
     if (offline) {
       try {
         await startLocal(fileType);
@@ -162,12 +185,24 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
         });
         return;
       }
-      const started = await requestExport(projectId, fileType);
+      const started = await requestExport(projectId, fileType, useCredit);
       queryClient.removeQueries({ queryKey: queryKeys.exportJob(started.jobId) });
       setJobId(started.jobId);
+      if (started.charged) {
+        toast.show({
+          tone: "success",
+          title: "Đã dùng 1 lượt xuất",
+          description: `Bản thiết kế này xuất sạch mọi định dạng trong 7 ngày. Còn ${started.exportCredits.balance} lượt.`,
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: accessKey });
     } catch (err) {
       if (err instanceof ApiError && err.status === 422 && err.fitCheck) {
         setBlocked(err.fitCheck);
+      } else if (err instanceof ApiError && err.status === 402) {
+        const balance = err.body?.balance ?? 0;
+        setCreditAsk({ fileType, balance, empty: err.code === "INSUFFICIENT_CREDITS" || balance < 1 });
+        void queryClient.invalidateQueries({ queryKey: accessKey });
       } else if (design && !(err instanceof ApiError && err.status < 500)) {
         // The API cannot be reached (offline demo, server down): build the file in the browser instead.
         setOffline(true);
@@ -224,6 +259,11 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
           >
             <span>
               <span className="font-semibold text-sm text-landing-ink group-hover:text-fpt-orange block">{format.title}</span>
+              {locked && (
+                <Badge size="sm" tone={isWatermarkable(format.type) ? "warning" : "neutral"} className="mt-1">
+                  {isWatermarkable(format.type) ? "Có watermark" : "Cần 1 lượt xuất"}
+                </Badge>
+              )}
               <span className="text-xs text-landing-muted block mt-0.5 leading-relaxed">{format.hint}</span>
             </span>
             {starting === format.type ? (
@@ -234,6 +274,40 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
           </button>
         ))}
       </div>
+
+      {creditAsk && (
+        <Alert
+          tone={creditAsk.empty ? "warning" : "info"}
+          icon={Ticket}
+          title={creditAsk.empty ? "Bạn đã hết lượt xuất" : `Dùng 1 lượt? Còn ${creditAsk.balance} lượt`}
+          action={
+            creditAsk.empty ? (
+              <>
+                {/* S5 replaces this link with the VietQR checkout of an export pack. */}
+                <ButtonLink href="/pricing" size="sm">
+                  Mua lượt
+                </ButtonLink>
+                <Button variant="secondary" size="sm" onClick={() => void start("PDF_A4_PRINT")}>
+                  Xuất PDF A4 có watermark
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="sm" onClick={() => void start(creditAsk.fileType, true)}>
+                  Dùng 1 lượt
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setCreditAsk(null)}>
+                  Để sau
+                </Button>
+              </>
+            )
+          }
+        >
+          {creditAsk.empty
+            ? `File ${FORMAT_NAMES[creditAsk.fileType]} sạch cần 1 lượt xuất hoặc gói Pro. PDF A4 có watermark ở tai dán vẫn miễn phí.`
+            : `1 lượt mở khóa file sạch mọi định dạng (PDF CMYK, SVG, DXF, PDF A4) của bản thiết kế này trong 7 ngày. Sửa thiết kế thì cần lượt mới.`}
+        </Alert>
+      )}
 
       {blocked && (
         <div role="alert" className="p-4 rounded-3xl bg-vibrant-coral/10 border border-vibrant-coral/30 space-y-3">
@@ -284,6 +358,9 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
                   <CheckCircle2 className="w-4 h-4" aria-hidden /> File {FORMAT_NAMES[current.fileType]} đã sẵn sàng
                 </span>
                 <span className="text-xs text-success-fg block truncate">{current.fileName}</span>
+                {current.watermarked && (
+                  <span className="text-xs text-success-fg block">Có dòng “Thiết kế bằng WrapFit” ở tai dán, bị che khi dán hộp.</span>
+                )}
               </>
             ) : current?.status === "FAILED" ? (
               <>

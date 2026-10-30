@@ -40,7 +40,9 @@ export type ApiErrorCode =
   | "FILE_URL_NOT_ALLOWED"
   | "FILE_NOT_OWNED"
   | "PROJECT_VERSION_CONFLICT"
-  | "ORIGIN_NOT_ALLOWED";
+  | "ORIGIN_NOT_ALLOWED"
+  | "EXPORT_CREDIT_REQUIRED"
+  | "INSUFFICIENT_CREDITS";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {
@@ -57,6 +59,8 @@ export interface ApiErrorBody {
   currentVersion?: number;
   /** 422 on export: the FitCheck report with the blocking violations. */
   fitCheck?: FitCheckReport;
+  /** 402 EXPORT_CREDIT_REQUIRED / INSUFFICIENT_CREDITS: export credits left. */
+  balance?: number;
 }
 
 export interface HealthStatus {
@@ -439,6 +443,21 @@ export interface ExportStarted {
   jobId: string;
   status: ExportStatus;
   fitCheck: FitCheckReport;
+  /** Free A4 PDF of a design that is not unlocked: WrapFit line on a glue flap. */
+  watermarked: boolean;
+  /** This request spent one export credit (useCredit). */
+  charged: boolean;
+  exportCredits: { balance: number };
+}
+
+/** `GET /projects/:id/exports/access`: what the export dialog shows before a request (docs/16 §5). */
+export interface ExportAccess {
+  /** FREE_A4: only the watermarked A4 PDF without credits; CREDIT: one credit per design version; UNLIMITED: Pro. */
+  mode: "FREE_A4" | "CREDIT" | "UNLIMITED";
+  /** Clean files of the current version need no credit (Pro, or a credit already spent on it). */
+  unlocked: boolean;
+  unlockExpiresAt: string | null;
+  balance: number;
 }
 
 export interface ExportJob {
@@ -446,6 +465,8 @@ export interface ExportJob {
   projectId: string;
   fileType: ExportFileType;
   status: ExportStatus;
+  /** The free A4 PDF with the WrapFit line on a glue flap. */
+  watermarked?: boolean;
   /** Set when FAILED. */
   error: string | null;
   createdAt: string;

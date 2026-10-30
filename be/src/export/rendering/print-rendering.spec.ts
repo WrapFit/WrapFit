@@ -9,8 +9,19 @@ import {
   UnsupportedFormulaVersionError,
   UnsupportedStructureError,
 } from './print-layout';
-import { CURRENT_FORMULA_VERSION, layoutTextBox, printFontOf, PT_TO_MM } from '@wrapfit/shared';
+import {
+  CURRENT_FORMULA_VERSION,
+  fitWatermark,
+  layoutTextBox,
+  printFontOf,
+  PT_TO_MM,
+  WATERMARK_SAFE_MM,
+  WATERMARK_TEXT,
+  watermarkPlacement,
+} from '@wrapfit/shared';
 import { strFromU8, unzipSync } from 'fflate';
+import { inflateSync } from 'zlib';
+import { checkProject } from '../../projects';
 import { renderPrintPackage } from './print-package';
 import {
   Artwork,
@@ -21,6 +32,7 @@ import {
   renderDxf,
   renderPdf,
   renderSvg,
+  watermarkOutline,
 } from './print-renderers';
 
 describe('text model shared with the editor canvas', () => {
@@ -301,5 +313,108 @@ describe('print renderers', () => {
     expect(hexToCmyk('#FFFFFF')).toEqual([0, 0, 0, 0]);
     expect(fileNameFor('Hộp nến Tết Đoàn Viên!', 'PDF_CMYK')).toBe('hop-nen-tet-doan-vien-pdf-cmyk.pdf');
     expect(fileNameFor('***', 'DXF')).toBe('wrapfit-dxf.dxf');
+  });
+});
+
+describe('watermark of the free A4 PDF', () => {
+  const current = (structure: string, elements: CanvasElement[] = [greeting]) =>
+    buildPrintLayout({ title: 'Hộp nến Tết', structure, formulaVersion: CURRENT_FORMULA_VERSION, dimensions, elements });
+  /** Every "x y" point of a path. */
+  const pointsOf = (d: string) => [...d.matchAll(/(-?[\d.]+) (-?[\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const glueAreasOf = (layout: ReturnType<typeof current>) =>
+    layout.pieces.flatMap((piece) =>
+      (piece.geometry.glueAreas ?? []).map((a) => ({ left: piece.x + a.x, top: piece.y + a.y, right: piece.x + a.x + a.width, bottom: piece.y + a.y + a.height })),
+    );
+  const inside = (points: number[][], box: { left: number; top: number; right: number; bottom: number }) =>
+    points.every(([x, y]) => x >= box.left && x <= box.right && y >= box.top && y <= box.bottom);
+
+  it.each(['tuck-top', 'pillow', 'sleeve-drawer', 'lid-base'])('puts it on a glue flap of the %s, 6 pt when it fits', (structure) => {
+    const layout = current(structure);
+    const mark = watermarkOutline(layout)!;
+    expect(mark.placement.source).toBe('glue');
+    const points = pointsOf(mark.d);
+    expect(points.length).toBeGreaterThan(50);
+    // Every point of the outlines lies inside one glue area.
+    expect(glueAreasOf(layout).some((area) => inside(points, area))).toBe(true);
+    if (structure === 'tuck-top') {
+      // A tall, narrow flap: the line runs along it, at the full 6 pt.
+      expect(mark.placement.rotation).toBe(-90);
+      expect(mark.sizeMm).toBeCloseTo(6 * PT_TO_MM, 3);
+    }
+  });
+
+  it('falls back to a band at the bottom of the largest panel, inside the 3 mm safe margin', () => {
+    const layout = current('sticker-label', []);
+    const placement = watermarkPlacement(layout.pieces)!;
+    expect(placement).toMatchObject({ source: 'panel', rotation: 0 });
+    const piece = layout.pieces[0];
+    const panel = piece.geometry.panels[0].bounds;
+    expect(placement.x).toBeCloseTo(piece.x + panel.x + WATERMARK_SAFE_MM);
+    expect(placement.y + placement.height).toBeCloseTo(piece.y + panel.y + panel.height - WATERMARK_SAFE_MM);
+    const points = pointsOf(watermarkOutline(layout)!.d);
+    expect(
+      inside(points, {
+        left: piece.x + panel.x + WATERMARK_SAFE_MM,
+        right: piece.x + panel.x + panel.width - WATERMARK_SAFE_MM,
+        top: piece.y + panel.y,
+        bottom: piece.y + panel.y + panel.height - WATERMARK_SAFE_MM,
+      }),
+    ).toBe(true);
+    // Projects pinned to formulas without glue areas (version 1) use the band too.
+    expect(watermarkPlacement(layoutOf('tuck-top').pieces)).toMatchObject({ source: 'panel' });
+  });
+
+  it('shrinks the text when the run is too short, and centres it', () => {
+    const placement = { x: 10, y: 20, width: 30, height: 4, rotation: 0 as const, source: 'panel' as const };
+    // 20 mm of text per mm of font size: 6 pt (2.12 mm) would need 42 mm, the box has 30.
+    const fit = fitWatermark(placement, (size: number) => size * 20);
+    expect(fit.sizeMm).toBeCloseTo(1.5); // 30 mm run / 20
+    expect(fit.length).toBeCloseTo(30);
+    expect(fit.origin.x).toBeCloseTo(10);
+    expect(watermarkPlacement([])).toBeNull();
+  });
+
+  it('is drawn only on watermarked PDFs, in the Artwork layer, and readable as text', async () => {
+    const layout = current('tuck-top');
+    const streams = (pdf: Buffer) => {
+      const text = pdf.toString('latin1');
+      const out: string[] = [];
+      for (const match of text.matchAll(/stream\s/g)) {
+        const start = match.index! + match[0].length;
+        const end = text.indexOf('endstream', start);
+        try {
+          out.push(inflateSync(pdf.subarray(start, end)).toString('latin1'));
+        } catch {
+          // not a Flate stream (images are raw)
+        }
+      }
+      return out.join('\n');
+    };
+    const hex = `FEFF${Buffer.from(WATERMARK_TEXT, 'utf16le').swap16().toString('hex').toUpperCase()}`;
+    const plain = streams(await renderPdf(layout, new Map(), { withCropMarks: true, paperSize: 'A4' }));
+    expect(plain).not.toContain('/ActualText');
+
+    const pdf = await renderPdf(layout, new Map(), { withCropMarks: true, paperSize: 'A4', watermarked: true });
+    expect(pdf.toString('latin1')).not.toMatch(/\/FontFile|\/Type \/Font/); // outlined like every text
+    const content = streams(pdf);
+    const start = content.indexOf(`/Span <</ActualText <${hex}>>> BDC`);
+    expect(start).toBeGreaterThan(-1);
+    // Inside the Artwork layer (L0), before the dielines.
+    expect(content.lastIndexOf('/OC /L0 BDC', start)).toBeGreaterThan(-1);
+    expect(content.indexOf('/OC /L1 BDC')).toBeGreaterThan(start);
+    // The drawing between BDC and EMC: sheet coordinates (the page offset is a cm before), all inside the glue flap.
+    const body = content.slice(start, content.indexOf('EMC', start));
+    const numbers = [...body.replace(/<[0-9A-F]+>/, '').matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) [mlc]/g)].map((m) => [
+      Number(m[1]),
+      Number(m[2]),
+    ]);
+    expect(numbers.length).toBeGreaterThan(50);
+    expect(inside(numbers, glueAreasOf(layout)[0])).toBe(true);
+  });
+
+  it('is not a design element: FitCheck of the project is the same with or without it', () => {
+    const report = checkProject('tuck-top', dimensions, [greeting], CURRENT_FORMULA_VERSION);
+    expect(report.violations.map((v) => v.code)).not.toContain('GLUE_CONTAMINATED');
+    expect(report.isValidForProduction).toBe(true);
   });
 });

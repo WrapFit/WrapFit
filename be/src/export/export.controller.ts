@@ -16,9 +16,21 @@ export class ExportController {
   @HttpCode(202)
   @UseGuards(ProjectOwnerGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Request a print file (FitCheck runs first); poll GET /api/exports/:jobId' })
+  @ApiOperation({
+    summary: 'Request a print file (FitCheck runs first); poll GET /api/exports/:jobId',
+    description:
+      'Not unlocked on a free or credit plan: PDF_A4_PRINT is watermarked, other formats answer 402 EXPORT_CREDIT_REQUIRED ' +
+      '{ balance } until the request sends useCredit: true (402 INSUFFICIENT_CREDITS when none are left).',
+  })
   request(@Param('id') projectId: string, @Body() dto: CreateExportDto) {
-    return this.exports.request(projectId, dto.fileType);
+    return this.exports.request(projectId, dto.fileType, dto.useCredit);
+  }
+
+  @Get('projects/:id/exports/access')
+  @UseGuards(ProjectOwnerGuard)
+  @ApiOperation({ summary: 'Export mode of my plan, whether this design version is unlocked, export credits left' })
+  access(@Param('id') projectId: string) {
+    return this.exports.access(projectId);
   }
 
   @Get('projects/:id/exports')
