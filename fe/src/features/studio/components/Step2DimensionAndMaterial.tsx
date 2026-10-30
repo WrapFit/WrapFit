@@ -20,6 +20,8 @@ import {
   CanvasElement,
   CURRENT_FORMULA_VERSION,
   FitCheckReport,
+  LOCK_BOTTOM_MIN_WEIGHT_G,
+  usesLockBottom,
 } from "@wrapfit/shared";
 
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
@@ -39,6 +41,7 @@ import {
 import { formatNumber, innerVolumeMl, outerSize, sheetFits } from "@/features/studio/utils/boxMetrics";
 import type { DimensionLimits } from "@/types/api";
 import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
+import { Badge, Button, Field, Input } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 import {
   clampDimension,
@@ -80,7 +83,9 @@ const sameSize = (a: BoxDimensions, b: BoxDimensions) =>
   a.length === b.length &&
   a.width === b.width &&
   a.height === b.height &&
-  a.paperThickness === b.paperThickness;
+  a.paperThickness === b.paperThickness &&
+  a.giftWeight === b.giftWeight &&
+  a.bottomType === b.bottomType;
 
 interface Step2DimensionAndMaterialProps {
   dimensions: BoxDimensions;
@@ -337,6 +342,16 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             </div>
           </div>
 
+          {/* Card: gift weight (tuck-top only: its bottom turns into a crash-lock bottom for heavy gifts) */}
+          {boxType === "tuck-top" && (
+            <GiftWeightCard
+              weight={draft.giftWeight}
+              bottomType={draft.bottomType}
+              onWeight={(giftWeight, now) => change({ ...draft, giftWeight }, now)}
+              onBottom={(bottomType) => change({ ...draft, bottomType }, true)}
+            />
+          )}
+
           {/* Card 2: Món quà mẫu */}
           <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
@@ -365,7 +380,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                         ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm`
                         : "Ngoài giới hạn của cấu trúc hộp này"
                     }
-                    onClick={() => change(gp.dims, true)}
+                    onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType }, true)}
                     className={cn(
                       "rounded-2xl border p-3 text-left transition-all",
                       isMatch
@@ -513,6 +528,90 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
     </div>
   );
 };
+
+/**
+ * "Khối lượng quà (g)": above LOCK_BOTTOM_MIN_WEIGHT_G the tuck-top dieline gets a crash-lock bottom (FEFCO 0215,
+ * shared/src/parametric/tuck-top.ts); the user may keep the plain tuck bottom instead (`bottomType: "tuck"`).
+ */
+function GiftWeightCard({
+  weight,
+  bottomType,
+  onWeight,
+  onBottom,
+}: {
+  weight: number | undefined;
+  bottomType: "tuck" | "lock" | undefined;
+  onWeight(weight: number | undefined, now: boolean): void;
+  onBottom(bottomType: "tuck" | "lock" | undefined): void;
+}) {
+  const heavy = weight !== undefined && weight > LOCK_BOTTOM_MIN_WEIGHT_G;
+  const lock = usesLockBottom({ giftWeight: weight, bottomType });
+  const read = (value: string) => {
+    const grams = Number(value.replace(",", "."));
+    return value.trim() === "" || !Number.isFinite(grams) || grams <= 0 ? undefined : Math.min(20_000, Math.round(grams));
+  };
+  const [text, setText] = useState(weight === undefined ? "" : String(weight));
+  // Follow a weight set elsewhere (undo, a saved project), not the one being typed.
+  useEffect(() => {
+    setText((current) => (read(current) === weight ? current : weight === undefined ? "" : String(weight)));
+  }, [weight]);
+
+  return (
+    <div data-tour="s2-weight" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <Field
+          label="Khối lượng quà (g)"
+          hint={`Quà nặng hơn ${LOCK_BOTTOM_MIN_WEIGHT_G} g nên dùng đáy khóa chịu lực.`}
+          className="sm:w-56"
+        >
+          {(control) => (
+            <Input
+              {...control}
+              type="text"
+              inputMode="decimal"
+              placeholder="Ví dụ 350"
+              value={text}
+              trailing="g"
+              className="tabular-nums"
+              onChange={(event) => {
+                setText(event.target.value);
+                onWeight(read(event.target.value), false);
+              }}
+              onBlur={() => onWeight(read(text), true)}
+            />
+          )}
+        </Field>
+        <div className="flex min-w-0 flex-1 flex-col gap-2" aria-live="polite">
+          <Badge tone={lock ? "warning" : "neutral"} className="w-fit">
+            {lock ? "Đáy khóa FEFCO 0215" : "Đáy gài thường"}
+          </Badge>
+          <p className="text-caption text-fg-muted">
+            {lock
+              ? heavy && bottomType !== "lock"
+                ? `Quà ${weight} g > ${LOCK_BOTTOM_MIN_WEIGHT_G} g: đáy tự khóa khi bung hộp, không bị sụt khi nhấc.`
+                : "Đáy tự khóa khi bung hộp, chịu được quà nặng."
+              : heavy
+                ? `Bạn đã chọn đáy gài cho quà ${weight} g; đáy khóa chắc hơn cho quà nặng.`
+                : "Hai tai gài ở đáy, đủ cho quà nhẹ."}
+          </p>
+        </div>
+      </div>
+      {(heavy || bottomType) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {lock ? (
+            <Button variant="secondary" size="sm" onClick={() => onBottom("tuck")}>
+              Dùng đáy gài thường
+            </Button>
+          ) : (
+            <Button variant="secondary" size="sm" onClick={() => onBottom(heavy ? undefined : "lock")}>
+              Dùng đáy khóa FEFCO 0215
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** Segmented switch pill component for unit and basis */
 function SegmentedSwitch<T extends string>({

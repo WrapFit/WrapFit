@@ -5,6 +5,8 @@ import {
   cutSidesOf,
   dimensionRuleErrors,
   generateDielinePieces,
+  generateTuckTopDieline,
+  usesLockBottom,
 } from '@wrapfit/shared';
 import { checkProject } from './project-fitcheck';
 
@@ -169,6 +171,18 @@ describe('auto-fix', () => {
     expect(autoFixElements(tuckTop, [element({})])).toEqual([element({})]);
   });
 
+  it('moves only the element that breaks the margin; the one inside stays as it was', () => {
+    const bad = element({ id: 'logo', type: 'logo', content: 'https://x/logo.png', x: 1, y: 1, width: 20, height: 20 });
+    const good = element({ id: 'title', x: 20, y: 20 });
+    expect(codes([good])).toEqual([]);
+    const [fixedBad, fixedGood] = autoFixElements(tuckTop, [bad, good]);
+    expect(fixedGood).toBe(good);
+    expect(fixedBad).not.toEqual(bad);
+    expect(fixedBad.x).toBeGreaterThanOrEqual(3);
+    expect(fixedBad.y).toBeGreaterThanOrEqual(3);
+    expect(checkBox(tuckTop, [fixedBad, fixedGood]).violations).toEqual([]);
+  });
+
   it('stretches a background that stops short of a cut line to the bleed', () => {
     const { width: W, height: H } = front.bounds;
     const pattern = element({
@@ -197,5 +211,20 @@ describe('size rules of the structures', () => {
     expect(
       dimensionRuleErrors('tuck-top', { length: 60, width: 60, height: 150 }),
     ).toEqual([]);
+  });
+});
+
+describe('tuck-top bottom (gift weight)', () => {
+  const box = { length: 80, width: 80, height: 95, paperThickness: 0.42 };
+  const bottomOf = (dims: typeof box & { giftWeight?: number; bottomType?: 'tuck' | 'lock' }) =>
+    generateTuckTopDieline(dims).totalBoundingBox.height;
+
+  it('switches to the crash-lock bottom (FEFCO 0215) above 300 g, unless the tuck bottom is chosen', () => {
+    expect(usesLockBottom({ giftWeight: 300 })).toBe(false);
+    expect(usesLockBottom({ giftWeight: 350 })).toBe(true);
+    expect(usesLockBottom({ giftWeight: 350, bottomType: 'tuck' })).toBe(false);
+    expect(usesLockBottom({ bottomType: 'lock' })).toBe(true);
+    expect(bottomOf({ ...box, giftWeight: 350 })).not.toBe(bottomOf(box));
+    expect(bottomOf({ ...box, giftWeight: 350, bottomType: 'tuck' })).toBe(bottomOf(box));
   });
 });
