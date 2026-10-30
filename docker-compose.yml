@@ -148,6 +148,10 @@ services:
       # Optional: creates an admin account on start (never with a default password in production)
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # Optional: the CP4 demo account (5 export credits, the candle jar project with its logo); empty password = none
+      SEED_DEMO_EMAIL: ${SEED_DEMO_EMAIL:-}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+      SEED_DEMO_CREDITS: ${SEED_DEMO_CREDITS:-}
       # Object storage: defaults to the local SeaweedFS above; set these to Cloudflare R2 in production
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
