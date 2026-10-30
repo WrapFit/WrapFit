@@ -405,7 +405,8 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
                     <span className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg bg-library-tile p-2">
                       <DielineSketch structure={item.id} dimensions={defaultDimensionsOf(item.id)} className="h-full w-full" />
                     </span>
-                    <span className="truncate px-0.5 text-sm text-library-ink">{item.name}</span>
+                    {/* Two lines at most: long names ("Hộp Nắp Gài Đáy Khóa") stay readable in the narrow aside */}
+                    <span className="line-clamp-2 px-0.5 text-sm leading-snug text-library-ink">{item.name}</span>
                   </button>
                 );
               })}

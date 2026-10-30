@@ -1138,16 +1138,17 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
       </div>
 
-      {/* Stage: the layers as a floating legend (each line toggles its layer) with the cursor position under it. */}
+      {/* Stage: the layers as a one-line floating legend (each chip toggles its layer) with the cursor position after it.
+          One line, so it covers as little of the dieline as it can on short laptop screens. */}
       {isStage && (
-        <div className="pointer-events-none absolute bottom-2 left-2 z-20 hidden flex-col gap-1.5 md:flex">
-          <div role="group" aria-label="Lớp khuôn bế" className="pointer-events-auto flex flex-col gap-0.5 rounded-panel bg-surface-raised/85 p-1.5 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-md">
+        <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-20 hidden flex-wrap items-center gap-1.5 md:flex">
+          <div role="group" aria-label="Lớp khuôn bế" className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-surface-raised/85 p-1 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-md">
             {(
               [
-                { key: "cut", label: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
-                { key: "crease", label: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
-                { key: "bleed", label: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
-                { key: "safeMargin", label: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
+                { key: "cut", label: "Nét cắt", hint: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
+                { key: "crease", label: "Nếp gấp", hint: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
+                { key: "bleed", label: "Tràn lề", hint: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
+                { key: "safeMargin", label: "Vùng an toàn", hint: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
               ] as const
             ).map((layer) => {
               const on = showLayers[layer.key];
@@ -1156,9 +1157,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   key={layer.key}
                   type="button"
                   aria-pressed={on}
+                  aria-label={layer.hint}
                   onClick={() => setShowLayers({ ...showLayers, [layer.key]: !on })}
-                  title={on ? `Ẩn lớp ${layer.label}` : `Hiện lớp ${layer.label}`}
-                  className={`flex min-h-8 items-center gap-2 rounded-control px-2 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+                  title={on ? `Ẩn lớp ${layer.hint}` : `Hiện lớp ${layer.hint}`}
+                  className={`flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
                     on ? "text-fg hover:bg-surface-sunken" : "text-fg-muted line-through decoration-fg-muted/60 hover:bg-surface-sunken"
                   }`}
                 >
