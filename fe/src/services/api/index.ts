@@ -174,6 +174,8 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FILE_NOT_OWNED: "Chỉ dùng được ảnh do bạn tải lên.",
   PROJECT_VERSION_CONFLICT: "Dự án vừa được lưu ở tab hoặc thiết bị khác.",
   ORIGIN_NOT_ALLOWED: "Yêu cầu phải được gửi từ trang WrapFit.",
+  EXPORT_CREDIT_REQUIRED: "File sạch cần dùng 1 lượt xuất.",
+  INSUFFICIENT_CREDITS: "Bạn đã hết lượt xuất file.",
 };
 
 /** Vietnamese message for a failed call (docs/06, section 2). Validation errors keep the server's field messages. */

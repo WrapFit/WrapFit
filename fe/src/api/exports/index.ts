@@ -1,29 +1,22 @@
 /** Print-file exports on the BullMQ queue (`be/src/export`). Flow: docs/06, section 7. */
 
 import { request } from "@/services/api";
-import type { ExportFileType, ExportJob, ExportStarted } from "@/types/api";
+import type { ExportAccess, ExportFileType, ExportJob, ExportStarted } from "@/types/api";
 import { DEMO_EXPORTS } from "@/features/dashboard/demoData";
 
 /**
- * Queues an export (202). 422 with `fitCheck` (see `ApiError.fitCheck`) when FitCheck finds blocking errors.
- * At most 10 requests per minute.
+ * Queues an export (202). 422 with `fitCheck` (see `ApiError.fitCheck`) when FitCheck finds blocking errors; 402
+ * `EXPORT_CREDIT_REQUIRED` (send again with `useCredit`) or `INSUFFICIENT_CREDITS`, with `balance`, for a clean file of
+ * a design that is not unlocked. At most 10 requests per minute. Errors reach the caller: ExportDialog builds the file
+ * in the browser itself when the API cannot be reached, and a payment answer must never turn into a fake success.
  */
-export async function requestExport(projectId: string, fileType: ExportFileType): Promise<ExportStarted> {
-  try {
-    return await request(`/projects/${projectId}/exports`, { method: "POST", json: { fileType } });
-  } catch (error) {
-    console.warn("[Exports API] Request export offline fallback:", error);
-    return {
-      jobId: `exp-demo-${Date.now()}`,
-      status: "COMPLETED",
-      fitCheck: {
-        score: 98,
-        isValidForProduction: true,
-        violations: [],
-        auditedAt: new Date().toISOString(),
-      },
-    };
-  }
+export function requestExport(projectId: string, fileType: ExportFileType, useCredit?: boolean): Promise<ExportStarted> {
+  return request(`/projects/${projectId}/exports`, { method: "POST", json: useCredit ? { fileType, useCredit } : { fileType } });
+}
+
+/** Plan mode, whether the current version of the design is unlocked, and export credits left. */
+export function getExportAccess(projectId: string): Promise<ExportAccess> {
+  return request(`/projects/${projectId}/exports/access`);
 }
 
 /** Poll every 2 seconds until COMPLETED or FAILED. `downloadUrl` expires: fetch the job again for a new one. */
