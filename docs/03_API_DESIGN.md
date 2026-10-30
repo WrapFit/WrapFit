@@ -65,9 +65,21 @@
 | `GET` · `POST` · `DELETE` | `/api/projects/:id/unboxing` | Chủ dự án | Xem / tạo hoặc thay cấu hình mở hộp `{ recipientName, giftNote, audioTrackUrl?, particleEffect? }` (201 lần đầu, 200 khi thay) / xóa kèm file QR |
 | `GET` | `/api/projects/:id/unboxing/qr?format=png\|svg` | Chủ dự án | Tải mã QR (PNG 1200 px hoặc SVG), sinh trực tiếp |
 | `GET` | `/api/public/unboxing/:slug` | Public | Dữ liệu trang mở hộp khi quét QR; tăng `viewsCount` |
-| `POST` | `/api/projects/:id/exports` | Chủ dự án | `{ fileType: "PDF_CMYK" \| "SVG" \| "DXF" }` → `202 { jobId, status, fitCheck }`; FitCheck lỗi → `422` |
+| `POST` | `/api/projects/:id/exports` | Chủ dự án | `{ fileType: "PDF_CMYK" \| "PDF_A4_PRINT" \| "SVG" \| "DXF" \| "PRINT_PACKAGE", useCredit?: boolean }` → `202 { jobId, status, fitCheck, watermarked, charged, exportCredits: { balance } }`; FitCheck lỗi → `422`; cần lượt xuất → `402` (xem "Gói, lượt xuất và thanh toán") |
 | `GET` | `/api/projects/:id/exports` | Chủ dự án | 20 lần xuất gần nhất |
-| `GET` | `/api/exports/:jobId` | Chủ dự án | `{ status, error, fileName, downloadUrl, downloadExpiresIn }` — link tải hết hạn sau 15 phút |
+| `GET` | `/api/projects/:id/exports/access` | Chủ dự án | `{ mode, unlocked, unlockExpiresAt, balance }`: chế độ xuất của gói, phiên bản thiết kế hiện tại đã mở khóa chưa, số lượt còn (nhãn "Có watermark" / "Cần 1 lượt xuất" của ExportDialog) |
+| `GET` | `/api/exports/:jobId` | Chủ dự án | `{ status, error, fileName, watermarked, downloadUrl, downloadExpiresIn }` — link tải hết hạn sau 15 phút |
+| `GET` | `/api/billing/me` | Đã đăng nhập | `{ tier, entitlements, exportCredits: { balance, lots }, subscription, paymentSimulation }` |
+| `POST` | `/api/admin/users/:id/credits` | ADMIN | Cấp lượt xuất tay `{ quantity, expiresInDays?, note? }` (lô `ADMIN`, vd. tài khoản demo) |
+| `POST` | `/api/payments` | Đã đăng nhập | `{ purpose: "EXPORT_1" \| "EXPORT_5" \| "EXPORT_15" \| "PRO_MONTH" \| "SAMPLE_ORDER", orderId? }` → `201 { id, purpose, amountVnd, reference, status: "PENDING", expiresAt, vietqr: { payload, qrSvg, bankName, accountNo, accountName, sample } }` |
+| `GET` | `/api/payments/:id` | Chủ thanh toán | Trạng thái (FE hỏi mỗi 3 giây); quá hạn 15 phút → `EXPIRED`; `vietqr` chỉ có khi `PENDING` |
+| `POST` | `/api/payments/:id/simulate-confirm` | Chủ thanh toán | Chỉ khi `PAYMENT_SIMULATION=true` (ngược lại `404`): `PAID` + cấp quyền lợi trong một transaction; gọi lại không cấp thêm; hết hạn → `409 PAYMENT_EXPIRED` |
+| `POST` | `/api/orders/sample` | Đã đăng nhập (chủ dự án) | Đặt in mẫu 1–10 hộp `{ projectId, quantity, paperStock?, printShopId?, recipientName, phone, shippingAddress, notes? }` → đơn `WF-<năm>-<4 số>` trạng thái `PENDING_PAYMENT` |
+| `GET` | `/api/orders/my-orders` · `/api/orders/:id` | Chủ đơn | Đơn của tôi (mới nhất trước) / một đơn; đơn của người khác → `404` |
+| `GET` | `/api/orders` | ADMIN, PRINT_SHOP | Đơn cần xử lý: mọi xưởng (ADMIN) hoặc xưởng của tài khoản |
+| `PATCH` | `/api/orders/:id/status` | ADMIN, PRINT_SHOP của đúng xưởng | `{ status, note? }` chuyển trạng thái (`PENDING_PAYMENT → PAID → IN_PRODUCTION → SHIPPED → DELIVERED`, hủy trước khi in); bước sai hoặc đơn vừa đổi → `409` |
+| `GET` | `/api/analytics/summary?scope=me\|global&days=7\|30\|90` | Đã đăng nhập | Số liệu dashboard: hộp đã tạo (tổng, theo ngày), cơ cấu kiểu hộp, lỗi FitCheck đã chặn, thời gian tạo hộp (trung vị, trung bình), lần xuất theo định dạng. `global` chỉ có số tổng, cache 60 giây |
+| `POST` | `/api/projects/:id/events` | Chủ dự án | `{ type: "AUTO_FIX_APPLIED", fixed }` hoặc `{ type: "STUDIO_ACTIVE", seconds ≤ 60 }` (nhịp studio); 10 lần / phút |
 | `GET` · `POST` | `/api/collections` | Đã đăng nhập | Thư mục của tôi (mảng, sửa gần nhất trước, kèm `projectCount`) / tạo `{ title, description?, colorTag? }` |
 | `GET` · `PATCH` · `DELETE` | `/api/collections/:id` | Chủ thư mục | Xem / sửa (`null` xóa `description`) / xóa thư mục — dự án bên trong được giữ lại, chuyển thành "chưa phân loại" |
 
@@ -115,9 +127,23 @@
 
 - Luồng: `POST .../exports` → backend chạy lại FitCheck (lưu vào `fitcheckState` của dự án; vi phạm mức `error` → `422` kèm `fitCheck`) → tạo `ExportJob` `PENDING` và đẩy vào hàng đợi BullMQ (Redis) → `202 { jobId }`. Process `worker` riêng xuất file, tải lên storage → `COMPLETED` (+ tự tạo mốc phiên bản "Bản xuất in ..."). FE hỏi `GET /api/exports/:jobId` mỗi 2 giây.
 - `status`: `PENDING` → `PROCESSING` → `COMPLETED` / `FAILED`. Lỗi được thử lại 3 lần; chỉ lần cuối mới thành `FAILED` (kèm `error`).
-- File: `PDF_CMYK` (xưởng in, kích thước thật, màu CMYK, font tiếng Việt nhúng sẵn), `SVG` (Cricut / laser, có lớp), `DXF` (máy bế CNC, mm). Lớp đồ họa gồm chữ và ảnh / logo / hoa văn đã upload lên storage của WrapFit (URL ngoài bị bỏ qua; PDF nhúng PNG / JPEG, SVG nhúng mọi định dạng ảnh; tổng ≤ 100 MB). Chi tiết & giới hạn hiện tại (chưa có đường cắt bao ngoài và lớp bleed từ `@wrapfit/shared`): [`be/README.md`](../be/README.md#xuất-file-in-bullmq).
+- File: `PDF_CMYK` (xưởng in, kích thước thật, màu CMYK, font tiếng Việt nhúng sẵn), `PDF_A4_PRINT` (in tại nhà, khổ A4 / A3, dấu xén), `SVG` (Cricut / laser, có lớp), `DXF` (máy bế CNC, mm), `PRINT_PACKAGE` (ZIP gửi nhà in). Lớp đồ họa gồm chữ và ảnh / logo / hoa văn đã upload lên storage của WrapFit (URL ngoài bị bỏ qua; PDF nhúng PNG, JPEG, WebP, GIF, TIFF, AVIF và logo SVG (raster hóa, đổi sang CMYK), SVG nhúng mọi định dạng ảnh; tổng ≤ 100 MB). Chi tiết & giới hạn hiện tại (chưa có đường cắt bao ngoài và lớp bleed từ `@wrapfit/shared`): [`be/README.md`](../be/README.md#xuất-file-in-bullmq).
 - Chưa cấu hình storage → `503`; Redis không chạy → `503` (job được đánh dấu `FAILED`). Tối đa 10 yêu cầu xuất / phút.
 - Lỗi `4xx` có thể kèm trường bổ sung ngoài `statusCode / error / message / path / timestamp` (vd. `fitCheck`).
+
+### Gói, lượt xuất và thanh toán (Path 2, docs/16, docs/17 S1–S5)
+
+- Quyết định xuất file (docs/16 §5.2): Pro (`STARTER`) → file sạch; phiên bản thiết kế đã mở khóa (còn trong 7 ngày) → sạch,
+  không trừ thêm; `PDF_A4_PRINT` không dùng lượt → `watermarked: true` (dòng "Thiết kế bằng WrapFit · wrapfit.vn" ở tai
+  dán); định dạng khác không có lượt → `402 { code: "EXPORT_CREDIT_REQUIRED", balance }`; gửi `useCredit: true` mà hết lượt →
+  `402 { code: "INSUFFICIENT_CREDITS", balance }`. Một lượt mở khóa mọi định dạng của phiên bản đó; sửa thiết kế (phiên bản
+  mới) cần lượt mới. Job thất bại ở lần thử cuối thì lượt được hoàn một lần.
+- Lượt xuất là sổ cái (`credit_lots`, `credit_debits`): lô sắp hết hạn bị trừ trước, khóa dòng nên hai request song song
+  với 1 lượt chỉ một thành công. Gói lượt: `EXPORT_1` 19.000đ, `EXPORT_5` 79.000đ, `EXPORT_15` 199.000đ (hạn 12 tháng);
+  `PRO_MONTH` 99.000đ / 30 ngày; đơn in mẫu 49.000đ / hộp.
+- VietQR (M5): backend dựng payload EMVCo (NAPAS tag 38, số tiền, nội dung = `reference` `WF` + 6 ký tự bỏ O/0/I/1,
+  CRC-16) và ảnh QR SVG, không gọi dịch vụ ngoài. Tài khoản nhận lấy từ `VIETQR_*`, trống = tài khoản mẫu (`sample: true`).
+- Thanh toán mô phỏng (M6): `PAYMENT_SIMULATION=true` chỉ cho bản demo CP4; chưa có webhook ngân hàng.
 
 ### Mở hộp 3D & QR (IT3-10)
 
@@ -133,6 +159,8 @@
 - Claude chỉ trả dữ liệu hình (structured outputs); backend kiểm tra rồi tự dựng SVG, nên SVG trả về không chứa script / link / tài nguyên ngoài.
 - `source: "ai"` khi Claude sinh; `"procedural"` khi chưa cấu hình AI hoặc AI lỗi (luôn có kết quả, không trả lỗi cho người dùng).
 - Giới hạn lượt AI trong 24 giờ theo gói: FREE 10, STARTER 50, PRO_BUSINESS 300 → hết trả `429`. Tối đa 5 yêu cầu / phút.
+- `quality: "fast"` (mặc định, `AI_MODEL_FAST` = Haiku) hoặc `"premium"` (`AI_MODEL_PREMIUM`, gói khác Free; Free → `403
+  PLAN_FEATURE_REQUIRED`). Vượt `AI_MONTHLY_BUDGET_USD` trong tháng → hoa văn thuật toán; `GET /api/ai/usage` có `budgetReached`.
 - `theme` ≤ 200 ký tự; `preferredColors` tối đa 5 màu thương hiệu.
 
 ### Tài khoản & email (xác minh, quên mật khẩu)
