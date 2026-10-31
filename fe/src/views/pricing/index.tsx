@@ -3,11 +3,11 @@
 import React from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { MainFooter, MainHeader } from "@/components/layout";
-import { PlanComparison, PlanFaq, VisualSparkPricingCards } from "@/components/pricing";
+import { PlanComparison, PlanFaq, VisualSparkPricingCards, XuWrapSection } from "@/components/pricing";
 
 /**
  * `/pricing`: Pricing page in the VisualSpark layout: the four plan cards (prices from @wrapfit/shared/billing), the
- * comparison table and the FAQ.
+ * comparison table, Xu Wrap (packs and what 1.000 xu buy) and the FAQ.
  */
 export default function PricingPage() {
   return (
@@ -18,6 +18,7 @@ export default function PricingPage() {
       >
         <VisualSparkPricingCards />
         <PlanComparison />
+        <XuWrapSection />
         <PlanFaq />
       </main>
       <MainFooter />

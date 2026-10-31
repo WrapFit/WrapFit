@@ -30,14 +30,15 @@ const SECTION_NOTES: Record<string, string> = {
   '/admin/library': 'Sticker, nhãn, nền có giấy phép in',
   '/admin/media': 'Ảnh, logo và file đã tải lên',
   '/admin/revenue': 'Doanh thu theo gói',
+  '/admin/xu': 'Xu phát, tiêu, doanh thu và chi phí AI',
   '/admin/ledger': 'Giao dịch thanh toán',
   '/admin/print-shops': 'Xưởng in đối tác',
   '/admin/accounts': 'Vai trò, xác minh, khoá tài khoản',
-  '/admin/vault-quotas': 'Dung lượng và lượt AI theo gói',
+  '/admin/vault-quotas': 'Dung lượng và xu Wrap theo gói',
   '/admin/security': 'Chính sách đăng nhập và link',
   '/admin/system-config': 'Quy tắc FitCheck™ và tệp tải lên',
 };
-const WIRED = new Set(['/admin/studio-monitoring', '/admin/dieline-vault', '/admin/appraisal', '/admin/accounts', '/admin/vault-quotas', '/admin/security', '/admin/system-config']);
+const WIRED = new Set(['/admin/xu', '/admin/studio-monitoring', '/admin/dieline-vault', '/admin/appraisal', '/admin/accounts', '/admin/vault-quotas', '/admin/security', '/admin/system-config']);
 
 const SERVICE_LABEL: Record<string, string> = { up: 'Chạy', down: 'Lỗi', unknown: 'Không rõ' };
 

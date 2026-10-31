@@ -20,6 +20,7 @@ import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
 import { CheckoutDialog } from '@/features/payments';
+import { XuWalletPanel } from './XuWalletPanel';
 import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
 import { PROMO_CODES } from '@/features/site/cart';
 import { queryKeys } from '@/hooks/data';
@@ -165,6 +166,8 @@ function BillingScreen() {
               </p>
             </div>
           </Panel>
+
+          <XuWalletPanel wallet={billing.data?.xu} onBuy={setBuying} />
 
           {/* History */}
           <Panel>

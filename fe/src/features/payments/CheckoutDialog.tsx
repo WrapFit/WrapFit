@@ -21,11 +21,15 @@ const TITLES: Record<PaymentPurpose, string> = {
   EXPORT_15: "Mua 15 lượt xuất",
   PRO_MONTH: "Nâng lên Pro 30 ngày",
   SAMPLE_ORDER: "Thanh toán đơn in mẫu",
+  XU_500: "Nạp 500 xu Wrap",
+  XU_1050: "Nạp 1.050 xu Wrap",
+  XU_2200: "Nạp 2.200 xu Wrap",
 };
 
 function successText(payment: Payment): string {
   if (payment.purpose === "PRO_MONTH") return "Gói Pro đã bật: xuất file in sạch không giới hạn trong 30 ngày.";
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
+  if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
   return `Đã cộng ${payment.credits ?? 0} lượt xuất vào tài khoản, dùng trong 12 tháng.`;
 }
 
@@ -98,6 +102,8 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   useEffect(() => {
     if (!paid) return;
     void queryClient.invalidateQueries({ queryKey: queryKeys.billing });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.aiUsage });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.xuHistory });
     void queryClient.invalidateQueries({ queryKey: queryKeys.me });
     void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });

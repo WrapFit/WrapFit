@@ -3,6 +3,7 @@
 import {
   Activity,
   BadgeDollarSign,
+  Coins,
   ClipboardCheck,
   Cpu,
   Factory,
@@ -47,6 +48,7 @@ export const ADMIN_NAV: NavGroup[] = [
     title: "Tài chính & đối tác",
     items: [
       { href: "/admin/revenue", label: "Doanh thu", icon: BadgeDollarSign },
+      { href: "/admin/xu", label: "Xu Wrap", icon: Coins },
       { href: "/admin/ledger", label: "Sổ giao dịch", icon: ReceiptText },
       { href: "/admin/print-shops", label: "Xưởng in", icon: Factory },
     ],

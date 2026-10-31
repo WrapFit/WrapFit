@@ -488,7 +488,8 @@ export interface ExportJob {
 
 // ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
 
-export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER";
+export type XuPackPurpose = "XU_500" | "XU_1050" | "XU_2200";
+export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose;
 export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
 
 /** `GET /billing/me`: plan in use, export credits and the Pro period. */
@@ -499,6 +500,8 @@ export interface BillingSummary {
     lots: { id: string; source: "PURCHASE" | "ADMIN"; quantity: number; remaining: number; expiresAt: string | null; createdAt: string }[];
   };
   subscription: { plan: SubscriptionTier; status: "ACTIVE" | "EXPIRED"; currentPeriodStart: string; currentPeriodEnd: string } | null;
+  /** Xu Wrap wallet (docs/19): the allowance of the period is granted when it is read. */
+  xu: XuWallet;
   /** PAYMENT_SIMULATION on the server: the checkout shows "Giả lập đã thanh toán" (CP4 demo). */
   paymentSimulation: boolean;
 }
@@ -515,6 +518,8 @@ export interface Payment {
   paidAt: string | null;
   createdAt: string;
   credits: number | null;
+  /** Xu of a xu pack, null otherwise. */
+  xu: number | null;
   orderId: string | null;
   /** Set while PENDING. */
   vietqr: {
@@ -704,6 +709,45 @@ export interface CreditLot {
   remaining: number;
   expiresAt: string | null;
   createdAt: string;
+}
+
+/** One line of "Lịch sử xu": a lot granted (positive) or a spend (negative), newest first. */
+export interface XuHistoryEntry {
+  type: "GRANT" | "SPEND";
+  id: string;
+  quantity: number;
+  source: CreditLot["source"] | null;
+  reason: "EXPORT_UNLOCK" | "ADMIN_ADJUSTMENT" | "AI_IMAGE" | "AI_PATTERN" | "AI_TOOL" | null;
+  refId: string | null;
+  /** The job failed on our side and the xu came back. */
+  refundedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface XuHistoryPage {
+  entries: XuHistoryEntry[];
+  nextBefore: string | null;
+}
+
+/** `GET /admin/analytics/xu?month=` (admin): xu of one month, valued at the money paid for each lot (docs/19 S5). */
+export interface XuReport {
+  month: string;
+  from: string;
+  to: string;
+  usdVndRate: number;
+  issued: { source: CreditLot["source"]; xu: number; lots: number; valueVnd: number }[];
+  spent: { reason: NonNullable<XuHistoryEntry["reason"]>; xu: number; operations: number; revenueVnd: number }[];
+  refundedXu: number;
+  recognizedRevenueVnd: number;
+  expired: { xu: number; valueVnd: number };
+  /** Purchased xu still spendable now and the money still owed for them. */
+  outstanding: { xu: number; valueVnd: number };
+  providerCost: { kind: "IMAGE" | "PATTERN"; model: string; jobs: number; xu: number; costUsd: number; costVnd: number }[];
+  providerCostVnd: number;
+  grossMarginVnd: number;
+  grossMarginRate: number | null;
+  spentListValueVnd: number;
 }
 
 /** The xu wallet (`GET /billing/me` → `xu`): lots spent first on top. */

@@ -21,18 +21,32 @@ export class ProductEventsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async record(type: ProductEventType, event: ProductEventInput): Promise<void> {
+  async record(
+    type: ProductEventType,
+    event: ProductEventInput,
+  ): Promise<void> {
     try {
       await this.prisma.productEvent.create({
-        data: { type, userId: event.userId, projectId: event.projectId, payload: event.payload ?? {} },
+        data: {
+          type,
+          userId: event.userId,
+          projectId: event.projectId,
+          payload: event.payload ?? {},
+        },
       });
     } catch (error) {
-      this.logger.warn(`Could not record ${type}: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn(
+        `Could not record ${type}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   /** STUDIO_ACTIVE heartbeat; false when one of the same project and user arrived less than 50 s ago. */
-  async recordStudioActivity(userId: string, projectId: string, seconds: number): Promise<boolean> {
+  async recordStudioActivity(
+    userId: string,
+    projectId: string,
+    seconds: number,
+  ): Promise<boolean> {
     const recent = await this.prisma.productEvent.findFirst({
       where: {
         projectId,
@@ -43,7 +57,11 @@ export class ProductEventsService {
       select: { id: true },
     });
     if (recent) return false;
-    await this.record('STUDIO_ACTIVE', { userId, projectId, payload: { seconds } });
+    await this.record('STUDIO_ACTIVE', {
+      userId,
+      projectId,
+      payload: { seconds },
+    });
     return true;
   }
 }
