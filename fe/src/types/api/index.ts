@@ -616,6 +616,86 @@ export interface XuAllowance {
   resetsAt: string;
 }
 
+export type AiImageAspectRatio = "1:1" | "4:3" | "3:4" | "3:2" | "2:3" | "16:9" | "9:16";
+export type AiImageTool = "upscale" | "remove-bg" | "vectorize";
+
+/** One model of `GET /ai/models` (catalog of @wrapfit/shared, priced in xu per image). */
+export interface AiImageModelOffer {
+  key: string;
+  label: string;
+  /** draft: try ideas cheaply; standard: everyday artwork; premium: best quality and lettering; vector: SVG. */
+  tier: "draft" | "standard" | "premium" | "vector";
+  xu: number;
+  output: "raster" | "vector";
+  supportsText: boolean;
+  aspectRatios: AiImageAspectRatio[];
+  maxImages: number;
+  summary: string;
+}
+
+/** `GET /ai/models`: `enabled` false when the server has no image provider or no storage. */
+export interface AiImageCatalog {
+  enabled: boolean;
+  models: AiImageModelOffer[];
+  /** Xu per run on one image. */
+  tools: Record<AiImageTool, number>;
+}
+
+export interface CreateAiImageRequest {
+  /** ≤ 500 characters, any language: the server translates it and frames it as flat box-face artwork. */
+  prompt: string;
+  modelKey: string;
+  aspectRatio: AiImageAspectRatio;
+  /** 1–4 (≤ model.maxImages); the price is per image. */
+  numImages?: number;
+  /** Let a model with `supportsText` draw lettering. */
+  allowText?: boolean;
+  /** One per click: a repeated request returns the same job, not a new charge. */
+  clientRequestId?: string;
+}
+
+export interface AiImageOutput {
+  id: string;
+  url: string | null;
+  contentType: string;
+  /** null for an SVG. */
+  width: number | null;
+  height: number | null;
+  /** Deleted after this date unless it is on a saved design. */
+  keepUntil: string;
+  createdAt: string;
+}
+
+export type AiImageJobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface AiImageJob {
+  id: string;
+  kind: "GENERATE" | "UPSCALE" | "REMOVE_BG" | "VECTORIZE";
+  modelKey: string;
+  status: AiImageJobStatus;
+  prompt: string | null;
+  aspectRatio: string | null;
+  numImages: number;
+  xuCost: number;
+  /** Vietnamese message of a FAILED job: its xu came back. */
+  error: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  outputs: AiImageOutput[];
+}
+
+/** `POST /ai/images` and the tools: 202 with the queued job and the xu left. */
+export interface AiImageJobStarted {
+  job: AiImageJob;
+  balance: number;
+}
+
+/** "Ảnh AI của tôi", newest first. */
+export interface AiImageGalleryPage {
+  items: (AiImageOutput & { job: { id: string; kind: AiImageJob["kind"]; modelKey: string; prompt: string | null } })[];
+  nextBefore: string | null;
+}
+
 /** A lot of export credits or xu: what was granted, what is left, until when. */
 export interface CreditLot {
   id: string;

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Tooltip } from "@/components/ui";
-import { MousePointer, Type, Gift, Upload, Palette, Sparkles, Ruler, Undo2, Redo2 } from "lucide-react";
+import { MousePointer, Type, Gift, Upload, Palette, Sparkles, Ruler, Undo2, Redo2, ImagePlus } from "lucide-react";
 import { cn } from "@/utils/helpers";
 
 export type StudioToolId =
@@ -13,6 +13,7 @@ export type StudioToolId =
   | "image"
   | "palette"
   | "patterns"
+  | "aiImage"
   | "rulers";
 
 interface StudioToolDockProps {
@@ -33,6 +34,7 @@ const TOOLS: { id: StudioToolId; label: string; icon: typeof MousePointer; short
   { id: "image", label: "Tải ảnh / logo", icon: Upload, shortcut: "U" },
   { id: "stickers", label: "Sticker", icon: Gift, shortcut: "S" },
   { id: "palette", label: "Phông & bảng màu", icon: Palette, shortcut: "C" },
+  { id: "aiImage", label: "Ảnh AI", icon: ImagePlus, shortcut: "I" },
   { id: "patterns", label: "Hoa văn AI", icon: Sparkles, shortcut: "A" },
 ];
 

@@ -38,6 +38,8 @@ export const queryKeys = {
 
   storageUsage: ["storage", "usage"] as const,
   aiUsage: ["ai", "usage"] as const,
+  aiImageCatalog: ["ai", "models"] as const,
+  aiImages: ["ai", "images"] as const,
   analytics: {
     all: ["analytics"] as const,
     summary: (scope: AnalyticsScope, days: AnalyticsPeriod) => ["analytics", "summary", scope, days] as const,

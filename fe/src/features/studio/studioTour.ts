@@ -112,7 +112,7 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[role="toolbar"][aria-label="Công cụ thiết kế"]',
       title: "Hộp công cụ",
-      body: "Từ trên xuống: chọn & di chuyển, thêm chữ, tải ảnh hoặc logo, sticker, phông & màu, hoa văn AI. Rê chuột lên mỗi nút để xem tên.",
+      body: "Từ trên xuống: chọn & di chuyển, thêm chữ, tải ảnh hoặc logo, sticker, phông & màu, ảnh AI và hoa văn AI (trả bằng xu Wrap). Rê chuột lên mỗi nút để xem tên.",
       mascot: "folding",
       placement: "right",
     },

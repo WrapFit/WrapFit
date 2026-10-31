@@ -26,6 +26,7 @@ import {
   Palette,
   Gift,
   Ruler,
+  ImagePlus,
   type LucideIcon,
 } from "lucide-react";
 import { buttonClass, hasSeenTour, ProductTour, TourReplayButton, useTourContinuation } from "@/components/ui";
@@ -67,12 +68,13 @@ import { renderThumbnail } from "@/features/studio/utils/thumbnail";
 import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
-import type { BoxStructure, ProjectDetail, SnapshotSummary, TemplateDetail } from "@/types/api";
+import type { AiImageOutput, BoxStructure, ProjectDetail, SnapshotSummary, TemplateDetail } from "@/types/api";
 import { FormulaUpgrade } from "@/features/studio/components/formula/FormulaUpgrade";
 
 // Code splitting: panels and dialogs opened on demand load their own chunk the first time they are needed, so the
 // studio's first paint only waits for the dieline canvas and the 3D view.
 const LibraryPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/library/LibraryPanel").LibraryPanel>>(() => import("@/features/studio/components/library/LibraryPanel").then((m) => m.LibraryPanel), { ssr: false });
+const AiImagePanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/ai-image/AiImagePanel").AiImagePanel>>(() => import("@/features/studio/components/ai-image/AiImagePanel").then((m) => m.AiImagePanel), { ssr: false });
 const AiPatternPanel = dynamic<React.ComponentProps<typeof import("@/features/studio/components/ai-pattern/AiPatternPanel").AiPatternPanel>>(() => import("@/features/studio/components/ai-pattern/AiPatternPanel").then((m) => m.AiPatternPanel), { ssr: false });
 const VersionConflictDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/sync/VersionConflictDialog").VersionConflictDialog>>(() => import("@/features/studio/components/sync/VersionConflictDialog").then((m) => m.VersionConflictDialog), { ssr: false });
 const ExportDialog = dynamic<React.ComponentProps<typeof import("@/features/studio/components/export/ExportDialog").ExportDialog>>(() => import("@/features/studio/components/export/ExportDialog").then((m) => m.ExportDialog), { ssr: false });
@@ -90,13 +92,14 @@ const HISTORY_GAP_MS = 600;
 const HISTORY_LIMIT = 60;
 
 /** Keys of the step 4 tool dock (StudioToolDock shows the same letters). */
-const TOOL_KEYS: Record<string, StudioToolId> = { v: "select", t: "text", u: "image", s: "stickers", c: "palette", a: "patterns" };
+const TOOL_KEYS: Record<string, StudioToolId> = { v: "select", t: "text", u: "image", s: "stickers", c: "palette", a: "patterns", i: "aiImage" };
 
-type InspectorTab = "style" | "stickers" | "dimensions" | "fitcheck";
+type InspectorTab = "style" | "stickers" | "ai" | "dimensions" | "fitcheck";
 
 const INSPECTOR_TABS: { id: InspectorTab; label: string; icon: LucideIcon }[] = [
   { id: "style", label: "Kiểu", icon: Palette },
   { id: "stickers", label: "Sticker", icon: Gift },
+  { id: "ai", label: "Ảnh AI", icon: ImagePlus },
   { id: "dimensions", label: "Cỡ", icon: Ruler },
   { id: "fitcheck", label: "FitCheck", icon: ShieldCheck },
 ];
@@ -567,6 +570,46 @@ export function StudioWorkspace({
     [placementPanel, project, toast, handleAddElement]
   );
 
+  // AI image (docs/19 S4): as large as the safe area of the face allows, with the image's proportions, centred. Same
+  // element and DPI as an uploaded image, so FitCheck judges it the same way; the file is already in WrapFit storage.
+  const handlePlaceAiImage = useCallback(
+    (output: AiImageOutput): { dpi: number } | null => {
+      if (!placementPanel || !output.url) return null;
+      const isVector = output.width === null || output.height === null;
+      const ratio = isVector ? 1 : output.height! / output.width!;
+      const m = safeMarginsOf(placementPanel, dieline);
+      // Half a millimetre more than the safe margin, so rounding never puts the image on the line.
+      const left = m.left + 0.5;
+      const top = m.top + 0.5;
+      const maxW = placementPanel.bounds.width - left - m.right - 0.5;
+      const maxH = placementPanel.bounds.height - top - m.bottom - 0.5;
+      if (maxW <= 0 || maxH <= 0) return null;
+      let width = maxW;
+      let height = width * ratio;
+      if (height > maxH) {
+        height = maxH;
+        width = height / ratio;
+      }
+      width = Math.floor(width * 10) / 10;
+      height = Math.floor(height * 10) / 10;
+      const dpi = isVector ? 300 : Math.round(output.width! / (width / 25.4));
+      handleAddElement({
+        id: `aiimg_${Date.now()}`,
+        type: isVector ? "logo" : "image",
+        panelId: placementPanel.id,
+        x: Math.round((left + (maxW - width) / 2) * 10) / 10,
+        y: Math.round((top + (maxH - height) / 2) * 10) / 10,
+        width,
+        height,
+        rotation: 0,
+        content: output.url,
+        dpi,
+      });
+      return { dpi };
+    },
+    [placementPanel, dieline, handleAddElement]
+  );
+
   // AI pattern: under the other elements of the panel
   const handleInsertPattern = useCallback((pattern: CanvasElement) => {
     setElements((prev) => [pattern, ...prev]);
@@ -587,6 +630,7 @@ export function StudioWorkspace({
         setTextComposerOpen(true);
       }
       if (tool === "stickers") setActiveInspectorTab("stickers");
+      if (tool === "aiImage") setActiveInspectorTab("ai");
       if (tool === "palette" || tool === "patterns") setActiveInspectorTab("style");
     },
     [uploading]
@@ -1173,7 +1217,7 @@ export function StudioWorkspace({
               className="z-20 flex flex-col overflow-hidden rounded-sheet bg-surface-raised/95 shadow-popover ring-1 ring-line/70 backdrop-blur-xl lg:absolute lg:bottom-24 lg:right-4 lg:top-[76px] lg:w-[364px]"
             >
               <div className="border-b border-line/70 p-3">
-                <div role="tablist" aria-label="Bảng thuộc tính" className="grid grid-cols-4 gap-1 rounded-full bg-surface-sunken p-1 text-label-sm">
+                <div role="tablist" aria-label="Bảng thuộc tính" className="flex gap-0.5 rounded-full bg-surface-sunken p-1 text-label-sm">
                   {INSPECTOR_TABS.map((tab) => {
                     const on = activeInspectorTab === tab.id;
                     const Icon = tab.icon;
@@ -1184,7 +1228,7 @@ export function StudioWorkspace({
                         onClick={() => setActiveInspectorTab(tab.id)}
                         role="tab"
                         aria-selected={on}
-                        className={`relative flex min-h-9 items-center justify-center gap-1 whitespace-nowrap rounded-full px-1 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+                        className={`relative flex min-h-9 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full px-1.5 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
                           on ? "bg-surface-raised font-semibold text-fg shadow-xs" : "text-fg-muted hover:text-fg"
                         }`}
                       >
@@ -1276,6 +1320,13 @@ export function StudioWorkspace({
                         })
                       }
                     />
+                  </div>
+                )}
+
+                {/* TAB: AI IMAGES (xu, docs/19) */}
+                {activeInspectorTab === "ai" && (
+                  <div className="animate-fadeIn">
+                    <AiImagePanel projectId={project?.id ?? null} panel={placementPanel} onPlace={handlePlaceAiImage} />
                   </div>
                 )}
 
