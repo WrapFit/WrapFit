@@ -190,7 +190,7 @@ export const CATEGORIES: ArticleCategory[] = [
         id: "han-muc-goi",
         title: "Hạn mức của từng gói",
         body: [
-          `${FREE.name}: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.aiPatternsPerDay} hoa văn AI mỗi ngày, xuất PDF A4 có watermark ở tai dán. ${PAY_PER_EXPORT.name}: ${formatQuota(PAY_PER_EXPORT.storageBytes)} và ${PAY_PER_EXPORT.aiPatternsPerDay} hoa văn. ${STARTER.name}: ${formatQuota(STARTER.storageBytes)} và ${STARTER.aiPatternsPerDay} hoa văn. ${PRO_BUSINESS.name}: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.aiPatternsPerDay} hoa văn.`,
+          `${FREE.name}: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.xuPerPeriod} xu Wrap mỗi tháng cho ảnh và hoa văn AI, xuất PDF A4 có watermark ở tai dán. ${PAY_PER_EXPORT.name}: ${formatQuota(PAY_PER_EXPORT.storageBytes)} và ${PAY_PER_EXPORT.xuPerPeriod} xu. ${STARTER.name}: ${formatQuota(STARTER.storageBytes)} và ${STARTER.xuPerPeriod.toLocaleString("vi-VN")} xu. ${PRO_BUSINESS.name}: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.xuPerPeriod.toLocaleString("vi-VN")} xu.`,
           "Mức đã dùng hiện trên trang Tổng quan của bạn.",
         ],
         action: { label: "Xem bảng giá", href: "/pricing" },

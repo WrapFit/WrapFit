@@ -142,7 +142,7 @@ function OrderSummary({ tier, pack }: { tier: PaidTier; pack: ExportPackId }) {
         </li>
         <li className="flex items-start gap-3">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />
-          {plan.aiPatternsPerDay} lượt tạo hoa văn AI mỗi 24 giờ
+          {plan.xuPerPeriod.toLocaleString("vi-VN")} xu Wrap mỗi kỳ cho ảnh và hoa văn AI
         </li>
         <li className="flex items-start gap-3">
           <Check className="mt-0.5 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />

@@ -176,11 +176,22 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
   ORIGIN_NOT_ALLOWED: "Yêu cầu phải được gửi từ trang WrapFit.",
   EXPORT_CREDIT_REQUIRED: "File sạch cần dùng 1 lượt xuất.",
   INSUFFICIENT_CREDITS: "Bạn đã hết lượt xuất file.",
+  PROMPT_REJECTED: "Mô tả này có nội dung WrapFit không thể in. Hãy thử mô tả khác.",
+  AI_IMAGE_UNAVAILABLE: "Tạo ảnh AI đang tạm dừng. Thử lại sau ít phút.",
+  AI_IMAGE_BUSY: "Chờ các ảnh đang tạo xong rồi tạo tiếp.",
+  STORAGE_QUOTA_EXCEEDED: "Bộ nhớ của gói đã đầy. Xoá bớt ảnh hoặc nâng cấp gói.",
 };
+
+/** Codes whose server message is written for the user (Vietnamese, with the details): shown as sent. */
+const SERVER_WORDED_CODES: ReadonlySet<ApiErrorCode> = new Set(["PROMPT_REJECTED", "AI_IMAGE_UNAVAILABLE", "AI_IMAGE_BUSY"]);
 
 /** Vietnamese message for a failed call (docs/06, section 2). Validation errors keep the server's field messages. */
 export function errorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "Đã có lỗi xảy ra. Vui lòng thử lại.";
+  if (error.code === "INSUFFICIENT_CREDITS" && error.body?.kind === "XU") {
+    return `Cần ${error.body.cost ?? "thêm"} xu, bạn còn ${error.body.balance ?? 0} xu. Nạp thêm xu ở trang Thanh toán & gói.`;
+  }
+  if (error.code && SERVER_WORDED_CODES.has(error.code) && error.messages[0]) return error.messages[0];
   // Codes without their own text (e.g. 429 LOGIN_RATE_LIMITED) fall back to the message of their status.
   if (error.code && Object.prototype.hasOwnProperty.call(CODE_MESSAGES, error.code)) return CODE_MESSAGES[error.code];
   switch (error.status) {

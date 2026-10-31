@@ -233,17 +233,18 @@ function buildNotices({ user, active: activeProjects, trash: trashedProjects, st
       });
     }
   }
-  if (aiUsage?.aiEnabled && aiUsage.used >= aiUsage.limit * 0.8) {
-    const left = Math.max(0, aiUsage.limit - aiUsage.used);
+  // Xu Wrap running low: under a fifth of the allowance of one period.
+  if (aiUsage && aiUsage.xu.balance < aiUsage.xu.allowance.perPeriod * 0.2) {
+    const left = aiUsage.xu.balance;
     notices.push({
       id: 'ai',
       category: 'account',
-      tone: left === 0 ? 'red' : 'amber',
+      tone: left < aiUsage.patternCost.fast ? 'red' : 'amber',
       icon: Sparkles,
-      title: left === 0 ? 'Đã hết lượt tạo hoa văn AI' : `Còn ${left} lượt tạo hoa văn AI`,
-      text: `Hạn mức ${aiUsage.limit} lượt trong 24 giờ của gói hiện tại.`,
-      href: '/pricing',
-      action: 'Xem các gói',
+      title: left === 0 ? 'Đã hết xu Wrap' : `Còn ${left} xu Wrap`,
+      text: `Gói cộng ${aiUsage.xu.allowance.perPeriod} xu từ ${new Date(aiUsage.xu.allowance.resetsAt).toLocaleDateString('vi-VN')}. Nạp thêm xu để tạo ảnh và hoa văn AI ngay.`,
+      href: '/dashboard/billing',
+      action: 'Nạp xu',
     });
   }
   notices.sort((a, b) => (b.at ?? '9').localeCompare(a.at ?? '9'));

@@ -35,7 +35,7 @@ function Review() {
   const rows = [
     { label: 'Gói', from: TIER_LABELS[current.tier], to: TIER_LABELS[next.tier] },
     { label: 'Dung lượng lưu trữ', from: formatQuota(current.storageBytes), to: formatQuota(next.storageBytes) },
-    { label: 'Hoa văn AI / 24 giờ', from: `${current.aiPatternsPerDay} lượt`, to: `${next.aiPatternsPerDay} lượt` },
+    { label: 'Xu Wrap mỗi kỳ', from: `${current.xuPerPeriod.toLocaleString('vi-VN')} xu`, to: `${next.xuPerPeriod.toLocaleString('vi-VN')} xu` },
   ];
 
   return (

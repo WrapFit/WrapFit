@@ -1,5 +1,4 @@
 import type {
-  AiUsage,
   Collection,
   ExportJob,
   HealthDetails,
@@ -428,14 +427,6 @@ export const DEMO_STORAGE_USAGE: StorageUsage = {
   usedBytes: 15728640,
   quotaBytes: 52428800,
   fileCount: 4,
-};
-
-export const DEMO_AI_USAGE: AiUsage = {
-  tier: "FREE",
-  used: 2,
-  limit: 5,
-  aiEnabled: true,
-  budgetReached: false,
 };
 
 export const DEMO_PRINT_SHOPS: PrintShop[] = [

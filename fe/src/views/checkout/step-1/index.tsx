@@ -74,7 +74,7 @@ function ChoosePlan() {
                 </span>
                 <span className="flex flex-col gap-1.5 text-sm text-landing-muted">
                   <span>{formatQuota(plan.storageBytes)} lưu trữ</span>
-                  <span>{plan.aiPatternsPerDay} lượt hoa văn AI / 24h</span>
+                  <span>{plan.xuPerPeriod.toLocaleString("vi-VN")} xu Wrap mỗi kỳ</span>
                 </span>
                 {isOwned && <span className="text-xs font-medium text-fpt-orange-ink">Đã có trong gói của bạn</span>}
               </Link>

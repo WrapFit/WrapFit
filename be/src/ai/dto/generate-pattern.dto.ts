@@ -22,7 +22,7 @@ export class GeneratePatternDto {
   @ApiPropertyOptional({
     enum: ['fast', 'premium'],
     default: 'fast',
-    description: '`premium` = stronger model, paid plans only (403 PLAN_FEATURE_REQUIRED on Free)',
+    description: 'Price in xu: `fast` 1, `premium` (stronger model) 65 (XU_PATTERN_COST, docs/19). Not enough xu: 402',
   })
   @IsOptional()
   @IsIn(['fast', 'premium'])

@@ -110,15 +110,14 @@ export function AiUsageTile() {
     return (
       <ErrorState
         error={usage.error}
-        title="Không tải được lượt AI"
+        title="Không tải được ví xu"
         onRetry={() => void usage.refetch()}
         retrying={usage.isFetching}
       />
     );
   }
 
-  const { used, limit, aiEnabled, tier } = usage.data;
-  const left = Math.max(0, limit - used);
+  const { xu, patternCost } = usage.data;
   return (
     <section aria-labelledby={titleId} className={TILE}>
       <div className="flex items-start justify-between gap-3">
@@ -126,34 +125,24 @@ export function AiUsageTile() {
           <Sparkles className="size-5" aria-hidden />
         </div>
         <span className="rounded-md bg-library-panel px-2 py-1 text-xs font-medium text-library-sub">
-          {TIER_LABELS[tier]}
+          {formatCount(xu.allowance.perPeriod)} xu/kỳ
         </span>
       </div>
       <div className="space-y-2">
         <h3 id={titleId} className="text-lg font-medium text-library-ink">
-          Hoa văn AI trong 24 giờ
+          Xu Wrap
         </h3>
-        {aiEnabled ? (
-          <>
-            <p className="text-2xl font-medium text-library-ink">
-              {formatCount(used)}{" "}
-              <span className="text-sm font-normal text-library-muted">/ {formatCount(limit)} lượt</span>
-            </p>
-            <Meter percent={usagePercent(used, limit)} label="Lượt AI đã dùng" />
-            <p className="text-xs text-library-sub">
-              {left > 0 ? `Còn ${formatCount(left)} lượt` : "Đã hết lượt, thử lại sau 24 giờ"}
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="text-2xl font-medium text-library-ink">Không giới hạn</p>
-            <p className="text-sm leading-relaxed text-library-sub">
-              Hoa văn đang được tạo bằng bộ sinh có sẵn của WrapFit, không tính lượt.
-            </p>
-          </>
-        )}
+        <p className="text-2xl font-medium tabular-nums text-library-ink">
+          {formatCount(xu.balance)} <span className="text-sm font-normal text-library-muted">xu</span>
+        </p>
+        <p className="text-xs text-library-sub">
+          Kỳ tới cộng {formatCount(xu.allowance.perPeriod)} xu từ {new Date(xu.allowance.resetsAt).toLocaleDateString("vi-VN")}.
+          Hoa văn AI {patternCost.fast} xu, ảnh AI từ 10 xu.
+        </p>
       </div>
-      <p className="text-xs text-library-muted">Tạo hoa văn trong studio, mục Hoa văn AI.</p>
+      <Link href="/dashboard/billing" className="inline-flex items-center gap-1 text-xs font-medium text-accent-fg hover:underline">
+        Ví xu và nạp thêm <ArrowRight className="size-3.5" aria-hidden />
+      </Link>
     </section>
   );
 }

@@ -1,4 +1,13 @@
-import { BLEED_MM, ENTITLEMENTS, MIN_DPI, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type ExportPackId } from "@wrapfit/shared";
+import {
+  BLEED_MM,
+  ENTITLEMENTS,
+  MIN_DPI,
+  SAFE_MARGIN_CREASE_MM,
+  SAFE_MARGIN_CUT_MM,
+  XU_PATTERN_COST,
+  XU_VALUE_VND,
+  type ExportPackId,
+} from "@wrapfit/shared";
 import { ROUTES } from "@/constants";
 import {
   EXPORT_PACK_LIST,
@@ -17,6 +26,9 @@ import type { SubscriptionTier } from "@/types/api";
 
 const { FREE, PAY_PER_EXPORT, STARTER, PRO_BUSINESS } = PLANS;
 const UNLOCK_DAYS = ENTITLEMENTS.PAY_PER_EXPORT.export.unlockDays;
+
+/** `1.000 xu`. */
+const xu = (count: number) => `${count.toLocaleString("vi-VN")} xu`;
 
 /** Export pack chosen first in the "Lượt xuất" card. */
 export const DEFAULT_PACK: ExportPackId = "EXPORT_5";
@@ -50,7 +62,7 @@ export const PLAN_CARDS: Record<SubscriptionTier, PlanCardCopy> = {
       "Studio thiết kế, 4 cấu trúc hộp, hộp gấp 3D",
       "FitCheck™ và Auto-Fix trước khi in",
       "PDF A4 in tại nhà, có watermark WrapFit ở tai dán",
-      `${formatQuota(FREE.storageBytes)} lưu trữ · ${FREE.aiPatternsPerDay} hoa văn AI/ngày`,
+      `${formatQuota(FREE.storageBytes)} lưu trữ · ${xu(FREE.xuPerPeriod)} Wrap mỗi tháng`,
       "Trang chia sẻ 3D và mã QR mở hộp",
     ],
     cta: "Bắt đầu miễn phí",
@@ -62,7 +74,7 @@ export const PLAN_CARDS: Record<SubscriptionTier, PlanCardCopy> = {
     features: [
       `Mỗi lượt mở khóa một bản thiết kế trong ${UNLOCK_DAYS} ngày`,
       "PDF CMYK 4 lớp cho xưởng · SVG · DXF · PDF A4/A3, không watermark",
-      `${formatQuota(PAY_PER_EXPORT.storageBytes)} lưu trữ · ${PAY_PER_EXPORT.aiPatternsPerDay} hoa văn AI/ngày`,
+      `${formatQuota(PAY_PER_EXPORT.storageBytes)} lưu trữ · ${xu(PAY_PER_EXPORT.xuPerPeriod)} Wrap mỗi tháng`,
       "Mọi tính năng của gói Miễn phí",
     ],
     cta: "Mua lượt xuất",
@@ -74,7 +86,7 @@ export const PLAN_CARDS: Record<SubscriptionTier, PlanCardCopy> = {
     features: [
       `Xuất file in sạch không giới hạn trong ${PRO_PERIOD_DAYS} ngày`,
       "PDF CMYK 4 lớp · SVG · DXF · PDF A4/A3",
-      `${formatQuota(STARTER.storageBytes)} lưu trữ · ${STARTER.aiPatternsPerDay} hoa văn AI/ngày`,
+      `${formatQuota(STARTER.storageBytes)} lưu trữ · ${xu(STARTER.xuPerPeriod)} Wrap mỗi tháng`,
       "Ưu tiên đặt in hộp mẫu qua xưởng đối tác",
       "Mọi tính năng của gói Lượt xuất",
     ],
@@ -86,7 +98,7 @@ export const PLAN_CARDS: Record<SubscriptionTier, PlanCardCopy> = {
     subtitle: "Cho thương hiệu và xưởng in",
     note: `Tham khảo từ ${formatVnd(PRO_BUSINESS.price.monthly)}/tháng`,
     features: [
-      `${formatQuota(PRO_BUSINESS.storageBytes)} lưu trữ · ${PRO_BUSINESS.aiPatternsPerDay} hoa văn AI/ngày`,
+      `${formatQuota(PRO_BUSINESS.storageBytes)} lưu trữ · ${xu(PRO_BUSINESS.xuPerPeriod)} Wrap mỗi tháng`,
       "Nhiều thành viên trong một không gian làm việc",
       "Kiểm tra hàng loạt file khuôn cho đối tác gia công",
       "Tư vấn 1-1 với chuyên gia bao bì",
@@ -120,7 +132,7 @@ export const COMPARISON: ComparisonRow[] = [
     values: { FREE: "Không có", PAY_PER_EXPORT: "1 lượt / bản thiết kế", STARTER: "Không giới hạn", PRO_BUSINESS: "Không giới hạn" },
   },
   { feature: "Lưu trữ", values: perTier((tier) => formatQuota(PLANS[tier].storageBytes)) },
-  { feature: "Hoa văn AI mỗi 24 giờ", values: perTier((tier) => `${PLANS[tier].aiPatternsPerDay} lượt`) },
+  { feature: "Xu Wrap mỗi kỳ (ảnh, hoa văn AI)", values: perTier((tier) => xu(PLANS[tier].xuPerPeriod)) },
   {
     feature: "Cách trả tiền",
     values: {
@@ -152,8 +164,8 @@ export const FAQ: { question: string; answer: string }[] = [
     answer: `Không. Gói ${STARTER.name} ${formatVnd(STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán, xuất file sạch không giới hạn. Hết hạn, tài khoản trở về gói Miễn phí (hoặc Lượt xuất nếu còn lượt); dự án không bị xoá.`,
   },
   {
-    question: "Lượt tạo hoa văn AI được tính thế nào?",
-    answer: `Mỗi lần bấm tạo hoa văn trong studio là một lượt. Hạn mức tính trên 24 giờ gần nhất, không reset lúc nửa đêm: ${FREE.name} ${FREE.aiPatternsPerDay} lượt, ${PAY_PER_EXPORT.name} ${PAY_PER_EXPORT.aiPatternsPerDay} lượt, ${STARTER.name} ${STARTER.aiPatternsPerDay} lượt, ${PRO_BUSINESS.name} ${PRO_BUSINESS.aiPatternsPerDay} lượt.`,
+    question: "Xu Wrap là gì, được tính thế nào?",
+    answer: `Xu Wrap là đồng xu chung cho mọi tác vụ AI: tạo ảnh cho mặt hộp, hoa văn AI, phóng to, xóa nền, vector hóa. 1 xu = ${formatVnd(XU_VALUE_VND)}. Mỗi kỳ gói cộng xu: ${PLAN_ORDER.map((tier) => `${PLANS[tier].name} ${xu(PLANS[tier].xuPerPeriod)}`).join(", ")}; xu chưa dùng giữ thêm một kỳ. Hoa văn AI ${XU_PATTERN_COST.fast} xu (cao cấp ${XU_PATTERN_COST.premium} xu), ảnh AI từ 10 xu mỗi ảnh. Lỗi phía WrapFit thì xu được hoàn.`,
   },
   {
     question: "Dung lượng lưu trữ gồm những gì?",

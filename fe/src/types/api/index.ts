@@ -42,7 +42,11 @@ export type ApiErrorCode =
   | "PROJECT_VERSION_CONFLICT"
   | "ORIGIN_NOT_ALLOWED"
   | "EXPORT_CREDIT_REQUIRED"
-  | "INSUFFICIENT_CREDITS";
+  | "INSUFFICIENT_CREDITS"
+  | "PROMPT_REJECTED"
+  | "AI_IMAGE_UNAVAILABLE"
+  | "AI_IMAGE_BUSY"
+  | "STORAGE_QUOTA_EXCEEDED";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {
@@ -59,8 +63,12 @@ export interface ApiErrorBody {
   currentVersion?: number;
   /** 422 on export: the FitCheck report with the blocking violations. */
   fitCheck?: FitCheckReport;
-  /** 402 EXPORT_CREDIT_REQUIRED / INSUFFICIENT_CREDITS: export credits left. */
+  /** 402 EXPORT_CREDIT_REQUIRED / INSUFFICIENT_CREDITS: export credits or xu left. */
   balance?: number;
+  /** 402 INSUFFICIENT_CREDITS: which ledger is short, export credits or xu (docs/19). */
+  kind?: "EXPORT" | "XU";
+  /** 402 INSUFFICIENT_CREDITS: what the operation costs. */
+  cost?: number;
 }
 
 export interface HealthStatus {
@@ -576,7 +584,7 @@ export interface GeneratePatternRequest {
   theme: string;
   /** ≤ 5 brand colors `#RRGGBB`. */
   preferredColors?: string[];
-  /** Default `fast` (every plan); `premium` = stronger model, paid plans only (403 `PLAN_FEATURE_REQUIRED` on Free). */
+  /** Default `fast`; `premium` = stronger model. Price in xu: `AiUsage.patternCost` (402 `INSUFFICIENT_CREDITS` when short). */
   quality?: "fast" | "premium";
 }
 
@@ -588,17 +596,41 @@ export interface AiPatternResult {
   palette: string[];
   /** Seamless repeat tile, safe to insert (no script, no external resource). */
   tile: { size: number; svg: string };
-  /** AI generations in the last 24 hours; null when AI is off. */
-  usage: { used: number; limit: number } | null;
+  /** Xu spent on this pattern (0 when the AI failed and the xu came back) and the balance after; null when AI is off. */
+  usage: { charged: number; balance: number } | null;
 }
 
+/** `GET /ai/usage`: whether AI patterns run, their price in xu and the xu wallet (docs/19). */
 export interface AiUsage {
-  tier: SubscriptionTier;
-  used: number;
-  limit: number;
   aiEnabled: boolean;
-  /** The monthly AI budget of WrapFit is spent: patterns are procedural until next month. */
+  /** The monthly AI budget of WrapFit is spent: patterns are procedural (free) until next month. */
   budgetReached: boolean;
+  patternCost: { fast: number; premium: number };
+  xu: { balance: number; allowance: XuAllowance };
+}
+
+/** Xu of the plan per period, and when the next allowance arrives. */
+export interface XuAllowance {
+  perPeriod: number;
+  periodKey: string;
+  resetsAt: string;
+}
+
+/** A lot of export credits or xu: what was granted, what is left, until when. */
+export interface CreditLot {
+  id: string;
+  source: "PURCHASE" | "ADMIN" | "PLAN_ALLOWANCE";
+  quantity: number;
+  remaining: number;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+/** The xu wallet (`GET /billing/me` → `xu`): lots spent first on top. */
+export interface XuWallet {
+  balance: number;
+  lots: CreditLot[];
+  allowance: XuAllowance;
 }
 
 // ---------------------------------------------------------------- print-shops & orders

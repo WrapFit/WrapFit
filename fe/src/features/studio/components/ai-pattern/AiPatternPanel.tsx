@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles, Wand2 } from "lucide-react";
+import { Coins, Sparkles, Wand2 } from "lucide-react";
 import { BLEED_BOX_MM, cutSidesOf, type CanvasElement, type DielineGeometry, type PanelFace } from "@wrapfit/shared";
-import { ApiError, generateAiPattern, getAiUsage, uploadFileToStorage } from "@/api";
+import { ApiError, errorMessage, generateAiPattern, getAiUsage, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
+import { RadioGroup } from "@/components/ui";
 import { queryKeys } from "@/hooks/data";
-import type { AiPatternResult } from "@/types/api";
+import type { AiPatternResult, AiUsage, GeneratePatternRequest } from "@/types/api";
 import { renderPatternPng, tileBackground } from "./patternImage";
 
 const MAX_THEME = 200;
@@ -25,13 +27,16 @@ interface AiPatternPanelProps {
   onInsert: (element: CanvasElement) => void;
 }
 
-/** AI pattern generator (docs/06 §11): theme → seamless tile → printed over the selected panel. */
+type Quality = NonNullable<GeneratePatternRequest["quality"]>;
+
+/** AI pattern generator (docs/06 §11), paid with xu (docs/19): theme → seamless tile → printed over the selected panel. */
 export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }: AiPatternPanelProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const usage = useQuery({ queryKey: queryKeys.aiUsage, queryFn: getAiUsage, enabled: projectId !== null, staleTime: 60_000 });
   const [theme, setTheme] = useState("");
   const [useColors, setUseColors] = useState(true);
+  const [quality, setQuality] = useState<Quality>("fast");
   const [generating, setGenerating] = useState(false);
   const [inserting, setInserting] = useState(false);
   const [result, setResult] = useState<AiPatternResult | null>(null);
@@ -44,8 +49,10 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
     );
   }
 
-  const quota = usage.data?.aiEnabled ? usage.data : null;
-  const exhausted = quota !== null && quota.used >= quota.limit;
+  // AI off or the monthly budget of WrapFit spent: the procedural generator answers, for free.
+  const paid = usage.data?.aiEnabled === true && !usage.data.budgetReached ? usage.data : null;
+  const cost = paid ? paid.patternCost[quality] : 0;
+  const short = paid !== null && paid.xu.balance < cost;
 
   const generate = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -55,16 +62,22 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
       const generated = await generateAiPattern({
         theme: theme.trim(),
         preferredColors: useColors ? colors.slice(0, 5) : undefined,
+        quality,
       });
       setResult(generated);
-      if (generated.usage) {
-        queryClient.setQueryData(queryKeys.aiUsage, (old: typeof usage.data) =>
-          old ? { ...old, used: generated.usage!.used, limit: generated.usage!.limit } : old
+      const spent = generated.usage;
+      if (spent) {
+        queryClient.setQueryData(queryKeys.aiUsage, (old: AiUsage | undefined) =>
+          old ? { ...old, xu: { ...old.xu, balance: spent.balance } } : old
         );
+        void queryClient.invalidateQueries({ queryKey: queryKeys.billing });
+      }
+      if (spent && spent.charged === 0 && generated.source === "procedural") {
+        toast.show({ tone: "info", title: "AI đang bận, đã dùng hoa văn thuật toán", description: "Xu của lượt này đã được hoàn." });
       }
     } catch (err) {
-      if (err instanceof ApiError && err.status === 429 && exhausted) {
-        toast.show({ tone: "error", title: "Đã hết lượt AI hôm nay", description: "Lượt mới được cộng lại sau 24 giờ, hoặc nâng cấp gói." });
+      if (err instanceof ApiError && err.code === "INSUFFICIENT_CREDITS") {
+        toast.show({ tone: "error", title: "Không đủ xu", description: errorMessage(err) });
       } else {
         toast.error(err, "Chưa tạo được hoa văn");
       }
@@ -113,9 +126,13 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
         <span className="font-landing-heading text-base font-bold text-landing-ink flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-fpt-orange-ink" aria-hidden /> Hoa văn AI
         </span>
-        {quota && (
-          <span className={`text-cad-spec-micro font-mono ${exhausted ? "text-vibrant-coral-dark" : "text-landing-muted"}`}>
-            Còn {Math.max(0, quota.limit - quota.used)}/{quota.limit} lượt
+        {usage.data && (
+          <span
+            className={`inline-flex items-center gap-1 text-cad-spec-micro font-mono tabular-nums ${short ? "text-danger-fg" : "text-landing-muted"}`}
+            title="Số xu còn lại trong ví"
+          >
+            <Coins className="w-3 h-3" aria-hidden />
+            {usage.data.xu.balance.toLocaleString("vi-VN")} xu
           </span>
         )}
       </div>
@@ -159,14 +176,38 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
             ))}
           </span>
         </label>
+        {paid && (
+          <RadioGroup<Quality>
+            label="Chất lượng"
+            hideLabel
+            inline
+            value={quality}
+            onChange={setQuality}
+            options={[
+              { value: "fast", label: `Nhanh · ${paid.patternCost.fast} xu` },
+              { value: "premium", label: `Cao cấp · ${paid.patternCost.premium} xu` },
+            ]}
+          />
+        )}
         <button
           type="submit"
-          disabled={!theme.trim() || generating || exhausted}
+          disabled={!theme.trim() || generating || short}
           className="w-full min-h-[44px] rounded-full bg-fpt-orange hover:bg-fpt-orange-ink text-white text-sm font-semibold shadow-none transition flex items-center justify-center gap-1.5 disabled:opacity-50"
         >
           <Wand2 className="w-4 h-4" aria-hidden />
-          {generating ? "Đang tạo…" : exhausted ? "Hết lượt hôm nay" : "Tạo hoa văn"}
+          {generating ? "Đang tạo…" : short ? "Không đủ xu" : paid ? `Tạo hoa văn · ${cost} xu` : "Tạo hoa văn"}
         </button>
+        {usage.data && !paid && (
+          <p className="text-caption text-landing-muted">AI đang tắt: hoa văn được tạo bằng thuật toán, không tốn xu.</p>
+        )}
+        {short && (
+          <p className="text-caption text-danger-fg">
+            Cần {cost} xu, ví còn {paid!.xu.balance} xu.{" "}
+            <Link href="/dashboard/billing" className="underline font-semibold">
+              Nạp xu
+            </Link>
+          </p>
+        )}
       </form>
 
       {result && (

@@ -1,6 +1,6 @@
 # 19. Xu Wrap: đồng xu chung cho mọi tác vụ AI
 
-> Trạng thái: S1, S2 xong trên nhánh `feat/xu-wrap` (chưa push). S3–S6 còn lại, xem §6 và nhật ký §7.
+> Trạng thái: S1–S3 xong trên nhánh `feat/xu-wrap` (chưa push). S4–S6 còn lại, xem §6 và nhật ký §7.
 > Kế hoạch được duyệt ngày 2026-10-31 sau 3 vòng hỏi đáp với chủ dự án.
 
 ## 1. Bối cảnh
@@ -107,3 +107,4 @@ Sau mỗi phiên: typecheck (`npx tsc --noEmit -p be/tsconfig.json`, FE theo `fe
 | :- | :- | :- | :- |
 | 2026-10-31 | S1 | 6b50810 | Sổ cái xu, gói xu, allowance dồn 1 kỳ. 50 unit + 8 e2e billing pass. |
 | 2026-10-31 | S2 | a22eab8 | Engine ảnh fal, provider giả, hàng đợi, hoàn xu, lọc SVG. Unit pass, 7 e2e ai-images pass, e2e billing/payments/storage/unused-files/ai pass. Chưa chạy e2e export vì worker dev khác đang chạy. Chưa gọi fal thật. |
+| 2026-10-31 | S3 | (commit này) | Hoa văn AI trả bằng xu: trừ trước khi gọi Claude, hoàn khi lỗi rồi trả hoa văn thuật toán, premium mở cho mọi gói (65 xu). Migration `20261031000400_ai_pattern_xu` (`credits`, `debit_operation_id`). `GET /ai/usage` trả `patternCost` và ví xu. FE: API không nuốt lỗi, thông báo 402 xu, panel hoa văn chọn chất lượng và hiện giá, bỏ `aiPatternsPerDay` (thay `xuPerPeriod`) ở giá, checkout, billing, thông báo, dashboard. 7 unit + 6 e2e ai pass, tsc BE/FE pass. Giao diện kiểm cùng S4. |

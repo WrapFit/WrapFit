@@ -468,13 +468,15 @@ model OrphanedObject {
 // Mỗi lần gọi AI sinh hoa văn (IT3-09): dùng để giới hạn số lượt theo gói và theo dõi chi phí token.
 // Lần sinh bằng thuật toán dự phòng (không gọi AI) không được ghi.
 model AiGeneration {
-  id           String   @id @default(uuid(7)) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  theme        String
-  model        String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
-  inputTokens  Int      @map("input_tokens")
-  outputTokens Int      @map("output_tokens")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id               String   @id @default(uuid(7)) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  theme            String
+  model            String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
+  inputTokens      Int      @map("input_tokens")
+  outputTokens     Int      @map("output_tokens")
+  credits          Int      @default(0) // xu đã trừ cho lượt này (docs/19 S3); 0 = trước khi có xu
+  debitOperationId String?  @map("debit_operation_id") @db.Uuid // credit_debits.operation_id của lượt trừ xu
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -60,7 +60,6 @@ export {
 export { usagePercent, useAiUsage, useStorageUsage } from "./useUsage";
 export { useAnalyticsSummary } from "./useAnalytics";
 export {
-  DEMO_AI_USAGE,
   DEMO_COLLECTIONS,
   DEMO_EXPORTS,
   DEMO_HEALTH,

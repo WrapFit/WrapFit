@@ -63,7 +63,8 @@ function BillingScreen() {
   const nextLotEnd = billing.data?.exportCredits.lots.find((lot) => lot.remaining > 0)?.expiresAt;
 
   const storagePercent = storage.data ? usagePercent(storage.data.usedBytes, storage.data.quotaBytes) : 0;
-  const aiPercent = ai.data ? usagePercent(ai.data.used, ai.data.limit) : 0;
+  const xu = ai.data?.xu;
+  const xuPercent = xu ? usagePercent(xu.balance, xu.allowance.perPeriod) : 0;
 
   return (
     <WorkspaceShell
@@ -133,10 +134,17 @@ function BillingScreen() {
               </div>
               <div>
                 <div className="mb-1.5 flex justify-between text-sm">
-                  <span className="text-library-sub">Hoa văn AI (24 giờ)</span>
-                  <span className="text-library-ink">{ai.data ? `${ai.data.used} / ${ai.data.limit}` : `${plan.aiPatternsPerDay}/ngày`}</span>
+                  <span className="text-library-sub">Xu Wrap</span>
+                  <span className="tabular-nums text-library-ink">
+                    {xu ? `${xu.balance.toLocaleString('vi-VN')} xu` : `${plan.xuPerPeriod.toLocaleString('vi-VN')} xu/kỳ`}
+                  </span>
                 </div>
-                <Meter percent={aiPercent} label="Lượt hoa văn AI đã dùng" />
+                <Meter percent={xuPercent} label="Xu còn lại so với hạn mức mỗi kỳ" />
+                {xu && (
+                  <p className="mt-1.5 text-xs text-library-sub">
+                    Gói cộng {xu.allowance.perPeriod.toLocaleString('vi-VN')} xu mỗi kỳ, kỳ tới từ {new Date(xu.allowance.resetsAt).toLocaleDateString('vi-VN')}.
+                  </p>
+                )}
               </div>
             </div>
           </Panel>

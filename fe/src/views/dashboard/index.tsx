@@ -223,9 +223,9 @@ function DashboardScreen() {
           <StatTile label="Lưu trữ" value={archived.data !== undefined ? formatCount(archived.data) : '–'} />
           <StatTile label="Thùng rác" value={trashed.data !== undefined ? formatCount(trashed.data) : '–'} hint="Tự xoá sau 30 ngày" />
           <StatTile
-            label="Hoa văn AI còn lại"
-            value={ai.data ? (ai.data.aiEnabled ? formatCount(Math.max(0, ai.data.limit - ai.data.used)) : 'Không giới hạn') : '–'}
-            hint="Trong 24 giờ"
+            label="Xu Wrap"
+            value={ai.data ? formatCount(ai.data.xu.balance) : '–'}
+            hint="Cho ảnh và hoa văn AI"
           />
         </section>
 

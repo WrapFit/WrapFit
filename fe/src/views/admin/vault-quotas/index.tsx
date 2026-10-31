@@ -43,7 +43,7 @@ function VaultQuotas() {
             columns={[
               { key: 'tier', label: 'Gói', render: (plan) => <span className="font-medium">{TIER_LABELS[plan.tier]}</span> },
               { key: 'storage', label: 'Dung lượng', render: (plan) => formatQuota(plan.storageBytes) },
-              { key: 'ai', label: 'Hoa văn AI / 24 giờ', render: (plan) => `${plan.aiPatternsPerDay} lượt` },
+              { key: 'ai', label: 'Xu Wrap / kỳ', render: (plan) => `${plan.xuPerPeriod.toLocaleString('vi-VN')} xu` },
               { key: 'price', label: 'Giá / tháng', align: 'right', render: (plan) => (plan.price.monthly === 0 ? 'Miễn phí' : formatUsd(plan.price.monthly)) },
             ]}
           />

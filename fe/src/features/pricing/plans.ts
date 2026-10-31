@@ -7,12 +7,13 @@ import {
   PRO_MONTH,
   PURCHASED_LOT_VALID_MONTHS,
   type ExportPack,
+  XU_ALLOWANCE,
   type ExportPackId,
 } from "@wrapfit/shared";
 import type { SubscriptionTier } from "@/types/api";
 
 // Display layer over @wrapfit/shared/billing (docs/17 S6): names, prices and storage come from shared, the same numbers
-// the backend charges and enforces. AI patterns per day mirror DAILY_AI_LIMIT in be/src/ai/ai-pattern.service.ts.
+// the backend charges and enforces, xu per period included (XU_ALLOWANCE, docs/19).
 
 export interface PlanPrice {
   /** VNĐ per month (Pro, Business), or the price of the cheapest pack for PAY_PER_EXPORT. 0 for Free. */
@@ -27,7 +28,8 @@ export interface Plan {
   name: string;
   price: PlanPrice;
   storageBytes: number;
-  aiPatternsPerDay: number;
+  /** Xu Wrap granted each period (calendar month, or 30-day period of a paid plan); unspent xu roll over once. */
+  xuPerPeriod: number;
   badge?: string;
   isPerExport?: boolean;
   /** Not sold online yet: the pricing page shows a "Liên hệ" button (docs/17 M4). */
@@ -54,7 +56,7 @@ export const PLANS: Record<SubscriptionTier, Plan> = {
     name: PLAN_LABELS.FREE,
     price: { monthly: 0 },
     storageBytes: ENTITLEMENTS.FREE.storage.bytes,
-    aiPatternsPerDay: 10,
+    xuPerPeriod: XU_ALLOWANCE.FREE,
     badge: "Bắt đầu miễn phí",
   },
   PAY_PER_EXPORT: {
@@ -62,7 +64,7 @@ export const PLANS: Record<SubscriptionTier, Plan> = {
     name: PLAN_LABELS.PAY_PER_EXPORT,
     price: { monthly: SINGLE_EXPORT_PRICE, perExport: SINGLE_EXPORT_PRICE },
     storageBytes: ENTITLEMENTS.PAY_PER_EXPORT.storage.bytes,
-    aiPatternsPerDay: 25,
+    xuPerPeriod: XU_ALLOWANCE.PAY_PER_EXPORT,
     badge: "Trả khi cần",
     isPerExport: true,
   },
@@ -71,7 +73,7 @@ export const PLANS: Record<SubscriptionTier, Plan> = {
     name: PLAN_LABELS.STARTER,
     price: { monthly: PRO_MONTH.priceVnd },
     storageBytes: ENTITLEMENTS.STARTER.storage.bytes,
-    aiPatternsPerDay: 50,
+    xuPerPeriod: XU_ALLOWANCE.STARTER,
     badge: "Phổ biến nhất",
   },
   PRO_BUSINESS: {
@@ -79,7 +81,7 @@ export const PLANS: Record<SubscriptionTier, Plan> = {
     name: PLAN_LABELS.PRO_BUSINESS,
     price: { monthly: BUSINESS_MONTH_DISPLAY.priceVnd },
     storageBytes: ENTITLEMENTS.PRO_BUSINESS.storage.bytes,
-    aiPatternsPerDay: 300,
+    xuPerPeriod: XU_ALLOWANCE.PRO_BUSINESS,
     badge: "Cho xưởng & studio",
     contactOnly: true,
   },
