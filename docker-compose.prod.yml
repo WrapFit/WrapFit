@@ -4,7 +4,7 @@
 # Cloudflare R2 and the SMTP_* / MAIL_FROM variables of the email provider. A missing one stops `docker compose`
 # before any container is replaced: production never falls back to the development defaults of docker-compose.yml
 # (password "password", Redis without a password, the SeaweedFS keys). The CP4 demo also sets PAYMENT_SIMULATION=true,
-# AI_MONTHLY_BUDGET_USD, SEED_DEMO_* and EXTRA_CORS_ORIGINS (docs/18_PATH2_DEPLOY_RUNBOOK.md).
+# AI_MONTHLY_BUDGET_USD, FAL_KEY (AI images, docs/19), SEED_DEMO_* and EXTRA_CORS_ORIGINS (docs/18_PATH2_DEPLOY_RUNBOOK.md).
 # Requires Docker Compose >= 2.24 (`!reset`).
 
 # Credentials of the internal services, for the API and the worker. Both passwords go into URLs: use URL-safe values

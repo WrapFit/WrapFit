@@ -10,7 +10,7 @@
 | Mục | Đã có trong code | Còn lại / làm gọn so với đặc tả |
 | :--- | :--- | :--- |
 | 2, 3.2 Gói, giá, hạn mức | `shared/src/billing/` (`resolvePlan`, `requiredPlanFor`, `ENTITLEMENTS`, `EXPORT_PACKS`, `PRO_MONTH`); trang giá đọc giá từ shared; `storage.bytes` nối vào hạn mức dung lượng | Hạn mức `projects.max`, `collections.max`, `snapshots.maxManualPerProject` chưa nối vào service; ghi đè theo tài khoản (3.3) chưa có |
-| 4.1, 4.4 Model AI, cầu chì | `AI_MODEL_FAST` (Haiku) / `AI_MODEL_PREMIUM` (Opus), `quality` (Free → `403`), `AI_MONTHLY_BUDGET_USD` + `AiCostGuard`, `budgetReached` | Credit AI theo lô (4.2, 4.3) **chưa làm** (docs/17 M2): vẫn `DAILY_AI_LIMIT` |
+| 4 Credit AI | **Thay bằng xu Wrap** ([docs/19](19_XU_WRAP_SPEC.md)): lô `credit_lots` kind `XU`, allowance mỗi kỳ, gói nạp `XU_*`, hoa văn 1 / 65 xu, ảnh AI, `AI_MONTHLY_BUDGET_USD` + `AiCostGuard`. `DAILY_AI_LIMIT` và cổng `403` premium đã bỏ | Mục 4 dưới đây là đặc tả cũ, giữ để tham khảo; số liệu đúng ở docs/19 §2–§3 |
 | 5.1–5.4 Lượt xuất, mở khóa, hoàn lượt, watermark | `credit_lots` / `credit_debits` (sổ cái), `export_unlocks` 7 ngày theo `(project, version)`, `402 EXPORT_CREDIT_REQUIRED` / `INSUFFICIENT_CREDITS`, hoàn lượt khi job lỗi lần cuối, watermark ở tai dán của PDF A4 | 5.5 giữ file in theo gói chưa làm |
 | 6 Schema | Migration `20261030000100_billing_core` (`payments`, `credit_lots`, `credit_debits`, `export_unlocks`, `subscriptions`), `20261030000500_payments` (FK đơn in) | Bảng `invoices`, `coupons`, `referrals`, workspace (6.4) chưa có |
 | 7.1 Vòng đời gói | Pro 30 ngày qua `subscriptions` (`ACTIVE` / `EXPIRED`), gia hạn nối thêm 30 ngày, `PlanService.sync` lười | Dùng thử, `PAST_DUE`, ân hạn, nhắc gia hạn, hạ gói (7.2) chưa làm |
@@ -241,6 +241,8 @@ Kiểm và ghi nằm trong **cùng một transaction** (như `assertQuota` của
 ---
 
 ## 4. Credit AI
+
+> **Đã thay bằng xu Wrap (2026-10-31).** Credit AI được làm thành đồng xu chung cho mọi tác vụ AI: xem [docs/19](19_XU_WRAP_SPEC.md) (quyết định §2, bảng giá §3, thiết kế §4). Các con số dưới đây (20 / 50 / 300 credit, premium 25 credit, `AI_PACKS`, không cộng dồn) **không còn đúng**: hạn mức là Free 50, Lượt xuất 100, Pro 1.000, Business 3.500 xu, dồn tối đa một kỳ; hoa văn premium 65 xu.
 
 ### 4.1 Chất lượng, model và giá credit
 

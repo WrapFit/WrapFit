@@ -175,6 +175,12 @@ services:
       AI_MODEL_PREMIUM: ${AI_MODEL_PREMIUM:-claude-opus-5-5}
       # Monthly AI cost fuse in USD (empty = no limit); once spent, patterns are procedural until next month
       AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
+      # AI images paid with xu (docs/19): fal.ai with FAL_KEY (empty key = AI images off); AI_IMAGE_MODELS empty = the
+      # models enabled in shared/src/billing/ai-image-models.ts
+      AI_IMAGE_PROVIDER: ${AI_IMAGE_PROVIDER:-fal}
+      FAL_KEY: ${FAL_KEY:-}
+      AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
+      USD_VND_RATE: ${USD_VND_RATE:-26000}
       # VietQR payments: true only for the CP4 demo ("simulate paid" button); empty VIETQR_* = sample account
       PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
       VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
@@ -224,6 +230,13 @@ services:
       AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
       REDIS_URL: redis://redis:6379
       EXPORT_CONCURRENCY: ${EXPORT_CONCURRENCY:-2}
+      # AI image jobs (docs/19): the worker calls fal.ai and stores the images
+      AI_IMAGE_PROVIDER: ${AI_IMAGE_PROVIDER:-fal}
+      FAL_KEY: ${FAL_KEY:-}
+      AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
+      AI_IMAGE_TIMEOUT_MS: ${AI_IMAGE_TIMEOUT_MS:-180000}
+      AI_IMAGE_CONCURRENCY: ${AI_IMAGE_CONCURRENCY:-2}
+      USD_VND_RATE: ${USD_VND_RATE:-26000}
       # Email (verify email, reset password): Mailpit above by default; set to the provider's SMTP in production
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       SMTP_HOST: ${SMTP_HOST:-mailpit}

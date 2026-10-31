@@ -24,7 +24,8 @@ REST API của nền tảng **WrapFit** — thiết kế & đóng gói bao bì q
 | IT3-06 Public Showcase & Remix | ✅ Xong: quyền riêng tư `PRIVATE/UNLISTED/PUBLIC` + `allowFork`, trang công khai theo slug (đếm view), Remix (fork + sự kiện `project.forked`), thả tim |
 | IT3-07 Thư viện mẫu | ✅ Xong: `/api/templates/structures`, `/hub` (Curated + Community, lọc cấu trúc / dịp lễ / ngành hàng / giấy / từ khóa, cache 60 s), `/:id`; tạo dự án từ mẫu (`designTemplateId`); bảng `design_templates` + 6 mẫu seed |
 | IT3-08 Lưu trữ file S3 / R2 | ✅ Xong: pre-signed upload (khóa định dạng + dung lượng), hạn mức theo gói, xóa file khi xóa dự án / dọn thùng rác; SeaweedFS local thay MinIO (chưa có `sharp`) |
-| IT3-09 AI sinh hoa văn | ✅ Xong: `/api/ai/pattern` (Claude + structured outputs, SVG dựng & làm sạch phía server, lặp liền mạch), giới hạn lượt theo gói, dự phòng sinh hoa văn bằng thuật toán khi chưa có API key |
+| IT3-09 AI sinh hoa văn | ✅ Xong: `/api/ai/pattern` (Claude + structured outputs, SVG dựng & làm sạch phía server, lặp liền mạch), trả bằng xu Wrap (1 / 65 xu, hoàn khi Claude lỗi), dự phòng sinh hoa văn bằng thuật toán khi chưa có API key |
+| Xu Wrap & ảnh AI (docs/19) | ✅ Xong: ví xu trên sổ cái `credit_lots` (kind `XU`), allowance mỗi kỳ, gói nạp `XU_*`, ảnh AI qua fal.ai (`ai/image/`, hàng đợi `ai-image`, hoàn xu khi lỗi phía hệ thống), báo cáo xu cho admin |
 | IT3-10 Mở hộp 3D & QR | ✅ Xong: cấu hình lời chúc / nhạc / hiệu ứng, QR (PNG 1200 px + SVG, sửa lỗi mức H) lưu lên storage và tải trực tiếp, trang công khai `/api/public/unboxing/:slug` |
 | IT3-11 Xuất file in & CI/CD | ✅ Xong: `/api/projects/:id/exports` (FitCheck phía server → BullMQ), process `worker` riêng xuất PDF CMYK / SVG / DXF, thử lại 3 lần, link tải 15 phút, snapshot tự động; CI chạy unit + e2e; deploy VPS qua HTTPS (Caddy) |
 
@@ -69,7 +70,9 @@ src/
   public-showcase/         # trang công khai /p/[slug], Remix (fork), thả tim
   templates/               # Thư viện mẫu Curated & Community (cache 60 s)
   storage/                 # @Global: pre-signed upload lên S3 / R2, hạn mức, xóa file
-  ai/                      # sinh bảng màu + hoa văn SVG (Claude hoặc thuật toán dự phòng)
+  ai/                      # AI trả bằng xu (docs/19): hoa văn SVG (Claude hoặc thuật toán dự phòng), cầu chì chi phí
+    image/                 # ảnh AI qua fal.ai: API (trừ xu, xếp hàng) + AiImageProcessor (worker, AiImageWorkerModule),
+                           # provider fal / fake, lọc SVG, hoàn xu (AiImageRefunds), dọn job treo mỗi 5 phút
   unboxing/                # trải nghiệm mở hộp 3D + mã QR in đáy hộp
   export/                  # xuất file in: API (hàng đợi) + ExportProcessor (worker) + rendering/
   mail/                    # MailService (đưa vào hàng đợi) + MailProcessor (worker gửi SMTP)
@@ -177,6 +180,12 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `AI_MODEL` | – | *(trống)* | **Tên cũ** của `AI_MODEL_FAST`, chỉ được đọc khi `AI_MODEL_FAST` không đặt. Sẽ bỏ sau CP4: đổi tên biến trong `.env` của VPS |
 | `AI_MONTHLY_BUDGET_USD` | `ai.monthlyBudgetUsd` | *(trống)* | Cầu chì chi phí AI (USD / tháng dương lịch giờ Việt Nam). Để trống = không giới hạn |
 | `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
+| `AI_IMAGE_PROVIDER` | `ai.image.provider` | `fal` | Ai vẽ ảnh AI (docs/19): `fal` = fal.ai bằng `FAL_KEY`; `fake` = ảnh giả sinh tại chỗ, không tốn tiền (dev, e2e). `fake` bị từ chối khi `NODE_ENV=production` |
+| `FAL_KEY` | `ai.image.falKey` | *(trống)* | Khóa fal.ai. Trống với `AI_IMAGE_PROVIDER=fal` = tắt ảnh AI (`503 AI_IMAGE_UNAVAILABLE`, studio ẩn công cụ) |
+| `AI_IMAGE_MODELS` | `ai.image.models` | *(model có `enabled: true`)* | Khóa model ảnh đang bán, cách nhau bằng dấu phẩy (`shared/src/billing/ai-image-models.ts`); bật model chưa chốt giá mà không sửa code |
+| `AI_IMAGE_TIMEOUT_MS` | `ai.image.timeoutMs` | `180000` | Thời gian chờ tối đa một job ảnh ở provider |
+| `AI_IMAGE_CONCURRENCY` | `ai.image.concurrency` | `2` | Số job ảnh worker chạy cùng lúc |
+| `USD_VND_RATE` | `ai.usdVndRate` | `26000` | Tỉ giá quy đổi chi phí provider sang VNĐ trong báo cáo xu |
 | `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs/17 M6). `false` → route giả lập trả 404 |
 | `VIETQR_BANK_BIN` | `payments.vietqr.bankBin` | *(trống)* | BIN NAPAS 6 số của ngân hàng nhận tiền. Ba biến `VIETQR_*` đặt cùng nhau; để trống cả ba = tài khoản mẫu, giao diện ghi "Mô phỏng" |
 | `VIETQR_ACCOUNT_NO` | `payments.vietqr.accountNo` | *(trống)* | Số tài khoản nhận tiền |

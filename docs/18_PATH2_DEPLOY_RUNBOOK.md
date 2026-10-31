@@ -70,6 +70,11 @@ SMTP, Google) giữ nguyên; danh sách đầy đủ ở `be/README.md`, mục "
 | `SEED_DEMO_EMAIL` | `demo@wrapfit.vn` (mặc định) | Tài khoản demo, xem 3.2 |
 | `SEED_DEMO_PASSWORD` | mật khẩu riêng, chỉ người demo biết | Trống = không tạo tài khoản demo. Không ghi vào slide, tài liệu, chat |
 | `SEED_DEMO_CREDITS` | `5` (mặc định) | Số lượt xuất được nạp lại mỗi lần container khởi động |
+| `FAL_KEY` | khóa fal.ai (Xu Wrap, docs/19) | Truyền vào cả `backend` và `worker`. Trống = tắt ảnh AI (studio báo "đang tắt"), hoa văn và phần còn lại vẫn chạy. Không ghi vào slide, tài liệu, chat |
+| `AI_IMAGE_PROVIDER` | `fal` (mặc định) | `fake` chỉ cho dev / e2e, bị từ chối khi `NODE_ENV=production` |
+| `AI_IMAGE_MODELS` | trống | Trống = các model có `enabled: true`. GPT Image 2 medium chưa đo giá thật (docs/19 §3): bỏ khỏi danh sách nếu muốn chắc biên, vd. `flux2-klein,gpt-image-2-low,seedream-4.5,nano-banana-2,recraft-v3-vector,nano-banana-pro` |
+| `AI_IMAGE_TIMEOUT_MS`, `AI_IMAGE_CONCURRENCY` | `180000`, `2` (mặc định) | Worker: thời gian chờ một job ở fal, số job ảnh chạy song song |
+| `USD_VND_RATE` | `26000` (mặc định) | Tỉ giá quy đổi chi phí model trong báo cáo `/admin/xu` |
 | `EXTRA_CORS_ORIGINS` | `https://wrap-fit.vercel.app` | Origin của frontend Vercel, để `OriginGuard` (CSRF) và CORS nhận request được Vercel chuyển tiếp. Nhiều origin: ngăn cách bằng dấu phẩy |
 
 ### 3.2. Tài khoản demo (`be/prisma/seed-demo.ts`)
@@ -114,6 +119,8 @@ Bucket `wrapfit` (r2.dev bật), `wrapfit-private`, `wrapfit-backups` đã tạo
 
 2. Container backend tự áp migration (`prisma migrate deploy`) rồi seed. Path 2 thêm 4 migration:
    `20261030000100_billing_core`, `20261030000300_orders`, `20261030000500_payments`, `20261030000700_product_events`.
+   Xu Wrap (docs/19) thêm 4 migration: `20261031000100_xu_enums`, `20261031000200_xu_wallet`, `20261031000300_ai_images`,
+   `20261031000400_ai_pattern_xu`.
    Xem log:
 
    ```bash
@@ -190,7 +197,8 @@ trang giá công khai của nhà cung cấp, kiểm lại trước khi đưa và
 | VPS (nhà cung cấp: IT điền) | backend, worker, PostgreSQL, Redis, Caddy, frontend dự phòng | IT điền (RAM tối thiểu ~2 GB: 4 container Node ≤ 512 MB + Postgres 512 MB) | Không | _điền_ |
 | Vercel | frontend `wrap-fit.vercel.app` | Hobby | Miễn phí; điều khoản Hobby chỉ cho dùng cá nhân, phi thương mại. Bán thật cần Pro (theo thành viên) | 0đ (Hobby) |
 | Cloudflare R2 | ảnh tải lên, QR, file in, bản sao lưu CSDL | Free tier | 10 GB lưu trữ / tháng, 1 triệu thao tác ghi (Class A), 10 triệu thao tác đọc (Class B), không tính phí băng thông ra | _điền_ (dự kiến 0đ) |
-| Anthropic Claude API | AI sinh hoa văn (`claude-haiku-5-5`) | Trả theo token, cầu chì `AI_MONTHLY_BUDGET_USD` | Không | ≤ `AI_MONTHLY_BUDGET_USD` USD. Ước tính một lượt Haiku 13–34đ (S3, chưa có token thật) |
+| fal.ai | Ảnh AI cho mặt hộp, phóng to, xóa nền, vector hóa (Xu Wrap, docs/19) | Trả theo ảnh / MP, nạp trước; cầu chì `AI_MONTHLY_BUDGET_USD` tính cả ảnh | Không | Theo lượt dùng; mỗi ảnh $0.01–0.15 (docs/19 §3), giá bán ≥ 2,5 lần chi phí |
+| Anthropic Claude API | AI sinh hoa văn (`claude-haiku-5-5`), viết lại mô tả ảnh AI | Trả theo token, cầu chì `AI_MONTHLY_BUDGET_USD` | Không | ≤ `AI_MONTHLY_BUDGET_USD` USD. Ước tính một lượt Haiku 13–34đ (S3, chưa có token thật) |
 | Email SMTP (Resend theo docs/10) | email xác minh, đặt lại mật khẩu | Free | 3.000 email / tháng, 100 email / ngày | _điền_ |
 | Cloudinary | CDN ảnh công khai (đã kết nối, chưa dùng) | Free (dùng chung tài khoản) | 25 credit / tháng | 0đ |
 | Tên miền `wrapfit.vn` | `APP_DOMAIN`, email gửi đi | Nhà đăng ký: IT điền | Không | _điền_ (theo năm / 12) |

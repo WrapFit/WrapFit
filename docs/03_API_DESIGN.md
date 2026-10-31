@@ -60,8 +60,15 @@
 | `GET` | `/api/templates/:id` | Public | Mẫu Curated kèm `canvasState` + `dimensionLimits` để "Dùng mẫu này" |
 | `POST` | `/api/storage/presigned-upload` | Đã đăng nhập | `{ purpose, contentType, size, projectId? }` → `{ uploadUrl, headers, fileUrl, ... }` để FE upload thẳng lên S3 / R2 |
 | `GET` | `/api/storage/usage` | Đã đăng nhập | `{ tier, usedBytes, quotaBytes, fileCount }` |
-| `POST` | `/api/ai/pattern` | Đã đăng nhập | `{ theme, preferredColors? }` → `{ source, themeName, description, palette, tile: { size, svg }, usage }` |
-| `GET` | `/api/ai/usage` | Đã đăng nhập | `{ tier, used, limit, aiEnabled }` — lượt AI trong 24 giờ qua |
+| `POST` | `/api/ai/pattern` | Đã đăng nhập | `{ theme, preferredColors?, quality? }` → `{ source, themeName, description, palette, tile: { size, svg }, usage: { charged, balance } \| null }`; thiếu xu → `402 INSUFFICIENT_CREDITS { kind: "XU", balance, cost }` |
+| `GET` | `/api/ai/usage` | Đã đăng nhập | `{ aiEnabled, budgetReached, patternCost: { fast, premium }, xu: { balance, allowance } }` — giá hoa văn theo xu và ví xu |
+| `GET` | `/api/ai/models` | Đã đăng nhập | `{ enabled, models: [{ key, label, tier, xu, output, supportsText, aspectRatios, maxImages, summary }], tools: { upscale, "remove-bg", vectorize } }` — model ảnh AI đang bán và giá xu |
+| `POST` | `/api/ai/images` | Đã đăng nhập | `{ prompt, modelKey, aspectRatio, numImages?, allowText?, clientRequestId? }` → `202 { job, balance }`; `402` thiếu xu, `422 PROMPT_REJECTED`, `429 AI_IMAGE_BUSY`, `503 AI_IMAGE_UNAVAILABLE`, `403 STORAGE_QUOTA_EXCEEDED` (docs/19 §4.2) |
+| `GET` | `/api/ai/images/jobs/:id` | Chủ job | `{ id, kind, modelKey, status, prompt, aspectRatio, numImages, xuCost, error, outputs: [{ id, url, contentType, width, height, keepUntil }] }` — FE hỏi mỗi 2 giây |
+| `GET` | `/api/ai/images?before=&limit=` | Đã đăng nhập | "Ảnh AI của tôi": `{ items, nextBefore }`, mới nhất trước, ảnh chưa dùng giữ 30 ngày |
+| `POST` | `/api/ai/images/:outputId/upscale\|remove-bg\|vectorize` | Chủ ảnh | `{ clientRequestId? }` → `202 { job, balance }`; 20 / 5 / 10 xu |
+| `GET` | `/api/billing/xu/history?before=&limit=` | Đã đăng nhập | Lịch sử xu `{ entries: [{ type: "GRANT" \| "SPEND", quantity, source, reason, refundedAt, expiresAt, createdAt }], nextBefore }` |
+| `GET` | `/api/admin/analytics/xu?month=yyyy-mm` | ADMIN | Báo cáo xu của tháng: phát theo nguồn, đã tiêu, đã hoàn, doanh thu ghi nhận, hết hạn, xu bán chưa tiêu, chi phí model, biên gộp (docs/19 S5) |
 | `GET` · `POST` · `DELETE` | `/api/projects/:id/unboxing` | Chủ dự án | Xem / tạo hoặc thay cấu hình mở hộp `{ recipientName, giftNote, audioTrackUrl?, particleEffect? }` (201 lần đầu, 200 khi thay) / xóa kèm file QR |
 | `GET` | `/api/projects/:id/unboxing/qr?format=png\|svg` | Chủ dự án | Tải mã QR (PNG 1200 px hoặc SVG), sinh trực tiếp |
 | `GET` | `/api/public/unboxing/:slug` | Public | Dữ liệu trang mở hộp khi quét QR; tăng `viewsCount` |
@@ -69,9 +76,9 @@
 | `GET` | `/api/projects/:id/exports` | Chủ dự án | 20 lần xuất gần nhất |
 | `GET` | `/api/projects/:id/exports/access` | Chủ dự án | `{ mode, unlocked, unlockExpiresAt, balance }`: chế độ xuất của gói, phiên bản thiết kế hiện tại đã mở khóa chưa, số lượt còn (nhãn "Có watermark" / "Cần 1 lượt xuất" của ExportDialog) |
 | `GET` | `/api/exports/:jobId` | Chủ dự án | `{ status, error, fileName, watermarked, downloadUrl, downloadExpiresIn }` — link tải hết hạn sau 15 phút |
-| `GET` | `/api/billing/me` | Đã đăng nhập | `{ tier, entitlements, exportCredits: { balance, lots }, subscription, paymentSimulation }` |
-| `POST` | `/api/admin/users/:id/credits` | ADMIN | Cấp lượt xuất tay `{ quantity, expiresInDays?, note? }` (lô `ADMIN`, vd. tài khoản demo) |
-| `POST` | `/api/payments` | Đã đăng nhập | `{ purpose: "EXPORT_1" \| "EXPORT_5" \| "EXPORT_15" \| "PRO_MONTH" \| "SAMPLE_ORDER", orderId? }` → `201 { id, purpose, amountVnd, reference, status: "PENDING", expiresAt, vietqr: { payload, qrSvg, bankName, accountNo, accountName, sample } }` |
+| `GET` | `/api/billing/me` | Đã đăng nhập | `{ tier, entitlements, exportCredits: { balance, lots }, xu: { balance, lots, allowance }, subscription, paymentSimulation }` |
+| `POST` | `/api/admin/users/:id/credits` | ADMIN | Cấp lượt xuất hoặc xu tay `{ quantity, kind?: "EXPORT" \| "XU", expiresInDays?, note? }` (lô `ADMIN`, vd. tài khoản demo) |
+| `POST` | `/api/payments` | Đã đăng nhập | `{ purpose: "EXPORT_1" \| "EXPORT_5" \| "EXPORT_15" \| "PRO_MONTH" \| "SAMPLE_ORDER" \| "XU_500" \| "XU_1050" \| "XU_2200", orderId? }` → `201 { id, purpose, amountVnd, reference, status: "PENDING", expiresAt, vietqr: { payload, qrSvg, bankName, accountNo, accountName, sample } }` |
 | `GET` | `/api/payments/:id` | Chủ thanh toán | Trạng thái (FE hỏi mỗi 3 giây); quá hạn 15 phút → `EXPIRED`; `vietqr` chỉ có khi `PENDING` |
 | `POST` | `/api/payments/:id/simulate-confirm` | Chủ thanh toán | Chỉ khi `PAYMENT_SIMULATION=true` (ngược lại `404`): `PAID` + cấp quyền lợi trong một transaction; gọi lại không cấp thêm; hết hạn → `409 PAYMENT_EXPIRED` |
 | `POST` | `/api/orders/sample` | Đã đăng nhập (chủ dự án) | Đặt in mẫu 1–10 hộp `{ projectId, quantity, paperStock?, printShopId?, recipientName, phone, shippingAddress, notes? }` → đơn `WF-<năm>-<4 số>` trạng thái `PENDING_PAYMENT` |
@@ -153,14 +160,26 @@
 - `particleEffect`: `confetti` (mặc định), `fireworks`, `hearts`, `petals`, `snow`, `none`. `audioTrackUrl` phải là `https`.
 - **Trang công khai** hoạt động cả khi thiết kế đang `PRIVATE` (slug chính là "chìa khóa" cho người nhận), trả `recipientName`, `giftNote`, `audioTrackUrl`, `particleEffect`, `viewsCount`, `sender { fullName, shopName, avatarUrl }` và `box` (tiêu đề, cấu trúc, kích thước, chất liệu, canvas, thumbnail) — không có id, email. Dự án trong thùng rác → `404` (và không tạo / sửa được: `409`).
 
+### Xu Wrap và ảnh AI (docs/19)
+
+- Mọi tác vụ AI trả bằng **xu Wrap** (1 xu = 100đ): ảnh AI, hoa văn AI, phóng to, xóa nền, vector hóa. Lượt xuất file vẫn là
+  sổ riêng. Mỗi gói được cộng xu mỗi kỳ (Free 50, Lượt xuất 100, Pro 1.000, Business 3.500), xu chưa dùng giữ thêm một kỳ;
+  gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ (hạn 12 tháng).
+- Xu bị trừ khi tạo job, hoàn khi lỗi phía hệ thống (provider lỗi, ảnh bị chặn, hàng đợi hoặc worker sập); không hoàn khi
+  khách không ưng ảnh. Mô tả bị từ chối (`422 PROMPT_REJECTED`) thì chưa trừ xu.
+- Gửi `clientRequestId` (UUID mới cho mỗi lần bấm): gửi lại cùng id trả job cũ, không trừ lần hai.
+- Chi tiết thiết kế, bảng giá và nhật ký: [docs/19](19_XU_WRAP_SPEC.md).
+
 ### AI sinh hoa văn (IT3-09)
 
 - Trả bảng màu (3–8 màu `#RRGGBB`) và một ô hoa văn SVG **lặp liền mạch** (`tile.svg`, cạnh `tile.size` px) — FE dùng làm nền lặp trên mặt hộp.
 - Claude chỉ trả dữ liệu hình (structured outputs); backend kiểm tra rồi tự dựng SVG, nên SVG trả về không chứa script / link / tài nguyên ngoài.
 - `source: "ai"` khi Claude sinh; `"procedural"` khi chưa cấu hình AI hoặc AI lỗi (luôn có kết quả, không trả lỗi cho người dùng).
-- Giới hạn lượt AI trong 24 giờ theo gói: FREE 10, STARTER 50, PRO_BUSINESS 300 → hết trả `429`. Tối đa 5 yêu cầu / phút.
-- `quality: "fast"` (mặc định, `AI_MODEL_FAST` = Haiku) hoặc `"premium"` (`AI_MODEL_PREMIUM`, gói khác Free; Free → `403
-  PLAN_FEATURE_REQUIRED`). Vượt `AI_MONTHLY_BUDGET_USD` trong tháng → hoa văn thuật toán; `GET /api/ai/usage` có `budgetReached`.
+- Trả bằng xu (docs/19 S3): `quality: "fast"` (mặc định, `AI_MODEL_FAST` = Haiku) 1 xu, `"premium"` (`AI_MODEL_PREMIUM`) 65
+  xu, mọi gói. Xu bị trừ trước khi gọi Claude; Claude lỗi thì xu được hoàn và trả hoa văn thuật toán (`usage.charged: 0`).
+  Thiếu xu → `402 INSUFFICIENT_CREDITS { kind: "XU" }`. Tối đa 5 yêu cầu / phút.
+- AI tắt hoặc vượt `AI_MONTHLY_BUDGET_USD` trong tháng → hoa văn thuật toán, không trừ xu (`usage: null`); `GET /api/ai/usage`
+  có `budgetReached`.
 - `theme` ≤ 200 ký tự; `preferredColors` tối đa 5 màu thương hiệu.
 
 ### Tài khoản & email (xác minh, quên mật khẩu)
