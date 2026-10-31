@@ -29,6 +29,17 @@ function reason(error: unknown): string {
   return error.message && error.message !== error.name ? `${error.name}: ${error.message}` : error.name;
 }
 
+/**
+ * HeadBucket answers without a body, so the SDK only knows the status and reports "UnknownError": name its usual
+ * cause instead (R2 meanings, https://developers.cloudflare.com/r2/api/error-codes/).
+ */
+const HEAD_BUCKET_HINTS: Record<number, string> = {
+  400: 'access key or bucket name malformed',
+  401: 'access key not recognised',
+  403: 'token has no access to this bucket, or secret key wrong',
+  404: 'no bucket with this name',
+};
+
 async function checkBuckets(config: ConfigService): Promise<boolean> {
   const buckets = {
     STORAGE_BUCKET: config.get('storage.bucket'),
@@ -63,7 +74,8 @@ async function checkBuckets(config: ConfigService): Promise<boolean> {
         console.log(`  ${variable} "${bucket}": OK`);
       } catch (error) {
         const status = (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
-        console.error(`  ${variable} "${bucket}": failed${status ? ` (HTTP ${status})` : ''}, ${reason(error)}`);
+        const cause = (status && HEAD_BUCKET_HINTS[status]) || reason(error);
+        console.error(`  ${variable} "${bucket}": failed${status ? ` (HTTP ${status})` : ''}, ${cause}`);
         ok = false;
       }
     }
