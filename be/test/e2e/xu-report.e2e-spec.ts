@@ -129,31 +129,17 @@ describe('Xu report (e2e)', () => {
   });
 
   it('is for admins only and checks the month', async () => {
-    await api()
-      .get('/api/admin/analytics/xu')
-      .set('Cookie', maker.cookie)
-      .expect(403);
-    await api()
-      .get('/api/admin/analytics/xu?month=2001-13')
-      .set('Cookie', admin.cookie)
-      .expect(400);
-    const now = await api()
-      .get('/api/admin/analytics/xu')
-      .set('Cookie', admin.cookie)
-      .expect(200);
+    await api().get('/api/admin/analytics/xu').set('Cookie', maker.cookie).expect(403);
+    await api().get('/api/admin/analytics/xu?month=2001-13').set('Cookie', admin.cookie).expect(400);
+    const now = await api().get('/api/admin/analytics/xu').set('Cookie', admin.cookie).expect(200);
     expect(now.body.month).toMatch(/^\d{4}-\d{2}$/);
   });
 
   it('values spent xu at the money paid for their lot and nets the provider cost', async () => {
-    const res = await api()
-      .get('/api/admin/analytics/xu?month=2001-02')
-      .set('Cookie', admin.cookie)
-      .expect(200);
+    const res = await api().get('/api/admin/analytics/xu?month=2001-02').set('Cookie', admin.cookie).expect(200);
     const rate: number = res.body.usdVndRate;
     const imageVnd = Math.round(0.04 * rate);
-    const patternVnd = Math.round(
-      ((1_000 * 0.1 + 400 * 0.5) / 1_000_000) * rate,
-    );
+    const patternVnd = Math.round(((1_000 * 0.1 + 400 * 0.5) / 1_000_000) * rate);
 
     expect(res.body).toMatchObject({
       month: '2001-02',
@@ -191,10 +177,7 @@ describe('Xu report (e2e)', () => {
       grossMarginVnd: 10_000 - imageVnd - patternVnd,
       spentListValueVnd: 12_000,
     });
-    expect(res.body.grossMarginRate).toBeCloseTo(
-      (10_000 - imageVnd - patternVnd) / 10_000,
-      3,
-    );
+    expect(res.body.grossMarginRate).toBeCloseTo((10_000 - imageVnd - patternVnd) / 10_000, 3);
     // Purchased xu still spendable now, ours included: 400 xu worth 40.000đ.
     expect(res.body.outstanding.xu).toBeGreaterThanOrEqual(400);
     expect(res.body.outstanding.valueVnd).toBeGreaterThanOrEqual(40_000);

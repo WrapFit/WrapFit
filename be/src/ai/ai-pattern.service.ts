@@ -5,10 +5,7 @@ import { PrismaService } from '../shared/prisma';
 import { AiCostGuard } from './ai-cost.guard';
 import { GeneratePatternDto } from './dto/generate-pattern.dto';
 import { renderPatternSvg } from './pattern/pattern-svg';
-import type {
-  GeneratedPattern,
-  PatternGenerator,
-} from './pattern/pattern.types';
+import type { GeneratedPattern, PatternGenerator } from './pattern/pattern.types';
 import { ProceduralPatternGenerator } from './pattern/procedural-pattern.generator';
 
 /** The AI generator, or null when ANTHROPIC_API_KEY is empty. */
@@ -51,11 +48,7 @@ export class AiPatternService {
     if (this.ai && !(await this.costGuard.budgetReached())) {
       // Not enough xu: 402 INSUFFICIENT_CREDITS { kind: 'XU', balance, cost } before any call.
       const debit = await this.prisma.$transaction((tx) =>
-        this.xuWallet.spend(
-          userId,
-          { quantity: cost, reason: 'AI_PATTERN' },
-          tx,
-        ),
+        this.xuWallet.spend(userId, { quantity: cost, reason: 'AI_PATTERN' }, tx),
       );
       balance = debit.balance;
       try {
@@ -64,9 +57,7 @@ export class AiPatternService {
         charged = cost;
       } catch (error) {
         // Never leave the user empty-handed: give the xu back and fall back to the procedural pattern.
-        this.logger.warn(
-          `AI pattern failed, using the procedural generator: ${(error as Error).message}`,
-        );
+        this.logger.warn(`AI pattern failed, using the procedural generator: ${(error as Error).message}`);
         balance += await this.xuWallet.refund(debit.operationId);
       }
       if (result?.usage) {

@@ -1,13 +1,5 @@
 import { activeGapMs, activeTimeMs, STUDIO_IDLE_GAP_MS } from '@wrapfit/shared';
-import {
-  boxTypesOf,
-  countsByDay,
-  creationTimeOf,
-  mean,
-  median,
-  periodOf,
-  vietnamDate,
-} from './analytics-stats';
+import { boxTypesOf, countsByDay, creationTimeOf, mean, median, periodOf, vietnamDate } from './analytics-stats';
 
 describe('analytics stats', () => {
   describe('median', () => {
@@ -33,16 +25,8 @@ describe('analytics stats', () => {
 
   describe('creation time', () => {
     it('rounds to whole seconds and leaves out projects without studio activity (older data)', () => {
-      expect(creationTimeOf([0, 125, 250])).toEqual({
-        medianSeconds: 188,
-        meanSeconds: 188,
-        projects: 2,
-      });
-      expect(creationTimeOf([])).toEqual({
-        medianSeconds: null,
-        meanSeconds: null,
-        projects: 0,
-      });
+      expect(creationTimeOf([0, 125, 250])).toEqual({ medianSeconds: 188, meanSeconds: 188, projects: 2 });
+      expect(creationTimeOf([])).toEqual({ medianSeconds: null, meanSeconds: null, projects: 0 });
     });
   });
 

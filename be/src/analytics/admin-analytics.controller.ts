@@ -14,10 +14,8 @@ export class AdminAnalyticsController {
   @Get('xu')
   @Roles(Role.ADMIN)
   @ApiOperation({
-    summary:
-      'Xu Wrap of a month (admin): issued, spent, refunded, expired, revenue, deferred revenue, provider cost',
-    description:
-      'Revenue counts each spent xu at the money paid for its lot (allowance and gift xu are worth 0đ).',
+    summary: 'Xu Wrap of a month (admin): issued, spent, refunded, expired, revenue, deferred revenue, provider cost',
+    description: 'Revenue counts each spent xu at the money paid for its lot (allowance and gift xu are worth 0đ).',
   })
   xu(@Query() query: XuReportQueryDto) {
     return this.xuReport.report(query.month ?? vietnamMonthOf(new Date()));

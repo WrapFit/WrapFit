@@ -81,14 +81,8 @@ describe('AiPatternService', () => {
       source: 'ai',
       usage: { charged: XU_PATTERN_COST.fast, balance: 49 },
     });
-    expect(xuWallet.spend).toHaveBeenCalledWith(
-      'u-1',
-      { quantity: XU_PATTERN_COST.fast, reason: 'AI_PATTERN' },
-      tx,
-    );
-    expect(xuWallet.spend.mock.invocationCallOrder[0]).toBeLessThan(
-      ai.generate.mock.invocationCallOrder[0],
-    );
+    expect(xuWallet.spend).toHaveBeenCalledWith('u-1', { quantity: XU_PATTERN_COST.fast, reason: 'AI_PATTERN' }, tx);
+    expect(xuWallet.spend.mock.invocationCallOrder[0]).toBeLessThan(ai.generate.mock.invocationCallOrder[0]);
     expect(ai.generate).toHaveBeenCalledWith({
       theme: 'valentine',
       preferredColors: ['#E11D48'],
@@ -118,9 +112,7 @@ describe('AiPatternService', () => {
       quantity: XU_PATTERN_COST.premium,
       reason: 'AI_PATTERN',
     });
-    expect(ai.generate).toHaveBeenCalledWith(
-      expect.objectContaining({ quality: 'premium' }),
-    );
+    expect(ai.generate).toHaveBeenCalledWith(expect.objectContaining({ quality: 'premium' }));
     expect(result.usage).toEqual({
       charged: XU_PATTERN_COST.premium,
       balance: 935,
@@ -143,9 +135,7 @@ describe('AiPatternService', () => {
   });
 
   it('answers 402 without calling the AI when the wallet is short', async () => {
-    xuWallet.spend.mockRejectedValueOnce(
-      insufficientCredits(0, 'XU', XU_PATTERN_COST.premium),
-    );
+    xuWallet.spend.mockRejectedValueOnce(insufficientCredits(0, 'XU', XU_PATTERN_COST.premium));
     const error = await service(ai)
       .generate('u-1', { theme: 'Tết', quality: 'premium' })
       .catch((e) => e);

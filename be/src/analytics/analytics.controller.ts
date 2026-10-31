@@ -12,8 +12,7 @@ export class AnalyticsController {
 
   @Get('summary')
   @ApiOperation({
-    summary:
-      'Design numbers of the dashboard: boxes, box types, FitCheck errors prevented, box creation time, exports',
+    summary: 'Design numbers of the dashboard: boxes, box types, FitCheck errors prevented, box creation time, exports',
     description:
       'scope=me: my projects, always fresh. scope=global: anonymous totals of every user, cached for 60 s. ' +
       'Creation time = median active studio time from creating a project to its first completed export.',
