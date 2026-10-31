@@ -36,7 +36,7 @@ Nguồn sự thật: `shared/src/billing/ai-image-models.ts` và `shared/src/bil
 | `flux2-klein` | `fal-ai/flux-2/klein/4b` (2 MP, $0.005/MP) | $0.014 | 10 |
 | `gpt-image-2-low` | `openai/gpt-image-2`, quality low, ~1 MP | ~$0.01 | 10 |
 | `seedream-4.5` | `fal-ai/bytedance/seedream/v4.5/text-to-image` (~4.2 MP) | $0.04 | 30 |
-| `gpt-image-2-medium` | `openai/gpt-image-2`, quality medium | ~$0.05 (**chưa đo**) | 40 |
+| `gpt-image-2-medium` | `openai/gpt-image-2`, quality medium, ~1 MP | ~$0.055 | 40 |
 | `nano-banana-2` | `fal-ai/nano-banana-2`, 1K | $0.08 | 60 |
 | `recraft-v3-vector` | `fal-ai/recraft/v3/text-to-image`, style `vector_illustration` | $0.08 | 60 |
 | `nano-banana-pro` | `fal-ai/nano-banana-pro`, 2K | $0.15 | 120 |
@@ -57,7 +57,8 @@ Bật model có giá chưa chốt bằng biến `AI_IMAGE_MODELS` (danh sách kh
 - Endpoint và tham số trong `be/src/ai/image/fal-models.ts` đều có trong schema hiện hành (`image_size`, `quality`, `num_images`, `resolution`, `aspect_ratio`, `style`, `upscale_mode`/`upscale_factor`, `refine_foreground`). Kích thước Seedream 4.5 (~4,2 MP) nằm trong khoảng cho phép (≥ 2560×1440 điểm ảnh); GPT Image 2 ~1 MP nằm trong 655.360–8.294.400 điểm ảnh, cạnh bội 16.
 - Giá niêm yết khớp bảng trên: FLUX.2 klein $0.005/MP (ảnh ~2 MP = $0.01, giữ $0.014 để dư khi fal làm tròn MP), Seedream 4.5 $0.04/ảnh, Nano Banana 2 $0.08/ảnh, Nano Banana Pro $0.15/ảnh, SeedVR $0.001/MP (16 MP = $0.016), BiRefNet $0.000575/giây GPU (~9 giây = $0.005), Recraft vectorize $0.01/ảnh.
 - Recraft V3: API giá trả $0.04/ảnh; trang model của fal ghi style vector tính gấp đôi, nên giữ $0.08.
-- GPT Image 2: API giá chỉ trả "1 USD / units" (tính theo token), không suy ra được giá mỗi ảnh. Low ~$0.01 và medium ~$0.05 vẫn là ước tính; cần một lượt gọi thật mỗi mức để đo. Không đổi `estCostUsd`, mọi biên vẫn ≥ 2,5 lần.
+- GPT Image 2: API giá của fal trả "1 USD / units", nghĩa là fal tính đúng chi phí token của OpenAI. OpenAI tính $30 cho 1 triệu token ảnh đầu ra. Ảnh 1024×1024 theo ví dụ của OpenAI (qua các trang tổng hợp, chưa đối chiếu trang giá gốc): low ~$0.006, medium ~$0.053, high ~$0.211. Ảnh 3:2 và 2:3 rẻ hơn ảnh vuông. Token prompt chỉ thêm vài phần trăm. Vì vậy `estCostUsd` low giữ $0.01, medium nâng $0.05 lên $0.055 (biên 2,8 lần), high giữ $0.41 cho tới khi bật.
+- Sau lần gọi thật đầu tiên trên production, đối chiếu `est_cost_usd` của `ai_image_jobs` với chi phí từng request trong trang Usage của fal (MCP `search_request_history` chỉ trả thời gian và kết quả, không trả tiền).
 
 ## 4. Thiết kế đã làm
 

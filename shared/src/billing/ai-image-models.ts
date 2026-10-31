@@ -92,7 +92,7 @@ export const AI_IMAGE_MODELS: readonly AiImageModel[] = [
     label: "GPT Image 2",
     tier: "standard",
     xu: 40,
-    estCostUsd: 0.05,
+    estCostUsd: 0.055,
     output: "raster",
     supportsText: true,
     aspectRatios: GPT_RATIOS,
