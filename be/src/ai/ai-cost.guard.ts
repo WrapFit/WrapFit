@@ -20,10 +20,10 @@ interface MonthSpend {
 }
 
 /**
- * System-wide cost fuse of the AI pattern generator (docs/16 §4.4): sums the estimated cost of this month's
- * `ai_generations` and reports when it reaches AI_MONTHLY_BUDGET_USD, so every request falls back to the free
- * procedural generator until the next month. The sum is cached 5 minutes per process; generations made in this
- * process are added to it at once, others (a second API instance) show up at the next refresh.
+ * System-wide cost fuse of AI (docs/16 §4.4, docs/19): sums the estimated cost of this month's `ai_generations`
+ * (patterns) and `ai_image_jobs` and reports when it reaches AI_MONTHLY_BUDGET_USD. Patterns then fall back to the
+ * free procedural generator and AI images answer 503 (no xu spent) until the next month. The sum is cached 5 minutes
+ * per process; costs added in this process count at once, others (a second API instance) at the next refresh.
  */
 @Injectable()
 export class AiCostGuard {
@@ -45,9 +45,14 @@ export class AiCostGuard {
 
   /** Adds a generation that was just recorded to the cached sum. */
   async record(model: string, inputTokens: number, outputTokens: number, now = new Date()): Promise<void> {
+    await this.addUsd(estimateCostUsd(model, inputTokens, outputTokens), now);
+  }
+
+  /** Adds the estimated cost of an AI image job that was just created (`ai_image_jobs.est_cost_usd`). */
+  async addUsd(usd: number, now = new Date()): Promise<void> {
     if (this.budgetUsd === null || !this.spend) return;
     const spend = await this.spend.catch(() => null);
-    if (spend?.monthStart === vietnamMonthStart(now).getTime()) spend.usd += estimateCostUsd(model, inputTokens, outputTokens);
+    if (spend?.monthStart === vietnamMonthStart(now).getTime()) spend.usd += usd;
   }
 
   private async monthSpend(now: Date): Promise<MonthSpend> {
@@ -62,15 +67,21 @@ export class AiCostGuard {
   }
 
   private async load(monthStart: number, now: number): Promise<MonthSpend> {
-    const rows = await this.prisma.aiGeneration.groupBy({
-      by: ['model'],
-      where: { createdAt: { gte: new Date(monthStart) } },
-      _sum: { inputTokens: true, outputTokens: true },
-    });
-    const usd = rows.reduce(
-      (sum, row) => sum + estimateCostUsd(row.model, row._sum.inputTokens ?? 0, row._sum.outputTokens ?? 0),
-      0,
-    );
+    const since = new Date(monthStart);
+    const [rows, images] = await Promise.all([
+      this.prisma.aiGeneration.groupBy({
+        by: ['model'],
+        where: { createdAt: { gte: since } },
+        _sum: { inputTokens: true, outputTokens: true },
+      }),
+      // Every image job counts, failed ones too: the provider may have billed a call that failed afterwards.
+      this.prisma.aiImageJob.aggregate({ where: { createdAt: { gte: since } }, _sum: { estCostUsd: true } }),
+    ]);
+    const usd =
+      rows.reduce(
+        (sum, row) => sum + estimateCostUsd(row.model, row._sum.inputTokens ?? 0, row._sum.outputTokens ?? 0),
+        0,
+      ) + Number(images._sum.estCostUsd ?? 0);
     if (this.budgetUsd !== null && usd >= this.budgetUsd) {
       // Once per cache period: admins see it in the error logs, users still get procedural patterns.
       this.logger.error(

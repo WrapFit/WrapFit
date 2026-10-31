@@ -14,10 +14,11 @@ describe('vietnamMonthStart', () => {
 
 describe('AiCostGuard', () => {
   let groupBy: jest.Mock;
+  let aggregate: jest.Mock;
   const now = new Date('2026-11-10T03:00:00Z');
   const guard = (budget: number | null) => {
     const g = new AiCostGuard(
-      { aiGeneration: { groupBy } } as unknown as PrismaService,
+      { aiGeneration: { groupBy }, aiImageJob: { aggregate } } as unknown as PrismaService,
       { get: () => budget } as unknown as ConfigService,
     );
     jest.spyOn(g['logger'], 'error').mockImplementation(() => undefined);
@@ -31,6 +32,16 @@ describe('AiCostGuard', () => {
 
   beforeEach(() => {
     groupBy = jest.fn().mockResolvedValue(rows);
+    aggregate = jest.fn().mockResolvedValue({ _sum: { estCostUsd: null } });
+  });
+
+  it('adds the estimated cost of the AI image jobs of the month', async () => {
+    aggregate.mockResolvedValue({ _sum: { estCostUsd: '0.95' } }); // Prisma returns a Decimal
+    expect(await guard(2).budgetReached(now)).toBe(true);
+    expect(aggregate).toHaveBeenCalledWith({
+      where: { createdAt: { gte: new Date('2026-10-31T17:00:00Z') } },
+      _sum: { estCostUsd: true },
+    });
   });
 
   it('never limits nor queries without a budget', async () => {

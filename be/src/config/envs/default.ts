@@ -1,4 +1,5 @@
-import type { EnvironmentVariables } from '../env.validation';
+import { AI_IMAGE_MODELS, type AiImageModelKey } from '@wrapfit/shared';
+import { splitList, type EnvironmentVariables } from '../env.validation';
 
 /**
  * Every setting of the application, built from the validated environment (env.validation.ts). The NODE_ENV files next
@@ -61,12 +62,27 @@ export const config = (env: EnvironmentVariables) => ({
     apiSecret: env.CLOUDINARY_API_SECRET,
     folder: env.CLOUDINARY_FOLDER,
   },
-  /** `anthropicApiKey` empty = built-in procedural patterns only. `monthlyBudgetUsd` null = no cost fuse. */
+  /**
+   * `anthropicApiKey` empty = built-in procedural patterns only (and AI image prompts sent as typed). `monthlyBudgetUsd`
+   * null = no cost fuse.
+   */
   ai: {
     anthropicApiKey: env.ANTHROPIC_API_KEY,
     models: { fast: env.AI_MODEL_FAST, premium: env.AI_MODEL_PREMIUM },
     timeoutMs: env.AI_TIMEOUT_MS,
     monthlyBudgetUsd: env.AI_MONTHLY_BUDGET_USD ? Number(env.AI_MONTHLY_BUDGET_USD) : null,
+    /** AI images paid with xu (docs/19). `enabled` false = the routes answer 503 and the studio hides the panel. */
+    image: {
+      provider: env.AI_IMAGE_PROVIDER as 'fal' | 'fake',
+      falKey: env.FAL_KEY,
+      enabled: env.AI_IMAGE_PROVIDER === 'fake' || env.FAL_KEY !== '',
+      models: (env.AI_IMAGE_MODELS
+        ? splitList(env.AI_IMAGE_MODELS)
+        : AI_IMAGE_MODELS.filter((model) => model.enabled).map((model) => model.key)) as AiImageModelKey[],
+      timeoutMs: env.AI_IMAGE_TIMEOUT_MS,
+      concurrency: env.AI_IMAGE_CONCURRENCY,
+    },
+    usdVndRate: env.USD_VND_RATE,
   },
   /**
    * `simulation` = payments can be confirmed by a button instead of a bank transfer (CP4 demo). `vietqr` null = the

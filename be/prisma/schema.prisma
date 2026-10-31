@@ -121,6 +121,7 @@ model User {
   projectLikes  ProjectLike[]
   storedFiles   StoredFile[]
   aiGenerations AiGeneration[]
+  aiImageJobs   AiImageJob[]
   payments      Payment[]
   creditLots    CreditLot[]
   exportUnlocks ExportUnlock[]
@@ -390,6 +391,7 @@ model StoredFile {
   project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   refs    ProjectFileRef[]
   library LibraryAsset?
+  aiImage AiImageOutput?
 
   @@index([userId])
   @@index([projectId])
@@ -478,6 +480,74 @@ model AiGeneration {
 
   @@index([userId, createdAt])
   @@map("ai_generations")
+}
+
+enum AiImageJobKind {
+  GENERATE // Tạo ảnh từ mô tả (text-to-image)
+  UPSCALE // Phóng to một ảnh AI cho in ấn
+  REMOVE_BG // Xóa nền một ảnh AI
+  VECTORIZE // Chuyển một ảnh AI sang SVG
+}
+
+enum AiImageJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED // Lỗi phía hệ thống: xu đã hoàn (docs/19 D3)
+}
+
+// Một yêu cầu ảnh AI trả bằng xu (docs/19): tạo ảnh, hoặc một công cụ chạy trên một ảnh AI. Xu bị trừ cùng transaction
+// tạo dòng này; worker (AiImageProcessor) chạy job và hoàn xu đúng một lần khi job thất bại.
+model AiImageJob {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  kind              AiImageJobKind
+  modelKey          String           @map("model_key") // Khóa trong AI_IMAGE_MODELS, hoặc tên công cụ
+  prompt            String? // Mô tả khách gõ (GENERATE)
+  promptEn          String?          @map("prompt_en") // Mô tả gửi cho model sau bước viết lại
+  aspectRatio       String?          @map("aspect_ratio")
+  allowText         Boolean          @default(false) @map("allow_text")
+  numImages         Int              @default(1) @map("num_images")
+  sourceOutputId    String?          @map("source_output_id") @db.Uuid // Công cụ: ảnh AI được xử lý
+  xuCost            Int              @map("xu_cost")
+  estCostUsd        Decimal          @map("est_cost_usd") @db.Decimal(10, 4) // Chi phí provider ước tính (cầu chì, báo cáo)
+  status            AiImageJobStatus @default(PENDING)
+  clientRequestId   String?          @map("client_request_id") @db.Uuid // Bấm hai lần không trừ xu hai lần
+  debitOperationId  String           @map("debit_operation_id") @db.Uuid
+  providerRequestId String?          @map("provider_request_id")
+  errorLog          String?          @map("error_log")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source  AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
+  outputs AiImageOutput[] @relation("AiImageJobOutputs")
+
+  @@unique([userId, clientRequestId])
+  @@index([userId, createdAt])
+  @@index([status, createdAt]) // AiImageReconcileTask
+  @@index([createdAt]) // Cầu chì chi phí tháng
+  @@index([sourceOutputId])
+  @@map("ai_image_jobs")
+}
+
+// Một ảnh một job tạo ra. Ảnh chưa đặt lên thiết kế nào được giữ tới keep_until (30 ngày) rồi bị dọn như ảnh upload;
+// xóa file thì dòng này đi theo.
+model AiImageOutput {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  jobId        String   @map("job_id") @db.Uuid
+  storedFileId String   @unique @map("stored_file_id") @db.Uuid
+  width        Int? // null với SVG
+  height       Int?
+  keepUntil    DateTime @map("keep_until") @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  job        AiImageJob   @relation("AiImageJobOutputs", fields: [jobId], references: [id], onDelete: Cascade)
+  storedFile StoredFile   @relation(fields: [storedFileId], references: [id], onDelete: Cascade)
+  toolJobs   AiImageJob[] @relation("AiImageToolSource")
+
+  @@index([jobId])
+  @@map("ai_image_outputs")
 }
 
 // ============================================================================

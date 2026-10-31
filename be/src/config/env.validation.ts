@@ -13,6 +13,14 @@ import {
   MinLength,
   validateSync,
 } from 'class-validator';
+import { isAiImageModelKey } from '@wrapfit/shared';
+
+/** `a, b,c` -> ['a', 'b', 'c']; empty -> []. */
+export const splitList = (value: string): string[] =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 export enum NodeEnv {
   Development = 'development',
@@ -188,6 +196,39 @@ export class EnvironmentVariables {
   AI_TIMEOUT_MS: number = 30000;
 
   /**
+   * Who draws AI images paid with xu (docs/19): `fal` = fal.ai with FAL_KEY (an empty key turns AI images off),
+   * `fake` = placeholder pictures made locally, for development and tests (refused in production).
+   */
+  @IsIn(['fal', 'fake'])
+  AI_IMAGE_PROVIDER: string = 'fal';
+
+  @IsString()
+  FAL_KEY: string = '';
+
+  /**
+   * Keys of AI_IMAGE_MODELS (shared/src/billing/ai-image-models.ts) on offer, comma separated, e.g. to switch on a
+   * model whose price is confirmed. Empty = the catalog defaults.
+   */
+  @Matches(/^[a-z0-9.,\s-]*$/, { message: 'AI_IMAGE_MODELS must be model keys separated by commas, or empty' })
+  AI_IMAGE_MODELS: string = '';
+
+  /** Longest wait for one call to the image provider. */
+  @IsInt()
+  @Min(10000)
+  AI_IMAGE_TIMEOUT_MS: number = 180000;
+
+  /** How many AI image jobs one worker process runs in parallel. */
+  @IsInt()
+  @Min(1)
+  @Max(16)
+  AI_IMAGE_CONCURRENCY: number = 2;
+
+  /** VND per USD, to report provider costs next to xu revenue. */
+  @IsInt()
+  @Min(1000)
+  USD_VND_RATE: number = 26000;
+
+  /**
    * `true` = `POST /payments/:id/simulate-confirm` marks a payment paid without a bank transfer, and the checkout shows
    * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken.
    */
@@ -298,5 +339,12 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     );
   }
   if (!config.AI_MODEL_FAST && validated.AI_MODEL) validated.AI_MODEL_FAST = validated.AI_MODEL;
+  if (validated.AI_IMAGE_PROVIDER === 'fake' && validated.NODE_ENV === NodeEnv.Production) {
+    throw new Error('Invalid environment variables:\n - AI_IMAGE_PROVIDER=fake draws placeholder images; use fal in production');
+  }
+  const unknownModels = splitList(validated.AI_IMAGE_MODELS).filter((key) => !isAiImageModelKey(key));
+  if (unknownModels.length) {
+    throw new Error(`Invalid environment variables:\n - AI_IMAGE_MODELS has unknown model keys: ${unknownModels.join(', ')}`);
+  }
   return validated;
 }
