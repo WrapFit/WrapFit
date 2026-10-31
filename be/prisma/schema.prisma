@@ -492,6 +492,9 @@ enum PaymentPurpose {
   EXPORT_15 // 15 lượt xuất, 199.000đ
   PRO_MONTH // Pro 30 ngày, 99.000đ
   SAMPLE_ORDER // Đơn in mẫu (số tiền theo đơn)
+  XU_500 // 500 xu Wrap, 50.000đ (docs/19)
+  XU_1050 // 1.050 xu Wrap, 100.000đ
+  XU_2200 // 2.200 xu Wrap, 200.000đ
 }
 
 enum PaymentStatus {
@@ -502,17 +505,22 @@ enum PaymentStatus {
 }
 
 enum CreditKind {
-  EXPORT // Lượt xuất file sạch (credit AI theo lô chưa làm: docs/17 M2)
+  EXPORT // Lượt xuất file sạch
+  XU // Xu Wrap: mọi tác vụ AI (docs/19)
 }
 
 enum CreditSource {
-  PURCHASE // Mua gói lượt: tính là gói Lượt xuất khi còn hạn
+  PURCHASE // Mua gói: lô EXPORT còn hạn tính là gói Lượt xuất
   ADMIN // Admin cấp tay (tài khoản demo, bồi thường): không đổi gói
+  PLAN_ALLOWANCE // Xu của gói theo kỳ, cấp lười khi đọc hoặc tiêu ví (một lô mỗi period_key)
 }
 
 enum CreditDebitReason {
   EXPORT_UNLOCK // Mở khóa một bản thiết kế (project, version)
   ADMIN_ADJUSTMENT
+  AI_IMAGE // Tạo ảnh AI (ref_id = ai_image_jobs.id)
+  AI_PATTERN // Hoa văn AI
+  AI_TOOL // Upscale, xóa nền, vector hóa một ảnh AI
 }
 
 enum SubscriptionStatus {
@@ -550,10 +558,12 @@ model CreditLot {
   userId    String       @map("user_id") @db.Uuid
   kind      CreditKind
   source    CreditSource
-  quantity  Int // Số lượt cấp
+  quantity  Int // Số lượt (xu) cấp
   remaining Int // Còn lại: chỉ CreditsService sửa, trong transaction có khóa dòng
   expiresAt DateTime?    @map("expires_at") @db.Timestamptz(3) // null = không hết hạn (chỉ lô ADMIN)
   paymentId String?      @map("payment_id") @db.Uuid
+  periodKey String?      @map("period_key") // Chỉ lô PLAN_ALLOWANCE (CHECK): kỳ được cấp, xem xuAllowancePeriod
+  valueVnd  Int          @default(0) @map("value_vnd") // Tiền thật của cả lô: số tiền đã trả, 0 với xu gói / tặng (docs/19 D6)
   note      String?
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -561,6 +571,7 @@ model CreditLot {
   payment Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   debits  CreditDebit[]
 
+  @@unique([userId, kind, source, periodKey]) // Cấp allowance đúng một lần mỗi kỳ (NULL không trùng nhau)
   @@index([userId, kind, expiresAt])
   @@index([paymentId])
   @@map("credit_lots")

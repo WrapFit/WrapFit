@@ -4,11 +4,15 @@ import { BillingService } from './billing.service';
 import { CreditsService } from './credits.service';
 import { EntitlementsService } from './entitlements.service';
 import { PlanService } from './plan.service';
+import { XuWalletService } from './xu-wallet.service';
 
-/** Credits, plan sync and entitlements, no HTTP: imported by the API (BillingModule, ExportModule) and the worker. */
+/**
+ * Credits, the xu wallet, plan sync and entitlements, no HTTP: imported by the API (BillingModule, ExportModule,
+ * AiModule) and the worker.
+ */
 @Module({
-  providers: [CreditsService, PlanService, EntitlementsService],
-  exports: [CreditsService, PlanService, EntitlementsService],
+  providers: [CreditsService, XuWalletService, PlanService, EntitlementsService],
+  exports: [CreditsService, XuWalletService, PlanService, EntitlementsService],
 })
 export class BillingCoreModule {}
 

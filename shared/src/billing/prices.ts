@@ -2,11 +2,15 @@
  * Prices in VND, VAT included (B2C prices), docs/16 §3.2 trimmed to what Path 2 sells (docs/17 S1). The pricing page,
  * the checkout and the backend that creates payments all read these numbers.
  */
+import type { XuPackId } from "./xu";
 
 /** Export packs: N clean exports, valid 12 months from the purchase. */
 export type ExportPackId = "EXPORT_1" | "EXPORT_5" | "EXPORT_15";
-/** What a payment can buy. `SAMPLE_ORDER` is a print sample order: its amount comes from the order, not from here. */
-export type PaymentPurpose = ExportPackId | "PRO_MONTH" | "SAMPLE_ORDER";
+/**
+ * What a payment can buy. Xu packs are in ./xu (XU_PACKS). `SAMPLE_ORDER` is a print sample order: its amount comes
+ * from the order, not from here.
+ */
+export type PaymentPurpose = ExportPackId | XuPackId | "PRO_MONTH" | "SAMPLE_ORDER";
 
 export interface ExportPack {
   id: ExportPackId;
@@ -32,7 +36,7 @@ export function isExportPackId(value: string): value is ExportPackId {
   return Object.prototype.hasOwnProperty.call(EXPORT_PACKS, value);
 }
 
-/** Expiry of a purchased export lot: same day and time, 12 calendar months later (UTC). */
+/** Expiry of a purchased lot (export credits or xu): same day and time, 12 calendar months later (UTC). */
 export function exportLotExpiresAt(purchasedAt: Date): Date {
   const expires = new Date(purchasedAt);
   expires.setUTCMonth(expires.getUTCMonth() + PURCHASED_LOT_VALID_MONTHS);

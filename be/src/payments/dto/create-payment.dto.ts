@@ -3,7 +3,7 @@ import { PaymentPurpose } from '@prisma/client';
 import { IsEnum, IsUUID, ValidateIf } from 'class-validator';
 
 export class CreatePaymentDto {
-  @ApiProperty({ enum: PaymentPurpose, description: 'Gói lượt xuất, Pro 30 ngày hoặc đơn in mẫu' })
+  @ApiProperty({ enum: PaymentPurpose, description: 'Gói lượt xuất, gói xu, Pro 30 ngày hoặc đơn in mẫu' })
   @IsEnum(PaymentPurpose)
   purpose!: PaymentPurpose;
 

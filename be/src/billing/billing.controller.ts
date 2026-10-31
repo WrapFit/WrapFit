@@ -1,20 +1,31 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { ACCESS_COOKIE, CurrentUser, Roles } from '../common';
 import { BillingService } from './billing.service';
 import { GrantCreditsDto } from './dto/grant-credits.dto';
+import { XuHistoryQueryDto } from './dto/xu-history-query.dto';
+import { XuWalletService } from './xu-wallet.service';
 
 @ApiTags('billing')
 @ApiCookieAuth(ACCESS_COOKIE)
 @Controller('billing')
 export class BillingController {
-  constructor(private readonly billing: BillingService) {}
+  constructor(
+    private readonly billing: BillingService,
+    private readonly xuWallet: XuWalletService,
+  ) {}
 
   @Get('me')
-  @ApiOperation({ summary: 'My plan, its limits, export credit balance and lots, and my live subscription' })
+  @ApiOperation({ summary: 'My plan, its limits, export credits, xu wallet, and my live subscription' })
   me(@CurrentUser('id') userId: string) {
     return this.billing.me(userId);
+  }
+
+  @Get('xu/history')
+  @ApiOperation({ summary: 'Xu granted and spent, newest first (`nextBefore` continues the list)' })
+  xuHistory(@CurrentUser('id') userId: string, @Query() query: XuHistoryQueryDto) {
+    return this.xuWallet.history(userId, query);
   }
 }
 

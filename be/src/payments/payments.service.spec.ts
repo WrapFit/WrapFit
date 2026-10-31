@@ -58,4 +58,46 @@ describe('PaymentsService', () => {
     const sample = await serviceWith({ 'payments.simulation': true, 'payments.vietqr': null }, prisma).get('p1', 'u1');
     expect(sample.vietqr).toMatchObject({ ...SAMPLE_ACCOUNT, sample: true });
   });
+
+  it('grants a xu lot worth what was paid when a xu pack is paid', async () => {
+    const pending = {
+      id: 'p2',
+      userId: 'u1',
+      purpose: 'XU_1050',
+      status: 'PENDING',
+      amountVnd: 100_000,
+      reference: 'WFXUPACK',
+      expiresAt: new Date(Date.now() + 60_000),
+      paidAt: null,
+      metadata: { xu: 1_050 },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([{ id: 'p2' }]),
+      payment: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue(pending),
+        update: jest.fn(({ data }) => Promise.resolve({ ...pending, ...data })),
+      },
+    };
+    const prisma = { $transaction: (run: (db: typeof tx) => unknown) => run(tx) } as unknown as PrismaService;
+    const credits = { grant: jest.fn().mockResolvedValue({}) };
+    const plans = { sync: jest.fn().mockResolvedValue('FREE') };
+    const service = new PaymentsService(
+      prisma,
+      credits as unknown as CreditsService,
+      plans as unknown as PlanService,
+      {} as OrdersService,
+      { get: (key: string) => ({ 'payments.simulation': true, 'payments.vietqr': null })[key] } as unknown as ConfigService,
+    );
+
+    const view = await service.simulateConfirm('p2', 'u1');
+
+    expect(view).toMatchObject({ status: 'PAID', xu: 1_050, credits: null });
+    expect(credits.grant).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ kind: 'XU', quantity: 1_050, source: 'PURCHASE', valueVnd: 100_000, paymentId: 'p2' }),
+      tx,
+    );
+  });
 });

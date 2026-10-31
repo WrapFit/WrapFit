@@ -25,6 +25,17 @@ describe('CreditsService', () => {
     expect(tx.creditDebit.createMany).not.toHaveBeenCalled();
   });
 
+  it('spends only from the ledger of its kind and says which one is short', async () => {
+    tx.$queryRaw.mockResolvedValueOnce([{ id: 'xu-lot', remaining: 5 }]);
+    const error = await service
+      .debit('user-1', { kind: 'XU', quantity: 30, reason: 'AI_IMAGE' })
+      .catch((e: unknown) => e);
+
+    const [, ...values] = tx.$queryRaw.mock.calls[0];
+    expect(values).toContain('XU');
+    expect(error).toMatchObject({ status: 402, response: { code: 'INSUFFICIENT_CREDITS', kind: 'XU', balance: 5, cost: 30 } });
+  });
+
   it('refuses a debit when no lot is left', async () => {
     tx.$queryRaw.mockResolvedValueOnce([]);
     await expect(service.debit('user-1', { reason: 'EXPORT_UNLOCK' })).rejects.toMatchObject({ status: 402 });

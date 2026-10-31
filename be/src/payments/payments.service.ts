@@ -8,7 +8,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OrderStatus, Payment, PaymentPurpose, PaymentStatus, Prisma } from '@prisma/client';
-import { EXPORT_PACKS, exportLotExpiresAt, isExportPackId, PRO_MONTH, proPeriodEnd } from '@wrapfit/shared';
+import {
+  EXPORT_PACKS,
+  exportLotExpiresAt,
+  isExportPackId,
+  isXuPackId,
+  PRO_MONTH,
+  proPeriodEnd,
+  XU_PACKS,
+} from '@wrapfit/shared';
 import { randomInt } from 'crypto';
 import { CreditsService, PlanService } from '../billing';
 import { ConfigService } from '../common';
@@ -32,7 +40,7 @@ export function newPaymentReference(): string {
 }
 
 /** What the payment buys, snapshotted when it is created (prices may change while it waits). */
-type PaymentMetadata = { credits: number } | { periodDays: number } | { orderId: string };
+type PaymentMetadata = { credits: number } | { xu: number } | { periodDays: number } | { orderId: string };
 
 export interface PaymentView {
   id: string;
@@ -45,6 +53,8 @@ export interface PaymentView {
   createdAt: string;
   /** Export credits of a pack, null otherwise. */
   credits: number | null;
+  /** Xu of a xu pack, null otherwise. */
+  xu: number | null;
   /** Sample order paid by this payment, null otherwise. */
   orderId: string | null;
   /** The transfer to make, while the payment waits for it. */
@@ -68,7 +78,8 @@ const paymentExpired = () =>
 
 /**
  * VietQR payments (docs/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
- * grants what it bought in the same transaction: an export credit lot, 30 days of Pro, or a sample order moved to PAID.
+ * grants what it bought in the same transaction: an export credit lot, a xu lot (docs/19), 30 days of Pro, or a sample
+ * order moved to PAID.
  * Without a bank webhook (docs/17 M1), "paid" comes only from the simulate button, enabled by PAYMENT_SIMULATION.
  */
 @Injectable()
@@ -186,6 +197,10 @@ export class PaymentsService {
       const pack = EXPORT_PACKS[dto.purpose];
       return { amountVnd: pack.priceVnd, metadata: { credits: pack.credits } };
     }
+    if (isXuPackId(dto.purpose)) {
+      const pack = XU_PACKS[dto.purpose];
+      return { amountVnd: pack.priceVnd, metadata: { xu: pack.xu } };
+    }
     if (dto.purpose === PaymentPurpose.PRO_MONTH) {
       return { amountVnd: PRO_MONTH.priceVnd, metadata: { periodDays: PRO_MONTH.periodDays } };
     }
@@ -211,6 +226,21 @@ export class PaymentsService {
           source: 'PURCHASE',
           expiresAt: exportLotExpiresAt(now),
           paymentId: payment.id,
+          note: payment.reference,
+        },
+        tx,
+      );
+    } else if ('xu' in metadata) {
+      // A purchased lot is worth what was paid for it: reports recognize that money as xu are spent (docs/19 D6).
+      await this.credits.grant(
+        payment.userId,
+        {
+          kind: 'XU',
+          quantity: metadata.xu,
+          source: 'PURCHASE',
+          expiresAt: exportLotExpiresAt(now),
+          paymentId: payment.id,
+          valueVnd: payment.amountVnd,
           note: payment.reference,
         },
         tx,
@@ -244,7 +274,7 @@ export class PaymentsService {
   }
 
   private async toView(payment: Payment): Promise<PaymentView> {
-    const metadata = (payment.metadata ?? {}) as Partial<{ credits: number; orderId: string }>;
+    const metadata = (payment.metadata ?? {}) as Partial<{ credits: number; xu: number; orderId: string }>;
     let vietqr: PaymentView['vietqr'] = null;
     if (payment.status === PaymentStatus.PENDING) {
       const payload = vietQrPayload({ ...this.account, amountVnd: payment.amountVnd, description: payment.reference });
@@ -268,6 +298,7 @@ export class PaymentsService {
       paidAt: payment.paidAt?.toISOString() ?? null,
       createdAt: payment.createdAt.toISOString(),
       credits: metadata.credits ?? null,
+      xu: metadata.xu ?? null,
       orderId: metadata.orderId ?? null,
       vietqr,
     };

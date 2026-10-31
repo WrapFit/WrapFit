@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreditDebitReason, CreditSource, Prisma } from '@prisma/client';
+import { CreditDebitReason, CreditKind, CreditSource, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../shared/prisma';
 import { insufficientCredits } from './billing.errors';
@@ -15,16 +15,28 @@ export interface CreditLotView {
   createdAt: Date;
 }
 
+/** Which ledger: export credits (the default) or xu (docs/19). `now` decides which lots have expired. */
+export interface LedgerScope {
+  kind?: CreditKind;
+  now?: Date;
+}
+
 export interface GrantInput {
+  /** Default EXPORT. */
+  kind?: CreditKind;
   quantity: number;
   source: CreditSource;
   /** null = never expires (ADMIN lots only, CHECK chk_credit_lots_expiry). */
   expiresAt: Date | null;
   paymentId?: string;
+  /** Money the whole lot is worth: what was paid for it (PURCHASE only, chk_credit_lots_value_source). Default 0. */
+  valueVnd?: number;
   note?: string;
 }
 
 export interface DebitInput {
+  /** Default EXPORT. */
+  kind?: CreditKind;
   quantity?: number;
   reason: CreditDebitReason;
   /** What the credits paid for, e.g. the export_unlocks id. */
@@ -36,28 +48,39 @@ export interface DebitInput {
 /** A lot counts while it has not expired; lots without an expiry never do. */
 const unexpired = (now: Date): Prisma.CreditLotWhereInput => ({ OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] });
 
+const LOT_VIEW = { id: true, source: true, quantity: true, remaining: true, expiresAt: true, createdAt: true } as const;
+
 /**
- * Export credit ledger (docs/16 §1.5, docs/17 M3): lots with an expiry, spent by debit rows. There is no balance column
- * anywhere: the balance is the sum of `remaining` over the lots not expired, and `remaining` only changes here, inside a
- * transaction that holds the lot rows locked, so two concurrent debits never spend the same credit.
+ * Credit ledgers (docs/16 §1.5, docs/17 M3, docs/19): lots with an expiry, spent by debit rows, one ledger per kind
+ * (export credits, xu) that never mix. There is no balance column anywhere: the balance is the sum of `remaining` over
+ * the lots not expired, and `remaining` only changes here, inside a transaction that holds the lot rows locked, so two
+ * concurrent debits never spend the same credit.
  */
 @Injectable()
 export class CreditsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async balance(userId: string, db: Db = this.prisma, now = new Date()): Promise<number> {
+  async balance(
+    userId: string,
+    db: Db = this.prisma,
+    { kind = 'EXPORT', now = new Date() }: LedgerScope = {},
+  ): Promise<number> {
     const { _sum } = await db.creditLot.aggregate({
-      where: { userId, kind: 'EXPORT', ...unexpired(now) },
+      where: { userId, kind, ...unexpired(now) },
       _sum: { remaining: true },
     });
     return _sum.remaining ?? 0;
   }
 
   /** Lots not expired, the ones spent first on top. */
-  async lots(userId: string, db: Db = this.prisma, now = new Date()): Promise<CreditLotView[]> {
+  async lots(
+    userId: string,
+    db: Db = this.prisma,
+    { kind = 'EXPORT', now = new Date() }: LedgerScope = {},
+  ): Promise<CreditLotView[]> {
     return db.creditLot.findMany({
-      where: { userId, kind: 'EXPORT', ...unexpired(now) },
-      select: { id: true, source: true, quantity: true, remaining: true, expiresAt: true, createdAt: true },
+      where: { userId, kind, ...unexpired(now) },
+      select: LOT_VIEW,
       orderBy: [{ expiresAt: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
     });
   }
@@ -66,15 +89,16 @@ export class CreditsService {
     return db.creditLot.create({
       data: {
         userId,
-        kind: 'EXPORT',
+        kind: input.kind ?? 'EXPORT',
         source: input.source,
         quantity: input.quantity,
         remaining: input.quantity,
         expiresAt: input.expiresAt,
         paymentId: input.paymentId,
+        valueVnd: input.valueVnd ?? 0,
         note: input.note,
       },
-      select: { id: true, source: true, quantity: true, remaining: true, expiresAt: true, createdAt: true },
+      select: LOT_VIEW,
     });
   }
 
@@ -114,19 +138,19 @@ export class CreditsService {
   private async debitIn(
     db: Prisma.TransactionClient,
     userId: string,
-    { quantity = 1, reason, refId, operationId = randomUUID() }: DebitInput,
+    { kind = 'EXPORT', quantity = 1, reason, refId, operationId = randomUUID() }: DebitInput,
   ): Promise<{ operationId: string; balance: number }> {
     if (!Number.isInteger(quantity) || quantity < 1) throw new RangeError(`Invalid debit quantity: ${quantity}`);
     const now = new Date();
     // FOR UPDATE: a concurrent debit waits here, then re-reads `remaining` and skips the lots this one emptied.
     const lots = await db.$queryRaw<{ id: string; remaining: number }[]>`
       SELECT id, remaining FROM credit_lots
-      WHERE user_id = ${userId}::uuid AND kind = 'EXPORT' AND remaining > 0
+      WHERE user_id = ${userId}::uuid AND kind = ${kind}::"CreditKind" AND remaining > 0
         AND (expires_at IS NULL OR expires_at > ${now.toISOString()}::timestamptz)
       ORDER BY expires_at ASC NULLS LAST, created_at ASC
       FOR UPDATE`;
     const available = lots.reduce((sum, lot) => sum + lot.remaining, 0);
-    if (available < quantity) throw insufficientCredits(available);
+    if (available < quantity) throw insufficientCredits(available, kind, quantity);
 
     let left = quantity;
     const debits: Prisma.CreditDebitCreateManyInput[] = [];

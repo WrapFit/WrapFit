@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
-import { CreditsService, PlanService } from '../../src/billing';
+import { CreditsService, PlanService, XuWalletService } from '../../src/billing';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 
@@ -93,6 +93,34 @@ describe('Billing core (e2e)', () => {
     });
   });
 
+  describe('XuWalletService', () => {
+    it('grants the allowance of a period once, even to concurrent requests, and keeps xu apart from export credits', async () => {
+      const { id } = await register('billing-xu');
+      const xu = app.get(XuWalletService);
+      await lotOf(id, 3, 'ADMIN');
+
+      const [first, second] = await Promise.all([xu.wallet(id), xu.wallet(id)]);
+      expect(first.balance).toBe(50);
+      expect(second.balance).toBe(50);
+      await expect(prisma.creditLot.count({ where: { userId: id, kind: 'XU' } })).resolves.toBe(1);
+      await expect(credits.balance(id)).resolves.toBe(3);
+
+      const { balance } = await prisma.$transaction((tx) => xu.spend(id, { quantity: 10, reason: 'AI_IMAGE' }, tx));
+      expect(balance).toBe(40);
+      await expect(credits.balance(id)).resolves.toBe(3);
+      await expect(
+        prisma.$transaction((tx) => xu.spend(id, { quantity: 41, reason: 'AI_IMAGE' }, tx)),
+      ).rejects.toMatchObject({ status: 402, response: { kind: 'XU', balance: 40, cost: 41 } });
+    });
+
+    it('lets the database refuse money on a lot that was not bought', async () => {
+      const { id } = await register('billing-xu-value');
+      await expect(
+        credits.grant(id, { kind: 'XU', quantity: 10, source: 'ADMIN', expiresAt: null, valueVnd: 1_000 }),
+      ).rejects.toThrow(/chk_credit_lots_value_source/);
+    });
+  });
+
   describe('PlanService', () => {
     it('follows purchased packs and Pro periods', async () => {
       const { id } = await register('billing-plan');
@@ -126,8 +154,12 @@ describe('Billing core (e2e)', () => {
         tier: 'FREE',
         entitlements: { export: { mode: 'FREE_A4' } },
         exportCredits: { balance: 0, lots: [] },
+        xu: { balance: 50, lots: [{ source: 'PLAN_ALLOWANCE', remaining: 50 }], allowance: { perPeriod: 50 } },
         subscription: null,
       });
+
+      const history = await api().get('/api/billing/xu/history?limit=5').set('Cookie', maker.cookie).expect(200);
+      expect(history.body).toMatchObject({ entries: [{ type: 'GRANT', quantity: 50 }], nextBefore: null });
 
       await api().get('/api/billing/me').expect(401);
     });

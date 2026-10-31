@@ -1,11 +1,13 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
+import type { CreditKind } from '@prisma/client';
 
-/** 402: the user has fewer export credits than the operation needs. `balance` lets the client offer a pack. */
-export function insufficientCredits(balance: number): HttpException {
-  return new HttpException(
-    { code: 'INSUFFICIENT_CREDITS', message: 'Bạn đã hết lượt xuất file', balance },
-    HttpStatus.PAYMENT_REQUIRED,
-  );
+/**
+ * 402: the user has fewer credits of `kind` than the operation needs (`cost`). `balance` lets the client offer a
+ * pack: export credits, or xu (docs/19).
+ */
+export function insufficientCredits(balance: number, kind: CreditKind = 'EXPORT', cost = 1): HttpException {
+  const message = kind === 'XU' ? `Cần ${cost} xu, bạn còn ${balance} xu` : 'Bạn đã hết lượt xuất file';
+  return new HttpException({ code: 'INSUFFICIENT_CREDITS', kind, message, balance, cost }, HttpStatus.PAYMENT_REQUIRED);
 }
 
 /**
