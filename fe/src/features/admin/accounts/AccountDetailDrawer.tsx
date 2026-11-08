@@ -8,6 +8,8 @@ import { displayName, formatDateTime, ROLE_LABELS, SELF_EDIT_HINT, TIER_LABELS }
 import { ModalDialog } from "./ModalDialog";
 import { RoleSelect } from "./RoleSelect";
 import { Icon } from "@/components/ui";
+import { Coins } from "lucide-react";
+import { GrantCreditsDialog } from "./GrantCreditsDialog";
 
 interface AccountDetailDrawerProps extends Omit<AccountActions, "onOpen"> {
   user: SafeUser;
@@ -32,6 +34,7 @@ export function AccountDetailDrawer({
   const titleId = useId();
   const roleId = useId();
   const [draft, setDraft] = useState<Role | null>(null);
+  const [granting, setGranting] = useState(false);
   const role = draft ?? user.role;
   const dirty = role !== user.role;
   const frozen = isSelf || busy;
@@ -208,6 +211,7 @@ export function AccountDetailDrawer({
           Đóng Chi Tiết
         </button>
       </div>
+    {granting && <GrantCreditsDialog user={user} onClose={() => setGranting(false)} />}
     </ModalDialog>
   );
 }

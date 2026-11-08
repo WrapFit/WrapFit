@@ -176,8 +176,13 @@ const TERMS: LegalDoc = {
     },
     {
       id: "thanh-toan",
-      title: "Gói cước và hoàn tiền",
-      body: <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Lượt xuất mua theo gói ${EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(', ')}, còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng; mỗi lượt mở khóa file in sạch của một bản thiết kế trong 7 ngày. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất đã dùng không được hoàn.</P>,
+      title: "Gói cước, lượt xuất và xu Wrap",
+      body: (
+        <>
+          <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Lượt xuất mua theo gói ${EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(', ')}, còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng; mỗi lượt mở khóa file in sạch của một bản thiết kế trong 7 ngày. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất đã dùng không được hoàn.</P>
+          <P><strong>Quy định về Xu Wrap:</strong> Xu Wrap là đơn vị tín dụng nội bộ dùng cho các dịch vụ AI (tạo ảnh mặt hộp, hoa văn AI, công cụ phóng to, xóa nền và vector hóa) với tỷ giá niêm yết 1 xu = 100đ. Xu Wrap không có giá trị quy đổi thành tiền mặt, không chuyển nhượng giữa các tài khoản và không áp dụng chính sách hoàn tiền sau khi nạp thành công. Xu tặng kèm theo gói có hiệu lực theo kỳ (được dồn tối đa một kỳ tiếp theo); xu nạp lẻ có thời hạn 12 tháng kể từ ngày thanh toán. Trong trường hợp tác vụ AI hoặc hệ thống phát sinh lỗi kỹ thuật, số xu tương ứng sẽ được hoàn lại tự động vào ví của bạn.</P>
+        </>
+      ),
     },
     {
       id: "cam",

@@ -189,7 +189,7 @@ function CartScreen() {
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-fpt-orange-ink">In mẫu thử</p>
           <h1 className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">Giỏ in mẫu</h1>
-          <p className="mt-1 text-sm text-landing-muted">In 1–{MAX_QUANTITY} hộp mỗi thiết kế để kiểm tra màu và độ vừa trước khi in số lượng.</p>
+          <p className="mt-1 text-sm text-landing-muted">In mẫu 1–{MAX_QUANTITY} hộp để kiểm tra thực tế trước khi in số lượng lớn.</p>
         </div>
         <Link href="/support?a=dinh-dang-xuat" className="inline-flex items-center gap-1.5 text-sm font-semibold text-fpt-orange-ink">
           <LifeBuoy className="size-4" aria-hidden /> Cần giúp chọn giấy?
@@ -339,10 +339,10 @@ function CartScreen() {
             </button>
             <div className="flex flex-col gap-1.5 text-xs text-landing-muted">
               <p className="flex items-center gap-1.5">
-                <CreditCard className="size-3.5" aria-hidden /> Thanh toán khi nhận hàng (COD) hoặc chuyển khoản VietQR khi xưởng xác nhận
+                <CreditCard className="size-3.5" aria-hidden /> COD hoặc chuyển khoản VietQR khi xác nhận đơn
               </p>
               <p className="flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5" aria-hidden /> In lại miễn phí một lần nếu hộp không vừa số đo đã nhập ·{" "}
+                <ShieldCheck className="size-3.5" aria-hidden /> In lại miễn phí nếu hộp sai lệch kích thước ·{" "}
                 <Link href="/legal/terms#mau-sac" className="underline">
                   Điều khoản
                 </Link>
@@ -391,7 +391,7 @@ function CartLine({
           </select>
         </label>
         {project.fitcheckScore !== null && project.fitcheckScore < 100 && (
-          <p className="mt-2 text-xs font-medium text-warning-fg">FitCheck™ chưa đạt 100: nên sửa lỗi trong studio trước khi in.</p>
+          <p className="mt-2 text-xs font-medium text-warning-fg">FitCheck™ &lt; 100: nên tối ưu lại trước khi đặt in.</p>
         )}
       </div>
       <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end">

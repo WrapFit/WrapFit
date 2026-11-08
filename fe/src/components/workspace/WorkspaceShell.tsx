@@ -253,18 +253,21 @@ function PlanCard() {
   const { user } = useAuth();
   const storage = useStorageUsage();
   if (!user) return null;
-  const percent = storage.data ? usagePercent(storage.data.usedBytes, storage.data.quotaBytes) : 0;
+  const tierName = (user.subscriptionTier && TIER_LABELS[user.subscriptionTier]) || "Gói Miễn phí";
+  const used = storage.data?.usedBytes ?? 0;
+  const quota = storage.data?.quotaBytes ?? 0;
+  const percent = quota > 0 ? usagePercent(used, quota) : 0;
   return (
     <div className="rounded-2xl border border-library-line bg-library-tile p-4">
       <p className="text-xs text-library-muted">Gói hiện tại</p>
-      <p className="text-base font-medium text-library-ink">{TIER_LABELS[user.subscriptionTier]}</p>
-      {storage.data && (
+      <p className="text-base font-medium text-library-ink">{tierName}</p>
+      {storage.data && quota > 0 && (
         <>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white" aria-hidden>
             <div className={cn("h-full rounded-full", percent >= 90 ? "bg-danger" : "bg-fpt-orange")} style={{ width: `${percent}%` }} />
           </div>
           <p className="mt-1.5 text-xs text-library-sub">
-            {formatBytes(storage.data.usedBytes)} / {formatBytes(storage.data.quotaBytes)}
+            {formatBytes(used)} / {formatBytes(quota)}
           </p>
         </>
       )}

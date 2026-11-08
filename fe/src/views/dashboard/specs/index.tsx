@@ -55,7 +55,7 @@ function SpecsScreen() {
   return (
     <WorkspaceShell
       title="Quy chuẩn hộp"
-      description="Cấu trúc hộp, giới hạn kích thước và các quy tắc FitCheck™ mà mọi khuôn bế WrapFit phải đạt trước khi xuất file in."
+      description="Cấu trúc hộp, giới hạn kích thước và tiêu chuẩn kỹ thuật FitCheck."
       actions={
         <Link href={ROUTES.editorNew} className={createBoxButton}>
           Tạo hộp mới

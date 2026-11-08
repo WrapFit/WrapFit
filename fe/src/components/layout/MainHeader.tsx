@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Bell, ChevronDown, FolderOpen, Menu, Shield, User, X } from 'lucide-react';
+import { ArrowRight, Bell, ChevronDown, Coins, Menu, Shield, User, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
@@ -8,7 +8,6 @@ import { ViewTransition } from '@/components/common/ViewTransition';
 import { landingFontVariables } from '@/assets/fonts/landing';
 import { ROUTES } from '@/constants';
 import { ADMIN_HOME, homeForRole, isRealAdmin, useAuth } from '@/features/auth';
-import { useProjectCount } from '@/features/dashboard/useProjects';
 import { useBoxStructures } from '@/features/templates/hooks';
 import { useHydrated } from '@/hooks/dom';
 import { cn } from '@/utils/helpers';
@@ -17,6 +16,7 @@ import { HeaderSearch } from './HeaderSearch';
 import { LandingLogo } from './LandingLogo';
 import { navGroups, type NavGroup } from './navigation';
 import { UserAvatarDropdown } from './UserAvatarDropdown';
+import { XuBalancePill } from './XuBalancePill';
 import { buttonClass } from "@/components/ui";
 
 export interface MainHeaderProps {
@@ -109,10 +109,10 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
         className
       )}
     >
-      <nav aria-label="Điều hướng chính" className="mx-auto flex h-16 w-full max-w-screen-xl items-center justify-between gap-4 px-4 lg:px-8 2xl:max-w-screen-2xl">
-        <div className="flex min-w-0 items-center gap-6">
+      <nav aria-label="Điều hướng chính" className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+        <div className="flex shrink-0 items-center gap-2.5 xl:gap-4 2xl:gap-6">
           <LandingLogo />
-          <ul className="hidden items-center gap-1 xl:flex">
+          <ul className="hidden items-center gap-0.5 xl:flex 2xl:gap-1">
             {groups.map((group) => (
               <li key={group.id} className="relative" onPointerEnter={hoverOpen(group.id)} onPointerLeave={hoverClose}>
                 <button
@@ -121,7 +121,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
                   aria-controls={`menu-${group.id}`}
                   onClick={() => setOpenMenu((current) => (current === group.id ? null : group.id))}
                   className={cn(
-                    'inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-full px-3 2xl:px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/20',
+                    'inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-full px-2.5 xl:px-3 2xl:px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/20',
                     openMenu === group.id ? 'bg-landing-tile' : 'hover:bg-landing-tile/70'
                   )}
                 >
@@ -134,13 +134,14 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
           </ul>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <HeaderSearch />
+          {user && !isRealAdmin(user) && <XuBalancePill className="hidden sm:inline-flex" />}
           {showCta && (
             <Link
               href={ROUTES.editorNew}
               data-tour="header-start"
-              className={buttonClass({ variant: "brand", className: "hidden px-4 sm:inline-flex" })}
+              className={buttonClass({ variant: "brand", className: "hidden px-3.5 2xl:px-4 sm:inline-flex" })}
             >
               Bắt đầu
               <ArrowRight className="size-4" aria-hidden />
@@ -160,7 +161,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
               <User className="size-[18px]" strokeWidth={1.75} aria-hidden />
             </Link>
           )}
-          {user && !isRealAdmin(user) && <ProjectsPill />}
+
           {user && isRealAdmin(user) && (
             <Link
               href={ADMIN_HOME}
@@ -227,23 +228,6 @@ function MenuPanel({ group, pathname, onNavigate }: { group: NavGroup; pathname:
   );
 }
 
-/** My active projects, like the cart pill of pack.ly (`GET /projects?status=ACTIVE&limit=1`). */
-function ProjectsPill() {
-  const count = useProjectCount('ACTIVE');
-  return (
-    <Link
-      href={ROUTES.projects}
-      className="hidden h-10 items-center gap-2 rounded-full bg-landing-tile pr-1.5 pl-3 text-landing-ink transition-colors hover:bg-landing-accent sm:inline-flex"
-      aria-label={count.data !== undefined ? `Dự án của tôi: ${count.data}` : 'Dự án của tôi'}
-    >
-      <FolderOpen className="size-[18px]" strokeWidth={1.75} aria-hidden />
-      <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-white px-2 text-xs font-medium">
-        {count.data ?? '–'}
-      </span>
-    </Link>
-  );
-}
-
 function MobileMenu({
   groups,
   isAdmin,
@@ -287,6 +271,25 @@ function MobileMenu({
             )}
           </div>
         ))}
+        {userName && !isAdmin && (
+          <div className="mt-2 flex items-center justify-between rounded-2xl border border-landing-line/70 bg-landing-tile px-4 py-2.5">
+            <Link
+              href="/dashboard/billing"
+              onClick={onNavigate}
+              className="flex items-center gap-2 text-sm font-medium text-fg"
+            >
+              <Coins className="size-4 text-fpt-orange-ink" aria-hidden />
+              <span>Ví xu Wrap</span>
+            </Link>
+            <Link
+              href="/dashboard/billing"
+              onClick={onNavigate}
+              className="rounded-full bg-fpt-orange px-3 py-1 text-xs font-semibold text-white shadow-sm hover:bg-fpt-orange-dark"
+            >
+              Nạp xu
+            </Link>
+          </div>
+        )}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Link
             href={targetHref}

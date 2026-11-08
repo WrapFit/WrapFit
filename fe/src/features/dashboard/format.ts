@@ -58,7 +58,7 @@ export function daysUntilPurge(deletedAt: string, now = Date.now()): number {
 export function purgeLabel(deletedAt: string | null): string {
   if (!deletedAt) return "Trong thùng rác";
   const days = daysUntilPurge(deletedAt);
-  return days > 0 ? `Tự xoá sau ${days} ngày` : "Sắp bị xoá vĩnh viễn";
+  return days > 0 ? `Xoá sau ${days} ngày` : "Sắp xoá";
 }
 
 /** "120 × 80 × 60 mm" (L × W × H). */
@@ -84,7 +84,7 @@ export function fitCheckTone(score: number | null): FitCheckTone {
 }
 
 export function fitCheckLabel(score: number | null): string {
-  return score === null ? "Chưa kiểm FitCheck™" : `FitCheck™ ${score}/100`;
+  return score === null ? "Chưa kiểm tra" : `FitCheck ${score}/100`;
 }
 
 // ---------------------------------------------------------------- project list controls

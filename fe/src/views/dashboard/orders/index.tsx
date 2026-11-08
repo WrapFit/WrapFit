@@ -16,6 +16,7 @@ import { useToast } from '@/components/common/Toast';
 import { outlineButton, primaryButton } from '@/components/library';
 import { Badge, Panel, PanelTitle, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { CheckoutDialog } from '@/features/payments';
+import { OrderDetailDialog } from './OrderDetailDialog';
 import { ROUTES } from '@/constants';
 import { RequireAuth } from '@/features/auth';
 import { RECENT_PROJECTS_QUERY, formatRelative, useProjectList } from '@/features/dashboard';
@@ -53,10 +54,10 @@ const STATUS_BADGES: Record<ExportStatus, { tone: 'green' | 'grey' | 'red'; labe
 const PROJECTS_QUERY = { ...RECENT_PROJECTS_QUERY, limit: 8 };
 
 const STEPS = [
-  { title: 'Thiết kế & đạt FitCheck™', text: 'Khuôn bế, hình in và điểm kiểm tra trong studio.', ready: true },
-  { title: 'Xuất file in', text: 'PDF CMYK, PDF A4/A3 in tại nhà, SVG hoặc DXF cho máy cắt.', ready: true },
-  { title: 'Đặt in mẫu thử 01 hộp', text: 'In mẫu 01 chiếc gửi tận tay trước khi in loạt.', ready: true },
-  { title: 'Sản xuất loạt & giao hàng', text: 'Kết nối xưởng đối tác bế cắt CNC không cần khuôn sắt 2 triệu.', ready: true },
+  { title: 'Thiết kế & kiểm tra', text: 'Dựng hộp 3D và đạt chuẩn FitCheck.', ready: true },
+  { title: 'Xuất file in', text: 'Tải file PDF CMYK, SVG hoặc DXF cho máy bế.', ready: true },
+  { title: 'In mẫu thử 1 chiếc', text: 'Kiểm tra màu in và khớp nối thực tế.', ready: true },
+  { title: 'Sản xuất & giao hàng', text: 'Gia công bế cắt CNC giao tận nơi.', ready: true },
 ];
 
 interface Row {
@@ -91,6 +92,7 @@ function OrdersScreen() {
   const sampleOrders = sampleOrdersQuery.data ?? [];
   /** Sample order whose VietQR checkout is open (an order still waiting for payment). */
   const [payingOrder, setPayingOrder] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Former links of the studio (?project=…&action=sample) now open the sample-print cart with that project.
   const targetProjectId = searchParams.get('project');
@@ -278,12 +280,26 @@ function OrdersScreen() {
       sortValue: (order) => new Date(order.createdAt),
       render: (order) => <span className="whitespace-nowrap text-library-sub">{formatRelative(order.createdAt)}</span>,
     },
+    {
+      key: 'detail',
+      label: 'Chi tiết',
+      align: 'right',
+      render: (order) => (
+        <button
+          type="button"
+          onClick={() => setSelectedOrderId(order.id)}
+          className={cn(outlineButton, 'h-8 px-2.5 text-caption')}
+        >
+          Chi tiết
+        </button>
+      ),
+    },
   ];
 
   return (
     <WorkspaceShell
       title="Đơn hàng & File In"
-      description="Quản lý file in công nghiệp đã xuất và theo dõi đơn đặt in mẫu thử 01 hộp."
+      description="Quản lý file sản xuất đã xuất và đơn in mẫu thử."
     >
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="min-w-0 xl:col-span-8 flex flex-col gap-6">
@@ -321,7 +337,7 @@ function OrdersScreen() {
               <div className="py-6 text-center text-sm text-library-muted">
                 <PackageCheck className="size-8 mx-auto mb-2 text-library-sub opacity-60" />
                 <p>Bạn chưa có đơn đặt in mẫu thử nào.</p>
-                <p className="text-xs text-library-sub mt-1">In 01 hộp thực tế gửi tận tay để kiểm định màu in và khớp nối trước khi sản xuất hàng loạt.</p>
+                <p className="text-xs text-library-sub mt-1">In 1 hộp gửi tận tay để kiểm tra màu in và khớp nối thực tế.</p>
               </div>
             ) : (
               <DataTable

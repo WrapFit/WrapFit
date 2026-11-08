@@ -3,14 +3,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Coins, ImagePlus, Wand2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Coins, ImagePlus, Wand2 } from "lucide-react";
 import { nearestAspectRatio, type PanelFace } from "@wrapfit/shared";
 import { createAiImages, getAiImageCatalog, getAiImageJob, getAiUsage, listAiImages, runAiImageTool } from "@/api";
 import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
 import { useToast } from "@/components/common/Toast";
 import { Badge, Button, DropdownMenu, NumberStepper, RadioGroup, Switch, Textarea } from "@/components/ui";
 import { queryKeys } from "@/hooks/data";
-import type { AiImageJob, AiImageOutput, AiImageTool, AiUsage } from "@/types/api";
+import { CheckoutDialog } from "@/features/payments";
+import { formatVnd } from "@/features/pricing";
+import type { AiImageJob, AiImageOutput, AiImageTool, AiUsage, XuPackPurpose } from "@/types/api";
 import { cn } from "@/utils/helpers";
 
 const MAX_PROMPT = 500;
@@ -61,6 +63,8 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
   const [jobId, setJobId] = useState<string | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [lowDpi, setLowDpi] = useState<{ outputId: string; dpi: number } | null>(null);
+  const [buyingPack, setBuyingPack] = useState<XuPackPurpose | null>(null);
+  const [confirmingCost, setConfirmingCost] = useState(false);
 
   const job = useQuery({
     queryKey: [...queryKeys.aiImages, "job", jobId],
@@ -106,6 +110,8 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
   const cost = model ? model.xu * count : 0;
   const balance = usage.data?.xu.balance;
   const short = balance !== undefined && balance < cost;
+  const deficit = Math.max(0, cost - (balance ?? 0));
+  const recommendedPack: XuPackPurpose = deficit <= 500 ? "XU_500" : deficit <= 1050 ? "XU_1050" : "XU_2200";
   const aspectRatio = model && panel ? nearestAspectRatio(panel.bounds.width, panel.bounds.height, model.aspectRatios) : "1:1";
   const busy = submitting || running(job.data);
 
@@ -120,7 +126,12 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
 
   const generate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!model || !prompt.trim() || busy) return;
+    if (!model || !prompt.trim() || busy || short) return;
+    if (cost >= 100 && !confirmingCost) {
+      setConfirmingCost(true);
+      return;
+    }
+    setConfirmingCost(false);
     setSubmitting(true);
     try {
       started(
@@ -167,19 +178,49 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
 
   const outputCard = (output: AiImageOutput) => {
     const vector = output.width === null;
+    const expiresMs = output.keepUntil ? new Date(output.keepUntil).getTime() - Date.now() : 0;
+    const daysLeft = Math.max(0, Math.ceil(expiresMs / (1000 * 60 * 60 * 24)));
+    const isExpired = output.keepUntil ? daysLeft <= 0 : false;
+    const isUrgent = output.keepUntil ? daysLeft <= 3 : false;
+
     return (
-      <li key={output.id} className="overflow-hidden rounded-panel border border-line bg-surface-raised">
-        {output.url ? (
-          // eslint-disable-next-line @next/next/no-img-element -- files of the WrapFit bucket, sizes vary
-          <img src={output.url} alt={job.data?.prompt ?? "Ảnh AI"} className="aspect-square w-full bg-surface-sunken object-contain" />
-        ) : (
-          <div className="aspect-square w-full bg-surface-sunken" />
-        )}
-        <div className="flex items-center gap-1 p-1.5">
+      <li key={output.id} className="group relative overflow-hidden rounded-2xl border border-line bg-surface-raised shadow-xs hover:shadow-md transition-all duration-300 flex flex-col">
+        <div className="relative aspect-square w-full bg-surface-sunken overflow-hidden">
+          {output.url ? (
+            // eslint-disable-next-line @next/next/no-img-element -- files of the WrapFit bucket, sizes vary
+            <img
+              src={output.url}
+              alt={job.data?.prompt ?? "Ảnh AI"}
+              className={cn("aspect-square w-full object-contain transition-transform duration-300 group-hover:scale-105", isExpired && "opacity-50 grayscale")}
+            />
+          ) : (
+            <div className="aspect-square w-full" />
+          )}
+
+          {output.keepUntil && (
+            <span
+              title={isExpired ? "Ảnh đã hết hạn lưu trữ" : `Tự động xóa sau ${daysLeft} ngày nếu không gắn vào thiết kế`}
+              className={cn(
+                "absolute top-2 right-2 rounded-control px-2 py-0.5 font-mono text-cad-spec-micro font-medium tracking-tight shadow-xs border transition-all select-none",
+                isExpired
+                  ? "bg-danger-bg text-danger-fg border-danger-line"
+                  : isUrgent
+                    ? "bg-danger-bg text-danger-fg border-danger-line"
+                    : daysLeft <= 7
+                      ? "bg-warning-bg text-warning-fg border-warning-line"
+                      : "bg-white/95 text-fg-muted border-line"
+              )}
+            >
+              {isExpired ? "Hết hạn" : `Còn ${daysLeft} ngày`}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 p-2 mt-auto bg-surface-raised border-t border-line/60">
           <Button
             size="sm"
             variant="primary"
-            className="min-w-0 flex-1 px-2"
+            className="min-w-0 flex-1 px-2.5 text-xs font-semibold shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all"
             title={`Dùng cho ${panel?.name ?? "mặt đang chọn"}`}
             onClick={() => place(output)}
             disabled={!output.url || !panel}
@@ -197,8 +238,8 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
                 onSelect: () => void runTool(output, tool),
               }))}
               renderTrigger={(props) => (
-                <Button {...props} size="icon-sm" variant="ghost" aria-label="Công cụ: phóng to, xóa nền, vector hóa">
-                  <Wand2 aria-hidden />
+                <Button {...props} size="icon-sm" variant="ghost" aria-label="Công cụ: phóng to, xóa nền, vector hóa" className="hover:bg-amber-500/10 hover:text-amber-700">
+                  <Wand2 className="size-3.5" aria-hidden />
                 </Button>
               )}
             />
@@ -215,14 +256,22 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
           <ImagePlus className="size-3.5 text-fpt-orange-ink" aria-hidden /> Ảnh AI
         </span>
         {balance !== undefined && (
-          <Link
-            href="/dashboard/billing"
-            title="Ví xu: nạp thêm ở trang Thanh toán & gói"
-            className={cn("inline-flex min-h-8 items-center gap-1 rounded-full px-2 font-mono text-cad-spec-micro tabular-nums hover:bg-surface-sunken", short ? "text-danger-fg" : "text-fg-muted")}
+          <button
+            type="button"
+            onClick={() => setBuyingPack("XU_500")}
+            title="Ví xu: bấm để nạp thêm qua VietQR"
+            className={cn(
+              "group inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 font-mono text-cad-spec-micro tabular-nums transition-all border cursor-pointer",
+              "bg-surface-sunken hover:bg-surface-raised border-line hover:border-fpt-orange",
+              short ? "border-danger-fg text-danger-fg bg-danger-bg/20" : "text-fg"
+            )}
           >
-            <Coins className="size-3" aria-hidden />
-            {balance.toLocaleString("vi-VN")} xu
-          </Link>
+            <Coins className="size-3.5 text-fpt-orange-ink" aria-hidden />
+            <span className="font-semibold">{balance.toLocaleString("vi-VN")} xu</span>
+            <span className="rounded-full bg-fpt-orange size-3.5 flex items-center justify-center text-white text-label-sm font-bold group-hover:scale-110 transition-transform">
+              +
+            </span>
+          </button>
         )}
       </div>
 
@@ -294,16 +343,53 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
           <Switch checked={allowText} onChange={setAllowText} label="Cho phép chữ trong ảnh" description="Mặc định ảnh không có chữ, để bạn tự thêm chữ in sắc nét." />
         )}
 
-        <Button type="submit" variant="brand" size="lg" block disabled={!model || !prompt.trim() || busy || short} leadingIcon={<Wand2 aria-hidden />}>
-          {busy ? "Đang tạo…" : short ? "Không đủ xu" : `Tạo · ${cost} xu`}
+        {confirmingCost && (
+          <div className="rounded-control border border-warning/60 bg-warning-bg/40 p-2.5 text-caption text-warning-fg animate-in fade-in-50">
+            <div className="flex items-center gap-1.5 font-semibold text-fg">
+              <AlertTriangle className="size-3.5 text-warning-fg shrink-0" aria-hidden />
+              <span>Xác nhận dùng {cost} xu?</span>
+            </div>
+            <p className="mt-1 text-xs text-fg-muted">
+              Tác vụ này tiêu tốn <strong>{cost} xu Wrap</strong> (≈ {formatVnd(cost * 100)}). Bấm nút bên dưới lần nữa để bắt đầu.
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirmingCost(false)}
+              className="mt-1 text-xs text-fg-muted underline hover:text-fg"
+            >
+              Hủy thao tác
+            </button>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          variant="brand"
+          size="lg"
+          block
+          disabled={!model || !prompt.trim() || busy || short}
+          leadingIcon={<Wand2 aria-hidden />}
+        >
+          {busy
+            ? "Đang tạo…"
+            : short
+              ? "Không đủ xu"
+              : confirmingCost
+                ? `Xác nhận tạo · ${cost} xu`
+                : `Tạo · ${cost} xu`}
         </Button>
+
         {short && (
-          <p className="text-caption text-danger-fg">
-            Cần {cost} xu, ví còn {balance} xu.{" "}
-            <Link href="/dashboard/billing" className="font-semibold underline">
-              Nạp xu
-            </Link>
-          </p>
+          <div className="flex items-center justify-between rounded-control border border-danger-line/60 bg-danger-bg/20 p-2.5 text-caption text-danger-fg">
+            <span>Cần {cost} xu, ví còn {balance} xu.</span>
+            <button
+              type="button"
+              onClick={() => setBuyingPack(recommendedPack)}
+              className="rounded-full bg-fpt-orange px-2.5 py-1 text-xs font-semibold text-white shadow-sm hover:bg-fpt-orange-dark transition-colors"
+            >
+              Nạp nhanh ({recommendedPack === "XU_500" ? "500 xu" : recommendedPack === "XU_1050" ? "1.050 xu" : "2.200 xu"})
+            </button>
+          </div>
         )}
       </form>
 
@@ -363,6 +449,13 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
           </div>
         )}
       </div>
+
+      {buyingPack && (
+        <CheckoutDialog
+          purpose={buyingPack}
+          onClose={() => setBuyingPack(null)}
+        />
+      )}
     </div>
   );
 }

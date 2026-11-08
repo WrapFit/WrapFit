@@ -110,8 +110,15 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   }, [paid, queryClient]);
 
   const simulate = useMutation({
-    mutationFn: () => simulatePayment(paymentId!),
-    onSuccess: (result) => queryClient.setQueryData(queryKeys.payment(result.id), result),
+    mutationFn: () => simulatePayment(paymentId!, payment ?? undefined),
+    onSuccess: (result) => {
+      queryClient.setQueryData(queryKeys.payment(result.id), result);
+      if (result.xu) {
+        queryClient.setQueryData(queryKeys.aiUsage, (old: any) =>
+          old ? { ...old, xu: { ...old.xu, balance: (old.xu?.balance ?? 0) + (result.xu ?? 0) } } : old
+        );
+      }
+    },
     onError: (error) => toast.error(error, "Chưa giả lập được thanh toán"),
   });
 
@@ -234,18 +241,18 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
             Đang chờ chuyển khoản. Trang tự cập nhật khi WrapFit nhận được tiền.
           </p>
 
-          {billing.data?.paymentSimulation && (
+          {(billing.data?.paymentSimulation || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))) && (
             <Alert
               tone="info"
               icon={FlaskConical}
-              title="Chế độ demo"
+              title="Chế độ thử nghiệm"
               action={
                 <Button size="sm" variant="dark" loading={simulate.isPending} loadingLabel="Đang xác nhận…" onClick={() => simulate.mutate()}>
                   Giả lập đã thanh toán
                 </Button>
               }
             >
-              Máy chủ đang bật thanh toán mô phỏng: bấm để xác nhận như khi ngân hàng báo đã nhận tiền.
+              Môi trường thử nghiệm: bấm nút để xác nhận thanh toán thành công ngay lập tức mà không cần chuyển tiền thật.
             </Alert>
           )}
         </>

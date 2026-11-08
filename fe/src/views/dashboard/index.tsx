@@ -35,10 +35,10 @@ export default function DashboardPage() {
 }
 
 const SHORTCUTS = [
-  { href: ROUTES.brandKit, title: 'Bộ nhận diện', text: 'Logo, bảng màu, font và khẩu hiệu dùng lại trên mọi hộp.' },
-  { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Mẫu WrapFit tuyển chọn và thiết kế đạt FitCheck™ của cộng đồng.' },
-  { href: '/support', title: 'Trung tâm hỗ trợ', text: 'Kích thước, FitCheck™, file in, mã QR mở hộp.' },
-  { href: '/pricing', title: 'Gói dịch vụ', text: 'Dung lượng lưu trữ và lượt tạo hoa văn AI của từng gói.' },
+  { href: ROUTES.brandKit, title: 'Bộ nhận diện', text: 'Logo, màu sắc và font chữ thương hiệu.' },
+  { href: ROUTES.templates, title: 'Thư viện mẫu', text: 'Bộ sưu tập mẫu hộp quà tuyển chọn.' },
+  { href: '/support', title: 'Trung tâm hỗ trợ', text: 'Hướng dẫn kỹ thuật và giải đáp thắc mắc.' },
+  { href: '/pricing', title: 'Gói dịch vụ', text: 'Thông tin gói cước và hạn mức.' },
 ];
 
 const TOUR_ID = 'dashboard-v1';
@@ -140,7 +140,7 @@ function DashboardScreen() {
   return (
     <WorkspaceShell
       title="Tổng quan"
-      description={user ? `Chào ${displayName(user)}, đây là các hộp bạn đang làm.` : "Không gian làm việc trải nghiệm — mở hộp bất kỳ trong Studio 3D hoặc tạo mới theo kích thước."}
+      description={user ? `Chào ${displayName(user)}, tổng quan không gian làm việc.` : "Trải nghiệm Studio 3D và tạo hộp quà theo kích thước."}
       actions={
         <>
           <TourReplayButton tourId={TOUR_ID} data-tour="tour-replay" variant="ghost" />
@@ -162,7 +162,7 @@ function DashboardScreen() {
         <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-fpt-orange/30 bg-orange-50/80 p-4 text-sm text-landing-ink">
           <div className="flex items-center gap-2.5">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white font-bold text-xs">i</span>
-            <span><strong>Không gian làm việc khách (Demo Workspace):</strong> Bạn đang xem các dự án mẫu của WrapFit. Bấm vào bất kỳ dự án nào để mở trực tiếp trong Studio 3D hoặc bấm <strong>Tạo hộp mới</strong> để tùy chỉnh kích thước riêng.</span>
+            <span><strong>Chế độ trải nghiệm:</strong> Xem mẫu demo, bấm vào để mở Studio 3D hoặc tạo mới.</span>
           </div>
           <Link href="/auth/login" className="shrink-0 rounded-full border border-fpt-orange bg-white px-3.5 py-1.5 text-xs font-semibold text-fpt-orange-ink hover:bg-orange-100 transition-colors">
             Đăng nhập tài khoản
@@ -190,7 +190,7 @@ function DashboardScreen() {
                 Bắt đầu từ một cấu trúc hộp
               </h2>
               <p className="mt-3 text-base leading-[1.6] text-library-sub">
-                Chọn kiểu hộp gần nhất với món quà, xem các mẫu của nó rồi đổi kích thước theo từng milimét.
+                Chọn cấu trúc phù hợp để bắt đầu thiết kế theo kích thước riêng.
               </p>
             </div>
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-tour="structures">
@@ -225,7 +225,7 @@ function DashboardScreen() {
           <StatTile
             label="Xu Wrap"
             value={ai.data ? formatCount(ai.data.xu.balance) : '–'}
-            hint="Cho ảnh và hoa văn AI"
+            hint="Khả dụng"
           />
         </section>
 

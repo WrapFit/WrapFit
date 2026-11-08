@@ -47,7 +47,7 @@ function MaterialsScreen() {
   return (
     <WorkspaceShell
       title="Vật liệu"
-      description="Các loại giấy in được trong studio: định lượng, độ dày và bề mặt quyết định khuôn bế của hộp."
+      description="Định lượng, độ dày và chất liệu giấy ảnh hưởng đến khuôn bế hộp."
       actions={
         <Link href={ROUTES.editorNew} className={createBoxButton}>
           Tạo hộp mới
@@ -140,8 +140,8 @@ function MaterialsScreen() {
               <PanelTitle id="material-rules">Độ dày giấy và khuôn bế</PanelTitle>
               <p className="flex items-start gap-3 text-sm leading-[1.6] text-library-sub">
                 <Info className="mt-0.5 size-4 shrink-0 text-library-ink" aria-hidden />
-                Mỗi nếp gấp được cộng bù theo độ dày giấy t, nên đổi giấy là đổi kích thước khuôn bế. Studio nhận giấy Ivory, Kraft và Duplex từ 100 đến
-                1000 GSM với bề mặt mờ, bóng hoặc mộc.
+                Khuôn bế tự động bù trừ nếp gấp theo độ dày giấy (t). Hỗ trợ giấy Ivory, Kraft, Duplex từ 100–1000 GSM.
+
               </p>
             </Panel>
           </div>

@@ -141,15 +141,15 @@ function SecurityPanel({ user, onLogoutAll }: { user: SafeUser; onLogoutAll(): v
     <Panel>
       <PanelTitle>Bảo mật</PanelTitle>
       <div className="divide-y divide-library-line border-t border-library-line">
-        <SettingRow icon={KeyRound} title="Mật khẩu" text={`Gửi link đặt mật khẩu mới tới ${user.email}. Link có hạn 30 phút.`}>
+        <SettingRow icon={KeyRound} title="Mật khẩu" text={`Gửi link đặt lại mật khẩu tới ${user.email} (hiệu lực 30 phút).`}>
           <button type="button" onClick={reset.send} disabled={reset.sending || reset.secondsLeft > 0} className={cn(outlineButton, 'disabled:cursor-not-allowed')}>
             {reset.sending ? 'Đang gửi…' : reset.secondsLeft > 0 ? `Gửi lại sau ${reset.secondsLeft} giây` : 'Đổi mật khẩu'}
           </button>
         </SettingRow>
-        <SettingRow icon={ShieldCheck} title="Xác thực hai bước" text="Nhập thêm mã 6 số khi đăng nhập trên thiết bị mới.">
+        <SettingRow icon={ShieldCheck} title="Xác thực hai bước" text="Bảo vệ bằng mã OTP 6 số khi đăng nhập.">
           <Badge>Sắp ra mắt</Badge>
         </SettingRow>
-        <SettingRow icon={LogOut} title="Phiên đăng nhập" text="Kết thúc mọi phiên, kể cả trình duyệt này.">
+        <SettingRow icon={LogOut} title="Phiên đăng nhập" text="Đăng xuất khỏi tất cả thiết bị khác.">
           <button type="button" onClick={onLogoutAll} className={cn(outlineButton, 'border-danger/30 text-danger-fg hover:bg-danger-bg')}>
             Đăng xuất mọi thiết bị
           </button>
@@ -203,22 +203,22 @@ function StudioPanel() {
     <Panel>
       <PanelTitle action={<Badge>Lưu trên trình duyệt này</Badge>}>Tuỳ chọn studio</PanelTitle>
       <div className="divide-y divide-library-line border-t border-library-line">
-        <SettingRow icon={RulerIcon} title="Đơn vị đo" text="Đơn vị của ô nhập kích thước và thước đo trên khuôn bế.">
+        <SettingRow icon={RulerIcon} title="Đơn vị đo" text="Đơn vị kích thước và thước đo khuôn bế.">
           <SegmentedControl tone="ink" label="Đơn vị đo" value={preferences.unit} onChange={(value) => set('unit', value)} options={['mm', 'cm', 'inch'].map((v) => ({ value: v as Preferences['unit'], label: v }))} />
         </SettingRow>
         <SettingRow icon={GridIcon} title="Lưới khuôn bế" text="Hiện lưới milimét sau bản vẽ 2D.">
           <Toggle tone="ink" checked={preferences.cadGrid} onChange={(value) => set('cadGrid', value)} label="Hiện lưới khuôn bế" />
         </SettingRow>
-        <SettingRow icon={FoldIcon} title="Bù độ dày nếp gấp (K-factor)" text="Khoảng bù tại nếp cấn theo độ dày giấy.">
+        <SettingRow icon={FoldIcon} title="Bù độ dày nếp gấp (K-factor)" text="Bù trừ nếp cấn theo độ dày giấy.">
           <SegmentedControl tone="ink" label="K-factor" value={preferences.kFactor} onChange={(value) => set('kFactor', value)} options={['K-0.45', 'K-0.68'].map((v) => ({ value: v as Preferences['kFactor'], label: v }))} />
         </SettingRow>
         <SettingRow icon={BoxIcon} title="Mở nắp khi xem 3D" text="Hộp 3D mở nắp sẵn khi vào studio.">
           <Toggle tone="ink" checked={preferences.unbox} onChange={(value) => set('unbox', value)} label="Mở nắp khi xem 3D" />
         </SettingRow>
-        <SettingRow icon={HistoryIcon} title="Tự động lưu mốc phiên bản" text="Tạo một mốc khi bạn rời studio.">
+        <SettingRow icon={HistoryIcon} title="Tự động lưu mốc phiên bản" text="Tự lưu một bản khi bạn rời studio.">
           <Toggle tone="ink" checked={preferences.snapshot} onChange={(value) => set('snapshot', value)} label="Tự động lưu mốc phiên bản" />
         </SettingRow>
-        <SettingRow icon={FileIcon} title="Định dạng xuất mặc định" text="PDF CMYK 300 DPI cho nhà in, SVG để chỉnh sửa, DXF cho máy cắt.">
+        <SettingRow icon={FileIcon} title="Định dạng xuất mặc định" text="PDF CMYK 300 DPI cho nhà in, SVG hoặc DXF cho máy cắt.">
           <SegmentedControl tone="ink" label="Định dạng xuất mặc định" value={preferences.format} onChange={(value) => set('format', value)} options={['PDF', 'SVG', 'DXF'].map((v) => ({ value: v as Preferences['format'], label: v }))} />
         </SettingRow>
       </div>
