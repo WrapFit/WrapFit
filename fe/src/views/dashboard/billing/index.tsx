@@ -70,7 +70,7 @@ function BillingScreen() {
   return (
     <WorkspaceShell
       title="Thanh toán & gói cước"
-      description="Gói đang dùng, hạn mức, cách thanh toán và lịch sử đơn của tài khoản."
+      description="Gói cước, hạn mức tài nguyên và lịch sử thanh toán."
       actions={
         <Link href="/pricing" className={outlineButton}>
           So sánh các gói
@@ -87,12 +87,12 @@ function BillingScreen() {
                 <p className="text-2xl font-medium text-library-ink">{TIER_LABELS[tier]}</p>
                 <p className="mt-1 text-sm text-library-sub">
                   {tier === 'FREE'
-                    ? `Thiết kế, FitCheck™ và xem 3D không giới hạn; PDF A4 có watermark ở tai dán. File in sạch từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`
+                    ? `Thiết kế, FitCheck™ và xem 3D miễn phí. File in sạch từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`
                     : plan.isPerExport
-                      ? `Mỗi lượt xuất mở khóa file in sạch của một bản thiết kế, từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`
+                      ? `Mở khoá file in sạch theo từng bản thiết kế.`
                       : plan.contactOnly
                         ? 'Gói theo hợp đồng với WrapFit.'
-                        : `${formatVnd(plan.price.monthly)} cho ${PRO_PERIOD_DAYS} ngày xuất file in không giới hạn.`}
+                        : `${formatVnd(plan.price.monthly)} / ${PRO_PERIOD_DAYS} ngày xuất file không giới hạn.`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -157,11 +157,11 @@ function BillingScreen() {
               <CalendarClock className="mt-0.5 size-5 shrink-0 text-library-sub" aria-hidden />
               <p className="text-sm leading-relaxed text-library-sub">
                 {tier === 'FREE'
-                  ? 'Gói Free không có kỳ thanh toán. Bạn chỉ trả khi xuất file in hoặc nâng cấp gói.'
+                  ? 'Gói Free không có phí định kỳ. Bạn chỉ trả khi xuất file in hoặc nâng cấp.'
                   : plan.isPerExport
                     ? 'Không có phí định kỳ: mỗi lần xuất file in được tính riêng.'
                     : proEnd
-                      ? `Gói Pro dùng tới ${new Date(proEnd).toLocaleDateString('vi-VN')}. Không tự gia hạn: thanh toán thêm 30 ngày bằng VietQR khi cần, ngày mới được cộng nối tiếp.`
+                      ? `Hạn dùng Pro đến ${new Date(proEnd).toLocaleDateString('vi-VN')} (không tự gia hạn, nạp nối tiếp khi cần).`
                       : 'Gói theo thỏa thuận với WrapFit: không có kỳ thanh toán tự động.'}
               </p>
             </div>
@@ -201,7 +201,7 @@ function BillingScreen() {
         <div className="flex flex-col gap-6 xl:col-span-4">
           <Panel>
             <PanelTitle>Phương thức thanh toán</PanelTitle>
-            <p className="mt-2 text-sm text-library-sub">Chưa lưu phương thức nào. WrapFit không lưu số thẻ; bạn chọn cách trả ở bước thanh toán.</p>
+            <p className="mt-2 text-sm text-library-sub">WrapFit không lưu thẻ thanh toán. Chọn hình thức khi thanh toán.</p>
             <ul className="mt-4 flex flex-col gap-2">
               {METHODS.map((method) => (
                 <li key={method.title} className="flex items-center gap-3 rounded-xl border border-library-line p-3">
@@ -234,7 +234,7 @@ function BillingScreen() {
           }}
         >
           <p className="text-sm leading-relaxed text-library-sub">
-            Gói vẫn dùng được đến hết kỳ đã trả, sau đó tài khoản chuyển về gói Free. Dự án và file không bị xoá; dung lượng vượt hạn mức Free chỉ chặn tải tệp mới. Trong bản thử nghiệm, yêu cầu huỷ được gửi qua email đến bộ phận thanh toán.
+            Gói vẫn dùng được đến hết kỳ đã thanh toán. Dự án và file được lưu giữ an toàn.
           </p>
         </ConfirmDialog>
       )}
@@ -250,7 +250,7 @@ function PromoPanel() {
     const value = code.trim().toUpperCase();
     if (!value) return;
     const promo = PROMO_CODES[value];
-    setResult(promo ? { ok: true, text: `${promo.label}. Mã dùng ở giỏ in mẫu hoặc bước thanh toán.` } : { ok: false, text: 'Mã không hợp lệ hoặc đã hết hạn.' });
+    setResult(promo ? { ok: true, text: `${promo.label} (áp dụng tại bước thanh toán).` } : { ok: false, text: 'Mã không hợp lệ hoặc đã hết hạn.' });
   };
   return (
     <Panel>
@@ -311,7 +311,7 @@ function BillingDetails() {
         <button type="submit" className={outlineButton}>
           Lưu thông tin
         </button>
-        {saved && <p className="text-xs text-library-sub">Đã lưu trên thiết bị này; hoá đơn của đơn tiếp theo sẽ dùng thông tin này.</p>}
+        {saved && <p className="text-xs text-library-sub">Đã lưu thông tin xuất hoá đơn.</p>}
       </form>
     </Panel>
   );

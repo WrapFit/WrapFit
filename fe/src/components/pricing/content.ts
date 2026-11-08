@@ -40,7 +40,7 @@ export const checkoutHref = (tier: SubscriptionTier, pack?: ExportPackId) =>
 export const PRICING_HERO = {
   eyebrow: "Bảng giá",
   title: "Thiết kế miễn phí, trả khi cần file in",
-  lead: `Mọi gói đều có đủ studio, FitCheck™ và hộp gấp 3D. Gói Miễn phí xuất PDF A4 in tại nhà có watermark ở tai dán; file in sạch cho xưởng từ ${formatVnd(SINGLE_EXPORT_PRICE)} một lượt.`,
+  lead: `Thiết kế 3D và kiểm tra FitCheck hoàn toàn miễn phí. Chỉ thanh toán khi cần xuất file in chuẩn nhà in từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`,
 };
 
 export interface PlanCardCopy {

@@ -80,7 +80,7 @@ function DashboardBrandKitScreen() {
   );
 
   return (
-    <WorkspaceShell title="Bộ nhận diện" description="Logo, bảng màu, font và slogan của thương hiệu: áp lên mọi hộp chỉ với một cú nhấp trong studio." actions={actions}>
+    <WorkspaceShell title="Bộ nhận diện" description="Logo, bảng màu, font chữ và slogan đồng bộ trên mọi mẫu hộp." actions={actions}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-7">
           <Panel aria-labelledby="bk-colors">

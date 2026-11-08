@@ -349,11 +349,11 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
         <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
         <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-heading-lg sm:leading-[1.3]">
           <ArrowRight className="mt-1 size-7 shrink-0 text-fpt-orange-ink sm:size-8" strokeWidth={1.75} aria-hidden />
-          <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} in được & tuỳ chỉnh theo từng milimét</span>
+          <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} tuỳ chỉnh theo từng milimét</span>
         </h1>
         <p className="mt-4 text-base leading-[1.6] text-library-sub">
-          Một chiếc hộp vừa khít giúp món quà được nhớ lâu hơn. Thư viện WrapFit gồm mẫu do WrapFit tuyển chọn và thiết kế đạt
-          FitCheck™ của cộng đồng: chọn một mẫu, đổi kích thước theo món quà rồi xuất file in.
+          Khám phá bộ sưu tập mẫu hộp quà tuyển chọn: chọn mẫu, tùy chỉnh kích thước theo món quà và xuất file sản xuất.
+
         </p>
         <form
           role="search"
@@ -374,7 +374,7 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
               value={search}
               maxLength={SEARCH_MAX}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Tìm theo tên hoặc thẻ, ví dụ: tết, kraft…"
+              placeholder="Tìm mẫu hộp quà…"
               enterKeyHint="search"
               className="h-full min-w-0 flex-1 bg-transparent text-base text-library-ink outline-none placeholder:text-library-muted"
             />
