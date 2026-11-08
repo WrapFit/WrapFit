@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, X } from "lucide-react";
 import { ROUTES } from "@/constants";
@@ -33,7 +33,7 @@ const STEPS: StepInfo[] = [
     imageSrc: "/branding/screen-flow-1.png",
     imageAlt: "Giao diện may đo hộp quà theo kích thước món quà trên WrapFit",
     targetHref: ROUTES.editorNew,
-    ctaLabel: "Mở trang May đo hộp ngay",
+    ctaLabel: "May đo ngay",
   },
   {
     number: "02",
@@ -42,7 +42,7 @@ const STEPS: StepInfo[] = [
     imageSrc: "/branding/screen-flow-2.png",
     imageAlt: "Giao diện Studio 2D Dieline và 3D Origami WebGL thời gian thực trên WrapFit",
     targetHref: ROUTES.editorDemo,
-    ctaLabel: "Mở Studio 3D trải nghiệm ngay",
+    ctaLabel: "Vào Studio 3D",
   },
   {
     number: "03",
@@ -51,7 +51,7 @@ const STEPS: StepInfo[] = [
     imageSrc: "/branding/screen-flow-3.png",
     imageAlt: "Giao diện FitCheck AI kiểm tra an toàn tràn lề, viền chữ và mép dán",
     targetHref: ROUTES.editorDemo,
-    ctaLabel: "Trải nghiệm FitCheck™ AI",
+    ctaLabel: "Thử FitCheck™",
   },
   {
     number: "04",
@@ -60,7 +60,7 @@ const STEPS: StepInfo[] = [
     imageSrc: "/branding/screen-flow-4.png",
     imageAlt: "Giao diện kiểm duyệt chế bản in và xuất file vector đa lớp chuẩn xưởng",
     targetHref: "/editor/demo?dialog=export",
-    ctaLabel: "Trải nghiệm xuất file in ngay",
+    ctaLabel: "Xuất file in",
   },
 ];
 
@@ -70,8 +70,15 @@ export function FlowStepModal({
   stepIndex,
   initialStepIndex = 0,
 }: FlowStepModalProps) {
-  const activeStep = stepIndex ?? initialStepIndex;
-  const current = STEPS[activeStep] ?? STEPS[0];
+  const [currentStep, setCurrentStep] = useState(stepIndex ?? initialStepIndex);
+
+  useEffect(() => {
+    if (stepIndex !== undefined) {
+      setCurrentStep(stepIndex);
+    }
+  }, [stepIndex]);
+
+  const current = STEPS[currentStep] ?? STEPS[0];
 
   // Priming audio when opening
   useEffect(() => {
@@ -148,7 +155,7 @@ export function FlowStepModal({
         </div>
 
         {/* ================= FOOTER: CLOSE & ACTION BUTTONS ================= */}
-        <div className="flex items-center justify-between gap-3 border-t border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -159,6 +166,29 @@ export function FlowStepModal({
           >
             <span>Đóng lại</span>
           </button>
+
+          {/* Quick step navigation */}
+          <div className="flex items-center gap-1.5">
+            {STEPS.map((step, idx) => (
+              <button
+                key={step.number}
+                type="button"
+                onClick={() => {
+                  tactileAudio.playSquishyTap();
+                  setCurrentStep(idx);
+                }}
+                className={cn(
+                  "h-8 px-3 rounded-xl text-xs font-semibold transition-all",
+                  currentStep === idx
+                    ? "bg-fpt-orange text-white shadow-2xs"
+                    : "bg-white border border-line/70 text-fg-muted hover:text-fg hover:bg-surface-sunken"
+                )}
+                aria-label={`Xem bước ${step.number}`}
+              >
+                Bước {step.number}
+              </button>
+            ))}
+          </div>
 
           <Link
             href={current.targetHref}

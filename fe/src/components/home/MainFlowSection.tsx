@@ -193,16 +193,7 @@ export function MainFlowSection() {
                 <h3 className="font-landing-heading text-xl font-bold text-landing-ink mt-1">
                   Kiểm tra in FitCheck™
                 </h3>
-
-                {/* Pre-press Chips */}
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className="rounded-full border border-success/40 bg-success-bg/80 px-2.5 py-0.5 text-caption font-medium text-success-fg">
-                    Lề an toàn 3 mm
-                  </span>
-                  <span className="rounded-full border border-success/40 bg-success-bg/80 px-2.5 py-0.5 text-caption font-medium text-success-fg">
-                    Bleed 2mm
-                  </span>
-                </div>
+                <div className="h-[28px]" />
               </div>
 
               {/* Bé Gói measuring the margins; not interactive: the whole card opens the step. */}
@@ -256,8 +247,10 @@ export function MainFlowSection() {
                     <span className="rounded bg-red-600 px-1 py-0.5 text-cad-spec-micro font-bold text-white uppercase leading-none">
                       PDF
                     </span>
+  
                     <span>PDF vector 300 DPI</span>
                   </span>
+
                 </div>
               </div>
 
