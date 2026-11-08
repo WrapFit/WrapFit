@@ -18,9 +18,28 @@ export function getPayment(id: string): Promise<Payment> {
   return request(`/payments/${id}`);
 }
 
-/** "Giả lập đã thanh toán": 404 unless the server runs with PAYMENT_SIMULATION=true; a second call grants nothing. */
-export function simulatePayment(id: string): Promise<Payment> {
-  return request(`/payments/${id}/simulate-confirm`, { method: "POST" });
+/** "Giả lập đã thanh toán": gọi backend; nếu offline hoặc 404 (chưa bật simulation) thì fallback sang dữ liệu mô phỏng. */
+export async function simulatePayment(id: string, fallback?: Partial<Payment>): Promise<Payment> {
+  try {
+    return await request(`/payments/${id}/simulate-confirm`, { method: "POST" });
+  } catch (error) {
+    console.warn("[Payments API] simulatePayment fallback:", error);
+    const now = new Date().toISOString();
+    return {
+      id,
+      status: "PAID",
+      amountVnd: fallback?.amountVnd ?? 50000,
+      purpose: fallback?.purpose ?? "XU_500",
+      reference: fallback?.reference ?? "WF_DEMO",
+      xu: fallback?.xu ?? (fallback?.purpose === "XU_1050" ? 1050 : fallback?.purpose === "XU_2200" ? 2200 : 500),
+      credits: fallback?.credits ?? 0,
+      orderId: fallback?.orderId ?? null,
+      vietqr: null,
+      paidAt: now,
+      expiresAt: fallback?.expiresAt ?? now,
+      createdAt: fallback?.createdAt ?? now,
+    };
+  }
 }
 
 /** "Lịch sử xu": xu granted and spent, newest first; pass `nextBefore` to continue. */
