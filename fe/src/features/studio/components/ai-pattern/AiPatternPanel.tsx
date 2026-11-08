@@ -9,7 +9,8 @@ import { ApiError, errorMessage, generateAiPattern, getAiUsage, uploadFileToStor
 import { useToast } from "@/components/common/Toast";
 import { RadioGroup } from "@/components/ui";
 import { queryKeys } from "@/hooks/data";
-import type { AiPatternResult, AiUsage, GeneratePatternRequest } from "@/types/api";
+import { CheckoutDialog } from "@/features/payments";
+import type { AiPatternResult, AiUsage, GeneratePatternRequest, XuPackPurpose } from "@/types/api";
 import { renderPatternPng, tileBackground } from "./patternImage";
 
 const MAX_THEME = 200;
@@ -40,6 +41,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
   const [generating, setGenerating] = useState(false);
   const [inserting, setInserting] = useState(false);
   const [result, setResult] = useState<AiPatternResult | null>(null);
+  const [buyingPack, setBuyingPack] = useState<XuPackPurpose | null>(null);
 
   if (!projectId) {
     return (
