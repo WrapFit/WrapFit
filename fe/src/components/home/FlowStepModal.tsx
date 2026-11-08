@@ -17,7 +17,7 @@ export interface FlowStepModalProps {
 
 interface StepInfo {
   number: string;
-  badgeLabel: string;
+
   title: string;
   imageSrc: string;
   imageAlt: string;
@@ -28,7 +28,7 @@ interface StepInfo {
 const STEPS: StepInfo[] = [
   {
     number: "01",
-    badgeLabel: "BƯỚC 01 · ĐO KÍCH THƯỚC QUÀ",
+
     title: "Bước 01: Nhập kích thước món quà — Tự động may đo hộp theo milimét",
     imageSrc: "/branding/screen-flow-1.png",
     imageAlt: "Giao diện may đo hộp quà theo kích thước món quà trên WrapFit",
@@ -37,7 +37,7 @@ const STEPS: StepInfo[] = [
   },
   {
     number: "02",
-    badgeLabel: "BƯỚC 02 · THIẾT KẾ & GẬP 3D",
+
     title: "Bước 02: Studio thiết kế 2D & Mô phỏng gập 3D thời gian thực",
     imageSrc: "/branding/screen-flow-2.png",
     imageAlt: "Giao diện Studio 2D Dieline và 3D Origami WebGL thời gian thực trên WrapFit",
@@ -46,7 +46,7 @@ const STEPS: StepInfo[] = [
   },
   {
     number: "03",
-    badgeLabel: "BƯỚC 03 · FITCHECK™ AI",
+
     title: "Bước 03: FitCheck™ AI — Tự động kiểm duyệt an toàn in ấn",
     imageSrc: "/branding/screen-flow-3.png",
     imageAlt: "Giao diện FitCheck AI kiểm tra an toàn tràn lề, viền chữ và mép dán",
@@ -55,7 +55,7 @@ const STEPS: StepInfo[] = [
   },
   {
     number: "04",
-    badgeLabel: "BƯỚC 04 · XUẤT FILE & CẮT BẾ",
+
     title: "Bước 04: Xuất file chuẩn xưởng & Cắt kỹ thuật số từ 1 hộp",
     imageSrc: "/branding/screen-flow-4.png",
     imageAlt: "Giao diện kiểm duyệt chế bản in và xuất file vector đa lớp chuẩn xưởng",
@@ -117,13 +117,9 @@ export function FlowStepModal({
       }}
     >
       <div className="relative w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-sheet bg-white border border-line shadow-popover flex flex-col animate-pop-in">
-        {/* ================= MODAL HEADER: DEDICATED STEP ONLY ================= */}
-        <div className="flex items-center justify-between border-b border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-fpt-orange-light text-fpt-orange-ink border border-fpt-orange/20 shadow-2xs">
-              {current.badgeLabel}
-            </span>
-          </div>
+        {/* ================= MODAL HEADER: TITLE & CLOSE BUTTON ================= */}
+        <div className="flex items-center justify-between gap-4 border-b border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
+          <h3 className="font-landing-heading text-base sm:text-xl font-bold text-landing-ink tracking-tight min-w-0 pr-2">{current.title}</h3>
 
           {/* Close button */}
           <button
@@ -133,17 +129,10 @@ export function FlowStepModal({
               onClose();
             }}
             aria-label="Đóng"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white border border-line/70 text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg shadow-2xs ml-3"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white border border-line/70 text-fg-muted transition-colors hover:bg-surface-sunken hover:text-fg shadow-2xs"
           >
             <X className="size-4" />
           </button>
-        </div>
-
-        {/* ================= STEP TITLE ================= */}
-        <div className="px-5 pt-4 pb-2.5 sm:px-7 shrink-0">
-          <h3 className="font-landing-heading text-lg sm:text-2xl font-bold text-landing-ink tracking-tight">
-            {current.title}
-          </h3>
         </div>
 
         {/* ================= VISUAL SHOWCASE: CLEAN FULL WEBSITE SCREENSHOT ================= */}
