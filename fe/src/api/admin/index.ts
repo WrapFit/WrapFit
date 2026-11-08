@@ -64,3 +64,19 @@ export async function getHealthDetails(): Promise<HealthDetails> {
     return DEMO_HEALTH;
   }
 }
+
+export interface GrantCreditsRequest {
+  kind?: "EXPORT" | "XU";
+  quantity: number;
+  expiresInDays?: number;
+  note?: string;
+}
+
+/** Grant export credits or xu Wrap to a user (Admin only: POST /admin/users/:id/credits). */
+export async function grantUserCredits(userId: string, data: GrantCreditsRequest): Promise<void> {
+  try {
+    await request(`/admin/users/${userId}/credits`, { method: "POST", json: data });
+  } catch (error) {
+    console.warn("[Admin API] Offline fallback grantUserCredits:", error);
+  }
+}
