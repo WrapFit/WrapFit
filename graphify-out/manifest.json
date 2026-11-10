@@ -9516,9 +9516,9 @@
     "semantic_hash": ""
   },
   "fe/src/components/home/HomeHero.tsx": {
-    "mtime": 1792639585.3293526,
-    "seen": 1794327103.312168,
-    "ast_hash": "2dc923dc131a07a23522d57b797cf120",
+    "mtime": 1794342742.8123817,
+    "seen": 1794343865.6693027,
+    "ast_hash": "15e55507a2983bef29f9039ddbe079c7",
     "semantic_hash": ""
   },
   "fe/src/components/home/MadeInVietnam.tsx": {
@@ -9930,9 +9930,9 @@
     "semantic_hash": ""
   },
   "fe/src/components/ui/tour.tsx": {
-    "mtime": 1793372698.137908,
-    "seen": 1794327103.3122308,
-    "ast_hash": "e6714ee3afe94f617a130f2464c92bce",
+    "mtime": 1794342742.6429484,
+    "seen": 1794343865.6811273,
+    "ast_hash": "eeb9531e6c47efa4f221a1419e02d2df",
     "semantic_hash": ""
   },
   "fe/src/components/ui/virtual-list.tsx": {
@@ -10734,9 +10734,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/studioTour.ts": {
-    "mtime": 1793458487.4962356,
-    "seen": 1794327103.3123527,
-    "ast_hash": "9701d7add8618b14dd65865ce15b9454",
+    "mtime": 1794342945.541652,
+    "seen": 1794343865.7043235,
+    "ast_hash": "22c7d8bbfa33138b91d67215c8e0a1ae",
     "semantic_hash": ""
   },
   "fe/src/features/studio/utils/boxMetrics.ts": {
@@ -11310,9 +11310,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/dashboard/index.tsx": {
-    "mtime": 1794293173.4899852,
-    "seen": 1794327103.3124425,
-    "ast_hash": "9ab6ca51dfbfe1a60d37cd5851f74f2a",
+    "mtime": 1794342912.32083,
+    "seen": 1794343865.7223125,
+    "ast_hash": "5c558ce6514b986481b066479e082c47",
     "semantic_hash": ""
   },
   "fe/src/views/dashboard/materials/index.tsx": {
@@ -11388,9 +11388,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/design-system/index.tsx": {
-    "mtime": 1792507573.3009703,
-    "seen": 1794327103.3124552,
-    "ast_hash": "c30a6203bb945823359dbd203e1c16ef",
+    "mtime": 1794342742.6429484,
+    "seen": 1794343865.7244132,
+    "ast_hash": "192f4e7a332c2069d7f3e0dec50a071e",
     "semantic_hash": ""
   },
   "fe/src/views/editor/index.tsx": {
@@ -11400,9 +11400,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/new/index.tsx": {
-    "mtime": 1793372722.8301475,
-    "seen": 1794327103.3124568,
-    "ast_hash": "db858a016e4e7f41a028125ccd251e31",
+    "mtime": 1794342912.8637722,
+    "seen": 1794343865.7245862,
+    "ast_hash": "f362b341cc9b95fe9b173e7469abd303",
     "semantic_hash": ""
   },
   "fe/src/views/editor/step-1/index.tsx": {
@@ -11436,9 +11436,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/StudioWorkspace.tsx": {
-    "mtime": 1794328285.1610134,
-    "seen": 1794328340.1345663,
-    "ast_hash": "53401ed715b4c38363c7937294955840",
+    "mtime": 1794342742.8148975,
+    "seen": 1794343865.72544,
+    "ast_hash": "03e868ab26b2154c56182c2ba1108184",
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/index.tsx": {
@@ -11460,9 +11460,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/home/index.tsx": {
-    "mtime": 1792507573.3039756,
-    "seen": 1794327103.3124666,
-    "ast_hash": "7fe635f15968f5b5f4ac88ab0dd80672",
+    "mtime": 1794342848.069472,
+    "seen": 1794343865.7259638,
+    "ast_hash": "e2febbaa1bd444a168a5bd9ff4cc0b8f",
     "semantic_hash": ""
   },
   "fe/src/views/intro/blueprint/index.tsx": {
@@ -11538,9 +11538,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/templates/index.tsx": {
-    "mtime": 1794293173.4929996,
-    "seen": 1794327103.3124797,
-    "ast_hash": "18b5da2f3e9db761a0647e7172ce1f97",
+    "mtime": 1794342931.1286864,
+    "seen": 1794343865.728162,
+    "ast_hash": "ff451d9698905cf9d77f4cc64aebbf27",
     "semantic_hash": ""
   },
   "fe/src/views/testimonials/index.tsx": {
@@ -11598,9 +11598,9 @@
     "semantic_hash": ""
   },
   "fe/tsconfig.json": {
-    "mtime": 1794330668.0232098,
-    "seen": 1794330860.1497438,
-    "ast_hash": "aa2d58732fb527b1649466385a96873d",
+    "mtime": 1794343053.243199,
+    "seen": 1794343865.729712,
+    "ast_hash": "d6593baea46b47b89a0207a3c80632f3",
     "semantic_hash": ""
   },
   "package.json": {
@@ -13935,6 +13935,12 @@
     "mtime": 1794329190.572639,
     "seen": 1794330167.9981697,
     "ast_hash": "c6e5e09f197cb2e79e88ab4c9a14412c",
+    "semantic_hash": ""
+  },
+  "docs/22_INTERACTIVE_TOURS_PLAN.md": {
+    "mtime": 1794340186.8408647,
+    "seen": 1794343865.7523553,
+    "ast_hash": "1c5f1160c0210f7cab7878bd05622bbc",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {
