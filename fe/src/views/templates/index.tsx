@@ -11,7 +11,7 @@ import { landingFontVariables } from "@/assets/fonts/landing";
 import { EmptyState, ErrorState } from "@/components/common/StatusViews";
 import { MainFooter, MainHeader } from "@/components/layout";
 import { HowItWorks, LibraryBodySkeleton, LibraryCard, LibraryCardSkeleton, Pagination, StartBar } from "@/components/library";
-import { Breadcrumb, ProductTour, Tab, TabList, TabPanel, Tabs, type TourStep } from "@/components/ui";
+import { Breadcrumb, ProductTour, Tab, TabList, TabPanel, Tabs, TourReplayButton, type TourStep } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import {
   DielineSketch,
@@ -346,7 +346,10 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
   return (
     <section className="grid grid-cols-1 overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard md:grid-cols-[minmax(0,575fr)_minmax(0,435fr)]">
       <div className="px-5 pb-8 pt-5 sm:pl-8">
-        <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
+          <TourReplayButton tourId={LIBRARY_TOUR_ID} variant="ghost" size="sm" />
+        </div>
         <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-heading-lg sm:leading-[1.3]">
           <ArrowRight className="mt-1 size-7 shrink-0 text-fpt-orange-ink sm:size-8" strokeWidth={1.75} aria-hidden />
           <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} tuỳ chỉnh theo từng milimét</span>

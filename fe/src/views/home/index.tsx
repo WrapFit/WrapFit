@@ -81,15 +81,16 @@ export default function HomePage() {
  */
 function WelcomeTour() {
   const welcome = useSearchParams().get("welcome") === "1";
-  if (!welcome) return null;
+  // Always mounted: the replay button on the hero starts the tour for visitors who did not come from sign-in too.
   return (
     <ProductTour
       id={ONBOARDING_TOUR_ID}
       steps={HOME_TOUR}
+      autoStart={welcome}
       startDelayMs={900}
-      // Drop `?welcome=1` from the address without a navigation, so a reload does not look like a first visit.
       onClose={(completed) => {
-        window.history.replaceState(window.history.state, "", window.location.pathname);
+        // Drop `?welcome=1` from the address without a navigation, so a reload does not look like a first visit.
+        if (welcome) window.history.replaceState(window.history.state, "", window.location.pathname);
         // Finished on "Bắt đầu": the page it opens continues the guide at once.
         if (completed) continueTourOnNextPage();
       }}
