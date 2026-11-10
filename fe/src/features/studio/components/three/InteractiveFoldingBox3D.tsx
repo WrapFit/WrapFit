@@ -258,6 +258,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   faceLabels = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  /** Outermost element of the stage: the canvas and every overlay on it. */
+  const wrapperRef = useRef<HTMLDivElement>(null);
   /** Labels of the dimension guides, placed by the render loop. */
   const labelRefs = useRef<Partial<Record<DimensionAxis, HTMLDivElement | null>>>({});
   /** Face labels by panel id, placed by the render loop. */
@@ -583,6 +585,30 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     el.addEventListener("pointerup", onPointerUp);
     el.addEventListener("pointermove", onPointerMove);
     el.addEventListener("pointerleave", onPointerLeave);
+    // Ctrl/⌘ + wheel (or a pinch) must never zoom the browser page. OrbitControls stops it over the canvas only, and
+    // not while a drag is going on; the overlays (toolbar, buttons) stop nothing. So the whole stage swallows it in
+    // the capture phase, and a wheel over an overlay is replayed on the canvas so the box still zooms.
+    const wrapper = wrapperRef.current ?? container;
+    const onZoomWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      if (event.target === el) return;
+      el.dispatchEvent(
+        new WheelEvent("wheel", {
+          deltaX: event.deltaX,
+          deltaY: event.deltaY,
+          deltaZ: event.deltaZ,
+          deltaMode: event.deltaMode,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    };
+    wrapper.addEventListener("wheel", onZoomWheel, { capture: true, passive: false });
     controls.addEventListener("start", () => {
       tween = null;
       dragging = true;
@@ -758,6 +784,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       el.removeEventListener("pointerup", onPointerUp);
       el.removeEventListener("pointermove", onPointerMove);
       el.removeEventListener("pointerleave", onPointerLeave);
+      wrapper.removeEventListener("wheel", onZoomWheel, { capture: true });
       controls.dispose();
       model?.dispose();
       unitCylinder.dispose();
@@ -979,6 +1006,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   if (bar) {
     return (
       <div
+        ref={wrapperRef}
         className={`flex h-full w-full flex-col overflow-hidden ${minHeight ? "min-h-[460px]" : ""} ${frameless ? "" : "rounded-sheet ring-1 ring-line"} ${className}`}
       >
         <div className="relative min-h-0 flex-1" style={backdrop ? { background: backdrop.css } : undefined}>
@@ -1003,6 +1031,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
   return (
     <div
+      ref={wrapperRef}
       className={`relative h-full w-full overflow-hidden ${minHeight ? "min-h-[460px]" : ""} ${
         frameless ? "" : "rounded-sheet ring-1 ring-landing-line"
       } ${className}`}
