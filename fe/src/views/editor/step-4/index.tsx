@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useCtrlWheelZoom } from '@/hooks/dom';
 
 export default function Step4FitCheckPage() {
   const [activeInspectMode, setActiveInspectMode] = useState<'dieline' | '3d' | 'fea'>('dieline');
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const stageRef = useRef<HTMLElement>(null);
+  const zoomStage = useCallback((factor: number) => setZoomLevel((z) => Math.min(200, Math.max(50, z * factor))), []);
+  useCtrlWheelZoom(stageRef, zoomStage);
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#1C1917] flex flex-col justify-between font-landing-body select-none">
@@ -149,7 +153,7 @@ export default function Step4FitCheckPage() {
       {/* ================= 3. CENTRAL CAD INSPECTION CANVAS & RIGHT SIDEBAR ================= */}
       <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 py-5 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch min-h-[580px]">
         {/* LEFT/CENTER (8 COLS): 1:1 CAD DIELINE INSPECTION STAGE */}
-        <section className="lg:col-span-8 bg-white rounded-3xl border border-stone-200/90 shadow-[0_4px_24px_rgba(28,25,23,0.03)] p-6 flex flex-col justify-between relative overflow-hidden bg-[#FAF8F5]">
+        <section ref={stageRef} className="lg:col-span-8 bg-white rounded-3xl border border-stone-200/90 shadow-[0_4px_24px_rgba(28,25,23,0.03)] p-6 flex flex-col justify-between relative overflow-hidden bg-[#FAF8F5]">
           {/* Subtle CAD Background Grid */}
           <div
             className="absolute inset-0 opacity-[0.05] pointer-events-none"
@@ -270,7 +274,7 @@ export default function Step4FitCheckPage() {
               >
                 −
               </button>
-              <span className="font-semibold text-stone-700">{zoomLevel}%</span>
+              <span className="font-semibold text-stone-700">{Math.round(zoomLevel)}%</span>
               <button
                 type="button"
                 onClick={() => setZoomLevel((prev) => Math.min(200, prev + 10))}

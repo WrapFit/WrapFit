@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useCtrlWheelZoom } from "@/hooks/dom";
 import { useSearchParams } from "next/navigation";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
@@ -311,6 +312,18 @@ export function StudioWorkspace({
   const [foldProgress, setFoldProgress] = useState<number>(1);
   const [lidOpen, setLidOpen] = useState<boolean>(false);
   const [textComposerOpen, setTextComposerOpen] = useState<boolean>(false);
+
+  // Ctrl/⌘ + wheel (or trackpad pinch) over the stage zooms the dieline, never the browser page. In 3D the box's own
+  // OrbitControls zoom; the listener still swallows the event there so the page does not zoom either.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const zoomStage = useCallback(
+    (factor: number) => {
+      if (artView !== "2d") return;
+      setZoomScale((s) => Math.min(2.5, Math.max(0.4, Number((s * factor).toFixed(3)))));
+    },
+    [artView]
+  );
+  useCtrlWheelZoom(stageRef, zoomStage);
 
   // Artwork Canvas Elements
   const [elements, setElements] = useState<CanvasElement[]>(
@@ -1000,7 +1013,7 @@ export function StudioWorkspace({
             </div>
 
             {/* ── Centre: the stage ── */}
-            <div data-tour="studio-stage" className="relative z-10 h-[62vh] min-h-[420px] overflow-hidden rounded-sheet bg-surface-raised/40 ring-1 ring-line/50 lg:absolute lg:inset-auto lg:bottom-[84px] lg:left-[84px] lg:right-[396px] lg:top-[124px] lg:h-auto lg:min-h-0 lg:overflow-visible lg:rounded-none lg:bg-transparent lg:ring-0">
+            <div ref={stageRef} data-tour="studio-stage" className="relative z-10 h-[62vh] min-h-[420px] overflow-hidden rounded-sheet bg-surface-raised/40 ring-1 ring-line/50 lg:absolute lg:inset-auto lg:bottom-[84px] lg:left-[84px] lg:right-[396px] lg:top-[124px] lg:h-auto lg:min-h-0 lg:overflow-visible lg:rounded-none lg:bg-transparent lg:ring-0">
               {artView === "2d" ? (
                 <DielineCanvas2D
                   variant="stage"

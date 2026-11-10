@@ -10,6 +10,7 @@ import { formatMm } from "@/features/studio/utils/dieline";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
 import { Checkbox } from "@/components/ui";
+import { useCtrlWheelZoom } from "@/hooks/dom";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
 const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
@@ -262,6 +263,16 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     }
   };
 
+  // Ctrl/⌘ + wheel zooms the card. The stage variant is zoomed by the page, which owns that listener.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  useCtrlWheelZoom(
+    rootRef,
+    (factor) => onScaleChange?.(Math.min(2.5, Math.max(0.4, Number((scaleRef.current * factor).toFixed(3))))),
+    !isStage && !!onScaleChange
+  );
+
   const handleResetZoom = () => {
     
     if (onScaleChange) onScaleChange(1.0);
@@ -366,6 +377,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   return (
     <div
+      ref={rootRef}
       className={
         isStage
           ? `relative flex w-full h-full flex-col ${className}`

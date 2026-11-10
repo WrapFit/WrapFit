@@ -145,6 +145,25 @@ export function AvatarCropDialog({ file, onCancel, onConfirm, busy = false }: Av
     return { x: Math.min(maxX, Math.max(-maxX, x)), y: Math.min(maxY, Math.max(-maxY, y)) };
   };
 
+  // Wheel over the preview zooms the photo. The listener is native and non-passive: React's `onWheel` is passive, so it
+  // cannot stop Ctrl/⌘ + wheel (or a pinch) from zooming the whole page along with the photo. A plain wheel is not
+  // prevented. The handler reads the latest state through a ref, so the listener is bound once per element.
+  const [cropEl, setCropEl] = useState<HTMLDivElement | null>(null);
+  const onWheelRef = useRef<(event: WheelEvent) => void>(() => {});
+  onWheelRef.current = (event) => {
+    if (event.ctrlKey || event.metaKey) event.preventDefault();
+    if (!image || art) return;
+    const next = Math.min(3, Math.max(1, zoom - event.deltaY * 0.002));
+    setZoom(next);
+    setOffset((current) => clampOffset(current.x, current.y, next));
+  };
+  useEffect(() => {
+    if (!cropEl) return;
+    const handler = (event: WheelEvent) => onWheelRef.current(event);
+    cropEl.addEventListener("wheel", handler, { passive: false });
+    return () => cropEl.removeEventListener("wheel", handler);
+  }, [cropEl]);
+
   const save = async () => {
     const out = document.createElement("canvas");
     out.width = OUTPUT;
@@ -172,6 +191,7 @@ export function AvatarCropDialog({ file, onCancel, onConfirm, busy = false }: Av
     >
       <div className="flex flex-col items-center gap-4">
         <div
+          ref={setCropEl}
           className={cn("relative size-64 overflow-hidden rounded-full bg-canvas ring-1 ring-line touch-none", image && !art && "cursor-grab active:cursor-grabbing")}
           onPointerDown={(event) => {
             if (!image || art) return;
@@ -184,12 +204,6 @@ export function AvatarCropDialog({ file, onCancel, onConfirm, busy = false }: Av
           }}
           onPointerUp={() => {
             drag.current = null;
-          }}
-          onWheel={(event) => {
-            if (!image || art) return;
-            const next = Math.min(3, Math.max(1, zoom - event.deltaY * 0.002));
-            setZoom(next);
-            setOffset((current) => clampOffset(current.x, current.y, next));
           }}
         >
           <canvas ref={canvasRef} width={VIEW * 2} height={VIEW * 2} className="size-full" aria-label="Xem trước ảnh đại diện" role="img" />
