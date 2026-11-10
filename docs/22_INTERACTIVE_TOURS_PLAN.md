@@ -136,8 +136,8 @@ Môi trường: FE dev trên cổng 3107 (cổng 3000 đã bị chiếm), BE ch�
 Thêm: mọi bước có đích của 6 mảng tour (studio 26 bước, dashboard, editor-new, home, templates, design-system) có `tryIt` và `**…**` (kiểm bằng script đọc mã nguồn); trong trình duyệt, `/editor/new`, dashboard, trang chủ, thư viện, Studio hiện đủ dải gợi ý. Không tìm thấy lỗi nên không sửa gì ở `tour.tsx`, `StudioWorkspace.tsx`, `HomeHero.tsx`. `tsc --noEmit -p fe` sạch.
 
 Ghi chú:
-- `StudioWorkspace.tsx` dùng state `introSeen` + effect theo `currentStep` để đóng tour giới thiệu khi đổi bước, thay cho prop `abortKey` ở §4; kết quả giống nhau. `abortKey` vẫn nằm trong `ProductTour` nhưng chưa trang nào dùng.
-- Nút "Xem hướng dẫn" ở Thư viện mẫu cao 36 px (`size="sm"`), dưới ngưỡng 44 px của màn điện thoại; ở Trang chủ cao 40 px.
+- `StudioWorkspace.tsx` dùng state `introSeen` + effect theo `currentStep` để đóng tour giới thiệu khi đổi bước, thay cho prop `abortKey` ở §4; kết quả giống nhau. Prop `abortKey` không trang nào dùng nên đã bỏ khỏi `ProductTour` (2026-11-11).
+- Nút "Xem hướng dẫn" ở Thư viện mẫu (36 px), `/editor/new` (36 px) và Trang chủ (40 px) thấp hơn ngưỡng 44 px trên điện thoại: đã thêm `min-h-11 sm:min-h-0` (2026-11-11).
 - `page-shots` mở trang bằng hồ sơ mới nên tour tự chạy và lớp tối `fixed inset-0 z-[90]` bị kiểm tra `covered` báo che chữ cuối trang (`/templates` ở M và T). Báo cáo cũ cũng có lỗi này: không do đợt này.
 
 Chưa kiểm được:

@@ -23,9 +23,9 @@ import { Button, buttonClass, type ButtonStyleProps } from "./button";
  *   An app modal opened from the target (`[role="dialog"][aria-modal="true"]`) hides the tour until it closes.
  *   `tryIt` is the hint line saying what a click does; `**bold**` in `body` / `tryIt` renders bold orange for the
  *   action phrases (`renderTourText`).
- * - Leaving mid-way: unmounting the tour while it is open (another page, another Studio step) or a changed
- *   `abortKey` marks it skipped, so coming back does not start it again; the replay button does. A reload does not
- *   mark anything: the tour starts over.
+ * - Leaving mid-way: unmounting the tour while it is open (another page, another Studio step) marks it skipped, so
+ *   coming back does not start it again; the replay button does. A reload does not mark anything: the tour starts
+ *   over.
  * - Keyboard: → next, ← back, Esc closes, Tab stays inside the tooltip; focus returns to where it was. While the
  *   focus is in the target or in a field, ← / → / Enter belong to it; Esc first closes an open popup, then the tour.
  * - Motion: the cut-out moves with the SVG path (no layout), the tooltip fades in with transform and opacity, and
@@ -70,11 +70,6 @@ export interface ProductTourProps {
   startDelayMs?: number;
   /** Starts even if this tour was seen (e.g. the user just came from the previous tour's last step). */
   force?: boolean;
-  /**
-   * While the tour is open, a change of this value closes it as skipped (`onClose(false)`). For a tour that stays
-   * mounted while the user moves to another flow (e.g. another Studio step).
-   */
-  abortKey?: unknown;
   /** Called when the tour ends; `completed` is false when it was skipped. */
   onClose?(completed: boolean): void;
 }
@@ -293,7 +288,7 @@ const FOCUSABLE = 'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1
 const TARGET_WAIT_MS = 4000;
 const TARGET_POLL_MS = 200;
 
-export function ProductTour({ id, steps, autoStart = true, ready = true, startDelayMs = 500, force = false, abortKey, onClose }: ProductTourProps) {
+export function ProductTour({ id, steps, autoStart = true, ready = true, startDelayMs = 500, force = false, onClose }: ProductTourProps) {
   /** Steps whose target is on screen, fixed when the tour starts so "2 / 5" stays true. */
   const [active, setActive] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
@@ -344,14 +339,6 @@ export function ProductTour({ id, steps, autoStart = true, ready = true, startDe
     },
     [id],
   );
-
-  // Moving to another flow without unmounting (e.g. another Studio step) closes the open tour as skipped.
-  const abortKeyRef = useRef(abortKey);
-  useEffect(() => {
-    if (Object.is(abortKeyRef.current, abortKey)) return;
-    abortKeyRef.current = abortKey;
-    if (activeRef.current) close(false);
-  }, [abortKey, close]);
 
   // First visit: start once the page is ready and has settled.
   useEffect(() => {

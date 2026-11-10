@@ -352,7 +352,8 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
       <div className="px-5 pb-8 pt-5 sm:pl-8">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
-          <TourReplayButton tourId={LIBRARY_TOUR_ID} variant="ghost" size="sm" />
+          {/* 44px tap target on phones, compact from sm up. */}
+          <TourReplayButton tourId={LIBRARY_TOUR_ID} variant="ghost" size="sm" className="min-h-11 sm:min-h-0" />
         </div>
         <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-heading-lg sm:leading-[1.3]">
           <ArrowRight className="mt-1 size-7 shrink-0 text-fpt-orange-ink sm:size-8" strokeWidth={1.75} aria-hidden />

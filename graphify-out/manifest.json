@@ -9516,9 +9516,9 @@
     "semantic_hash": ""
   },
   "fe/src/components/home/HomeHero.tsx": {
-    "mtime": 1794342742.8123817,
-    "seen": 1794343865.6693027,
-    "ast_hash": "15e55507a2983bef29f9039ddbe079c7",
+    "mtime": 1794344092.6110759,
+    "seen": 1794344229.2875478,
+    "ast_hash": "9d35a5ed5c4d0fc33bb32843e834b1bf",
     "semantic_hash": ""
   },
   "fe/src/components/home/MadeInVietnam.tsx": {
@@ -9930,9 +9930,9 @@
     "semantic_hash": ""
   },
   "fe/src/components/ui/tour.tsx": {
-    "mtime": 1794342742.6429484,
-    "seen": 1794343865.6811273,
-    "ast_hash": "eeb9531e6c47efa4f221a1419e02d2df",
+    "mtime": 1794344079.4373662,
+    "seen": 1794344229.294892,
+    "ast_hash": "2d7e89415f1ddf89668c208c7c67c0da",
     "semantic_hash": ""
   },
   "fe/src/components/ui/virtual-list.tsx": {
@@ -11400,9 +11400,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/new/index.tsx": {
-    "mtime": 1794342912.8637722,
-    "seen": 1794343865.7245862,
-    "ast_hash": "f362b341cc9b95fe9b173e7469abd303",
+    "mtime": 1794344079.1196034,
+    "seen": 1794344229.3250723,
+    "ast_hash": "e0bf58d06a50182ebcb66b03d2d41b6c",
     "semantic_hash": ""
   },
   "fe/src/views/editor/step-1/index.tsx": {
@@ -11538,9 +11538,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/templates/index.tsx": {
-    "mtime": 1794342931.1286864,
-    "seen": 1794343865.728162,
-    "ast_hash": "ff451d9698905cf9d77f4cc64aebbf27",
+    "mtime": 1794344079.0319347,
+    "seen": 1794344229.3272672,
+    "ast_hash": "b4883f8aa46153483db24608a7362f35",
     "semantic_hash": ""
   },
   "fe/src/views/testimonials/index.tsx": {
@@ -11598,9 +11598,9 @@
     "semantic_hash": ""
   },
   "fe/tsconfig.json": {
-    "mtime": 1794343053.243199,
-    "seen": 1794343865.729712,
-    "ast_hash": "d6593baea46b47b89a0207a3c80632f3",
+    "mtime": 1794343946.0877626,
+    "seen": 1794344229.3283353,
+    "ast_hash": "0631421b383922a3532c194d49ef09d8",
     "semantic_hash": ""
   },
   "package.json": {
@@ -12288,9 +12288,9 @@
     "semantic_hash": ""
   },
   "docs/04_PROGRESS.md": {
-    "mtime": 1794330797.2173667,
-    "seen": 1794330860.1611443,
-    "ast_hash": "1c7b5fb40b240bfc29628a9c1ca04d81",
+    "mtime": 1794343977.7042058,
+    "seen": 1794344229.3415911,
+    "ast_hash": "3a6a462ac998adef9a18ab6181ede783",
     "semantic_hash": ""
   },
   "docs/05_PACKAGING_GUIDELINES_AND_SUPPORT.md": {
@@ -13938,9 +13938,9 @@
     "semantic_hash": ""
   },
   "docs/22_INTERACTIVE_TOURS_PLAN.md": {
-    "mtime": 1794340186.8408647,
-    "seen": 1794343865.7523553,
-    "ast_hash": "1c5f1160c0210f7cab7878bd05622bbc",
+    "mtime": 1794344092.679104,
+    "seen": 1794344229.343188,
+    "ast_hash": "7a8651700bf2d984c27e1c0a3078f90b",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {

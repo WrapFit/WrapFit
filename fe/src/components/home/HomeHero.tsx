@@ -64,7 +64,7 @@ export function HomeHero() {
             <Link href={HERO.cta.href} className={limeButton()} data-tour="home-cta">
               {HERO.cta.label}
             </Link>
-            <TourReplayButton tourId={ONBOARDING_TOUR_ID} variant="ghost" />
+            <TourReplayButton tourId={ONBOARDING_TOUR_ID} variant="ghost" className="min-h-11 sm:min-h-0" />
           </div>
         </div>
 

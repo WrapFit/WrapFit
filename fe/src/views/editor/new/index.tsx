@@ -268,7 +268,7 @@ function NewBoxDesigner({ structures, template, preset }: { structures: BoxStruc
           </p>
         </div>
         <span className="flex flex-wrap items-center gap-3">
-          <TourReplayButton tourId={NEW_BOX_TOUR_ID} variant="ghost" size="sm" />
+          <TourReplayButton tourId={NEW_BOX_TOUR_ID} variant="ghost" size="sm" className="min-h-11 sm:min-h-0" />
           <span className="font-mono text-sm text-library-sub">
             {dimensions.length} × {dimensions.width} × {dimensions.height} mm · t {dimensions.paperThickness.toFixed(2)}
           </span>
