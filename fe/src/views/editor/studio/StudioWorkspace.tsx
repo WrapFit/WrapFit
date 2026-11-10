@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import {
+  CircleHelp,
   Download,
   ShieldCheck,
   ShieldAlert,
@@ -30,7 +31,7 @@ import {
   ImagePlus,
   type LucideIcon,
 } from "lucide-react";
-import { buttonClass, hasSeenTour, ProductTour, TourReplayButton, useTourContinuation } from "@/components/ui";
+import { buttonClass, hasSeenTour, markTourSeen, ProductTour, useTourContinuation } from "@/components/ui";
 import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
 import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
@@ -221,6 +222,10 @@ export function StudioWorkspace({
   const tourContinued = useTourContinuation();
   const [introSeen, setIntroSeen] = useState(true);
   useEffect(() => setIntroSeen(hasSeenTour(STUDIO_INTRO_TOUR_ID)), []);
+  // "Hướng dẫn" button: counts the replays (remounts the intro) and, once a replayed intro is finished, names the
+  // step whose own tour then runs.
+  const [replay, setReplay] = useState(0);
+  const [chainedStep, setChainedStep] = useState<StudioStep | null>(null);
 
   // Query parameter overrides for demo mode (e.g. from /editor/new or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
@@ -246,6 +251,18 @@ export function StudioWorkspace({
     if (hasParamDims || paramStructure || demoTemplate) return 4;
     return 1;
   });
+
+  // Going to another step while the intro is open leaves the intro (counted as skipped); that step's own tour starts
+  // if it was not seen. The first value, from the address or the project, is not a change.
+  const previousStep = useRef(currentStep);
+  useEffect(() => {
+    if (previousStep.current === currentStep) return;
+    previousStep.current = currentStep;
+    if (!introSeen) {
+      markTourSeen(STUDIO_INTRO_TOUR_ID, false);
+      setIntroSeen(true);
+    }
+  }, [currentStep, introSeen]);
 
   // Project Core State: a saved project fills it once, on mount
   const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoTemplate?.title ?? "Bao bì quà tặng sang trọng");
@@ -792,14 +809,19 @@ export function StudioWorkspace({
               </span>
             </button>
 
-            <TourReplayButton
-              tourId={studioStepTourId(currentStep)}
-              label={<span className="sr-only xl:not-sr-only">Hướng dẫn</span>}
+            <button
+              type="button"
               title="Hướng dẫn"
-              variant="ghost"
-              size="sm"
-              className="hidden md:inline-flex"
-            />
+              onClick={() => {
+                setChainedStep(null);
+                setReplay((count) => count + 1);
+                setIntroSeen(false);
+              }}
+              className={buttonClass({ variant: "ghost", size: "sm", className: "hidden md:inline-flex" })}
+            >
+              <CircleHelp aria-hidden />
+              <span className="sr-only xl:not-sr-only">Hướng dẫn</span>
+            </button>
 
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
             {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
@@ -907,10 +929,26 @@ export function StudioWorkspace({
       )}
 
       {!introSeen ? (
-        <ProductTour id={STUDIO_INTRO_TOUR_ID} steps={STUDIO_INTRO_TOUR} force={tourContinued} onClose={() => setIntroSeen(true)} />
+        <ProductTour
+          key={`intro-${replay}`}
+          id={STUDIO_INTRO_TOUR_ID}
+          steps={STUDIO_INTRO_TOUR}
+          force={tourContinued || replay > 0}
+          onClose={(completed) => {
+            setIntroSeen(true);
+            // A replayed intro that was finished goes on with the tour of the step that is open; skipped, it stops.
+            if (completed && replay > 0) setChainedStep(currentStep);
+          }}
+        />
       ) : (
-        // Keyed by step: each step has its own tour, started on its first visit.
-        <ProductTour key={currentStep} id={studioStepTourId(currentStep)} steps={STUDIO_STEP_TOURS[currentStep]} />
+        // Keyed by step: each step has its own tour, started on its first visit (or by the replay above).
+        <ProductTour
+          key={chainedStep === currentStep ? `${currentStep}-replay-${replay}` : currentStep}
+          id={studioStepTourId(currentStep)}
+          steps={STUDIO_STEP_TOURS[currentStep]}
+          force={chainedStep === currentStep}
+          onClose={() => setChainedStep(null)}
+        />
       )}
 
       {/* ================= 2. DYNAMIC STEP VIEW CONTENT ================= */}
