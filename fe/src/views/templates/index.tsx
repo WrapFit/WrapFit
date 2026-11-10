@@ -295,24 +295,28 @@ const LIBRARY_TOUR: TourStep[] = [
   {
     target: '[data-tour="library-search"]',
     title: "Tìm theo tên hoặc thẻ",
-    body: "Gõ “tết”, “kraft”, “mỹ phẩm”… Kết quả đổi sau khi bạn ngừng gõ một chút, không cần bấm Enter.",
+    body: "**Gõ “tết”, “kraft”, “mỹ phẩm”…** vào ô tìm. Kết quả đổi sau khi bạn ngừng gõ một chút, không cần bấm Enter.",
+    tryIt: "**Gõ một từ khoá vào ô tìm**: lưới mẫu bên dưới lọc lại sau khi bạn ngừng gõ.",
     mascot: "presenting",
   },
   {
     target: '[data-tour="library-filters"]',
     title: "Lọc theo cấu trúc, dịp, ngành hàng",
-    body: "Mỗi lựa chọn kèm số mẫu còn lại, nên bạn biết trước bộ lọc nào ra kết quả.",
+    body: "**Chọn một cấu trúc, dịp hoặc ngành hàng** để thu hẹp danh sách. Mỗi lựa chọn kèm số mẫu còn lại, nên bạn biết trước bộ lọc nào ra kết quả.",
+    tryIt: "**Bấm một bộ lọc**: lưới mẫu thu hẹp ngay, bấm lại để bỏ lọc.",
     placement: "right",
   },
   {
     target: '[data-tour="library-tabs"]',
     title: "Mẫu tuyển chọn hoặc của cộng đồng",
-    body: "WrapFit tuyển chọn là mẫu sẵn sàng in. Cộng đồng là thiết kế công khai đạt FitCheck™ từ 90 điểm.",
+    body: "WrapFit tuyển chọn là mẫu sẵn sàng in. Cộng đồng là thiết kế công khai đạt FitCheck™ từ 90 điểm. **Bấm từng tab** để so sánh.",
+    tryIt: "**Bấm tab Cộng đồng**: lưới đổi sang thiết kế của người dùng.",
   },
   {
     target: '[data-tour="library-grid"] a',
     title: "Mở mẫu và đổi kích thước",
-    body: "Bên trái là khuôn bế phẳng, bên phải là hộp đã gấp. Bấm vào để mở trong Studio rồi đổi từng milimét theo món quà.",
+    body: "Bên trái là khuôn bế phẳng, bên phải là hộp đã gấp. **Bấm vào một mẫu** để mở trong Studio rồi đổi từng milimét theo món quà.",
+    tryIt: "**Bấm một thẻ mẫu**: mở mẫu đó trong Studio, hướng dẫn này sẽ dừng.",
     mascot: "measuring",
   },
 ];
