@@ -55,6 +55,8 @@ RUN addgroup -S wrapfit && adduser -S wrapfit -G wrapfit
 # Copy standalone output: traces only needed files (~80MB RAM at runtime vs 600MB+)
 COPY --from=builder /app/fe/.next/standalone ./
 COPY --from=builder /app/fe/.next/static ./fe/.next/static
+# Standalone output leaves out public/ (photos, mascots, branding, favicons)
+COPY --from=builder /app/fe/public ./fe/public
 COPY --from=builder /app/fe/package.json ./fe/package.json
 
 USER wrapfit:wrapfit
