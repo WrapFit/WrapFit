@@ -440,8 +440,14 @@ const FLOATING = `(covered) => {
 const ROLE_ACCOUNTS = {
   admin: () => seedAdmin(),
   maker: () => {
+    if (process.env.SHOT_MAKER_EMAIL) return { email: process.env.SHOT_MAKER_EMAIL, password: process.env.SHOT_MAKER_PASSWORD };
     if (!fixtures?.maker) throw new Error('Role maker needs fixtures: run node fe/scripts/ui-fixtures.mjs');
     return fixtures.maker;
+  },
+  // A demo account (users.is_demo, pays through VNPay sandbox, docs/21): set the flag in the database or with the admin API.
+  demo: () => {
+    if (!process.env.SHOT_DEMO_EMAIL) throw new Error('Role demo needs SHOT_DEMO_EMAIL and SHOT_DEMO_PASSWORD (an account with is_demo = true)');
+    return { email: process.env.SHOT_DEMO_EMAIL, password: process.env.SHOT_DEMO_PASSWORD };
   },
 };
 

@@ -46,7 +46,8 @@ export type ApiErrorCode =
   | "PROMPT_REJECTED"
   | "AI_IMAGE_UNAVAILABLE"
   | "AI_IMAGE_BUSY"
-  | "STORAGE_QUOTA_EXCEEDED";
+  | "STORAGE_QUOTA_EXCEEDED"
+  | "VNPAY_NOT_CONFIGURED";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {
@@ -491,6 +492,8 @@ export interface ExportJob {
 export type XuPackPurpose = "XU_500" | "XU_1050" | "XU_2200";
 export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose;
 export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
+export type PaymentProvider = "VIETQR" | "VNPAY";
+export type PaymentConfirmation = "SEPAY_WEBHOOK" | "VNPAY_IPN" | "VNPAY_RETURN" | "SIMULATION" | "ADMIN";
 
 /** `GET /billing/me`: plan in use, export credits and the Pro period. */
 export interface BillingSummary {
@@ -504,6 +507,8 @@ export interface BillingSummary {
   xu: XuWallet;
   /** PAYMENT_SIMULATION on the server: the checkout shows "Giả lập đã thanh toán" (CP4 demo). */
   paymentSimulation: boolean;
+  /** Demo account (`users.is_demo`): pays through VNPay sandbox, never through a real bank transfer (docs/21). */
+  isDemo: boolean;
 }
 
 /** A VietQR payment (`POST /payments`, `GET /payments/:id`). */
@@ -511,6 +516,10 @@ export interface Payment {
   id: string;
   purpose: PaymentPurpose;
   status: PaymentStatus;
+  /** VNPAY for demo accounts, VIETQR otherwise. */
+  provider: PaymentProvider;
+  /** How it was confirmed, null while not PAID. */
+  confirmedVia: PaymentConfirmation | null;
   amountVnd: number;
   /** Transfer content: WF + 6 characters. */
   reference: string;
@@ -532,6 +541,20 @@ export interface Payment {
     /** Placeholder account: the server has no VIETQR_* settings. */
     sample: boolean;
   } | null;
+  /**
+   * Demo accounts (provider VNPAY): `window.location.assign(vnpay.payUrl)`. Only in the answer of `POST /payments`;
+   * null on `GET /payments/:id`, for VIETQR payments, and when the server has no VNPAY_* settings (only the simulate
+   * button works then).
+   */
+  vnpay?: { payUrl: string } | null;
+}
+
+/** `GET /payments/vnpay/return?<the vnp_* query VNPay appended>` (docs/21 §3.4). */
+export interface VnpayReturnResult {
+  /** success = paid; failed = cancelled or refused by the bank; invalid = bad signature or wrong amount. */
+  result: "success" | "failed" | "invalid";
+  /** Null when the signature is bad. */
+  payment: Payment | null;
 }
 
 // ---------------------------------------------------------------- unboxing
@@ -724,6 +747,9 @@ export interface XuHistoryEntry {
   expiresAt: string | null;
   createdAt: string;
 }
+
+/** Filter groups of `GET /billing/xu/history?type=`: plan and purchased lots, spends, administrator changes. */
+export type XuHistoryType = "grant" | "spend" | "adjust";
 
 export interface XuHistoryPage {
   entries: XuHistoryEntry[];

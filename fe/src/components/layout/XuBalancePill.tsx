@@ -124,11 +124,11 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
                 <span className="text-caption text-landing-muted block mt-0.5">Dùng cho ảnh và hoa văn AI</span>
               </div>
               <Link
-                href="/dashboard/billing"
+                href="/dashboard/wallet"
                 onClick={() => setIsOpen(false)}
                 className="text-xs font-medium text-fpt-orange-ink hover:underline flex items-center gap-0.5"
               >
-                Lịch sử
+                Mở ví
                 <ChevronRight className="size-3" aria-hidden />
               </Link>
             </div>

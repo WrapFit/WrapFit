@@ -14,7 +14,7 @@ interface NormalizedError {
   status: number;
   message: string | string[];
   error: string;
-  /** Extra fields of an HttpException body, e.g. `fitCheck` on a 422 (never added for 5xx). */
+  /** Extra fields of an HttpException body, e.g. `fitCheck` on a 422 or a stable `code` (never added for 5xx other than 503). */
   details?: Record<string, unknown>;
 }
 
@@ -79,7 +79,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         status,
         message: message ?? exception.message,
         error: error ?? statusText(status),
-        details: status < 500 ? details : undefined,
+        // 503 is a deliberate answer ("not configured / paused") with a stable `code` the client branches on; other 5xx stay opaque.
+        details: status < 500 || status === HttpStatus.SERVICE_UNAVAILABLE ? details : undefined,
       };
     }
 

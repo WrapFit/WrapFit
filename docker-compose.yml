@@ -186,6 +186,14 @@ services:
       VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}
       VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-}
+      # SePay webhook key (POST /api/webhooks/sepay, docs/21; empty = every webhook is rejected with 401)
+      SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY:-}
+      # VNPay sandbox for demo accounts (docs/21): TMN code + hash secret together or both empty; empty return URL =
+      # ${FRONTEND_URL}/payments/vnpay-return
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+      VNPAY_PAY_URL: ${VNPAY_PAY_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:

@@ -1,8 +1,20 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { allowedOrigins, ConfigService, parseCorsOrigins, requestIdMiddleware, SocketIoAdapter } from './common';
+
+const WEBHOOK_BODY_LIMIT = 64 * 1024;
+
+/** 413 for a webhook whose Content-Length is over 64 kB; a chunked body without a length still meets the 1 MB cap. */
+function limitWebhookBody(req: Request, res: Response, next: NextFunction): void {
+  if (Number(req.headers['content-length'] ?? 0) > WEBHOOK_BODY_LIMIT) {
+    res.status(413).json({ statusCode: 413, message: 'Payload too large' });
+    return;
+  }
+  next();
+}
 
 /** Shared bootstrap configuration, used by app.ts and the e2e tests. */
 export function middleware(app: INestApplication): void {
@@ -29,6 +41,8 @@ export function middleware(app: INestApplication): void {
     ),
   );
   app.use(cookieParser());
+  // Webhooks are tiny: refuse a declared body over 64 kB before the 1 MB parser below reads it (docs/21 §3.3).
+  app.use('/api/webhooks', limitWebhookBody);
   // Canvas states (up to 300 elements) can exceed the 100 kB default. Images go to object storage, not the body.
   (app as NestExpressApplication).useBodyParser('json', { limit: '1mb' });
   // Behind Caddy every request comes from the proxy: trust one hop so req.ip is the client (rate limits, sessions).

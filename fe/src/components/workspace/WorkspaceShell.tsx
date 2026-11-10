@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Coins,
   CreditCard,
   Bell,
   FolderOpen,
@@ -62,6 +63,7 @@ export const WORKSPACE_NAV: NavGroup[] = [
     title: "Tài khoản",
     items: [
       { href: ROUTES.profile, label: "Hồ sơ", icon: UserRound },
+      { href: "/dashboard/wallet", label: "Ví xu Wrap", icon: Coins },
       { href: "/dashboard/billing", label: "Thanh toán & gói", icon: CreditCard },
       { href: ROUTES.settings, label: "Cài đặt", icon: Settings },
     ],

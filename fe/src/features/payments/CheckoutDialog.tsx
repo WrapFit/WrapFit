@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, FlaskConical, QrCode, RotateCw, TimerOff } from "lucide-react";
+import { Check, Copy, CreditCard, ExternalLink, FlaskConical, QrCode, RotateCw, TimerOff } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createPayment, getBillingSummary, getPayment, simulatePayment } from "@/api";
@@ -10,9 +10,11 @@ import { useToast } from "@/components/common/Toast";
 import { Alert, Badge, Button, Dialog, LoadingState, Spinner } from "@/components/ui";
 import { formatVnd } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
+import { errorMessage } from "@/services/api";
 import type { Payment, PaymentPurpose } from "@/types/api";
+import { savePendingVnpay } from "./vnpaySession";
 
-/** The server is asked for the payment status every 3 seconds while it waits for the transfer. */
+/** The server is asked for the payment status every 3 seconds while it waits for the money. */
 const POLL_MS = 3000;
 
 const TITLES: Record<PaymentPurpose, string> = {
@@ -25,6 +27,9 @@ const TITLES: Record<PaymentPurpose, string> = {
   XU_1050: "Nạp 1.050 xu Wrap",
   XU_2200: "Nạp 2.200 xu Wrap",
 };
+
+/** Test card of the VNPay sandbox (published by VNPay for its test environment, not a real card). */
+const VNPAY_TEST_CARD = { bank: "NCB", number: "9704198526191432198", holder: "NGUYEN VAN A", issued: "07/15", otp: "123456" };
 
 function successText(payment: Payment): string {
   if (payment.purpose === "PRO_MONTH") return "Gói Pro đã bật: xuất file in sạch không giới hạn trong 30 ngày.";
@@ -61,9 +66,10 @@ export interface CheckoutDialogProps {
 }
 
 /**
- * VietQR checkout (docs/17 S5): creates a 15-minute payment, shows the QR, the amount and the transfer content to copy,
- * and asks the server every 3 seconds until it is paid. With PAYMENT_SIMULATION on the server (CP4 demo) a button
- * marks it paid. On success Gói celebrates, and the plan, credits and orders are fetched again.
+ * Checkout (docs/17 S5, docs/21 §4.1): creates a 15-minute payment and asks the server every 3 seconds until it is paid.
+ * Real accounts (provider VIETQR) scan a QR and the bank's webhook confirms it; demo accounts (provider VNPAY) open the
+ * VNPay sandbox by redirect and come back through `/payments/vnpay-return`. With PAYMENT_SIMULATION on the server
+ * (CP4 demo) a button marks either one paid. On success Gói celebrates, and the plan, credits and orders are fetched again.
  */
 export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", onPaid, onClose }: CheckoutDialogProps) {
   const toast = useToast();
@@ -80,6 +86,8 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   }, [create]);
 
   const paymentId = create.data?.id;
+  // `vnpay` is only in the answer of POST /payments: the polling answers replace the payment without it.
+  const payUrl = create.data?.vnpay?.payUrl;
   const poll = useQuery({
     queryKey: queryKeys.payment(paymentId ?? ""),
     queryFn: () => getPayment(paymentId!),
@@ -109,6 +117,12 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
     void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
   }, [paid, queryClient]);
 
+  // The content swaps for the success screen: move focus to its heading so a screen reader starts there.
+  const successHeading = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (paid) successHeading.current?.focus({ preventScroll: true });
+  }, [paid]);
+
   const simulate = useMutation({
     mutationFn: () => simulatePayment(paymentId!, payment ?? undefined),
     onSuccess: (result) => {
@@ -136,6 +150,31 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
     }
   };
 
+  const provider = payment?.provider ?? "VIETQR";
+  const openVnpay = () => {
+    if (!payUrl || !paymentId) return;
+    savePendingVnpay({ paymentId, returnTo: `${window.location.pathname}${window.location.search}` });
+    window.location.assign(payUrl);
+  };
+
+  const showSimulate =
+    billing.data?.paymentSimulation ||
+    (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
+  const simulateAlert = showSimulate ? (
+    <Alert
+      tone="info"
+      icon={FlaskConical}
+      title="Chế độ thử nghiệm"
+      action={
+        <Button size="sm" variant="dark" loading={simulate.isPending} loadingLabel="Đang xác nhận…" onClick={() => simulate.mutate()}>
+          Giả lập đã thanh toán
+        </Button>
+      }
+    >
+      Môi trường thử nghiệm: bấm nút để xác nhận thanh toán thành công ngay lập tức mà không cần chuyển tiền thật.
+    </Alert>
+  ) : null;
+
   const footer = paid ? (
     <Button onClick={close}>{doneLabel}</Button>
   ) : (
@@ -149,8 +188,14 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   return createPortal(
     <Dialog
       title={TITLES[purpose]}
-      description={paid ? "Đã nhận thanh toán" : "Quét mã VietQR bằng ứng dụng ngân hàng bất kỳ"}
-      icon={<QrCode aria-hidden />}
+      description={
+        paid
+          ? "Đã nhận thanh toán"
+          : provider === "VNPAY"
+            ? "Thanh toán thử nghiệm qua cổng VNPay sandbox"
+            : "Quét mã VietQR bằng ứng dụng ngân hàng bất kỳ"
+      }
+      icon={provider === "VNPAY" && !paid ? <CreditCard aria-hidden /> : <QrCode aria-hidden />}
       onClose={close}
       busy={simulate.isPending}
       footer={footer}
@@ -168,16 +213,23 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
             </Button>
           }
         >
-          {create.error instanceof Error ? create.error.message : "Kiểm tra kết nối rồi thử lại."}
+          {errorMessage(create.error)}
         </Alert>
       ) : paid && payment ? (
         <div className="flex flex-col items-center gap-3 py-2 text-center" role="status">
           <GoiMascot pose="celebration" size={120} interactive={false} />
-          <p className="font-landing-heading text-heading-sm text-fg">Thanh toán thành công</p>
-          <p className="max-w-sm text-body-sm text-fg-muted">{successText(payment)}</p>
-          <p className="text-caption text-fg-muted">
-            {formatVnd(payment.amountVnd)} · mã <span className="font-mono">{payment.reference}</span>
+          <p ref={successHeading} tabIndex={-1} className="font-landing-heading text-heading-sm text-fg outline-none">
+            Thanh toán thành công
           </p>
+          <p className="max-w-sm text-body-sm text-fg-muted">{successText(payment)}</p>
+          <dl className="grid w-full max-w-xs grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-panel bg-surface-sunken p-3.5 text-left text-body-sm">
+            <dt className="text-fg-muted">Số tiền</dt>
+            <dd className="text-right font-semibold tabular-nums text-fg">{formatVnd(payment.amountVnd)}</dd>
+            <dt className="text-fg-muted">Mã</dt>
+            <dd className="text-right font-mono text-fg">{payment.reference}</dd>
+            <dt className="text-fg-muted">Cách trả</dt>
+            <dd className="text-right text-fg">{providerLabel(payment)}</dd>
+          </dl>
         </div>
       ) : payment && !pending ? (
         <Alert
@@ -190,10 +242,74 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
             </Button>
           }
         >
-          Mã chỉ dùng được trong 15 phút. Nếu bạn đã chuyển khoản, đừng chuyển lại: liên hệ WrapFit kèm mã {payment.reference}.
+          {payment.provider === "VNPAY"
+            ? "Phiên thanh toán chỉ dùng được trong 15 phút. Nếu VNPay đã báo thành công, đừng thanh toán lại: liên hệ WrapFit kèm mã "
+            : "Mã chỉ dùng được trong 15 phút. Nếu bạn đã chuyển khoản, đừng chuyển lại: liên hệ WrapFit kèm mã "}
+          {payment.reference}.
         </Alert>
+      ) : payment?.provider === "VNPAY" ? (
+        <>
+          <section aria-labelledby="vnpay-title" className="flex flex-col gap-4 rounded-panel border border-line bg-surface-raised p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent-bg text-accent-fg [&_svg]:size-5">
+                <CreditCard aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 id="vnpay-title" className="text-body font-semibold text-fg">
+                    Thanh toán qua VNPay (sandbox)
+                  </h3>
+                  <Badge size="sm" tone="warning">
+                    Thử nghiệm
+                  </Badge>
+                </div>
+                <p className="mt-0.5 text-body-sm text-fg-muted">Tài khoản demo trả qua cổng thử nghiệm của VNPay, không trừ tiền thật.</p>
+              </div>
+            </div>
+
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-body-sm">
+              <dt className="text-fg-muted">Số tiền</dt>
+              <dd className="font-landing-heading text-heading-sm tabular-nums text-fg">{formatVnd(payment.amountVnd)}</dd>
+              <dt className="text-fg-muted">Mã đơn</dt>
+              <dd className="font-mono font-semibold tracking-wider text-accent-fg">{payment.reference}</dd>
+              <dt className="text-fg-muted">Còn hiệu lực</dt>
+              <dd role="timer" aria-label={`Còn hiệu lực ${mmss(left)}`} className="font-mono font-semibold tabular-nums text-fg">
+                {mmss(left)}
+              </dd>
+            </dl>
+
+            {payUrl ? (
+              <Button variant="brand" shape="rounded" size="lg" block trailingIcon={<ExternalLink aria-hidden />} onClick={openVnpay}>
+                Mở cổng VNPay
+              </Button>
+            ) : (
+              <Alert tone="warning" title="Chưa mở được cổng VNPay">
+                {showSimulate
+                  ? "Máy chủ chưa cấu hình VNPay sandbox. Dùng nút giả lập bên dưới để hoàn tất thanh toán thử."
+                  : "Cổng VNPay không có liên kết cho phiên này. Đóng hộp thoại rồi tạo thanh toán mới."}
+              </Alert>
+            )}
+          </section>
+
+          <Alert tone="info" icon={CreditCard} title="Thẻ thử của VNPay sandbox">
+            Ngân hàng <strong>{VNPAY_TEST_CARD.bank}</strong>, số thẻ <span className="font-mono tabular-nums">{VNPAY_TEST_CARD.number}</span>, tên{" "}
+            <span className="font-mono">{VNPAY_TEST_CARD.holder}</span>, ngày phát hành <span className="font-mono">{VNPAY_TEST_CARD.issued}</span>, mã OTP{" "}
+            <span className="font-mono">{VNPAY_TEST_CARD.otp}</span>.
+          </Alert>
+
+          <WaitingNote>Sau khi thanh toán, VNPay đưa bạn quay lại WrapFit. Trang tự cập nhật.</WaitingNote>
+          {simulateAlert}
+        </>
       ) : payment?.vietqr ? (
         <>
+          <ol aria-label="Cách chuyển khoản" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <Step n={1}>Mở app ngân hàng, chọn quét mã QR</Step>
+            <Step n={2}>Quét mã bên dưới, kiểm tra số tiền</Step>
+            <Step n={3}>
+              Giữ nguyên nội dung <span className="font-mono font-semibold">WF…</span>
+            </Step>
+          </ol>
+
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="flex shrink-0 flex-col items-center gap-2">
               {/* An <img>, not inline markup: the SVG comes from the API and never runs in the page. */}
@@ -236,29 +352,39 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
             </p>
           )}
 
-          <p className="flex items-center gap-2 text-body-sm text-fg-muted" role="status">
-            <Spinner size="sm" />
-            Đang chờ chuyển khoản. Trang tự cập nhật khi WrapFit nhận được tiền.
-          </p>
-
-          {(billing.data?.paymentSimulation || (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"))) && (
-            <Alert
-              tone="info"
-              icon={FlaskConical}
-              title="Chế độ thử nghiệm"
-              action={
-                <Button size="sm" variant="dark" loading={simulate.isPending} loadingLabel="Đang xác nhận…" onClick={() => simulate.mutate()}>
-                  Giả lập đã thanh toán
-                </Button>
-              }
-            >
-              Môi trường thử nghiệm: bấm nút để xác nhận thanh toán thành công ngay lập tức mà không cần chuyển tiền thật.
-            </Alert>
-          )}
+          <WaitingNote>Đang chờ ngân hàng báo về… Trang tự cập nhật khi WrapFit nhận được tiền.</WaitingNote>
+          {simulateAlert}
         </>
       ) : null}
     </Dialog>,
     document.body,
+  );
+}
+
+function providerLabel(payment: Payment): string {
+  if (payment.confirmedVia === "SIMULATION") return "Giả lập";
+  return payment.provider === "VNPAY" ? "VNPay (sandbox)" : "VietQR";
+}
+
+function Step({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5 rounded-control bg-surface-sunken px-3 py-2.5 text-body-sm text-fg">
+      <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent-bg text-caption font-semibold text-accent-fg">
+        {n}
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+/** Status line while the server waits for the money: Gói on his delivery run, announced politely to screen readers. */
+function WaitingNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 rounded-panel bg-surface-sunken px-3.5 py-2.5" role="status">
+      <GoiMascot pose="delivery" size={44} interactive={false} />
+      <p className="min-w-0 flex-1 text-body-sm text-fg-muted">{children}</p>
+      <Spinner size="sm" />
+    </div>
   );
 }
 

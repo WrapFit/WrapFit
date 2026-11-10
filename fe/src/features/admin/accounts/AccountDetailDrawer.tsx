@@ -5,6 +5,7 @@ import type { Role, SafeUser } from "@/types/api";
 import { AccountAvatar } from "./AccountAvatar";
 import { ActiveBadge, EmailBadge, type AccountActions } from "./AccountsTable";
 import { displayName, formatDateTime, ROLE_LABELS, SELF_EDIT_HINT, TIER_LABELS } from "./accountFormat";
+import { DemoFlagToggle } from "./DemoFlagToggle";
 import { ModalDialog } from "./ModalDialog";
 import { RoleSelect } from "./RoleSelect";
 import { Icon } from "@/components/ui";
@@ -158,6 +159,7 @@ export function AccountDetailDrawer({
               title={isSelf ? SELF_EDIT_HINT : undefined}
             />
           </div>
+          <DemoFlagToggle user={user} disabled={busy} />
           <div className="flex flex-col gap-2" title={isSelf ? SELF_EDIT_HINT : undefined}>
             <button
               type="button"

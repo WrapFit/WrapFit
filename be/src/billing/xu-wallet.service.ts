@@ -44,6 +44,30 @@ export interface XuHistoryEntry {
 
 export const XU_HISTORY_MAX_LIMIT = 100;
 
+/**
+ * Filter groups of "Lịch sử xu" (docs/21 §4.2): `grant` = plan allowance and purchased lots, `spend` = every spend
+ * except an administrator's adjustment, `adjust` = lots given by an administrator and ADMIN_ADJUSTMENT debits.
+ */
+export const XU_HISTORY_TYPES = ['grant', 'spend', 'adjust'] as const;
+export type XuHistoryType = (typeof XU_HISTORY_TYPES)[number];
+
+export interface XuHistoryQuery {
+  before?: Date;
+  limit?: number;
+  type?: XuHistoryType;
+  /** Entries created at or after this instant. */
+  from?: Date;
+  /** Entries created at or before this instant. */
+  to?: Date;
+}
+
+/** Sources of the lots shown by each group; a group missing here lists no lots. */
+const LOT_SOURCES: Record<XuHistoryType, CreditSource[]> = {
+  grant: ['PURCHASE', 'PLAN_ALLOWANCE'],
+  spend: [],
+  adjust: ['ADMIN'],
+};
+
 interface SpendRow {
   id: string;
   reason: CreditDebitReason;
@@ -126,24 +150,45 @@ export class XuWalletService {
    */
   async history(
     userId: string,
-    { before = new Date(), limit = 30 }: { before?: Date; limit?: number } = {},
+    { before = new Date(), limit = 30, type, from, to }: XuHistoryQuery = {},
   ): Promise<{ entries: XuHistoryEntry[]; nextBefore: string | null }> {
     const take = Math.min(Math.max(limit, 1), XU_HISTORY_MAX_LIMIT);
+    const createdAt: Prisma.DateTimeFilter = { lt: before };
+    if (from) createdAt.gte = from;
+    if (to) createdAt.lte = to;
+
+    // The reason is compared as a literal so Postgres reads it as the enum, not as a text parameter.
+    const spendFilter =
+      type === 'adjust'
+        ? Prisma.sql`AND d.reason = 'ADMIN_ADJUSTMENT'`
+        : type === 'spend'
+          ? Prisma.sql`AND d.reason <> 'ADMIN_ADJUSTMENT'`
+          : Prisma.empty;
+    const fromFilter = from ? Prisma.sql`AND d.created_at >= ${from}` : Prisma.empty;
+    const toFilter = to ? Prisma.sql`AND d.created_at <= ${to}` : Prisma.empty;
+    const wantLots = !type || LOT_SOURCES[type].length > 0;
+    const wantSpends = type !== 'grant';
+
     const [lots, spends] = await Promise.all([
-      this.prisma.creditLot.findMany({
-        where: { userId, kind: 'XU', createdAt: { lt: before } },
-        select: { id: true, source: true, quantity: true, expiresAt: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take,
-      }),
-      this.prisma.$queryRaw<SpendRow[]>`
+      wantLots
+        ? this.prisma.creditLot.findMany({
+            where: { userId, kind: 'XU', createdAt, ...(type ? { source: { in: LOT_SOURCES[type] } } : {}) },
+            select: { id: true, source: true, quantity: true, expiresAt: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take,
+          })
+        : Promise.resolve([]),
+      wantSpends
+        ? this.prisma.$queryRaw<SpendRow[]>`
         SELECT d.operation_id AS id, d.reason, d.ref_id, max(d.refunded_at) AS refunded_at,
                min(d.created_at) AS created_at, sum(d.quantity)::int AS quantity
         FROM credit_debits d JOIN credit_lots l ON l.id = d.lot_id
         WHERE d.user_id = ${userId}::uuid AND l.kind = 'XU' AND d.created_at < ${before}
+          ${spendFilter} ${fromFilter} ${toFilter}
         GROUP BY d.operation_id, d.reason, d.ref_id
         ORDER BY created_at DESC
-        LIMIT ${take}`,
+        LIMIT ${take}`
+        : Promise.resolve([] as SpendRow[]),
     ]);
 
     const entries: XuHistoryEntry[] = [

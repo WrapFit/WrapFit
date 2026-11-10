@@ -55,6 +55,9 @@
       "actions": [{ "click": "[aria-label^='Xem chi tiết']", "wait": 800 }] },
     { "name": "g3-accounts-lock-dialog", "group": "G3", "path": "/admin/accounts", "roles": ["admin"],
       "actions": [{ "click": "button[aria-label^='Khoá tài khoản']:not([disabled])", "wait": 700 }] },
+    { "name": "g3-bank-transactions", "group": "G3", "path": "/admin/bank-transactions", "roles": ["admin"], "sizes": ["M", "X+"], "shots": 1 },
+    { "name": "g3-bank-transactions-assign", "group": "G3", "path": "/admin/bank-transactions", "roles": ["admin"], "sizes": ["M", "X+"],
+      "actions": [{ "waitFor": "table", "click": "tbody tr:first-child button, ul[aria-label='Giao dịch ngân hàng'] li:first-child button", "wait": 900 }] },
     { "name": "g3-accounts-delete-dialog", "group": "G3", "path": "/admin/accounts", "roles": ["admin"],
       "actions": [{ "click": "button[aria-label^='Xoá tài khoản']:not([disabled])", "wait": 700 }] },
 
@@ -77,6 +80,7 @@
     { "name": "g4-brand-kit", "group": "G4", "path": "/dashboard/brand-kit", "roles": ["admin", "maker"] },
     { "name": "g4-profile", "group": "G4", "path": "/dashboard/profile", "roles": ["admin", "maker"] },
     { "name": "g4-settings", "group": "G4", "path": "/dashboard/settings", "roles": ["admin", "maker"] },
+    { "name": "g4-wallet", "group": "G4", "path": "/dashboard/wallet", "roles": ["maker"], "sizes": ["M", "X+"] },
 
     { "name": "g5-home", "group": "G5", "path": "/", "roles": ["guest", "admin"], "shots": 8 },
     { "name": "g5-templates", "group": "G5", "path": "/templates", "roles": ["guest"], "shots": 3 },
@@ -157,6 +161,15 @@
     { "name": "g7-editor-step-3", "group": "G7", "path": "/editor/step-3", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" },
     { "name": "g7-editor-step-4", "group": "G7", "path": "/editor/step-4", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" },
     { "name": "g7-editor-studio", "group": "G7", "path": "/editor/studio", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" },
-    { "name": "g7-editor-export", "group": "G7", "path": "/editor/export", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" }
+    { "name": "g7-editor-export", "group": "G7", "path": "/editor/export", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" },
+
+    { "name": "g8-wallet-demo", "group": "G8", "$comment": "Payment gateways of docs/21 S5. Role demo = SHOT_DEMO_EMAIL / SHOT_DEMO_PASSWORD (an is_demo account).", "path": "/dashboard/wallet", "roles": ["demo"], "sizes": ["M", "X+"] },
+    { "name": "g8-checkout-vietqr", "group": "G8", "path": "/dashboard/wallet", "roles": ["maker"], "sizes": ["M", "X+"],
+      "actions": [{ "clickText": "Nạp ", "wait": 300 }, { "waitFor": "[role=dialog] img[alt^='Mã VietQR']", "wait": 800 }] },
+    { "name": "g8-checkout-vietqr-paid", "group": "G8", "path": "/dashboard/wallet", "roles": ["maker"], "sizes": ["M", "X+"],
+      "actions": [{ "clickText": "Nạp ", "wait": 300 }, { "waitFor": "[role=dialog] img[alt^='Mã VietQR']" }, { "clickText": "Giả lập đã thanh toán", "wait": 1500 }] },
+    { "name": "g8-checkout-vnpay", "group": "G8", "path": "/dashboard/wallet", "roles": ["demo"], "sizes": ["M", "X+"],
+      "actions": [{ "clickText": "Nạp ", "wait": 300 }, { "waitFor": "#vnpay-title", "wait": 800 }] },
+    { "name": "g8-vnpay-return-empty", "group": "G8", "path": "/payments/vnpay-return", "roles": ["maker"], "sizes": ["M", "X+"] }
   ]
 }

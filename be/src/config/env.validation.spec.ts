@@ -14,6 +14,28 @@ describe('validateEnv', () => {
     expect(env.SWAGGER_ENABLED).toBe('true');
   });
 
+  it('treats SEPAY_WEBHOOK_API_KEY as optional but refuses a short or spaced one', () => {
+    expect(validateEnv(valid).SEPAY_WEBHOOK_API_KEY).toBe('');
+    expect(validateEnv({ ...valid, SEPAY_WEBHOOK_API_KEY: 'a'.repeat(32) }).SEPAY_WEBHOOK_API_KEY).toBe('a'.repeat(32));
+    expect(() => validateEnv({ ...valid, SEPAY_WEBHOOK_API_KEY: 'short' })).toThrow(/SEPAY_WEBHOOK_API_KEY/);
+    expect(() => validateEnv({ ...valid, SEPAY_WEBHOOK_API_KEY: `${'a'.repeat(16)} ${'b'.repeat(16)}` })).toThrow(
+      /SEPAY_WEBHOOK_API_KEY/,
+    );
+  });
+
+  it('needs VNPAY_TMN_CODE and VNPAY_HASH_SECRET together, and defaults to the sandbox', () => {
+    const env = validateEnv(valid);
+    expect([env.VNPAY_TMN_CODE, env.VNPAY_HASH_SECRET, env.VNPAY_RETURN_URL]).toEqual(['', '', '']);
+    expect(env.VNPAY_PAY_URL).toBe('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
+
+    const both = { ...valid, VNPAY_TMN_CODE: 'ABCD1234', VNPAY_HASH_SECRET: 'x'.repeat(32) };
+    expect(validateEnv(both).VNPAY_TMN_CODE).toBe('ABCD1234');
+    expect(() => validateEnv({ ...valid, VNPAY_TMN_CODE: 'ABCD1234' })).toThrow(/VNPAY_TMN_CODE and VNPAY_HASH_SECRET/);
+    expect(() => validateEnv({ ...valid, VNPAY_HASH_SECRET: 'x'.repeat(32) })).toThrow(/VNPAY_TMN_CODE and VNPAY_HASH_SECRET/);
+    expect(() => validateEnv({ ...both, VNPAY_TMN_CODE: 'short' })).toThrow(/VNPAY_TMN_CODE/);
+    expect(() => validateEnv({ ...both, VNPAY_RETURN_URL: 'not a url' })).toThrow(/VNPAY_RETURN_URL/);
+  });
+
   it('rejects short JWT secrets', () => {
     expect(() => validateEnv({ ...valid, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
   });

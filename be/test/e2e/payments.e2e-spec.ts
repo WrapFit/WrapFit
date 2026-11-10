@@ -119,7 +119,7 @@ describe('Payments API (e2e)', () => {
     const [first, second] = await Promise.all([confirm(user, payment.id), confirm(user, payment.id)]);
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(first.body).toMatchObject({ status: 'PAID', vietqr: null });
+    expect(first.body).toMatchObject({ status: 'PAID', vietqr: null, provider: 'VIETQR', confirmedVia: 'SIMULATION' });
     expect((await confirm(user, payment.id).expect(200)).body.status).toBe('PAID');
 
     const lots = await prisma.creditLot.findMany({ where: { userId: user.id } });
@@ -130,6 +130,20 @@ describe('Payments API (e2e)', () => {
     const billing = (await as(user).get('/api/billing/me').expect(200)).body;
     expect(billing).toMatchObject({ tier: 'PAY_PER_EXPORT', exportCredits: { balance: 5 }, paymentSimulation: true });
     await confirm(stranger, payment.id).expect(404);
+  });
+
+  it('gives a demo account a VNPAY payment, a real account a VIETQR one, and records the simulation', async () => {
+    const demo = await register('demo');
+    await prisma.user.update({ where: { id: demo.id }, data: { isDemo: true } });
+
+    const payment = await pay(demo, { purpose: 'XU_500' });
+    expect(payment).toMatchObject({ provider: 'VNPAY', confirmedVia: null, status: 'PENDING' });
+    expect((await pay(buyer, { purpose: 'XU_500' })).provider).toBe('VIETQR');
+
+    const paid = (await confirm(demo, payment.id).expect(200)).body;
+    expect(paid).toMatchObject({ status: 'PAID', provider: 'VNPAY', confirmedVia: 'SIMULATION' });
+    const row = await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } });
+    expect(row).toMatchObject({ provider: 'VNPAY', confirmedVia: 'SIMULATION', providerTxnId: null });
   });
 
   it('starts 30 days of Pro, and a second Pro payment extends the same period', async () => {

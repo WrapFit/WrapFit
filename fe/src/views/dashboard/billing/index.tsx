@@ -8,19 +8,20 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Building2, CalendarClock, Landmark, Receipt, Tag } from 'lucide-react';
+import { ArrowRight, Building2, CalendarClock, Coins, Landmark, Receipt, Tag } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { listMyOrders } from '@/api/orders';
 import { getBillingSummary } from '@/api/payments';
 import { outlineButton, primaryButton } from '@/components/library';
+import { ButtonLink } from '@/components/ui';
 import { PaymentMark } from '@/components/layout/PaymentLogos';
 import { Badge, DataTable, Meter, Panel, PanelTitle, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
 import { CheckoutDialog } from '@/features/payments';
-import { XuWalletPanel } from './XuWalletPanel';
+import { XU_VALUE_VND } from '@wrapfit/shared';
 import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
 import { PROMO_CODES } from '@/features/site/cart';
 import { queryKeys } from '@/hooks/data';
@@ -60,6 +61,8 @@ function BillingScreen() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary });
   const [buying, setBuying] = useState<PaymentPurpose | null>(null);
+  // Orders carry no provider; it follows the account (docs/21): demo accounts pay through VNPay sandbox.
+  const methodLabel = billing.data?.isDemo ? 'VNPay (sandbox)' : 'VietQR';
   const proEnd = billing.data?.subscription?.currentPeriodEnd;
   const nextLotEnd = billing.data?.exportCredits.lots.find((lot) => lot.remaining > 0)?.expiresAt;
 
@@ -167,7 +170,22 @@ function BillingScreen() {
             </div>
           </Panel>
 
-          <XuWalletPanel wallet={billing.data?.xu} onBuy={setBuying} />
+          {/* Xu wallet */}
+          <Panel>
+            <PanelTitle action={<Badge tone="grey">1 xu = {formatVnd(XU_VALUE_VND)}</Badge>}>Ví xu Wrap</PanelTitle>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-baseline gap-2">
+                <Coins className="size-5 self-center text-fpt-orange-ink" aria-hidden />
+                <span className="font-mono text-heading-lg font-semibold tabular-nums text-library-ink">{xu ? xu.balance.toLocaleString('vi-VN') : '–'}</span>
+                <span className="text-sm text-library-sub">xu Wrap</span>
+              </p>
+              <ButtonLink href="/dashboard/wallet" variant="outline" shape="rounded">
+                Mở ví xu
+                <ArrowRight aria-hidden />
+              </ButtonLink>
+            </div>
+            <p className="mt-2 text-xs text-library-sub">Nạp xu, xem xu sắp hết hạn và lịch sử giao dịch trong ví.</p>
+          </Panel>
 
           {/* History */}
           <Panel>
@@ -188,7 +206,7 @@ function BillingScreen() {
                     { key: 'date', label: 'Ngày', render: (row) => new Date(row.createdAt).toLocaleDateString('vi-VN') },
                     { key: 'item', label: 'Nội dung', render: (row) => <span className="line-clamp-1">In mẫu {row.quantity} hộp · {row.projectTitle}</span> },
                     { key: 'code', label: 'Mã', render: (row) => <span className="font-mono text-xs">{row.orderCode ?? row.id}</span> },
-                    { key: 'method', label: 'Cách trả', render: () => <span className="text-library-sub">VietQR</span> },
+                    { key: 'method', label: 'Cách trả', render: () => <span className="text-library-sub">{methodLabel}</span> },
                     { key: 'total', label: 'Số tiền', align: 'right', render: (row) => formatVnd(row.totalVnd ?? row.sampleFeeVnd ?? 0) },
                     { key: 'paid', label: 'Thanh toán', align: 'right', render: (row) => <Badge tone={paymentBadge(row.status).tone}>{paymentBadge(row.status).label}</Badge> },
                   ]}

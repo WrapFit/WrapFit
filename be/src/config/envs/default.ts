@@ -93,6 +93,15 @@ export const config = (env: EnvironmentVariables) => ({
     vietqr: env.VIETQR_BANK_BIN
       ? { bankBin: env.VIETQR_BANK_BIN, accountNo: env.VIETQR_ACCOUNT_NO, accountName: env.VIETQR_ACCOUNT_NAME }
       : null,
+    /** SePay bank webhook (docs/21 §3.3). `webhookApiKey` null = every webhook is rejected. */
+    sepay: { webhookApiKey: env.SEPAY_WEBHOOK_API_KEY || null },
+    /** VNPay sandbox for demo accounts (docs/21 §3.4). `tmnCode` / `hashSecret` empty = not configured. */
+    vnpay: {
+      tmnCode: env.VNPAY_TMN_CODE,
+      hashSecret: env.VNPAY_HASH_SECRET,
+      payUrl: env.VNPAY_PAY_URL,
+      returnUrl: env.VNPAY_RETURN_URL || `${env.FRONTEND_URL.replace(/\/+$/, '')}/payments/vnpay-return`,
+    },
   },
   redis: {
     url: env.REDIS_URL,

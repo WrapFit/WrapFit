@@ -76,6 +76,10 @@ SMTP, Google) giữ nguyên; danh sách đầy đủ ở `be/README.md`, mục "
 | `AI_IMAGE_TIMEOUT_MS`, `AI_IMAGE_CONCURRENCY` | `180000`, `2` (mặc định) | Worker: thời gian chờ một job ở fal, số job ảnh chạy song song |
 | `USD_VND_RATE` | `26000` (mặc định) | Tỉ giá quy đổi chi phí model trong báo cáo `/admin/xu` |
 | `EXTRA_CORS_ORIGINS` | `https://wrap-fit.vercel.app` | Origin của frontend Vercel, để `OriginGuard` (CSRF) và CORS nhận request được Vercel chuyển tiếp. Nhiều origin: ngăn cách bằng dấu phẩy |
+| `SEPAY_WEBHOOK_API_KEY` | chuỗi ngẫu nhiên 16–256 ký tự, không khoảng trắng (`openssl rand -hex 24`) | Chỉ khi nhận tiền thật qua SePay (docs/21). Trống = mọi webhook bị từ chối `401`. Điền cùng giá trị vào cấu hình webhook trên SePay (3.4). Không ghi vào slide, tài liệu, chat |
+| `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` | "Mã website" (8 ký tự) và "Chuỗi bí mật" của sandbox VNPay | Đặt cả hai hoặc để trống cả hai. Trống = tài khoản demo không mở được cổng VNPay: `503 VNPAY_NOT_CONFIGURED`, trừ khi `PAYMENT_SIMULATION=true` (khi đó thanh toán vẫn tạo, chỉ còn nút giả lập). Xem 3.5 |
+| `VNPAY_PAY_URL` | `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html` (mặc định trong compose) | Không để trống: backend từ chối khởi động nếu không phải URL hợp lệ |
+| `VNPAY_RETURN_URL` | `https://wrap-fit.vercel.app/payments/vnpay-return` | Trang FE nhận trình duyệt quay về từ VNPay. Trống = `${FRONTEND_URL}/payments/vnpay-return`, tức `https://<APP_DOMAIN>/...`; trên bản Vercel phải đặt rõ để cookie đăng nhập của `wrap-fit.vercel.app` đi kèm |
 
 ### 3.2. Tài khoản demo (`be/prisma/seed-demo.ts`)
 
@@ -109,6 +113,30 @@ Bucket `wrapfit` (r2.dev bật), `wrapfit-private`, `wrapfit-backups` đã tạo
    `STORAGE_*` của R2 (image production chỉ có `dist/` và `prisma/`, không có `src/` nên không chạy được script này).
    Log khởi động backend có dòng "Demo account: project … with its logo" khi seed tải được logo demo lên R2.
 
+### 3.4. Webhook SePay (tiền thật, docs/21)
+
+Chỉ làm khi đã điền `VIETQR_*` bằng tài khoản ngân hàng thật. Tài khoản `is_demo` không đi đường này.
+
+1. Trên my.sepay.vn: liên kết tài khoản ngân hàng nhận tiền (đúng tài khoản trong `VIETQR_BANK_BIN`, `VIETQR_ACCOUNT_NO`).
+2. *Tích hợp Webhooks → Thêm webhooks*: URL `https://<APP_DOMAIN>/api/webhooks/sepay` (miền VPS, **không** qua Vercel; có tiền tố `/api`),
+   sự kiện *Có tiền vào*, kiểu chứng thực **API Key**, giá trị = `SEPAY_WEBHOOK_API_KEY`. SePay gửi header
+   `Authorization: Apikey <key>`.
+3. Khởi động lại backend (`docker compose ... up -d backend`). Thiếu key thì log lúc khởi động có dòng lỗi và mọi webhook bị `401`.
+4. Kiểm: chuyển khoản một khoản nhỏ với nội dung đúng mã `WF…` của một thanh toán `PENDING` (đúng số tiền, còn hạn 15 phút). Thanh
+   toán phải sang `PAID` trong vài giây. Tiền không khớp (thiếu, thừa, quá hạn, không mã) nằm ở `/admin/bank-transactions`
+   để đối soát tay. Chưa thử với tiền thật tại thời điểm viết (docs/21 §9).
+
+### 3.5. VNPay sandbox cho tài khoản demo (docs/21)
+
+1. Đăng ký tại sandbox.vnpayment.vn, lấy "Mã website" (`VNPAY_TMN_CODE`) và "Chuỗi bí mật" (`VNPAY_HASH_SECRET`) trong email sandbox.
+2. Trong cổng quản lý sandbox khai **IPN URL**: `https://<APP_DOMAIN>/api/payments/vnpay/ipn` (VNPay gọi bằng `GET`, miền VPS).
+3. Đặt `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` (3.1), khởi động lại backend. Backend từ chối khởi động nếu chỉ
+   điền một trong hai biến đầu.
+4. Tài khoản đi đường VNPay khi `users.is_demo = true`. Seed demo (3.2) bật cờ cho `SEED_DEMO_EMAIL` ở mỗi lần khởi động, kể cả
+   tài khoản đã tồn tại. Tài khoản khác: admin bật / tắt ở *Quản trị → Tài khoản → chi tiết* hoặc `PATCH /api/users/:id { "isDemo": true }`.
+5. Kiểm: đăng nhập tài khoản demo, mua 1 lượt → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox → quay về
+   `/payments/vnpay-return` hiện thành công, lượt xuất tăng. Chưa thử với credential sandbox thật tại thời điểm viết (docs/21 §9).
+
 ## 4. Deploy backend lên VPS
 
 1. Chạy workflow `Deploy WrapFit to VPS` (tự chạy sau CI trên `main`, hoặc *Run workflow*), hoặc SSH vào VPS:
@@ -121,6 +149,8 @@ Bucket `wrapfit` (r2.dev bật), `wrapfit-private`, `wrapfit-backups` đã tạo
    `20261030000100_billing_core`, `20261030000300_orders`, `20261030000500_payments`, `20261030000700_product_events`.
    Xu Wrap (docs/19) thêm 4 migration: `20261031000100_xu_enums`, `20261031000200_xu_wallet`, `20261031000300_ai_images`,
    `20261031000400_ai_pattern_xu`.
+   Cổng thanh toán (docs/21) thêm 1 migration: `20261110000100_payment_gateways` (cột `users.is_demo`, `payments.provider` /
+   `confirmed_via` / `provider_txn_id`, bảng `bank_transactions`).
    Xem log:
 
    ```bash
@@ -218,6 +248,8 @@ S8 không đọc được hóa đơn (không đăng nhập tài khoản nào). S
 | Backend VPS chết | Mọi trang báo "Máy chủ…" | `docker compose ... ps`, `logs backend`; khởi động lại `docker compose ... up -d`. Dự phòng cuối: video quay sẵn kịch bản §5 |
 | Worker chết, file in không ra | ExportDialog đứng ở "Đang dựng file" quá 30 s | `/api/health` báo `worker` khác `up`: `docker compose ... restart worker`. Lượt đã trừ được hoàn tự động khi job thất bại (docs/16 §5.3) |
 | Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend` |
+| Sandbox VNPay lỗi lúc demo | Cổng VNPay không mở / không quay về | Đặt `PAYMENT_SIMULATION=true`: CheckoutDialog của tài khoản demo vẫn có nút "Giả lập đã thanh toán" (IPN và nút giả lập đến cùng lúc vẫn chỉ cấp quyền lợi một lần) |
+| Webhook SePay không tới | Chuyển khoản xong thanh toán vẫn `PENDING` | Xem *Tích hợp Webhooks → Nhật ký* trên SePay (401 = sai `SEPAY_WEBHOOK_API_KEY`); giao dịch tới nhưng không khớp nằm ở `/admin/bank-transactions` để gán tay |
 | Tài khoản demo hết lượt sau buổi tập | Khung "Bạn đã hết lượt xuất" | Đúng là bước 6 của §6 (mua 1 lượt qua VietQR giả lập). Muốn nạp lại: khởi động lại backend (seed nạp đủ `SEED_DEMO_CREDITS`) hoặc admin cấp lượt |
 | Tài khoản demo còn lượt nên không thấy 402 | Hộp thoại "Dùng 1 lượt? Còn N lượt" | Diễn bằng tài khoản Free mới, hoặc nói rõ "tài khoản đã mua gói 5 lượt" rồi bấm "Dùng 1 lượt" |
 | Tên xưởng "Minh Tâm Prolab" của kịch bản không có trong danh sách xưởng | Giỏ in chỉ có 4 xưởng mẫu (Sài Gòn Xanh, Hà Thành, Đà Nẵng, Cần Thơ) | Chọn "Để WrapFit chọn xưởng phù hợp" hoặc một xưởng mẫu; muốn đúng tên cần thêm xưởng vào `be/src/print-shops/print-shops.service.ts` (danh sách tĩnh) |

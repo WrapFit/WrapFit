@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ACCESS_COOKIE, CurrentUser } from '../common';
@@ -13,9 +13,12 @@ export class PaymentsController {
 
   @Post()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Tạo thanh toán VietQR (hạn 15 phút): gói lượt xuất, Pro 30 ngày hoặc đơn in mẫu' })
-  create(@CurrentUser('id') userId: string, @Body() dto: CreatePaymentDto) {
-    return this.payments.create(userId, dto);
+  @ApiOperation({
+    summary:
+      'Tạo thanh toán (hạn 15 phút): gói lượt xuất, xu, Pro 30 ngày hoặc đơn in mẫu. Tài khoản thật nhận vietqr, tài khoản demo nhận vnpay.payUrl; demo mà chưa cấu hình VNPay và không bật giả lập → 503 VNPAY_NOT_CONFIGURED',
+  })
+  create(@CurrentUser('id') userId: string, @Body() dto: CreatePaymentDto, @Ip() ip: string) {
+    return this.payments.create(userId, dto, ip);
   }
 
   @Get(':id')

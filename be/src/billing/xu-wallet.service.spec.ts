@@ -108,4 +108,60 @@ describe('XuWalletService', () => {
     expect(all.entries.map((entry) => entry.id)).toEqual(['op-1', 'lot-1']);
     expect(all.nextBefore).toBeNull();
   });
+
+  describe('history filters', () => {
+    const sqlOf = (call: unknown[], index: number) => (call[index] as { sql: string; values: unknown[] });
+    // $queryRaw is a tagged template: [strings, userId, before, spendFilter, fromFilter, toFilter, take].
+    const filtersOf = () => {
+      const call = db.$queryRaw.mock.calls[0] as unknown[];
+      return { spend: sqlOf(call, 3), from: sqlOf(call, 4), to: sqlOf(call, 5) };
+    };
+
+    it('lists only purchased and plan lots, and no spends, for the grant group', async () => {
+      await wallet.history('user-1', { type: 'grant' });
+
+      expect(db.creditLot.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ source: { in: ['PURCHASE', 'PLAN_ALLOWANCE'] } }) }),
+      );
+      expect(db.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('lists the spends that are not adjustments, and no lots, for the spend group', async () => {
+      await wallet.history('user-1', { type: 'spend' });
+
+      expect(db.creditLot.findMany).not.toHaveBeenCalled();
+      expect(filtersOf().spend.sql).toContain("<> 'ADMIN_ADJUSTMENT'");
+    });
+
+    it('lists administrator lots and ADMIN_ADJUSTMENT spends for the adjust group', async () => {
+      await wallet.history('user-1', { type: 'adjust' });
+
+      expect(db.creditLot.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ source: { in: ['ADMIN'] } }) }),
+      );
+      expect(filtersOf().spend.sql).toContain("= 'ADMIN_ADJUSTMENT'");
+      expect(filtersOf().spend.sql).not.toContain('<>');
+    });
+
+    it('applies no group filter without a type', async () => {
+      await wallet.history('user-1');
+
+      const where = (db.creditLot.findMany.mock.calls[0][0] as { where: Record<string, unknown> }).where;
+      expect(where).not.toHaveProperty('source');
+      expect(filtersOf().spend.sql).toBe('');
+    });
+
+    it('bounds lots and spends by from and to', async () => {
+      const before = new Date('2026-11-10T00:00:00Z');
+      const from = new Date('2026-11-01T00:00:00Z');
+      const to = new Date('2026-11-05T23:59:59Z');
+      await wallet.history('user-1', { before, from, to });
+
+      expect(db.creditLot.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ createdAt: { lt: before, gte: from, lte: to } }) }),
+      );
+      expect(filtersOf().from.values).toEqual([from]);
+      expect(filtersOf().to.values).toEqual([to]);
+    });
+  });
 });

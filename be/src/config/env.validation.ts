@@ -11,6 +11,7 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 import { isAiImageModelKey } from '@wrapfit/shared';
@@ -246,6 +247,33 @@ export class EnvironmentVariables {
   @IsString()
   VIETQR_ACCOUNT_NAME: string = '';
 
+  /**
+   * Key SePay sends as `Authorization: Apikey <key>` to POST /api/webhooks/sepay (docs/21 §3.3). Empty = every
+   * webhook is rejected with 401 and an error is logged at boot. Never commit it.
+   */
+  @Matches(/^(\S{16,256})?$/, { message: 'SEPAY_WEBHOOK_API_KEY must be 16-256 characters without whitespace, or empty' })
+  SEPAY_WEBHOOK_API_KEY: string = '';
+
+  /**
+   * VNPay sandbox for demo accounts (docs/21 §3.4): website code (`vnp_TmnCode`, 8 characters) and secret
+   * (`vnp_HashSecret`) from sandbox.vnpayment.vn. Both empty = a demo account cannot open the gateway (503
+   * VNPAY_NOT_CONFIGURED, unless PAYMENT_SIMULATION is on) and every IPN is answered 97. Never commit the secret.
+   */
+  @Matches(/^([0-9A-Za-z]{8})?$/, { message: 'VNPAY_TMN_CODE must be the 8-character website code from VNPay, or empty' })
+  VNPAY_TMN_CODE: string = '';
+
+  @Matches(/^(\S{16,128})?$/, { message: 'VNPAY_HASH_SECRET must be 16-128 characters without whitespace, or empty' })
+  VNPAY_HASH_SECRET: string = '';
+
+  /** Pay page of the gateway; the sandbox by default. */
+  @IsUrl({ require_tld: true, protocols: ['http', 'https'], require_protocol: true })
+  VNPAY_PAY_URL: string = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+
+  /** Where VNPay sends the browser back (the frontend page that calls GET /payments/vnpay/return). Empty = `${FRONTEND_URL}/payments/vnpay-return`. */
+  @ValidateIf((env: { VNPAY_RETURN_URL?: string }) => env.VNPAY_RETURN_URL !== '')
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'], require_protocol: true })
+  VNPAY_RETURN_URL: string = '';
+
   /** `json` = one JSON object per log line (log collectors), `text` = readable. Empty = json in production. */
   @IsIn(['', 'json', 'text'])
   LOG_FORMAT: string = '';
@@ -337,6 +365,9 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     throw new Error(
       'Invalid environment variables:\n - VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME must be set together (or all left empty)',
     );
+  }
+  if (!validated.VNPAY_TMN_CODE !== !validated.VNPAY_HASH_SECRET) {
+    throw new Error('Invalid environment variables:\n - VNPAY_TMN_CODE and VNPAY_HASH_SECRET must be set together (or both left empty)');
   }
   if (!config.AI_MODEL_FAST && validated.AI_MODEL) validated.AI_MODEL_FAST = validated.AI_MODEL;
   if (validated.AI_IMAGE_PROVIDER === 'fake' && validated.NODE_ENV === NodeEnv.Production) {

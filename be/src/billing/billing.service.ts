@@ -24,6 +24,8 @@ export interface BillingSummary {
   } | null;
   /** PAYMENT_SIMULATION: the checkout shows "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). */
   paymentSimulation: boolean;
+  /** Demo account (users.is_demo): the wallet shows VNPay sandbox instead of VietQR (docs/21 S5). */
+  isDemo: boolean;
 }
 
 /** HTTP side of billing: the summary of `GET /billing/me` and the admin grant. */
@@ -43,7 +45,7 @@ export class BillingService {
     // The wallet syncs the plan before it grants the allowance of the period, so it goes first.
     const xu = await this.xuWallet.wallet(userId);
     const [user, lots, subscription] = await Promise.all([
-      this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { subscriptionTier: true } }),
+      this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { subscriptionTier: true, isDemo: true } }),
       this.credits.lots(userId),
       this.prisma.subscription.findFirst({
         where: { userId, status: 'ACTIVE' },
@@ -59,6 +61,7 @@ export class BillingService {
       xu,
       subscription,
       paymentSimulation: this.config.get('payments.simulation'),
+      isDemo: user.isDemo,
     };
   }
 

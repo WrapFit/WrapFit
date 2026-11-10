@@ -104,6 +104,8 @@ model User {
   referralCode     String?          @unique @map("referral_code")
   referredById     String?          @map("referred_by_id") @db.Uuid
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
+  // Tài khoản demo (docs/21): thanh toán qua VNPay sandbox, không bao giờ qua SePay tiền thật.
+  isDemo           Boolean          @default(false) @map("is_demo")
   // Tăng mỗi lần đăng xuất mọi thiết bị (đặt lại mật khẩu, logout-all, khóa tài khoản…). Access / refresh token mang
   // số này (claim `sv`): token mang số cũ bị từ chối ngay, không chờ hết hạn.
   sessionVersion   Int              @default(0) @map("session_version")
@@ -128,6 +130,7 @@ model User {
   subscriptions Subscription[]
   orders        Order[]
   shopMember    PrintShopMember?
+  resolvedBankTransactions BankTransaction[] @relation("BankTransactionResolver")
 
   @@index([referredById])
   @@map("users")
@@ -576,6 +579,34 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum PaymentProvider {
+  VIETQR // Chuyển khoản VietQR, SePay báo tiền về (docs/21)
+  VNPAY // Cổng VNPay sandbox, dành cho tài khoản demo
+}
+
+enum PaymentConfirmation {
+  SEPAY_WEBHOOK
+  VNPAY_IPN
+  VNPAY_RETURN
+  SIMULATION // Nút "Giả lập đã thanh toán" (PAYMENT_SIMULATION)
+  ADMIN // Admin gán giao dịch ngân hàng không khớp
+}
+
+enum BankTxStatus {
+  MATCHED // Khớp tự động với một thanh toán
+  UNMATCHED // Chờ admin đối soát
+  RESOLVED // Admin đã gán cho một thanh toán
+  IGNORED // Admin bỏ qua (hoàn tiền tay, tiền không liên quan)
+}
+
+enum BankTxUnmatchedReason {
+  NO_REFERENCE // Nội dung không có mã WF
+  NOT_FOUND // Có mã nhưng không có thanh toán VIETQR nào
+  AMOUNT_MISMATCH
+  EXPIRED // Thanh toán đã hết hạn
+  ALREADY_PAID
+}
+
 enum CreditKind {
   EXPORT // Lượt xuất file sạch
   XU // Xu Wrap: mọi tác vụ AI (docs/19)
@@ -600,7 +631,8 @@ enum SubscriptionStatus {
   EXPIRED // Hết chu kỳ (không gia hạn tự động: docs/17 M4)
 }
 
-// One payment request (VietQR transfer, simulated in the CP4 demo). `reference` is the transfer content.
+// One payment request (VietQR transfer confirmed by SePay, VNPay sandbox for demo users, or simulated). `reference` is
+// the transfer content.
 model Payment {
   id        String         @id @default(uuid(7)) @db.Uuid
   userId    String         @map("user_id") @db.Uuid
@@ -611,17 +643,50 @@ model Payment {
   expiresAt DateTime       @map("expires_at") @db.Timestamptz(3)
   paidAt    DateTime?      @map("paid_at") @db.Timestamptz(3)
   metadata  Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
+  provider      PaymentProvider      @default(VIETQR) // Chọn lúc tạo: user.isDemo ? VNPAY : VIETQR
+  confirmedVia  PaymentConfirmation? @map("confirmed_via") // Đường đã xác nhận, null khi chưa PAID
+  providerTxnId String?              @map("provider_txn_id") // id giao dịch SePay hoặc vnp_TransactionNo
   createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  creditLots    CreditLot[]
-  subscriptions Subscription[]
-  orders        Order[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditLots       CreditLot[]
+  subscriptions    Subscription[]
+  orders           Order[]
+  bankTransactions BankTransaction[]
 
   @@index([userId, createdAt])
   @@index([status, expiresAt]) // Đánh dấu EXPIRED
   @@map("payments")
+}
+
+// Every incoming transfer reported by the SePay webhook (docs/21 §3.1). `external_id` is the SePay transaction id, the
+// idempotency key: a resend inserts nothing.
+model BankTransaction {
+  id                 String                 @id @default(uuid(7)) @db.Uuid
+  externalId         String                 @unique @map("external_id")
+  gateway            String
+  accountNo          String                 @map("account_no")
+  amountVnd          Int                    @map("amount_vnd")
+  content            String
+  bankReference      String                 @map("bank_reference") // referenceCode của ngân hàng
+  extractedReference String?                @map("extracted_reference") // Mã WF… tách từ nội dung
+  transactionAt      DateTime               @map("transaction_at") @db.Timestamptz(3)
+  status             BankTxStatus
+  unmatchedReason    BankTxUnmatchedReason? @map("unmatched_reason")
+  paymentId          String?                @map("payment_id") @db.Uuid
+  resolvedBy         String?                @map("resolved_by") @db.Uuid
+  resolvedNote       String?                @map("resolved_note")
+  raw                Json
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  payment  Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  resolver User?    @relation("BankTransactionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt]) // Hàng đợi đối soát
+  @@index([paymentId])
+  @@index([resolvedBy])
+  @@map("bank_transactions")
 }
 
 // A batch of credits with an expiry. Balance = sum of `remaining` over the lots not expired.

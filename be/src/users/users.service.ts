@@ -180,7 +180,7 @@ export class UsersService {
       throw new BadRequestException('You cannot change your own role or deactivate yourself');
     }
 
-    const data: Prisma.UserUpdateInput = { role: dto.role, isActive: dto.isActive };
+    const data: Prisma.UserUpdateInput = { role: dto.role, isActive: dto.isActive, isDemo: dto.isDemo };
 
     if (dto.isActive === false) {
       // Deactivated users must lose all existing sessions (also the access tokens: unlocking does not revive them).

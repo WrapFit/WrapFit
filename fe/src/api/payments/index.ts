@@ -1,7 +1,7 @@
 /** Plan summary (`be/src/billing`) and VietQR payments (`be/src/payments`, docs/17 S5). */
 
 import { request } from "@/services/api";
-import type { BillingSummary, Payment, PaymentPurpose, XuHistoryPage, XuReport } from "@/types/api";
+import type { BillingSummary, Payment, PaymentPurpose, VnpayReturnResult, XuHistoryPage, XuHistoryType, XuReport } from "@/types/api";
 
 /** Plan in use, export credits, the Pro period and whether payments can be simulated. */
 export function getBillingSummary(): Promise<BillingSummary> {
@@ -18,6 +18,11 @@ export function getPayment(id: string): Promise<Payment> {
   return request(`/payments/${id}`);
 }
 
+/** The page VNPay sends the browser back to: checks the signature of the `vnp_*` query (passed untouched) and settles the payment. Idempotent. */
+export function getVnpayReturn(search: string): Promise<VnpayReturnResult> {
+  return request(`/payments/vnpay/return${search.startsWith("?") ? search : `?${search}`}`);
+}
+
 /** "Giả lập đã thanh toán": gọi backend; nếu offline hoặc 404 (chưa bật simulation) thì fallback sang dữ liệu mô phỏng. */
 export async function simulatePayment(id: string, fallback?: Partial<Payment>): Promise<Payment> {
   try {
@@ -28,6 +33,8 @@ export async function simulatePayment(id: string, fallback?: Partial<Payment>): 
     return {
       id,
       status: "PAID",
+      provider: fallback?.provider ?? "VIETQR",
+      confirmedVia: "SIMULATION",
       amountVnd: fallback?.amountVnd ?? 50000,
       purpose: fallback?.purpose ?? "XU_500",
       reference: fallback?.reference ?? "WF_DEMO",
@@ -43,10 +50,13 @@ export async function simulatePayment(id: string, fallback?: Partial<Payment>): 
 }
 
 /** "Lịch sử xu": xu granted and spent, newest first; pass `nextBefore` to continue. */
-export function getXuHistory(params: { before?: string; limit?: number } = {}): Promise<XuHistoryPage> {
+export function getXuHistory(params: { before?: string; limit?: number; type?: XuHistoryType; from?: string; to?: string } = {}): Promise<XuHistoryPage> {
   const query = new URLSearchParams();
   if (params.before) query.set("before", params.before);
   if (params.limit) query.set("limit", String(params.limit));
+  if (params.type) query.set("type", params.type);
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
   const qs = query.toString();
   return request(`/billing/xu/history${qs ? `?${qs}` : ""}`);
 }

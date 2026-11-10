@@ -7,7 +7,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus, Payment, PaymentPurpose, PaymentStatus, Prisma } from '@prisma/client';
+import {
+  OrderStatus,
+  Payment,
+  PaymentConfirmation,
+  PaymentProvider,
+  PaymentPurpose,
+  PaymentStatus,
+  Prisma,
+} from '@prisma/client';
 import {
   EXPORT_PACKS,
   exportLotExpiresAt,
@@ -23,6 +31,7 @@ import { ConfigService } from '../common';
 import { OrdersService } from '../orders';
 import { PrismaService } from '../shared/prisma';
 import type { CreatePaymentDto } from './dto/create-payment.dto';
+import { VnpayGateway } from './vnpay/vnpay.gateway';
 import { bankName, SAMPLE_ACCOUNT, vietQrPayload, vietQrSvg, type VietQrAccount } from './vietqr';
 
 /** A transfer must arrive within 15 minutes; the checkout shows the countdown. */
@@ -30,6 +39,8 @@ export const PAYMENT_TTL_MS = 15 * 60 * 1000;
 
 /** No O / 0 / I / 1: the reference is typed by hand into a banking app when the QR cannot be scanned. */
 const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+/** A reference inside free text (the transfer content); the alphabet above, so look-alike characters never match. */
+export const PAYMENT_REFERENCE_PATTERN = /WF[A-HJ-NP-Z2-9]{6}/;
 const REFERENCE_ATTEMPTS = 8;
 
 /** `WF` + 6 characters, the transfer content (chk_payments_reference). */
@@ -42,10 +53,21 @@ export function newPaymentReference(): string {
 /** What the payment buys, snapshotted when it is created (prices may change while it waits). */
 type PaymentMetadata = { credits: number } | { xu: number } | { periodDays: number } | { orderId: string };
 
+/** How a payment was confirmed (docs/21 §3.2). `allowExpired` is for an admin assigning a late transfer. */
+export interface ConfirmPaidOptions {
+  via: PaymentConfirmation;
+  providerTxnId?: string;
+  allowExpired?: boolean;
+}
+
 export interface PaymentView {
   id: string;
   purpose: PaymentPurpose;
   status: PaymentStatus;
+  /** Who takes the money: VietQR transfer (SePay) or VNPay sandbox (demo accounts). */
+  provider: PaymentProvider;
+  /** How it was confirmed, null while not PAID. */
+  confirmedVia: PaymentConfirmation | null;
   amountVnd: number;
   reference: string;
   expiresAt: string;
@@ -68,6 +90,12 @@ export interface PaymentView {
     /** Placeholder account (VIETQR_* not set): the checkout labels it "Mô phỏng". */
     sample: boolean;
   } | null;
+  /**
+   * VNPay sandbox checkout of a demo account's payment: send the browser to `payUrl`. Only in the answer of
+   * `POST /payments` (the URL carries the customer's IP); null on `GET /payments/:id`, when not PENDING, for VietQR
+   * payments, and when VNPay is not configured on the server (only the simulate button works then).
+   */
+  vnpay: { payUrl: string } | null;
 }
 
 const paymentExpired = () =>
@@ -80,7 +108,7 @@ const paymentExpired = () =>
  * VietQR payments (docs/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
  * grants what it bought in the same transaction: an export credit lot, a xu lot (docs/19), 30 days of Pro, or a sample
  * order moved to PAID.
- * Without a bank webhook (docs/17 M1), "paid" comes only from the simulate button, enabled by PAYMENT_SIMULATION.
+ * Every path that marks a payment paid (simulate button, SePay webhook, VNPay, admin) goes through `confirmPaid`.
  */
 @Injectable()
 export class PaymentsService {
@@ -95,6 +123,7 @@ export class PaymentsService {
     private readonly plans: PlanService,
     private readonly orders: OrdersService,
     config: ConfigService,
+    private readonly vnpay: VnpayGateway,
   ) {
     this.simulation = config.get('payments.simulation');
     const account = config.get('payments.vietqr');
@@ -106,8 +135,27 @@ export class PaymentsService {
     return this.simulation;
   }
 
-  async create(userId: string, dto: CreatePaymentDto): Promise<PaymentView> {
+  /** `ip` is the customer's address (`req.ip`, which honours TRUST_PROXY): VNPay wants it in the pay URL. */
+  async create(userId: string, dto: CreatePaymentDto, ip?: string): Promise<PaymentView> {
     const { amountVnd, metadata } = await this.priceOf(userId, dto);
+    // Demo accounts never take the real-money VietQR path, real accounts never the sandbox (docs/21 §6).
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { isDemo: true } });
+    const provider = user.isDemo ? PaymentProvider.VNPAY : PaymentProvider.VIETQR;
+    if (provider === PaymentProvider.VNPAY && !this.vnpay.configured) {
+      // The simulate button is the demo fallback (docs/21 D5): while it is on, a demo payment is still created and the
+      // checkout shows only that button. With it off (production) there is no way to pay, so say so.
+      if (!this.simulation) {
+        throw new HttpException(
+          {
+            code: 'VNPAY_NOT_CONFIGURED',
+            message:
+              'Cổng VNPay sandbox chưa được cấu hình trên máy chủ (thiếu VNPAY_TMN_CODE / VNPAY_HASH_SECRET). Vui lòng liên hệ quản trị viên.',
+          },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      this.logger.warn(`payment.create user=${userId}: VNPay not configured, only the simulate button can pay`);
+    }
 
     if (dto.purpose === PaymentPurpose.SAMPLE_ORDER) {
       // Opening the checkout twice shows the same QR instead of two payments for one order.
@@ -115,13 +163,14 @@ export class PaymentsService {
         where: {
           userId,
           purpose: PaymentPurpose.SAMPLE_ORDER,
+          provider,
           status: PaymentStatus.PENDING,
           expiresAt: { gt: new Date() },
           metadata: { path: ['orderId'], equals: dto.orderId },
         },
         orderBy: { createdAt: 'desc' },
       });
-      if (waiting) return this.toView(waiting);
+      if (waiting) return this.toView(waiting, ip);
     }
 
     for (let attempt = 1; ; attempt++) {
@@ -131,13 +180,14 @@ export class PaymentsService {
             userId,
             purpose: dto.purpose,
             amountVnd,
+            provider,
             reference: newPaymentReference(),
             expiresAt: new Date(Date.now() + PAYMENT_TTL_MS),
             metadata,
           },
         });
         this.logger.log(`payment.created id=${payment.id} user=${userId} purpose=${dto.purpose} amount=${amountVnd}`);
-        return this.toView(payment);
+        return this.toView(payment, ip);
       } catch (error) {
         if (attempt < REFERENCE_ATTEMPTS && isReferenceTaken(error)) continue;
         throw error;
@@ -160,30 +210,54 @@ export class PaymentsService {
   }
 
   /**
-   * Marks a payment paid without a transfer (PAYMENT_SIMULATION only, 404 otherwise, as if the route did not exist) and
-   * grants what it bought. The payment row is locked first, so a second or concurrent call waits, sees PAID and grants
-   * nothing more.
+   * Marks a payment paid without a transfer (PAYMENT_SIMULATION only, 404 otherwise, as if the route did not exist).
+   * Only the owner may do it; `confirmPaid` does the rest.
    */
   async simulateConfirm(id: string, userId: string): Promise<PaymentView> {
     if (!this.simulation) throw new NotFoundException();
 
     const payment = await this.prisma.$transaction(async (tx) => {
-      const locked = await tx.$queryRaw<{ id: string }[]>`
+      const owned = await tx.$queryRaw<{ id: string }[]>`
         SELECT id FROM payments WHERE id = ${id}::uuid AND user_id = ${userId}::uuid FOR UPDATE`;
-      if (locked.length === 0) throw new NotFoundException('Thanh toán không tồn tại');
-
-      const current = await tx.payment.findUniqueOrThrow({ where: { id } });
-      if (current.status === PaymentStatus.PAID) return current;
-      const now = new Date();
-      if (current.status !== PaymentStatus.PENDING || current.expiresAt <= now) throw paymentExpired();
-
-      const paid = await tx.payment.update({ where: { id }, data: { status: PaymentStatus.PAID, paidAt: now } });
-      await this.fulfil(tx, paid, now);
-      await this.plans.sync(userId, tx, now);
-      this.logger.log(`payment.paid id=${id} user=${userId} purpose=${paid.purpose} amount=${paid.amountVnd} simulated`);
-      return paid;
+      if (owned.length === 0) throw new NotFoundException('Thanh toán không tồn tại');
+      return this.confirmPaid(tx, id, { via: PaymentConfirmation.SIMULATION });
     });
     return this.toView(payment);
+  }
+
+  /**
+   * The one place a payment becomes PAID (docs/21 §3.2), for the simulate button, the SePay webhook, VNPay and the
+   * admin. Locks the payment row, so a webhook and a simulate click arriving together grant once: the second waits,
+   * sees PAID and returns it untouched. Runs inside the caller's transaction (the caller may have locked the row
+   * already; locking again is a no-op). Throws 404 for an unknown id, 409 PAYMENT_EXPIRED for a payment that is no
+   * longer PENDING or is past its expiry, unless `allowExpired`.
+   */
+  async confirmPaid(tx: Prisma.TransactionClient, paymentId: string, options: ConfirmPaidOptions): Promise<Payment> {
+    const locked = await tx.$queryRaw<{ id: string }[]>`
+      SELECT id FROM payments WHERE id = ${paymentId}::uuid FOR UPDATE`;
+    if (locked.length === 0) throw new NotFoundException('Thanh toán không tồn tại');
+
+    const current = await tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+    if (current.status === PaymentStatus.PAID) return current;
+    const now = new Date();
+    const open = current.status === PaymentStatus.PENDING || (options.allowExpired && current.status === PaymentStatus.EXPIRED);
+    if (!open || (!options.allowExpired && current.expiresAt <= now)) throw paymentExpired();
+
+    const paid = await tx.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: PaymentStatus.PAID,
+        paidAt: now,
+        confirmedVia: options.via,
+        ...(options.providerTxnId ? { providerTxnId: options.providerTxnId } : {}),
+      },
+    });
+    await this.fulfil(tx, paid, now);
+    await this.plans.sync(paid.userId, tx, now);
+    this.logger.log(
+      `payment.paid id=${paymentId} user=${paid.userId} purpose=${paid.purpose} amount=${paid.amountVnd} via=${options.via}`,
+    );
+    return paid;
   }
 
   private async priceOf(
@@ -273,10 +347,14 @@ export class PaymentsService {
     }
   }
 
-  private async toView(payment: Payment): Promise<PaymentView> {
+  /** `ip` set = the pay URL of a VNPay payment is included (only `create` knows the customer's address). */
+  private async toView(payment: Payment, ip?: string): Promise<PaymentView> {
     const metadata = (payment.metadata ?? {}) as Partial<{ credits: number; xu: number; orderId: string }>;
     let vietqr: PaymentView['vietqr'] = null;
-    if (payment.status === PaymentStatus.PENDING) {
+    let vnpay: PaymentView['vnpay'] = null;
+    if (payment.status === PaymentStatus.PENDING && payment.provider === PaymentProvider.VNPAY) {
+      if (ip !== undefined && this.vnpay.configured) vnpay = { payUrl: this.vnpay.payUrlFor(payment, ip) };
+    } else if (payment.status === PaymentStatus.PENDING) {
       const payload = vietQrPayload({ ...this.account, amountVnd: payment.amountVnd, description: payment.reference });
       vietqr = {
         payload,
@@ -292,6 +370,8 @@ export class PaymentsService {
       id: payment.id,
       purpose: payment.purpose,
       status: payment.status,
+      provider: payment.provider,
+      confirmedVia: payment.confirmedVia,
       amountVnd: payment.amountVnd,
       reference: payment.reference,
       expiresAt: payment.expiresAt.toISOString(),
@@ -301,6 +381,7 @@ export class PaymentsService {
       xu: metadata.xu ?? null,
       orderId: metadata.orderId ?? null,
       vietqr,
+      vnpay,
     };
   }
 }

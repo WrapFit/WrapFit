@@ -40,9 +40,11 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   }
   const user = await prisma.user.upsert({
     where: { email },
-    update: {},
+    // Demo accounts pay through VNPay sandbox, never SePay (docs/21 D3); an existing demo account gets the flag too.
+    update: { isDemo: true },
     create: {
       email,
+      isDemo: true,
       emailVerifiedAt: new Date(),
       fullName: process.env.SEED_DEMO_NAME || 'Chị Linh (demo)',
       shopName: 'Nến thơm Mộc An',

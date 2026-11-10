@@ -180,6 +180,7 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
   AI_IMAGE_UNAVAILABLE: "Tạo ảnh AI đang tạm dừng. Thử lại sau ít phút.",
   AI_IMAGE_BUSY: "Chờ các ảnh đang tạo xong rồi tạo tiếp.",
   STORAGE_QUOTA_EXCEEDED: "Bộ nhớ của gói đã đầy. Xoá bớt ảnh hoặc nâng cấp gói.",
+  VNPAY_NOT_CONFIGURED: "Cổng VNPay sandbox chưa được cấu hình trên máy chủ này. Hãy liên hệ WrapFit để bật thanh toán thử nghiệm.",
 };
 
 /** Codes whose server message is written for the user (Vietnamese, with the details): shown as sent. */

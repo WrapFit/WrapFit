@@ -190,6 +190,11 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `VIETQR_BANK_BIN` | `payments.vietqr.bankBin` | *(trống)* | BIN NAPAS 6 số của ngân hàng nhận tiền. Ba biến `VIETQR_*` đặt cùng nhau; để trống cả ba = tài khoản mẫu, giao diện ghi "Mô phỏng" |
 | `VIETQR_ACCOUNT_NO` | `payments.vietqr.accountNo` | *(trống)* | Số tài khoản nhận tiền |
 | `VIETQR_ACCOUNT_NAME` | `payments.vietqr.accountName` | *(trống)* | Tên chủ tài khoản, viết hoa không dấu |
+| `SEPAY_WEBHOOK_API_KEY` | `payments.sepay.webhookApiKey` | *(trống)* | Key SePay gửi trong `Authorization: Apikey <key>` tới `POST /api/webhooks/sepay` (16–256 ký tự, không khoảng trắng). Trống = mọi webhook bị `401` (docs/21) |
+| `VNPAY_TMN_CODE` | `payments.vnpay.tmnCode` | *(trống)* | Mã website VNPay sandbox (8 ký tự). Đặt cùng `VNPAY_HASH_SECRET` hoặc để trống cả hai; trống = tài khoản `is_demo` bị `503 VNPAY_NOT_CONFIGURED` (trừ khi `PAYMENT_SIMULATION=true`) |
+| `VNPAY_HASH_SECRET` | `payments.vnpay.hashSecret` | *(trống)* | Chuỗi bí mật ký HMAC-SHA512 (16–128 ký tự). Không commit |
+| `VNPAY_PAY_URL` | `payments.vnpay.payUrl` | `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html` | Trang thanh toán của cổng |
+| `VNPAY_RETURN_URL` | `payments.vnpay.returnUrl` | `${FRONTEND_URL}/payments/vnpay-return` | Trang FE nhận trình duyệt quay về từ VNPay |
 | `REDIS_URL` | `redis.url` | `redis://localhost:6379` | Redis cho hàng đợi BullMQ (`rediss://` = TLS) |
 | `EXPORT_CONCURRENCY` | `export.concurrency` | `2` | Số job xuất file một worker chạy song song |
 | `SMTP_HOST` / `SMTP_PORT` | `mail.smtp.host` / `.port` | `localhost` / `1025` | SMTP của worker; mặc định là Mailpit trong `docker-compose.yml` (thư bị giữ lại, xem tại `http://localhost:8025`) |
@@ -224,6 +229,10 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 | POST | `/api/payments` | đã đăng nhập | Tạo thanh toán VietQR `{ purpose: EXPORT_1 \| EXPORT_5 \| EXPORT_15 \| PRO_MONTH \| SAMPLE_ORDER, orderId? }`: `reference` `WF` + 6 ký tự, hạn 15 phút, `vietqr.payload` (EMVCo NAPAS) + `vietqr.qrSvg` |
 | GET | `/api/payments/:id` | chủ thanh toán | Trạng thái (`PENDING` / `PAID` / `EXPIRED`); quá hạn thì đổi `EXPIRED` |
 | POST | `/api/payments/:id/simulate-confirm` | chủ thanh toán | Chỉ khi `PAYMENT_SIMULATION=true` (ngược lại 404): `PAID` và cấp lô lượt / Pro 30 ngày / đơn in `PAID` trong một transaction; gọi lại không cấp thêm |
+| POST | `/api/webhooks/sepay` | public, `Authorization: Apikey` | SePay báo tiền vào: lưu `bank_transactions`, khớp mã `WF…` + đúng số tiền → `PAID` (docs/21 §3.3) |
+| GET | `/api/payments/vnpay/ipn` | public, chữ ký VNPay | IPN của VNPay, luôn HTTP 200 `{ RspCode, Message }` |
+| GET | `/api/payments/vnpay/return` | chủ thanh toán | Trang trả về của FE xác nhận kết quả VNPay `{ result, payment }` |
+| GET · POST | `/api/admin/bank-transactions` · `/:id/resolve` | ADMIN | Đối soát tiền về không khớp (`assign` / `ignore`) |
 
 Định dạng lỗi thống nhất (tài liệu 07, Mục 4.3):
 
