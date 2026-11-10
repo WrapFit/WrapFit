@@ -177,8 +177,20 @@ function Demo({ title, note, children, className }: { title: string; note?: Reac
 
 const DEMO_TOUR_ID = "design-system-demo";
 const DEMO_TOUR: TourStep[] = [
-  { target: '[data-tour="ds-tour-start"]', title: "Một tính năng được làm nổi bật", body: "Phần còn lại tối đi, tooltip nằm cạnh phần tử, tự đổi phía khi thiếu chỗ.", mascot: "presenting" },
-  { target: '[data-tour="ds-tour-badge"]', title: "Gắn data-tour lên phần tử", body: "Mỗi bước trỏ tới một bộ chọn CSS; phần tử không có trên màn hình thì bước đó được bỏ qua.", mascot: "folding" },
+  {
+    target: '[data-tour="ds-tour-start"]',
+    title: "Một tính năng được làm nổi bật",
+    body: "Phần còn lại tối đi, tooltip nằm cạnh phần tử, tự đổi phía khi thiếu chỗ. Phần được tô sáng dùng được thật.",
+    tryIt: "**Bấm nút này** để chạy lại hướng dẫn từ đầu; hướng dẫn vẫn mở sau khi bấm.",
+    mascot: "presenting",
+  },
+  {
+    target: '[data-tour="ds-tour-badge"]',
+    title: "Gắn data-tour lên phần tử",
+    body: "Mỗi bước trỏ tới một bộ chọn CSS; phần tử không có trên màn hình thì bước đó được **bỏ qua**.",
+    tryIt: "**Thêm tryIt** vào bước để nói rõ thao tác và kết quả; bọc cụm hành động trong dấu sao đôi.",
+    mascot: "folding",
+  },
   { title: "Bước không có đích", body: "Thẻ nằm giữa màn hình: dùng cho lời chào và lời kết.", mascot: "celebration" },
 ];
 
