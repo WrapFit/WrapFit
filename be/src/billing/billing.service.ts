@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { SubscriptionStatus, SubscriptionTier } from '@prisma/client';
+import { Prisma, SubscriptionStatus, SubscriptionTier } from '@prisma/client';
+import type { BillingDetails, BillingDetailsDto } from './dto/billing-details.dto';
 import { ENTITLEMENTS, type Entitlements } from '@wrapfit/shared';
 import { ConfigService } from '../common';
 import { PrismaService } from '../shared/prisma';
@@ -40,6 +41,23 @@ export class BillingService {
     private readonly xuWallet: XuWalletService,
     private readonly config: ConfigService,
   ) {}
+
+  /** VAT invoice details of the user, empty strings when never filled. */
+  async details(userId: string): Promise<BillingDetails> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { billingDetails: true } });
+    const stored = (user.billingDetails ?? {}) as Partial<BillingDetails>;
+    return { company: stored.company ?? '', taxCode: stored.taxCode ?? '', email: stored.email ?? '' };
+  }
+
+  async saveDetails(userId: string, dto: BillingDetailsDto): Promise<BillingDetails> {
+    const details: BillingDetails = { company: dto.company, taxCode: dto.taxCode, email: dto.email.toLowerCase() };
+    const empty = !details.company && !details.taxCode && !details.email;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { billingDetails: empty ? Prisma.DbNull : { ...details } },
+    });
+    return details;
+  }
 
   async me(userId: string): Promise<BillingSummary> {
     // The wallet syncs the plan before it grants the allowance of the period, so it goes first.

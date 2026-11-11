@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { ACCESS_COOKIE, CurrentUser, Roles } from '../common';
 import { BillingService } from './billing.service';
+import { BillingDetailsDto } from './dto/billing-details.dto';
 import { GrantCreditsDto } from './dto/grant-credits.dto';
 import { XuHistoryQueryDto } from './dto/xu-history-query.dto';
 import { XuWalletService } from './xu-wallet.service';
@@ -20,6 +21,18 @@ export class BillingController {
   @ApiOperation({ summary: 'My plan, its limits, export credits, xu wallet, and my live subscription' })
   me(@CurrentUser('id') userId: string) {
     return this.billing.me(userId);
+  }
+
+  @Get('details')
+  @ApiOperation({ summary: 'Thông tin xuất hoá đơn VAT của tôi (chuỗi rỗng khi chưa điền)' })
+  details(@CurrentUser('id') userId: string) {
+    return this.billing.details(userId);
+  }
+
+  @Put('details')
+  @ApiOperation({ summary: 'Lưu thông tin xuất hoá đơn VAT (cả ba trường rỗng = xoá)' })
+  saveDetails(@CurrentUser('id') userId: string, @Body() dto: BillingDetailsDto) {
+    return this.billing.saveDetails(userId, dto);
   }
 
   @Get('xu/history')

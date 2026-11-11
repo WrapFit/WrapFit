@@ -1,15 +1,21 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Ip, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ACCESS_COOKIE, CurrentUser } from '../common';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { ListPaymentsQueryDto } from './dto/list-payments.dto';
+import { SimulateTransferDto } from './dto/simulate-transfer.dto';
 import { PaymentsService } from './payments.service';
+import { MockTransferService } from './sepay/mock-transfer.service';
 
 @ApiTags('payments')
 @ApiCookieAuth(ACCESS_COOKIE)
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly payments: PaymentsService) {}
+  constructor(
+    private readonly payments: PaymentsService,
+    private readonly mockTransfers: MockTransferService,
+  ) {}
 
   @Post()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
@@ -19,6 +25,12 @@ export class PaymentsController {
   })
   create(@CurrentUser('id') userId: string, @Body() dto: CreatePaymentDto, @Ip() ip: string) {
     return this.payments.create(userId, dto, ip);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Lịch sử thanh toán của tôi, mới nhất trước (không kèm mã QR)' })
+  listMine(@CurrentUser('id') userId: string, @Query() query: ListPaymentsQueryDto) {
+    return this.payments.listMine(userId, query.limit ?? 20, query.before);
   }
 
   @Get(':id')
@@ -32,5 +44,16 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Giả lập đã chuyển khoản (chỉ khi PAYMENT_SIMULATION=true, ngược lại 404); gọi lại không cấp thêm' })
   simulateConfirm(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') userId: string) {
     return this.payments.simulateConfirm(id, userId);
+  }
+
+  @Post(':id/simulate-transfer')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @ApiOperation({
+    summary:
+      'Giả lập ngân hàng báo tiền về qua webhook SePay (chỉ khi PAYMENT_SIMULATION=true): giao dịch hiện ở trang admin đối soát, tự xóa sau 30 phút',
+  })
+  simulateTransfer(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') userId: string, @Body() dto: SimulateTransferDto) {
+    return this.mockTransfers.simulate(id, userId, dto.scenario ?? 'exact');
   }
 }

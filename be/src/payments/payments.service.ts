@@ -98,6 +98,15 @@ export interface PaymentView {
   vnpay: { payUrl: string } | null;
 }
 
+/** One row of "Lịch sử thanh toán": a PaymentView without the QR / pay URL. */
+export type PaymentHistoryEntry = Omit<PaymentView, 'vietqr' | 'vnpay'>;
+
+export interface PaymentHistoryPage {
+  entries: PaymentHistoryEntry[];
+  /** Pass as `before` for the next page; null at the end. */
+  nextBefore: string | null;
+}
+
 const paymentExpired = () =>
   new HttpException(
     { code: 'PAYMENT_EXPIRED', message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
@@ -193,6 +202,42 @@ export class PaymentsService {
         throw error;
       }
     }
+  }
+
+  /**
+   * The caller's payments, newest first, for "Lịch sử thanh toán". No QR or pay URL: reopen one with `GET /payments/:id`.
+   * A PENDING payment past its expiry is reported EXPIRED (the row is updated the next time it is read on its own).
+   */
+  async listMine(userId: string, limit: number, before?: Date): Promise<PaymentHistoryPage> {
+    const rows = await this.prisma.payment.findMany({
+      where: { userId, ...(before ? { createdAt: { lt: before } } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    });
+    const now = new Date();
+    const page = rows.slice(0, limit);
+    return {
+      entries: page.map((payment) => {
+        const metadata = (payment.metadata ?? {}) as Partial<{ credits: number; xu: number; orderId: string }>;
+        const lapsed = payment.status === PaymentStatus.PENDING && payment.expiresAt <= now;
+        return {
+          id: payment.id,
+          purpose: payment.purpose,
+          status: lapsed ? PaymentStatus.EXPIRED : payment.status,
+          provider: payment.provider,
+          confirmedVia: payment.confirmedVia,
+          amountVnd: payment.amountVnd,
+          reference: payment.reference,
+          createdAt: payment.createdAt.toISOString(),
+          paidAt: payment.paidAt?.toISOString() ?? null,
+          expiresAt: payment.expiresAt.toISOString(),
+          credits: metadata.credits ?? null,
+          xu: metadata.xu ?? null,
+          orderId: metadata.orderId ?? null,
+        };
+      }),
+      nextBefore: rows.length > limit ? page[page.length - 1].createdAt.toISOString() : null,
+    };
   }
 
   /** One payment of its owner (someone else's answers 404). A PENDING payment past its expiry becomes EXPIRED here. */
