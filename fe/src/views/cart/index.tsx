@@ -13,7 +13,8 @@ import { Badge, Button } from "@/components/ui";
 import { RequireAuth } from "@/features/auth";
 import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
-import { MAX_QUANTITY, PAPER_STOCKS, PROMO_CODES, sampleFee, useSampleCart } from "@/features/site/cart";
+import { MAX_QUANTITY, PAPER_STOCKS, sampleFee, useSampleCart } from "@/features/site/cart";
+import { findSamplePromo, samplePromoDiscount } from "@wrapfit/shared";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
@@ -67,7 +68,8 @@ function CartScreen() {
   const lines = cart.items.map((item) => ({ item, project: byId.get(item.projectId) }));
   const known = lines.filter((line) => line.project);
   const subtotal = known.reduce((sum, { item }) => sum + sampleFee(item.quantity), 0);
-  const discount = applied ? Math.min(subtotal, PROMO_CODES[applied].discount(subtotal, known.length)) : 0;
+  // The server applies the code to each order (one per project); the cart shows the same sum.
+  const discount = applied ? known.reduce((sum, { item }) => sum + samplePromoDiscount(applied, sampleFee(item.quantity)), 0) : 0;
   const suggestions = (projects.data?.items ?? []).filter((project) => !cart.items.some((item) => item.projectId === project.id)).slice(0, 3);
   const activeShops = (shops.data ?? []).filter((shop) => (shop.status ?? shop.state ?? "active") === "active");
 
@@ -84,7 +86,8 @@ function CartScreen() {
             recipientName: form.recipientName.trim(),
             phone: form.phone.trim(),
             shippingAddress: form.shippingAddress.trim(),
-            notes: [form.notes.trim(), applied ? `Mã ưu đãi: ${applied}` : "", `Dự án: ${project!.title}`].filter(Boolean).join(" · "),
+            promoCode: applied ?? undefined,
+            notes: [form.notes.trim(), `Dự án: ${project!.title}`].filter(Boolean).join(" · "),
           })
         );
       }
@@ -92,8 +95,8 @@ function CartScreen() {
     },
     onSuccess: (orders) => {
       setPlaced(orders);
-      // One order (the usual sample): its VietQR checkout opens right away.
-      if (orders.length === 1) setPaying(orders[0]);
+      // One order (the usual sample): its VietQR checkout opens right away, unless a promo made it free.
+      if (orders.length === 1 && orders[0].status === "pending_payment") setPaying(orders[0]);
       cart.clear();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
@@ -102,7 +105,7 @@ function CartScreen() {
   const applyPromo = () => {
     const code = promo.trim().toUpperCase();
     if (!code) return;
-    if (!PROMO_CODES[code]) {
+    if (!findSamplePromo(code)) {
       setApplied(null);
       setPromoError("Mã không hợp lệ hoặc đã hết hạn.");
       return;
@@ -264,7 +267,7 @@ function CartScreen() {
               </div>
               {applied && (
                 <div className="flex justify-between text-fpt-orange-ink">
-                  <dt>{PROMO_CODES[applied].label}</dt>
+                  <dt>{findSamplePromo(applied)?.label}</dt>
                   <dd className="font-semibold">−{formatVnd(discount)}</dd>
                 </div>
               )}
@@ -290,7 +293,7 @@ function CartScreen() {
                 </button>
               </div>
               {promoError && <p className="mt-1 text-xs font-medium text-danger-fg">{promoError}</p>}
-              {applied && <p className="mt-1 text-xs text-landing-muted">Xưởng in kiểm tra lại mã khi xác nhận đơn.</p>}
+              {applied && <p className="mt-1 text-xs text-landing-muted">Số tiền giảm được trừ ngay vào khoản thanh toán.</p>}
             </div>
           </Card>
 

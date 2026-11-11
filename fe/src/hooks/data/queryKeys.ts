@@ -64,6 +64,8 @@ export const queryKeys = {
 
   billing: ["billing", "me"] as const,
   xuHistory: ["billing", "xu", "history"] as const,
+  paymentHistory: ["billing", "payments"] as const,
+  billingDetails: ["billing", "details"] as const,
   xuReport: (month: string) => ["admin", "analytics", "xu", month] as const,
   payment: (id: string) => ["payments", id] as const,
 

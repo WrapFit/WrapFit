@@ -51,7 +51,7 @@ export const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/revenue", label: "Doanh thu", icon: BadgeDollarSign },
       { href: "/admin/xu", label: "Xu Wrap", icon: Coins },
       { href: "/admin/ledger", label: "Sổ giao dịch", icon: ReceiptText },
-      { href: "/admin/bank-transactions", label: "Đối soát chuyển khoản", icon: Landmark },
+      { href: "/admin/bank-transactions", label: "Đối soát", icon: Landmark },
       { href: "/admin/print-shops", label: "Xưởng in", icon: Factory },
     ],
   },

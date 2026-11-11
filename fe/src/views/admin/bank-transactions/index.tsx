@@ -17,16 +17,21 @@ import { formatVnd } from '@/features/pricing';
 import { AssignDialog, IgnoreDialog } from './ResolveDialogs';
 import { formatDateTime, REASON_LABELS, REASON_TONES, STATUS_LABELS, STATUS_TONES } from './labels';
 
-type QueueStatus = Exclude<BankTxStatus, 'MATCHED'>;
+type QueueStatus = BankTxStatus;
 
 const TABS: { value: QueueStatus; label: string }[] = [
   { value: 'UNMATCHED', label: 'Chưa khớp' },
+  { value: 'MATCHED', label: 'Tự khớp' },
   { value: 'RESOLVED', label: 'Đã gán' },
   { value: 'IGNORED', label: 'Đã bỏ qua' },
 ];
 
+/** Other admins and customers change this queue while the page is open: ask again this often. */
+const REFRESH_MS = 4000;
+
 const EMPTY: Record<QueueStatus, { title: string; description: string }> = {
   UNMATCHED: { title: 'Không còn giao dịch chờ đối soát', description: 'Tiền về đúng mã và đúng số tiền được khớp tự động. Khoản nào lệch sẽ hiện ở đây.' },
+  MATCHED: { title: 'Chưa có giao dịch tự khớp', description: 'Tiền về đúng mã và đúng số tiền sẽ hiện ở đây.' },
   RESOLVED: { title: 'Chưa có giao dịch nào được gán', description: 'Giao dịch đã gán cho một thanh toán sẽ hiện ở đây.' },
   IGNORED: { title: 'Chưa có giao dịch nào bị bỏ qua', description: 'Giao dịch đã hoàn tiền tay hoặc không liên quan sẽ hiện ở đây.' },
 };
@@ -52,6 +57,8 @@ function BankTransactionsScreen() {
     queryFn: ({ pageParam }) => listBankTransactions({ status, before: pageParam ?? undefined, limit: PAGE_SIZE }),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextBefore,
+    // Paused while a resolve dialog is open, so the row being handled does not move under the admin.
+    refetchInterval: action ? false : REFRESH_MS,
   });
   const rows = list.data?.pages.flatMap((page) => page.entries) ?? [];
   const waiting = status === 'UNMATCHED';
@@ -90,9 +97,11 @@ function BankTransactionsScreen() {
                   label: 'Thời gian',
                   primary: true,
                   render: (tx) => (
-                    <time dateTime={tx.transactionAt} className="whitespace-nowrap tabular-nums text-fg">
-                      {formatDateTime(tx.transactionAt)}
-                    </time>
+                    <span className="flex flex-col items-start gap-1 max-md:items-end">
+                      <time dateTime={tx.transactionAt} className="whitespace-nowrap tabular-nums text-fg">
+                        {formatDateTime(tx.transactionAt)}
+                      </time>
+                    </span>
                   ),
                 },
                 { key: 'amount', label: 'Số tiền', align: 'right', render: (tx) => <span className="font-semibold tabular-nums">{formatVnd(tx.amountVnd)}</span> },
@@ -120,7 +129,7 @@ function BankTransactionsScreen() {
                     ) : (
                       <span className="flex flex-col items-start gap-0.5 max-md:items-end">
                         <ToneBadge tone={STATUS_TONES[tx.status]}>{STATUS_LABELS[tx.status]}</ToneBadge>
-                        {tx.payment && tx.status === 'RESOLVED' && <span className="font-mono text-caption text-fg-muted">{tx.payment.reference}</span>}
+                        {tx.payment && (tx.status === 'RESOLVED' || tx.status === 'MATCHED') && <span className="font-mono text-caption text-fg-muted">{tx.payment.reference}</span>}
                         {tx.resolvedNote && <span className="max-w-xs break-words text-caption text-fg-muted">{tx.resolvedNote}</span>}
                       </span>
                     ),

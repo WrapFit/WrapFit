@@ -549,6 +549,22 @@ export interface Payment {
   vnpay?: { payUrl: string } | null;
 }
 
+/** One row of `GET /payments`: a payment without its QR / pay URL. */
+export type PaymentHistoryEntry = Omit<Payment, "vietqr" | "vnpay">;
+
+export interface PaymentHistoryPage {
+  entries: PaymentHistoryEntry[];
+  /** Pass as `before` for the next page; null at the end. */
+  nextBefore: string | null;
+}
+
+/** VAT invoice details (`GET|PUT /billing/details`). */
+export interface BillingDetails {
+  company: string;
+  taxCode: string;
+  email: string;
+}
+
 /** `GET /payments/vnpay/return?<the vnp_* query VNPay appended>` (docs/21 §3.4). */
 export interface VnpayReturnResult {
   /** success = paid; failed = cancelled or refused by the bank; invalid = bad signature or wrong amount. */
@@ -832,6 +848,9 @@ export interface SampleOrder {
   notes?: string | null;
   subtotalVnd?: number;
   shippingVnd?: number;
+  /** Promo discount applied by the server. */
+  discountVnd?: number;
+  promoCode?: string | null;
   totalVnd?: number;
   sampleFeeVnd?: number;
   status: Lowercase<OrderStatus>;
@@ -863,6 +882,8 @@ export interface CreateSampleOrderRequest {
   notes?: string;
   quantity?: number;
   paperStock?: string;
+  /** Promo code; the server computes the discount (unknown code → 400 INVALID_PROMO). */
+  promoCode?: string;
 }
 
 // ---------------------------------------------------------------- shared library (be/src/library)

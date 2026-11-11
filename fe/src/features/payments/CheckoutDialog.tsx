@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, CreditCard, ExternalLink, FlaskConical, QrCode, RotateCw, TimerOff } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { createPayment, getBillingSummary, getPayment, simulatePayment } from "@/api";
+import { createPayment, getBillingSummary, getPayment, simulatePayment, simulateTransfer, type MockTransferScenario } from "@/api";
+
+const MOCK_TRANSFERS: { scenario: MockTransferScenario; label: string }[] = [
+  { scenario: "exact", label: "Chuyển đúng" },
+  { scenario: "underpaid", label: "Chuyển thiếu 10.000đ" },
+  { scenario: "no_reference", label: "Quên ghi mã" },
+];
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { useToast } from "@/components/common/Toast";
 import { Alert, Badge, Button, Dialog, LoadingState, Spinner } from "@/components/ui";
@@ -106,9 +112,15 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
     if (due) void refetch();
   }, [due, refetch]);
 
+  // A new payment shows in "Lịch sử thanh toán" as soon as it exists.
+  useEffect(() => {
+    if (paymentId) void queryClient.invalidateQueries({ queryKey: queryKeys.paymentHistory });
+  }, [paymentId, queryClient]);
+
   const paid = payment?.status === "PAID";
   useEffect(() => {
     if (!paid) return;
+    void queryClient.invalidateQueries({ queryKey: queryKeys.paymentHistory });
     void queryClient.invalidateQueries({ queryKey: queryKeys.billing });
     void queryClient.invalidateQueries({ queryKey: queryKeys.aiUsage });
     void queryClient.invalidateQueries({ queryKey: queryKeys.xuHistory });
@@ -124,7 +136,17 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   }, [paid]);
 
   const simulate = useMutation({
-    mutationFn: () => simulatePayment(paymentId!, payment ?? undefined),
+    // VietQR goes through the mock bank transfer, so the admin reconciliation page sees it too.
+    mutationFn: async () => {
+      if (payment?.provider === "VIETQR") {
+        try {
+          return await simulateTransfer(paymentId!);
+        } catch {
+          // Older backend without the route: confirm directly.
+        }
+      }
+      return simulatePayment(paymentId!);
+    },
     onSuccess: (result) => {
       queryClient.setQueryData(queryKeys.payment(result.id), result);
       if (result.xu) {
@@ -135,6 +157,25 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
     },
     onError: (error) => toast.error(error, "Chưa giả lập được thanh toán"),
   });
+
+  const transfer = useMutation({
+    mutationFn: (scenario: MockTransferScenario) => simulateTransfer(paymentId!, scenario),
+    onSuccess: (result, scenario) => {
+      queryClient.setQueryData(queryKeys.payment(result.id), result);
+      if (scenario !== "exact" && result.status === "PENDING") {
+        toast.show({
+          tone: scenario === "underpaid" ? "warning" : "info",
+          title: scenario === "underpaid" ? "Chuyển chưa đủ tiền" : "Ngân hàng đã báo tiền về",
+          description:
+            scenario === "underpaid"
+              ? "Khoản thiếu không được tự khớp; admin sẽ liên hệ để hoàn tiền. Hãy chuyển lại đúng số tiền."
+              : "Giao dịch chưa khớp, đang chờ admin đối soát. Cửa sổ này tự cập nhật khi admin gán.",
+        });
+      }
+    },
+    onError: (error) => toast.error(error, "Chưa giả lập được chuyển khoản"),
+  });
+  const busy = simulate.isPending || transfer.isPending;
 
   const close = () => {
     if (paid && payment) onPaid?.(payment);
@@ -166,19 +207,39 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
       icon={FlaskConical}
       title="Chế độ thử nghiệm"
       action={
-        <Button size="sm" variant="dark" loading={simulate.isPending} loadingLabel="Đang xác nhận…" onClick={() => simulate.mutate()}>
+        <Button size="sm" variant="dark" loading={simulate.isPending} disabled={busy} loadingLabel="Đang xác nhận…" onClick={() => simulate.mutate()}>
           Giả lập đã thanh toán
         </Button>
       }
     >
       Môi trường thử nghiệm: bấm nút để xác nhận thanh toán thành công ngay lập tức mà không cần chuyển tiền thật.
+      {provider === "VIETQR" && pending && (
+        <span className="mt-3 block">
+          <span className="block text-body-sm text-fg-muted">Hoặc giả lập ngân hàng báo tiền về (hiện ở trang admin đối soát):</span>
+          <span className="mt-2 flex flex-wrap gap-2">
+            {MOCK_TRANSFERS.map((item) => (
+              <Button
+                key={item.scenario}
+                size="sm"
+                variant="secondary"
+                disabled={busy}
+                loading={transfer.isPending && transfer.variables === item.scenario}
+                loadingLabel="Đang gửi…"
+                onClick={() => transfer.mutate(item.scenario)}
+              >
+                {item.label}
+              </Button>
+            ))}
+          </span>
+        </span>
+      )}
     </Alert>
   ) : null;
 
   const footer = paid ? (
     <Button onClick={close}>{doneLabel}</Button>
   ) : (
-    <Button variant="secondary" onClick={close} disabled={simulate.isPending}>
+    <Button variant="secondary" onClick={close} disabled={busy}>
       Để sau
     </Button>
   );
@@ -197,7 +258,7 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
       }
       icon={provider === "VNPAY" && !paid ? <CreditCard aria-hidden /> : <QrCode aria-hidden />}
       onClose={close}
-      busy={simulate.isPending}
+      busy={busy}
       footer={footer}
       size="lg"
     >
