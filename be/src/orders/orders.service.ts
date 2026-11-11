@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OrderStatus, Prisma, ProjectStatus, Role } from '@prisma/client';
+import { findSamplePromo, samplePromoDiscount, type SamplePromo } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
 import { AuthUser } from '../common';
 import { PrismaService } from '../shared/prisma';
@@ -52,6 +53,9 @@ export interface SampleOrderResponse {
   sampleFeeVnd: number;
   subtotalVnd: number;
   shippingVnd: number;
+  /** Promo discount computed by the server, 0 without a code. */
+  discountVnd: number;
+  promoCode: string | null;
   totalVnd: number;
   printShopId: string;
   printShopName: string;
@@ -99,6 +103,15 @@ export class OrdersService {
 
     const quantity = dto.quantity ?? 1;
     const subtotal = sampleFeeVnd(quantity);
+    let promo: SamplePromo | null = null;
+    if (dto.promoCode?.trim()) {
+      promo = findSamplePromo(dto.promoCode);
+      if (!promo) throw new BadRequestException({ code: 'INVALID_PROMO', message: 'Mã ưu đãi không hợp lệ hoặc đã hết hạn' });
+    }
+    const discount = promo ? samplePromoDiscount(promo.code, subtotal) : 0;
+    const total = subtotal - discount;
+    // A free order (WORKSHOPTET on one box) has nothing to pay: it goes straight to the print shop.
+    const free = total === 0;
     const data = (orderCode: string): Prisma.OrderCreateInput => ({
       orderCode,
       user: { connect: { id: userId } },
@@ -109,7 +122,10 @@ export class OrdersService {
       notes: dto.notes?.trim() || null,
       subtotalVnd: subtotal,
       shippingVnd: 0,
-      totalVnd: subtotal,
+      discountVnd: discount,
+      promoCode: promo?.code ?? null,
+      totalVnd: total,
+      ...(free ? { status: OrderStatus.PAID, paidAt: new Date() } : {}),
       items: {
         create: {
           project: { connect: { id: project.id } },
@@ -123,7 +139,7 @@ export class OrdersService {
           lineTotalVnd: subtotal,
         },
       },
-      history: { create: { toStatus: OrderStatus.PENDING_PAYMENT, changedById: userId } },
+      history: { create: { toStatus: free ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT, changedById: userId } },
     });
 
     // WF-<year>-<4 digits>: short enough to read over the phone. A taken code is retried with a new number.
@@ -265,6 +281,8 @@ export class OrdersService {
       sampleFeeVnd: order.subtotalVnd,
       subtotalVnd: order.subtotalVnd,
       shippingVnd: order.shippingVnd,
+      discountVnd: order.discountVnd,
+      promoCode: order.promoCode,
       totalVnd: order.totalVnd,
       printShopId: order.printShopId,
       printShopName: shop?.name ?? order.printShopId,

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateSampleOrderDto {
   @ApiProperty({ description: 'ID dự án hộp cần in mẫu thử' })
@@ -42,6 +42,12 @@ export class CreateSampleOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Mã ưu đãi (WORKSHOPTET, WRAPFIT10): server tính số tiền giảm; mã sai → 400' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  promoCode?: string;
 
   @ApiPropertyOptional({ description: 'ID xưởng in đối tác được chọn' })
   @IsOptional()
