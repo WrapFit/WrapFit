@@ -106,6 +106,7 @@ model User {
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
   // Tài khoản demo (docs/21): thanh toán qua VNPay sandbox, không bao giờ qua SePay tiền thật.
   isDemo           Boolean          @default(false) @map("is_demo")
+  billingDetails   Json?            @map("billing_details") // Thông tin xuất hoá đơn VAT { company, taxCode, email }
   // Tăng mỗi lần đăng xuất mọi thiết bị (đặt lại mật khẩu, logout-all, khóa tài khoản…). Access / refresh token mang
   // số này (claim `sv`): token mang số cũ bị từ chối ngay, không chờ hết hạn.
   sessionVersion   Int              @default(0) @map("session_version")
@@ -798,7 +799,9 @@ model Order {
   notes           String?
   subtotalVnd     Int         @map("subtotal_vnd")
   shippingVnd     Int         @default(0) @map("shipping_vnd")
-  totalVnd        Int         @map("total_vnd") // = subtotal + shipping (CHECK trong migration)
+  discountVnd     Int         @default(0) @map("discount_vnd") // Mã ưu đãi do server tính (shared/src/billing/promo.ts)
+  promoCode       String?     @map("promo_code")
+  totalVnd        Int         @map("total_vnd") // = subtotal + shipping - discount (CHECK trong migration)
   status          OrderStatus @default(PENDING_PAYMENT)
   paymentId       String?     @map("payment_id") @db.Uuid // Thanh toán đã trả đơn (S5)
   paidAt          DateTime?   @map("paid_at") @db.Timestamptz(3)
