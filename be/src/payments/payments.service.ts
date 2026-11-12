@@ -17,6 +17,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import {
+  customXuError,
+  customXuPriceVnd,
   EXPORT_PACKS,
   exportLotExpiresAt,
   isExportPackId,
@@ -317,9 +319,17 @@ export class PaymentsService {
       const pack = EXPORT_PACKS[dto.purpose];
       return { amountVnd: pack.priceVnd, metadata: { credits: pack.credits } };
     }
+    if (dto.purpose !== PaymentPurpose.XU_CUSTOM && dto.xu !== undefined) {
+      throw new BadRequestException('xu chỉ dùng cho nạp số xu tùy chọn');
+    }
     if (isXuPackId(dto.purpose)) {
       const pack = XU_PACKS[dto.purpose];
       return { amountVnd: pack.priceVnd, metadata: { xu: pack.xu } };
+    }
+    if (dto.purpose === PaymentPurpose.XU_CUSTOM) {
+      const problem = dto.xu === undefined ? 'Nhập số xu muốn nạp.' : customXuError(dto.xu);
+      if (problem) throw new BadRequestException(problem);
+      return { amountVnd: customXuPriceVnd(dto.xu!), metadata: { xu: dto.xu! } };
     }
     if (dto.purpose === PaymentPurpose.PRO_MONTH) {
       return { amountVnd: PRO_MONTH.priceVnd, metadata: { periodDays: PRO_MONTH.periodDays } };

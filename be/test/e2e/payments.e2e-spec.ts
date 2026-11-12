@@ -1,3 +1,4 @@
+import { PAYMENT_TERMS_VERSION } from '@wrapfit/shared';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
@@ -34,7 +35,8 @@ describe('Payments API (e2e)', () => {
     return { id, cookie };
   };
   const pay = async (user: Account, body: Record<string, unknown>) =>
-    (await as(user).post('/api/payments').send(body).expect(201)).body;
+    // Every payment needs the current terms accepted (CreatePaymentDto.termsVersion).
+    (await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, ...body }).expect(201)).body;
   const confirm = (user: Account, id: string) => as(user).post(`/api/payments/${id}/simulate-confirm`);
   const newProject = async (user: Account) =>
     (
@@ -107,7 +109,7 @@ describe('Payments API (e2e)', () => {
       .expect(400);
     await as(buyer)
       .post('/api/payments')
-      .send({ purpose: 'SAMPLE_ORDER', orderId: '01970000-0000-7000-8000-000000000000' })
+      .send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'SAMPLE_ORDER', orderId: '01970000-0000-7000-8000-000000000000' })
       .expect(404);
   });
 
@@ -175,7 +177,7 @@ describe('Payments API (e2e)', () => {
     ).body;
     expect(order.orderStatus).toBe('PENDING_PAYMENT');
 
-    await as(stranger).post('/api/payments').send({ purpose: 'SAMPLE_ORDER', orderId: order.id }).expect(404);
+    await as(stranger).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'SAMPLE_ORDER', orderId: order.id }).expect(404);
     const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
     expect(payment).toMatchObject({ amountVnd: 49_000, orderId: order.id, credits: null });
     expect((await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id })).id).toBe(payment.id);
@@ -188,7 +190,7 @@ describe('Payments API (e2e)', () => {
     const history = await prisma.orderStatusHistory.findMany({ where: { orderId: order.id }, orderBy: { createdAt: 'asc' } });
     expect(history.map((h) => h.toStatus)).toEqual(['PENDING_PAYMENT', 'PAID']);
 
-    await as(buyer).post('/api/payments').send({ purpose: 'SAMPLE_ORDER', orderId: order.id }).expect(409);
+    await as(buyer).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'SAMPLE_ORDER', orderId: order.id }).expect(409);
   });
 
   it('expires a payment after 15 minutes: no QR, no confirmation', async () => {
@@ -203,17 +205,16 @@ describe('Payments API (e2e)', () => {
     await expect(prisma.creditLot.count({ where: { paymentId: payment.id } })).resolves.toBe(0);
   });
 
-  it('runs the Free flow: clean SVG needs a credit, buy 1, confirm, export clean', async () => {
+  it('an export credit no longer unlocks the print file: it is sold through the print cart', async () => {
     const user = await register('free');
     const projectId = await newProject(user);
     const exportSvg = (useCredit?: boolean) =>
       as(user).post(`/api/projects/${projectId}/exports`).send({ fileType: 'SVG', useCredit });
 
-    expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'EXPORT_CREDIT_REQUIRED', balance: 0 });
+    expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
     const payment = await pay(user, { purpose: 'EXPORT_1' });
     await confirm(user, payment.id).expect(200);
-    const started = (await exportSvg(true).expect(202)).body;
-    expect(started).toMatchObject({ watermarked: false, charged: true, exportCredits: { balance: 0 } });
+    expect((await exportSvg(true).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
   });
 
   it('answers 404 to simulate-confirm when PAYMENT_SIMULATION is off', async () => {

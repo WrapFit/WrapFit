@@ -2,11 +2,9 @@
 
 import { CalendarClock, Crown, RefreshCw, ShieldCheck } from 'lucide-react';
 import React from 'react';
-import { XU_VALUE_VND } from '@wrapfit/shared';
 import { Badge, Button, ButtonLink, TONE_SOFT } from '@/components/ui';
 import { Panel, PanelTitle, StatTile } from '@/components/workspace';
 import { TIER_LABELS } from '@/constants';
-import { formatVnd } from '@/features/pricing';
 import type { BillingSummary, SubscriptionTier } from '@/types/api';
 import { cn } from '@/utils/helpers';
 import { SOURCE_META, day, xu } from './xu-meta';
@@ -58,7 +56,6 @@ export function BalanceAside({ billing, tier, loading, refreshing, onRefresh }: 
               <span className="font-mono text-display font-semibold tabular-nums text-fg">{wallet.balance.toLocaleString('vi-VN')}</span>
               <span className="text-body font-medium text-fg-muted">xu Wrap</span>
             </p>
-            <p className="mt-1 text-caption tabular-nums text-fg-muted">≈ {formatVnd(wallet.balance * XU_VALUE_VND)}</p>
             <p className="mt-4 text-caption text-fg-muted">
               Định mức gói <strong className="tabular-nums text-fg">+{xu(wallet.allowance.perPeriod)}</strong> mỗi kỳ, làm mới {day(wallet.allowance.resetsAt)}.
             </p>

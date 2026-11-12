@@ -490,7 +490,7 @@ export interface ExportJob {
 // ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
 
 export type XuPackPurpose = "XU_500" | "XU_1050" | "XU_2200";
-export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose;
+export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose | "XU_CUSTOM";
 export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
 export type PaymentProvider = "VIETQR" | "VNPAY";
 export type PaymentConfirmation = "SEPAY_WEBHOOK" | "VNPAY_IPN" | "VNPAY_RETURN" | "SIMULATION" | "ADMIN";
@@ -852,6 +852,8 @@ export interface SampleOrder {
   discountVnd?: number;
   promoCode?: string | null;
   totalVnd?: number;
+  /** Every design of the order, one bill; a single-design order has one line. */
+  items?: { projectId: string | null; projectTitle: string; quantity: number; lineTotalVnd: number }[];
   sampleFeeVnd?: number;
   status: Lowercase<OrderStatus>;
   orderStatus?: OrderStatus;
@@ -884,6 +886,11 @@ export interface CreateSampleOrderRequest {
   paperStock?: string;
   /** Promo code; the server computes the discount (unknown code → 400 INVALID_PROMO). */
   promoCode?: string;
+}
+
+/** Several designs in one order (one bill). The recipient fields are shared by every design. */
+export interface CreateSampleBundleRequest extends Omit<CreateSampleOrderRequest, "projectId" | "quantity" | "paperStock"> {
+  items: { projectId: string; quantity?: number; paperStock?: string }[];
 }
 
 // ---------------------------------------------------------------- shared library (be/src/library)

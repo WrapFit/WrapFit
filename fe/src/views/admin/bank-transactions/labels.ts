@@ -41,6 +41,7 @@ export const PURPOSE_LABELS: Record<string, string> = {
   XU_500: '500 xu Wrap',
   XU_1050: '1.050 xu Wrap',
   XU_2200: '2.200 xu Wrap',
+  XU_CUSTOM: 'Nạp xu tùy chọn',
 };
 
 export const PAYMENT_STATUS_LABELS: Record<string, string> = {

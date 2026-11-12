@@ -571,6 +571,7 @@ enum PaymentPurpose {
   XU_500 // 500 xu Wrap, 50.000đ (docs/19)
   XU_1050 // 1.050 xu Wrap, 100.000đ
   XU_2200 // 2.200 xu Wrap, 200.000đ
+  XU_CUSTOM // Số xu tùy chọn, giá niêm yết (metadata.xu)
 }
 
 enum PaymentStatus {

@@ -13,11 +13,10 @@ import { WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { CheckoutDialog } from '@/features/payments';
 import { queryKeys } from '@/hooks/data';
-import type { XuPackPurpose } from '@/types/api';
 import React, { useState } from 'react';
 import { BalanceAside } from './BalanceAside';
 import { HistoryPanel } from './HistoryPanel';
-import { TopUpPanel, VIETQR_METHOD, VNPAY_METHOD } from './TopUpPanel';
+import { TopUpPanel, VIETQR_METHOD, VNPAY_METHOD, type XuTopUp } from './TopUpPanel';
 
 export default function WalletPage() {
   return (
@@ -32,7 +31,7 @@ function WalletScreen() {
   const tier = user?.subscriptionTier ?? 'FREE';
   const queryClient = useQueryClient();
   const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary });
-  const [buying, setBuying] = useState<XuPackPurpose | null>(null);
+  const [buying, setBuying] = useState<XuTopUp | null>(null);
 
   const refresh = () => {
     void billing.refetch();
@@ -69,7 +68,7 @@ function WalletScreen() {
           <HistoryPanel />
         </div>
       </div>
-      {buying && <CheckoutDialog purpose={buying} onClose={() => setBuying(null)} />}
+      {buying && <CheckoutDialog purpose={buying.purpose} xu={'xu' in buying ? buying.xu : undefined} onClose={() => setBuying(null)} />}
     </WorkspaceShell>
   );
 }

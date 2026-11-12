@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Coins, Plus, ChevronRight, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
-import { XU_PACKS, XU_VALUE_VND, type XuPackId } from '@wrapfit/shared';
+import { XU_CUSTOM, XU_PACKS, XU_VALUE_VND, customXuError, customXuPriceVnd, type XuPackId } from '@wrapfit/shared';
 import { getBillingSummary } from '@/api/payments';
 import { CheckoutDialog } from '@/features/payments';
 import { formatVnd } from '@/features/pricing';
@@ -28,8 +28,12 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
   const { user } = useAuth();
   const hydrated = useHydrated();
   const [isOpen, setIsOpen] = useState(false);
-  const [buying, setBuying] = useState<XuPackPurpose | null>(null);
+  const [buying, setBuying] = useState<{ purpose: XuPackPurpose | 'XU_CUSTOM'; xu?: number } | null>(null);
+  const [custom, setCustom] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const customInputRef = useRef<HTMLInputElement>(null);
+  const customXu = custom === '' ? null : Number(custom);
+  const customError = customXu === null ? null : customXuError(customXu);
 
   const billing = useQuery({
     queryKey: queryKeys.billing,
@@ -96,8 +100,9 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setIsOpen(false);
-              setBuying('XU_500');
+              // Opens the packs and the amount field: the user picks how much, nothing is bought on this click.
+              setIsOpen(true);
+              window.setTimeout(() => customInputRef.current?.focus(), 0);
             }}
             title="Nạp thêm xu qua VietQR"
             aria-label="Nạp thêm xu"
@@ -137,11 +142,6 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
             <div className="my-3 rounded-panel border border-landing-line/60 bg-surface-sunken p-3">
               <div className="flex items-baseline justify-between text-xs text-landing-muted">
                 <span>Số dư khả dụng</span>
-                {balance !== undefined && (
-                  <span className="font-mono text-landing-muted">
-                    ≈ {formatVnd(balance * XU_VALUE_VND)}
-                  </span>
-                )}
               </div>
               <div className="mt-1 flex items-baseline gap-1.5 font-mono text-2xl font-bold tabular-nums text-landing-ink">
                 {balance !== undefined ? balance.toLocaleString('vi-VN') : '–'}
@@ -159,7 +159,6 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-semibold text-landing-ink">Nạp xu qua VietQR</span>
-                <span className="text-caption font-mono text-landing-muted">1 xu = 100đ</span>
               </div>
 
               <div className="space-y-1.5">
@@ -173,7 +172,7 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
                       type="button"
                       onClick={() => {
                         setIsOpen(false);
-                        setBuying(pack.id);
+                        setBuying({ purpose: pack.id });
                       }}
                       className={cn(
                         'group flex w-full items-center justify-between rounded-xl border p-2.5 text-left text-xs transition-all',
@@ -210,6 +209,51 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
               </div>
             </div>
 
+            {/* Any number of xu, at the list price (the packs above carry a bonus) */}
+            <form
+              className="mt-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (customXu === null || customError) return;
+                setIsOpen(false);
+                setBuying({ purpose: 'XU_CUSTOM', xu: customXu });
+                setCustom('');
+              }}
+            >
+              <label htmlFor="xu-pill-custom" className="mb-1.5 block text-xs font-semibold text-landing-ink">
+                Hoặc nhập số xu
+              </label>
+              <div className="flex gap-1.5">
+                <input
+                  id="xu-pill-custom"
+                  ref={customInputRef}
+                  type="number"
+                  inputMode="numeric"
+                  min={XU_CUSTOM.min}
+                  max={XU_CUSTOM.max}
+                  step={XU_CUSTOM.step}
+                  placeholder={`${XU_CUSTOM.min}–${XU_CUSTOM.max.toLocaleString('vi-VN')} xu`}
+                  value={custom}
+                  onChange={(e) => setCustom(e.target.value.replace(/[^\d]/g, ''))}
+                  aria-invalid={customError ? true : undefined}
+                  aria-describedby={customError ? 'xu-pill-custom-error' : undefined}
+                  className="h-9 min-w-0 flex-1 rounded-xl border border-landing-line bg-white px-3 font-mono text-xs tabular-nums text-landing-ink outline-none focus-visible:border-fpt-orange focus-visible:ring-[3px] focus-visible:ring-fpt-orange/20"
+                />
+                <button
+                  type="submit"
+                  disabled={customXu === null || customError !== null}
+                  className="h-9 shrink-0 rounded-xl bg-fpt-orange px-3 text-xs font-semibold text-white transition-colors hover:bg-fpt-orange-dark disabled:opacity-50"
+                >
+                  {customXu !== null && !customError ? `Nạp ${formatVnd(customXuPriceVnd(customXu))}` : 'Nạp'}
+                </button>
+              </div>
+              {customError && (
+                <p id="xu-pill-custom-error" className="mt-1 text-caption text-danger-fg">
+                  {customError}
+                </p>
+              )}
+            </form>
+
             {/* Footer usage note */}
             <div className="mt-3 border-t border-landing-line/60 pt-2 flex items-center justify-between text-caption text-landing-muted">
               <span>Lỗi hệ thống hoàn xu 100%</span>
@@ -229,7 +273,8 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
       {/* VietQR Checkout Modal */}
       {buying && (
         <CheckoutDialog
-          purpose={buying}
+          purpose={buying.purpose}
+          xu={buying.xu}
           onClose={() => setBuying(null)}
         />
       )}

@@ -5,7 +5,6 @@ import {
   SAFE_MARGIN_CREASE_MM,
   SAFE_MARGIN_CUT_MM,
   XU_PATTERN_COST,
-  XU_VALUE_VND,
   type ExportPackId,
 } from "@wrapfit/shared";
 import { ROUTES } from "@/constants";
@@ -165,7 +164,7 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "Xu Wrap là gì, được tính thế nào?",
-    answer: `Xu Wrap là đồng xu chung cho mọi tác vụ AI: tạo ảnh cho mặt hộp, hoa văn AI, phóng to, xóa nền, vector hóa. 1 xu = ${formatVnd(XU_VALUE_VND)}. Mỗi kỳ gói cộng xu: ${PLAN_ORDER.map((tier) => `${PLANS[tier].name} ${xu(PLANS[tier].xuPerPeriod)}`).join(", ")}; xu chưa dùng giữ thêm một kỳ. Hoa văn AI ${XU_PATTERN_COST.fast} xu (cao cấp ${XU_PATTERN_COST.premium} xu), ảnh AI từ 10 xu mỗi ảnh. Lỗi phía WrapFit thì xu được hoàn.`,
+    answer: `Xu Wrap là đồng xu chung cho mọi tác vụ AI: tạo ảnh cho mặt hộp, hoa văn AI, phóng to, xóa nền, vector hóa. Mỗi kỳ gói cộng xu: ${PLAN_ORDER.map((tier) => `${PLANS[tier].name} ${xu(PLANS[tier].xuPerPeriod)}`).join(", ")}; xu chưa dùng giữ thêm một kỳ. Hoa văn AI ${XU_PATTERN_COST.fast} xu (cao cấp ${XU_PATTERN_COST.premium} xu), ảnh AI từ 10 xu mỗi ảnh. Lỗi phía WrapFit thì xu được hoàn.`,
   },
   {
     question: "Dung lượng lưu trữ gồm những gì?",

@@ -62,7 +62,7 @@ export function XuWrapSection({ embedded = false }: { embedded?: boolean }) {
               <Coins className="size-7 text-fpt-orange-ink" aria-hidden /> Xu Wrap cho mọi tác vụ AI
             </h2>
             <p className="mx-auto mt-2 max-w-2xl text-body text-fg-muted">
-              Một đồng xu cho ảnh AI, hoa văn AI và công cụ ảnh. 1 xu = {formatVnd(XU_VALUE_VND)}. Gói cộng xu mỗi kỳ:{" "}
+              Một đồng xu cho ảnh AI, hoa văn AI và công cụ ảnh. Gói cộng xu mỗi kỳ:{" "}
               {PLAN_ORDER.map((tier) => `${PLANS[tier].name} ${xu(PLANS[tier].xuPerPeriod)}`).join(", ")}. Xu chưa dùng giữ thêm một kỳ; lỗi phía
               WrapFit thì xu được hoàn.
             </p>

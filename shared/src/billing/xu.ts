@@ -37,6 +37,26 @@ export function isXuPackId(value: string): value is XuPackId {
 }
 
 /**
+ * Top-up of any number of xu (payment purpose `XU_CUSTOM`): priced at the list price, no bonus. The bonus of the fixed
+ * packs makes them the better deal for the same money.
+ */
+export const XU_CUSTOM = { min: 100, max: 50_000, step: 10 } as const;
+
+/** Problem with a custom top-up amount, or null when it can be bought. */
+export function customXuError(xu: number): string | null {
+  if (!Number.isInteger(xu)) return "Số xu phải là số nguyên.";
+  if (xu < XU_CUSTOM.min) return `Nạp tối thiểu ${XU_CUSTOM.min.toLocaleString("vi-VN")} xu.`;
+  if (xu > XU_CUSTOM.max) return `Nạp tối đa ${XU_CUSTOM.max.toLocaleString("vi-VN")} xu mỗi lần.`;
+  if (xu % XU_CUSTOM.step !== 0) return `Số xu phải là bội số của ${XU_CUSTOM.step}.`;
+  return null;
+}
+
+/** Price in VND of a custom top-up of `xu` xu. */
+export function customXuPriceVnd(xu: number): number {
+  return xu * XU_VALUE_VND;
+}
+
+/**
  * Price of one AI pattern by quality. `premium` runs a model that costs up to ~2.500đ a call: 65 xu keeps the minimum
  * margin of the image models at that worst case.
  */
