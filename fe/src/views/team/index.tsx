@@ -8,7 +8,7 @@
 import { Info, UserPlus } from 'lucide-react';
 import React from 'react';
 import { outlineButton } from '@/components/library';
-import { Badge, DataTable, Panel, PanelTitle, SampleBadge, StatTile, WorkspaceShell } from '@/components/workspace';
+import { ADMIN_STAT_GROUP, Badge, DataTable, Panel, PanelTitle, StatTile, WorkspaceShell } from '@/components/workspace';
 import { RequireAuth } from '@/features/auth';
 import { cn } from '@/utils/helpers';
 
@@ -56,7 +56,6 @@ function Team() {
       description="Mời người cùng thiết kế và xưởng in nhận file trực tiếp từ dự án của bạn."
       actions={
         <>
-          <SampleBadge />
           <button type="button" disabled title="Chưa có API mời thành viên" className={cn(outlineButton, 'disabled:cursor-not-allowed')}>
             <UserPlus className="size-4" aria-hidden />
             Mời thành viên
@@ -70,7 +69,7 @@ function Team() {
           Làm việc nhóm chưa có ở API: mỗi tài khoản WrapFit hiện chỉ thấy dự án của chính mình. Danh sách dưới đây là ví dụ cho cách chia quyền sắp tới.
         </p>
 
-        <section aria-label="Số liệu mẫu" className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <section aria-label="Số liệu mẫu" className={`${ADMIN_STAT_GROUP} grid-cols-2 md:grid-cols-4`}>
           <StatTile label="Thành viên" value="4" />
           <StatTile label="Xưởng in" value="1" />
           <StatTile label="Dự án chia sẻ" value="6" />
@@ -89,7 +88,7 @@ function Team() {
                 label: 'Tên',
                 render: (member) => (
                   <span className="flex items-center gap-3">
-                    <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full border border-library-ink bg-library-tile text-sm font-medium">
+                    <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full border border-line bg-library-tile text-sm font-medium">
                       {member.name.charAt(0)}
                     </span>
                     <span className="font-medium">{member.name}</span>

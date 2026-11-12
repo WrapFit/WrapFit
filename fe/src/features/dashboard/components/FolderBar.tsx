@@ -25,7 +25,7 @@ interface FolderBarProps {
 
 const CHIP =
   "flex min-h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border-[1.5px] px-3 text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 md:min-h-9";
-const CHIP_ACTIVE = "border-library-ink bg-white text-library-ink shadow-hard-sm";
+const CHIP_ACTIVE = "border-transparent bg-fpt-orange-light font-semibold text-accent";
 const CHIP_IDLE = "border-transparent text-library-sub hover:bg-library-panel hover:text-library-ink";
 const TOOL =
   "flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 md:min-h-9";
@@ -107,7 +107,7 @@ export function FolderBar({
           disabled={full || loading}
           aria-label="Tạo thư mục mới"
           title={full ? `Tối đa ${MAX_COLLECTIONS} thư mục` : "Tạo thư mục mới"}
-          className={`${TOOL} min-w-[44px] shrink-0 justify-center border border-library-ink bg-white text-library-ink enabled:hover:bg-library-panel disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`${TOOL} min-w-[44px] shrink-0 justify-center border border-line bg-white text-library-ink enabled:hover:bg-library-panel disabled:cursor-not-allowed disabled:opacity-50`}
         >
           <Icon name="create_new_folder" className="size-[18px]" />
           <span className="hidden sm:inline">Thư mục mới</span>

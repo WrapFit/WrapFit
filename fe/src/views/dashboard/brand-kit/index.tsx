@@ -106,7 +106,7 @@ function DashboardBrandKitScreen() {
                 <button
                   type="button"
                   onClick={() => update({ colors: [...draft.colors, EXTRA_COLORS[draft.colors.length - MIN_COLORS] ?? '#2563EB'] })}
-                  className="flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-library-ink/40 text-sm text-library-sub transition-colors hover:border-library-ink hover:bg-library-panel hover:text-library-ink outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20"
+                  className="flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-line/40 text-sm text-library-sub transition-colors hover:border-line hover:bg-library-panel hover:text-library-ink outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20"
                 >
                   <Plus className="size-5" aria-hidden />
                   Thêm {COLOR_ROLES[draft.colors.length].toLowerCase()}
@@ -185,7 +185,7 @@ function BrandPreview({ draft, shopName }: { draft: BrandKitDraft; shopName: str
   const showLogo = draft.logoUrl && !isPdfUrl(draft.logoUrl);
 
   return (
-    <section aria-label="Xem trước" className="rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard">
+    <section aria-label="Xem trước" className="rounded-squircle-md border border-line bg-library-tile p-5">
       <p className="text-sm font-medium text-library-ink">Xem trước trên hộp</p>
       <div className="mt-4 flex items-end justify-center gap-5">
         <div className="relative flex aspect-[4/5] w-[58%] max-w-[240px] flex-col overflow-hidden rounded-md border border-black/15 shadow-soft-16" style={{ backgroundColor: background }}>

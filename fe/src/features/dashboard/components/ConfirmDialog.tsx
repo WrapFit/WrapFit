@@ -6,9 +6,9 @@ import { Icon } from "@/components/ui";
 
 /** Workspace dialog: white, black hairline and hard shadow (pacdora.com style). */
 export const DIALOG_PANEL =
-  "flex max-w-md flex-col gap-5 rounded-2xl border-[1.5px] border-library-ink bg-white p-6 font-landing-heading text-library-text shadow-hard sm:p-8";
+  "flex max-w-md flex-col gap-5 rounded-2xl border border-line bg-white p-6 font-landing-heading text-library-text sm:p-8";
 export const DIALOG_CANCEL =
-  "min-h-[44px] rounded-lg border border-library-ink bg-white px-4 py-2.5 text-sm font-medium text-library-ink transition-colors hover:bg-library-panel focus-visible:ring-[3px] focus-visible:ring-library-ink/20";
+  "min-h-[44px] rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-medium text-library-ink transition-colors hover:bg-library-panel focus-visible:ring-[3px] focus-visible:ring-library-ink/20";
 export const DIALOG_DANGER =
   "flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-danger px-5 py-2.5 text-sm font-medium text-white transition-colors enabled:hover:bg-danger disabled:cursor-wait disabled:opacity-60 focus-visible:ring-[3px] focus-visible:ring-danger/30";
 

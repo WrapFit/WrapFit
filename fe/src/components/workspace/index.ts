@@ -5,3 +5,8 @@ export { AdminShell, ADMIN_NAV } from "./AdminShell";
 export type { DataColumn } from "./ui";
 export { Badge, HeroPanel, Meter, Panel, PanelTitle, SegmentedControl, StatTile, DataTable, SampleBadge, Toggle, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError } from "./ui";
 export { WorkspaceSkeleton } from "./WorkspaceSkeleton";
+export { AdminTimeline, dayKeyOf, lastDays } from "./AdminTimeline";
+export type { TimelineBucket, TimelineEvent, TimelineTone } from "./AdminTimeline";
+export { ADMIN_STAT_GROUP, AdminStat } from "./AdminStat";
+export type { AdminStatProps, AdminStatStatus } from "./AdminStat";
+export { MonthPicker } from "./MonthPicker";

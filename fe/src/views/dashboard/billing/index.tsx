@@ -14,7 +14,6 @@ import React, { useEffect, useState } from 'react';
 import { getBillingDetails, getBillingSummary, listMyPayments, saveBillingDetails } from '@/api/payments';
 import { outlineButton, primaryButton } from '@/components/library';
 import { ButtonLink } from '@/components/ui';
-import { PaymentMark } from '@/components/layout/PaymentLogos';
 import { Badge, DataTable, Meter, Panel, PanelTitle, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, WorkspaceShell } from '@/components/workspace';
 import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
@@ -77,7 +76,6 @@ function BillingScreen() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary });
   const [buying, setBuying] = useState<PaymentPurpose | null>(null);
-  const isDemo = billing.data?.isDemo === true;
   const proEnd = billing.data?.subscription?.currentPeriodEnd;
   const nextLotEnd = billing.data?.exportCredits.lots.find((lot) => lot.remaining > 0)?.expiresAt;
 
@@ -241,20 +239,6 @@ function BillingScreen() {
         </div>
 
         <div className="flex flex-col gap-6 xl:col-span-4">
-          <Panel>
-            <PanelTitle>Phương thức thanh toán</PanelTitle>
-            <p className="mt-2 text-sm text-library-sub">WrapFit không lưu thẻ thanh toán. Tài khoản của bạn trả bằng:</p>
-            <div className="mt-4 flex items-center gap-3 rounded-xl border border-library-line p-3">
-              <PaymentMark method={isDemo ? 'bank' : 'vietqr'} className="shrink-0" />
-              <span>
-                <span className="block text-sm font-medium text-library-ink">{isDemo ? 'VNPay (sandbox)' : 'VietQR / chuyển khoản'}</span>
-                <span className="block text-xs text-library-sub">
-                  {isDemo ? 'Tài khoản demo: thanh toán thử, không mất tiền thật' : 'Quét mã bằng app ngân hàng bất kỳ, tự xác nhận khi tiền về'}
-                </span>
-              </span>
-            </div>
-          </Panel>
-
           <PromoPanel />
           <BillingDetailsPanel />
         </div>

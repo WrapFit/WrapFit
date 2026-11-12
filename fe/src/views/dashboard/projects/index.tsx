@@ -197,7 +197,7 @@ function DashboardProjectsScreen() {
           title="Chưa có dự án nào"
           description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
           action={
-            <Link href={ROUTES.editorNew} className={createBoxButton}>
+            <Link href={ROUTES.editorDemo} className={createBoxButton}>
               <Plus className="size-4" aria-hidden />
               Tạo hộp mới
             </Link>
@@ -229,13 +229,7 @@ function DashboardProjectsScreen() {
   return (
     <WorkspaceShell
       title="Dự án"
-      description={isGuest ? "Dự án mẫu demo — mở trong Studio 3D hoặc tạo mới theo kích thước." : "Quản lý bản vẽ, khuôn bế và hộp 3D đã thiết kế."}
-      actions={
-        <Link href={ROUTES.editorNew} className={primaryButton}>
-          <Plus className="size-4" aria-hidden />
-          Tạo dự án mới
-        </Link>
-      }
+      description={isGuest ? "Dự án mẫu: mở trong Studio để xem." : "Các hộp bạn đã thiết kế."}
     >
       {isGuest && (
         <div className="mb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-fpt-orange/30 bg-orange-50/80 p-4 text-sm text-landing-ink">
@@ -289,7 +283,7 @@ function DashboardProjectsScreen() {
               aria-label="Tìm dự án theo tên hoặc thẻ"
               placeholder="Tìm dự án…"
               autoComplete="off"
-              className={cn(WORKSPACE_INPUT, 'rounded-full border-library-ink pl-10 pr-11')}
+              className={cn(WORKSPACE_INPUT, 'rounded-full border-line pl-10 pr-11')}
             />
             {search && (
               <button

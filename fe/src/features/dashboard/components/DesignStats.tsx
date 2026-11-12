@@ -14,7 +14,7 @@ import { ANALYTICS_PERIODS, type AnalyticsBoxType, type AnalyticsPeriod, type An
 import { EmptyState } from "@/components/common/StatusViews";
 import { createBoxButton } from "@/components/library";
 import { Skeleton } from "@/components/ui";
-import { Panel, PanelTitle, SegmentedControl, StatTile, WorkspaceError } from "@/components/workspace";
+import { ADMIN_STAT_GROUP, Panel, PanelTitle, SegmentedControl, StatTile, WorkspaceError } from "@/components/workspace";
 import { ROUTES } from "@/constants";
 import { cn } from "@/utils/helpers";
 import { formatCount } from "../format";
@@ -82,7 +82,7 @@ export function DesignStats() {
         title={scope === "me" ? `Chưa có hộp nào trong ${days} ngày qua` : `WrapFit chưa có hộp nào trong ${days} ngày qua`}
         description="Tạo một hộp, kiểm FitCheck và xuất file in: số hộp, kiểu hộp, lỗi đã chặn và thời gian làm hộp sẽ hiện ở đây."
         action={
-          <Link href={ROUTES.editorNew} className={createBoxButton}>
+          <Link href={ROUTES.editorDemo} className={createBoxButton}>
             <Plus className="size-4" aria-hidden />
             Tạo hộp mới
           </Link>
@@ -132,7 +132,7 @@ function isEmpty(data: AnalyticsSummary): boolean {
 function StatTiles({ data }: { data: AnalyticsSummary }) {
   const { fitcheck, creationTime } = data;
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div className={`${ADMIN_STAT_GROUP} grid-cols-2 md:grid-cols-4`}>
       <StatTile label="Hộp đã tạo" value={formatCount(data.boxes.total)} hint={`Trong ${data.days} ngày`} />
       <StatTile
         label="Lỗi FitCheck đã chặn"
@@ -207,7 +207,7 @@ function BoxesByDayChart({ data }: { data: AnalyticsSummary }) {
           >
             <span aria-hidden className="absolute inset-x-0 top-0 border-t border-library-line" />
             <span aria-hidden className="absolute inset-x-0 top-1/2 border-t border-library-line" />
-            <div aria-hidden className="absolute inset-0 flex items-end border-b border-library-ink">
+            <div aria-hidden className="absolute inset-0 flex items-end border-b border-line">
               {days.map((day, index) => (
                 <div key={day.date} className="flex h-full min-w-0 flex-1 items-end justify-center px-px">
                   {day.count > 0 && (

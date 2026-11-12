@@ -49,7 +49,7 @@ function MaterialsScreen() {
       title="Vật liệu"
       description="Định lượng, độ dày và chất liệu giấy ảnh hưởng đến khuôn bế hộp."
       actions={
-        <Link href={ROUTES.editorNew} className={createBoxButton}>
+        <Link href={ROUTES.editorDemo} className={createBoxButton}>
           Tạo hộp mới
           <ArrowRight className="size-4" aria-hidden />
         </Link>
@@ -75,7 +75,7 @@ function MaterialsScreen() {
                     <span
                       className={cn(
                         'relative block aspect-[321/201] overflow-hidden rounded-2xl border bg-library-tile transition-shadow',
-                        active ? 'border-[1.5px] border-library-ink shadow-hard-sm' : 'border-library-ink group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50',
+                        active ? 'border-2 border-fpt-orange' : 'border-line group-hover:shadow-soft-16 group-focus-visible:shadow-soft-16 group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50',
                       )}
                     >
                       <span className="absolute inset-0 grid grid-cols-2">
@@ -197,7 +197,7 @@ function Backdrops({ paper }: { paper: PaperStock }) {
                 onClick={() => setScene(item.id)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-xl border p-2.5 text-left transition-colors',
-                  scene === item.id ? 'border-[1.5px] border-library-ink bg-fpt-orange-light' : 'border-library-line hover:border-library-ink',
+                  scene === item.id ? 'border border-line bg-fpt-orange-light' : 'border-library-line hover:border-line',
                 )}
               >
                 <span aria-hidden className="size-9 shrink-0 rounded-lg border border-black/15" style={{ background: item.css }} />
@@ -209,7 +209,7 @@ function Backdrops({ paper }: { paper: PaperStock }) {
             </li>
           ))}
         </ul>
-        <div className="relative h-[380px] overflow-hidden rounded-2xl border border-library-ink bg-library-tile sm:h-[440px]">
+        <div className="relative h-[380px] overflow-hidden rounded-2xl border border-line bg-library-tile sm:h-[440px]">
           <div className="absolute inset-0">
             <Box3DView
               dimensions={{ ...SAMPLE, paperThickness: paper.spec.caliper }}

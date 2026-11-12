@@ -57,7 +57,7 @@ function SpecsScreen() {
       title="Quy chuẩn hộp"
       description="Cấu trúc hộp, giới hạn kích thước và tiêu chuẩn kỹ thuật FitCheck."
       actions={
-        <Link href={ROUTES.editorNew} className={createBoxButton}>
+        <Link href={ROUTES.editorDemo} className={createBoxButton}>
           Tạo hộp mới
           <ArrowRight className="size-4" aria-hidden />
         </Link>
@@ -152,7 +152,7 @@ function StructureCard({ structure }: { structure: BoxStructure }) {
   const limits = structure.dimensionLimits;
   return (
     <article className="flex h-full flex-col gap-4 rounded-2xl border border-library-line bg-white p-5 sm:flex-row">
-      <div className="flex aspect-[4/3] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-library-ink bg-library-tile p-3 sm:w-44">
+      <div className="flex aspect-[4/3] shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-library-tile p-3 sm:w-44">
         <DielineSketch structure={structure.id} dimensions={{ length: 80, width: 55, height: 60, paperThickness: 0.42 }} className="h-full w-full" />
       </div>
       <div className="min-w-0 flex-1">

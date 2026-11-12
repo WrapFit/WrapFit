@@ -14,7 +14,7 @@ export function RecentProjectCard({ project }: { project: ProjectSummary }) {
   const prefetch = usePrefetchStudio();
   return (
     <Link href={ROUTES.editor(project.id)} {...prefetch(project.id)} className="group block outline-none" aria-label={`Mở “${project.title}” trong studio`}>
-      <div className="rounded-2xl transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm group-focus-visible:shadow-hard-sm group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50 motion-reduce:transition-none">
+      <div className="rounded-2xl transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-soft-16 group-focus-visible:shadow-soft-16 group-focus-visible:ring-[3px] group-focus-visible:ring-focus/50 motion-reduce:transition-none">
         <ProjectTile project={project} />
       </div>
       <p title={project.title} className="mt-3 truncate text-base text-library-ink">

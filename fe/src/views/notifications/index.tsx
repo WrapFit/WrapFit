@@ -139,7 +139,7 @@ function renderNotice(notice: Notice) {
   return (
     <Link
       href={notice.href}
-      className="group flex items-start gap-4 rounded-2xl border border-library-line bg-white p-4 transition-[border-color,box-shadow] hover:border-library-ink hover:shadow-hard-sm sm:p-5"
+      className="group flex items-start gap-4 rounded-2xl border border-library-line bg-white p-4 transition-[border-color,box-shadow] hover:border-line sm:p-5"
     >
       <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', ICON_TONES[notice.tone])}>
         <notice.icon className="size-5" strokeWidth={1.75} aria-hidden />

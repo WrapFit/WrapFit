@@ -385,7 +385,7 @@ function OrdersScreen() {
         </div>
 
         {/* Steps Sidebar */}
-        <section aria-labelledby="orders-steps" className="rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard xl:col-span-4 h-fit">
+        <section aria-labelledby="orders-steps" className="rounded-squircle-md border border-line bg-library-tile p-5 xl:col-span-4 h-fit">
           <h2 id="orders-steps" className="text-lg font-medium text-library-ink">
             Quy trình in cùng WrapFit
           </h2>
