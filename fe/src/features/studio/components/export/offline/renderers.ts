@@ -268,7 +268,6 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
         barcodes.join("") +
         `<path fill="${COLORS.info}" d="${labelPath(info, marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
-    layer("crease", "Crease", ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes("crease")),
     layer("cut", "CutContour", ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes("cut")),
     layer(
       "dimensions",
@@ -600,11 +599,11 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
   content.push(`q ${ink(CMYK_INFO)}`, pathToPdf(labelPath(info, spec.text, spec.x, spec.y, SPEC_LINE_FONT_MM, false), map), "f Q");
   content.push("EMC");
 
-  const strokeLayer = (type: "cut" | "crease", ocg: string, cs: string, dash: string) => {
+  const strokeLayer = (type: "cut", ocg: string, cs: string, dash: string) => {
     const paths = layout.strokes.filter((s) => s.type === type).map((s) => pathToPdf(s.d, map) + " S");
     content.push(`/OC /${ocg} BDC q /GSop gs /${cs} CS 1 SCN ${f(LINE_MM * k)} w ${dash} 1 J 1 j`, ...paths, "Q EMC");
   };
-  strokeLayer("crease", "OCcrease", "CsCrease", `[${f(DASH_MM * k)} ${f(DASH_MM * k)}] 0 d`);
+  // No crease layer: the dashed fold lines are not printed (same as the server file).
   strokeLayer("cut", "OCcut", "CsCut", "[] 0 d");
 
   const marks = dimensionMarks(layout);
@@ -638,7 +637,6 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
 
   const ocgs = [
     ["OCart", "Artwork", true],
-    ["OCcrease", "Crease", true],
     ["OCcut", "CutContour", true],
     ["OCdim", "Dimensions", false],
   ] as const;

@@ -110,15 +110,11 @@ describe('ExportService.request gating', () => {
       (e: { getStatus(): number; getResponse(): unknown }) => ({ status: e.getStatus(), body: e.getResponse() }),
     );
 
-  it('Free, A4 PDF: free and watermarked, no credit spent', async () => {
-    await expect(service.request('p-1', 'PDF_A4_PRINT')).resolves.toMatchObject({
-      watermarked: true,
-      charged: false,
-      exportCredits: { balance: 0 },
-    });
-    expect(jobs).toEqual([expect.objectContaining({ fileType: 'PDF_A4_PRINT', watermarked: true, unlockId: null })]);
+  it('Free, A4 PDF without a purchase: 402 EXPORT_CREDIT_REQUIRED, nothing queued (no free print file)', async () => {
+    await expect(error(service.request('p-1', 'PDF_A4_PRINT'))).resolves.toMatchObject({ status: 402 });
+    expect(jobs).toEqual([]);
     expect(credits.debit).not.toHaveBeenCalled();
-    expect(queue.add).toHaveBeenCalled();
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   it('Free, SVG without useCredit: 402 EXPORT_CREDIT_REQUIRED with the balance, nothing queued', async () => {
@@ -175,7 +171,7 @@ describe('ExportService.request gating', () => {
     await service.request('p-1', 'SVG', true);
     version = 2;
     await expect(error(service.request('p-1', 'SVG'))).resolves.toMatchObject({ status: 402 });
-    await expect(service.request('p-1', 'PDF_A4_PRINT')).resolves.toMatchObject({ watermarked: true });
+    await expect(error(service.request('p-1', 'PDF_A4_PRINT'))).resolves.toMatchObject({ status: 402 });
     await expect(service.request('p-1', 'SVG', true)).resolves.toMatchObject({ charged: true, exportCredits: { balance: 1 } });
     expect(unlocks.map((u) => u.projectVersion)).toEqual([1, 2]);
   });
@@ -215,9 +211,6 @@ describe('ExportService.request gating', () => {
     await expect(service.request('p-1', 'SVG', true)).rejects.toThrow('The export queue is unavailable');
     expect(refunds.refundFailed).toHaveBeenCalledWith('job-1');
 
-    refunds.refundFailed.mockClear();
-    await expect(service.request('p-1', 'PDF_A4_PRINT')).rejects.toThrow('The export queue is unavailable');
-    expect(refunds.refundFailed).not.toHaveBeenCalled(); // nothing was paid
   });
 
   it('access: tells the dialog whether this version is unlocked and how many credits are left', async () => {

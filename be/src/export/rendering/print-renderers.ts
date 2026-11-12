@@ -56,7 +56,9 @@ const MAX_EMBED_DPI = 450;
 /** Vector logos (SVG) are rasterised at this resolution for the PDF; the SVG export keeps them as vectors. */
 const VECTOR_DPI = 600;
 /** Layers of the PDF (Optional Content Groups) and the SVG, bottom to top. `Dimensions` is not printed. */
-export const PRINT_LAYERS = ['Artwork', 'Crease', 'CutContour', 'Dimensions'] as const;
+// No crease layer in the print files: the dashed fold lines printed on the box (docs: business rule CP4). Creases stay
+// in the DXF for the die maker only.
+export const PRINT_LAYERS = ['Artwork', 'CutContour', 'Dimensions'] as const;
 
 /** Bold font files, the weight the editor draws texts with (TEXT_FONT_WEIGHT); `info` and `watermark` are not texts of the design. */
 const FONT_FILES: Record<PrintFontId | 'info' | 'watermark', string> = {
@@ -243,7 +245,6 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): st
         barcodes.join('') +
         `<path fill="${COLORS.info}" d="${labelPath(marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
-    layer('crease', 'Crease', ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes('crease')),
     layer('cut', 'CutContour', ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes('cut')),
     layer(
       'dimensions',
@@ -518,15 +519,13 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
   doc.path(labelPath(spec.text, spec.x, spec.y, SPEC_LINE_FONT_MM, false)).fill(CMYK_INFO);
   endLayer();
 
-  for (const type of ['crease', 'cut'] as const) {
-    beginLayer(type === 'cut' ? 'CutContour' : 'Crease');
-    doc.save().lineWidth(LINE_MM).strokeColor(SPOT_COLORS[type].name);
-    doc.addContent('/GsOverprint gs');
-    if (type === 'crease') doc.dash(DASH_MM, { space: DASH_MM });
-    for (const stroke of layout.strokes.filter((s) => s.type === type)) doc.path(stroke.d).stroke();
-    doc.undash().restore();
-    endLayer();
-  }
+  // Only the cut line: the dashed crease lines are not part of the print file.
+  beginLayer('CutContour');
+  doc.save().lineWidth(LINE_MM).strokeColor(SPOT_COLORS.cut.name);
+  doc.addContent('/GsOverprint gs');
+  for (const stroke of layout.strokes.filter((s) => s.type === 'cut')) doc.path(stroke.d).stroke();
+  doc.restore();
+  endLayer();
 
   beginLayer('Dimensions');
   const marks = dimensionMarks(layout);

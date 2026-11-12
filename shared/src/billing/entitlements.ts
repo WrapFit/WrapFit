@@ -8,7 +8,7 @@ const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
 /**
- * FREE_A4: only the A4 PDF, with a watermark on the glue flap; a clean export needs a credit.
+ * FREE_A4: no free print file (CP4): every format, the A4 PDF included, needs a credit (the name is kept for the API).
  * CREDIT: one export credit unlocks every format of one design version for `unlockDays`.
  * UNLIMITED: clean exports without credits.
  */

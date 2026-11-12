@@ -187,8 +187,7 @@ export class ExportService {
       select: { id: true },
     });
     if (unlock) return { watermarked: false, charged: false, unlockId: unlock.id };
-    // The free home-print PDF, on every plan: the WrapFit line goes on a glue flap.
-    if (fileType === 'PDF_A4_PRINT' && !useCredit) return { watermarked: true, charged: false, unlockId: null };
+    // No free print file: every format, the home-print A4 PDF included, needs a purchase (a credit or Pro).
     if (!useCredit) throw exportCreditRequired(await this.credits.balance(userId, tx));
 
     // The unlock records the operation id first; the debit (402 INSUFFICIENT_CREDITS when empty) rolls it back.
