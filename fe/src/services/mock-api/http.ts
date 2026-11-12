@@ -1,7 +1,7 @@
 /** Request and answer of the in-browser API of the offline demo, and the errors it answers with. */
 
 import type { ApiErrorBody, ApiErrorCode } from "@/types/api";
-import { db, type MockUser } from "./store";
+import { db, getSessionUserId, type MockUser } from "./store";
 
 export interface MockRequest {
   method: string;
@@ -54,7 +54,7 @@ export const conflict = (message: string, extra: Partial<ApiErrorBody> = {}) => 
 
 /** The signed-in user; 401 when nobody is (the client then reports the session as expired). */
 export function currentUser(): MockUser {
-  const user = db().users.find((u) => u.id === db().sessionUserId && u.isActive);
+  const user = db().users.find((u) => u.id === getSessionUserId() && u.isActive);
   if (!user) throw new MockHttpError(401, "Bạn cần đăng nhập.");
   return user;
 }

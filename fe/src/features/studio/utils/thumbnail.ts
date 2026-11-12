@@ -27,7 +27,8 @@ const GAP_MM = 12;
 const escapeXml = (text: string) =>
   text.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-const isFileUrl = (content: string) => /^(https?:\/\/|\/)/.test(content);
+// data: and blob: are uploads kept in the browser (offline demo, storage out of reach).
+const isFileUrl = (content: string) => /^(https?:\/\/|\/|blob:|data:image\/)/.test(content);
 
 /**
  * Reads an image as a data URL, so the SVG drawn on the canvas has no outside reference: an image of another origin

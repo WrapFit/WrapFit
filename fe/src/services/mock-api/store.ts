@@ -185,7 +185,7 @@ function seed(): MockDb {
   ];
   return {
     version: 1,
-    sessionUserId: DEMO_USER_ID,
+    sessionUserId: null,
     users,
     projects,
     snapshots: [],
@@ -266,11 +266,33 @@ export function save(): void {
  * accounts of the sign-in page, the admin console of the demo), so the pages and the API agree on the user.
  */
 export function setMockSession(userId: string | null): void {
-  const state = db();
-  if (userId !== null && !state.users.some((u) => u.id === userId)) return;
-  if (state.sessionUserId === userId) return;
-  state.sessionUserId = userId;
-  save();
+  if (userId !== null && !db().users.some((u) => u.id === userId)) return;
+  setSessionUserId(userId);
+}
+
+/**
+ * Who is signed in to the demo API, kept per tab (sessionStorage), not with the data (localStorage): opening the site
+ * again starts as a visitor on the home page instead of the last account used, admin or maker.
+ * `MockDb.sessionUserId` is no longer read; it stays in the type for databases saved by older builds.
+ */
+const SESSION_KEY = "wrapfit.demo.session";
+
+export function getSessionUserId(): string | null {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage.getItem(SESSION_KEY) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setSessionUserId(userId: string | null): void {
+  try {
+    if (typeof window === "undefined") return;
+    if (userId) window.sessionStorage.setItem(SESSION_KEY, userId);
+    else window.sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // Storage blocked: the visitor stays signed out.
+  }
 }
 
 /** Starts the demo over with the seed data. */
