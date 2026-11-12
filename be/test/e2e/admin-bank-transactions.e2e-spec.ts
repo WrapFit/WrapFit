@@ -1,3 +1,4 @@
+import { PAYMENT_TERMS_VERSION } from '@wrapfit/shared';
 import { INestApplication } from '@nestjs/common';
 import { BankTxStatus, BankTxUnmatchedReason } from '@prisma/client';
 import { Test } from '@nestjs/testing';
@@ -30,7 +31,7 @@ describe('Admin bank transactions (e2e)', () => {
     patch: (url: string) => api().patch(url).set('Cookie', user.cookie),
   });
   const pay = async (user: Account, body: Record<string, unknown>) =>
-    (await as(user).post('/api/payments').send(body).expect(201)).body;
+    (await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, ...body }).expect(201)).body;
   const resolve = (user: Account, id: string, body: Record<string, unknown>) =>
     as(user).post(`/api/admin/bank-transactions/${id}/resolve`).send(body);
 

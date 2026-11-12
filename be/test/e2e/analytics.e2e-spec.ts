@@ -6,6 +6,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { WorkerModule } from '../../src/worker';
 import { signUp } from './helpers/accounts';
+import { createPaidOrder } from './helpers/orders';
 
 /**
  * Analytics dashboard (docs/17 S7): product events recorded by the API, the worker and the studio, and the summary
@@ -22,6 +23,8 @@ describe('Analytics (e2e)', () => {
   let tuckTop: string;
   let pillow: string;
   let blockedErrors: number;
+  /** Print orders written by the test, removed at the end. */
+  const orderIds: string[] = [];
 
   const api = () => request(app.getHttpServer());
   const as = (user: { cookie: string }) => ({
@@ -62,6 +65,7 @@ describe('Analytics (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
     await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
     await worker.close(); // waits for the BullMQ worker's blocking connection: several seconds
     await app.close();
@@ -118,6 +122,8 @@ describe('Analytics (e2e)', () => {
   });
 
   it('counts the completed export in the worker and the active time up to it', async () => {
+    // Print files are unlocked by a paid print order of the design (the cart flow).
+    orderIds.push(await createPaidOrder(prisma, ana.id, pillow, run));
     const queued = await as(ana).post(`/api/projects/${pillow}/exports`).send({ fileType: 'SVG' }).expect(202);
     expect((await waitFor(queued.body.jobId)).status).toBe('COMPLETED');
     // Work after the first export does not change its creation time.

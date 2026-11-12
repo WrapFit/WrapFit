@@ -8,6 +8,7 @@ import { middleware } from '../../src/app.middleware';
 import { CreditsService } from '../../src/billing';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { createPaidOrder } from './helpers/orders';
 import { WorkerModule } from '../../src/worker';
 
 /**
@@ -40,40 +41,8 @@ describe('Print export (e2e)', () => {
   /** Polls like the frontend does (docs 07: every 2 s; faster here). */
   /** Print orders written by the test, removed at the end. */
   const orderIds: string[] = [];
-  /** A paid print order holding the current version of the design: what unlocks its print file (the cart flow). */
   const payOrderFor = async (userId: string, project: string) => {
-    const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: project } });
-    // WF-<4 digits>-<4 digits> (CHECK): a year far ahead and random digits keep it apart from real orders.
-    const code = `WF-9${String(run % 1000).padStart(3, '0')}-${String(Math.floor(Math.random() * 10_000)).padStart(4, '0')}`;
-    const order = await prisma.order.create({
-      data: {
-        orderCode: code,
-        userId,
-        printShopId: 'ps-sg-01',
-        recipientName: 'E2E',
-        recipientPhone: '0900000000',
-        shippingAddress: 'E2E',
-        subtotalVnd: 49_000,
-        totalVnd: 49_000,
-        status: 'PAID',
-        paidAt: new Date(),
-        items: {
-          create: {
-            projectId: project,
-            projectVersion: stored.version,
-            projectTitle: stored.title,
-            structure: stored.templateId,
-            dimensions: stored.dimensions as never,
-            paperStock: 'ivory-300',
-            quantity: 1,
-            unitPriceVnd: 49_000,
-            lineTotalVnd: 49_000,
-          },
-        },
-      },
-      select: { id: true },
-    });
-    orderIds.push(order.id);
+    orderIds.push(await createPaidOrder(prisma, userId, project, run));
   };
 
   const waitFor = async (jobId: string, user = pia) => {
@@ -158,7 +127,9 @@ describe('Print export (e2e)', () => {
   it('renders SVG and DXF too', async () => {
     const svg = await exportAs('SVG');
     const svgText = await (await fetch(svg.downloadUrl)).text();
-    expect(svgText).toContain('<g id="crease"');
+    // Fold lines are not printed: the print file has the cut contour and no crease layer.
+    expect(svgText).toContain('<g id="cut"');
+    expect(svgText).not.toContain('<g id="crease"');
     // The text is outlined: a filled path in the artwork layer, never a <text> with a font.
     expect(svgText).not.toContain('An khang thịnh vượng');
     expect(svgText).not.toContain('<text');

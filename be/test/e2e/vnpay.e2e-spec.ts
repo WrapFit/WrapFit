@@ -1,3 +1,4 @@
+import { PAYMENT_TERMS_VERSION } from '@wrapfit/shared';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
@@ -33,7 +34,7 @@ describe('VNPay (e2e)', () => {
     post: (url: string) => api().post(url).set('Cookie', user.cookie),
   });
   const pay = async (user: Account, body: Record<string, unknown>) =>
-    (await as(user).post('/api/payments').send(body).expect(201)).body;
+    (await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, ...body }).expect(201)).body;
 
   /** The query VNPay appends to the return URL / IPN for `payment`, signed with the test secret. */
   const vnpayQuery = (payment: { reference: string; amountVnd: number }, over: Record<string, string> = {}): Record<string, string> => {
@@ -292,12 +293,12 @@ describe('VNPay (e2e)', () => {
     it('answers a demo account 503 VNPAY_NOT_CONFIGURED when simulation is off, and creates no payment', async () => {
       const before = await prisma.payment.count({ where: { userId: demo.id } });
       await withEnv({ VNPAY_TMN_CODE: '', VNPAY_HASH_SECRET: '', PAYMENT_SIMULATION: 'false' }, async (live) => {
-        const res = await request(live.getHttpServer()).post('/api/payments').set('Cookie', demo.cookie).send({ purpose: 'XU_500' }).expect(503);
+        const res = await request(live.getHttpServer()).post('/api/payments').set('Cookie', demo.cookie).send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'XU_500' }).expect(503);
         expect(res.body).toMatchObject({ code: 'VNPAY_NOT_CONFIGURED' });
         expect(res.body.message).toMatch(/VNPay/);
 
         // A real account does not depend on VNPay.
-        const vietqr = await request(live.getHttpServer()).post('/api/payments').set('Cookie', real.cookie).send({ purpose: 'XU_500' }).expect(201);
+        const vietqr = await request(live.getHttpServer()).post('/api/payments').set('Cookie', real.cookie).send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'XU_500' }).expect(201);
         expect(vietqr.body.provider).toBe('VIETQR');
 
         // The IPN of an unconfigured gateway is never trusted.
@@ -309,7 +310,7 @@ describe('VNPay (e2e)', () => {
 
     it('lets a demo account create a payment while simulation is on: no pay URL, the button pays', async () => {
       await withEnv({ VNPAY_TMN_CODE: '', VNPAY_HASH_SECRET: '', PAYMENT_SIMULATION: 'true' }, async (live) => {
-        const created = await request(live.getHttpServer()).post('/api/payments').set('Cookie', demo.cookie).send({ purpose: 'XU_500' }).expect(201);
+        const created = await request(live.getHttpServer()).post('/api/payments').set('Cookie', demo.cookie).send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'XU_500' }).expect(201);
         expect(created.body).toMatchObject({ provider: 'VNPAY', status: 'PENDING', vnpay: null, vietqr: null });
         const paid = await request(live.getHttpServer())
           .post(`/api/payments/${created.body.id}/simulate-confirm`)

@@ -1,3 +1,4 @@
+import { PAYMENT_TERMS_VERSION } from '@wrapfit/shared';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
@@ -30,7 +31,7 @@ describe('SePay webhook (e2e)', () => {
     post: (url: string) => api().post(url).set('Cookie', user.cookie),
   });
   const pay = async (user: Account, body: Record<string, unknown>) =>
-    (await as(user).post('/api/payments').send(body).expect(201)).body;
+    (await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, ...body }).expect(201)).body;
 
   /** A SePay payload for a transfer of `amount` with `content`; each call gets a fresh transaction id. */
   const transfer = (content: string, amount: number, over: Record<string, unknown> = {}) => {
