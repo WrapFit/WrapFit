@@ -3,7 +3,7 @@
 import type { SafeUser, StorageUsage, UploadPurpose } from "@/types/api";
 import { ENTITLEMENTS } from "@wrapfit/shared";
 import { badRequest, currentUser, MockHttpError, type Handler } from "../http";
-import { db, newId, nowIso, save, type MockUser } from "../store";
+import { db, newId, nowIso, save, setSessionUserId, type MockUser } from "../store";
 
 /** What the API returns of a user: never the password or the demo flag. */
 export function publicUser(user: MockUser): SafeUser {
@@ -25,7 +25,7 @@ const login: Handler = ({ body }) => {
     throw new MockHttpError(401, "Email hoặc mật khẩu không đúng.");
   }
   if (!user.isActive) throw new MockHttpError(403, "Tài khoản đã bị khoá.");
-  db().sessionUserId = user.id;
+  setSessionUserId(user.id);
   save();
   return { user: publicUser(user), expiresIn: 900 };
 };
@@ -68,7 +68,7 @@ const register: Handler = ({ body }) => {
 const me: Handler = () => publicUser(currentUser());
 
 const logout: Handler = () => {
-  db().sessionUserId = null;
+  setSessionUserId(null);
   save();
 };
 

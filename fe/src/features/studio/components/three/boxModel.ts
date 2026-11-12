@@ -47,8 +47,9 @@ const PAPER: Record<BoxMaterialTheme, { outside: string; inside: string; ink: st
 /** Panel that carries the showcase decoration when there is no design (home page, intro). */
 const MAIN_PANEL = ["panel_front", "lid_top", "sleeve_top", "pillow_front", "panel_sticker"];
 const IMAGE_TYPES = new Set<CanvasElement["type"]>(["image", "logo", "pattern"]);
-// blob: URLs are uploads that fell back to this tab (storage offline): same-origin, so they load into the 3D texture too.
-const isFileUrl = (content: string) => /^(https?:\/\/|\/|blob:)/.test(content);
+// blob: and data: URLs are uploads kept in the browser (offline demo, storage out of reach): they load into the 3D
+// texture too.
+const isFileUrl = (content: string) => /^(https?:\/\/|\/|blob:|data:image\/)/.test(content);
 
 export interface BoxModelOptions {
   structure: string;

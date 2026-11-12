@@ -4,7 +4,7 @@ import { CURRENT_FORMULA_VERSION, type BoxStructureType, type CanvasState } from
 import { DEMO_BOX_STRUCTURES, getDemoPublicProject, getDemoTemplateDetail } from "@/features/templates/demoData";
 import type { Collection, ProjectDetail, ProjectSummary, PublicProject } from "@/types/api";
 import { badRequest, conflict, currentUser, MockHttpError, notFound, paginate, type Handler } from "../http";
-import { db, newId, nowIso, save, type MockProject, type MockSnapshot } from "../store";
+import { db, getSessionUserId, newId, nowIso, save, type MockProject, type MockSnapshot } from "../store";
 
 const structureName = (id: string) => DEMO_BOX_STRUCTURES.find((s) => s.id === id)?.name ?? id;
 
@@ -334,7 +334,7 @@ function publishedProject(slug: string): PublicProject {
     return { ...example, likesCount: example.likesCount + (liked ? 1 : 0), viewer: { isOwner: false, liked } };
   }
   const owner = db().users.find((u) => u.id === project.ownerId);
-  const viewerId = db().sessionUserId;
+  const viewerId = getSessionUserId();
   const liked = db().likes[slug] ?? false;
   return {
     slug: project.slug,
