@@ -38,7 +38,7 @@ export const STUDIO_INTRO_TOUR: TourStep[] = [
   {
     target: '[aria-label="Bước 6: Đặt in"]',
     title: "Thanh toán & xuất file in",
-    body: "Ở bước cuối **Đặt in**, bạn chọn gói và thanh toán. Thanh toán xong, nút **Thanh toán** đổi thành **Xuất file in**. Bạn chưa cần bấm bây giờ.",
+    body: "Ở bước cuối **Đặt in**, bấm **Thanh toán** để đưa thiết kế vào giỏ và trả tiền đơn in. Trả xong, quay lại đây sẽ thấy nút **Xuất file in**. Bạn chưa cần bấm bây giờ.",
     tryIt: "Chưa cần bấm. Khi xong thiết kế, **bấm bước Đặt in** để xem báo giá, thanh toán và xuất file.",
     mascot: "delivery",
   },
@@ -207,8 +207,8 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[data-tour="s6-export"]',
       title: "Thanh toán rồi xuất file in",
-      body: "File in chỉ xuất được sau khi mua gói. **Chọn gói và bấm Thanh toán** (đọc và đồng ý điều khoản trước); trả xong, nút đổi thành **Xuất file in**. Nút chỉ bấm được khi FitCheck™ đạt.",
-      tryIt: "**Chọn một gói**: giá trên nút Thanh toán đổi theo. Đã mua thì bấm **Xuất file in** để mở bảng tải file.",
+      body: "File in chỉ xuất được sau khi thanh toán đơn in ở giỏ. **Bấm Thanh toán** để đưa thiết kế vào giỏ, đọc và đồng ý điều khoản rồi trả tiền; trả xong, nút ở đây đổi thành **Xuất file in**. Nút chỉ bấm được khi FitCheck™ đạt.",
+      tryIt: "Bấm **Thanh toán** khi thiết kế đã xong. Đơn đã trả thì bấm **Xuất file in** để mở bảng tải file; sửa thiết kế sau đó thì cần đơn mới.",
       mascot: "celebration",
     },
   ],

@@ -60,6 +60,21 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+/*
+ * Green scope: the checkout (payment terms, QR) uses the green ramp (tokens.ts PALETTE.green) in place of FPT orange for
+ * its main button, ticked boxes and highlights. Everything inside that reads action-* or accent-* turns green.
+ */
+.theme-green {
+  --ds-action: 69 140 23; /* green 600 #458C17 */
+  --ds-action-hover: 45 92 15; /* green 700 */
+  --ds-action-pressed: 31 66 10; /* green 800 */
+  --ds-action-fg: 255 255 255;
+  --ds-accent: 45 92 15; /* green 700, 7.3:1 on white */
+  --ds-accent-contrast: 255 255 255;
+  --ds-accent-bg: 234 250 224; /* green 100 */
+  --ds-accent-fg: 45 92 15;
+}
+
 @layer base {
   /*
    * One focus indicator for the whole app: a 2 px cobalt outline for keyboard users. Components that draw their own

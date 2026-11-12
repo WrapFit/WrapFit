@@ -756,6 +756,24 @@ export function StudioWorkspace({
     }
   };
 
+  // A saved project autosaves; this button saves now, at any step, whatever FitCheck says (only the print file is sold).
+  const saveNow = async () => {
+    if (invalidReason) {
+      toast.show({ tone: "error", title: "Chưa lưu được dự án", description: invalidReason });
+      return;
+    }
+    setSavingProject(true);
+    try {
+      if (await sync.flush()) toast.show({ tone: "success", title: "Đã lưu dự án", description: "Thiết kế đã lưu trên Cloud." });
+      else toast.show({ tone: "error", title: "Chưa lưu được dự án", description: "Thử lại sau vài giây." });
+    } catch (err) {
+      toast.error(err, "Chưa lưu được dự án");
+    } finally {
+      setSavingProject(false);
+    }
+  };
+
+
   const projectActions = (
     <>
       <button
@@ -852,6 +870,18 @@ export function StudioWorkspace({
 
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
             {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
+
+            {!isDemo && !readOnly && (
+              <button
+                type="button"
+                onClick={() => void saveNow()}
+                disabled={savingProject || sync.state === "saving"}
+                className={buttonClass({ variant: "brand", size: "sm", className: "min-h-10" })}
+              >
+                <Save aria-hidden />
+                <span className="hidden sm:inline">{savingProject ? "Đang lưu…" : "Lưu dự án"}</span>
+              </button>
+            )}
 
             {isDemo &&
               (authStatus === "authenticated" ? (
@@ -1173,8 +1203,9 @@ export function StudioWorkspace({
             {/* ── The workspace: toolbar, stage, page strip and zoom ── */}
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               {/* Context toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-raised px-3 py-2">
-                <div className="flex items-center gap-1">
+              {/* Three columns from md: tools | 2D/3D switch, always centred | "Tiếp". */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-raised px-3 py-2 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-2">
+                <div className="flex min-w-0 items-center gap-1">
                   <button type="button" aria-label="Hoàn tác" title="Hoàn tác · Ctrl+Z" disabled={historySize.past === 0} onClick={() => travel("undo")} className={lightToolButton(false)}>
                     <Undo2 className="size-4" aria-hidden />
                   </button>
@@ -1200,23 +1231,59 @@ export function StudioWorkspace({
                   )}
                 </div>
 
-                <ViewToggle<"2d" | "3d">
-                  label="Chế độ xem"
-                  value={artView}
-                  onChange={setArtView}
-                  options={[
-                    { value: "2d", label: "Khuôn bế 2D", icon: LayoutPanelTop },
-                    { value: "3d", label: "Gập hộp 3D", icon: Box },
-                  ]}
-                />
+                <div className="flex items-center justify-center">
+                  <ViewToggle<"2d" | "3d">
+                    label="Chế độ xem"
+                    value={artView}
+                    onChange={setArtView}
+                    options={[
+                      { value: "2d", label: "Khuôn bế 2D", icon: LayoutPanelTop },
+                      { value: "3d", label: "Gập hộp 3D", icon: Box },
+                    ]}
+                  />
+                </div>
 
-                <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "min-h-10" })}>
-                  <span>
-                    Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
-                  </span>
-                  <ArrowRight className="size-4" aria-hidden />
-                </button>
+                <div className="flex min-w-0 items-center gap-2">
+                  <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
+                    <span>
+                      Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
+                    </span>
+                    <ArrowRight className="size-4" aria-hidden />
+                  </button>
+                </div>
               </div>
+
+              {/* Right under the 2D/3D switch: the pieces of a two-part box and the faces of the dieline (like Canva's pages),
+                  where new elements land. 2D only: the folded box shows every face at once. */}
+              {artView === "2d" && (
+                <div className="flex items-center gap-2 overflow-x-auto border-b border-line bg-surface-raised px-3 py-1.5 no-scrollbar">
+                  <div className="mx-auto flex min-w-max items-center gap-2">
+                    {/* Pieces of a two-part box (sleeve & drawer, lid & base): which dieline is edited. */}
+                    {pieces.length > 1 && (
+                      <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
+                        {pieces.map((piece, index) => (
+                          <button
+                            key={piece.name}
+                            type="button"
+                            aria-pressed={index === pieceIndex}
+                            onClick={() => {
+                              setPieceIndex(index);
+                              setActivePanelId("all");
+                              setArtView("2d");
+                            }}
+                            className={`min-h-9 whitespace-nowrap rounded-full px-3.5 text-label-sm font-semibold transition-colors ${
+                              index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
+                            }`}
+                          >
+                            {piece.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} />
+                  </div>
+                </div>
+              )}
 
               {/* Stage: the dieline sits on the grey desk like a slide */}
               <div ref={stageRef} data-tour="studio-stage" className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-auto lg:min-h-0 lg:flex-1">
@@ -1258,7 +1325,7 @@ export function StudioWorkspace({
                 )}
               </div>
 
-              {/* Bottom bar: where new elements land, zoom (2D) or folding (3D) */}
+              {/* Bottom bar: zoom (2D) or folding (3D) */}
               <div
                 role="toolbar"
                 aria-label={artView === "2d" ? "Thu phóng khuôn bế" : "Gập hộp 3D"}
@@ -1266,30 +1333,6 @@ export function StudioWorkspace({
               >
                 {artView === "2d" ? (
                   <>
-                    {/* Faces of the dieline (like Canva's pages): where new elements land. */}
-                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
-                      {pieces.length > 1 && (
-                        <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
-                          {pieces.map((piece, index) => (
-                            <button
-                              key={piece.name}
-                              type="button"
-                              aria-pressed={index === pieceIndex}
-                              onClick={() => {
-                                setPieceIndex(index);
-                                setActivePanelId("all");
-                              }}
-                              className={`min-h-8 whitespace-nowrap rounded-full px-3 text-label-sm font-semibold transition-colors ${
-                                index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
-                              }`}
-                            >
-                              {piece.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} className="min-w-0" />
-                    </div>
                     <div className="ml-auto flex shrink-0 items-center gap-1">
                       <button type="button" onClick={() => setArtView("3d")} className={lightToolButton(false, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}>
                         <Box className="size-4" aria-hidden />

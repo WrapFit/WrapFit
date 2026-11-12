@@ -31,6 +31,59 @@ function elementLabel(el: CanvasElement): string {
 const BLEED_MM = BLEED_BOX_MM;
 
 
+/** Layers of the dieline that can be hidden. */
+export interface DielineLayers {
+  cut: boolean;
+  crease: boolean;
+  bleed: boolean;
+  safeMargin: boolean;
+  dimensions: boolean;
+}
+
+export const DEFAULT_DIELINE_LAYERS: DielineLayers = { cut: true, crease: true, bleed: true, safeMargin: true, dimensions: true };
+
+const LEGEND_LAYERS = [
+  { key: "cut", label: "Nét cắt", hint: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
+  { key: "crease", label: "Nếp gấp", hint: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
+  { key: "bleed", label: "Tràn lề", hint: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
+  { key: "safeMargin", label: "Vùng an toàn", hint: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
+] as const;
+
+/** The legend of the dieline lines as a row of chips; each chip shows or hides its layer. */
+export function DielineLayerLegend({
+  layers,
+  onChange,
+  className = "",
+}: {
+  layers: DielineLayers;
+  onChange(layers: DielineLayers): void;
+  className?: string;
+}) {
+  return (
+    <div role="group" aria-label="Lớp khuôn bế" className={`flex items-center gap-0.5 rounded-full bg-surface-raised/85 p-1 ring-1 ring-line/70 ${className}`}>
+      {LEGEND_LAYERS.map((layer) => {
+        const on = layers[layer.key];
+        return (
+          <button
+            key={layer.key}
+            type="button"
+            aria-pressed={on}
+            aria-label={layer.hint}
+            onClick={() => onChange({ ...layers, [layer.key]: !on })}
+            title={on ? `Ẩn lớp ${layer.hint}` : `Hiện lớp ${layer.hint}`}
+            className={`flex min-h-8 items-center whitespace-nowrap rounded-full px-2.5 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+              on ? "text-fg hover:bg-surface-sunken" : "text-fg-muted line-through decoration-fg-muted/60 hover:bg-surface-sunken"
+            }`}
+          >
+            <span className={`inline-block w-4 ${layer.swatch} ${on ? "" : "opacity-40"}`} aria-hidden />
+            <span className="ml-1.5">{layer.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface DielineCanvas2DProps {
   dieline: DielineGeometry;
   scale?: number;
@@ -89,13 +142,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   className = "",
 }) => {
   const isStage = variant === "stage";
-  const [showLayers, setShowLayers] = useState({
-    cut: true,
-    crease: true,
-    bleed: true,
-    safeMargin: true,
-    dimensions: true,
-  });
+  const [showLayers, setShowLayers] = useState<DielineLayers>(DEFAULT_DIELINE_LAYERS);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const uid = useId().replace(/:/g, "");
@@ -1157,34 +1204,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           One line, so it covers as little of the dieline as it can on short laptop screens. */}
       {isStage && (
         <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-20 hidden flex-wrap items-center gap-1.5 md:flex">
-          <div role="group" aria-label="Lớp khuôn bế" className="pointer-events-auto flex items-center gap-0.5 rounded-full bg-surface-raised/85 p-1 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-md">
-            {(
-              [
-                { key: "cut", label: "Nét cắt", hint: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
-                { key: "crease", label: "Nếp gấp", hint: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
-                { key: "bleed", label: "Tràn lề", hint: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
-                { key: "safeMargin", label: "Vùng an toàn", hint: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
-              ] as const
-            ).map((layer) => {
-              const on = showLayers[layer.key];
-              return (
-                <button
-                  key={layer.key}
-                  type="button"
-                  aria-pressed={on}
-                  aria-label={layer.hint}
-                  onClick={() => setShowLayers({ ...showLayers, [layer.key]: !on })}
-                  title={on ? `Ẩn lớp ${layer.hint}` : `Hiện lớp ${layer.hint}`}
-                  className={`flex min-h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
-                    on ? "text-fg hover:bg-surface-sunken" : "text-fg-muted line-through decoration-fg-muted/60 hover:bg-surface-sunken"
-                  }`}
-                >
-                  <span className={`inline-block w-4 ${layer.swatch} ${on ? "" : "opacity-40"}`} aria-hidden />
-                  {layer.label}
-                </button>
-              );
-            })}
-          </div>
+          <DielineLayerLegend layers={showLayers} onChange={setShowLayers} className="pointer-events-auto shadow-soft-8 backdrop-blur-md" />
           <span className="w-fit rounded-full bg-surface-raised/85 px-2.5 py-1 font-mono text-cad-spec-micro tabular-nums text-fg-muted ring-1 ring-line/70 backdrop-blur-md" aria-hidden>
             {cursorMm ? `X ${cursorMm.x} · Y ${cursorMm.y} mm` : "X — · Y — mm"}
           </span>
