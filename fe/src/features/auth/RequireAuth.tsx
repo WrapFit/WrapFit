@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import React, { useMemo } from "react";
-import { ErrorState } from "@/components/common/StatusViews";
+import React, { useEffect, useRef } from "react";
+import { ErrorState, PageLoader } from "@/components/common/StatusViews";
 import { OFFLINE_DEMO } from "@/config";
 import { ROUTES } from "@/constants";
 import type { Role } from "@/types/api";
@@ -32,6 +32,28 @@ export function RequireAuth({ children, role }: RequireAuthProps) {
   const auth = useAuth();
   const { user } = auth;
   const requiresAdmin = role === "ADMIN" || (Array.isArray(role) && role.includes("ADMIN"));
+
+  // Demo build with its in-browser API: the pages run as the account that API signed in, so they agree on every call.
+  if (OFFLINE_DEMO) {
+    if (!user && (auth.status === "loading" || auth.isChecking)) return <PageLoader />;
+    // Graders open /admin straight away: the demo signs in its admin account instead of showing an access error.
+    if (requiresAdmin && !isRealAdmin(user)) return <DemoAdminSignIn />;
+    if (!user) {
+      return (
+        <main className="flex min-h-[70vh] items-center px-4 py-16">
+          <ErrorState
+            title="Bạn đã đăng xuất"
+            description="Đăng nhập (hoặc chọn “Đăng nhập nhanh bản demo”) để mở trang này."
+            action={
+              <Link href={ROUTES.login} className="text-sm font-semibold text-fpt-orange-ink underline-offset-4 hover:underline">
+                Đăng nhập
+              </Link>
+            }
+          />
+        </main>
+      );
+    }
+  }
 
   // Demo deployment: an admin page opens with the offline admin account instead of an access error.
   if (requiresAdmin && DEMO_ADMIN_ALLOWED && !isRealAdmin(user)) {
@@ -95,4 +117,16 @@ export function RequireAuth({ children, role }: RequireAuthProps) {
   };
 
   return <AuthContext.Provider value={demoAuthValue}>{children}</AuthContext.Provider>;
+}
+
+/** Demo build: signs in the demo admin account (in-browser API and app together), then the admin page renders. */
+function DemoAdminSignIn() {
+  const { signedIn } = useAuth();
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    signedIn(DEMO_ADMIN_USER);
+  }, [signedIn]);
+  return <PageLoader label="Đang mở bảng quản trị demo…" />;
 }

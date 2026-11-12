@@ -9,7 +9,9 @@ import { queryKeys, useMe } from "@/hooks/data";
 import { SESSION_EXPIRED_EVENT } from "@/services/api";
 import type { SafeUser } from "@/types/api";
 
+import { OFFLINE_DEMO } from "@/config";
 import { DEMO_USER } from "@/features/dashboard/demoData";
+import { setMockSession } from "@/services/mock-api/store";
 import { ADMIN_HOME, isAccountPage, isRealAdmin } from "./roles";
 
 /** Set once an administrator has been sent to /admin in this tab: afterwards they may browse the site freely. */
@@ -74,6 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         predicate: (query) => query.queryKey[0] !== queryKeys.me[0] && !PUBLIC_QUERY_ROOTS.has(String(query.queryKey[0])),
       });
       queryClient.setQueryData(queryKeys.me, user);
+      // The in-browser API of the demo follows the account the app switched to (quick demo buttons, sign-out).
+      if (OFFLINE_DEMO) setMockSession(user?.id ?? null);
       if (typeof window !== "undefined") {
         if (user) {
           window.sessionStorage?.removeItem("wrapfit_demo_logged_out");
@@ -112,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const isExplicitlyLoggedOut = typeof window !== "undefined" && window.sessionStorage?.getItem("wrapfit_demo_logged_out") === "1";
     let user: SafeUser | null = me.data ?? null;
-    if (!user && !isExplicitlyLoggedOut) {
+    // The demo build has its own API: who is signed in comes from it, never from a stand-in account.
+    if (!user && !isExplicitlyLoggedOut && !OFFLINE_DEMO) {
       user = DEMO_USER;
     }
 
