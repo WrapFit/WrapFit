@@ -108,7 +108,7 @@ export default function UnboxCodePage() {
             ))}
           </ol>
           <Link
-            href={ROUTES.editorNew}
+            href={ROUTES.editorDemo}
             className="mt-6 inline-flex h-12 items-center justify-center gap-2 self-start rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover lg:mt-auto"
           >
             Bắt đầu thiết kế

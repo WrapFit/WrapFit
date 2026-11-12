@@ -28,7 +28,7 @@ export const HERO = {
 };
 
 export const HERO_FEATURES: { icon: LucideIcon; label: string; href: string }[] = [
-  { icon: Ruler, label: "Khuôn bế theo mm", href: ROUTES.editorNew },
+  { icon: Ruler, label: "Khuôn bế theo mm", href: ROUTES.editorDemo },
   { icon: Package, label: "Cấu trúc hộp chuẩn", href: `#${ANCHORS.structures}` },
   { icon: ShieldCheck, label: "Soát lỗi trước in", href: `#${ANCHORS.fitcheck}` },
   { icon: MessageCircleMore, label: "Trợ lý Gói", href: `#${ANCHORS.copilot}` },
@@ -115,7 +115,7 @@ export const CUSTOMIZE = {
     "Nhập kích thước món quà, WrapFit dựng khuôn bế vừa khít đến từng milimét.",
     "Chọn giấy, thêm hoa văn, logo, lời chúc và xem hộp gấp thành 3D.",
   ],
-  cta: { label: "Tùy chỉnh ngay", href: ROUTES.editorNew },
+  cta: { label: "Tùy chỉnh ngay", href: ROUTES.editorDemo },
   dimensions: { length: 120, width: 80, height: 60 },
 };
 
@@ -150,7 +150,7 @@ export const PRODUCTION_ROWS: ProductionRow[] = [
     eyebrow: "Kiểm tra trước khi in",
     title: "FitCheck™: đúng ngay bản đầu",
     body: "Tự soát chữ sát nếp gấp, thiếu tràn lề, ảnh mờ. Trợ lý Gói chỉ chỗ lỗi và sửa giúp bằng một cú bấm.",
-    cta: { label: "Kiểm tra thiết kế", href: ROUTES.editorNew },
+    cta: { label: "Kiểm tra thiết kế", href: ROUTES.editorDemo },
     images: [PHOTOS.swatches, PHOTOS.foil],
   },
   {
@@ -169,7 +169,7 @@ export const PLANS = {
   cta: { label: "Xem bảng giá", href: "/pricing" },
   // The plans of /pricing (@wrapfit/shared/billing): Free, the three export packs, Pro, Business.
   options: [
-    { price: formatVnd(0), unit: TIERS.FREE.name, detail: `PDF A4 có watermark · ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
+    { price: formatVnd(0), unit: TIERS.FREE.name, detail: `Thiết kế & báo giá · ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
     ...EXPORT_PACK_LIST.map((pack) => ({
       price: formatVnd(pack.priceVnd),
       unit: `${pack.credits} lượt xuất`,
@@ -225,7 +225,7 @@ export const JOURNEY: {
       stat: "Vừa khít · Tự bù độ dày giấy",
       image: PHOTOS.measuring.src,
       alt: PHOTOS.measuring.alt,
-      cta: { label: "Thử nhập kích thước", href: ROUTES.editorNew },
+      cta: { label: "Thử nhập kích thước", href: ROUTES.editorDemo },
     },
     {
       stepNumber: "02",
@@ -236,7 +236,7 @@ export const JOURNEY: {
       stat: "Đồng bộ 2D ↔ 3D",
       image: PHOTOS.sketching.src,
       alt: PHOTOS.sketching.alt,
-      cta: { label: "Mở Studio", href: ROUTES.editorNew },
+      cta: { label: "Mở Studio", href: ROUTES.editorDemo },
     },
     {
       stepNumber: "03",
@@ -247,7 +247,7 @@ export const JOURNEY: {
       stat: "An toàn ≥ 3 mm · Tràn lề ≥ 2 mm",
       image: PHOTOS.swatches.src,
       alt: PHOTOS.swatches.alt,
-      cta: { label: "Kiểm tra với FitCheck™", href: ROUTES.editorNew },
+      cta: { label: "Kiểm tra với FitCheck™", href: ROUTES.editorDemo },
     },
     {
       stepNumber: "04",

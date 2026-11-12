@@ -148,7 +148,7 @@ export function BoxQuickPreviewModal({
     onClose();
   };
 
-  const studioUrl = `${ROUTES.editorNew}?structure=${structure.id}&l=${currentPreset.dims.length}&w=${currentPreset.dims.width}&d=${currentPreset.dims.height}`;
+  const studioUrl = `${ROUTES.editorDemo}?structure=${structure.id}&l=${currentPreset.dims.length}&w=${currentPreset.dims.width}&d=${currentPreset.dims.height}`;
   const foldPercent = Math.round(foldProgress * 100);
 
   return (

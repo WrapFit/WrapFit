@@ -29,7 +29,7 @@ export interface MainHeaderProps {
 /** Top-level pages of the site, for menus outside the header. */
 export const MAIN_NAV_ITEMS = [
   { href: ROUTES.templates, label: 'Thư viện mẫu', icon: 'grid_view' },
-  { href: ROUTES.editorNew, label: 'Studio 3D', icon: 'view_in_ar' },
+  { href: ROUTES.editorDemo, label: 'Studio 3D', icon: 'view_in_ar' },
   { href: '/pricing', label: 'Bảng giá', icon: 'payments' },
   { href: '/support', label: 'Hỗ trợ', icon: 'help' },
   { href: ROUTES.dashboard, label: 'Dự án của tôi', icon: 'folder_special' },
@@ -139,7 +139,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
           {user && !isRealAdmin(user) && <XuBalancePill className="hidden sm:inline-flex" />}
           {showCta && (
             <Link
-              href={ROUTES.editorNew}
+              href={ROUTES.editorDemo}
               data-tour="header-start"
               className={buttonClass({ variant: "brand", className: "hidden px-3.5 2xl:px-4 sm:inline-flex" })}
             >
@@ -302,7 +302,7 @@ function MobileMenu({
             {isAdmin ? "Quản trị" : (userName ?? 'Đăng nhập')}
           </Link>
           <Link
-            href={isAdmin ? "/admin" : ROUTES.editorNew}
+            href={isAdmin ? "/admin" : ROUTES.editorDemo}
             onClick={onNavigate}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-fpt-orange text-sm font-semibold text-white hover:bg-fpt-orange-dark"
           >

@@ -57,7 +57,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(0);
               }}
               title="Nhấn để phóng to xem giao diện & tính năng Đo kích thước quà"
-              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 transition-all duration-300 hover:border-fpt-orange/60 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -128,7 +128,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(1);
               }}
               title="Nhấn để phóng to xem giao diện & tính năng Thiết kế 2D & Mô phỏng 3D"
-              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 transition-all duration-300 hover:border-fpt-orange/60 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -179,7 +179,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(2);
               }}
               title="Nhấn để xem giao diện kiểm tra FitCheck™"
-              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 transition-all duration-300 hover:border-fpt-orange/60 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -235,7 +235,7 @@ export function MainFlowSection() {
                 if (e.key === "Enter" || e.key === " ") handleCardClick(3);
               }}
               title="Nhấn để phóng to xem giao diện & tính năng Xuất file in & Cắt bế"
-              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 shadow-soft-8 transition-all duration-300 hover:-translate-y-1.5 hover:border-fpt-orange/60 hover:shadow-soft-16 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
+              className="group relative flex flex-col justify-between rounded-sheet border border-line/70 bg-white p-6 sm:p-7 transition-all duration-300 hover:border-fpt-orange/60 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange"
             >
               {/* Zoom pill badge on hover */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200">

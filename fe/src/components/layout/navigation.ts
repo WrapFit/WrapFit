@@ -20,8 +20,7 @@ export interface NavGroup {
 }
 
 export const STUDIO_LINKS: NavLink[] = [
-  { label: "Tạo dự án mới", href: ROUTES.editorNew, description: "Chọn cấu trúc hộp và nhập kích thước món quà" },
-  { label: "Studio dùng thử", href: ROUTES.editorDemo, description: "Khuôn 2D và hộp 3D, không cần đăng nhập" },
+  { label: "Thiết kế hộp mới", href: ROUTES.editorDemo, description: "Mở Studio 2D & 3D, không cần đăng nhập; đăng nhập để lưu dự án" },
   { label: "Dự án của tôi", href: ROUTES.projects, description: "Mở lại các thiết kế đã lưu" },
   { label: "Mở hộp bằng mã QR", href: ROUTES.unboxCode, description: "Nhập mã in kèm món quà để mở hộp 3D" },
 ];
@@ -33,7 +32,6 @@ export const RESOURCE_LINKS: NavLink[] = [
   { label: "Liên hệ", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
   { label: "Bảng giá", href: "/pricing", description: "Miễn phí, Lượt xuất, Pro và Business" },
   { label: "Thiết kế cộng đồng", href: `${ROUTES.templates}?tab=community`, description: "Thiết kế công khai đạt FitCheck™ từ 90 điểm" },
-  { label: "Đội ngũ & xưởng in", href: "/team", description: "Thành viên, quyền và xưởng in đối tác" },
 ];
 
 /** Company pages, in the footer. */

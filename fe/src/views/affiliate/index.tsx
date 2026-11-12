@@ -133,9 +133,9 @@ export default function AffiliatePage() {
       </Section>
 
       <Section title="Bốn bước">
-        <ol className="grid grid-cols-1 gap-5 md:grid-cols-4">
+        <ol className="grid grid-cols-1 md:grid-cols-4 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="rounded-card bg-white p-6 ring-1 ring-landing-ink/10">
+            <li key={step.title} className="p-6 bg-white transition-colors hover:bg-surface-sunken/50">
               <span className="inline-flex size-9 items-center justify-center rounded-full bg-fpt-orange font-landing-heading font-bold text-white">{index + 1}</span>
               <p className="mt-4 font-landing-heading text-lg font-bold">{step.title}</p>
               <p className="mt-1 text-sm leading-relaxed text-landing-muted">{step.text}</p>
@@ -145,9 +145,9 @@ export default function AffiliatePage() {
       </Section>
 
       <Section title="Chúng tôi chuẩn bị sẵn cho bạn">
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70">
           {RESOURCES.map((resource) => (
-            <li key={resource.title} className="rounded-3xl bg-white p-5 ring-1 ring-landing-ink/10">
+            <li key={resource.title} className="p-5 bg-white transition-colors hover:bg-surface-sunken/50">
               <IconTile icon={resource.icon} />
               <p className="mt-3 font-semibold">{resource.title}</p>
               <p className="text-sm text-landing-muted">{resource.text}</p>
@@ -157,16 +157,16 @@ export default function AffiliatePage() {
       </Section>
 
       <Section title="Vì sao người bán sẽ cảm ơn bạn">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70 md:grid-cols-3">
           {[
             { value: "53,2%", text: "người bán bị xưởng từ chối vì số lượng quá ít" },
             { value: "69,7%", text: "đang thiết kế bao bì bằng Canva, không gấp thử được" },
             { value: "65,1%", text: "sẵn sàng đặt in qua mạng lưới xưởng của WrapFit" },
           ].map((item) => (
-            <Card key={item.value}>
+            <div key={item.value} className="bg-white p-6">
               <p className="font-landing-heading text-4xl font-bold">{item.value}</p>
               <p className="mt-2 text-sm text-landing-muted">{item.text}</p>
-            </Card>
+            </div>
           ))}
         </div>
         <p className="mt-4 text-xs text-landing-muted">Khảo sát 109 người bán quà tặng, tháng 10/2026.</p>

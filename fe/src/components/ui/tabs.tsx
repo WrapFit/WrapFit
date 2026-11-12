@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/utils/helpers";
+import { useAdminSkin } from "@/components/workspace/adminSkin";
 
 /**
  * Tabs (WAI-ARIA tabs pattern): ←/→ (and Home/End) move between tabs and select them, Tab moves into the panel. Each
@@ -137,7 +138,9 @@ export function Tab({
 }) {
   const { value: current, select, baseId, variant, panels } = useTabs();
   const active = current === value;
-  const style = TAB[variant];
+  // Admin console: the selected tab is tinted orange like the selected sidebar item, never a black pill.
+  const admin = useAdminSkin();
+  const style = admin && variant !== "underline" ? { ...TAB[variant], active: "bg-fpt-orange-light font-semibold text-accent shadow-xs" } : TAB[variant];
   return (
     <button
       type="button"

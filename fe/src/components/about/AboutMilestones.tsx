@@ -89,11 +89,11 @@ export function AboutMilestones() {
         </div>
 
         {/* Traction Stats Banner */}
-        <div className="mx-auto max-w-5xl grid grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+        <div className="mx-auto max-w-5xl grid grid-cols-2 lg:grid-cols-4 mb-16 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70">
           {TRACTION_STATS.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-line/90 bg-surface-sunken/70 p-5 text-center shadow-soft-4 transition-all hover:bg-white hover:shadow-soft-12"
+              className="p-5 text-center bg-white transition-colors hover:bg-surface-sunken/50"
             >
               <span className="block font-mono text-2xl sm:text-3xl font-bold text-fg text-fpt-blue">
                 {stat.value}

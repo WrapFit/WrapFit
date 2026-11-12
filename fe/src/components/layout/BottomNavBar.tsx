@@ -92,7 +92,7 @@ export const BottomNavBar: React.FC = () => {
 
       {/* 3. 2D/3D Studio */}
       <Link
-        href={ROUTES.editorNew}
+        href={ROUTES.editorDemo}
         onClick={handleTabClick}
         className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full transition-all duration-200 ${
           isStudio

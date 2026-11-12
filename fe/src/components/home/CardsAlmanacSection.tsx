@@ -212,7 +212,7 @@ function AlmanacCard({
     setBookmarked(!bookmarked);
   };
 
-  const studioUrl = `${ROUTES.editorNew}?structure=${item.structureId}&l=${item.dims.length}&w=${item.dims.width}&d=${item.dims.height}`;
+  const studioUrl = `${ROUTES.editorDemo}?structure=${item.structureId}&l=${item.dims.length}&w=${item.dims.width}&d=${item.dims.height}`;
   const templatesUrl = `${ROUTES.templates}?structure=${item.structureId}`;
 
   return (

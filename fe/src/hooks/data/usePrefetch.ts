@@ -35,7 +35,7 @@ function useOnce(run: (id: string) => void) {
   }, []);
 }
 
-/** Library card → `/editor/new?template=<id>`: the template detail and the structures it is drawn with. */
+/** Library card → `/editor/demo?template=<id>`: the template detail and the structures it is drawn with. */
 export function usePrefetchTemplate() {
   const queryClient = useQueryClient();
   return useOnce((id) => {

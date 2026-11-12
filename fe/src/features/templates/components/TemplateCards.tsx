@@ -18,11 +18,11 @@ import { AuthorAvatar } from "./AuthorAvatar";
 import { DesignThumb } from "./DesignThumb";
 
 const CARD =
-  "group flex h-full flex-col overflow-hidden rounded-3xl border border-line/80 bg-white/85 shadow-tactile backdrop-blur-md transition duration-300 motion-reduce:transition-none";
+  "group flex h-full flex-col overflow-hidden rounded-3xl border border-line/80 bg-white/85 hover:border-fpt-orange/40 transition duration-300 motion-reduce:transition-none";
 
 /** Link of the "use this template" button: the project wizard starts from the curated design. */
 export function templateHref(id: string): string {
-  return `${ROUTES.editorNew}?template=${encodeURIComponent(id)}`;
+  return `${ROUTES.editorDemo}?template=${encodeURIComponent(id)}`;
 }
 
 function Preview({ card, label }: { card: CuratedCard | CommunityCard; label: string }) {
@@ -82,7 +82,7 @@ export function TagChips({ occasion, industry }: { occasion: Occasion | null; in
 export function CuratedTemplateCard({ template }: { template: CuratedCard }) {
   const href = templateHref(template.id);
   return (
-    <article className={`${CARD} hover:-translate-y-0.5 hover:shadow-tactile-lg motion-reduce:hover:translate-y-0`}>
+    <article className={`${CARD}`}>
       <Preview card={template} label={`Mẫu ${template.title}`} />
       <div className="flex flex-1 flex-col p-5">
         <h3 className="font-landing-heading text-xl leading-snug tracking-tight text-fg">{template.title}</h3>
@@ -108,7 +108,7 @@ export function CommunityTemplateCard({ project }: { project: CommunityCard }) {
   return (
     <Link
       href={ROUTES.publicProject(project.slug)}
-      className={`${CARD} hover:-translate-y-0.5 hover:shadow-tactile-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/40 motion-reduce:hover:translate-y-0`}
+      className={`${CARD} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest/40 motion-reduce:hover:translate-y-0`}
     >
       <Preview card={project} label={`Thiết kế ${project.title}`} />
       <div className="flex flex-1 flex-col p-5">
