@@ -18,9 +18,12 @@ export function getBillingSummary(): Promise<BillingSummary> {
   return request("/billing/me");
 }
 
-/** A 15-minute VietQR payment. A sample order (`orderId`) already waiting for payment gets its QR again. */
-export function createPayment(purpose: PaymentPurpose, orderId?: string): Promise<Payment> {
-  return request("/payments", { method: "POST", json: orderId ? { purpose, orderId } : { purpose } });
+/**
+ * A 15-minute VietQR payment. A sample order (`orderId`) already waiting for payment gets its QR again. `termsVersion`:
+ * the payment terms the user read and accepted (the server refuses any other version).
+ */
+export function createPayment(purpose: PaymentPurpose, orderId: string | undefined, termsVersion: string): Promise<Payment> {
+  return request("/payments", { method: "POST", json: orderId ? { purpose, orderId, termsVersion } : { purpose, termsVersion } });
 }
 
 /** Status of one of my payments: the checkout asks every 3 seconds. */

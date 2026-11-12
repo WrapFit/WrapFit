@@ -192,7 +192,8 @@ export class PaymentsService {
             provider,
             reference: newPaymentReference(),
             expiresAt: new Date(Date.now() + PAYMENT_TTL_MS),
-            metadata,
+            // The payment terms the user accepted for this payment, kept as evidence next to what was bought.
+            metadata: { ...metadata, termsVersion: dto.termsVersion ?? null, termsAcceptedAt: new Date().toISOString() },
           },
         });
         this.logger.log(`payment.created id=${payment.id} user=${userId} purpose=${dto.purpose} amount=${amountVnd}`);

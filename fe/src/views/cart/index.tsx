@@ -208,7 +208,7 @@ function CartScreen() {
               <ShoppingBag className="size-10 text-landing-muted" aria-hidden />
               <p className="font-landing-heading text-xl font-bold">Giỏ đang trống</p>
               <p className="max-w-sm text-sm text-landing-muted">Chọn một thiết kế bên dưới để in hộp mẫu, hoặc tạo dự án mới trong studio.</p>
-              <Link href="/editor/new" className={SECONDARY_CTA}>
+              <Link href="/editor/demo" className={SECONDARY_CTA}>
                 Tạo dự án mới
               </Link>
             </Card>

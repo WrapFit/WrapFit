@@ -51,13 +51,14 @@ const COLUMNS: DataColumn<UseRow>[] = [
 const PACKS = (Object.keys(XU_PACKS) as XuPackId[]).map((id) => XU_PACKS[id]);
 
 /** `/pricing`: Xu Wrap, the one currency of every AI task (docs/19): xu per plan, packs, what 1.000 xu buy. */
-export function XuWrapSection() {
+/** `embedded`: inside the pricing tabs (no own heading or section spacing). */
+export function XuWrapSection({ embedded = false }: { embedded?: boolean }) {
   return (
-    <section aria-labelledby="xu-wrap" className="pb-12 lg:pb-16">
+    <section aria-labelledby="xu-wrap" className={embedded ? "" : "pb-12 lg:pb-16"}>
       <Reveal>
-        <Container className="mx-auto max-w-7xl">
+        <Container className={embedded ? "mx-auto max-w-7xl !px-0" : "mx-auto max-w-7xl"}>
           <div className="mb-6 text-center">
-            <h2 id="xu-wrap" className="flex items-center justify-center gap-2 font-landing-heading text-heading-lg font-bold text-fg">
+            <h2 id="xu-wrap" className={embedded ? "sr-only" : "flex items-center justify-center gap-2 font-landing-heading text-heading-lg font-bold text-fg"}>
               <Coins className="size-7 text-fpt-orange-ink" aria-hidden /> Xu Wrap cho mọi tác vụ AI
             </h2>
             <p className="mx-auto mt-2 max-w-2xl text-body text-fg-muted">

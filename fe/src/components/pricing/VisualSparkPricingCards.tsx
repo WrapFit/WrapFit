@@ -9,7 +9,8 @@ import { PaymentLogos, type PaymentMethodId } from "@/components/layout/PaymentL
 import { Badge, Button, RadioGroup, buttonClass } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useAuth } from "@/features/auth";
-import { CheckoutDialog } from "@/features/payments";
+import { CheckoutDialog, PurchaseSuccessDialog } from "@/features/payments";
+import type { Payment } from "@/types/api";
 import { EXPORT_PACK_LIST, PLANS, PLAN_ORDER, formatVnd, formatVndShort, perExportOf } from "@/features/pricing";
 import type { PaymentPurpose, SubscriptionTier } from "@/types/api";
 import { cn } from "@/utils/helpers";
@@ -41,6 +42,8 @@ export function VisualSparkPricingCards() {
   const currentTier = auth.user?.subscriptionTier ?? null;
   const [pack, setPack] = useState<ExportPackId>(DEFAULT_PACK);
   const [buying, setBuying] = useState<PaymentPurpose | null>(null);
+  /** The payment just confirmed: shows the congratulations popup. */
+  const [purchased, setPurchased] = useState<Payment | null>(null);
   const signedIn = auth.status === "authenticated";
 
   return (
@@ -76,7 +79,8 @@ export function VisualSparkPricingCards() {
           .
         </p>
       </Container>
-      {buying && <CheckoutDialog purpose={buying} onClose={() => setBuying(null)} />}
+      {buying && <CheckoutDialog purpose={buying} closeOnPaid onPaid={setPurchased} onClose={() => setBuying(null)} />}
+      {purchased && <PurchaseSuccessDialog payment={purchased} onClose={() => setPurchased(null)} />}
     </section>
   );
 }
@@ -114,7 +118,7 @@ function PlanCard({
 
   const action =
     tier === "FREE"
-      ? { href: signedIn ? ROUTES.editorNew : ROUTES.register, label: signedIn ? "Tạo hộp ngay" : copy.cta }
+      ? { href: signedIn ? ROUTES.editorDemo : ROUTES.register, label: signedIn ? "Tạo hộp ngay" : copy.cta }
       : plan.isPerExport
         ? { href: checkoutHref(tier, selectedPack.id), label: `Mua ${selectedPack.credits} lượt (${formatVndShort(selectedPack.priceVnd)})` }
         : plan.contactOnly

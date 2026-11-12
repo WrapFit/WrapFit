@@ -61,7 +61,7 @@ export const PLAN_CARDS: Record<SubscriptionTier, PlanCardCopy> = {
     features: [
       "Studio thiết kế, 4 cấu trúc hộp, hộp gấp 3D",
       "FitCheck™ và Auto-Fix trước khi in",
-      "PDF A4 in tại nhà, có watermark WrapFit ở tai dán",
+      "Thiết kế, xem 3D và báo giá miễn phí; mua lượt xuất khi cần file in",
       `${formatQuota(FREE.storageBytes)} lưu trữ · ${xu(FREE.xuPerPeriod)} Wrap mỗi tháng`,
       "Trang chia sẻ 3D và mã QR mở hộp",
     ],
@@ -125,7 +125,7 @@ export const COMPARISON: ComparisonRow[] = [
   { feature: "FitCheck™ và Auto-Fix", values: sameForAll("Có") },
   {
     feature: "PDF A4 in tại nhà",
-    values: { FREE: "Có watermark ở tai dán", PAY_PER_EXPORT: "Không watermark", STARTER: "Không watermark", PRO_BUSINESS: "Không watermark" },
+    values: { FREE: "Mua lượt xuất", PAY_PER_EXPORT: "Có (1 lượt / thiết kế)", STARTER: "Không giới hạn", PRO_BUSINESS: "Không giới hạn" },
   },
   {
     feature: "PDF CMYK 4 lớp cho xưởng · SVG · DXF",
@@ -153,7 +153,7 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "Gói Miễn phí xuất được file gì?",
-    answer: `PDF A4 để in thử tại nhà, có watermark WrapFit nhỏ ở tai dán (phần bị dán khuất khi gấp hộp). File cho xưởng (PDF CMYK 4 lớp, SVG, DXF) và PDF không watermark cần một lượt xuất hoặc gói ${STARTER.name}.`,
+    answer: `Gói Miễn phí thiết kế, xem hộp 3D, chạy FitCheck™ và xem báo giá không giới hạn, nhưng chưa xuất được file in. Mọi file in (PDF A4 in tại nhà, PDF CMYK 4 lớp cho xưởng, SVG, DXF) cần một lượt xuất hoặc gói ${STARTER.name}: nút Thanh toán ở bước Đặt in đổi thành Xuất file in ngay khi bạn trả xong.`,
   },
   {
     question: "Một lượt xuất gồm những gì?",

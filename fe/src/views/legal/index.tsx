@@ -7,6 +7,7 @@ import { Container } from "@/components/landing";
 import { Card, PageHero, SitePage, Toc } from "@/components/site";
 import { EXPORT_PACK_LIST, EXPORT_PACK_VALID_MONTHS, PLANS, PRO_PERIOD_DAYS, formatVnd } from "@/features/pricing";
 import { cn } from "@/utils/helpers";
+import { PAYMENT_TERMS_CLAUSES, PAYMENT_TERMS_PATH, PAYMENT_TERMS_VERSION } from "@wrapfit/shared";
 
 // /legal/privacy, /legal/terms and /legal/cookies. The facts follow the back end: what it stores (be/prisma), the
 // session cookies (be/src/auth/auth-cookie.service.ts), the 30-day trash (be/src/projects), the AI provider
@@ -252,7 +253,63 @@ const COOKIES: LegalDoc = {
   ],
 };
 
-DOCS.push(PRIVACY, TERMS, COOKIES);
+const PAYMENT: LegalDoc = {
+  path: PAYMENT_TERMS_PATH,
+  label: "Thanh toán & hồ sơ pháp lý",
+  title: "Chính sách thanh toán & hồ sơ pháp lý",
+  lead: "Bạn phải đọc và đồng ý các điều khoản này trước mỗi lần trả tiền: mua lượt xuất file in, nâng Pro, nạp xu Wrap hoặc thanh toán đơn in mẫu.",
+  updated: PAYMENT_TERMS_VERSION,
+  versions: [{ version: "1.0", date: PAYMENT_TERMS_VERSION, change: "Bản đầu tiên: điều khoản rủi ro thanh toán bắt buộc đọc trước khi trả tiền." }],
+  sections: [
+    {
+      id: "ho-so",
+      title: "Hồ sơ pháp lý",
+      body: (
+        <>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-2xl bg-landing-canvas p-4 text-sm sm:grid-cols-[200px_minmax(0,1fr)]">
+            <dt className="font-semibold">Tên dịch vụ</dt>
+            <dd>WrapFit — nền tảng thiết kế bao bì quà tặng theo kích thước</dd>
+            <dt className="font-semibold">Đơn vị vận hành</dt>
+            <dd>Nhóm dự án WrapFit, học phần EXE101 — Trường Đại học FPT</dd>
+            <dt className="font-semibold">Tình trạng pháp lý</dt>
+            <dd>Bản thử nghiệm (beta). Mã số thuế và giấy đăng ký kinh doanh được công bố tại đây khi hoàn tất thủ tục.</dd>
+            <dt className="font-semibold">Liên hệ pháp lý</dt>
+            <dd>legal@wrapfit.vn · trả lời trong 3 ngày làm việc</dd>
+            <dt className="font-semibold">Thanh toán</dt>
+            <dd>Chuyển khoản VietQR (đối soát tự động theo nội dung WF…), cổng VNPay sandbox cho tài khoản demo</dd>
+          </dl>
+          <P>Căn cứ pháp lý chính:</P>
+          <UL
+            items={[
+              "Luật Giao dịch điện tử 2023.",
+              "Luật Bảo vệ quyền lợi người tiêu dùng 2023.",
+              "Nghị định 52/2013/NĐ-CP về thương mại điện tử (sửa đổi bởi Nghị định 85/2021/NĐ-CP).",
+              "Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.",
+            ]}
+          />
+          <P>
+            Bộ hồ sơ gồm: <Link href="/legal/terms" className="font-semibold text-fpt-orange-ink underline">Điều khoản sử dụng</Link>,{" "}
+            <Link href="/legal/privacy" className="font-semibold text-fpt-orange-ink underline">Chính sách quyền riêng tư</Link>,{" "}
+            <Link href="/legal/cookies" className="font-semibold text-fpt-orange-ink underline">Chính sách cookie</Link> và chính sách thanh toán trên trang này.
+          </P>
+        </>
+      ),
+    },
+    ...PAYMENT_TERMS_CLAUSES.map((clause) => ({ id: clause.id, title: clause.title, body: <P>{clause.body}</P> })),
+    {
+      id: "dong-y",
+      title: "Cách bạn đồng ý",
+      body: (
+        <P>
+          Trước khi tạo mã thanh toán, WrapFit hiện toàn bộ các điều khoản trên. Ô “Tôi đã đọc và đồng ý” chỉ bấm được sau khi bạn kéo đọc hết, và máy chủ từ chối mọi thanh toán không kèm phiên bản điều khoản hiện hành (
+          {PAYMENT_TERMS_VERSION.split("-").reverse().join("/")}). Phiên bản bạn đồng ý được lưu cùng giao dịch để đối chiếu khi khiếu nại.
+        </P>
+      ),
+    },
+  ],
+};
+
+DOCS.push(PAYMENT, TERMS, PRIVACY, COOKIES);
 
 const formatDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("vi-VN", { day: "numeric", month: "long", year: "numeric" });
 
@@ -321,3 +378,4 @@ function LegalPage({ doc }: { doc: LegalDoc }) {
 export const PrivacyPage = () => <LegalPage doc={PRIVACY} />;
 export const TermsPage = () => <LegalPage doc={TERMS} />;
 export const CookiesPage = () => <LegalPage doc={COOKIES} />;
+export const PaymentTermsPage = () => <LegalPage doc={PAYMENT} />;

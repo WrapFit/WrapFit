@@ -18,6 +18,8 @@ import { formatVnd } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
 import type { Payment, PaymentPurpose } from "@/types/api";
+import { EXPORT_PACKS, PAYMENT_TERMS_VERSION, PRO_MONTH, XU_PACKS, isExportPackId, isXuPackId } from "@wrapfit/shared";
+import { PaymentTermsGate } from "./PaymentTermsGate";
 import { savePendingVnpay } from "./vnpaySession";
 
 /** The server is asked for the payment status every 3 seconds while it waits for the money. */
@@ -33,6 +35,14 @@ const TITLES: Record<PaymentPurpose, string> = {
   XU_1050: "Nạp 1.050 xu Wrap",
   XU_2200: "Nạp 2.200 xu Wrap",
 };
+
+/** Price shown before the payment exists; a sample order is priced by the server. */
+function knownPriceOf(purpose: PaymentPurpose): number | null {
+  if (isExportPackId(purpose)) return EXPORT_PACKS[purpose].priceVnd;
+  if (isXuPackId(purpose)) return XU_PACKS[purpose].priceVnd;
+  if (purpose === "PRO_MONTH") return PRO_MONTH.priceVnd;
+  return null;
+}
 
 /** Test card of the VNPay sandbox (published by VNPay for its test environment, not a real card). */
 const VNPAY_TEST_CARD = { bank: "NCB", number: "9704198526191432198", holder: "NGUYEN VAN A", issued: "07/15", otp: "123456" };
@@ -69,6 +79,8 @@ export interface CheckoutDialogProps {
   /** The payment went through; called when the dialog closes after it. */
   onPaid?(payment: Payment): void;
   onClose(): void;
+  /** Close as soon as the payment is confirmed (the caller shows its own congratulations). */
+  closeOnPaid?: boolean;
 }
 
 /**
@@ -77,19 +89,22 @@ export interface CheckoutDialogProps {
  * VNPay sandbox by redirect and come back through `/payments/vnpay-return`. With PAYMENT_SIMULATION on the server
  * (CP4 demo) a button marks either one paid. On success Gói celebrates, and the plan, credits and orders are fetched again.
  */
-export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", onPaid, onClose }: CheckoutDialogProps) {
+export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", onPaid, onClose, closeOnPaid = false }: CheckoutDialogProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary, staleTime: 60_000 });
 
-  const create = useMutation({ mutationFn: () => createPayment(purpose, orderId) });
-  // Once per dialog (React strict mode mounts effects twice in development).
+  // Step 0: the payment terms must be read and accepted before any payment (and QR code) is created.
+  const [termsTicked, setTermsTicked] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const create = useMutation({ mutationFn: () => createPayment(purpose, orderId, PAYMENT_TERMS_VERSION) });
+  // Once per dialog, after the terms (React strict mode mounts effects twice in development).
   const created = useRef(false);
   useEffect(() => {
-    if (created.current) return;
+    if (!termsAccepted || created.current) return;
     created.current = true;
     create.mutate();
-  }, [create]);
+  }, [create, termsAccepted]);
 
   const paymentId = create.data?.id;
   // `vnpay` is only in the answer of POST /payments: the polling answers replace the payment without it.
@@ -130,6 +145,14 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   }, [paid, queryClient]);
 
   // The content swaps for the success screen: move focus to its heading so a screen reader starts there.
+  const handedOver = useRef(false);
+  useEffect(() => {
+    if (!closeOnPaid || !paid || !payment || handedOver.current) return;
+    handedOver.current = true;
+    onPaid?.(payment);
+    onClose();
+  }, [closeOnPaid, paid, payment, onPaid, onClose]);
+
   const successHeading = useRef<HTMLParagraphElement>(null);
   useEffect(() => {
     if (paid) successHeading.current?.focus({ preventScroll: true });
@@ -236,7 +259,16 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
     </Alert>
   ) : null;
 
-  const footer = paid ? (
+  const footer = !termsAccepted ? (
+    <>
+      <Button variant="secondary" onClick={onClose}>
+        Hủy
+      </Button>
+      <Button variant="brand" disabled={!termsTicked} onClick={() => setTermsAccepted(true)}>
+        Đồng ý & thanh toán
+      </Button>
+    </>
+  ) : paid ? (
     <Button onClick={close}>{doneLabel}</Button>
   ) : (
     <Button variant="secondary" onClick={close} disabled={busy}>
@@ -250,7 +282,9 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
     <Dialog
       title={TITLES[purpose]}
       description={
-        paid
+        !termsAccepted
+          ? "Bước 1/2 · Đọc và đồng ý điều khoản thanh toán"
+          : paid
           ? "Đã nhận thanh toán"
           : provider === "VNPAY"
             ? "Thanh toán thử nghiệm qua cổng VNPay sandbox"
@@ -262,7 +296,9 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
       footer={footer}
       size="lg"
     >
-      {create.isPending ? (
+      {!termsAccepted ? (
+        <PaymentTermsGate itemLabel={TITLES[purpose]} amountVnd={knownPriceOf(purpose)} accepted={termsTicked} onAcceptedChange={setTermsTicked} />
+      ) : create.isPending || create.isIdle ? (
         <LoadingState label="Đang tạo mã thanh toán…" />
       ) : create.isError ? (
         <Alert
