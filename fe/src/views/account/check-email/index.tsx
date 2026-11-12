@@ -4,6 +4,7 @@ import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
+import { OFFLINE_DEMO } from "@/config";
 import { ROUTES } from "@/constants";
 import {
   AccountLoading,
@@ -46,6 +47,29 @@ function CheckEmail({ initialEmail }: { initialEmail: string }) {
   // No address in the link: ask for it before anything can be resent.
   const [editing, setEditing] = useState(!initialEmail);
   const locked = resend.isPending || resend.secondsLeft > 0;
+
+  // The demo build sends no email: its in-browser API verifies the new account at once.
+  if (OFFLINE_DEMO) {
+    return (
+      <AccountShell
+        icon={MailCheck}
+        eyebrow="Bản demo"
+        title="Tài khoản đã sẵn sàng"
+        description={
+          <>
+            Bản demo không gửi email, tài khoản{email ? <> <strong className="break-all font-semibold text-landing-ink">{email}</strong></> : null} đã
+            được xác nhận sẵn. Đăng nhập bằng email và mật khẩu bạn vừa tạo.
+          </>
+        }
+      >
+        <div className="mt-3 text-center">
+          <Link href={withEmail(ROUTES.login, email)} className={SECONDARY_BUTTON}>
+            Đăng nhập ngay
+          </Link>
+        </div>
+      </AccountShell>
+    );
+  }
 
   if (editing) {
     return (
