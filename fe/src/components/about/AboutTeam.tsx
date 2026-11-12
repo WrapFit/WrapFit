@@ -90,11 +90,11 @@ export function AboutTeam() {
         </div>
 
         {/* Team Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70">
           {TEAM_MEMBERS.map((member) => (
             <div
               key={member.name}
-              className="group relative rounded-3xl border border-line/90 bg-white p-6 shadow-soft-8 transition-all hover:-translate-y-1 hover:shadow-soft-16 flex flex-col justify-between"
+              className="group relative p-6 flex flex-col justify-between bg-white transition-colors hover:bg-surface-sunken/50"
             >
               <div>
                 {/* Photo & Badge */}

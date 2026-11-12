@@ -27,25 +27,29 @@ const HOME_TOUR: TourStep[] = [
   {
     target: '[data-tour="home-features"]',
     title: "WrapFit làm được gì",
-    body: "Hộp may đo theo món quà, khuôn bế đạt chuẩn in, hoa văn AI và xem hộp 3D trước khi in.",
+    body: "Hộp may đo theo món quà, khuôn bế đạt chuẩn in, hoa văn AI và xem hộp 3D trước khi in. **Bấm vào một tính năng** để đọc kỹ hơn.",
+    tryIt: "**Bấm một tính năng**: trang cuộn tới phần đó, riêng “Khuôn bế theo mm” mở trang tạo hộp và hướng dẫn này sẽ dừng.",
     mascot: "presenting",
   },
   {
     target: '[data-tour="home-industries"]',
     title: "Chọn theo ngành hàng",
-    body: "Mỹ phẩm, nến thơm, bánh kẹo, trang sức… Mỗi thẻ mở các mẫu hộp hợp với loại quà đó.",
+    body: "Mỹ phẩm, nến thơm, bánh kẹo, trang sức… **Bấm một thẻ** để mở các mẫu hộp hợp với loại quà đó.",
+    tryIt: "**Bấm một thẻ ngành hàng**: mở các mẫu hộp của ngành đó, hướng dẫn này sẽ dừng.",
     mascot: "presenting",
   },
   {
     target: '[data-tour="home-copilot"]',
     title: "Bé Gói luôn ở cạnh bạn",
-    body: "Trong Studio, mình nhắc khi chữ sát lề an toàn 3 mm hay ảnh thiếu độ phân giải, và sửa giúp bằng 1 cú bấm.",
+    body: "Trong Studio, mình nhắc khi chữ sát lề an toàn 3 mm hay ảnh thiếu độ phân giải, và sửa giúp bằng 1 cú bấm. Muốn làm quen trước, **bấm “Trò chuyện với Gói”** bên dưới.",
+    tryIt: "**Bấm “Trò chuyện với Gói”**: mở Studio demo cùng khung chat, hướng dẫn này sẽ dừng.",
     mascot: "measuring",
   },
   {
     target: '[data-tour="header-start"]',
     title: "Sẵn sàng làm chiếc hộp đầu tiên?",
-    body: "Bấm “Bắt đầu” để mở trang tạo hộp. Ở đó mình sẽ hướng dẫn tiếp từng bước: chọn kiểu hộp, nhập kích thước món quà, chọn giấy.",
+    body: "**Bấm “Bắt đầu”** để mở trang tạo hộp. Ở đó mình sẽ hướng dẫn tiếp từng bước: chọn kiểu hộp, nhập kích thước món quà, chọn giấy.",
+    tryIt: "**Bấm “Bắt đầu”**: mở trang tạo hộp, hướng dẫn tiếp tục ở trang đó.",
     mascot: "celebration",
     clickTarget: true,
   },
@@ -81,15 +85,16 @@ export default function HomePage() {
  */
 function WelcomeTour() {
   const welcome = useSearchParams().get("welcome") === "1";
-  if (!welcome) return null;
+  // Always mounted: the replay button on the hero starts the tour for visitors who did not come from sign-in too.
   return (
     <ProductTour
       id={ONBOARDING_TOUR_ID}
       steps={HOME_TOUR}
+      autoStart={welcome}
       startDelayMs={900}
-      // Drop `?welcome=1` from the address without a navigation, so a reload does not look like a first visit.
       onClose={(completed) => {
-        window.history.replaceState(window.history.state, "", window.location.pathname);
+        // Drop `?welcome=1` from the address without a navigation, so a reload does not look like a first visit.
+        if (welcome) window.history.replaceState(window.history.state, "", window.location.pathname);
         // Finished on "Bắt đầu": the page it opens continues the guide at once.
         if (completed) continueTourOnNextPage();
       }}

@@ -17,7 +17,17 @@ import { Button, buttonClass, type ButtonStyleProps } from "./button";
  *   (`a, b`): the first one on screen wins, so a step can point at the sidebar on desktop and the tabs on phones.
  *   A step whose target is missing or hidden is left out, so the tour never points at nothing.
  * - Seen once (finished or skipped), it does not start again on its own; `<TourReplayButton>` replays it.
- * - Keyboard: → / Enter next, ← back, Esc closes, Tab stays inside the tooltip; focus returns to where it was.
+ * - Hands-on: the highlighted element is live. Clicks go through the cut-out on every step, so the user can try the
+ *   feature (pick a box, type a size…); the tour stays on the step and "Tiếp" goes on. The cut-out grows to cover
+ *   popups opened inside the target (`[role="listbox"|"menu"|"dialog"]`, or `[data-tour-popup]` on a custom one).
+ *   An app modal opened from the target (`[role="dialog"][aria-modal="true"]`) hides the tour until it closes.
+ *   `tryIt` is the hint line saying what a click does; `**bold**` in `body` / `tryIt` renders bold orange for the
+ *   action phrases (`renderTourText`).
+ * - Leaving mid-way: unmounting the tour while it is open (another page, another Studio step) marks it skipped, so
+ *   coming back does not start it again; the replay button does. A reload does not mark anything: the tour starts
+ *   over.
+ * - Keyboard: → next, ← back, Esc closes, Tab stays inside the tooltip; focus returns to where it was. While the
+ *   focus is in the target or in a field, ← / → / Enter belong to it; Esc first closes an open popup, then the tour.
  * - Motion: the cut-out moves with the SVG path (no layout), the tooltip fades in with transform and opacity, and
  *   nothing animates for reduced motion. Scrolling to a target is instant then.
  */
@@ -26,7 +36,14 @@ export interface TourStep {
   /** CSS selector of the highlighted element. None: a centred card (welcome, last words). */
   target?: string;
   title: string;
+  /** A string may mark action phrases with `**…**` (bold orange, see `renderTourText`). */
   body: React.ReactNode;
+  /**
+   * Hint line under the body, in the orange strip: what the user can do with the highlighted element and what
+   * happens ("**Thử bấm một kiểu hộp**: bản vẽ đổi theo."). `**…**` as in `body`. Only shown on steps with a target;
+   * a `clickTarget` step without it shows a default sentence.
+   */
+  tryIt?: string;
   /** Side of the target the tooltip prefers; "auto" picks the side with room (below, above, right, left). */
   placement?: TourPlacement;
   /** Pose of Bé Gói next to the title (AGENTS §3). Default: `thumbs_up`. */
@@ -126,6 +143,10 @@ export function startTour(id: string) {
   window.dispatchEvent(new CustomEvent<string>(START_EVENT, { detail: id }));
 }
 
+function isShown(element: HTMLElement) {
+  return element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
+}
+
 /** First element of `selector` that is on screen (has a box). */
 function findTarget(selector: string | undefined): HTMLElement | null {
   if (!selector) return null;
@@ -135,7 +156,18 @@ function findTarget(selector: string | undefined): HTMLElement | null {
   } catch {
     return null;
   }
-  return elements.find((element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden") ?? null;
+  return elements.find(isShown) ?? null;
+}
+
+/** Popups a target can open inside itself (select list, menu, calendar); the cut-out grows to cover them. */
+const POPUP_SELECTOR = '[role="listbox"], [role="menu"], [role="dialog"], [data-tour-popup]';
+/** Fields that own ← / → / Enter while they have the focus. */
+const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable=""], [contenteditable="true"]';
+/** A modal of the app (not the tour's own tooltip, which has the same role). */
+const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"]';
+
+function openPopupsIn(target: HTMLElement): HTMLElement[] {
+  return Array.from(target.querySelectorAll<HTMLElement>(POPUP_SELECTOR)).filter(isShown);
 }
 
 interface Rect {
@@ -145,14 +177,49 @@ interface Rect {
   height: number;
 }
 
+/** The target plus the popups open inside it, with room around. */
 function spotlightOf(element: HTMLElement): Rect {
   const box = element.getBoundingClientRect();
+  let left = box.left;
+  let top = box.top;
+  let right = box.right;
+  let bottom = box.bottom;
+  for (const popup of openPopupsIn(element)) {
+    const popupBox = popup.getBoundingClientRect();
+    left = Math.min(left, popupBox.left);
+    top = Math.min(top, popupBox.top);
+    right = Math.max(right, popupBox.right);
+    bottom = Math.max(bottom, popupBox.bottom);
+  }
   return {
-    x: box.left - SPOT_PADDING,
-    y: box.top - SPOT_PADDING,
-    width: box.width + SPOT_PADDING * 2,
-    height: box.height + SPOT_PADDING * 2,
+    x: left - SPOT_PADDING,
+    y: top - SPOT_PADDING,
+    width: right - left + SPOT_PADDING * 2,
+    height: bottom - top + SPOT_PADDING * 2,
   };
+}
+
+function sameRect(a: Rect | null, b: Rect | null) {
+  return a === b || (a !== null && b !== null && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height);
+}
+
+/**
+ * Splits `text` on `**…**`: the marked parts (the actions to do) become bold orange. Text without marks comes back
+ * as is.
+ */
+export function renderTourText(text: string): React.ReactNode {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  if (parts.length === 1) return text;
+  // split() with one capture group: the marked parts sit at the odd indexes.
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="font-semibold text-accent">
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  );
 }
 
 /** Screen-sized path with the rounded spot cut out (even-odd fill). */
@@ -225,6 +292,9 @@ export function ProductTour({ id, steps, autoStart = true, ready = true, startDe
   /** Steps whose target is on screen, fixed when the tour starts so "2 / 5" stays true. */
   const [active, setActive] = useState<TourStep[] | null>(null);
   const [index, setIndex] = useState(0);
+  /** Whether a tour is open right now, readable from cleanups (state would be stale there). */
+  const activeRef = useRef<TourStep[] | null>(null);
+  activeRef.current = active;
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
   const onCloseRef = useRef(onClose);
@@ -248,13 +318,24 @@ export function ProductTour({ id, steps, autoStart = true, ready = true, startDe
     };
     attempt();
   }, []);
-  useEffect(() => () => window.clearTimeout(pollTimer.current), []);
 
   const close = useCallback(
     (completed: boolean) => {
+      // Cleared at once: if `onClose` navigates away, the unmount below must not turn "done" into "skipped".
+      activeRef.current = null;
       markTourSeen(id, completed);
       setActive(null);
       onCloseRef.current?.(completed);
+    },
+    [id],
+  );
+
+  // The user left the page (or the step) with the tour open: it counts as skipped, so coming back does not restart
+  // it. A reload runs no cleanup, so it marks nothing. Strict Mode's first fake unmount finds no open tour.
+  useEffect(() => () => window.clearTimeout(pollTimer.current), []);
+  useEffect(
+    () => () => {
+      if (activeRef.current) markTourSeen(id, false);
     },
     [id],
   );
@@ -317,33 +398,69 @@ function TourOverlay({ steps, index, onBack, onNext, onSkip }: TourOverlayProps)
     };
   }, []);
 
-  // Each step: bring the target into view, then follow it (scroll, resize, its own size) once per frame.
+  // An app modal (dialog opened from the target, portalled below the tour) hides the tour until it closes.
+  const [blocked, setBlocked] = useState(false);
   useEffect(() => {
-    const target = findTarget(step.target);
-    if (step.target && target) {
-      const box = target.getBoundingClientRect();
+    const check = () => {
+      const tooltip = tooltipRef.current;
+      setBlocked(Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR)).some((modal) => modal !== tooltip && isShown(modal)));
+    };
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-modal", "role", "hidden"] });
+    return () => observer.disconnect();
+  }, []);
+
+  // Each step: bring the target into view, then follow it (scroll, resize, its own size, popups opening inside it)
+  // once per frame. The target is looked up again at every measure: the user may make it appear or go away.
+  useEffect(() => {
+    const first = findTarget(step.target);
+    if (first) {
+      const box = first.getBoundingClientRect();
       const offScreen = box.top < 80 || box.bottom > window.innerHeight - 40;
-      if (offScreen) target.scrollIntoView({ block: "center", inline: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
+      if (offScreen) first.scrollIntoView({ block: "center", inline: "nearest", behavior: reducedMotion ? "auto" : "smooth" });
     }
     let frame = 0;
-    const measure = () => {
-      frame = 0;
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
-      setSpot(target?.isConnected ? spotlightOf(target) : null);
-    };
+    let watched: HTMLElement | null = null;
+    let watchingPage = false;
     const schedule = () => {
       if (!frame) frame = window.requestAnimationFrame(measure);
     };
+    const resizeObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
+    const targetObserver = new MutationObserver(schedule);
+    const pageObserver = new MutationObserver(schedule);
+    function measure() {
+      frame = 0;
+      const target = findTarget(step.target);
+      if (target !== watched) {
+        resizeObserver?.disconnect();
+        targetObserver.disconnect();
+        watched = target;
+        if (target) {
+          resizeObserver?.observe(target);
+          targetObserver.observe(target, { subtree: true, childList: true, attributes: true });
+        }
+      }
+      // Target missing: wait for it to come back by watching the page.
+      const waiting = !target && !!step.target;
+      if (waiting && !watchingPage) pageObserver.observe(document.body, { childList: true, subtree: true });
+      else if (!waiting && watchingPage) pageObserver.disconnect();
+      watchingPage = waiting;
+      const nextViewport = { width: window.innerWidth, height: window.innerHeight };
+      setViewport((current) => (current.width === nextViewport.width && current.height === nextViewport.height ? current : nextViewport));
+      const nextSpot = target ? spotlightOf(target) : null;
+      setSpot((current) => (sameRect(current, nextSpot) ? current : nextSpot));
+    }
     measure();
     window.addEventListener("scroll", schedule, { passive: true, capture: true });
     window.addEventListener("resize", schedule);
-    const observer = target && typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
-    if (target) observer?.observe(target);
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", schedule);
-      observer?.disconnect();
+      resizeObserver?.disconnect();
+      targetObserver.disconnect();
+      pageObserver.disconnect();
     };
   }, [step, reducedMotion]);
 
@@ -380,15 +497,31 @@ function TourOverlay({ steps, index, onBack, onNext, onSkip }: TourOverlayProps)
 
   // Keys on the whole page: on an interactive step the focus sits on the target, outside the tooltip.
   const keyHandler = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  // Whether an Escape starts with a popup open (focus in it, or a list open in the target). Read before the popup's
+  // own handler runs and closes it, so the same Escape does not also close the tour.
+  const escapeBelongsToPopup = useRef(false);
+  const stepTargetRef = useRef(step.target);
+  stepTargetRef.current = step.target;
   keyHandler.current = (event: KeyboardEvent) => {
-    const inTooltip = tooltipRef.current?.contains(document.activeElement) ?? false;
+    // An app modal is open: it owns the keyboard.
+    if (blocked) return;
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const inTooltip = tooltipRef.current?.contains(active) ?? false;
+    // The user works in the target or in a field: ← / → belong to it (a size field, a slider, a list). A click step's
+    // target is a plain button or link, so there ← still goes back.
+    const target = findTarget(step.target);
+    const usingTarget = !inTooltip && !step.clickTarget && !!active && !!target?.contains(active);
+    const typing = !!active?.closest(EDITABLE_SELECTOR);
+    const keepArrows = usingTarget || typing;
     if (event.key === "Escape") {
+      // The popup took this Escape (it closed, or kept the event): the tour stays.
+      if (event.defaultPrevented || escapeBelongsToPopup.current) return;
       event.preventDefault();
       onSkip();
-    } else if (event.key === "ArrowRight" && !step.clickTarget) {
+    } else if (event.key === "ArrowRight" && !step.clickTarget && !keepArrows) {
       event.preventDefault();
       onNext();
-    } else if (event.key === "ArrowLeft" && index > 0) {
+    } else if (event.key === "ArrowLeft" && index > 0 && !keepArrows) {
       event.preventDefault();
       onBack();
     } else if (event.key === "Tab" && inTooltip) {
@@ -407,24 +540,29 @@ function TourOverlay({ steps, index, onBack, onNext, onSkip }: TourOverlayProps)
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => keyHandler.current(event);
+    // Capture phase runs before the popup's own handler: note there whether this Escape belongs to an open popup.
+    const onKeyCapture = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const popup = active?.closest<HTMLElement>(POPUP_SELECTOR);
+      const target = findTarget(stepTargetRef.current);
+      escapeBelongsToPopup.current =
+        (!!popup && popup !== tooltipRef.current) || (!!active && !!target?.contains(active) && openPopupsIn(target).length > 0);
+    };
+    window.addEventListener("keydown", onKeyCapture, true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKeyCapture, true);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   return (
-    // The layer itself lets clicks through; the dim catches them, and the cut-out does only on interactive steps.
-    <div className="pointer-events-none fixed inset-0 z-[90]" data-app-tokens="">
+    // The layer lets clicks through; the dim catches them, but not over the cut-out, which stays usable on every step.
+    <div aria-hidden={blocked || undefined} className={cn("pointer-events-none fixed inset-0 z-[90]", blocked && "invisible")} data-app-tokens="">
       <svg className="absolute inset-0 size-full animate-fade-in" aria-hidden>
         <path d={dimPath(viewport, spot)} fillRule="evenodd" className="pointer-events-auto fill-fg/60" />
       </svg>
-      {spot && !step.clickTarget && (
-        // Not an interactive step: the highlighted element is shown, not usable yet.
-        <span
-          aria-hidden
-          className="pointer-events-auto absolute left-0 top-0"
-          style={{ width: spot.width, height: spot.height, transform: `translate(${spot.x}px, ${spot.y}px)` }}
-        />
-      )}
       {spot && (
         // Outer span: position (transform). Inner span: the ring, popping in per step (its own transform).
         <span
@@ -474,12 +612,18 @@ function TourOverlay({ steps, index, onBack, onNext, onSkip }: TourOverlayProps)
             </button>
           </div>
           <div id={bodyId} className="mt-3 text-body-sm text-fg-muted">
-            {step.body}
+            {typeof step.body === "string" ? renderTourText(step.body) : step.body}
           </div>
-          {step.clickTarget && (
-            <p className="mt-3 flex items-center gap-2 rounded-control bg-fpt-orange-light px-3 py-2 text-body-sm font-semibold text-accent">
-              <MousePointerClick className="size-4 shrink-0" aria-hidden />
-              Bấm vào phần đang được tô sáng để tiếp tục
+          {step.target && (step.tryIt || step.clickTarget) && (
+            <p
+              className={cn(
+                // accent-bg flips with the theme (a fixed light orange would hide the light text of the dark theme).
+                "mt-3 flex items-start gap-2 rounded-control bg-accent-bg px-3 py-2 text-body-sm",
+                step.tryIt ? "text-fg" : "font-semibold text-accent-fg",
+              )}
+            >
+              <MousePointerClick className="mt-0.5 size-4 shrink-0 text-accent-fg" aria-hidden />
+              <span className="min-w-0">{step.tryIt ? renderTourText(step.tryIt) : "Bấm vào phần đang được tô sáng để tiếp tục"}</span>
             </p>
           )}
 
@@ -540,7 +684,9 @@ function TooltipArrow({ side, offset }: { side: Side; offset: number }) {
 
 export interface TourReplayButtonProps extends ButtonStyleProps {
   tourId: string;
-  label?: string;
+  label?: React.ReactNode;
+  /** Tooltip, for a label hidden on small screens. */
+  title?: string;
 }
 
 /** "Xem hướng dẫn": replays the tour of the page. Give it `data-tour` to make it the last step. */

@@ -18,5 +18,6 @@
     "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "dist-worker"]
 }

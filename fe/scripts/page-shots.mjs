@@ -144,14 +144,18 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Minimal Chrome DevTools Protocol client on the first page target. */
 async function openChrome(profile) {
-  const port = 9300 + Math.floor(Math.random() * 600);
+  // Port 0: Chrome picks a free port and writes it to DevToolsActivePort. A fixed range collides with the ports Windows
+  // reserves for Hyper-V / Docker (netsh interface ipv4 show excludedportrange protocol=tcp).
+  const portFile = path.join(profile, 'DevToolsActivePort');
+  fs.rmSync(portFile, { force: true });
   const child = spawn(chromePath, [
-    '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run',
+    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
     '--no-default-browser-check', '--hide-scrollbars', '--force-device-scale-factor=1', 'about:blank',
   ], { stdio: 'ignore' });
   let target;
   for (let i = 0; i < 50 && !target; i++) {
     try {
+      const port = fs.readFileSync(portFile, 'utf8').split(/\r?\n/)[0].trim();
       target = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page');
     } catch {}
     if (!target) await sleep(200);
@@ -436,8 +440,14 @@ const FLOATING = `(covered) => {
 const ROLE_ACCOUNTS = {
   admin: () => seedAdmin(),
   maker: () => {
+    if (process.env.SHOT_MAKER_EMAIL) return { email: process.env.SHOT_MAKER_EMAIL, password: process.env.SHOT_MAKER_PASSWORD };
     if (!fixtures?.maker) throw new Error('Role maker needs fixtures: run node fe/scripts/ui-fixtures.mjs');
     return fixtures.maker;
+  },
+  // A demo account (users.is_demo, pays through VNPay sandbox, docs/21): set the flag in the database or with the admin API.
+  demo: () => {
+    if (!process.env.SHOT_DEMO_EMAIL) throw new Error('Role demo needs SHOT_DEMO_EMAIL and SHOT_DEMO_PASSWORD (an account with is_demo = true)');
+    return { email: process.env.SHOT_DEMO_EMAIL, password: process.env.SHOT_DEMO_PASSWORD };
   },
 };
 

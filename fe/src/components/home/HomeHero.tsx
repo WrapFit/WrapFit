@@ -4,6 +4,8 @@ import React from "react";
 import { cn } from "@/utils/helpers";
 import { HERO, HERO_FEATURES, INDUSTRY_TILES, type IndustryTile } from "./content";
 import { Container, Tag, limeButton } from "@/components/landing";
+import { TourReplayButton } from "@/components/ui";
+import { ONBOARDING_TOUR_ID } from "@/features/auth";
 
 /**
  * Hero of the home page, in two balanced columns from lg: the text on the left (badge, two-line title, the five
@@ -58,9 +60,12 @@ export function HomeHero() {
             ))}
           </ul>
 
-          <Link href={HERO.cta.href} className={limeButton()} data-tour="home-cta">
-            {HERO.cta.label}
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <Link href={HERO.cta.href} className={limeButton()} data-tour="home-cta">
+              {HERO.cta.label}
+            </Link>
+            <TourReplayButton tourId={ONBOARDING_TOUR_ID} variant="ghost" className="min-h-11 sm:min-h-0" />
+          </div>
         </div>
 
         <section aria-label="Ngành hàng nổi bật" data-tour="home-industries" className="grid grid-cols-2 gap-2 lg:gap-4">

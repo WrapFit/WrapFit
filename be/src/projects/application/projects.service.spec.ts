@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import type { ProjectDetail } from '../domain/project.types';
 import { CreateProjectDto } from '../presentation/dto/create-project.dto';
 import { QueryProjectsDto } from '../presentation/dto/query-projects.dto';
+import { IProjectEvents, PROJECT_EVENTS } from './ports/project-events.port';
 import { IProjectFiles, PROJECT_FILES } from './ports/project-files.port';
 import { IProjectRepository, PROJECT_REPOSITORY } from './ports/project.repository.port';
 import { ProjectsService } from './projects.service';
@@ -11,6 +12,7 @@ describe('ProjectsService', () => {
   let service: ProjectsService;
   let repo: jest.Mocked<IProjectRepository>;
   let files: jest.Mocked<IProjectFiles>;
+  let events: jest.Mocked<IProjectEvents>;
 
   const userId = 'user-1';
   const tuckTop = {
@@ -77,11 +79,13 @@ describe('ProjectsService', () => {
       resolveUpload: jest.fn(),
       assertCanvasUploads: jest.fn(),
     };
+    events = { record: jest.fn(), recordStudioActivity: jest.fn().mockResolvedValue(true) };
     const moduleRef = await Test.createTestingModule({
       providers: [
         ProjectsService,
         { provide: PROJECT_REPOSITORY, useValue: repo },
         { provide: PROJECT_FILES, useValue: files },
+        { provide: PROJECT_EVENTS, useValue: events },
       ],
     }).compile();
     service = moduleRef.get(ProjectsService);
@@ -105,6 +109,16 @@ describe('ProjectsService', () => {
         industry: null,
       });
       expect(repo.countTemplateUse).not.toHaveBeenCalled();
+    });
+
+    it('counts the project as a box created on the analytics dashboard', async () => {
+      repo.create.mockResolvedValueOnce(project({ id: 'project-9' }));
+      await service.create(userId, createDto());
+      expect(events.record).toHaveBeenCalledWith('PROJECT_CREATED', {
+        userId,
+        projectId: 'project-9',
+        payload: { templateId: 'tuck-top', source: 'new' },
+      });
     });
 
     it('runs FitCheck on the server (short panel ids included)', async () => {
@@ -307,6 +321,7 @@ describe('ProjectsService', () => {
         tags: ['tet'],
         forkedFromId: null,
       });
+      expect(events.record).toHaveBeenCalledWith('PROJECT_CREATED', expect.objectContaining({ userId, payload: { templateId: 'tuck-top', source: 'duplicate' } }));
     });
 
     it('refuses to duplicate a project in the trash', async () => {
@@ -323,6 +338,14 @@ describe('ProjectsService', () => {
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'remixer', title: 'Hộp Tết', collectionId: null, forkedFromId: 'project-1' }),
     );
+    expect(events.record).toHaveBeenCalledWith('PROJECT_CREATED', expect.objectContaining({ userId: 'remixer', payload: { templateId: 'tuck-top', source: 'fork' } }));
+  });
+
+  it('recordEvent passes Auto-Fix repairs and studio heartbeats to the analytics events', async () => {
+    await service.recordEvent('project-1', userId, { type: 'AUTO_FIX_APPLIED', fixed: 2 });
+    expect(events.record).toHaveBeenCalledWith('AUTO_FIX_APPLIED', { userId, projectId: 'project-1', payload: { fixed: 2 } });
+    await service.recordEvent('project-1', userId, { type: 'STUDIO_ACTIVE', seconds: 45 });
+    expect(events.recordStudioActivity).toHaveBeenCalledWith(userId, 'project-1', 45);
   });
 
   it('changeVisibility refuses projects in the trash', async () => {

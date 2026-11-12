@@ -11,7 +11,7 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import React from 'react';
 import { listCuratedTemplates } from '@/api/templates';
-import { AdminShell, Badge, DataTable, Panel, PanelTitle, StatTile, WorkspaceError } from '@/components/workspace';
+import { AdminShell, Badge, DataTable, Panel, PanelTitle, AdminStat, WorkspaceError, ADMIN_STAT_GROUP } from '@/components/workspace';
 import { ROUTES } from '@/constants';
 import { formatCount } from '@/features/admin';
 import { RequireAuth } from '@/features/auth';
@@ -43,15 +43,15 @@ function DielineVault() {
   const total = counts.every((query) => query.data) ? counts.reduce((sum, query) => sum + (query.data?.meta.total ?? 0), 0) : undefined;
 
   return (
-    <AdminShell title="Kho khuôn bế" description="Các cấu trúc hộp mà công thức khuôn bế hỗ trợ, giới hạn kích thước và số mẫu WrapFit Curated của từng cấu trúc.">
+    <AdminShell title="Kho khuôn bế" description="Cấu trúc hộp được hỗ trợ và giới hạn kích thước.">
       {structures.isError ? (
         <WorkspaceError error={structures.error} title="Không tải được cấu trúc hộp" onRetry={() => void structures.refetch()} retrying={structures.isFetching} />
       ) : (
         <div className="flex flex-col gap-6">
-          <section aria-label="Số liệu" className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <StatTile label="Cấu trúc hộp" value={structures.data ? list.length : '–'} />
-            <StatTile label="Mẫu WrapFit Curated" value={total !== undefined ? formatCount(total) : '–'} />
-            <StatTile label="Phiên bản công thức" value={`v${CURRENT_FORMULA_VERSION}`} hint="Dự án mới dùng bản này" />
+          <section aria-label="Số liệu" className={`${ADMIN_STAT_GROUP} grid-cols-2 md:grid-cols-3`}>
+            <AdminStat label="Cấu trúc hộp" value={structures.data ? list.length : '–'} />
+            <AdminStat label="Mẫu WrapFit Curated" value={total !== undefined ? formatCount(total) : '–'} />
+            <AdminStat label="Phiên bản công thức" value={`v${CURRENT_FORMULA_VERSION}`} hint="Bản cho dự án mới" />
           </section>
 
           <Panel aria-labelledby="vault-structures">

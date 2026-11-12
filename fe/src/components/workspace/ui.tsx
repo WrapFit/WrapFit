@@ -7,22 +7,26 @@ import { Badge as UiBadge, cardClass, INPUT_BASE, INPUT_SIZES, Switch, type Data
 import { DataTable as UiDataTable } from "@/components/ui";
 import { errorMessage } from "@/services/api";
 import { cn } from "@/utils/helpers";
+import { ADMIN_CARD, useAdminSkin } from "./adminSkin";
+import { AdminStat } from "./AdminStat";
 
 // Building blocks of the workspace pages (pacdora.com style, WrapFit greens).
 
 /** White panel with a hairline border: the shared Card, panel variant. */
 export function Panel({ className, children, as: Tag = "section", ...rest }: React.HTMLAttributes<HTMLElement> & { as?: "section" | "div" | "article" }) {
+  const admin = useAdminSkin();
   return (
-    <Tag className={cardClass({ variant: "panel", padding: "md", className })} {...rest}>
+    <Tag className={admin ? cn(ADMIN_CARD, "p-5 sm:p-6", className) : cardClass({ variant: "panel", padding: "md", className })} {...rest}>
       {children}
     </Tag>
   );
 }
 
 export function PanelTitle({ children, action, id }: { children: React.ReactNode; action?: React.ReactNode; id?: string }) {
+  const admin = useAdminSkin();
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-      <h2 id={id} className="text-title text-library-ink">
+      <h2 id={id} className={admin ? "font-landing-heading text-lg font-bold text-landing-ink" : "text-title text-library-ink"}>
         {children}
       </h2>
       {action}
@@ -32,11 +36,15 @@ export function PanelTitle({ children, action, id }: { children: React.ReactNode
 
 /** Grey card with the black outline and hard shadow of Pacdora's search card. */
 export function HeroPanel({ className, children }: { className?: string; children: React.ReactNode }) {
+  const admin = useAdminSkin();
+  if (admin) return <section className={cn(ADMIN_CARD, "p-5 sm:p-8", className)}>{children}</section>;
   return <section className={cn("rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile p-5 shadow-hard sm:p-8", className)}>{children}</section>;
 }
 
 /** Number with its label, on a grey tile. */
 export function StatTile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: React.ReactNode }) {
+  // Console layout (admin and workspace): a cell of the one-strip figures (ADMIN_STAT_GROUP), with its icon.
+  if (useAdminSkin()) return <AdminStat label={label} value={value} hint={hint} />;
   return (
     <div className="rounded-xl bg-library-panel px-4 py-3">
       <p className="text-caption text-library-muted">{label}</p>
@@ -91,7 +99,7 @@ export function SegmentedControl<T extends string>({
   };
 
   return (
-    <div role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className="inline-flex max-w-full overflow-x-auto rounded-lg border border-library-ink p-0.5 [scrollbar-width:none]">
+    <div role="radiogroup" aria-label={label} onKeyDown={onKeyDown} className="inline-flex max-w-full overflow-x-auto rounded-full bg-surface-sunken p-1 [scrollbar-width:none]">
       {options.map((option) => (
         <button
           key={option.value}
@@ -102,8 +110,8 @@ export function SegmentedControl<T extends string>({
           aria-checked={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            "h-9 shrink-0 whitespace-nowrap rounded-md px-3 text-body-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
-            value === option.value ? (tone === "ink" ? "bg-fg text-fg-inverse" : "bg-fpt-orange text-white") : "text-library-ink hover:bg-library-panel"
+            "h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-body-sm transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
+            value === option.value ? "bg-white font-semibold text-accent shadow-xs" : "text-fg-muted hover:text-fg"
           )}
         >
           {option.label}
@@ -173,6 +181,30 @@ export function WorkspaceError({
   retrying?: boolean;
   className?: string;
 }) {
+  const admin = useAdminSkin();
+  if (admin) {
+    // Admin console: a quiet white card with a small warning, and the orange outline retry of the admin palette.
+    return (
+      <div role="alert" className={cn(ADMIN_CARD, "flex flex-col items-center px-6 py-10 text-center", className)}>
+        <span className="flex size-11 items-center justify-center rounded-xl bg-warning-bg text-warning-fg">
+          <AlertTriangle className="size-5" aria-hidden />
+        </span>
+        <h2 className="mt-4 font-landing-heading text-base font-bold text-landing-ink">{title}</h2>
+        <p className="mt-1 max-w-md text-sm leading-6 text-fg-muted">{errorMessage(error)}</p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={retrying}
+            className="mt-5 inline-flex h-10 items-center gap-2 rounded-full bg-white px-5 text-sm font-semibold text-accent ring-1 ring-fpt-orange/40 transition-colors hover:bg-fpt-orange-light disabled:opacity-60"
+          >
+            <RotateCw className={cn("size-4", retrying && "animate-spin motion-reduce:animate-none")} aria-hidden />
+            {retrying ? "Đang thử lại…" : "Thử lại"}
+          </button>
+        )}
+      </div>
+    );
+  }
   return (
     <div role="alert" className={cn("flex flex-col items-center rounded-2xl border border-danger/25 bg-danger-bg/60 px-6 py-10 text-center", className)}>
       <span className="flex size-12 items-center justify-center rounded-xl bg-white text-danger">

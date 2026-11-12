@@ -3,7 +3,7 @@
 /**
  * `/structures/[id]`: one box structure in the style of pacdora.com's dieline pages. Names and size limits come from
  * `GET /templates/structures`; the dieline, its panels and the sheet figures from the formulas of `@wrapfit/shared`.
- * The flat dieline downloads as an SVG; "Thiết kế hộp này" opens /editor/new with the chosen size.
+ * The flat dieline downloads as an SVG; "Thiết kế hộp này" opens /editor/demo with the chosen size.
  */
 
 import { CURRENT_FORMULA_VERSION, generateDielinePieces, type BoxDimensions, type BoxStructureType } from "@wrapfit/shared";
@@ -138,7 +138,7 @@ function StructureDetail({ id, name, description, category, limits, defaults, ot
     URL.revokeObjectURL(url);
   };
 
-  const editorHref = `${ROUTES.editorNew}?structure=${id}&l=${dimensions.length}&w=${dimensions.width}&h=${dimensions.height}&paper=${paper.theme}`;
+  const editorHref = `${ROUTES.editorDemo}?structure=${id}&l=${dimensions.length}&w=${dimensions.width}&h=${dimensions.height}&paper=${paper.theme}`;
 
   return (
     <>

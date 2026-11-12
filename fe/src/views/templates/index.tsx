@@ -11,7 +11,7 @@ import { landingFontVariables } from "@/assets/fonts/landing";
 import { EmptyState, ErrorState } from "@/components/common/StatusViews";
 import { MainFooter, MainHeader } from "@/components/layout";
 import { HowItWorks, LibraryBodySkeleton, LibraryCard, LibraryCardSkeleton, Pagination, StartBar } from "@/components/library";
-import { Breadcrumb, ProductTour, Tab, TabList, TabPanel, Tabs, type TourStep } from "@/components/ui";
+import { Breadcrumb, ProductTour, Tab, TabList, TabPanel, Tabs, TourReplayButton, type TourStep } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import {
   DielineSketch,
@@ -295,24 +295,28 @@ const LIBRARY_TOUR: TourStep[] = [
   {
     target: '[data-tour="library-search"]',
     title: "Tìm theo tên hoặc thẻ",
-    body: "Gõ “tết”, “kraft”, “mỹ phẩm”… Kết quả đổi sau khi bạn ngừng gõ một chút, không cần bấm Enter.",
+    body: "**Gõ “tết”, “kraft”, “mỹ phẩm”…** vào ô tìm. Kết quả đổi sau khi bạn ngừng gõ một chút, không cần bấm Enter.",
+    tryIt: "**Gõ một từ khoá vào ô tìm**: lưới mẫu bên dưới lọc lại sau khi bạn ngừng gõ.",
     mascot: "presenting",
   },
   {
     target: '[data-tour="library-filters"]',
     title: "Lọc theo cấu trúc, dịp, ngành hàng",
-    body: "Mỗi lựa chọn kèm số mẫu còn lại, nên bạn biết trước bộ lọc nào ra kết quả.",
+    body: "**Chọn một cấu trúc, dịp hoặc ngành hàng** để thu hẹp danh sách. Mỗi lựa chọn kèm số mẫu còn lại, nên bạn biết trước bộ lọc nào ra kết quả.",
+    tryIt: "**Bấm một bộ lọc**: lưới mẫu thu hẹp ngay, bấm lại để bỏ lọc.",
     placement: "right",
   },
   {
     target: '[data-tour="library-tabs"]',
     title: "Mẫu tuyển chọn hoặc của cộng đồng",
-    body: "WrapFit tuyển chọn là mẫu sẵn sàng in. Cộng đồng là thiết kế công khai đạt FitCheck™ từ 90 điểm.",
+    body: "WrapFit tuyển chọn là mẫu sẵn sàng in. Cộng đồng là thiết kế công khai đạt FitCheck™ từ 90 điểm. **Bấm từng tab** để so sánh.",
+    tryIt: "**Bấm tab Cộng đồng**: lưới đổi sang thiết kế của người dùng.",
   },
   {
     target: '[data-tour="library-grid"] a',
     title: "Mở mẫu và đổi kích thước",
-    body: "Bên trái là khuôn bế phẳng, bên phải là hộp đã gấp. Bấm vào để mở trong Studio rồi đổi từng milimét theo món quà.",
+    body: "Bên trái là khuôn bế phẳng, bên phải là hộp đã gấp. **Bấm vào một mẫu** để mở trong Studio rồi đổi từng milimét theo món quà.",
+    tryIt: "**Bấm một thẻ mẫu**: mở mẫu đó trong Studio, hướng dẫn này sẽ dừng.",
     mascot: "measuring",
   },
 ];
@@ -346,14 +350,18 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
   return (
     <section className="grid grid-cols-1 overflow-hidden rounded-squircle-md border-[1.5px] border-library-ink bg-library-tile shadow-hard md:grid-cols-[minmax(0,575fr)_minmax(0,435fr)]">
       <div className="px-5 pb-8 pt-5 sm:pl-8">
-        <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <Breadcrumb items={[{ label: "Trang chủ", href: ROUTES.home }, { label: "Thư viện mẫu" }]} />
+          {/* 44px tap target on phones, compact from sm up. */}
+          <TourReplayButton tourId={LIBRARY_TOUR_ID} variant="ghost" size="sm" className="min-h-11 sm:min-h-0" />
+        </div>
         <h1 className="mt-4 flex gap-3 text-2xl font-medium leading-snug text-library-ink sm:text-heading-lg sm:leading-[1.3]">
           <ArrowRight className="mt-1 size-7 shrink-0 text-fpt-orange-ink sm:size-8" strokeWidth={1.75} aria-hidden />
-          <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} in được & tuỳ chỉnh theo từng milimét</span>
+          <span>{total !== null ? `${total} mẫu hộp quà` : "Mẫu hộp quà"} tuỳ chỉnh theo từng milimét</span>
         </h1>
         <p className="mt-4 text-base leading-[1.6] text-library-sub">
-          Một chiếc hộp vừa khít giúp món quà được nhớ lâu hơn. Thư viện WrapFit gồm mẫu do WrapFit tuyển chọn và thiết kế đạt
-          FitCheck™ của cộng đồng: chọn một mẫu, đổi kích thước theo món quà rồi xuất file in.
+          Khám phá bộ sưu tập mẫu hộp quà tuyển chọn: chọn mẫu, tùy chỉnh kích thước theo món quà và xuất file sản xuất.
+
         </p>
         <form
           role="search"
@@ -374,7 +382,7 @@ function HeroCard({ total, filters, onChange }: { total: number | null; filters:
               value={search}
               maxLength={SEARCH_MAX}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Tìm theo tên hoặc thẻ, ví dụ: tết, kraft…"
+              placeholder="Tìm mẫu hộp quà…"
               enterKeyHint="search"
               className="h-full min-w-0 flex-1 bg-transparent text-base text-library-ink outline-none placeholder:text-library-muted"
             />

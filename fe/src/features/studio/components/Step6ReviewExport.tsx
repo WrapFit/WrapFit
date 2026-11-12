@@ -1,15 +1,16 @@
 "use client";
 
 import { BLEED_MM, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, Download, Gift, Grid3x3, Sparkles, Wand2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Check, Gift, Grid3x3, Wand2 } from "lucide-react";
 import React, { useState } from "react";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { CardTitle, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
+import { ExportPurchaseCard } from "./export/ExportPurchaseCard";
 import { QuoteBreakdown } from "./QuoteBreakdown";
 import { QuoteCard } from "./QuoteCard";
 
@@ -45,7 +46,12 @@ interface Step6ReviewExportProps {
   projectId: string | null;
   onBack(): void;
   onAutoFix(): void;
+  /** Opens the export dialog: only reachable once a package covers this design (ExportPurchaseCard). */
   onExport(): void;
+  /** Demo of a signed-in user: saves it as a project to export. */
+  signedIn?: boolean;
+  onSaveProject?(): void;
+  saving?: boolean;
   /** Back to the design step with the library open (an empty box). */
   onDesign(): void;
 }
@@ -69,6 +75,9 @@ export function Step6ReviewExport({
   onAutoFix,
   onExport,
   onDesign,
+  signedIn,
+  onSaveProject,
+  saving,
 }: Step6ReviewExportProps) {
   const [view, setView] = useState<"2d" | "3d">("2d");
   const [pieceIndex, setPieceIndex] = useState(0);
@@ -93,9 +102,9 @@ export function Step6ReviewExport({
         subtitle={`${structureName} · ${dimensions.length} × ${dimensions.width} × ${dimensions.height} mm · ${paper.name}`}
       />
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Stage */}
-        <StudioCard className="flex min-h-[600px] flex-col overflow-hidden">
+        <StudioCard className="flex flex-col overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 p-4">
             <ViewToggle<"2d" | "3d">
               label="Chế độ xem"
@@ -116,15 +125,19 @@ export function Step6ReviewExport({
             )}
           </div>
 
-          <div className="relative mx-4 flex-1 overflow-hidden rounded-squircle-md bg-landing-canvas">
+          {/* A definite height: the dieline fits inside it instead of growing with the width and sinking to the bottom. */}
+          <div className="relative mx-4 h-[560px] overflow-hidden rounded-squircle-md bg-landing-canvas lg:h-auto lg:min-h-[560px] lg:flex-1">
             {view === "2d" && piece ? (
               // Read-only: no onElementsChange, nothing moves here.
-              <DielineCanvas2D dieline={piece.geometry} elements={elements} backgroundPatternSvg={backgroundPatternSvg} activePanelId="all" showRulers className="h-full !min-h-[520px] !rounded-squircle-md" />
+              <div className="absolute inset-0 flex">
+                <DielineCanvas2D dieline={piece.geometry} elements={elements} backgroundPatternSvg={backgroundPatternSvg} activePanelId="all" showRulers className="!min-h-0 h-full w-full !rounded-squircle-md" />
+              </div>
             ) : (
               <div className="absolute inset-0">
                 <Box3DView
                   dimensions={dimensions}
                   foldProgress={fold / 100}
+                  faceLabels
                   boxType={boxType}
                   theme={activeMaterial}
                   elements={elements}
@@ -183,20 +196,8 @@ export function Step6ReviewExport({
 
         {/* Report */}
         <div className="flex flex-col gap-4">
-          <StudioCard data-tour="s6-status" className={cn("p-5", empty ? "bg-surface-sunken" : passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
-            {empty ? (
-              <div className="flex flex-col gap-3">
-                <div>
-                  <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
-                  <p className="mt-1 font-landing-heading text-xl font-bold text-landing-ink">Hộp trơn, chưa có hình in</p>
-                  <p className="mt-1 text-sm text-landing-muted">In được như một hộp màu giấy. Thêm chữ, tem hoặc áp một phong cách để FitCheck kiểm tra hình in.</p>
-                </div>
-                <button type="button" onClick={onDesign} className={`${SECONDARY_PILL} w-full bg-surface-raised`}>
-                  <Sparkles className="size-4" aria-hidden />
-                  Áp phong cách cho hộp
-                </button>
-              </div>
-            ) : (
+          {!empty && (
+          <StudioCard data-tour="s6-status" className={cn("p-5", passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
@@ -210,7 +211,6 @@ export function Step6ReviewExport({
                 <span className="text-base font-semibold text-landing-muted">/100</span>
               </p>
             </div>
-            )}
             {blocked && (
               <p role="alert" className="mt-3 flex gap-2 rounded-2xl bg-white p-3 text-sm text-danger-fg">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -218,6 +218,9 @@ export function Step6ReviewExport({
               </p>
             )}
           </StudioCard>
+          )}
+
+          <ExportPurchaseCard projectId={projectId} blocked={!passed} onExport={onExport} signedIn={signedIn} onSaveProject={onSaveProject} saving={saving} />
 
           <StudioCard data-tour="s6-checks" className="p-5">
             <CardTitle action={<span className="text-xs text-landing-muted">{RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code) && v.severity !== "info")).length}/{RULES.length} đạt</span>}>
@@ -257,20 +260,24 @@ export function Step6ReviewExport({
             )}
           </StudioCard>
 
-          <QuoteCard
-            structure={boxType}
-            pieces={pieces}
-            dimensions={dimensions}
-            formulaVersion={formulaVersion}
-            material={activeMaterial}
-            finishes={finishes}
-            title={title}
-            projectId={projectId}
-            blocked={!passed}
-            quantity={quantity}
-            onQuantityChange={setQuantity}
-          />
         </div>
+      </div>
+
+      {/* The print quote as one wide row under the dieline, then its detail. */}
+      <div className="mt-4">
+        <QuoteCard
+          structure={boxType}
+          pieces={pieces}
+          dimensions={dimensions}
+          formulaVersion={formulaVersion}
+          material={activeMaterial}
+          finishes={finishes}
+          title={title}
+          projectId={projectId}
+          blocked={!passed}
+          quantity={quantity}
+          onQuantityChange={setQuantity}
+        />
       </div>
 
       <div className="mt-4">
@@ -280,7 +287,6 @@ export function Step6ReviewExport({
           material={activeMaterial}
           finishes={finishes}
           quantity={quantity}
-          onQuantityChange={setQuantity}
         />
       </div>
 
@@ -293,15 +299,9 @@ export function Step6ReviewExport({
         }
         summary={
           <>
-            <span className="block text-xs">Gói file in</span>
+            <span className="block text-xs">Gói file in (sau khi thanh toán)</span>
             <span className="text-landing-ink">.ai · PDF CMYK · JPG đối chiếu · SVG · DXF</span>
           </>
-        }
-        next={
-          <button type="button" data-tour="s6-export" onClick={onExport} disabled={!passed} title={passed ? undefined : "Sửa các lỗi FitCheck trước khi xuất"} className={PRIMARY_PILL}>
-            <Download className="size-4" aria-hidden />
-            Tải gói file in
-          </button>
         }
       />
     </div>

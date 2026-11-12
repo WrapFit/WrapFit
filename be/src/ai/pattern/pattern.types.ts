@@ -23,10 +23,15 @@ export interface PatternDesign {
   tile: PatternTile;
 }
 
+/** `fast` = AI_MODEL_FAST (every plan), `premium` = AI_MODEL_PREMIUM (paid plans). */
+export type AiQuality = 'fast' | 'premium';
+
 export interface PatternRequest {
   theme: string;
   /** Brand colors the pattern should use (hex). */
   preferredColors: string[];
+  /** Which model answers; the procedural generator ignores it. Default `fast`. */
+  quality?: AiQuality;
 }
 
 /** Result of a generator, with what to bill / record. */

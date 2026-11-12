@@ -9,7 +9,7 @@ import { ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { Pagination } from '@/components/library';
-import { AdminShell, Badge, DataTable, Panel, PanelTitle, StatTile, WorkspaceEmpty, WorkspaceError } from '@/components/workspace';
+import { AdminShell, Badge, DataTable, Panel, PanelTitle, AdminStat, WorkspaceEmpty, WorkspaceError, ADMIN_STAT_GROUP } from '@/components/workspace';
 import { ROUTES } from '@/constants';
 import { formatCount } from '@/features/admin';
 import { RequireAuth } from '@/features/auth';
@@ -90,12 +90,12 @@ function Appraisal() {
   }
 
   return (
-    <AdminShell title="Thẩm định mẫu" description="Thiết kế cộng đồng đang hiển thị trong thư viện mẫu: dự án công khai đạt FitCheck™ từ 90 điểm.">
+    <AdminShell title="Thẩm định mẫu" description="Thiết kế cộng đồng đang hiển thị trong thư viện mẫu.">
       <div className="flex flex-col gap-6">
-        <section aria-label="Số liệu" className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          <StatTile label="Đang hiển thị" value={meta ? formatCount(meta.total) : '–'} />
-          <StatTile label="Ngưỡng hiển thị" value="FitCheck™ ≥ 90" />
-          <StatTile label="Lượt thích trong trang" value={designs.data ? formatCount(items.reduce((sum, item) => sum + item.likesCount, 0)) : '–'} />
+        <section aria-label="Số liệu" className={`${ADMIN_STAT_GROUP} grid-cols-2 md:grid-cols-3`}>
+          <AdminStat label="Đang hiển thị" value={meta ? formatCount(meta.total) : '–'} />
+          <AdminStat label="Ngưỡng hiển thị" value="FitCheck™ ≥ 90" />
+          <AdminStat label="Lượt thích trong trang" value={designs.data ? formatCount(items.reduce((sum, item) => sum + item.likesCount, 0)) : '–'} />
         </section>
         <Panel aria-labelledby="appraisal-list">
           <PanelTitle id="appraisal-list">Thiết kế cộng đồng</PanelTitle>

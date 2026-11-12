@@ -147,7 +147,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
                 onClick={saveRole}
                 aria-label={`Lưu vai trò ${ROLE_LABELS[draft]} cho ${name}`}
                 title="Lưu vai trò"
-                className="w-7 h-7 rounded-full bg-fpt-orange text-white hover:bg-black shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
+                className="w-7 h-7 rounded-full bg-fpt-orange text-white hover:bg-fpt-orange-dark shadow-sm inline-flex items-center justify-center transition-all active:scale-95"
               >
                 <Icon name="check" className="size-3.5" />
               </button>
@@ -219,7 +219,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
             onClick={() => onOpen(user)}
             aria-label={`Xem chi tiết ${name}`}
             title="Xem chi tiết"
-            className={`${ICON_BUTTON} bg-library-line group-hover:bg-black group-hover:text-white text-library-ink`}
+            className={`${ICON_BUTTON} bg-library-line group-hover:bg-fpt-orange-dark group-hover:text-white text-library-ink`}
           >
             <Icon name="arrow_forward" className="size-3.5" />
           </button>

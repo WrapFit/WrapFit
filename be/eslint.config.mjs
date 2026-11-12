@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 /** Lint for the backend (CI: `npm --workspace=be run lint`). Formatting is Prettier's job, not ESLint's. */
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**'] },
+  { ignores: ['dist/**', 'dist-worker/**', 'coverage/**'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -1,4 +1,5 @@
 import { FilePurpose, SubscriptionTier } from '@prisma/client';
+import { ENTITLEMENTS } from '@wrapfit/shared';
 
 const MB = 1024 * 1024;
 
@@ -24,12 +25,12 @@ export const UPLOAD_RULES: Record<UploadPurpose, { types: Record<string, string>
  */
 export const DOWNLOAD_ONLY_TYPES: ReadonlySet<string> = new Set(['image/svg+xml', 'application/pdf']);
 
-/** Total storage per user, by subscription tier. */
+/** Total storage per user, by subscription tier: the `storage.bytes` entitlement the pricing page shows. */
 export const STORAGE_QUOTA_BYTES: Record<SubscriptionTier, number> = {
-  FREE: 100 * MB,
-  PAY_PER_EXPORT: 500 * MB,
-  STARTER: 1024 * MB,
-  PRO_BUSINESS: 10 * 1024 * MB,
+  FREE: ENTITLEMENTS.FREE.storage.bytes,
+  PAY_PER_EXPORT: ENTITLEMENTS.PAY_PER_EXPORT.storage.bytes,
+  STARTER: ENTITLEMENTS.STARTER.storage.bytes,
+  PRO_BUSINESS: ENTITLEMENTS.PRO_BUSINESS.storage.bytes,
 };
 
 /** Lifetime of a pre-signed upload URL. */

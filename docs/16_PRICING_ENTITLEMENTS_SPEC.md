@@ -1,9 +1,21 @@
 # 💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)
 
 > **Dành cho**: IT 3 (backend, CSDL), IT 1 (frontend), IT 2 (`@wrapfit/shared`, watermark trong file in).
-> **Trạng thái**: đặc tả cho bản phát hành thương mại, **chưa triển khai**. Mỗi mục ghi rõ phần nào đã có trong code, phần nào phải sửa, phần nào làm mới.
+> **Trạng thái (2026-10-30)**: **một phần P1 đã triển khai** cho bản demo CP4 Path 2 (docs/17 S1–S8, nhánh `feat/path2-mvp`), xem bảng "Đã triển khai" ngay dưới. Phần còn lại vẫn là đặc tả cho bản phát hành thương mại. Mỗi mục ghi rõ phần nào đã có trong code, phần nào phải sửa, phần nào làm mới.
 > **Nguồn quyết định kinh doanh**: chiến lược định giá (4 gói Free · Lượt xuất · Pro · Business, credit AI, quy tắc nghiệp vụ). Con số giá và hạn mức có thể đổi; khi đổi chỉ sửa **một file** (`shared/src/billing/entitlements.ts`, Mục 3).
 > **Không thuộc phạm vi tài liệu này**: chợ in ấn và gói đối tác xưởng in, chợ mẫu cao cấp (sẽ có tài liệu riêng). Bảng hạn mức đã chừa khóa `print.discountPercent` cho chúng.
+
+### Đã triển khai (Path 2, docs/17)
+
+| Mục | Đã có trong code | Còn lại / làm gọn so với đặc tả |
+| :--- | :--- | :--- |
+| 2, 3.2 Gói, giá, hạn mức | `shared/src/billing/` (`resolvePlan`, `requiredPlanFor`, `ENTITLEMENTS`, `EXPORT_PACKS`, `PRO_MONTH`); trang giá đọc giá từ shared; `storage.bytes` nối vào hạn mức dung lượng | Hạn mức `projects.max`, `collections.max`, `snapshots.maxManualPerProject` chưa nối vào service; ghi đè theo tài khoản (3.3) chưa có |
+| 4 Credit AI | **Thay bằng xu Wrap** ([docs/19](19_XU_WRAP_SPEC.md)): lô `credit_lots` kind `XU`, allowance mỗi kỳ, gói nạp `XU_*`, hoa văn 1 / 65 xu, ảnh AI, `AI_MONTHLY_BUDGET_USD` + `AiCostGuard`. `DAILY_AI_LIMIT` và cổng `403` premium đã bỏ | Mục 4 dưới đây là đặc tả cũ, giữ để tham khảo; số liệu đúng ở docs/19 §2–§3 |
+| 5.1–5.4 Lượt xuất, mở khóa, hoàn lượt, watermark | `credit_lots` / `credit_debits` (sổ cái), `export_unlocks` 7 ngày theo `(project, version)`, `402 EXPORT_CREDIT_REQUIRED` / `INSUFFICIENT_CREDITS`, hoàn lượt khi job lỗi lần cuối, watermark ở tai dán của PDF A4 | 5.5 giữ file in theo gói chưa làm |
+| 6 Schema | Migration `20261030000100_billing_core` (`payments`, `credit_lots`, `credit_debits`, `export_unlocks`, `subscriptions`), `20261030000500_payments` (FK đơn in) | Bảng `invoices`, `coupons`, `referrals`, workspace (6.4) chưa có |
+| 7.1 Vòng đời gói | Pro 30 ngày qua `subscriptions` (`ACTIVE` / `EXPIRED`), gia hạn nối thêm 30 ngày, `PlanService.sync` lười | Dùng thử, `PAST_DUE`, ân hạn, nhắc gia hạn, hạ gói (7.2) chưa làm |
+| 8.2 Endpoint | `GET /billing/me`, `POST /admin/users/:id/credits`, `POST /payments`, `GET /payments/:id`, `POST /payments/:id/simulate-confirm`, `GET /projects/:id/exports/access` (docs/03) | Webhook ngân hàng, MoMo / thẻ, hóa đơn, hoàn tiền chưa làm (M1) |
+| Thanh toán | VietQR EMVCo tự dựng, hạn 15 phút, xác nhận **mô phỏng** khi `PAYMENT_SIMULATION=true` (docs/17 M5, M6) | Xác nhận thật qua webhook ngân hàng |
 
 ---
 
@@ -229,6 +241,8 @@ Kiểm và ghi nằm trong **cùng một transaction** (như `assertQuota` của
 ---
 
 ## 4. Credit AI
+
+> **Đã thay bằng xu Wrap (2026-10-31).** Credit AI được làm thành đồng xu chung cho mọi tác vụ AI: xem [docs/19](19_XU_WRAP_SPEC.md) (quyết định §2, bảng giá §3, thiết kế §4). Các con số dưới đây (20 / 50 / 300 credit, premium 25 credit, `AI_PACKS`, không cộng dồn) **không còn đúng**: hạn mức là Free 50, Lượt xuất 100, Pro 1.000, Business 3.500 xu, dồn tối đa một kỳ; hoa văn premium 65 xu.
 
 ### 4.1 Chất lượng, model và giá credit
 
@@ -1091,12 +1105,12 @@ Cron chỉ chạy trong process API (`@nestjs/schedule`), giờ Việt Nam.
 
 **Kiểm thử bắt buộc** (unit `*.spec.ts` cạnh file, e2e trong `be/test/e2e/`):
 
-- [ ] `resolvePlan`, `resolveEntitlements` (ghi đè sâu, ghi đè hết hạn), `requiredPlanFor`.
-- [ ] Hai request xuất song song với 1 lượt: đúng một request bị trừ, request còn lại `402`.
-- [ ] Xuất lại định dạng khác cùng `version` trong 7 ngày không trừ lượt; sau khi sửa thiết kế thì trừ.
-- [ ] Job xuất thất bại 3 lần → lượt được hoàn; job thành công rồi job khác lỗi → không hoàn.
-- [ ] PDF A4 của Free có chữ watermark trên lớp Artwork, nằm trong `glueAreas`; FitCheck không báo lỗi vì watermark.
-- [ ] AI lỗi → credit được hoàn, kết quả `procedural`; Free gọi `premium` → `403`.
+- [ ] `resolvePlan`, `resolveEntitlements` (ghi đè sâu, ghi đè hết hạn), `requiredPlanFor`. *(Path 2 S1: `resolvePlan`, `requiredPlanFor` có test; chưa có ghi đè)*
+- [x] Hai request xuất song song với 1 lượt: đúng một request bị trừ, request còn lại `402`. *(Path 2 S1 / S2)*
+- [x] Xuất lại định dạng khác cùng `version` trong 7 ngày không trừ lượt; sau khi sửa thiết kế thì trừ. *(Path 2 S1 / S2)*
+- [x] Job xuất thất bại 3 lần → lượt được hoàn; job thành công rồi job khác lỗi → không hoàn. *(Path 2 S1 / S2)*
+- [x] PDF A4 của Free có chữ watermark trên lớp Artwork, nằm trong `glueAreas`; FitCheck không báo lỗi vì watermark. *(Path 2 S1 / S2)*
+- [ ] AI lỗi → credit được hoàn, kết quả `procedural`; Free gọi `premium` → `403`. *(Path 2 S3: Free + `premium` → `403` có test; chưa có credit AI)*
 - [ ] Webhook gửi 2 lần cùng `providerRef` → kích hoạt 1 lần; sai chữ ký → `401`; lệch số tiền → `payment.unmatched`.
 - [ ] Vòng đời: dùng thử → hết hạn → Free; Pro → hết kỳ → `PAST_DUE` (quyền lợi giữ) → hết ân hạn → `EXPIRED`.
 - [ ] Hạ gói Pro → Free với 15 dự án: 10 dự án sửa được, 5 dự án `409 PROJECT_LOCKED_BY_PLAN`, vẫn xem và xuất được; nâng lại → mở hết.

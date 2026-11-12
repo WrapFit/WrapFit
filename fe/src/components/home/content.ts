@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { FileDown, MessageCircleMore, Package, Ruler, ShieldCheck } from "lucide-react";
 import { ROUTES } from "@/constants";
-import { PLANS as TIERS, formatQuota, formatUsd } from "@/features/pricing";
+import { EXPORT_PACK_LIST, PLANS as TIERS, PRO_PERIOD_DAYS, formatQuota, formatVnd, perExportOf } from "@/features/pricing";
 import { PHOTOS } from "@/features/site/photos";
 import type { Industry, Occasion } from "@/types/api";
 
@@ -28,7 +28,7 @@ export const HERO = {
 };
 
 export const HERO_FEATURES: { icon: LucideIcon; label: string; href: string }[] = [
-  { icon: Ruler, label: "Khuôn bế theo mm", href: ROUTES.editorNew },
+  { icon: Ruler, label: "Khuôn bế theo mm", href: ROUTES.editorDemo },
   { icon: Package, label: "Cấu trúc hộp chuẩn", href: `#${ANCHORS.structures}` },
   { icon: ShieldCheck, label: "Soát lỗi trước in", href: `#${ANCHORS.fitcheck}` },
   { icon: MessageCircleMore, label: "Trợ lý Gói", href: `#${ANCHORS.copilot}` },
@@ -115,7 +115,7 @@ export const CUSTOMIZE = {
     "Nhập kích thước món quà, WrapFit dựng khuôn bế vừa khít đến từng milimét.",
     "Chọn giấy, thêm hoa văn, logo, lời chúc và xem hộp gấp thành 3D.",
   ],
-  cta: { label: "Tùy chỉnh ngay", href: ROUTES.editorNew },
+  cta: { label: "Tùy chỉnh ngay", href: ROUTES.editorDemo },
   dimensions: { length: 120, width: 80, height: 60 },
 };
 
@@ -150,7 +150,7 @@ export const PRODUCTION_ROWS: ProductionRow[] = [
     eyebrow: "Kiểm tra trước khi in",
     title: "FitCheck™: đúng ngay bản đầu",
     body: "Tự soát chữ sát nếp gấp, thiếu tràn lề, ảnh mờ. Trợ lý Gói chỉ chỗ lỗi và sửa giúp bằng một cú bấm.",
-    cta: { label: "Kiểm tra thiết kế", href: ROUTES.editorNew },
+    cta: { label: "Kiểm tra thiết kế", href: ROUTES.editorDemo },
     images: [PHOTOS.swatches, PHOTOS.foil],
   },
   {
@@ -164,19 +164,21 @@ export const PRODUCTION_ROWS: ProductionRow[] = [
 
 export const PLANS = {
   eyebrow: "Bảng giá minh bạch",
-  title: "Chỉ từ 19.000đ / lần xuất file",
-  body: "Dùng miễn phí, trả theo lần xuất hoặc 99.000đ/tháng để xuất không giới hạn.",
+  title: `Chỉ từ ${formatVnd(TIERS.PAY_PER_EXPORT.price.monthly)} / lượt xuất file`,
+  body: `Thiết kế miễn phí, mua lượt xuất khi cần file in hoặc ${formatVnd(TIERS.STARTER.price.monthly)}/tháng với gói ${TIERS.STARTER.name} để xuất không giới hạn.`,
   cta: { label: "Xem bảng giá", href: "/pricing" },
-  // The plans of /pricing, paid monthly or for a year.
+  // The plans of /pricing (@wrapfit/shared/billing): Free, the three export packs, Pro, Business.
   options: [
-    { price: formatUsd(0), unit: "Miễn phí", detail: `${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
-    { price: formatUsd(TIERS.PAY_PER_EXPORT.price.monthly), unit: "Từng lần", detail: "Không phí duy trì" },
-    ...(["STARTER", "PRO_BUSINESS"] as const).flatMap((tier) => [
-      { price: formatUsd(TIERS[tier].price.yearlyPerMonth), unit: `${TIERS[tier].name} · năm`, detail: "Mỗi tháng, trả theo năm" },
-      { price: formatUsd(TIERS[tier].price.monthly), unit: `${TIERS[tier].name} · tháng`, detail: "Mỗi tháng, trả theo tháng" },
-    ]),
+    { price: formatVnd(0), unit: TIERS.FREE.name, detail: `Thiết kế & báo giá · ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
+    ...EXPORT_PACK_LIST.map((pack) => ({
+      price: formatVnd(pack.priceVnd),
+      unit: `${pack.credits} lượt xuất`,
+      detail: pack.credits === 1 ? "Một lượt xuất file in sạch" : `${pack.credits} lượt, ${formatVnd(perExportOf(pack))} mỗi lượt`,
+    })),
+    { price: formatVnd(TIERS.STARTER.price.monthly), unit: `${TIERS.STARTER.name} · tháng`, detail: `Xuất không giới hạn trong ${PRO_PERIOD_DAYS} ngày` },
+    { price: "Liên hệ", unit: TIERS.PRO_BUSINESS.name, detail: "Cho thương hiệu và xưởng in" },
   ],
-  selected: 1,
+  selected: 2,
 };
 
 export const COPILOT = {
@@ -223,7 +225,7 @@ export const JOURNEY: {
       stat: "Vừa khít · Tự bù độ dày giấy",
       image: PHOTOS.measuring.src,
       alt: PHOTOS.measuring.alt,
-      cta: { label: "Thử nhập kích thước", href: ROUTES.editorNew },
+      cta: { label: "Thử nhập kích thước", href: ROUTES.editorDemo },
     },
     {
       stepNumber: "02",
@@ -234,7 +236,7 @@ export const JOURNEY: {
       stat: "Đồng bộ 2D ↔ 3D",
       image: PHOTOS.sketching.src,
       alt: PHOTOS.sketching.alt,
-      cta: { label: "Mở Studio", href: ROUTES.editorNew },
+      cta: { label: "Mở Studio", href: ROUTES.editorDemo },
     },
     {
       stepNumber: "03",
@@ -245,7 +247,7 @@ export const JOURNEY: {
       stat: "An toàn ≥ 3 mm · Tràn lề ≥ 2 mm",
       image: PHOTOS.swatches.src,
       alt: PHOTOS.swatches.alt,
-      cta: { label: "Kiểm tra với FitCheck™", href: ROUTES.editorNew },
+      cta: { label: "Kiểm tra với FitCheck™", href: ROUTES.editorDemo },
     },
     {
       stepNumber: "04",

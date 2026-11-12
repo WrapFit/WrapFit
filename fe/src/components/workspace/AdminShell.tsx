@@ -3,12 +3,14 @@
 import {
   Activity,
   BadgeDollarSign,
+  Coins,
   ClipboardCheck,
   Cpu,
   Factory,
   FolderArchive,
   HardDrive,
   Images,
+  Landmark,
   Library,
   LayoutDashboard,
   ReceiptText,
@@ -47,7 +49,9 @@ export const ADMIN_NAV: NavGroup[] = [
     title: "Tài chính & đối tác",
     items: [
       { href: "/admin/revenue", label: "Doanh thu", icon: BadgeDollarSign },
+      { href: "/admin/xu", label: "Xu Wrap", icon: Coins },
       { href: "/admin/ledger", label: "Sổ giao dịch", icon: ReceiptText },
+      { href: "/admin/bank-transactions", label: "Đối soát", icon: Landmark },
       { href: "/admin/print-shops", label: "Xưởng in", icon: Factory },
     ],
   },
@@ -77,14 +81,18 @@ interface AdminShellProps {
 }
 
 export function AdminShell(props: AdminShellProps) {
+  return <ShellLayout {...props} nav={ADMIN_NAV} root={{ label: "Quản trị", href: "/admin" }} isAdmin={true} />;
+}
+
+/**
+ * Header and sidebar of the admin console, mounted once in app/admin/layout.tsx: they stay on screen while the pages
+ * change (no logo flash, no jump), and each page's AdminShell renders only its title row and content.
+ */
+export function AdminFrame({ children }: { children: React.ReactNode }) {
   return (
-    <ShellLayout
-      {...props}
-      nav={ADMIN_NAV}
-      root={{ label: "Quản trị", href: "/admin" }}
-      sidebarBottom={<HealthCard />}
-      isAdmin={true}
-    />
+    <ShellLayout mode="frame" title="" nav={ADMIN_NAV} root={{ label: "Quản trị", href: "/admin" }} isAdmin={true}>
+      {children}
+    </ShellLayout>
   );
 }
 

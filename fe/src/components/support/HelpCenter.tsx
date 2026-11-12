@@ -89,7 +89,7 @@ function ArticleCard({ article, onOpen }: { article: Article; onOpen(article: Ar
     <button
       type="button"
       onClick={() => onOpen(article)}
-      className="flex h-full w-full flex-col gap-3 rounded-2xl bg-white p-4 text-left ring-1 ring-landing-ink/10 transition-shadow outline-none hover:shadow-soft-16 focus-visible:ring-[3px] focus-visible:ring-landing-ink/25"
+      className="flex h-full w-full flex-col gap-3 p-4 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-landing-ink/25 rounded-2xl bg-white ring-1 ring-line/70 transition-colors hover:ring-fpt-orange/40"
     >
       <h3 className="line-clamp-2 font-landing-heading text-base font-semibold leading-6 text-landing-ink">{article.title}</h3>
       <p className="line-clamp-3 text-base leading-6 text-landing-muted">{article.body[0]}</p>
@@ -121,7 +121,7 @@ function StructureCard({ structure }: { structure: BoxStructure }) {
   return (
     <Link
       href={`${ROUTES.templates}?structure=${structure.id}`}
-      className="flex h-full flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-landing-ink/10 transition-shadow hover:shadow-soft-16"
+      className="flex h-full flex-col gap-3 p-4 rounded-2xl bg-white ring-1 ring-line/70 transition-colors hover:ring-fpt-orange/40"
     >
       <h3 className="font-landing-heading text-base font-semibold text-landing-ink">{structure.name}</h3>
       {structure.description && <p className="line-clamp-3 text-base leading-6 text-landing-muted">{structure.description}</p>}

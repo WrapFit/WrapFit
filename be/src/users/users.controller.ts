@@ -57,7 +57,7 @@ export class UsersController {
 
   @Patch(':id')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Change role / active status of a user (admin)' })
+  @ApiOperation({ summary: 'Change role / active status / demo flag of a user (admin). isDemo: the next payment goes through VNPay sandbox instead of VietQR' })
   adminUpdate(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AdminUpdateUserDto,

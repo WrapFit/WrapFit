@@ -67,6 +67,18 @@ export class BoxDimensionsDto {
   @Min(0.05)
   @Max(5)
   paperThickness?: number;
+
+  @ApiPropertyOptional({ description: 'Gift weight (g). Above 300 g a tuck-top box gets a crash-lock bottom (FEFCO 0215)', example: 350 })
+  @IsOptional()
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(1)
+  @Max(20000)
+  giftWeight?: number;
+
+  @ApiPropertyOptional({ enum: ['tuck', 'lock'], description: 'Bottom of a tuck-top box; overrides the choice made from giftWeight' })
+  @IsOptional()
+  @IsIn(['tuck', 'lock'])
+  bottomType?: 'tuck' | 'lock';
 }
 
 export class MaterialSpecDto implements MaterialSpecification {

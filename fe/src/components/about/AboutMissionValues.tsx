@@ -45,13 +45,14 @@ export function AboutMissionValues() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 lg:gap-6">
+          {/* One block split by hairlines instead of four floating cards. */}
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70 sm:grid-cols-2">
             {CORE_VALUES.map((val) => {
               const Icon = val.icon;
               return (
                 <div
                   key={val.title}
-                  className="group flex flex-col justify-between rounded-3xl border border-line/90 bg-white p-6 shadow-soft-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-soft-16 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:p-7"
+                  className="group flex flex-col justify-between bg-white p-6 transition-colors hover:bg-surface-sunken/50 sm:p-7"
                 >
                   <div>
                     <div className="mb-4">

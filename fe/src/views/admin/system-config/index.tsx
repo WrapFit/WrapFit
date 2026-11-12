@@ -51,7 +51,7 @@ const columns = [
 
 function SystemConfig() {
   return (
-    <AdminShell title="Cấu hình" description="Quy tắc sản xuất dùng chung cho studio và API. Chỉ đổi được qua một bản phát hành mới.">
+    <AdminShell title="Cấu hình" description="Quy tắc sản xuất dùng chung cho studio và API.">
       <div className="flex flex-col gap-6">
         <Panel aria-labelledby="config-production">
           <PanelTitle id="config-production" action={<Badge tone="green">@wrapfit/shared</Badge>}>

@@ -40,7 +40,14 @@ export type ApiErrorCode =
   | "FILE_URL_NOT_ALLOWED"
   | "FILE_NOT_OWNED"
   | "PROJECT_VERSION_CONFLICT"
-  | "ORIGIN_NOT_ALLOWED";
+  | "ORIGIN_NOT_ALLOWED"
+  | "EXPORT_CREDIT_REQUIRED"
+  | "INSUFFICIENT_CREDITS"
+  | "PROMPT_REJECTED"
+  | "AI_IMAGE_UNAVAILABLE"
+  | "AI_IMAGE_BUSY"
+  | "STORAGE_QUOTA_EXCEEDED"
+  | "VNPAY_NOT_CONFIGURED";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {
@@ -57,6 +64,12 @@ export interface ApiErrorBody {
   currentVersion?: number;
   /** 422 on export: the FitCheck report with the blocking violations. */
   fitCheck?: FitCheckReport;
+  /** 402 EXPORT_CREDIT_REQUIRED / INSUFFICIENT_CREDITS: export credits or xu left. */
+  balance?: number;
+  /** 402 INSUFFICIENT_CREDITS: which ledger is short, export credits or xu (docs/19). */
+  kind?: "EXPORT" | "XU";
+  /** 402 INSUFFICIENT_CREDITS: what the operation costs. */
+  cost?: number;
 }
 
 export interface HealthStatus {
@@ -439,6 +452,21 @@ export interface ExportStarted {
   jobId: string;
   status: ExportStatus;
   fitCheck: FitCheckReport;
+  /** Free A4 PDF of a design that is not unlocked: WrapFit line on a glue flap. */
+  watermarked: boolean;
+  /** This request spent one export credit (useCredit). */
+  charged: boolean;
+  exportCredits: { balance: number };
+}
+
+/** `GET /projects/:id/exports/access`: what the export dialog shows before a request (docs/16 §5). */
+export interface ExportAccess {
+  /** FREE_A4: only the watermarked A4 PDF without credits; CREDIT: one credit per design version; UNLIMITED: Pro. */
+  mode: "FREE_A4" | "CREDIT" | "UNLIMITED";
+  /** Clean files of the current version need no credit (Pro, or a credit already spent on it). */
+  unlocked: boolean;
+  unlockExpiresAt: string | null;
+  balance: number;
 }
 
 export interface ExportJob {
@@ -446,6 +474,8 @@ export interface ExportJob {
   projectId: string;
   fileType: ExportFileType;
   status: ExportStatus;
+  /** The free A4 PDF with the WrapFit line on a glue flap. */
+  watermarked?: boolean;
   /** Set when FAILED. */
   error: string | null;
   createdAt: string;
@@ -455,6 +485,92 @@ export interface ExportJob {
   /** COMPLETED only; expires after `downloadExpiresIn` seconds: fetch the job again for a new one. */
   downloadUrl: string | null;
   downloadExpiresIn: number | null;
+}
+
+// ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
+
+export type XuPackPurpose = "XU_500" | "XU_1050" | "XU_2200";
+export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose | "XU_CUSTOM";
+export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
+export type PaymentProvider = "VIETQR" | "VNPAY";
+export type PaymentConfirmation = "SEPAY_WEBHOOK" | "VNPAY_IPN" | "VNPAY_RETURN" | "SIMULATION" | "ADMIN";
+
+/** `GET /billing/me`: plan in use, export credits and the Pro period. */
+export interface BillingSummary {
+  tier: SubscriptionTier;
+  exportCredits: {
+    balance: number;
+    lots: { id: string; source: "PURCHASE" | "ADMIN"; quantity: number; remaining: number; expiresAt: string | null; createdAt: string }[];
+  };
+  subscription: { plan: SubscriptionTier; status: "ACTIVE" | "EXPIRED"; currentPeriodStart: string; currentPeriodEnd: string } | null;
+  /** Xu Wrap wallet (docs/19): the allowance of the period is granted when it is read. */
+  xu: XuWallet;
+  /** PAYMENT_SIMULATION on the server: the checkout shows "Giả lập đã thanh toán" (CP4 demo). */
+  paymentSimulation: boolean;
+  /** Demo account (`users.is_demo`): pays through VNPay sandbox, never through a real bank transfer (docs/21). */
+  isDemo: boolean;
+}
+
+/** A VietQR payment (`POST /payments`, `GET /payments/:id`). */
+export interface Payment {
+  id: string;
+  purpose: PaymentPurpose;
+  status: PaymentStatus;
+  /** VNPAY for demo accounts, VIETQR otherwise. */
+  provider: PaymentProvider;
+  /** How it was confirmed, null while not PAID. */
+  confirmedVia: PaymentConfirmation | null;
+  amountVnd: number;
+  /** Transfer content: WF + 6 characters. */
+  reference: string;
+  expiresAt: string;
+  paidAt: string | null;
+  createdAt: string;
+  credits: number | null;
+  /** Xu of a xu pack, null otherwise. */
+  xu: number | null;
+  orderId: string | null;
+  /** Set while PENDING. */
+  vietqr: {
+    payload: string;
+    qrSvg: string;
+    bankBin: string;
+    bankName: string;
+    accountNo: string;
+    accountName: string;
+    /** Placeholder account: the server has no VIETQR_* settings. */
+    sample: boolean;
+  } | null;
+  /**
+   * Demo accounts (provider VNPAY): `window.location.assign(vnpay.payUrl)`. Only in the answer of `POST /payments`;
+   * null on `GET /payments/:id`, for VIETQR payments, and when the server has no VNPAY_* settings (only the simulate
+   * button works then).
+   */
+  vnpay?: { payUrl: string } | null;
+}
+
+/** One row of `GET /payments`: a payment without its QR / pay URL. */
+export type PaymentHistoryEntry = Omit<Payment, "vietqr" | "vnpay">;
+
+export interface PaymentHistoryPage {
+  entries: PaymentHistoryEntry[];
+  /** Pass as `before` for the next page; null at the end. */
+  nextBefore: string | null;
+}
+
+/** VAT invoice details (`GET|PUT /billing/details`). */
+export interface BillingDetails {
+  company: string;
+  taxCode: string;
+  email: string;
+}
+
+/** `GET /payments/vnpay/return?<the vnp_* query VNPay appended>` (docs/21 §3.4). */
+export interface VnpayReturnResult {
+  /** success = paid; failed = cancelled or refused by the bank; invalid = bad signature or wrong amount. */
+  result: "success" | "failed" | "invalid";
+  /** Null when the signature is bad. */
+  payment: Payment | null;
 }
 
 // ---------------------------------------------------------------- unboxing
@@ -512,6 +628,8 @@ export interface GeneratePatternRequest {
   theme: string;
   /** ≤ 5 brand colors `#RRGGBB`. */
   preferredColors?: string[];
+  /** Default `fast`; `premium` = stronger model. Price in xu: `AiUsage.patternCost` (402 `INSUFFICIENT_CREDITS` when short). */
+  quality?: "fast" | "premium";
 }
 
 export interface AiPatternResult {
@@ -522,15 +640,163 @@ export interface AiPatternResult {
   palette: string[];
   /** Seamless repeat tile, safe to insert (no script, no external resource). */
   tile: { size: number; svg: string };
-  /** AI generations in the last 24 hours; null when AI is off. */
-  usage: { used: number; limit: number } | null;
+  /** Xu spent on this pattern (0 when the AI failed and the xu came back) and the balance after; null when AI is off. */
+  usage: { charged: number; balance: number } | null;
 }
 
+/** `GET /ai/usage`: whether AI patterns run, their price in xu and the xu wallet (docs/19). */
 export interface AiUsage {
-  tier: SubscriptionTier;
-  used: number;
-  limit: number;
   aiEnabled: boolean;
+  /** The monthly AI budget of WrapFit is spent: patterns are procedural (free) until next month. */
+  budgetReached: boolean;
+  patternCost: { fast: number; premium: number };
+  xu: { balance: number; allowance: XuAllowance };
+}
+
+/** Xu of the plan per period, and when the next allowance arrives. */
+export interface XuAllowance {
+  perPeriod: number;
+  periodKey: string;
+  resetsAt: string;
+}
+
+export type AiImageAspectRatio = "1:1" | "4:3" | "3:4" | "3:2" | "2:3" | "16:9" | "9:16";
+export type AiImageTool = "upscale" | "remove-bg" | "vectorize";
+
+/** One model of `GET /ai/models` (catalog of @wrapfit/shared, priced in xu per image). */
+export interface AiImageModelOffer {
+  key: string;
+  label: string;
+  /** draft: try ideas cheaply; standard: everyday artwork; premium: best quality and lettering; vector: SVG. */
+  tier: "draft" | "standard" | "premium" | "vector";
+  xu: number;
+  output: "raster" | "vector";
+  supportsText: boolean;
+  aspectRatios: AiImageAspectRatio[];
+  maxImages: number;
+  summary: string;
+}
+
+/** `GET /ai/models`: `enabled` false when the server has no image provider or no storage. */
+export interface AiImageCatalog {
+  enabled: boolean;
+  models: AiImageModelOffer[];
+  /** Xu per run on one image. */
+  tools: Record<AiImageTool, number>;
+}
+
+export interface CreateAiImageRequest {
+  /** ≤ 500 characters, any language: the server translates it and frames it as flat box-face artwork. */
+  prompt: string;
+  modelKey: string;
+  aspectRatio: AiImageAspectRatio;
+  /** 1–4 (≤ model.maxImages); the price is per image. */
+  numImages?: number;
+  /** Let a model with `supportsText` draw lettering. */
+  allowText?: boolean;
+  /** One per click: a repeated request returns the same job, not a new charge. */
+  clientRequestId?: string;
+}
+
+export interface AiImageOutput {
+  id: string;
+  url: string | null;
+  contentType: string;
+  /** null for an SVG. */
+  width: number | null;
+  height: number | null;
+  /** Deleted after this date unless it is on a saved design. */
+  keepUntil: string;
+  createdAt: string;
+}
+
+export type AiImageJobStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export interface AiImageJob {
+  id: string;
+  kind: "GENERATE" | "UPSCALE" | "REMOVE_BG" | "VECTORIZE";
+  modelKey: string;
+  status: AiImageJobStatus;
+  prompt: string | null;
+  aspectRatio: string | null;
+  numImages: number;
+  xuCost: number;
+  /** Vietnamese message of a FAILED job: its xu came back. */
+  error: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  outputs: AiImageOutput[];
+}
+
+/** `POST /ai/images` and the tools: 202 with the queued job and the xu left. */
+export interface AiImageJobStarted {
+  job: AiImageJob;
+  balance: number;
+}
+
+/** "Ảnh AI của tôi", newest first. */
+export interface AiImageGalleryPage {
+  items: (AiImageOutput & { job: { id: string; kind: AiImageJob["kind"]; modelKey: string; prompt: string | null } })[];
+  nextBefore: string | null;
+}
+
+/** A lot of export credits or xu: what was granted, what is left, until when. */
+export interface CreditLot {
+  id: string;
+  source: "PURCHASE" | "ADMIN" | "PLAN_ALLOWANCE";
+  quantity: number;
+  remaining: number;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+/** One line of "Lịch sử xu": a lot granted (positive) or a spend (negative), newest first. */
+export interface XuHistoryEntry {
+  type: "GRANT" | "SPEND";
+  id: string;
+  quantity: number;
+  source: CreditLot["source"] | null;
+  reason: "EXPORT_UNLOCK" | "ADMIN_ADJUSTMENT" | "AI_IMAGE" | "AI_PATTERN" | "AI_TOOL" | null;
+  refId: string | null;
+  /** The job failed on our side and the xu came back. */
+  refundedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+/** Filter groups of `GET /billing/xu/history?type=`: plan and purchased lots, spends, administrator changes. */
+export type XuHistoryType = "grant" | "spend" | "adjust";
+
+export interface XuHistoryPage {
+  entries: XuHistoryEntry[];
+  nextBefore: string | null;
+}
+
+/** `GET /admin/analytics/xu?month=` (admin): xu of one month, valued at the money paid for each lot (docs/19 S5). */
+export interface XuReport {
+  month: string;
+  from: string;
+  to: string;
+  usdVndRate: number;
+  issued: { source: CreditLot["source"]; xu: number; lots: number; valueVnd: number }[];
+  spent: { reason: NonNullable<XuHistoryEntry["reason"]>; xu: number; operations: number; revenueVnd: number }[];
+  refundedXu: number;
+  recognizedRevenueVnd: number;
+  expired: { xu: number; valueVnd: number };
+  /** Purchased xu still spendable now and the money still owed for them. */
+  outstanding: { xu: number; valueVnd: number };
+  providerCost: { kind: "IMAGE" | "PATTERN"; model: string; jobs: number; xu: number; costUsd: number; costVnd: number }[];
+  providerCostVnd: number;
+  grossMarginVnd: number;
+  grossMarginRate: number | null;
+  spentListValueVnd: number;
+}
+
+/** The xu wallet (`GET /billing/me` → `xu`): lots spent first on top. */
+export interface XuWallet {
+  balance: number;
+  lots: CreditLot[];
+  allowance: XuAllowance;
 }
 
 // ---------------------------------------------------------------- print-shops & orders
@@ -551,11 +817,20 @@ export interface PrintShop {
   status?: 'active' | 'review' | 'paused';
 }
 
+/** Lifecycle of a sample print order (`be/src/orders/order-status.ts`). */
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+/** A sample print order (`be/src/orders`). `status` is `orderStatus` in lower case. */
 export interface SampleOrder {
   id: string;
+  orderCode: string;
   userId: string;
-  projectId: string;
+  /** null once the project was deleted for good: the order keeps its title, structure and size. */
+  projectId: string | null;
   projectTitle: string;
+  projectVersion?: number;
+  structure?: string;
+  dimensions?: { length: number; width: number; height: number; paperThickness?: number } | null;
   printShopId?: string;
   printShopName?: string;
   partnerShop?: {
@@ -565,16 +840,38 @@ export interface SampleOrder {
     contactPhone?: string;
   };
   quantity: number;
+  paperStock?: string;
   recipientName: string;
   phone?: string;
   recipientPhone?: string;
   shippingAddress: string;
   notes?: string | null;
+  subtotalVnd?: number;
+  shippingVnd?: number;
+  /** Promo discount applied by the server. */
+  discountVnd?: number;
+  promoCode?: string | null;
   totalVnd?: number;
+  /** Every design of the order, one bill; a single-design order has one line. */
+  items?: { projectId: string | null; projectTitle: string; quantity: number; lineTotalVnd: number }[];
   sampleFeeVnd?: number;
-  status: 'pending' | 'confirmed' | 'in_production' | 'shipped' | 'delivered' | 'SUBMITTED' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED';
-  orderCode?: string;
+  status: Lowercase<OrderStatus>;
+  orderStatus?: OrderStatus;
+  estimatedDeliveryDays?: string;
+  paymentId?: string | null;
+  paidAt?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+  cancelledAt?: string | null;
   createdAt: string;
+  updatedAt?: string;
+}
+
+/** Filters of `GET /orders` (ADMIN, PRINT_SHOP). */
+export interface StaffOrdersQuery {
+  status?: OrderStatus;
+  printShopId?: string;
+  limit?: number;
 }
 
 export interface CreateSampleOrderRequest {
@@ -587,6 +884,13 @@ export interface CreateSampleOrderRequest {
   notes?: string;
   quantity?: number;
   paperStock?: string;
+  /** Promo code; the server computes the discount (unknown code → 400 INVALID_PROMO). */
+  promoCode?: string;
+}
+
+/** Several designs in one order (one bill). The recipient fields are shared by every design. */
+export interface CreateSampleBundleRequest extends Omit<CreateSampleOrderRequest, "projectId" | "quantity" | "paperStock"> {
+  items: { projectId: string; quantity?: number; paperStock?: string }[];
 }
 
 // ---------------------------------------------------------------- shared library (be/src/library)

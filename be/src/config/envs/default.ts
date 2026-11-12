@@ -1,4 +1,5 @@
-import type { EnvironmentVariables } from '../env.validation';
+import { AI_IMAGE_MODELS, type AiImageModelKey } from '@wrapfit/shared';
+import { splitList, type EnvironmentVariables } from '../env.validation';
 
 /**
  * Every setting of the application, built from the validated environment (env.validation.ts). The NODE_ENV files next
@@ -51,12 +52,56 @@ export const config = (env: EnvironmentVariables) => ({
     secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY,
     publicUrl: env.STORAGE_PUBLIC_URL,
     forcePathStyle: env.STORAGE_FORCE_PATH_STYLE === 'true',
+    /** Encrypted database dumps, written by the backup job. Empty = none. */
+    backupBucket: env.STORAGE_BACKUP_BUCKET,
   },
-  /** `anthropicApiKey` empty = built-in procedural patterns only. */
+  /** Public image CDN (shared/cloudinary). `cloudName` empty = disabled. */
+  cloudinary: {
+    cloudName: env.CLOUDINARY_CLOUD_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
+    folder: env.CLOUDINARY_FOLDER,
+  },
+  /**
+   * `anthropicApiKey` empty = built-in procedural patterns only (and AI image prompts sent as typed). `monthlyBudgetUsd`
+   * null = no cost fuse.
+   */
   ai: {
     anthropicApiKey: env.ANTHROPIC_API_KEY,
-    model: env.AI_MODEL,
+    models: { fast: env.AI_MODEL_FAST, premium: env.AI_MODEL_PREMIUM },
     timeoutMs: env.AI_TIMEOUT_MS,
+    monthlyBudgetUsd: env.AI_MONTHLY_BUDGET_USD ? Number(env.AI_MONTHLY_BUDGET_USD) : null,
+    /** AI images paid with xu (docs/19). `enabled` false = the routes answer 503 and the studio hides the panel. */
+    image: {
+      provider: env.AI_IMAGE_PROVIDER as 'fal' | 'fake',
+      falKey: env.FAL_KEY,
+      enabled: env.AI_IMAGE_PROVIDER === 'fake' || env.FAL_KEY !== '',
+      models: (env.AI_IMAGE_MODELS
+        ? splitList(env.AI_IMAGE_MODELS)
+        : AI_IMAGE_MODELS.filter((model) => model.enabled).map((model) => model.key)) as AiImageModelKey[],
+      timeoutMs: env.AI_IMAGE_TIMEOUT_MS,
+      concurrency: env.AI_IMAGE_CONCURRENCY,
+    },
+    usdVndRate: env.USD_VND_RATE,
+  },
+  /**
+   * `simulation` = payments can be confirmed by a button instead of a bank transfer (CP4 demo). `vietqr` null = the
+   * sample account of payments/vietqr.ts, shown as "Mô phỏng".
+   */
+  payments: {
+    simulation: env.PAYMENT_SIMULATION === 'true',
+    vietqr: env.VIETQR_BANK_BIN
+      ? { bankBin: env.VIETQR_BANK_BIN, accountNo: env.VIETQR_ACCOUNT_NO, accountName: env.VIETQR_ACCOUNT_NAME }
+      : null,
+    /** SePay bank webhook (docs/21 §3.3). `webhookApiKey` null = every webhook is rejected. */
+    sepay: { webhookApiKey: env.SEPAY_WEBHOOK_API_KEY || null },
+    /** VNPay sandbox for demo accounts (docs/21 §3.4). `tmnCode` / `hashSecret` empty = not configured. */
+    vnpay: {
+      tmnCode: env.VNPAY_TMN_CODE,
+      hashSecret: env.VNPAY_HASH_SECRET,
+      payUrl: env.VNPAY_PAY_URL,
+      returnUrl: env.VNPAY_RETURN_URL || `${env.FRONTEND_URL.replace(/\/+$/, '')}/payments/vnpay-return`,
+    },
   },
   redis: {
     url: env.REDIS_URL,

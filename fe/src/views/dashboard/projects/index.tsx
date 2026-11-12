@@ -197,7 +197,7 @@ function DashboardProjectsScreen() {
           title="Chưa có dự án nào"
           description="Nhập kích thước món quà, WrapFit dựng khuôn bế và hộp 3D vừa khít cho bạn."
           action={
-            <Link href={ROUTES.editorNew} className={createBoxButton}>
+            <Link href={ROUTES.editorDemo} className={createBoxButton}>
               <Plus className="size-4" aria-hidden />
               Tạo hộp mới
             </Link>
@@ -229,19 +229,13 @@ function DashboardProjectsScreen() {
   return (
     <WorkspaceShell
       title="Dự án"
-      description={isGuest ? "Không gian làm việc trải nghiệm — mở hộp bất kỳ trong Studio 3D hoặc tạo mới theo kích thước." : "Mọi hộp bạn đã dựng: khuôn bế, kích thước, vật liệu và điểm FitCheck™ của từng hộp."}
-      actions={
-        <Link href={ROUTES.editorNew} className={primaryButton}>
-          <Plus className="size-4" aria-hidden />
-          Tạo dự án mới
-        </Link>
-      }
+      description={isGuest ? "Dự án mẫu: mở trong Studio để xem." : "Các hộp bạn đã thiết kế."}
     >
       {isGuest && (
         <div className="mb-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-fpt-orange/30 bg-orange-50/80 p-4 text-sm text-landing-ink">
           <div className="flex items-center gap-2.5">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white font-bold text-xs">i</span>
-            <span><strong>Không gian làm việc khách (Demo Workspace):</strong> Bạn đang xem các dự án mẫu của WrapFit. Bấm vào bất kỳ dự án nào để mở trực tiếp trong Studio 3D hoặc bấm <strong>Tạo dự án mới</strong> để thiết kế theo kích thước riêng.</span>
+            <span><strong>Chế độ trải nghiệm:</strong> Xem các mẫu hộp demo, bấm vào để mở Studio 3D hoặc tạo mới.</span>
           </div>
           <Link href="/auth/login" className="shrink-0 rounded-full border border-fpt-orange bg-white px-3.5 py-1.5 text-xs font-semibold text-fpt-orange-ink hover:bg-orange-100 transition-colors">
             Đăng nhập tài khoản
@@ -268,9 +262,9 @@ function DashboardProjectsScreen() {
               };
             })}
           />
-          <span aria-live="polite" className="text-sm text-library-muted">
-            {meta ? `Hiển thị ${items.length} / ${formatCount(meta.total)} dự án` : 'Đang tải…'}
-          </span>
+
+
+
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -287,9 +281,9 @@ function DashboardProjectsScreen() {
                 if (event.key === 'Escape' && search) setSearch('');
               }}
               aria-label="Tìm dự án theo tên hoặc thẻ"
-              placeholder="Tìm theo tên hoặc thẻ…"
+              placeholder="Tìm dự án…"
               autoComplete="off"
-              className={cn(WORKSPACE_INPUT, 'rounded-full border-library-ink pl-10 pr-11')}
+              className={cn(WORKSPACE_INPUT, 'rounded-full border-line pl-10 pr-11')}
             />
             {search && (
               <button

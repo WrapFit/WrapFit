@@ -3,15 +3,16 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, Download, FileDown, RotateCw, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CreditCard, Download, FileDown, RotateCw, ShieldAlert } from "lucide-react";
 import type { FitCheckReport } from "@wrapfit/shared";
-import { ApiError, getExportJob, listProjectExports, requestExport } from "@/api";
+import { ApiError, getExportAccess, getExportJob, listProjectExports, requestExport } from "@/api";
+import { Alert, buttonClass } from "@/components/ui";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { useToast } from "@/components/common/Toast";
 import { queryKeys } from "@/hooks/data";
 import type { ExportFileType, ExportJob } from "@/types/api";
 import { StudioDialog } from "../dialog/StudioDialog";
-import { buildPrintFile, fileNameFor, isDemoProjectId, OFFLINE_DEMO, saveFile, type ExportDesign } from "./offline";
+import { buildPrintFile, fileNameFor, isDemoProjectId, saveFile, type ExportDesign } from "./offline";
 
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
@@ -47,6 +48,7 @@ const STATUS_LABELS: Record<ExportJob["status"], string> = {
   COMPLETED: "Xong",
   FAILED: "Lỗi",
 };
+
 
 const isRunning = (job: ExportJob | undefined) => job?.status === "PENDING" || job?.status === "PROCESSING";
 
@@ -84,8 +86,11 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   const [starting, setStarting] = useState<ExportFileType | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<FitCheckReport | null>(null);
+  /** 402: no paid print order holds this version (the print file is sold through the print cart). */
+  const [needsOrder, setNeedsOrder] = useState(false);
   // No backend (Vercel, demo project, API unreachable): the files are built in the browser from the design on screen.
-  const [offline, setOffline] = useState(() => Boolean(design) && (OFFLINE_DEMO || isDemoProjectId(projectId)));
+  // Files are built in the browser only as a fallback for a design the server confirmed as paid (see start()).
+  const [offline, setOffline] = useState(false);
   const [localJob, setLocalJob] = useState<LocalJob | null>(null);
   const [localJobs, setLocalJobs] = useState<LocalJob[]>(() => localHistory.get(projectId) ?? []);
 
@@ -99,6 +104,14 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   const history = useQuery({
     queryKey: queryKeys.projects.exports(projectId),
     queryFn: () => listProjectExports(projectId),
+    enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
+  });
+
+  // Watermark label and credit count; the server decides again on every request.
+  const accessKey = [...queryKeys.projects.exports(projectId), "access"] as const;
+  const access = useQuery({
+    queryKey: accessKey,
+    queryFn: () => getExportAccess(projectId),
     enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
   });
 
@@ -145,6 +158,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   const start = async (fileType: ExportFileType) => {
     setStarting(fileType);
     setBlocked(null);
+    setNeedsOrder(false);
     if (offline) {
       try {
         await startLocal(fileType);
@@ -165,10 +179,14 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
       const started = await requestExport(projectId, fileType);
       queryClient.removeQueries({ queryKey: queryKeys.exportJob(started.jobId) });
       setJobId(started.jobId);
+      void queryClient.invalidateQueries({ queryKey: accessKey });
     } catch (err) {
       if (err instanceof ApiError && err.status === 422 && err.fitCheck) {
         setBlocked(err.fitCheck);
-      } else if (design && !(err instanceof ApiError && err.status < 500)) {
+      } else if (err instanceof ApiError && err.status === 402) {
+        setNeedsOrder(true);
+        void queryClient.invalidateQueries({ queryKey: accessKey });
+      } else if (design && access.data?.unlocked && !(err instanceof ApiError && err.status < 500)) {
         // The API cannot be reached (offline demo, server down): build the file in the browser instead.
         setOffline(true);
         await startLocal(fileType);
@@ -235,6 +253,21 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
         ))}
       </div>
 
+      {needsOrder && (
+        <Alert
+          tone="warning"
+          icon={CreditCard}
+          title="Chưa thanh toán đơn in của bản thiết kế này"
+          action={
+            <Link href={`/cart?add=${encodeURIComponent(projectId)}`} className={buttonClass({ variant: "brand", size: "sm" })}>
+              Thanh toán ở giỏ
+            </Link>
+          }
+        >
+          WrapFit chỉ xuất file in sau khi đơn in của đúng bản thiết kế này đã thanh toán. Sửa thiết kế sau khi trả thì cần đơn mới.
+        </Alert>
+      )}
+
       {blocked && (
         <div role="alert" className="p-4 rounded-3xl bg-vibrant-coral/10 border border-vibrant-coral/30 space-y-3">
           <div className="flex items-start gap-2.5">
@@ -284,6 +317,9 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
                   <CheckCircle2 className="w-4 h-4" aria-hidden /> File {FORMAT_NAMES[current.fileType]} đã sẵn sàng
                 </span>
                 <span className="text-xs text-success-fg block truncate">{current.fileName}</span>
+                {current.watermarked && (
+                  <span className="text-xs text-success-fg block">Có dòng “Thiết kế bằng WrapFit” ở tai dán, bị che khi dán hộp.</span>
+                )}
               </>
             ) : current?.status === "FAILED" ? (
               <>

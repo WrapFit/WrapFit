@@ -5,6 +5,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { configuration, createAppLogger, validateEnv } from './config';
 import { queueRootModule } from './shared/queue';
 import { CommonModule } from './common';
+import { AiImageWorkerModule } from './ai';
+import { BillingCoreModule } from './billing';
 import { ExportWorkerModule } from './export';
 import { MailWorkerModule } from './mail';
 import { StorageModule } from './storage';
@@ -22,8 +24,10 @@ import { PrismaModule } from './shared/prisma';
     PrismaModule,
     StorageModule,
     queueRootModule('worker'),
+    BillingCoreModule, // refunds the export credit or the xu of a failed job (docs/16 section 5.3, docs/19)
     ExportWorkerModule,
     MailWorkerModule,
+    AiImageWorkerModule,
   ],
 })
 export class WorkerModule {}
@@ -33,7 +37,7 @@ async function bootstrap() {
     logger: createAppLogger(),
   });
   app.enableShutdownHooks(); // finishes the running jobs on SIGTERM
-  new Logger('Worker').log('WrapFit worker started: queues "export", "mail"');
+  new Logger('Worker').log('WrapFit worker started: queues "export", "mail", "ai-image"');
 }
 
 if (require.main === module) bootstrap();

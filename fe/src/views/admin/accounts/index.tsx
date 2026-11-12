@@ -5,10 +5,11 @@
  * The filters and the search act on the loaded page: the API has no search.
  */
 
-import { FilterX, Search, Users } from "lucide-react";
+import { FilterX, Lock, MailWarning, Search, Store, Users } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Pagination, outlineButton } from "@/components/library";
-import { AdminShell, StatTile, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError } from "@/components/workspace";
+import { Pagination } from "@/components/library";
+import { buttonClass } from "@/components/ui";
+import { AdminShell, AdminStat, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, ADMIN_STAT_GROUP } from "@/components/workspace";
 import { ROLE_LABELS } from "@/constants";
 import {
   ACCOUNT_FILTERS,
@@ -48,7 +49,6 @@ function AdminAccountsScreen() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
-  const [shortcut, setShortcut] = useState("Ctrl F");
   const searchRef = useRef<HTMLInputElement>(null);
 
   const accounts = useAccountsPage(page);
@@ -79,7 +79,6 @@ function AdminAccountsScreen() {
 
   // Ctrl/Cmd+F focuses the page filter, except inside a dialog where the browser's own search stays.
   useEffect(() => {
-    if (/Mac|iPhone|iPad/.test(navigator.userAgent)) setShortcut("⌘F");
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== "f") return;
       const input = searchRef.current;
@@ -143,7 +142,7 @@ function AdminAccountsScreen() {
                 setFilter("all");
                 setSearch("");
               }}
-              className={outlineButton}
+              className={buttonClass({ variant: "secondary", shape: "rounded", className: "px-4" })}
             >
               Xoá bộ lọc
             </button>
@@ -174,15 +173,15 @@ function AdminAccountsScreen() {
   return (
     <AdminShell
       title="Tài khoản"
-      description="Mọi tài khoản WrapFit: vai trò, xác minh email và trạng thái khoá. Bấm vào một dòng để xem chi tiết."
+      description="Vai trò, xác minh email và trạng thái khoá. Bấm một dòng để xem chi tiết."
       actions={<span className="text-sm text-library-muted">{syncLabel}</span>}
     >
       <div className="flex flex-col gap-6">
-        <section aria-label="Số tài khoản" className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatTile label="Tổng tài khoản" value={meta ? formatCount(meta.total) : "–"} hint="Toàn hệ thống" />
-          <StatTile label={ROLE_LABELS.PRINT_SHOP} value={meta ? formatCount(counts.get("PRINT_SHOP") ?? 0) : "–"} hint={`Trong trang ${page}`} />
-          <StatTile label="Chưa xác minh" value={meta ? formatCount(counts.get("unverified") ?? 0) : "–"} hint={`Trong trang ${page}`} />
-          <StatTile label="Đã khoá" value={meta ? formatCount(counts.get("locked") ?? 0) : "–"} hint={`Trong trang ${page}`} />
+        <section aria-label="Số tài khoản" className={`${ADMIN_STAT_GROUP} grid-cols-2 md:grid-cols-4`}>
+          <AdminStat label="Tổng tài khoản" icon={Users} value={meta ? formatCount(meta.total) : "–"} />
+          <AdminStat label={ROLE_LABELS.PRINT_SHOP} icon={Store} value={meta ? formatCount(counts.get("PRINT_SHOP") ?? 0) : "–"} />
+          <AdminStat label="Chưa xác minh" icon={MailWarning} value={meta ? formatCount(counts.get("unverified") ?? 0) : "–"} />
+          <AdminStat label="Đã khoá" icon={Lock} status={meta && (counts.get("locked") ?? 0) > 0 ? "attention" : undefined} value={meta ? formatCount(counts.get("locked") ?? 0) : "–"} />
         </section>
 
         <section aria-label="Danh sách tài khoản" className="overflow-hidden rounded-2xl border border-library-line bg-white">
@@ -212,7 +211,7 @@ function AdminAccountsScreen() {
               <Search aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-library-muted" />
               <input
                 ref={searchRef}
-                className={cn(WORKSPACE_INPUT, "rounded-full border-library-ink pl-10 pr-16")}
+                className={cn(WORKSPACE_INPUT, "rounded-full border-line pl-10 pr-4")}
                 aria-label="Lọc tài khoản trong trang này theo tên, email hoặc cửa hàng"
                 placeholder="Lọc trong trang: tên, email…"
                 type="text"
@@ -223,7 +222,6 @@ function AdminAccountsScreen() {
                   if (event.key === "Escape" && search) setSearch("");
                 }}
               />
-              <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded bg-library-panel px-1.5 py-0.5 font-mono text-cad-spec-micro text-library-sub sm:inline">{shortcut}</kbd>
             </div>
           </div>
 

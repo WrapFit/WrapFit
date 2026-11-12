@@ -29,38 +29,38 @@ const STEPS: StepInfo[] = [
   {
     number: "01",
     badgeLabel: "BƯỚC 01 · ĐO KÍCH THƯỚC QUÀ",
-    title: "Bước 01: Nhập kích thước món quà — Tự động may đo hộp theo milimét",
+    title: "Bước 01: Nhập kích thước món quà, hộp tự may đo theo milimét",
     imageSrc: "/branding/screen-flow-1.png",
-    imageAlt: "Giao diện may đo hộp quà theo kích thước món quà trên WrapFit",
-    targetHref: ROUTES.editorNew,
-    ctaLabel: "Mở trang May đo hộp ngay",
+    imageAlt: "Bước Kích thước của Studio WrapFit: nhập dài, rộng, cao món quà, hộp 3D đổi theo",
+    targetHref: `${ROUTES.editorDemo}?step=2`,
+    ctaLabel: "Nhập kích thước",
   },
   {
     number: "02",
     badgeLabel: "BƯỚC 02 · THIẾT KẾ & GẬP 3D",
-    title: "Bước 02: Studio thiết kế 2D & Mô phỏng gập 3D thời gian thực",
+    title: "Bước 02: Thiết kế trên khuôn bế 2D, xem hộp gập 3D",
     imageSrc: "/branding/screen-flow-2.png",
-    imageAlt: "Giao diện Studio 2D Dieline và 3D Origami WebGL thời gian thực trên WrapFit",
-    targetHref: ROUTES.editorDemo,
-    ctaLabel: "Mở Studio 3D trải nghiệm ngay",
+    imageAlt: "Bước Thiết kế của Studio WrapFit: thanh công cụ bên trái, khuôn bế 2D ở giữa",
+    targetHref: `${ROUTES.editorDemo}?step=4`,
+    ctaLabel: "Mở Studio",
   },
   {
     number: "03",
     badgeLabel: "BƯỚC 03 · FITCHECK™ AI",
-    title: "Bước 03: FitCheck™ AI — Tự động kiểm duyệt an toàn in ấn",
+    title: "Bước 03: FitCheck™ tự kiểm tra lỗi in trước khi xuất",
     imageSrc: "/branding/screen-flow-3.png",
-    imageAlt: "Giao diện FitCheck AI kiểm tra an toàn tràn lề, viền chữ và mép dán",
-    targetHref: ROUTES.editorDemo,
-    ctaLabel: "Trải nghiệm FitCheck™ AI",
+    imageAlt: "Bước Đặt in của Studio WrapFit: khuôn bế 1:1 và danh sách quy tắc sản xuất FitCheck",
+    targetHref: `${ROUTES.editorDemo}?step=6`,
+    ctaLabel: "Thử FitCheck",
   },
   {
     number: "04",
     badgeLabel: "BƯỚC 04 · XUẤT FILE & CẮT BẾ",
-    title: "Bước 04: Xuất file chuẩn xưởng & Cắt kỹ thuật số từ 1 hộp",
+    title: "Bước 04: Báo giá, thanh toán và xuất file in",
     imageSrc: "/branding/screen-flow-4.png",
-    imageAlt: "Giao diện kiểm duyệt chế bản in và xuất file vector đa lớp chuẩn xưởng",
-    targetHref: "/editor/demo?dialog=export",
-    ctaLabel: "Trải nghiệm xuất file in ngay",
+    imageAlt: "Bước Đặt in của Studio WrapFit: báo giá in theo số lượng và báo giá chi tiết",
+    targetHref: `${ROUTES.editorDemo}?step=6`,
+    ctaLabel: "Xem báo giá",
   },
 ];
 
@@ -118,12 +118,8 @@ export function FlowStepModal({
     >
       <div className="relative w-full max-w-5xl max-h-[92vh] overflow-hidden rounded-sheet bg-white border border-line shadow-popover flex flex-col animate-pop-in">
         {/* ================= MODAL HEADER: DEDICATED STEP ONLY ================= */}
-        <div className="flex items-center justify-between border-b border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-fpt-orange-light text-fpt-orange-ink border border-fpt-orange/20 shadow-2xs">
-              {current.badgeLabel}
-            </span>
-          </div>
+        {/* Close only: the step title below already says which step this is (no "BƯỚC 0x" tag). */}
+        <div className="flex items-center justify-end border-b border-line/70 px-5 py-3.5 sm:px-7 bg-surface-sunken/40 shrink-0">
 
           {/* Close button */}
           <button

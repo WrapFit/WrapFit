@@ -104,6 +104,9 @@ model User {
   referralCode     String?          @unique @map("referral_code")
   referredById     String?          @map("referred_by_id") @db.Uuid
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
+  // Tài khoản demo (docs/21): thanh toán qua VNPay sandbox, không bao giờ qua SePay tiền thật.
+  isDemo           Boolean          @default(false) @map("is_demo")
+  billingDetails   Json?            @map("billing_details") // Thông tin xuất hoá đơn VAT { company, taxCode, email }
   // Tăng mỗi lần đăng xuất mọi thiết bị (đặt lại mật khẩu, logout-all, khóa tài khoản…). Access / refresh token mang
   // số này (claim `sv`): token mang số cũ bị từ chối ngay, không chờ hết hạn.
   sessionVersion   Int              @default(0) @map("session_version")
@@ -115,11 +118,20 @@ model User {
   refreshTokens RefreshToken[]
   authTokens    AuthToken[]
   projects      PackagingProject[]
+  productEvents ProductEvent[]
   collections   ProjectCollection[]
   mockups       SocialMockup[]
   projectLikes  ProjectLike[]
   storedFiles   StoredFile[]
   aiGenerations AiGeneration[]
+  aiImageJobs   AiImageJob[]
+  payments      Payment[]
+  creditLots    CreditLot[]
+  exportUnlocks ExportUnlock[]
+  subscriptions Subscription[]
+  orders        Order[]
+  shopMember    PrintShopMember?
+  resolvedBankTransactions BankTransaction[] @relation("BankTransactionResolver")
 
   @@index([referredById])
   @@map("users")
@@ -260,12 +272,15 @@ model PackagingProject {
   forkedFrom     PackagingProject?   @relation("ProjectForks", fields: [forkedFromId], references: [id], onDelete: SetNull)
   forks          PackagingProject[]  @relation("ProjectForks")
   exportJobs     ExportJob[]
+  productEvents  ProductEvent[]
   unboxingConfig UnboxingExperience?
   socialMockups  SocialMockup[]
   snapshots      ProjectSnapshot[]
   likes          ProjectLike[]
   files          StoredFile[]
   fileRefs       ProjectFileRef[]
+  exportUnlocks  ExportUnlock[]
+  orderItems     OrderItem[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -350,10 +365,14 @@ model ExportJob {
   errorLog    String?        @map("error_log")
   createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   completedAt DateTime?      @map("completed_at") @db.Timestamptz(3)
+  watermarked Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
+  unlockId    String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  unlock  ExportUnlock?    @relation(fields: [unlockId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
+  @@index([unlockId])
   @@map("export_jobs")
 }
 
@@ -376,6 +395,7 @@ model StoredFile {
   project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   refs    ProjectFileRef[]
   library LibraryAsset?
+  aiImage AiImageOutput?
 
   @@index([userId])
   @@index([projectId])
@@ -452,16 +472,430 @@ model OrphanedObject {
 // Mỗi lần gọi AI sinh hoa văn (IT3-09): dùng để giới hạn số lượt theo gói và theo dõi chi phí token.
 // Lần sinh bằng thuật toán dự phòng (không gọi AI) không được ghi.
 model AiGeneration {
-  id           String   @id @default(uuid(7)) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  theme        String
-  model        String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
-  inputTokens  Int      @map("input_tokens")
-  outputTokens Int      @map("output_tokens")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id               String   @id @default(uuid(7)) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  theme            String
+  model            String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
+  inputTokens      Int      @map("input_tokens")
+  outputTokens     Int      @map("output_tokens")
+  credits          Int      @default(0) // xu đã trừ cho lượt này (docs/19 S3); 0 = trước khi có xu
+  debitOperationId String?  @map("debit_operation_id") @db.Uuid // credit_debits.operation_id của lượt trừ xu
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("ai_generations")
+}
+
+enum AiImageJobKind {
+  GENERATE // Tạo ảnh từ mô tả (text-to-image)
+  UPSCALE // Phóng to một ảnh AI cho in ấn
+  REMOVE_BG // Xóa nền một ảnh AI
+  VECTORIZE // Chuyển một ảnh AI sang SVG
+}
+
+enum AiImageJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED // Lỗi phía hệ thống: xu đã hoàn (docs/19 D3)
+}
+
+// Một yêu cầu ảnh AI trả bằng xu (docs/19): tạo ảnh, hoặc một công cụ chạy trên một ảnh AI. Xu bị trừ cùng transaction
+// tạo dòng này; worker (AiImageProcessor) chạy job và hoàn xu đúng một lần khi job thất bại.
+model AiImageJob {
+  id                String           @id @default(uuid(7)) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  kind              AiImageJobKind
+  modelKey          String           @map("model_key") // Khóa trong AI_IMAGE_MODELS, hoặc tên công cụ
+  prompt            String? // Mô tả khách gõ (GENERATE)
+  promptEn          String?          @map("prompt_en") // Mô tả gửi cho model sau bước viết lại
+  aspectRatio       String?          @map("aspect_ratio")
+  allowText         Boolean          @default(false) @map("allow_text")
+  numImages         Int              @default(1) @map("num_images")
+  sourceOutputId    String?          @map("source_output_id") @db.Uuid // Công cụ: ảnh AI được xử lý
+  xuCost            Int              @map("xu_cost")
+  estCostUsd        Decimal          @map("est_cost_usd") @db.Decimal(10, 4) // Chi phí provider ước tính (cầu chì, báo cáo)
+  status            AiImageJobStatus @default(PENDING)
+  clientRequestId   String?          @map("client_request_id") @db.Uuid // Bấm hai lần không trừ xu hai lần
+  debitOperationId  String           @map("debit_operation_id") @db.Uuid
+  providerRequestId String?          @map("provider_request_id")
+  errorLog          String?          @map("error_log")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source  AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
+  outputs AiImageOutput[] @relation("AiImageJobOutputs")
+
+  @@unique([userId, clientRequestId])
+  @@index([userId, createdAt])
+  @@index([status, createdAt]) // AiImageReconcileTask
+  @@index([createdAt]) // Cầu chì chi phí tháng
+  @@index([sourceOutputId])
+  @@map("ai_image_jobs")
+}
+
+// Một ảnh một job tạo ra. Ảnh chưa đặt lên thiết kế nào được giữ tới keep_until (30 ngày) rồi bị dọn như ảnh upload;
+// xóa file thì dòng này đi theo.
+model AiImageOutput {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  jobId        String   @map("job_id") @db.Uuid
+  storedFileId String   @unique @map("stored_file_id") @db.Uuid
+  width        Int? // null với SVG
+  height       Int?
+  keepUntil    DateTime @map("keep_until") @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  job        AiImageJob   @relation("AiImageJobOutputs", fields: [jobId], references: [id], onDelete: Cascade)
+  storedFile StoredFile   @relation(fields: [storedFileId], references: [id], onDelete: Cascade)
+  toolJobs   AiImageJob[] @relation("AiImageToolSource")
+
+  @@index([jobId])
+  @@map("ai_image_outputs")
+}
+
+// ============================================================================
+// Billing core (docs/16 §6, trimmed by docs/17 S1). Money is an Int in VND. Export credits are a ledger: lots with an
+// expiry (`credit_lots`) spent by debit rows (`credit_debits`); `users.subscription_tier` is only a cache written by
+// PlanService.sync. CHECK constraints live in migration 20261030000100_billing_core.
+// ============================================================================
+
+enum PaymentPurpose {
+  EXPORT_1 // 1 lượt xuất, 19.000đ
+  EXPORT_5 // 5 lượt xuất, 79.000đ
+  EXPORT_15 // 15 lượt xuất, 199.000đ
+  PRO_MONTH // Pro 30 ngày, 99.000đ
+  SAMPLE_ORDER // Đơn in mẫu (số tiền theo đơn)
+  XU_500 // 500 xu Wrap, 50.000đ (docs/19)
+  XU_1050 // 1.050 xu Wrap, 100.000đ
+  XU_2200 // 2.200 xu Wrap, 200.000đ
+  XU_CUSTOM // Số xu tùy chọn, giá niêm yết (metadata.xu)
+}
+
+enum PaymentStatus {
+  PENDING // Chờ chuyển khoản, hết hạn sau 15 phút
+  PAID
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentProvider {
+  VIETQR // Chuyển khoản VietQR, SePay báo tiền về (docs/21)
+  VNPAY // Cổng VNPay sandbox, dành cho tài khoản demo
+}
+
+enum PaymentConfirmation {
+  SEPAY_WEBHOOK
+  VNPAY_IPN
+  VNPAY_RETURN
+  SIMULATION // Nút "Giả lập đã thanh toán" (PAYMENT_SIMULATION)
+  ADMIN // Admin gán giao dịch ngân hàng không khớp
+}
+
+enum BankTxStatus {
+  MATCHED // Khớp tự động với một thanh toán
+  UNMATCHED // Chờ admin đối soát
+  RESOLVED // Admin đã gán cho một thanh toán
+  IGNORED // Admin bỏ qua (hoàn tiền tay, tiền không liên quan)
+}
+
+enum BankTxUnmatchedReason {
+  NO_REFERENCE // Nội dung không có mã WF
+  NOT_FOUND // Có mã nhưng không có thanh toán VIETQR nào
+  AMOUNT_MISMATCH
+  EXPIRED // Thanh toán đã hết hạn
+  ALREADY_PAID
+}
+
+enum CreditKind {
+  EXPORT // Lượt xuất file sạch
+  XU // Xu Wrap: mọi tác vụ AI (docs/19)
+}
+
+enum CreditSource {
+  PURCHASE // Mua gói: lô EXPORT còn hạn tính là gói Lượt xuất
+  ADMIN // Admin cấp tay (tài khoản demo, bồi thường): không đổi gói
+  PLAN_ALLOWANCE // Xu của gói theo kỳ, cấp lười khi đọc hoặc tiêu ví (một lô mỗi period_key)
+}
+
+enum CreditDebitReason {
+  EXPORT_UNLOCK // Mở khóa một bản thiết kế (project, version)
+  ADMIN_ADJUSTMENT
+  AI_IMAGE // Tạo ảnh AI (ref_id = ai_image_jobs.id)
+  AI_PATTERN // Hoa văn AI
+  AI_TOOL // Upscale, xóa nền, vector hóa một ảnh AI
+}
+
+enum SubscriptionStatus {
+  ACTIVE // Trong chu kỳ đã trả
+  EXPIRED // Hết chu kỳ (không gia hạn tự động: docs/17 M4)
+}
+
+// One payment request (VietQR transfer confirmed by SePay, VNPay sandbox for demo users, or simulated). `reference` is
+// the transfer content.
+model Payment {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  purpose   PaymentPurpose
+  amountVnd Int            @map("amount_vnd")
+  reference String         @unique // "WF" + 6 ký tự [A-Z0-9] (CHECK), khớp nội dung chuyển khoản
+  status    PaymentStatus  @default(PENDING)
+  expiresAt DateTime       @map("expires_at") @db.Timestamptz(3)
+  paidAt    DateTime?      @map("paid_at") @db.Timestamptz(3)
+  metadata  Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
+  provider      PaymentProvider      @default(VIETQR) // Chọn lúc tạo: user.isDemo ? VNPAY : VIETQR
+  confirmedVia  PaymentConfirmation? @map("confirmed_via") // Đường đã xác nhận, null khi chưa PAID
+  providerTxnId String?              @map("provider_txn_id") // id giao dịch SePay hoặc vnp_TransactionNo
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creditLots       CreditLot[]
+  subscriptions    Subscription[]
+  orders           Order[]
+  bankTransactions BankTransaction[]
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt]) // Đánh dấu EXPIRED
+  @@map("payments")
+}
+
+// Every incoming transfer reported by the SePay webhook (docs/21 §3.1). `external_id` is the SePay transaction id, the
+// idempotency key: a resend inserts nothing.
+model BankTransaction {
+  id                 String                 @id @default(uuid(7)) @db.Uuid
+  externalId         String                 @unique @map("external_id")
+  gateway            String
+  accountNo          String                 @map("account_no")
+  amountVnd          Int                    @map("amount_vnd")
+  content            String
+  bankReference      String                 @map("bank_reference") // referenceCode của ngân hàng
+  extractedReference String?                @map("extracted_reference") // Mã WF… tách từ nội dung
+  transactionAt      DateTime               @map("transaction_at") @db.Timestamptz(3)
+  status             BankTxStatus
+  unmatchedReason    BankTxUnmatchedReason? @map("unmatched_reason")
+  paymentId          String?                @map("payment_id") @db.Uuid
+  resolvedBy         String?                @map("resolved_by") @db.Uuid
+  resolvedNote       String?                @map("resolved_note")
+  raw                Json
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  payment  Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  resolver User?    @relation("BankTransactionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt]) // Hàng đợi đối soát
+  @@index([paymentId])
+  @@index([resolvedBy])
+  @@map("bank_transactions")
+}
+
+// A batch of credits with an expiry. Balance = sum of `remaining` over the lots not expired.
+model CreditLot {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  kind      CreditKind
+  source    CreditSource
+  quantity  Int // Số lượt (xu) cấp
+  remaining Int // Còn lại: chỉ CreditsService sửa, trong transaction có khóa dòng
+  expiresAt DateTime?    @map("expires_at") @db.Timestamptz(3) // null = không hết hạn (chỉ lô ADMIN)
+  paymentId String?      @map("payment_id") @db.Uuid
+  periodKey String?      @map("period_key") // Chỉ lô PLAN_ALLOWANCE (CHECK): kỳ được cấp, xem xuAllowancePeriod
+  valueVnd  Int          @default(0) @map("value_vnd") // Tiền thật của cả lô: số tiền đã trả, 0 với xu gói / tặng (docs/19 D6)
+  note      String?
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  debits  CreditDebit[]
+
+  @@unique([userId, kind, source, periodKey]) // Cấp allowance đúng một lần mỗi kỳ (NULL không trùng nhau)
+  @@index([userId, kind, expiresAt])
+  @@index([paymentId])
+  @@map("credit_lots")
+}
+
+// One debit may take from several lots: the rows of one operation share `operationId`.
+model CreditDebit {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  operationId String            @map("operation_id") @db.Uuid
+  lotId       String            @map("lot_id") @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  quantity    Int
+  reason      CreditDebitReason
+  refId       String?           @map("ref_id") // vd. export_unlocks.id
+  refundedAt  DateTime?         @map("refunded_at") @db.Timestamptz(3) // Hoàn đúng một lần
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  lot CreditLot @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  @@unique([operationId, lotId])
+  @@index([lotId])
+  @@index([userId, createdAt])
+  @@map("credit_debits")
+}
+
+// One credit unlocks every clean format of one design version (project, version) for `export.unlockDays` days.
+model ExportUnlock {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  projectId        String    @map("project_id") @db.Uuid
+  projectVersion   Int       @map("project_version")
+  userId           String    @map("user_id") @db.Uuid // Người trả lượt
+  debitOperationId String    @map("debit_operation_id") @db.Uuid
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(3)
+  refundedAt       DateTime? @map("refunded_at") @db.Timestamptz(3) // Xuất lỗi, đã hoàn lượt
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  project    PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exportJobs ExportJob[]
+
+  @@index([projectId, projectVersion])
+  @@index([userId])
+  @@index([debitOperationId])
+  @@map("export_unlocks")
+}
+
+// A paid plan period. At most one ACTIVE row per user (partial unique index in the migration).
+model Subscription {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  userId             String             @map("user_id") @db.Uuid
+  plan               SubscriptionTier // Chỉ STARTER | PRO_BUSINESS (CHECK)
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime           @map("current_period_start") @db.Timestamptz(3)
+  currentPeriodEnd   DateTime           @map("current_period_end") @db.Timestamptz(3)
+  paymentId          String?            @map("payment_id") @db.Uuid // Thanh toán gần nhất (tạo / gia hạn)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([paymentId])
+  @@map("subscriptions")
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Đơn in mẫu gửi xưởng đối tác (docs/17, S4). Xưởng in là danh sách tĩnh trong PrintShopsService: lưu id dạng chuỗi.
+
+enum OrderStatus {
+  PENDING_PAYMENT // Đã đặt, chờ thanh toán (VietQR mô phỏng, S5)
+  PAID // Đã thanh toán, chờ xưởng nhận in
+  IN_PRODUCTION // Xưởng đang in
+  SHIPPED // Đang giao
+  DELIVERED // Đã giao
+  CANCELLED // Đã hủy (trước khi xưởng in)
+}
+
+model Order {
+  id              String      @id @default(uuid(7)) @db.Uuid
+  orderCode       String      @unique @map("order_code") // WF-<năm>-<4 số>, năm theo giờ Việt Nam
+  userId          String      @map("user_id") @db.Uuid
+  printShopId     String      @map("print_shop_id") // id xưởng trong PrintShopsService (ps-sg-01...)
+  recipientName   String      @map("recipient_name")
+  recipientPhone  String      @map("recipient_phone")
+  shippingAddress String      @map("shipping_address")
+  notes           String?
+  subtotalVnd     Int         @map("subtotal_vnd")
+  shippingVnd     Int         @default(0) @map("shipping_vnd")
+  discountVnd     Int         @default(0) @map("discount_vnd") // Mã ưu đãi do server tính (shared/src/billing/promo.ts)
+  promoCode       String?     @map("promo_code")
+  totalVnd        Int         @map("total_vnd") // = subtotal + shipping - discount (CHECK trong migration)
+  status          OrderStatus @default(PENDING_PAYMENT)
+  paymentId       String?     @map("payment_id") @db.Uuid // Thanh toán đã trả đơn (S5)
+  paidAt          DateTime?   @map("paid_at") @db.Timestamptz(3)
+  shippedAt       DateTime?   @map("shipped_at") @db.Timestamptz(3)
+  deliveredAt     DateTime?   @map("delivered_at") @db.Timestamptz(3)
+  cancelledAt     DateTime?   @map("cancelled_at") @db.Timestamptz(3)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  items   OrderItem[]
+  history OrderStatusHistory[]
+
+  @@index([userId, createdAt]) // GET /orders/my-orders
+  @@index([printShopId, status, createdAt]) // Hàng đợi của xưởng / trang quản trị
+  @@index([paymentId])
+  @@map("orders")
+}
+
+// Một thiết kế trong đơn. Chụp lại tên, cấu trúc, kích thước, phiên bản lúc đặt: dự án sửa hay xóa sau đó không đổi đơn.
+model OrderItem {
+  id             String  @id @default(uuid(7)) @db.Uuid
+  orderId        String  @map("order_id") @db.Uuid
+  projectId      String? @map("project_id") @db.Uuid // null khi dự án đã bị xóa vĩnh viễn
+  projectVersion Int     @map("project_version")
+  projectTitle   String  @map("project_title")
+  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow)
+  dimensions     Json // { length, width, height, paperThickness } lúc đặt
+  paperStock     String  @map("paper_stock")
+  quantity       Int // 1–10 (CHECK)
+  unitPriceVnd   Int     @map("unit_price_vnd") // Giá hộp đầu; mỗi hộp thêm 25.000đ, tổng ở line_total_vnd
+  lineTotalVnd   Int     @map("line_total_vnd")
+
+  order   Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([projectId])
+  @@map("order_items")
+}
+
+// Nhật ký chuyển trạng thái (cả lúc tạo: from = null). changed_by không có khóa ngoại: giữ nguyên khi tài khoản bị xóa.
+model OrderStatusHistory {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  orderId     String       @map("order_id") @db.Uuid
+  fromStatus  OrderStatus? @map("from_status")
+  toStatus    OrderStatus  @map("to_status")
+  changedById String?      @map("changed_by_id") @db.Uuid
+  note        String?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
+}
+
+// Tài khoản PRINT_SHOP thuộc xưởng nào (một tài khoản, một xưởng). Admin gán bằng seed / SQL ở MVP.
+model PrintShopMember {
+  userId      String   @id @map("user_id") @db.Uuid
+  printShopId String   @map("print_shop_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([printShopId])
+  @@map("print_shop_members")
+}
+
+// Analytics (docs/17 S7): append-only product events behind the dashboard numbers. user_id / project_id become null when
+// the user or the project is deleted, so totals of WrapFit stay correct.
+enum ProductEventType {
+  PROJECT_CREATED // payload { templateId, source: "new" | "duplicate" | "fork" | "backfill" }
+  EXPORT_BLOCKED_FITCHECK // payload { errors, fileType }: số vi phạm mức error làm xuất file bị chặn (422)
+  AUTO_FIX_APPLIED // payload { fixed }: số vi phạm Auto-Fix đã sửa
+  EXPORT_COMPLETED // payload { exportJobId, fileType, watermarked }
+  STUDIO_ACTIVE // payload { seconds }: thời gian có thao tác trong studio, tối đa 60 giây mỗi nhịp
+}
+
+model ProductEvent {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String?          @map("user_id") @db.Uuid
+  projectId String?          @map("project_id") @db.Uuid
+  type      ProductEventType
+  payload   Json             @default("{}")
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user    User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt]) // Khối "Toàn WrapFit"
+  @@index([userId, type, createdAt]) // Khối "Của bạn"
+  @@index([projectId, type]) // Thời gian tạo hộp: nhịp studio và lần xuất đầu tiên của từng dự án
+  @@map("product_events")
 }

@@ -34,3 +34,17 @@ for (const [key, value] of Object.entries(storageDefaults)) process.env[key] ??=
 
 // Never call the paid Claude API from tests: the AI module falls back to its procedural generator.
 process.env.ANTHROPIC_API_KEY = '';
+// Nor fal.ai: AI images are placeholder gradients drawn in the worker (docs/19).
+process.env.AI_IMAGE_PROVIDER = 'fake';
+process.env.FAL_KEY = '';
+
+// The simulate button of the VietQR checkout (docs/17 M6) is on for e2e; payments.e2e-spec.ts also boots an app with
+// it off to check the 404.
+process.env.PAYMENT_SIMULATION = 'true';
+// Key of the SePay webhook (test value): sepay-webhook.e2e-spec.ts sends it as `Authorization: Apikey <key>`.
+process.env.SEPAY_WEBHOOK_API_KEY = 'e2e-sepay-webhook-key-0123456789';
+// VNPay sandbox (test values, never real credentials): vnpay.e2e-spec.ts signs IPNs with this secret.
+process.env.VNPAY_TMN_CODE = 'E2ETMN01';
+process.env.VNPAY_HASH_SECRET = 'e2e-vnpay-hash-secret-0123456789ab';
+process.env.VNPAY_PAY_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+process.env.VNPAY_RETURN_URL = 'http://frontend.e2e/payments/vnpay-return';

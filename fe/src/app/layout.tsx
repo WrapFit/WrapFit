@@ -10,10 +10,10 @@ export const metadata = {
   // Favicon: the orange hexagon mark (same drawing as components/layout/WrapFitMark.tsx). `?v=` busts the old W icon in browser caches.
   icons: {
     icon: [
-      { url: "/branding/wrapfit-mark.svg?v=2", type: "image/svg+xml" },
-      { url: "/favicon.ico?v=2", sizes: "48x48" },
+      { url: "/branding/wrapfit-mark.svg?v=3", type: "image/svg+xml" },
+      { url: "/favicon.ico?v=3", sizes: "48x48" },
     ],
-    apple: "/apple-touch-icon.png?v=2",
+    apple: "/apple-touch-icon.png?v=3",
   },
 };
 

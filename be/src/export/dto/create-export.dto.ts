@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ExportFileType } from '@prisma/client';
-import { IsEnum } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
 
 export class CreateExportDto {
   @ApiProperty({
@@ -11,4 +11,13 @@ export class CreateExportDto {
   })
   @IsEnum(ExportFileType)
   fileType: ExportFileType;
+
+  @ApiPropertyOptional({
+    description:
+      'Spend one export credit to unlock every clean format of this design version (docs/16 §5.2). Without it a ' +
+      'design that is not unlocked gets the A4 PDF with a watermark, and 402 EXPORT_CREDIT_REQUIRED for other formats',
+  })
+  @IsOptional()
+  @IsBoolean()
+  useCredit?: boolean;
 }

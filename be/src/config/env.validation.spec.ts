@@ -14,6 +14,28 @@ describe('validateEnv', () => {
     expect(env.SWAGGER_ENABLED).toBe('true');
   });
 
+  it('treats SEPAY_WEBHOOK_API_KEY as optional but refuses a short or spaced one', () => {
+    expect(validateEnv(valid).SEPAY_WEBHOOK_API_KEY).toBe('');
+    expect(validateEnv({ ...valid, SEPAY_WEBHOOK_API_KEY: 'a'.repeat(32) }).SEPAY_WEBHOOK_API_KEY).toBe('a'.repeat(32));
+    expect(() => validateEnv({ ...valid, SEPAY_WEBHOOK_API_KEY: 'short' })).toThrow(/SEPAY_WEBHOOK_API_KEY/);
+    expect(() => validateEnv({ ...valid, SEPAY_WEBHOOK_API_KEY: `${'a'.repeat(16)} ${'b'.repeat(16)}` })).toThrow(
+      /SEPAY_WEBHOOK_API_KEY/,
+    );
+  });
+
+  it('needs VNPAY_TMN_CODE and VNPAY_HASH_SECRET together, and defaults to the sandbox', () => {
+    const env = validateEnv(valid);
+    expect([env.VNPAY_TMN_CODE, env.VNPAY_HASH_SECRET, env.VNPAY_RETURN_URL]).toEqual(['', '', '']);
+    expect(env.VNPAY_PAY_URL).toBe('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html');
+
+    const both = { ...valid, VNPAY_TMN_CODE: 'ABCD1234', VNPAY_HASH_SECRET: 'x'.repeat(32) };
+    expect(validateEnv(both).VNPAY_TMN_CODE).toBe('ABCD1234');
+    expect(() => validateEnv({ ...valid, VNPAY_TMN_CODE: 'ABCD1234' })).toThrow(/VNPAY_TMN_CODE and VNPAY_HASH_SECRET/);
+    expect(() => validateEnv({ ...valid, VNPAY_HASH_SECRET: 'x'.repeat(32) })).toThrow(/VNPAY_TMN_CODE and VNPAY_HASH_SECRET/);
+    expect(() => validateEnv({ ...both, VNPAY_TMN_CODE: 'short' })).toThrow(/VNPAY_TMN_CODE/);
+    expect(() => validateEnv({ ...both, VNPAY_RETURN_URL: 'not a url' })).toThrow(/VNPAY_RETURN_URL/);
+  });
+
   it('rejects short JWT secrets', () => {
     expect(() => validateEnv({ ...valid, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
   });
@@ -40,5 +62,29 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...valid, STORAGE_BUCKET: 'wrapfit', STORAGE_ACCESS_KEY_ID: 'key' })).toThrow(
       /STORAGE_SECRET_ACCESS_KEY, STORAGE_PUBLIC_URL/,
     );
+  });
+
+  it('allows Cloudinary to be disabled, but not half configured', () => {
+    expect(validateEnv(valid).CLOUDINARY_CLOUD_NAME).toBe('');
+    expect(validateEnv(valid).CLOUDINARY_FOLDER).toBe('wrapfit');
+    expect(() => validateEnv({ ...valid, CLOUDINARY_CLOUD_NAME: 'wrapfit', CLOUDINARY_API_KEY: 'key' })).toThrow(
+      /CLOUDINARY_API_SECRET/,
+    );
+  });
+
+  it('uses haiku for fast AI and keeps AI_MODEL as an alias of AI_MODEL_FAST', () => {
+    const env = validateEnv(valid);
+    expect(env.AI_MODEL_FAST).toBe('claude-haiku-5-5');
+    expect(env.AI_MODEL_PREMIUM).toBe('claude-opus-5-5');
+    expect(validateEnv({ ...valid, AI_MODEL: 'claude-sonnet-5-5' }).AI_MODEL_FAST).toBe('claude-sonnet-5-5');
+    expect(
+      validateEnv({ ...valid, AI_MODEL: 'claude-sonnet-5-5', AI_MODEL_FAST: 'claude-haiku-5-5' }).AI_MODEL_FAST,
+    ).toBe('claude-haiku-5-5');
+  });
+
+  it('accepts an empty or numeric AI_MONTHLY_BUDGET_USD only', () => {
+    expect(validateEnv(valid).AI_MONTHLY_BUDGET_USD).toBe('');
+    expect(validateEnv({ ...valid, AI_MONTHLY_BUDGET_USD: '7.5' }).AI_MONTHLY_BUDGET_USD).toBe('7.5');
+    expect(() => validateEnv({ ...valid, AI_MONTHLY_BUDGET_USD: '20$' })).toThrow(/AI_MONTHLY_BUDGET_USD/);
   });
 });

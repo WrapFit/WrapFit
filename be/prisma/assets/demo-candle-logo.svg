@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Logo of the demo shop (docs/17 S8): a candle jar in a round badge, shapes only (no font needed to print it). -->
+  <circle cx="100" cy="100" r="96" fill="#1A362B"/>
+  <circle cx="100" cy="100" r="86" fill="none" stroke="#D4AF37" stroke-width="4"/>
+  <path d="M100 38 C112 54 116 64 108 76 C104 82 96 82 92 76 C84 64 88 54 100 38 Z" fill="#D4AF37"/>
+  <path d="M100 56 C105 64 106 70 102 75 C100 77 98 77 97 75 C94 70 95 64 100 56 Z" fill="#FDFBF7"/>
+  <rect x="98" y="80" width="4" height="12" fill="#FDFBF7"/>
+  <rect x="64" y="92" width="72" height="72" rx="14" fill="#FDFBF7"/>
+  <rect x="64" y="112" width="72" height="26" fill="#E8D8C8"/>
+  <rect x="58" y="88" width="84" height="10" rx="5" fill="#D4AF37"/>
+</svg>

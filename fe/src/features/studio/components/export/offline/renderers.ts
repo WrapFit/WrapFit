@@ -34,6 +34,10 @@ const LINE_MM = 0.25;
 const DASH_MM = 4;
 const PT_PER_MM = 72 / 25.4;
 const INFO_FONT_MM = 3.5;
+/** Spec line of the box (name, structure, L x W x H, paper): 6 pt, printed in the margin on the Artwork layer. */
+const SPEC_LINE_FONT_MM = 6 / PT_PER_MM;
+/** Baseline of the spec line below the cut: its top stays at least 5 mm under the cut, clear of the 3 mm bleed. */
+const SPEC_LINE_BELOW_CUT_MM = 5 + SPEC_LINE_FONT_MM;
 /** Raster images are downsampled to this at their printed size; SVG logos are rasterised at VECTOR_DPI. */
 const MAX_EMBED_DPI = 450;
 const VECTOR_DPI = 600;
@@ -153,7 +157,7 @@ function dimensionMarks(layout: PrintLayout) {
     lines.push([x, piece.y, x, piece.y + height], [x - tick, piece.y, x + tick, piece.y], [x - tick, piece.y + height, x + tick, piece.y + height]);
     labels.push({ text: `${n(height)} mm`, x: x - 1.5, y: piece.y + height / 2, vertical: true });
   }
-  const info = { text: specLine(layout), x: layout.pieces[0].x, y: trimArea(layout).bottom + 10 };
+  const info = { text: specLine(layout), x: layout.pieces[0].x, y: trimArea(layout).bottom + SPEC_LINE_BELOW_CUT_MM };
   return { lines, labels, info };
 }
 
@@ -261,9 +265,9 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
         images.join("") +
         artVectors(layout, assets, false).map(artSvg).join("") +
         texts.join("") +
-        barcodes.join(""),
+        barcodes.join("") +
+        `<path fill="${COLORS.info}" d="${labelPath(info, marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
-    layer("crease", "Crease", ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes("crease")),
     layer("cut", "CutContour", ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes("cut")),
     layer(
       "dimensions",
@@ -277,8 +281,7 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
               (label.vertical ? ` transform="rotate(-90 ${n(label.x)} ${n(label.y)})"` : "") +
               "/>",
           )
-          .join("") +
-        `<path stroke="none" d="${labelPath(info, marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM, false)}"/>`,
+          .join(""),
     ),
     "</svg>",
   ].join("\n");
@@ -591,13 +594,16 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     const at = turned(b.rotation, b.cx, b.cy);
     content.push(`q ${ink([0, 0, 0, 0])}`, pathToPdf(b.knockout, at), "f", ink(K100), pathToPdf(b.d, at), "f Q");
   }
+  // Spec line in the margin: printed with the artwork so the print shop and the customer can read the box size.
+  const spec = dimensionMarks(layout).info;
+  content.push(`q ${ink(CMYK_INFO)}`, pathToPdf(labelPath(info, spec.text, spec.x, spec.y, SPEC_LINE_FONT_MM, false), map), "f Q");
   content.push("EMC");
 
-  const strokeLayer = (type: "cut" | "crease", ocg: string, cs: string, dash: string) => {
+  const strokeLayer = (type: "cut", ocg: string, cs: string, dash: string) => {
     const paths = layout.strokes.filter((s) => s.type === type).map((s) => pathToPdf(s.d, map) + " S");
     content.push(`/OC /${ocg} BDC q /GSop gs /${cs} CS 1 SCN ${f(LINE_MM * k)} w ${dash} 1 J 1 j`, ...paths, "Q EMC");
   };
-  strokeLayer("crease", "OCcrease", "CsCrease", `[${f(DASH_MM * k)} ${f(DASH_MM * k)}] 0 d`);
+  // No crease layer: the dashed fold lines are not printed (same as the server file).
   strokeLayer("cut", "OCcut", "CsCut", "[] 0 d");
 
   const marks = dimensionMarks(layout);
@@ -606,7 +612,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
   for (const l of marks.labels) {
     content.push(pathToPdf(labelPath(info, l.text, l.x, l.y, INFO_FONT_MM, true), turned(l.vertical ? -90 : 0, l.x, l.y)), "f");
   }
-  content.push(pathToPdf(labelPath(info, marks.info.text, marks.info.x, marks.info.y, INFO_FONT_MM, false), map), "f", "Q EMC");
+  content.push("Q EMC");
 
   if (options.homePrint) {
     // Crop marks at the trim corners and a 50 mm ruler to check the printer kept 1:1 (printed, plain black).
@@ -631,7 +637,6 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
 
   const ocgs = [
     ["OCart", "Artwork", true],
-    ["OCcrease", "Crease", true],
     ["OCcut", "CutContour", true],
     ["OCdim", "Dimensions", false],
   ] as const;

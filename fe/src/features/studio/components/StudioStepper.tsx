@@ -23,7 +23,7 @@ interface StudioStepperProps {
   locked?: Partial<Record<StudioStep, string>>;
 }
 
-/** The 6 steps of the studio as pack.ly menu pills (labels from `xl`, numbers below). */
+/** The 6 steps of the studio as pack.ly menu pills (current label from `lg`, all labels from `2xl`, numbers below). */
 export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperProps) {
   return (
     <nav aria-label="Các bước thiết kế" className="flex min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none]">
@@ -41,7 +41,7 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
             aria-current={isActive ? "step" : undefined}
             aria-label={`Bước ${s.step}: ${s.label}`}
             onClick={() => onSelect(s.step)}
-            className={`min-h-[36px] shrink-0 px-2 sm:px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed ${
+            className={`min-h-[36px] shrink-0 px-2 lg:px-3.5 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed ${
               isActive
                 ? "bg-landing-tile text-landing-ink font-semibold"
                 : isPast
@@ -63,7 +63,7 @@ export function StudioStepper({ current, onSelect, locked = {} }: StudioStepperP
                 {s.step}
               </span>
             )}
-            <span className={isActive ? "hidden sm:inline" : "hidden 2xl:inline"}>{s.label}</span>
+            <span className={isActive ? "hidden lg:inline" : "hidden 2xl:inline"}>{s.label}</span>
           </button>
         );
       })}

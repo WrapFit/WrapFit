@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ACCESS_COOKIE, CurrentUser } from '../../common';
 import { ProjectsService } from '../application/projects.service';
 import { SnapshotsService } from '../application/snapshots.service';
@@ -19,6 +20,7 @@ import { ChangeVisibilityDto } from './dto/change-visibility.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { FormulaUpgradeDto } from './dto/formula-upgrade.dto';
 import { QueryProjectsDto } from './dto/query-projects.dto';
+import { RecordProjectEventDto } from './dto/record-project-event.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectOwnerGuard } from './project-owner.guard';
 
@@ -90,6 +92,19 @@ export class ProjectsController {
   @ApiOperation({ summary: 'Copy a project into a new, independent project' })
   duplicate(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.projectsService.duplicate(id, userId);
+  }
+
+  @Post(':id/events')
+  @UseGuards(ProjectOwnerGuard)
+  @HttpCode(204)
+  // One heartbeat a minute and the odd Auto-Fix; more is a loop or a script.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({
+    summary: 'Record a studio event for the analytics dashboard: AUTO_FIX_APPLIED or STUDIO_ACTIVE (heartbeat)',
+    description: 'STUDIO_ACTIVE carries at most 60 seconds; a second heartbeat of the project within 50 s is ignored.',
+  })
+  recordEvent(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() dto: RecordProjectEventDto) {
+    return this.projectsService.recordEvent(id, userId, dto);
   }
 
   @Delete(':id')

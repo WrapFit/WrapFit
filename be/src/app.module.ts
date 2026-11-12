@@ -17,6 +17,8 @@ import { queueRootModule } from './shared/queue';
 import { AuthModule, JwtAuthGuard } from './auth';
 import { configuration, validateEnv } from './config';
 import { AiModule } from './ai';
+import { BillingModule } from './billing';
+import { AnalyticsModule } from './analytics';
 import { ExportModule } from './export';
 import { CollectionsModule } from './collections';
 import { EventsModule } from './events';
@@ -30,8 +32,10 @@ import { UnboxingModule } from './unboxing';
 import { UsersModule } from './users';
 import { PrintShopsModule } from './print-shops';
 import { OrdersModule } from './orders';
+import { PaymentsModule } from './payments';
 import { PrismaModule } from './shared/prisma';
 import { RedisModule } from './shared/redis';
+import { CloudinaryModule } from './shared/cloudinary';
 
 @Module({
   imports: [
@@ -49,20 +53,24 @@ import { RedisModule } from './shared/redis';
     RedisModule,
     StorageModule,
     StorageMaintenanceModule,
+    CloudinaryModule,
     queueRootModule('producer'), // BullMQ (Redis): jobs are processed by src/worker.ts
     AuthModule,
     UsersModule,
+    BillingModule,
     ProjectsModule,
     CollectionsModule,
     PublicShowcaseModule,
     TemplatesModule,
     LibraryModule,
     AiModule,
+    AnalyticsModule,
     UnboxingModule,
     ExportModule,
     EventsModule,
     PrintShopsModule,
     OrdersModule,
+    PaymentsModule,
     BaseModule,
   ],
   providers: [

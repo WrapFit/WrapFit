@@ -10,4 +10,9 @@ export class AdminUpdateUserDto {
   @IsOptionalNotNull()
   @IsBoolean()
   isActive?: boolean;
+
+  /** Demo accounts pay through the VNPay sandbox instead of a real bank transfer (docs/21 D3). */
+  @IsOptionalNotNull()
+  @IsBoolean()
+  isDemo?: boolean;
 }

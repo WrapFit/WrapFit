@@ -6,7 +6,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 
-/** AI pattern endpoint (IT3-09) with AI disabled (see e2e-env.ts): the procedural generator answers. */
+/** AI pattern endpoint (IT3-09, paid with xu since docs/19 S3) with AI disabled (see e2e-env.ts): procedural answers. */
 describe('AI pattern (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -33,9 +33,17 @@ describe('AI pattern (e2e)', () => {
     await api().post('/api/ai/pattern').send({ theme: 'Tết' }).expect(401);
   });
 
-  it('reports that AI is off and how much of the plan is used', async () => {
+  it('reports that AI is off, the price of a pattern in xu and the wallet', async () => {
     const res = await api().get('/api/ai/usage').set('Cookie', cookie).expect(200);
-    expect(res.body).toEqual({ tier: 'FREE', used: 0, limit: 10, aiEnabled: false });
+    expect(res.body).toEqual({
+      aiEnabled: false,
+      budgetReached: false,
+      patternCost: { fast: 1, premium: 65 },
+      xu: {
+        balance: 50,
+        allowance: { perPeriod: 50, periodKey: expect.stringMatching(/^FREE:\d{4}-\d{2}$/), resetsAt: expect.any(String) },
+      },
+    });
   });
 
   it('returns a palette and a seamless SVG tile', async () => {
@@ -59,6 +67,18 @@ describe('AI pattern (e2e)', () => {
   it('validates the request', async () => {
     await api().post('/api/ai/pattern').set('Cookie', cookie).send({ theme: '   ' }).expect(400);
     await api().post('/api/ai/pattern').set('Cookie', cookie).send({ theme: 'x', preferredColors: ['red'] }).expect(400);
+  });
+
+  // Before the burst test: every POST counts against the 5 per minute.
+  it('opens premium quality to every plan and spends no xu while AI is off', async () => {
+    const res = await api()
+      .post('/api/ai/pattern')
+      .set('Cookie', cookie)
+      .send({ theme: 'Tết', quality: 'premium' })
+      .expect(200);
+    expect(res.body).toMatchObject({ source: 'procedural', usage: null });
+    const usage = await api().get('/api/ai/usage').set('Cookie', cookie).expect(200);
+    expect(usage.body.xu.balance).toBe(50);
   });
 
   it('limits bursts to 5 requests per minute', async () => {

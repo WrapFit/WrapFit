@@ -110,7 +110,7 @@ function SizeAndPaper() {
 
   return (
     <div className="w-full max-w-[520px] -space-y-6">
-      <div className="relative rounded-sheet bg-white p-4 pb-8 shadow-soft-8 ring-1 ring-landing-ink/10">
+      <div className="relative rounded-sheet bg-white p-4 pb-8 ring-1 ring-landing-ink/10">
         <p className="mb-3 text-sm font-medium text-landing-ink">Kích thước món quà</p>
         <div className="flex min-w-full gap-1.5 md:gap-3">
           {DIMENSIONS.map((dim) => (

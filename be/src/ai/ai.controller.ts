@@ -20,8 +20,10 @@ export class AiController {
   }
 
   @Get('usage')
-  @ApiOperation({ summary: 'My AI generations in the last 24 hours and the limit of my plan' })
+  @ApiOperation({
+    summary: 'Whether AI patterns run, their price in xu, my xu wallet, and whether the monthly AI budget is spent',
+  })
   usage(@CurrentUser('id') userId: string) {
-    return this.patterns.quota(userId);
+    return this.patterns.usage(userId);
   }
 }

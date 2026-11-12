@@ -84,10 +84,10 @@ export default function TestimonialsPage() {
             </button>
           ))}
         </nav>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px overflow-hidden rounded-3xl bg-line/70 ring-1 ring-line/70">
           {research.map((item) => (
             <Reveal as="article" key={item.quote} className="h-full">
-              <div className="flex h-full flex-col rounded-card bg-white p-6 ring-1 ring-landing-ink/10 sm:p-8">
+              <div className="flex h-full flex-col p-6 sm:p-8 bg-white transition-colors hover:bg-surface-sunken/50">
                 <Quote className="size-8 text-fpt-orange" aria-hidden />
                 <blockquote className="mt-4 flex-1 font-landing-heading text-xl font-semibold leading-snug">{item.quote}</blockquote>
                 <p className="mt-6 text-sm font-semibold">{item.who}</p>

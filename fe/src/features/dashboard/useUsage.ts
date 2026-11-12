@@ -10,7 +10,7 @@ export function useStorageUsage() {
   return useQuery({ queryKey: queryKeys.storageUsage, queryFn: getStorageUsage });
 }
 
-/** AI pattern generations in the last 24 hours, against the daily limit of my plan. */
+/** Price of AI patterns in xu and my xu wallet (docs/19). */
 export function useAiUsage() {
   return useQuery({ queryKey: queryKeys.aiUsage, queryFn: getAiUsage });
 }

@@ -13,12 +13,13 @@ import { cn } from "@/utils/helpers";
 // hairline, the flat dieline next to the box, small white tags, numbered pages) in the green of pack.ly.
 
 /** Main call to action: Pacdora's button shape in the lime of pack.ly (shared Button, rounded shape). */
-export const primaryButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-medium" });
-/** "Tạo hộp mới" of the workspace pages: black, bold. */
-export const createBoxButton = buttonClass({ variant: "dark", shape: "rounded", className: "px-4 text-body font-bold" });
+// Site palette: orange for the main action, white with a grey hairline for the others (no black buttons).
+export const primaryButton = buttonClass({ variant: "brand", shape: "rounded", className: "px-4 text-body font-semibold" });
+/** "Tạo hộp mới" of the workspace pages. */
+export const createBoxButton = buttonClass({ variant: "brand", shape: "rounded", className: "px-4 text-body font-semibold" });
 
 /** White button with a black hairline (Pacdora's secondary button; shared Button, outline variant). */
-export const outlineButton = buttonClass({ variant: "outline", shape: "rounded", className: "px-4 text-body font-medium" });
+export const outlineButton = buttonClass({ variant: "secondary", shape: "rounded", className: "px-4 text-body font-medium" });
 
 export interface LibraryCardProps {
   href: string;

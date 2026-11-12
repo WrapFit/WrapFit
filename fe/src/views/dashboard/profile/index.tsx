@@ -196,7 +196,7 @@ function SecurityPanel({ user }: { user: SafeUser }) {
       <PanelTitle>Đăng nhập &amp; bảo mật</PanelTitle>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-library-ink bg-white">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-line bg-white">
             {user.emailVerifiedAt ? <KeyRound className="size-4" aria-hidden /> : <MailWarning className="size-4 text-warning-fg" aria-hidden />}
           </span>
           <p className="text-sm leading-[1.6] text-library-sub">

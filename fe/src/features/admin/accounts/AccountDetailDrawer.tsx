@@ -5,9 +5,12 @@ import type { Role, SafeUser } from "@/types/api";
 import { AccountAvatar } from "./AccountAvatar";
 import { ActiveBadge, EmailBadge, type AccountActions } from "./AccountsTable";
 import { displayName, formatDateTime, ROLE_LABELS, SELF_EDIT_HINT, TIER_LABELS } from "./accountFormat";
+import { DemoFlagToggle } from "./DemoFlagToggle";
 import { ModalDialog } from "./ModalDialog";
 import { RoleSelect } from "./RoleSelect";
 import { Icon } from "@/components/ui";
+import { Coins } from "lucide-react";
+import { GrantCreditsDialog } from "./GrantCreditsDialog";
 
 interface AccountDetailDrawerProps extends Omit<AccountActions, "onOpen"> {
   user: SafeUser;
@@ -32,6 +35,7 @@ export function AccountDetailDrawer({
   const titleId = useId();
   const roleId = useId();
   const [draft, setDraft] = useState<Role | null>(null);
+  const [granting, setGranting] = useState(false);
   const role = draft ?? user.role;
   const dirty = role !== user.role;
   const frozen = isSelf || busy;
@@ -155,6 +159,7 @@ export function AccountDetailDrawer({
               title={isSelf ? SELF_EDIT_HINT : undefined}
             />
           </div>
+          <DemoFlagToggle user={user} disabled={busy} />
           <div className="flex flex-col gap-2" title={isSelf ? SELF_EDIT_HINT : undefined}>
             <button
               type="button"
@@ -195,7 +200,7 @@ export function AccountDetailDrawer({
           type="button"
           onClick={saveRole}
           disabled={!dirty || frozen}
-          className="w-full py-3 rounded-2xl bg-fpt-orange text-white enabled:hover:bg-black font-medium text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 rounded-2xl bg-fpt-orange text-white enabled:hover:bg-fpt-orange-dark font-medium text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Icon name={busy ? "progress_activity" : "sync_lock"} className={`size-[18px] ${busy ? "animate-spin motion-reduce:animate-none" : ""}`} />
           <span>{busy ? "Đang cập nhật…" : dirty ? `Đổi thành ${ROLE_LABELS[role]}` : "Cập Nhật Quyền Hạn"}</span>
@@ -208,6 +213,7 @@ export function AccountDetailDrawer({
           Đóng Chi Tiết
         </button>
       </div>
+    {granting && <GrantCreditsDialog user={user} onClose={() => setGranting(false)} />}
     </ModalDialog>
   );
 }

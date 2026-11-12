@@ -1,9 +1,11 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ThrottlerStorage } from '@nestjs/throttler';
 import QRCode from 'qrcode';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
+import { CreditsService } from '../../src/billing';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { WorkerModule } from '../../src/worker';
@@ -18,8 +20,9 @@ describe('Print export (e2e)', () => {
   let prisma: PrismaService;
 
   const run = Date.now();
-  let pia: { cookie: string };
-  let quinn: { cookie: string };
+  let pia: { id: string; cookie: string };
+  let quinn: { id: string; cookie: string };
+  let credits: CreditsService;
   let projectId: string;
 
   const api = () => request(app.getHttpServer());
@@ -35,9 +38,47 @@ describe('Print export (e2e)', () => {
   };
 
   /** Polls like the frontend does (docs 07: every 2 s; faster here). */
-  const waitFor = async (jobId: string) => {
+  /** Print orders written by the test, removed at the end. */
+  const orderIds: string[] = [];
+  /** A paid print order holding the current version of the design: what unlocks its print file (the cart flow). */
+  const payOrderFor = async (userId: string, project: string) => {
+    const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: project } });
+    // WF-<4 digits>-<4 digits> (CHECK): a year far ahead and random digits keep it apart from real orders.
+    const code = `WF-9${String(run % 1000).padStart(3, '0')}-${String(Math.floor(Math.random() * 10_000)).padStart(4, '0')}`;
+    const order = await prisma.order.create({
+      data: {
+        orderCode: code,
+        userId,
+        printShopId: 'ps-sg-01',
+        recipientName: 'E2E',
+        recipientPhone: '0900000000',
+        shippingAddress: 'E2E',
+        subtotalVnd: 49_000,
+        totalVnd: 49_000,
+        status: 'PAID',
+        paidAt: new Date(),
+        items: {
+          create: {
+            projectId: project,
+            projectVersion: stored.version,
+            projectTitle: stored.title,
+            structure: stored.templateId,
+            dimensions: stored.dimensions as never,
+            paperStock: 'ivory-300',
+            quantity: 1,
+            unitPriceVnd: 49_000,
+            lineTotalVnd: 49_000,
+          },
+        },
+      },
+      select: { id: true },
+    });
+    orderIds.push(order.id);
+  };
+
+  const waitFor = async (jobId: string, user = pia) => {
     for (let i = 0; i < 100; i++) {
-      const res = await as(pia).get(`/api/exports/${jobId}`).expect(200);
+      const res = await as(user).get(`/api/exports/${jobId}`).expect(200);
       if (res.body.status === 'COMPLETED' || res.body.status === 'FAILED') return res.body;
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -58,6 +99,7 @@ describe('Print export (e2e)', () => {
     const workerRef = await Test.createTestingModule({ imports: [WorkerModule] }).compile();
     worker = await workerRef.createNestApplication().init();
 
+    credits = app.get(CreditsService);
     pia = await register('pia');
     quinn = await register('quinn');
     projectId = (
@@ -75,13 +117,16 @@ describe('Print export (e2e)', () => {
         })
         .expect(201)
     ).body.id;
+    // Pia paid the print order of this design in the cart: its print file is unlocked.
+    await payOrderFor(pia.id, projectId);
   });
 
   afterAll(async () => {
+    await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
     await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
-    await worker.close();
+    await worker.close(); // waits for the BullMQ worker's blocking connection: several seconds
     await app.close();
-  });
+  }, 30_000);
 
   it('renders a CMYK PDF in the worker and returns a 15-minute download link', async () => {
     const job = await exportAs('PDF_CMYK');
@@ -154,6 +199,7 @@ describe('Print export (e2e)', () => {
         })
         .expect(201)
     ).body.id;
+    await payOrderFor(pia.id, withImage);
 
     const exportOf = async (fileType: string) => {
       const res = await as(pia).post(`/api/projects/${withImage}/exports`).send({ fileType }).expect(202);
@@ -247,6 +293,81 @@ describe('Print export (e2e)', () => {
     await as(quinn).get(`/api/exports/${latest.id}`).expect(404);
     await as(pia).get('/api/exports/not-a-uuid').expect(400);
     await api().get(`/api/exports/${latest.id}`).expect(401);
+  });
+
+  describe('print file sold through the print cart: no export before a paid order', () => {
+    let rae: { id: string; cookie: string };
+    let design: string;
+    const exportOf = (body: Record<string, unknown>, user = rae) =>
+      as(user).post(`/api/projects/${design}/exports`).send(body);
+    // POST /exports allows 10 requests a minute per IP, and every test here comes from one: start each with a fresh budget.
+    beforeEach(() => {
+      // The in-memory store keeps the hits in a second map next to `storage`: reset both.
+      const store = app.get(ThrottlerStorage) as unknown as { storage: Map<string, unknown>; hitExpirations: Map<string, unknown> };
+      store.storage.clear();
+      store.hitExpirations.clear();
+    });
+
+    beforeAll(async () => {
+      rae = await register('rae');
+      design = (
+        await as(rae)
+          .post('/api/projects')
+          .send({ templateId: 'tuck-top', title: 'Hộp quà Rae', dimensions: { length: 120, width: 80, height: 60 }, canvasState: { elements: [] } })
+          .expect(201)
+      ).body.id;
+    });
+
+    // Several jobs here are queued without waiting for them: let the worker finish before the project is deleted.
+    afterAll(async () => {
+      for (let i = 0; i < 200; i++) {
+        const running = await prisma.exportJob.count({ where: { projectId: design, status: { in: ['PENDING', 'PROCESSING'] } } });
+        if (running === 0) return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }, 30_000);
+
+    it('answers 402 ORDER_PAYMENT_REQUIRED for every format until an order is paid, credits or Pro included', async () => {
+      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toMatchObject({ unlocked: false });
+      for (const fileType of ['PDF_A4_PRINT', 'SVG', 'DXF']) {
+        expect((await exportOf({ fileType }).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
+      }
+      await credits.grant(rae.id, { quantity: 2, source: 'ADMIN', expiresAt: null });
+      await exportOf({ fileType: 'SVG', useCredit: true }).expect(402);
+      expect(await credits.balance(rae.id)).toBe(2);
+      await prisma.user.update({ where: { id: rae.id }, data: { subscriptionTier: 'STARTER' } });
+      await exportOf({ fileType: 'SVG' }).expect(402);
+      await prisma.user.update({ where: { id: rae.id }, data: { subscriptionTier: 'FREE' } });
+      expect(await prisma.exportJob.count({ where: { projectId: design } })).toBe(0);
+    });
+
+    it('a paid order of this version unlocks clean files in every format, nothing charged', async () => {
+      await payOrderFor(rae.id, design);
+      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toMatchObject({ unlocked: true });
+      const started = (await exportOf({ fileType: 'SVG' }).expect(202)).body;
+      expect(started).toMatchObject({ watermarked: false, charged: false });
+      expect(await waitFor(started.jobId, rae)).toMatchObject({ status: 'COMPLETED', watermarked: false });
+      for (const fileType of ['DXF', 'PDF_A4_PRINT']) {
+        expect((await exportOf({ fileType }).expect(202)).body).toMatchObject({ watermarked: false, charged: false });
+      }
+      expect(await credits.balance(rae.id)).toBe(2);
+    });
+
+    it('needs a new paid order after an edit', async () => {
+      const text = { id: 't', type: 'text', panelId: 'panel_front', x: 10, y: 10, width: 40, height: 10, rotation: 0, content: 'Rae' };
+      await as(rae).patch(`/api/projects/${design}`).send({ canvasState: { elements: [text] } }).expect(200);
+      expect((await exportOf({ fileType: 'SVG' }).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
+      await payOrderFor(rae.id, design);
+      await exportOf({ fileType: 'SVG' }).expect(202);
+    });
+
+    it('lets only the owner export or read the access: 404 for others', async () => {
+      // docs/17 asked for 403; ProjectOwnerGuard answers 404 so other users cannot tell the project exists.
+      await exportOf({ fileType: 'SVG' }, quinn).expect(404);
+      await as(quinn).get(`/api/projects/${design}/exports/access`).expect(404);
+      await api().post(`/api/projects/${design}/exports`).send({ fileType: 'SVG' }).expect(401);
+      await exportOf({ fileType: 'SVG', useCredit: 'yes' }).expect(400);
+    });
   });
 
   it('deletes the exported files with the project', async () => {

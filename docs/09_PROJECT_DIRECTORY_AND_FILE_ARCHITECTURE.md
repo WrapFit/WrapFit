@@ -174,7 +174,7 @@ config/ + common/  ──▶  shared/prisma, shared/queue  ──▶  module ngh
 | **GHTK / GHN API** | Tính phí ship tự động và đẩy đơn giao vận | `be/src/shipping/` (chưa có) | `GHTK_API_TOKEN`, `GHN_SHOP_ID` |
 | **Resend / SendGrid** | Gửi email giao dịch (Xác thực, Quên mật khẩu, Báo đơn hàng) | `be/src/mail/` (SMTP qua worker) | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` |
 | **Google OAuth 2.0** | Đăng nhập nhanh 1 cú nhấp chuột cho người dùng | `be/src/auth/strategies/google.strategy.ts` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` |
-| **Gemini / Stability AI** | Sinh hoa văn bao bì tự động theo chủ đề dịp tặng quà | `be/src/ai/` (Claude, dự phòng bằng thuật toán) | `ANTHROPIC_API_KEY`, `AI_MODEL` |
+| **Gemini / Stability AI** | Sinh hoa văn bao bì tự động theo chủ đề dịp tặng quà | `be/src/ai/` (Claude, dự phòng bằng thuật toán) | `ANTHROPIC_API_KEY`, `AI_MODEL_FAST`, `AI_MODEL_PREMIUM`, `AI_MONTHLY_BUDGET_USD` |
 | **Cloudflare Turnstile** | CAPTCHA bảo vệ form đăng ký, quên mật khẩu chống bot | `fe/src/components/auth/`, `be/src/common/guards/` (chưa có) | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
 
 ---

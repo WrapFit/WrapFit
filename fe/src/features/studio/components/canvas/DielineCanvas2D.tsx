@@ -10,6 +10,7 @@ import { formatMm } from "@/features/studio/utils/dieline";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
 import { Checkbox } from "@/components/ui";
+import { useCtrlWheelZoom } from "@/hooks/dom";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
 const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
@@ -29,6 +30,59 @@ function elementLabel(el: CanvasElement): string {
 /** Bleed of the print file: the artwork may run this far past the cut lines. */
 const BLEED_MM = BLEED_BOX_MM;
 
+
+/** Layers of the dieline that can be hidden. */
+export interface DielineLayers {
+  cut: boolean;
+  crease: boolean;
+  bleed: boolean;
+  safeMargin: boolean;
+  dimensions: boolean;
+}
+
+export const DEFAULT_DIELINE_LAYERS: DielineLayers = { cut: true, crease: true, bleed: true, safeMargin: true, dimensions: true };
+
+const LEGEND_LAYERS = [
+  { key: "cut", label: "Nét cắt", hint: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
+  { key: "crease", label: "Nếp gấp", hint: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
+  { key: "bleed", label: "Tràn lề", hint: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
+  { key: "safeMargin", label: "Vùng an toàn", hint: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
+] as const;
+
+/** The legend of the dieline lines as a row of chips; each chip shows or hides its layer. */
+export function DielineLayerLegend({
+  layers,
+  onChange,
+  className = "",
+}: {
+  layers: DielineLayers;
+  onChange(layers: DielineLayers): void;
+  className?: string;
+}) {
+  return (
+    <div role="group" aria-label="Lớp khuôn bế" className={`flex items-center gap-0.5 rounded-full bg-surface-raised/85 p-1 ring-1 ring-line/70 ${className}`}>
+      {LEGEND_LAYERS.map((layer) => {
+        const on = layers[layer.key];
+        return (
+          <button
+            key={layer.key}
+            type="button"
+            aria-pressed={on}
+            aria-label={layer.hint}
+            onClick={() => onChange({ ...layers, [layer.key]: !on })}
+            title={on ? `Ẩn lớp ${layer.hint}` : `Hiện lớp ${layer.hint}`}
+            className={`flex min-h-8 items-center whitespace-nowrap rounded-full px-2.5 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
+              on ? "text-fg hover:bg-surface-sunken" : "text-fg-muted line-through decoration-fg-muted/60 hover:bg-surface-sunken"
+            }`}
+          >
+            <span className={`inline-block w-4 ${layer.swatch} ${on ? "" : "opacity-40"}`} aria-hidden />
+            <span className="ml-1.5">{layer.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 interface DielineCanvas2DProps {
   dieline: DielineGeometry;
@@ -88,13 +142,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   className = "",
 }) => {
   const isStage = variant === "stage";
-  const [showLayers, setShowLayers] = useState({
-    cut: true,
-    crease: true,
-    bleed: true,
-    safeMargin: true,
-    dimensions: true,
-  });
+  const [showLayers, setShowLayers] = useState<DielineLayers>(DEFAULT_DIELINE_LAYERS);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const uid = useId().replace(/:/g, "");
@@ -118,7 +166,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   const fontsVersion = useBoxFonts(elements, artFonts);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
-  const padding = 35; // 35mm margin
+  const padding = 20; // 20 mm around the sheet: the 14 mm rulers and the bleed fit, the dieline gets the rest
   const viewBoxW = totalW + 2 * padding;
   const viewBoxH = totalH + 2 * padding;
 
@@ -176,7 +224,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     const pt = getSvgCoordinates(e.clientX, e.clientY);
     const mmX = Math.round(pt.x - padding);
     const mmY = Math.round(pt.y - padding);
-    setCursorMm({ x: mmX, y: mmY });
+    // The measuring guides follow the pointer only over the sheet (and its rulers): outside it they would float in the
+    // empty part of a wide stage.
+    const onSheet = mmX >= 0 && mmY >= 0 && mmX <= viewBoxW - 2 * padding && mmY <= viewBoxH - 2 * padding;
+    setCursorMm(onSheet ? { x: mmX, y: mmY } : null);
 
     if (!dragState || !onElementsChange) return;
 
@@ -261,6 +312,16 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       onScaleChange(next);
     }
   };
+
+  // Ctrl/⌘ + wheel zooms the card. The stage variant is zoomed by the page, which owns that listener.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  useCtrlWheelZoom(
+    rootRef,
+    (factor) => onScaleChange?.(Math.min(2.5, Math.max(0.4, Number((scaleRef.current * factor).toFixed(3))))),
+    !isStage && !!onScaleChange
+  );
 
   const handleResetZoom = () => {
     
@@ -366,6 +427,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   return (
     <div
+      ref={rootRef}
       className={
         isStage
           ? `relative flex w-full h-full flex-col ${className}`
@@ -424,7 +486,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       </div>
       )}
 
-      <div className={`relative flex min-h-0 flex-1 items-center justify-center ${isStage ? "" : "overflow-hidden bg-mist-150 p-4"}`}>
+      <div className={`relative flex min-h-0 flex-1 items-center justify-center ${isStage ? "" : "overflow-hidden bg-mist-150 p-2"}`}>
       {/* Cutting mat: fine dot grid with a soft light in the middle (the stage shows the page's own backdrop) */}
       {!isStage && (
         <>
@@ -544,7 +606,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
-          className={`relative w-full h-full ${isStage ? "max-h-[94%]" : "max-h-[85%]"} ${
+          className={`relative w-full h-full max-h-[94%] ${
             dragState ? "cursor-grabbing" : "cursor-default"
           }`}
           onPointerMove={handleSvgPointerMove}
@@ -1138,36 +1200,11 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
       </div>
 
-      {/* Stage: the layers as a floating legend (each line toggles its layer) with the cursor position under it. */}
+      {/* Stage: the layers as a one-line floating legend (each chip toggles its layer) with the cursor position after it.
+          One line, so it covers as little of the dieline as it can on short laptop screens. */}
       {isStage && (
-        <div className="pointer-events-none absolute bottom-2 left-2 z-20 hidden flex-col gap-1.5 md:flex">
-          <div role="group" aria-label="Lớp khuôn bế" className="pointer-events-auto flex flex-col gap-0.5 rounded-panel bg-surface-raised/85 p-1.5 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-md">
-            {(
-              [
-                { key: "cut", label: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
-                { key: "crease", label: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
-                { key: "bleed", label: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
-                { key: "safeMargin", label: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
-              ] as const
-            ).map((layer) => {
-              const on = showLayers[layer.key];
-              return (
-                <button
-                  key={layer.key}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setShowLayers({ ...showLayers, [layer.key]: !on })}
-                  title={on ? `Ẩn lớp ${layer.label}` : `Hiện lớp ${layer.label}`}
-                  className={`flex min-h-8 items-center gap-2 rounded-control px-2 text-caption outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
-                    on ? "text-fg hover:bg-surface-sunken" : "text-fg-muted line-through decoration-fg-muted/60 hover:bg-surface-sunken"
-                  }`}
-                >
-                  <span className={`inline-block w-4 ${layer.swatch} ${on ? "" : "opacity-40"}`} aria-hidden />
-                  {layer.label}
-                </button>
-              );
-            })}
-          </div>
+        <div className="pointer-events-none absolute bottom-2 left-2 right-2 z-20 hidden flex-wrap items-center gap-1.5 md:flex">
+          <DielineLayerLegend layers={showLayers} onChange={setShowLayers} className="pointer-events-auto shadow-soft-8 backdrop-blur-md" />
           <span className="w-fit rounded-full bg-surface-raised/85 px-2.5 py-1 font-mono text-cad-spec-micro tabular-nums text-fg-muted ring-1 ring-line/70 backdrop-blur-md" aria-hidden>
             {cursorMm ? `X ${cursorMm.x} · Y ${cursorMm.y} mm` : "X — · Y — mm"}
           </span>

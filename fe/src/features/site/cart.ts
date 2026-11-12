@@ -17,11 +17,6 @@ export const MAX_QUANTITY = 10;
 /** Fee of a sample order, as be/src/orders/orders.service.ts computes it: 49.000đ the first box, 25.000đ each more. */
 export const sampleFee = (quantity: number) => 49_000 + Math.max(0, quantity - 1) * 25_000;
 
-/** Codes of the launch campaigns, checked again by the print shop when it confirms the order. */
-export const PROMO_CODES: Record<string, { label: string; discount: (subtotal: number, firstBoxes: number) => number }> = {
-  WORKSHOPTET: { label: "Workshop Tết 2027: hộp mẫu đầu tiên miễn phí", discount: (_subtotal, firstBoxes) => Math.min(1, firstBoxes) * 49_000 },
-  WRAPFIT10: { label: "Giảm 10% đơn in mẫu", discount: (subtotal) => Math.round(subtotal * 0.1) },
-};
 
 const KEY = "wrapfit:sample-cart";
 const EVENT = "wrapfit:cart";

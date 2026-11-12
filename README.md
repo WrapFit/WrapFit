@@ -12,7 +12,7 @@
 
 ## 📌 Bối cảnh & Nỗi đau thị trường (The Problem)
 
-- **MOQ & Chi phí khuôn bế quá cao**: Các shop quà tặng handmade và cá nhân muốn đặt hộp riêng thường bị xưởng in từ chối do số lượng tối thiểu (thường từ 500 - 1.000 hộp) hoặc chi phí làm khuôn dao bế riêng dao động từ 1.500.000đ - 2.000.000đ (1,5 - 2 triệu đồng)/kích thước.
+- **MOQ & Chi phí khuôn bế quá cao**: Các shop quà tặng handmade và cá nhân muốn đặt hộp riêng thường bị xưởng in từ chối do số lượng tối thiểu (thường từ 500 - 1.000 hộp) hoặc chi phí làm khuôn dao bế riêng dao động từ 1.000.000đ - 3.000.000đ/kích thước.
 - **Công cụ thiết kế 2D "mù" về vật lý bao bì**: Các phần mềm như Canva hay Photoshop không hiểu đường cấn gấp (crease line), mép dán (glue flap) hay độ co giãn của vật liệu (GSM/caliper), dẫn đến việc file thiết kế đẹp trên màn hình nhưng khi in và bế ra thực tế bị rách, lệch khớp hoặc đứt chữ.
 
 ---
@@ -95,26 +95,32 @@ docker compose up --build
 ### Yêu cầu tiên quyết:
 - **Node.js**: Phiên bản `>= 20.x`
 - **npm** (v10+)
+- **Docker Desktop** (PostgreSQL, Redis, lưu trữ file, Mailpit)
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/ptuoof/WrapFit.git
+git clone https://github.com/WrapFit/WrapFit.git
 cd WrapFit
 
 # 2. Cài đặt các gói phụ thuộc
 npm install
 
-# 3. Chạy PostgreSQL + lưu trữ file (SeaweedFS) và chuẩn bị database cho backend
-docker compose up -d postgres seaweedfs storage-init
-cp be/.env.example be/.env          # đổi JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
-npm --workspace=be run db:generate
-npm --workspace=be run db:migrate
-npm --workspace=be run db:seed
+# 3. File môi trường của backend: chạy local dùng nguyên được, không cần .env của người khác
+cp be/.env.example be/.env
 
-# 4. Biên dịch shared library & chạy đồng thời FE + BE
-npm run build:shared
-npm run dev:be & npm run dev:fe
+# 4. Chạy toàn bộ trong một terminal (cần Docker Desktop đang bật)
+npm run dev:all
 ```
+
+`npm run dev:all` bật PostgreSQL, Redis, SeaweedFS (lưu trữ file), Mailpit (email) bằng Docker, build `shared`, tạo Prisma
+client, áp dụng migration, seed, rồi chạy API, worker (email, xuất file in) và frontend cùng lúc. `Ctrl+C` dừng cả ba;
+container Docker vẫn chạy. Chạy lại sau mỗi lần pull code.
+
+- Frontend: `http://localhost:3000` · API: `http://localhost:8080/api` (Swagger `/api/docs`) · Email: `http://localhost:8025`
+- Tài khoản admin seed: `admin@wrapfit.vn` / `Admin@12345`
+- Windows báo cổng 5432 / 8333 bận: xem `netsh interface ipv4 show excludedportrange protocol=tcp`, đặt `POSTGRES_PORT` /
+  `STORAGE_PORT` trong `.env` gốc và sửa cổng tương ứng trong `be/.env`.
+- Chỉ bật phần Docker + database: `npm run dev:setup`. Từng process riêng: `npm run dev:be`, `npm run dev:worker`, `npm run dev:fe`.
 
 Chi tiết backend (API, auth, test, thêm module): xem [`be/README.md`](be/README.md).
 

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    // `npm run dev:worker` only. `nest start --watch` deletes its outDir on start: with dist/ shared by the API and the
+    // worker, starting one deleted the files of the other and it stopped with "Cannot find module dist/worker".
+    "outDir": "./dist-worker",
+    "tsBuildInfoFile": "./dist-worker/tsconfig.build.tsbuildinfo"
+  }
+}

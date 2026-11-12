@@ -1,68 +1,93 @@
+import {
+  BUSINESS_MONTH_DISPLAY,
+  ENTITLEMENTS,
+  EXPORT_PACKS,
+  PLAN_LABELS,
+  PLAN_ORDER as SHARED_PLAN_ORDER,
+  PRO_MONTH,
+  PURCHASED_LOT_VALID_MONTHS,
+  type ExportPack,
+  XU_ALLOWANCE,
+  type ExportPackId,
+} from "@wrapfit/shared";
 import type { SubscriptionTier } from "@/types/api";
 
-// Plans of WrapFit: Báo cáo chốt 19.000đ/lần xuất và 99.000đ/tháng (lợi thế giá VNĐ so với Pacdora $29 - $99).
-// Quotas: storage in be/src/storage/storage.rules.ts (STORAGE_QUOTA_BYTES), AI patterns in be/src/ai/ai-pattern.service.ts.
+// Display layer over @wrapfit/shared/billing (docs/17 S6): names, prices and storage come from shared, the same numbers
+// the backend charges and enforces, xu per period included (XU_ALLOWANCE, docs/19).
 
 export interface PlanPrice {
-  /** VNĐ per month when paid monthly (or per export for PAY_PER_EXPORT). */
+  /** VNĐ per month (Pro, Business), or the price of the cheapest pack for PAY_PER_EXPORT. 0 for Free. */
   monthly: number;
-  /** VNĐ per month when paid for a year at once. */
-  yearlyPerMonth: number;
-  /** Single export fee if pay-as-you-go. */
+  /** Price of one export (the 1-export pack), PAY_PER_EXPORT only. */
   perExport?: number;
 }
 
 export interface Plan {
   tier: SubscriptionTier;
+  /** Display name, the same on every screen: Miễn phí, Lượt xuất, Pro, Business. */
   name: string;
   price: PlanPrice;
   storageBytes: number;
-  aiPatternsPerDay: number;
+  /** Xu Wrap granted each period (calendar month, or 30-day period of a paid plan); unspent xu roll over once. */
+  xuPerPeriod: number;
   badge?: string;
   isPerExport?: boolean;
+  /** Not sold online yet: the pricing page shows a "Liên hệ" button (docs/17 M4). */
+  contactOnly?: boolean;
 }
 
 const MB = 1024 * 1024;
 
-export const SINGLE_EXPORT_PRICE = 19_000; // 19.000đ / lần xuất file vector chuẩn xưởng
+/** Export packs, cheapest first: 1, 5 and 15 exports. */
+export const EXPORT_PACK_LIST: readonly ExportPack[] = (Object.keys(EXPORT_PACKS) as ExportPackId[])
+  .map((id) => EXPORT_PACKS[id])
+  .sort((a, b) => a.credits - b.credits);
+
+export const SINGLE_EXPORT_PRICE = EXPORT_PACKS.EXPORT_1.priceVnd;
+export const EXPORT_PACK_VALID_MONTHS = PURCHASED_LOT_VALID_MONTHS;
+export const PRO_PERIOD_DAYS = PRO_MONTH.periodDays;
+
+/** Price of one export inside a pack, rounded to 100đ: 19.000đ, 15.800đ, 13.300đ. */
+export const perExportOf = (pack: ExportPack) => Math.round(pack.priceVnd / pack.credits / 100) * 100;
 
 export const PLANS: Record<SubscriptionTier, Plan> = {
   FREE: {
     tier: "FREE",
-    name: "Miễn Phí",
-    price: { monthly: 0, yearlyPerMonth: 0 },
-    storageBytes: 100 * MB,
-    aiPatternsPerDay: 10,
+    name: PLAN_LABELS.FREE,
+    price: { monthly: 0 },
+    storageBytes: ENTITLEMENTS.FREE.storage.bytes,
+    xuPerPeriod: XU_ALLOWANCE.FREE,
     badge: "Bắt đầu miễn phí",
   },
   PAY_PER_EXPORT: {
     tier: "PAY_PER_EXPORT",
-    name: "Từng Lần Xuất",
-    price: { monthly: 19_000, yearlyPerMonth: 19_000, perExport: 19_000 },
-    storageBytes: 500 * MB,
-    aiPatternsPerDay: 25,
-    badge: "19.000đ / lần xuất",
+    name: PLAN_LABELS.PAY_PER_EXPORT,
+    price: { monthly: SINGLE_EXPORT_PRICE, perExport: SINGLE_EXPORT_PRICE },
+    storageBytes: ENTITLEMENTS.PAY_PER_EXPORT.storage.bytes,
+    xuPerPeriod: XU_ALLOWANCE.PAY_PER_EXPORT,
+    badge: "Trả khi cần",
     isPerExport: true,
   },
   STARTER: {
     tier: "STARTER",
-    name: "Gói Tháng (Pro)",
-    price: { monthly: 99_000, yearlyPerMonth: 79_000 },
-    storageBytes: 1024 * MB,
-    aiPatternsPerDay: 50,
+    name: PLAN_LABELS.STARTER,
+    price: { monthly: PRO_MONTH.priceVnd },
+    storageBytes: ENTITLEMENTS.STARTER.storage.bytes,
+    xuPerPeriod: XU_ALLOWANCE.STARTER,
     badge: "Phổ biến nhất",
   },
   PRO_BUSINESS: {
     tier: "PRO_BUSINESS",
-    name: "Doanh Nghiệp",
-    price: { monthly: 299_000, yearlyPerMonth: 239_000 },
-    storageBytes: 10 * 1024 * MB,
-    aiPatternsPerDay: 300,
-    badge: "Cho xưởng & Studio",
+    name: PLAN_LABELS.PRO_BUSINESS,
+    price: { monthly: BUSINESS_MONTH_DISPLAY.priceVnd },
+    storageBytes: ENTITLEMENTS.PRO_BUSINESS.storage.bytes,
+    xuPerPeriod: XU_ALLOWANCE.PRO_BUSINESS,
+    badge: "Cho xưởng & studio",
+    contactOnly: true,
   },
 };
 
-export const PLAN_ORDER: SubscriptionTier[] = ["FREE", "PAY_PER_EXPORT", "STARTER", "PRO_BUSINESS"];
+export const PLAN_ORDER: SubscriptionTier[] = [...SHARED_PLAN_ORDER];
 
 /** `19.000đ`, `99.000đ`. */
 export const formatVnd = (value: number) => {
@@ -70,15 +95,11 @@ export const formatVnd = (value: number) => {
   return `${value.toLocaleString("vi-VN")}đ`;
 };
 
+/** `19k`, `79k`, `199k`: short prices for buttons and chips. */
+export const formatVndShort = (value: number) => (value % 1000 === 0 ? `${value / 1000}k` : formatVnd(value));
+
 /** Backward-compatibility alias for formatVnd */
-export const formatUsd = (value: number) => {
-  if (value === 0) return "0đ";
-  if (value < 1000) {
-    if (value === 19 || value === 29) return "19.000đ";
-    if (value === 99) return "99.000đ";
-  }
-  return formatVnd(value);
-};
+export const formatUsd = formatVnd;
 
 /** `100 MB`, `1 GB`, `10 GB`. */
 export function formatQuota(bytes: number): string {

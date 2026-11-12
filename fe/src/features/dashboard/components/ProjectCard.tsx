@@ -42,7 +42,7 @@ export const FITCHECK_TAG: Record<FitCheckTone, string> = {
 };
 
 const BUTTON =
-  "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-library-ink bg-white px-3 text-sm font-medium text-library-ink transition-colors hover:bg-library-panel outline-none focus-visible:ring-[3px] focus-visible:ring-library-ink/20 disabled:cursor-wait disabled:opacity-50";
+  "inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-line bg-white px-3 text-sm font-medium text-landing-ink transition-colors hover:bg-library-panel outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:cursor-wait disabled:opacity-50";
 
 /**
  * Grey tile of a project (its flat dieline and its box, as in the template library), tags, title and the actions
@@ -51,7 +51,7 @@ const BUTTON =
 export function ProjectTile({ project, children }: { project: ProjectSummary; children?: React.ReactNode }) {
   const inTrash = project.status === "DELETED";
   return (
-    <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-library-ink bg-library-tile">
+    <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-line bg-library-tile transition-shadow group-hover:shadow-soft-16">
       <div className="absolute inset-0 grid grid-cols-2">
         <div className="flex items-center justify-center p-4 pr-2">
           <DielineSketch
@@ -104,8 +104,8 @@ export const ProjectCard = memo(function ProjectCard({ project, busy, onChangeSt
       {inTrash ? (
         <ProjectTile project={project} />
       ) : (
-        <Link href={ROUTES.editor(project.id)} {...prefetch(project.id)} aria-label={`Mở “${project.title}” trong studio`} className="group block rounded-2xl outline-none focus-visible:shadow-hard-sm">
-          <div className="transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-hard-sm rounded-2xl motion-reduce:transition-none">
+        <Link href={ROUTES.editor(project.id)} {...prefetch(project.id)} aria-label={`Mở “${project.title}” trong studio`} className="group block rounded-2xl outline-none">
+          <div className="transition-[transform,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-soft-16 rounded-2xl motion-reduce:transition-none">
             <ProjectTile project={project} />
           </div>
         </Link>
@@ -158,7 +158,7 @@ export const ProjectCard = memo(function ProjectCard({ project, busy, onChangeSt
               href={ROUTES.editor(project.id)}
               aria-disabled={busy}
               tabIndex={busy ? -1 : undefined}
-              className={cn(BUTTON, "flex-1 border-transparent bg-fg text-fg-inverse hover:bg-fg/90", busy && "pointer-events-none")}
+              className={cn(BUTTON, "flex-1 border-transparent bg-fpt-orange-light font-semibold text-accent hover:bg-fpt-orange hover:text-white", busy && "pointer-events-none")}
             >
               <Box className="size-4" aria-hidden />
               Mở studio

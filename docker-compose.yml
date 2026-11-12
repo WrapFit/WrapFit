@@ -148,6 +148,10 @@ services:
       # Optional: creates an admin account on start (never with a default password in production)
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # Optional: the CP4 demo account (5 export credits, the candle jar project with its logo); empty password = none
+      SEED_DEMO_EMAIL: ${SEED_DEMO_EMAIL:-}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+      SEED_DEMO_CREDITS: ${SEED_DEMO_CREDITS:-}
       # Object storage: defaults to the local SeaweedFS above; set these to Cloudflare R2 in production
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
@@ -158,9 +162,38 @@ services:
       STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY:-wrapfit-dev-secret-change-me}
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
       STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
+      STORAGE_BACKUP_BUCKET: ${STORAGE_BACKUP_BUCKET:-}
+      # Optional: Cloudinary public image CDN (all three empty = disabled)
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-wrapfit}
       # Optional: AI pattern generator (empty key = procedural patterns only)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+      # AI_MODEL is the old name of AI_MODEL_FAST (still read when AI_MODEL_FAST is unset)
+      AI_MODEL_FAST: ${AI_MODEL_FAST:-${AI_MODEL:-claude-haiku-5-5}}
+      AI_MODEL_PREMIUM: ${AI_MODEL_PREMIUM:-claude-opus-5-5}
+      # Monthly AI cost fuse in USD (empty = no limit); once spent, patterns are procedural until next month
+      AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
+      # AI images paid with xu (docs/19): fal.ai with FAL_KEY (empty key = AI images off); AI_IMAGE_MODELS empty = the
+      # models enabled in shared/src/billing/ai-image-models.ts
+      AI_IMAGE_PROVIDER: ${AI_IMAGE_PROVIDER:-fal}
+      FAL_KEY: ${FAL_KEY:-}
+      AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
+      USD_VND_RATE: ${USD_VND_RATE:-26000}
+      # VietQR payments: true only for the CP4 demo ("simulate paid" button); empty VIETQR_* = sample account
+      PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
+      VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
+      VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}
+      VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-}
+      # SePay webhook key (POST /api/webhooks/sepay, docs/21; empty = every webhook is rejected with 401)
+      SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY:-}
+      # VNPay sandbox for demo accounts (docs/21): TMN code + hash secret together or both empty; empty return URL =
+      # ${FRONTEND_URL}/payments/vnpay-return
+      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+      VNPAY_PAY_URL: ${VNPAY_PAY_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-}
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
@@ -205,6 +238,13 @@ services:
       AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
       REDIS_URL: redis://redis:6379
       EXPORT_CONCURRENCY: ${EXPORT_CONCURRENCY:-2}
+      # AI image jobs (docs/19): the worker calls fal.ai and stores the images
+      AI_IMAGE_PROVIDER: ${AI_IMAGE_PROVIDER:-fal}
+      FAL_KEY: ${FAL_KEY:-}
+      AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
+      AI_IMAGE_TIMEOUT_MS: ${AI_IMAGE_TIMEOUT_MS:-180000}
+      AI_IMAGE_CONCURRENCY: ${AI_IMAGE_CONCURRENCY:-2}
+      USD_VND_RATE: ${USD_VND_RATE:-26000}
       # Email (verify email, reset password): Mailpit above by default; set to the provider's SMTP in production
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       SMTP_HOST: ${SMTP_HOST:-mailpit}

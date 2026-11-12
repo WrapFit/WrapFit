@@ -32,6 +32,7 @@ import {
 } from "@wrapfit/shared";
 import { listLibraryAssets } from "@/api";
 import { buttonClass, Field, Input } from "@/components/ui";
+import { cn } from "@/utils/helpers";
 import { queryKeys } from "@/hooks/data";
 import type { LibraryAsset } from "@/types/api";
 import { useBoxFonts } from "../canvas/boxText";
@@ -183,7 +184,12 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
     if (libraryArt(content, selectedElement.width, selectedElement.height)) onUpdateElement({ ...selectedElement, content });
   };
 
-  const chip = (active: boolean) => buttonClass({ variant: active ? "dark" : "secondary", size: "md", className: "min-h-11 shrink-0" });
+  /** Compact filter chip: orange tint when on (the studio's selected state), grey hairline otherwise. */
+  const chip = (active: boolean) =>
+    cn(
+      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40",
+      active ? "bg-fpt-orange-light font-semibold text-accent ring-1 ring-fpt-orange/30" : "bg-surface-raised font-medium text-fg-muted ring-1 ring-line hover:text-fg hover:ring-line-strong"
+    );
 
   return (
     <div className="space-y-4">
@@ -272,7 +278,7 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
         aria-label="Tìm trong thư viện"
       />
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Loại">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Loại">
         <button type="button" className={chip(!category)} aria-pressed={!category} onClick={() => setCategory(null)}>
           Tất cả
         </button>
@@ -282,7 +288,8 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
           </button>
         ))}
       </div>
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Dịp">
+      <div className="flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-3" role="group" aria-label="Dịp">
+        <span className="mr-1 text-caption font-semibold uppercase tracking-wide text-fg-muted">Dịp</span>
         {LIBRARY_OCCASIONS.map((o) => (
           <button key={o.id} type="button" className={chip(occasion === o.id)} aria-pressed={occasion === o.id} onClick={() => setOccasion(occasion === o.id ? null : o.id)}>
             {o.label}

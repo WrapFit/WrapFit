@@ -20,7 +20,7 @@ export interface ArticleCategory {
   articles: Article[];
 }
 
-const { FREE, STARTER, PRO_BUSINESS } = PLANS;
+const { FREE, PAY_PER_EXPORT, STARTER, PRO_BUSINESS } = PLANS;
 
 export const CATEGORIES: ArticleCategory[] = [
   {
@@ -52,7 +52,7 @@ export const CATEGORIES: ArticleCategory[] = [
           "Vào “Tạo dự án”, chọn một trong bốn cấu trúc hộp, nhập kích thước và chất liệu giấy. WrapFit dựng khuôn bế rồi mở studio để bạn thiết kế.",
           "Muốn đi nhanh hơn? Chọn một mẫu trong thư viện và bấm “Dùng mẫu này”: dự án mới có sẵn thiết kế, bạn chỉ cần đổi kích thước theo món quà.",
         ],
-        action: { label: "Tạo dự án", href: ROUTES.editorNew },
+        action: { label: "Tạo dự án", href: ROUTES.editorDemo },
       },
       {
         id: "quen-mat-khau",
@@ -190,8 +190,8 @@ export const CATEGORIES: ArticleCategory[] = [
         id: "han-muc-goi",
         title: "Hạn mức của từng gói",
         body: [
-          `Free: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.aiPatternsPerDay} hoa văn AI mỗi ngày. Starter: ${formatQuota(STARTER.storageBytes)} và ${STARTER.aiPatternsPerDay} hoa văn. Pro Business: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.aiPatternsPerDay} hoa văn.`,
-          "Số dự án không giới hạn ở mọi gói. Mức đã dùng hiện trên trang Tổng quan của bạn.",
+          `${FREE.name}: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.xuPerPeriod} xu Wrap mỗi tháng cho ảnh và hoa văn AI; file in cần mua lượt xuất. ${PAY_PER_EXPORT.name}: ${formatQuota(PAY_PER_EXPORT.storageBytes)} và ${PAY_PER_EXPORT.xuPerPeriod} xu. ${STARTER.name}: ${formatQuota(STARTER.storageBytes)} và ${STARTER.xuPerPeriod.toLocaleString("vi-VN")} xu. ${PRO_BUSINESS.name}: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.xuPerPeriod.toLocaleString("vi-VN")} xu.`,
+          "Mức đã dùng hiện trên trang Tổng quan của bạn.",
         ],
         action: { label: "Xem bảng giá", href: "/pricing" },
       },

@@ -280,7 +280,7 @@ export function UserAvatarDropdown({
               {/* Group 2: Quick Jump to 3D Studio */}
               <div className="space-y-0.5 py-1 text-sm font-medium">
             <Link
-              href={ROUTES.editorNew}
+              href={ROUTES.editorDemo}
               onClick={() => setIsOpen(false)}
               className="flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-fg transition-colors hover:bg-surface-sunken/80"
             >

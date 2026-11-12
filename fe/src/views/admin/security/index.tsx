@@ -39,7 +39,7 @@ const POLICIES: Policy[] = [
 
 function Security() {
   return (
-    <AdminShell title="Bảo mật" description="Các quy tắc đăng nhập và link tài khoản mà API đang áp dụng.">
+    <AdminShell title="Bảo mật" description="Quy tắc đăng nhập và liên kết tài khoản đang áp dụng.">
       <div className="flex flex-col gap-6">
         <Panel aria-labelledby="security-policies">
           <PanelTitle id="security-policies" action={<Badge tone="green">Dữ liệu thật</Badge>}>

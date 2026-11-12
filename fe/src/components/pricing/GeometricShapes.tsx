@@ -173,3 +173,39 @@ export function EmeraldPolyhedron({ className = "w-20 h-20" }: { className?: str
     </div>
   );
 }
+
+/** Kraft paper box (Free plan): the plain box every design starts from. Colours are the paper-* kraft ramp. */
+export function KraftBox({ className = "w-20 h-20" }: { className?: string }) {
+  return (
+    <div className={`relative flex items-center justify-center ${className}`}>
+      <svg
+        viewBox="0 0 120 120"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-full h-full drop-shadow-[0_12px_20px_rgba(140,98,57,0.3)]"
+      >
+        <defs>
+          <linearGradient id="kraft-top" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F3E7DA" />
+            <stop offset="100%" stopColor="#E8D8C8" />
+          </linearGradient>
+          <linearGradient id="kraft-left" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#D9C0A5" />
+            <stop offset="100%" stopColor="#C4A27F" />
+          </linearGradient>
+          <linearGradient id="kraft-right" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#C9A987" />
+            <stop offset="100%" stopColor="#A9845F" />
+          </linearGradient>
+        </defs>
+
+        {/* Isometric box: lid, left and right walls */}
+        <polygon points="60,28 94,46 60,64 26,46" fill="url(#kraft-top)" />
+        <polygon points="26,46 60,64 60,98 26,80" fill="url(#kraft-left)" />
+        <polygon points="94,46 60,64 60,98 94,80" fill="url(#kraft-right)" />
+        {/* Tuck flap crease across the lid */}
+        <path d="M 43 37 L 77 55" stroke="#B08A63" strokeWidth="1.5" strokeDasharray="3 3" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}

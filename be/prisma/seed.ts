@@ -2,6 +2,7 @@ import { PrismaClient, Role, SubscriptionTier } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { CURRENT_FORMULA_VERSION } from '@wrapfit/shared';
 import { boxTemplates, designTemplates } from './seed-data';
+import { seedDemo } from './seed-demo';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,9 @@ async function main() {
     await prisma.designTemplate.upsert({ where: { id }, update: design, create: { id, ...design } });
   }
   console.log(`Seeded ${designTemplates.length} curated design templates`);
+
+  // CP4 demo account (SEED_DEMO_PASSWORD), also in production: independent of the admin below.
+  await seedDemo(prisma);
 
   // The container runs this seed on every start: never create an admin with the well-known default password in production.
   const isProduction = process.env.NODE_ENV === 'production';

@@ -5,7 +5,9 @@ import Link from "next/link";
 import React from "react";
 import { Container } from "@/components/landing";
 import { Card, PageHero, SitePage, Toc } from "@/components/site";
+import { EXPORT_PACK_LIST, EXPORT_PACK_VALID_MONTHS, PLANS, PRO_PERIOD_DAYS, formatVnd } from "@/features/pricing";
 import { cn } from "@/utils/helpers";
+import { PAYMENT_TERMS_CLAUSES, PAYMENT_TERMS_PATH, PAYMENT_TERMS_VERSION } from "@wrapfit/shared";
 
 // /legal/privacy, /legal/terms and /legal/cookies. The facts follow the back end: what it stores (be/prisma), the
 // session cookies (be/src/auth/auth-cookie.service.ts), the 30-day trash (be/src/projects), the AI provider
@@ -131,8 +133,9 @@ const TERMS: LegalDoc = {
   label: "Điều khoản",
   title: "Điều khoản sử dụng",
   lead: "Những thỏa thuận giữa bạn và WrapFit khi dùng studio, xuất file in và đặt in mẫu — viết ngắn gọn, đặc biệt là phần trách nhiệm khi in.",
-  updated: "2026-10-12",
+  updated: "2026-11-12",
   versions: [
+    { version: "1.2", date: "2026-11-12", change: "Thêm luồng studio: lưu dự án miễn phí mọi lúc, file in chỉ xuất sau khi thanh toán đơn in ở giỏ." },
     { version: "1.1", date: "2026-10-12", change: "Làm rõ trách nhiệm về màu in và hộp mẫu." },
     { version: "1.0", date: "2026-09-20", change: "Bản đầu tiên cho bản thử nghiệm (beta)." },
   ],
@@ -146,6 +149,21 @@ const TERMS: LegalDoc = {
       id: "noi-dung",
       title: "Nội dung của bạn",
       body: <P>Logo, ảnh, chữ và thiết kế bạn tạo thuộc về bạn. Bạn cho phép WrapFit lưu, hiển thị và chuyển chúng đến xưởng in chỉ để cung cấp dịch vụ. Bạn cam kết có quyền sử dụng mọi hình ảnh, nhãn hiệu tải lên.</P>,
+    },
+    {
+      id: "studio",
+      title: "Studio thiết kế",
+      body: (
+        <UL
+          items={[
+            "Thiết kế, xem hộp 3D, chạy FitCheck™ và xem báo giá miễn phí.",
+            "Bạn lưu dự án được ở mọi bước làm hộp; dự án đã lưu tự lưu lên cloud khi bạn sửa.",
+            "File in chỉ xuất được sau khi bạn bấm Thanh toán ở bước Đặt in, trả tiền đơn in của bản thiết kế đó ở giỏ, và khi FitCheck™ không còn lỗi chặn. Gói Pro hay lượt xuất không thay cho bước này.",
+            "Đơn đã trả mở khóa đúng phiên bản thiết kế trong đơn; sửa thiết kế sau đó thì cần thanh toán đơn mới.",
+            "Trước khi thanh toán, bạn phải đọc và đồng ý điều khoản thanh toán.",
+          ]}
+        />
+      ),
     },
     {
       id: "file-in",
@@ -175,8 +193,13 @@ const TERMS: LegalDoc = {
     },
     {
       id: "thanh-toan",
-      title: "Gói cước và hoàn tiền",
-      body: <P>Gói tháng và gói năm gia hạn tự động cho đến khi bạn huỷ; huỷ có hiệu lực ở cuối kỳ đã trả. Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất 19.000đ đã dùng không được hoàn.</P>,
+      title: "Gói cước, lượt xuất và xu Wrap",
+      body: (
+        <>
+          <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Lượt xuất mua theo gói ${EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(', ')}, còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng; mỗi lượt mở khóa file in sạch của một bản thiết kế trong 7 ngày. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất đã dùng không được hoàn.</P>
+          <P><strong>Quy định về Xu Wrap:</strong> Xu Wrap là đơn vị tín dụng nội bộ dùng cho các dịch vụ AI (tạo ảnh mặt hộp, hoa văn AI, công cụ phóng to, xóa nền và vector hóa), nạp theo các gói và số xu niêm yết khi thanh toán. Xu Wrap không có giá trị quy đổi thành tiền mặt, không chuyển nhượng giữa các tài khoản và không áp dụng chính sách hoàn tiền sau khi nạp thành công. Xu tặng kèm theo gói có hiệu lực theo kỳ (được dồn tối đa một kỳ tiếp theo); xu nạp lẻ có thời hạn 12 tháng kể từ ngày thanh toán. Trong trường hợp tác vụ AI hoặc hệ thống phát sinh lỗi kỹ thuật, số xu tương ứng sẽ được hoàn lại tự động vào ví của bạn.</P>
+        </>
+      ),
     },
     {
       id: "cam",
@@ -246,7 +269,63 @@ const COOKIES: LegalDoc = {
   ],
 };
 
-DOCS.push(PRIVACY, TERMS, COOKIES);
+const PAYMENT: LegalDoc = {
+  path: PAYMENT_TERMS_PATH,
+  label: "Thanh toán & hồ sơ pháp lý",
+  title: "Chính sách thanh toán & hồ sơ pháp lý",
+  lead: "Bạn phải đọc và đồng ý các điều khoản này trước mỗi lần trả tiền: mua lượt xuất file in, nâng Pro, nạp xu Wrap hoặc thanh toán đơn in mẫu.",
+  updated: PAYMENT_TERMS_VERSION,
+  versions: [{ version: "1.0", date: PAYMENT_TERMS_VERSION, change: "Bản đầu tiên: điều khoản rủi ro thanh toán bắt buộc đọc trước khi trả tiền." }],
+  sections: [
+    {
+      id: "ho-so",
+      title: "Hồ sơ pháp lý",
+      body: (
+        <>
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-2xl bg-landing-canvas p-4 text-sm sm:grid-cols-[200px_minmax(0,1fr)]">
+            <dt className="font-semibold">Tên dịch vụ</dt>
+            <dd>WrapFit — nền tảng thiết kế bao bì quà tặng theo kích thước</dd>
+            <dt className="font-semibold">Đơn vị vận hành</dt>
+            <dd>Nhóm dự án WrapFit, học phần EXE101 — Trường Đại học FPT</dd>
+            <dt className="font-semibold">Tình trạng pháp lý</dt>
+            <dd>Bản thử nghiệm (beta). Mã số thuế và giấy đăng ký kinh doanh được công bố tại đây khi hoàn tất thủ tục.</dd>
+            <dt className="font-semibold">Liên hệ pháp lý</dt>
+            <dd>legal@wrapfit.vn · trả lời trong 3 ngày làm việc</dd>
+            <dt className="font-semibold">Thanh toán</dt>
+            <dd>Chuyển khoản VietQR (đối soát tự động theo nội dung WF…), cổng VNPay sandbox cho tài khoản demo</dd>
+          </dl>
+          <P>Căn cứ pháp lý chính:</P>
+          <UL
+            items={[
+              "Luật Giao dịch điện tử 2023.",
+              "Luật Bảo vệ quyền lợi người tiêu dùng 2023.",
+              "Nghị định 52/2013/NĐ-CP về thương mại điện tử (sửa đổi bởi Nghị định 85/2021/NĐ-CP).",
+              "Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.",
+            ]}
+          />
+          <P>
+            Bộ hồ sơ gồm: <Link href="/legal/terms" className="font-semibold text-fpt-orange-ink underline">Điều khoản sử dụng</Link>,{" "}
+            <Link href="/legal/privacy" className="font-semibold text-fpt-orange-ink underline">Chính sách quyền riêng tư</Link>,{" "}
+            <Link href="/legal/cookies" className="font-semibold text-fpt-orange-ink underline">Chính sách cookie</Link> và chính sách thanh toán trên trang này.
+          </P>
+        </>
+      ),
+    },
+    ...PAYMENT_TERMS_CLAUSES.map((clause) => ({ id: clause.id, title: clause.title, body: <P>{clause.body}</P> })),
+    {
+      id: "dong-y",
+      title: "Cách bạn đồng ý",
+      body: (
+        <P>
+          Trước khi tạo mã thanh toán, WrapFit hiện toàn bộ các điều khoản trên. Ô “Tôi đã đọc và đồng ý” chỉ bấm được sau khi bạn kéo đọc hết, và máy chủ từ chối mọi thanh toán không kèm phiên bản điều khoản hiện hành (
+          {PAYMENT_TERMS_VERSION.split("-").reverse().join("/")}). Phiên bản bạn đồng ý được lưu cùng giao dịch để đối chiếu khi khiếu nại.
+        </P>
+      ),
+    },
+  ],
+};
+
+DOCS.push(PAYMENT, TERMS, PRIVACY, COOKIES);
 
 const formatDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("vi-VN", { day: "numeric", month: "long", year: "numeric" });
 
@@ -315,3 +394,4 @@ function LegalPage({ doc }: { doc: LegalDoc }) {
 export const PrivacyPage = () => <LegalPage doc={PRIVACY} />;
 export const TermsPage = () => <LegalPage doc={TERMS} />;
 export const CookiesPage = () => <LegalPage doc={COOKIES} />;
+export const PaymentTermsPage = () => <LegalPage doc={PAYMENT} />;

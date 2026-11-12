@@ -65,7 +65,7 @@ export function HeaderSearch({ className }: { className?: string }) {
 
   return (
     <>
-      <div className={cn("hidden w-52 lg:block xl:w-56 2xl:w-80", className)}>{field(false, desktopRef)}</div>
+      <div className={cn("hidden lg:block w-36 xl:w-44 2xl:w-64 transition-[width] duration-200 focus-within:w-48 xl:focus-within:w-60", className)}>{field(false, desktopRef)}</div>
       <button
         type="button"
         onClick={() => setMobileOpen((open) => !open)}

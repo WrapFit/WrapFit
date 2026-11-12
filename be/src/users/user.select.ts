@@ -15,6 +15,7 @@ export const userSelect = {
   brandKit: true,
   referralCode: true,
   isActive: true,
+  isDemo: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;

@@ -40,7 +40,7 @@ export function AboutCta() {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
               {/* Primary CTA */}
               <Link
-                href="/editor/new"
+                href="/editor/demo"
                 className={buttonClass({ variant: "brand", size: "xl", className: "w-full px-8 sm:w-auto" })}
               >
                 <Box className="size-5" />

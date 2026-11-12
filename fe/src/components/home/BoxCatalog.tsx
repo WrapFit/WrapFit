@@ -100,11 +100,11 @@ function StructureCard({
   onQuickPreview: () => void;
 }) {
   const { length, width, height } = structure.defaultDims;
-  const studioUrl = `${ROUTES.editorNew}?structure=${structure.id}&l=${length}&w=${width}&d=${height}`;
+  const studioUrl = `${ROUTES.editorDemo}?structure=${structure.id}&l=${length}&w=${width}&d=${height}`;
   const templatesUrl = `${ROUTES.templates}?structure=${structure.id}`;
 
   return (
-    <article className="group flex w-full flex-col overflow-hidden rounded-card border border-line/70 bg-surface-raised shadow-soft-8 transition-[transform,box-shadow,border-color] duration-500 ease-out hover:-translate-y-1 hover:border-line hover:shadow-soft-16 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+    <article className="group flex w-full flex-col overflow-hidden rounded-card border border-line/70 bg-surface-raised transition-[transform,box-shadow,border-color] duration-500 ease-out hover:border-line motion-reduce:transition-none motion-reduce:hover:translate-y-0">
       {/* Photo */}
       <div className="relative aspect-[4/3] overflow-hidden bg-surface-sunken">
         <Image
