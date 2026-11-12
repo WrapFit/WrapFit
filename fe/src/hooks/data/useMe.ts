@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getCurrentUser } from "@/api/auth";
+import { OFFLINE_DEMO } from "@/config";
 import { isApiError } from "@/services/api";
 import type { SafeUser } from "@/types/api";
 import { DEMO_ADMIN_USER, DEMO_USER } from "@/features/dashboard/demoData";
@@ -15,6 +16,15 @@ export function useMe() {
   return useQuery<SafeUser | null>({
     queryKey: queryKeys.me,
     queryFn: async () => {
+      // The demo build answers from its in-browser API: 401 = signed out, nothing to stand in for.
+      if (OFFLINE_DEMO) {
+        try {
+          return await getCurrentUser();
+        } catch (error) {
+          if (isApiError(error) && error.status === 401) return null;
+          throw error;
+        }
+      }
       try {
         const user = await getCurrentUser();
         if (user) return user;

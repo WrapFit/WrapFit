@@ -1,5 +1,6 @@
 /** Uploads to object storage through pre-signed URLs (`be/src/storage`). Rules: docs/06, section 4. */
 
+import { OFFLINE_DEMO } from "@/config";
 import { request } from "@/services/api";
 import type { PresignedUpload, PresignUploadRequest, StorageUsage, UploadPurpose } from "@/types/api";
 import { DEMO_STORAGE_USAGE } from "@/features/dashboard/demoData";
@@ -28,6 +29,11 @@ export async function uploadFileToStorage(
   purpose: UploadPurpose = "IMAGE",
   projectId?: string,
 ): Promise<{ fileUrl: string }> {
+  if (OFFLINE_DEMO) {
+    // No object storage without a backend: the demo keeps the file in the browser (see mockUpload).
+    const { mockUpload } = await import("@/services/mock-api");
+    return { fileUrl: await mockUpload(file, purpose) };
+  }
   try {
     const ticket = await presignUpload({ purpose, contentType: file.type, size: file.size, projectId });
     // Signed URL of the bucket: no credentials, exactly the signed headers.

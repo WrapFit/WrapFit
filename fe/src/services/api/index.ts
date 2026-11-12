@@ -4,7 +4,7 @@
  * Endpoint functions live in `src/api/<module>`.
  */
 
-import { API_BASE_URL } from "@/config";
+import { API_BASE_URL, OFFLINE_DEMO } from "@/config";
 import type { ApiErrorBody, ApiErrorCode } from "@/types/api";
 
 /** Dispatched on `window` when the session cannot be refreshed any more: the user must sign in again. */
@@ -140,6 +140,7 @@ async function errorFrom(res: Response): Promise<ApiError> {
  */
 export async function request<T>(endpoint: string, options: RequestOptions = {}, retry = true): Promise<T> {
   const { json, body, query, headers, ...init } = options;
+  if (OFFLINE_DEMO) return demoRequest<T>(endpoint, init.method ?? "GET", query, json);
   let res: Response;
   try {
     res = await fetch(buildUrl(endpoint, query), {
@@ -163,6 +164,25 @@ export async function request<T>(endpoint: string, options: RequestOptions = {},
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
+}
+
+/**
+ * The build without a backend (`OFFLINE_DEMO`) answers from the in-browser API of `@/services/mock-api`, loaded only
+ * in that build. Its errors are `ApiError`s like the server's; an endpoint it does not know answers like an unreachable
+ * server (status 0), so the demo fallbacks of `src/api` apply.
+ */
+async function demoRequest<T>(endpoint: string, method: string, query: object | undefined, json: unknown): Promise<T> {
+  const { mockRequest } = await import("@/services/mock-api");
+  const answer = await mockRequest(method.toUpperCase(), buildUrl(endpoint, query), json);
+  if (!answer.handled) throw new ApiError(0, null);
+  if (answer.status >= 400) {
+    // No session to refresh: a 401 outside the sign-in calls means "signed out", like a refresh answered 401.
+    if (answer.status === 401 && !NO_REFRESH_PATHS.test(endpoint) && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
+    throw new ApiError(answer.status, answer.body as ApiErrorBody);
+  }
+  return answer.body as T;
 }
 
 const CODE_MESSAGES: Record<ApiErrorCode, string> = {
