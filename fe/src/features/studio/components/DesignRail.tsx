@@ -66,7 +66,7 @@ export function DesignRail({ active, onSelect, fitcheckIssues }: DesignRailProps
                 </span>
               )}
             </span>
-            <span className={cn("text-[11px] leading-tight", on ? "font-semibold" : "font-medium")}>{item.label}</span>
+            <span className={cn("text-caption leading-tight", on ? "font-semibold" : "font-medium")}>{item.label}</span>
           </button>
         );
       })}

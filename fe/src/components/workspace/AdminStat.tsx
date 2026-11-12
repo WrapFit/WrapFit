@@ -148,7 +148,7 @@ export function AdminStat({ label, value, hint, icon, status, statusLabel }: Adm
         <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg ring-1", tone)}>
           <Icon className="size-4" strokeWidth={2} aria-hidden />
         </span>
-        <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] font-medium text-fg-muted">
+        <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-caption font-medium text-fg-muted">
           <span className="truncate">{label}</span>
           {s && (
             <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", s.text)}>

@@ -11,7 +11,7 @@ import type { BoxMaterialTheme } from "./three/InteractiveFoldingBox3D";
 
 /** Small marker of each cost group: material (kraft brown), printing (FPT blue), converting and finishing (FPT orange). */
 const GROUP_DOT: Record<QuoteGroup, string> = {
-  material: "bg-[#A8661C]",
+  material: "bg-kraft-raw",
   print: "bg-fpt-blue",
   converting: "bg-fpt-orange",
 };

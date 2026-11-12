@@ -304,7 +304,7 @@ export function ShellLayout({
                     <p
                       className={cn(
                         "px-3 pb-1.5",
-                        consoleLayout ? "pt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted" : "text-xs text-library-muted"
+                        consoleLayout ? "pt-1 text-caption font-semibold uppercase tracking-[0.08em] text-fg-muted" : "text-xs text-library-muted"
                       )}
                     >
                       {group.title}

@@ -211,7 +211,7 @@ export function AdminTimeline({
                 </div>
               )}
             </div>
-            <div className="mt-1.5 flex gap-[2px] text-[11px] tabular-nums text-library-sub" aria-hidden>
+            <div className="mt-1.5 flex gap-[2px] text-cad-spec-micro tabular-nums text-library-sub" aria-hidden>
               {buckets.map((bucket, index) => (
                 <span key={bucket.key} className="min-w-0 flex-1 text-center">
                   {index % labelEvery === 0 || index === buckets.length - 1 ? bucket.label : ""}
