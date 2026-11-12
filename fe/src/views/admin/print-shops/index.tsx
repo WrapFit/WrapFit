@@ -12,7 +12,8 @@ import React, { useState } from 'react';
 import { listPrintShops, listStaffOrders, updateOrderStatus } from '@/api';
 import { useToast } from '@/components/common/Toast';
 import { Button, DataTable, type DataColumn } from '@/components/ui';
-import { AdminShell, Badge, Panel, PanelTitle, StatTile, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError } from '@/components/workspace';
+import { AdminShell, AdminTimeline, Badge, Panel, PanelTitle, AdminStat, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, ADMIN_STAT_GROUP, dayKeyOf, lastDays, type TimelineEvent } from '@/components/workspace';
+import { ADMIN_TIMELINE_REFRESH_S } from '@/features/admin';
 import { RequireAuth } from '@/features/auth';
 import { formatRelative } from '@/features/dashboard';
 import { ORDER_NEXT_STEPS, orderStatusBadge } from '@/features/orders';
@@ -36,6 +37,9 @@ const STATUS_FILTERS: { value: OrderStatus | ''; label: string }[] = [
   { value: 'DELIVERED', label: 'Đã giao' },
   { value: 'CANCELLED', label: 'Đã hủy' },
 ];
+/** Status words of the order events, from the filter labels. */
+const STATUS_TEXT: Record<string, string> = Object.fromEntries(STATUS_FILTERS.filter((f) => f.value).map((f) => [f.value, f.label]));
+
 
 export default function AdminPrintShopsPage() {
   return (
@@ -63,6 +67,26 @@ function PrintShopsScreen() {
   });
 
   const all = orders.data ?? [];
+  // Timeline at the top: orders per day over 14 days, newest orders as events.
+  const orderBuckets = React.useMemo(() => {
+    const buckets = lastDays(14);
+    const byKey = new Map(buckets.map((b) => [b.key, b]));
+    for (const order of all) {
+      const bucket = byKey.get(dayKeyOf(order.createdAt));
+      if (bucket) bucket.value += 1;
+    }
+    return buckets;
+  }, [all]);
+  const orderEvents: TimelineEvent[] = [...all]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 6)
+    .map((order) => ({
+      id: order.id,
+      at: order.createdAt,
+      tone: order.status === 'cancelled' ? 'critical' : order.status === 'pending_payment' ? 'warning' : order.status === 'delivered' ? 'good' : 'info',
+      title: `${STATUS_TEXT[order.status.toUpperCase()] ?? order.status} · ${formatVnd(order.totalVnd ?? 0)}`,
+      detail: order.printShopName ?? undefined,
+    }));
   const rows = all.filter((order) => (!status || order.orderStatus === status) && (!shopId || order.printShopId === shopId));
   const countBy = (predicate: (order: SampleOrder) => boolean) => (orders.data ? String(all.filter(predicate).length) : '–');
   const shopList: PrintShop[] = shops.data ?? [];
@@ -118,7 +142,7 @@ function PrintShopsScreen() {
                 key={step.to}
                 size="sm"
                 shape="rounded"
-                variant={step.to === 'CANCELLED' ? 'ghost' : 'outline'}
+                variant={step.to === 'CANCELLED' ? 'ghost' : 'secondary'}
                 disabled={change.isPending}
                 onClick={() => change.mutate({ order, to: step.to })}
                 aria-label={`${step.label}: ${order.orderCode}`}
@@ -171,14 +195,28 @@ function PrintShopsScreen() {
   return (
     <AdminShell
       title="Xưởng in đối tác"
-      description="Mạng lưới xưởng nhận file PDF CMYK từ WrapFit và các đơn in mẫu khách đã đặt. Chuyển trạng thái đơn theo từng bước: thanh toán, in, giao."
+      description="Xưởng đối tác và đơn in mẫu theo trạng thái."
     >
       <div className="flex flex-col gap-6">
-        <section aria-label="Số đơn in" className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatTile label="Chờ thanh toán" value={countBy((order) => order.orderStatus === 'PENDING_PAYMENT')} />
-          <StatTile label="Chờ xưởng in" value={countBy((order) => order.orderStatus === 'PAID')} />
-          <StatTile label="Đang in / giao" value={countBy((order) => order.orderStatus === 'IN_PRODUCTION' || order.orderStatus === 'SHIPPED')} />
-          <StatTile label="Đã giao" value={countBy((order) => order.orderStatus === 'DELIVERED')} hint={orders.data ? `Trên ${all.length} đơn gần nhất` : undefined} />
+        <AdminTimeline
+          title="Đơn in mẫu mỗi ngày"
+          unit="đơn"
+          buckets={orderBuckets}
+          loading={orders.isPending}
+          error={orders.isError ? 'Chưa tải được đơn in mẫu. Kiểm tra kết nối máy chủ rồi thử lại.' : undefined}
+          events={orderEvents}
+          eventsTitle="Đơn mới nhất"
+          updatedAt={orders.dataUpdatedAt || undefined}
+          refreshSeconds={ADMIN_TIMELINE_REFRESH_S}
+          refreshing={orders.isFetching}
+          onRefresh={() => void orders.refetch()}
+        />
+
+        <section aria-label="Số đơn in" className={`${ADMIN_STAT_GROUP} grid-cols-2 md:grid-cols-4`}>
+          <AdminStat label="Chờ thanh toán" value={countBy((order) => order.orderStatus === 'PENDING_PAYMENT')} />
+          <AdminStat label="Chờ xưởng in" value={countBy((order) => order.orderStatus === 'PAID')} />
+          <AdminStat label="Đang in / giao" value={countBy((order) => order.orderStatus === 'IN_PRODUCTION' || order.orderStatus === 'SHIPPED')} />
+          <AdminStat label="Đã giao" value={countBy((order) => order.orderStatus === 'DELIVERED')} hint={orders.data ? `Trên ${all.length} đơn gần nhất` : undefined} />
         </section>
 
         <Panel aria-labelledby="orders-heading">

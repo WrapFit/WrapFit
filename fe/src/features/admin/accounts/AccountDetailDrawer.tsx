@@ -200,7 +200,7 @@ export function AccountDetailDrawer({
           type="button"
           onClick={saveRole}
           disabled={!dirty || frozen}
-          className="w-full py-3 rounded-2xl bg-fpt-orange text-white enabled:hover:bg-black font-medium text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 rounded-2xl bg-fpt-orange text-white enabled:hover:bg-fpt-orange-dark font-medium text-sm font-semibold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Icon name={busy ? "progress_activity" : "sync_lock"} className={`size-[18px] ${busy ? "animate-spin motion-reduce:animate-none" : ""}`} />
           <span>{busy ? "Đang cập nhật…" : dirty ? `Đổi thành ${ROLE_LABELS[role]}` : "Cập Nhật Quyền Hạn"}</span>

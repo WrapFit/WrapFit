@@ -11,9 +11,10 @@ import { Landmark } from 'lucide-react';
 import React, { useState } from 'react';
 import { BANK_TX_KEY, listBankTransactions, type BankTransaction, type BankTxStatus } from '@/api/admin/bank-transactions';
 import { Badge as ToneBadge, Button, DataTable, Tab, TabList, Tabs } from '@/components/ui';
-import { AdminShell, Panel, WorkspaceEmpty, WorkspaceError } from '@/components/workspace';
+import { AdminShell, AdminTimeline, Panel, WorkspaceEmpty, WorkspaceError } from '@/components/workspace';
+import { ADMIN_TIMELINE_REFRESH_S, useBankTimeline } from '@/features/admin';
 import { RequireAuth } from '@/features/auth';
-import { formatVnd } from '@/features/pricing';
+import { formatVnd, formatVndShort } from '@/features/pricing';
 import { AssignDialog, IgnoreDialog } from './ResolveDialogs';
 import { formatDateTime, REASON_LABELS, REASON_TONES, STATUS_LABELS, STATUS_TONES } from './labels';
 
@@ -48,6 +49,29 @@ export default function AdminBankTransactionsPage() {
   );
 }
 
+/** Money in per day and the latest transfers, at the top of the page (refreshes itself). */
+function BankTimeline() {
+  const bank = useBankTimeline(14);
+  return (
+    <div className="mb-6">
+      <AdminTimeline
+        title="Tiền về theo ngày"
+        unit="đã chuyển"
+        buckets={bank.buckets}
+        format={formatVndShort}
+        loading={bank.query.isPending}
+        error={bank.query.isError ? 'Chưa tải được giao dịch ngân hàng. Kiểm tra kết nối máy chủ rồi thử lại.' : undefined}
+        events={bank.events}
+        eventsTitle={bank.unmatched ? `Giao dịch gần đây · ${bank.unmatched} chưa khớp` : 'Giao dịch gần đây'}
+        updatedAt={bank.query.dataUpdatedAt || undefined}
+        refreshSeconds={ADMIN_TIMELINE_REFRESH_S}
+        refreshing={bank.query.isFetching}
+        onRefresh={() => void bank.query.refetch()}
+      />
+    </div>
+  );
+}
+
 function BankTransactionsScreen() {
   const [status, setStatus] = useState<QueueStatus>('UNMATCHED');
   const [action, setAction] = useState<Action | null>(null);
@@ -66,8 +90,10 @@ function BankTransactionsScreen() {
   return (
     <AdminShell
       title="Đối soát chuyển khoản"
-      description="Tiền về tài khoản ngân hàng nhưng chưa khớp được với thanh toán nào: thiếu hoặc thừa tiền, quá hạn, thiếu mã, thanh toán đã trả."
+      description="Tiền về nhưng chưa khớp được thanh toán nào."
     >
+      <BankTimeline />
+
       <Panel aria-label="Giao dịch ngân hàng">
         <Tabs<QueueStatus> value={status} onValueChange={setStatus} className="mb-4">
           <TabList label="Lọc theo trạng thái xử lý">

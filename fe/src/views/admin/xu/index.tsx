@@ -10,12 +10,11 @@ import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
 import { getXuReport } from '@/api/payments';
 import { DataTable } from '@/components/ui';
-import { AdminShell, Panel, PanelTitle, StatTile, WORKSPACE_INPUT, WorkspaceError } from '@/components/workspace';
+import { AdminShell, MonthPicker, Panel, PanelTitle, AdminStat, WorkspaceError, ADMIN_STAT_GROUP } from '@/components/workspace';
 import { RequireAuth } from '@/features/auth';
 import { formatVnd } from '@/features/pricing';
 import { queryKeys } from '@/hooks/data';
 import type { XuReport } from '@/types/api';
-import { cn } from '@/utils/helpers';
 
 const SOURCE_LABELS: Record<XuReport['issued'][number]['source'], string> = {
   PLAN_ALLOWANCE: 'Xu của gói',
@@ -54,33 +53,24 @@ function XuReportScreen() {
   return (
     <AdminShell
       title="Xu Wrap"
-      description="Xu phát ra, đã tiêu, doanh thu ghi nhận theo tiền thật của từng lô, chi phí model AI và biên gộp của tháng."
+      description="Doanh thu, chi phí AI và biên gộp của xu theo tháng."
       actions={
-        <label className="flex items-center gap-2 text-sm text-library-sub">
-          Tháng
-          <input
-            type="month"
-            value={month}
-            max={thisMonth()}
-            onChange={(event) => event.target.value && setMonth(event.target.value)}
-            className={cn(WORKSPACE_INPUT, 'w-44 font-mono tabular-nums')}
-          />
-        </label>
+        <MonthPicker value={month} max={thisMonth()} onChange={setMonth} />
       }
     >
       {report.isError ? (
         <WorkspaceError error={report.error} title="Không tải được báo cáo xu" onRetry={() => void report.refetch()} retrying={report.isFetching} />
       ) : (
         <div className="flex flex-col gap-6" aria-busy={report.isPending}>
-          <section aria-label="Số liệu chính" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatTile label="Doanh thu ghi nhận" value={data ? formatVnd(data.recognizedRevenueVnd) : '–'} hint="Xu đã tiêu × giá thật của lô" />
-            <StatTile label="Chi phí model AI" value={data ? formatVnd(data.providerCostVnd) : '–'} hint={data ? `1 USD = ${formatVnd(data.usdVndRate)}` : undefined} />
-            <StatTile
+          <section aria-label="Số liệu chính" className={`${ADMIN_STAT_GROUP} grid-cols-2 lg:grid-cols-4`}>
+            <AdminStat label="Doanh thu ghi nhận" value={data ? formatVnd(data.recognizedRevenueVnd) : '–'} />
+            <AdminStat label="Chi phí model AI" value={data ? formatVnd(data.providerCostVnd) : '–'} hint={data ? `1 USD = ${formatVnd(data.usdVndRate)}` : undefined} />
+            <AdminStat
               label="Biên gộp"
               value={data ? formatVnd(data.grossMarginVnd) : '–'}
               hint={data?.grossMarginRate != null ? `${Math.round(data.grossMarginRate * 100)}% doanh thu` : 'Chưa có doanh thu'}
             />
-            <StatTile label="Xu bán chưa tiêu" value={data ? formatVnd(data.outstanding.valueVnd) : '–'} hint={data ? `${xu(data.outstanding.xu)} còn hạn, tính đến hôm nay` : undefined} />
+            <AdminStat label="Xu bán chưa tiêu" value={data ? formatVnd(data.outstanding.valueVnd) : '–'} hint={data ? `${xu(data.outstanding.xu)} còn hạn, tính đến hôm nay` : undefined} />
           </section>
 
           <div className="grid grid-cols-1 gap-6">

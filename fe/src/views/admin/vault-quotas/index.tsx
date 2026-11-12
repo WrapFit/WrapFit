@@ -30,7 +30,7 @@ const PURPOSE_LABELS: Record<keyof typeof UPLOAD_RULES, string> = {
 function VaultQuotas() {
   const purposes = Object.keys(UPLOAD_RULES) as (keyof typeof UPLOAD_RULES)[];
   return (
-    <AdminShell title="Hạn mức lưu trữ" description="Dung lượng và lượt tạo hoa văn AI mà API áp cho từng gói, cùng giới hạn của từng loại tệp tải lên.">
+    <AdminShell title="Hạn mức lưu trữ" description="Dung lượng và lượt AI theo từng gói.">
       <div className="flex flex-col gap-6">
         <Panel aria-labelledby="quota-tiers">
           <PanelTitle id="quota-tiers" action={<Badge tone="green">Dữ liệu thật</Badge>}>

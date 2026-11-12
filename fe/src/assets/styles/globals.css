@@ -407,3 +407,40 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none;
 }
+
+/* Admin sidebar: a thin rounded scrollbar that only shows while the pointer is over the sidebar. */
+.admin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+.admin-scroll:hover,
+.admin-scroll:focus-within {
+  scrollbar-color: rgba(83, 100, 125, 0.35) transparent;
+}
+.admin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+}
+.admin-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(83, 100, 125, 0.35);
+}
+.admin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(83, 100, 125, 0.6);
+}
+
+/* Admin navigation: the progress bar while the next page loads, and the short fade of the new page content. */
+@keyframes admin-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes admin-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

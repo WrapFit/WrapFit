@@ -81,14 +81,18 @@ interface AdminShellProps {
 }
 
 export function AdminShell(props: AdminShellProps) {
+  return <ShellLayout {...props} nav={ADMIN_NAV} root={{ label: "Quản trị", href: "/admin" }} isAdmin={true} />;
+}
+
+/**
+ * Header and sidebar of the admin console, mounted once in app/admin/layout.tsx: they stay on screen while the pages
+ * change (no logo flash, no jump), and each page's AdminShell renders only its title row and content.
+ */
+export function AdminFrame({ children }: { children: React.ReactNode }) {
   return (
-    <ShellLayout
-      {...props}
-      nav={ADMIN_NAV}
-      root={{ label: "Quản trị", href: "/admin" }}
-      sidebarBottom={<HealthCard />}
-      isAdmin={true}
-    />
+    <ShellLayout mode="frame" title="" nav={ADMIN_NAV} root={{ label: "Quản trị", href: "/admin" }} isAdmin={true}>
+      {children}
+    </ShellLayout>
   );
 }
 

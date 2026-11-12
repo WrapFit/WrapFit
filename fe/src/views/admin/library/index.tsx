@@ -8,7 +8,8 @@
 
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ImagePlus } from "lucide-react";
+import { FileCheck2, ImagePlus, UploadCloud } from "lucide-react";
+import { cn } from "@/utils/helpers";
 import { ApiError, createLibraryAsset, listLibraryLicenses, manageLibraryAssets, updateLibraryAsset, uploadFileToStorage } from "@/api";
 import { Button, Field, Input, Select } from "@/components/ui";
 import { AdminShell, Badge, DataTable, Panel, PanelTitle, Toggle, WorkspaceEmpty, WorkspaceError } from "@/components/workspace";
@@ -50,6 +51,12 @@ function AdminLibraryScreen() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  /** A picked or dropped file; its name fills an empty title. */
+  const pickFile = (picked: File) => {
+    setFile(picked);
+    if (!title) setTitle(picked.name.replace(/.[a-z0-9]+$/i, "").replace(/[-_]+/g, " "));
+  };
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<LibraryAssetCategory>("STICKER");
   const [license, setLicense] = useState("CC0-1.0");
@@ -100,7 +107,7 @@ function AdminLibraryScreen() {
   return (
     <AdminShell
       title="Thư viện tài nguyên"
-      description="Nhập sticker, nhãn, hình minh họa và nền từ nguồn có giấy phép in thương mại. Mọi người dùng thấy chúng trong studio."
+      description="Sticker, nhãn và nền có giấy phép in thương mại."
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <Panel aria-labelledby="library-import">
@@ -113,19 +120,51 @@ function AdminLibraryScreen() {
               create.mutate();
             }}
           >
-            <Field label="File" hint="SVG (vector, an toàn), hoặc PNG / JPEG / WebP có cạnh dài ≥ 591 px (50 mm ở 300 DPI).">
+            <Field label="File" hint="SVG, hoặc PNG / JPEG / WebP cạnh dài ≥ 591 px (50 mm ở 300 DPI).">
               {(control) => (
-                <Input
-                  {...control}
-                  type="file"
-                  accept="image/svg+xml,image/png,image/jpeg,image/webp"
-                  required
-                  onChange={(event) => {
-                    const picked = event.target.files?.[0] ?? null;
-                    setFile(picked);
-                    if (picked && !title) setTitle(picked.name.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " "));
+                // A drop zone instead of the browser's "Choose File" button: the whole box picks or takes a dropped file.
+                <label
+                  htmlFor={control.id}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragging(true);
                   }}
-                />
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setDragging(false);
+                    const dropped = event.dataTransfer.files?.[0];
+                    if (dropped) pickFile(dropped);
+                  }}
+                  className={cn(
+                    "group flex cursor-pointer items-center gap-3 rounded-2xl border-[1.5px] border-dashed px-4 py-3.5 transition-colors focus-within:ring-[3px] focus-within:ring-focus/40",
+                    dragging ? "border-fpt-orange bg-fpt-orange-light" : file ? "border-line bg-white" : "border-line-strong/60 bg-landing-canvas/60 hover:border-fpt-orange hover:bg-fpt-orange-light/60"
+                  )}
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-fpt-orange shadow-xs ring-1 ring-line/60">
+                    {file ? <FileCheck2 className="size-5" aria-hidden /> : <UploadCloud className="size-5" aria-hidden />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-landing-ink">{file ? file.name : "Kéo thả file vào đây"}</span>
+                    <span className="block text-xs text-fg-muted">
+                      {file ? `${Math.max(1, Math.round(file.size / 1024)).toLocaleString("vi-VN")} KB · bấm để đổi file` : "hoặc bấm để chọn từ máy"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-accent ring-1 ring-fpt-orange/30 group-hover:bg-fpt-orange group-hover:text-white">
+                    {file ? "Đổi" : "Chọn file"}
+                  </span>
+                  <input
+                    {...control}
+                    type="file"
+                    accept="image/svg+xml,image/png,image/jpeg,image/webp"
+                    required={!file}
+                    className="sr-only"
+                    onChange={(event) => {
+                      const picked = event.target.files?.[0] ?? null;
+                      if (picked) pickFile(picked);
+                    }}
+                  />
+                </label>
               )}
             </Field>
             <Field label="Tên hiển thị" required>
@@ -172,7 +211,7 @@ function AdminLibraryScreen() {
                       key={o.value}
                       type="button"
                       size="sm"
-                      variant={on ? "dark" : "secondary"}
+                      variant={on ? "brand" : "secondary"}
                       aria-pressed={on}
                       onClick={() => setOccasions(on ? occasions.filter((v) => v !== o.value) : [...occasions, o.value])}
                     >
