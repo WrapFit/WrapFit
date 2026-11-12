@@ -18,7 +18,7 @@ import { formatVnd } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
 import type { Payment, PaymentPurpose } from "@/types/api";
-import { EXPORT_PACKS, PAYMENT_TERMS_VERSION, PRO_MONTH, XU_PACKS, isExportPackId, isXuPackId } from "@wrapfit/shared";
+import { EXPORT_PACKS, PAYMENT_TERMS_VERSION, PRO_MONTH, XU_PACKS, customXuPriceVnd, isExportPackId, isXuPackId } from "@wrapfit/shared";
 import { PaymentTermsGate } from "./PaymentTermsGate";
 import { savePendingVnpay } from "./vnpaySession";
 
@@ -34,10 +34,12 @@ const TITLES: Record<PaymentPurpose, string> = {
   XU_500: "Nạp 500 xu Wrap",
   XU_1050: "Nạp 1.050 xu Wrap",
   XU_2200: "Nạp 2.200 xu Wrap",
+  XU_CUSTOM: "Nạp xu Wrap",
 };
 
 /** Price shown before the payment exists; a sample order is priced by the server. */
-function knownPriceOf(purpose: PaymentPurpose): number | null {
+function knownPriceOf(purpose: PaymentPurpose, xu?: number): number | null {
+  if (purpose === "XU_CUSTOM") return xu !== undefined ? customXuPriceVnd(xu) : null;
   if (isExportPackId(purpose)) return EXPORT_PACKS[purpose].priceVnd;
   if (isXuPackId(purpose)) return XU_PACKS[purpose].priceVnd;
   if (purpose === "PRO_MONTH") return PRO_MONTH.priceVnd;
@@ -72,6 +74,8 @@ const mmss = (ms: number) => {
 
 export interface CheckoutDialogProps {
   purpose: PaymentPurpose;
+  /** Number of xu of a custom top-up (purpose XU_CUSTOM). */
+  xu?: number;
   /** The sample order to pay (purpose SAMPLE_ORDER). */
   orderId?: string;
   /** Label of the button that closes the dialog after paying, e.g. "Xuất file ngay". */
@@ -89,15 +93,16 @@ export interface CheckoutDialogProps {
  * VNPay sandbox by redirect and come back through `/payments/vnpay-return`. With PAYMENT_SIMULATION on the server
  * (CP4 demo) a button marks either one paid. On success Gói celebrates, and the plan, credits and orders are fetched again.
  */
-export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", onPaid, onClose, closeOnPaid = false }: CheckoutDialogProps) {
+export function CheckoutDialog({ purpose, xu, orderId, doneLabel = "Tiếp tục", onPaid, onClose, closeOnPaid = false }: CheckoutDialogProps) {
   const toast = useToast();
+  const title = purpose === "XU_CUSTOM" && xu !== undefined ? `Nạp ${xu.toLocaleString("vi-VN")} xu Wrap` : TITLES[purpose];
   const queryClient = useQueryClient();
   const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary, staleTime: 60_000 });
 
   // Step 0: the payment terms must be read and accepted before any payment (and QR code) is created.
   const [termsTicked, setTermsTicked] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const create = useMutation({ mutationFn: () => createPayment(purpose, orderId, PAYMENT_TERMS_VERSION) });
+  const create = useMutation({ mutationFn: () => createPayment(purpose, orderId, PAYMENT_TERMS_VERSION, xu) });
   // Once per dialog, after the terms (React strict mode mounts effects twice in development).
   const created = useRef(false);
   useEffect(() => {
@@ -264,7 +269,7 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
       <Button variant="secondary" onClick={onClose}>
         Hủy
       </Button>
-      <Button variant="brand" disabled={!termsTicked} onClick={() => setTermsAccepted(true)}>
+      <Button variant="primary" disabled={!termsTicked} onClick={() => setTermsAccepted(true)}>
         Đồng ý & thanh toán
       </Button>
     </>
@@ -280,7 +285,7 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
   // out inside that panel instead of the viewport.
   return createPortal(
     <Dialog
-      title={TITLES[purpose]}
+      title={title}
       description={
         !termsAccepted
           ? "Bước 1/2 · Đọc và đồng ý điều khoản thanh toán"
@@ -295,9 +300,10 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
       busy={busy}
       footer={footer}
       size="lg"
+      className="theme-green"
     >
       {!termsAccepted ? (
-        <PaymentTermsGate itemLabel={TITLES[purpose]} amountVnd={knownPriceOf(purpose)} accepted={termsTicked} onAcceptedChange={setTermsTicked} />
+        <PaymentTermsGate itemLabel={title} amountVnd={knownPriceOf(purpose, xu)} accepted={termsTicked} onAcceptedChange={setTermsTicked} />
       ) : create.isPending || create.isIdle ? (
         <LoadingState label="Đang tạo mã thanh toán…" />
       ) : create.isError ? (
@@ -376,7 +382,7 @@ export function CheckoutDialog({ purpose, orderId, doneLabel = "Tiếp tục", o
             </dl>
 
             {payUrl ? (
-              <Button variant="brand" shape="rounded" size="lg" block trailingIcon={<ExternalLink aria-hidden />} onClick={openVnpay}>
+              <Button variant="primary" shape="rounded" size="lg" block trailingIcon={<ExternalLink aria-hidden />} onClick={openVnpay}>
                 Mở cổng VNPay
               </Button>
             ) : (

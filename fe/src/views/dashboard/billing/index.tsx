@@ -19,7 +19,6 @@ import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
 import { CheckoutDialog } from '@/features/payments';
-import { XU_VALUE_VND } from '@wrapfit/shared';
 import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
 import { findSamplePromo } from '@wrapfit/shared';
 import { queryKeys } from '@/hooks/data';
@@ -43,6 +42,7 @@ const PURPOSE_LABELS: Record<PaymentPurpose, string> = {
   XU_500: '500 xu Wrap',
   XU_1050: '1.050 xu Wrap',
   XU_2200: '2.200 xu Wrap',
+  XU_CUSTOM: 'Nạp xu Wrap',
 };
 
 const STATUS_BADGES: Record<PaymentHistoryEntry['status'], { tone: 'green' | 'amber' | 'grey'; label: string }> = {
@@ -185,7 +185,7 @@ function BillingScreen() {
 
           {/* Xu wallet */}
           <Panel>
-            <PanelTitle action={<Badge tone="grey">1 xu = {formatVnd(XU_VALUE_VND)}</Badge>}>Ví xu Wrap</PanelTitle>
+            <PanelTitle>Ví xu Wrap</PanelTitle>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="flex items-baseline gap-2">
                 <Coins className="size-5 self-center text-fpt-orange-ink" aria-hidden />

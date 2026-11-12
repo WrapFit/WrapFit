@@ -11,6 +11,7 @@ import { randomInt } from 'crypto';
 import { AuthUser } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { PrintShopsService } from '../print-shops';
+import { CreateSampleBundleDto } from './dto/create-sample-bundle.dto';
 import { CreateSampleOrderDto } from './dto/create-sample-order.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -43,6 +44,8 @@ export interface SampleOrderResponse {
   dimensions: Prisma.JsonValue;
   quantity: number;
   paperStock: string;
+  /** Every design of the order (one bill): the top-level fields above describe the first one. */
+  items: { projectId: string | null; projectTitle: string; quantity: number; lineTotalVnd: number }[];
   recipientName: string;
   phone: string;
   recipientPhone: string;
@@ -78,19 +81,30 @@ export class OrdersService {
   ) {}
 
   async createSampleOrder(userId: string, dto: CreateSampleOrderDto): Promise<SampleOrderResponse> {
+    const { projectId, quantity, paperStock, ...common } = dto;
+    return this.createSampleBundle(userId, { ...common, items: [{ projectId, quantity, paperStock }] });
+  }
+
+  /** Several designs in one order: one bill, one payment. Each design is a line; the fee and the promo cover the bill. */
+  async createSampleBundle(userId: string, dto: CreateSampleBundleDto): Promise<SampleOrderResponse> {
     const phone = (dto.phone || dto.recipientPhone)?.trim();
     if (!phone) {
       throw new BadRequestException('Vui lòng cung cấp số điện thoại người nhận');
     }
 
     // Only the owner can order prints of a design, and not from the trash.
-    const project = await this.prisma.packagingProject.findFirst({
-      where: { id: dto.projectId, userId, status: { not: ProjectStatus.DELETED } },
+    const projects = await this.prisma.packagingProject.findMany({
+      where: { id: { in: dto.items.map((item) => item.projectId) }, userId, status: { not: ProjectStatus.DELETED } },
       select: { id: true, title: true, templateId: true, dimensions: true, version: true },
     });
-    if (!project) {
-      throw new NotFoundException('Dự án hộp không tồn tại');
-    }
+    const lines = dto.items.map((item) => {
+      const project = projects.find((p) => p.id === item.projectId);
+      if (!project) {
+        throw new NotFoundException('Dự án hộp không tồn tại');
+      }
+      const quantity = item.quantity ?? 1;
+      return { project, quantity, paperStock: item.paperStock, fee: sampleFeeVnd(quantity) };
+    });
 
     let partner = this.printShops.getDefaultPartner();
     if (dto.printShopId) {
@@ -101,8 +115,7 @@ export class OrdersService {
       partner = chosen;
     }
 
-    const quantity = dto.quantity ?? 1;
-    const subtotal = sampleFeeVnd(quantity);
+    const subtotal = lines.reduce((sum, line) => sum + line.fee, 0);
     let promo: SamplePromo | null = null;
     if (dto.promoCode?.trim()) {
       promo = findSamplePromo(dto.promoCode);
@@ -127,17 +140,17 @@ export class OrdersService {
       totalVnd: total,
       ...(free ? { status: OrderStatus.PAID, paidAt: new Date() } : {}),
       items: {
-        create: {
+        create: lines.map(({ project, quantity, paperStock, fee }) => ({
           project: { connect: { id: project.id } },
           projectVersion: project.version,
           projectTitle: project.title,
           structure: project.templateId,
           dimensions: project.dimensions as Prisma.InputJsonValue,
-          paperStock: dto.paperStock?.trim() || DEFAULT_PAPER_STOCK,
+          paperStock: paperStock?.trim() || DEFAULT_PAPER_STOCK,
           quantity,
           unitPriceVnd: SAMPLE_FIRST_BOX_VND,
-          lineTotalVnd: subtotal,
-        },
+          lineTotalVnd: fee,
+        })),
       },
       history: { create: { toStatus: free ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT, changedById: userId } },
     });
@@ -271,6 +284,12 @@ export class OrdersService {
       dimensions: item?.dimensions ?? null,
       quantity: order.items.reduce((sum, line) => sum + line.quantity, 0),
       paperStock: item?.paperStock ?? DEFAULT_PAPER_STOCK,
+      items: order.items.map((line) => ({
+        projectId: line.projectId,
+        projectTitle: line.projectTitle,
+        quantity: line.quantity,
+        lineTotalVnd: line.lineTotalVnd,
+      })),
       recipientName: order.recipientName,
       phone: order.recipientPhone,
       recipientPhone: order.recipientPhone,

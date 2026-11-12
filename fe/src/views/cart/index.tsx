@@ -5,11 +5,11 @@ import { CheckCircle2, CreditCard, Factory, LifeBuoy, Minus, PackagePlus, Plus, 
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { listProjects } from "@/api/projects";
-import { createSampleOrder } from "@/api/orders";
+import { createSampleBundle } from "@/api/orders";
 import { listPrintShops } from "@/api/print-shops";
 import { Container } from "@/components/landing";
 import { Card, PRIMARY_CTA, SECONDARY_CTA, SitePage } from "@/components/site";
-import { Badge, Button } from "@/components/ui";
+import { Badge, Button, buttonClass } from "@/components/ui";
 import { RequireAuth } from "@/features/auth";
 import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
@@ -74,24 +74,18 @@ function CartScreen() {
   const activeShops = (shops.data ?? []).filter((shop) => (shop.status ?? shop.state ?? "active") === "active");
 
   const order = useMutation({
+    // Every design of the cart goes into ONE order: one bill, one payment.
     mutationFn: async () => {
-      const done: SampleOrder[] = [];
-      for (const { item, project } of known) {
-        done.push(
-          await createSampleOrder({
-            projectId: item.projectId,
-            quantity: item.quantity,
-            paperStock: item.paperStock,
-            printShopId: shopId || undefined,
-            recipientName: form.recipientName.trim(),
-            phone: form.phone.trim(),
-            shippingAddress: form.shippingAddress.trim(),
-            promoCode: applied ?? undefined,
-            notes: [form.notes.trim(), `Dự án: ${project!.title}`].filter(Boolean).join(" · "),
-          })
-        );
-      }
-      return done;
+      const bill = await createSampleBundle({
+        items: known.map(({ item }) => ({ projectId: item.projectId, quantity: item.quantity, paperStock: item.paperStock })),
+        printShopId: shopId || undefined,
+        recipientName: form.recipientName.trim(),
+        phone: form.phone.trim(),
+        shippingAddress: form.shippingAddress.trim(),
+        promoCode: applied ?? undefined,
+        notes: form.notes.trim() || undefined,
+      });
+      return [bill];
     },
     onSuccess: (orders) => {
       setPlaced(orders);
@@ -136,33 +130,54 @@ function CartScreen() {
       <Container className="max-w-3xl pb-16 pt-28 sm:pt-32">
         <Card className="text-center sm:p-10">
           <CheckCircle2 className="mx-auto size-12 text-fpt-orange-ink" aria-hidden />
-          <h1 className="mt-4 font-landing-heading text-3xl font-bold">Đã gửi {placed.length} đơn in mẫu</h1>
+          <h1 className="mt-4 font-landing-heading text-3xl font-bold">Đã gửi đơn in mẫu</h1>
           <p className="mt-2 text-sm text-landing-muted">
             {unpaid.length
               ? "Thanh toán bằng VietQR để xưởng bắt đầu in. Đơn chưa trả vẫn nằm trong Đơn hàng & file in."
               : "Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in."}
           </p>
           <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left">
-            {placed.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl bg-landing-canvas px-4 py-3 text-sm">
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{item.projectTitle}</span>
-                  <span className="font-mono text-xs text-landing-muted">{item.orderCode ?? item.id}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <span className="font-semibold">{formatVnd(item.totalVnd ?? item.sampleFeeVnd ?? sampleFee(item.quantity))}</span>
-                  {item.status === "pending_payment" ? (
-                    <Button size="sm" onClick={() => setPaying(item)}>
-                      Thanh toán
-                    </Button>
-                  ) : (
-                    <Badge size="sm" tone="success">
-                      Đã thanh toán
-                    </Badge>
-                  )}
-                </span>
-              </li>
-            ))}
+            {placed.map((bill) => {
+              const designs = bill.items?.length
+                ? bill.items
+                : [{ projectId: bill.projectId, projectTitle: bill.projectTitle, quantity: bill.quantity, lineTotalVnd: bill.sampleFeeVnd ?? 0 }];
+              const paid = bill.status !== "pending_payment";
+              return (
+                <li key={bill.id} className="rounded-2xl bg-landing-canvas px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-xs text-landing-muted">{bill.orderCode ?? bill.id}</span>
+                    <span className="font-semibold">{formatVnd(bill.totalVnd ?? bill.sampleFeeVnd ?? 0)}</span>
+                  </div>
+                  <ul className="mt-2 divide-y divide-landing-line">
+                    {designs.map((design, index) => (
+                      <li key={`${design.projectId ?? index}`} className="flex items-center justify-between gap-3 py-2">
+                        <span className="min-w-0 truncate font-semibold">{design.projectTitle}</span>
+                        <span className="flex shrink-0 items-center gap-3 text-landing-muted">
+                          {design.quantity} hộp · {formatVnd(design.lineTotalVnd)}
+                          {/* Paying the print order unlocks the print file of that design version in the studio. */}
+                          {paid && design.projectId && (
+                            <Link href={`/editor/${design.projectId}?step=6`} className={buttonClass({ variant: "brand", size: "sm" })}>
+                              Xuất file in
+                            </Link>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 flex justify-end">
+                    {paid ? (
+                      <Badge size="sm" tone="success">
+                        Đã thanh toán
+                      </Badge>
+                    ) : (
+                      <Button size="sm" onClick={() => setPaying(bill)}>
+                        Thanh toán cả đơn
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/dashboard/orders" className={PRIMARY_CTA}>

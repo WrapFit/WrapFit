@@ -65,7 +65,7 @@ export function PaymentTermsGate({ itemLabel, amountVnd, accepted, onAcceptedCha
 
       <div className="overflow-hidden rounded-panel bg-surface-sunken">
         <div aria-hidden className="h-0.5 bg-line/60">
-          <div className="h-full bg-fpt-orange transition-[width] duration-150" style={{ width: `${Math.round(progress * 100)}%` }} />
+          <div className="h-full bg-action transition-[width] duration-150" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
         <div
           ref={listRef}
@@ -102,7 +102,7 @@ export function PaymentTermsGate({ itemLabel, amountVnd, accepted, onAcceptedCha
         </div>
       </div>
 
-      <div className={cn("rounded-panel px-3 py-1 transition-colors", accepted ? "bg-fpt-orange-light" : readToEnd ? "bg-surface-sunken" : "bg-transparent")}>
+      <div className={cn("rounded-panel px-3 py-1 transition-colors", accepted ? "bg-accent-bg" : readToEnd ? "bg-surface-sunken" : "bg-transparent")}>
         <Checkbox
           checked={accepted}
           disabled={!readToEnd}

@@ -15,7 +15,7 @@ const PROJECT = {
 
 /** The row Prisma would return for `order.create({ data, include: { items } })`. */
 function rowFrom(data: Prisma.OrderCreateInput) {
-  const item = data.items!.create as Prisma.OrderItemCreateWithoutOrderInput;
+  const lines = [data.items!.create].flat() as Prisma.OrderItemCreateWithoutOrderInput[];
   const now = new Date('2026-10-30T03:00:00Z');
   return {
     id: '0192f0a0-0000-7000-8000-000000000001',
@@ -37,27 +37,25 @@ function rowFrom(data: Prisma.OrderCreateInput) {
     cancelledAt: null,
     createdAt: now,
     updatedAt: now,
-    items: [
-      {
-        id: 'item-1',
-        orderId: '0192f0a0-0000-7000-8000-000000000001',
-        projectId: (item.project!.connect as { id: string }).id,
-        projectVersion: item.projectVersion,
-        projectTitle: item.projectTitle,
-        structure: item.structure,
-        dimensions: item.dimensions,
-        paperStock: item.paperStock,
-        quantity: item.quantity,
-        unitPriceVnd: item.unitPriceVnd,
-        lineTotalVnd: item.lineTotalVnd,
-      },
-    ],
+    items: lines.map((item, index) => ({
+      id: `item-${index + 1}`,
+      orderId: '0192f0a0-0000-7000-8000-000000000001',
+      projectId: (item.project!.connect as { id: string }).id,
+      projectVersion: item.projectVersion,
+      projectTitle: item.projectTitle,
+      structure: item.structure,
+      dimensions: item.dimensions,
+      paperStock: item.paperStock,
+      quantity: item.quantity,
+      unitPriceVnd: item.unitPriceVnd,
+      lineTotalVnd: item.lineTotalVnd,
+    })),
   };
 }
 
 describe('OrdersService', () => {
   let prisma: {
-    packagingProject: { findFirst: jest.Mock };
+    packagingProject: { findMany: jest.Mock };
     order: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock; findUniqueOrThrow: jest.Mock };
     orderStatusHistory: { create: jest.Mock };
     printShopMember: { findUnique: jest.Mock };
@@ -71,7 +69,7 @@ describe('OrdersService', () => {
 
   beforeEach(() => {
     prisma = {
-      packagingProject: { findFirst: jest.fn().mockResolvedValue(PROJECT) },
+      packagingProject: { findMany: jest.fn().mockResolvedValue([PROJECT]) },
       order: {
         create: jest.fn(async ({ data }: { data: Prisma.OrderCreateInput }) => rowFrom(data)),
         findMany: jest.fn().mockResolvedValue([]),
@@ -109,12 +107,32 @@ describe('OrdersService', () => {
       });
 
       // Owner-only lookup that skips the trash.
-      expect(prisma.packagingProject.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'proj-123', userId: 'user-1', status: { not: 'DELETED' } } }),
+      expect(prisma.packagingProject.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: { in: ['proj-123'] }, userId: 'user-1', status: { not: 'DELETED' } } }),
       );
       const { data } = prisma.order.create.mock.calls[0][0];
       expect(data.history).toEqual({ create: { toStatus: 'PENDING_PAYMENT', changedById: 'user-1' } });
-      expect(data.items.create).toMatchObject({ dimensions: PROJECT.dimensions, unitPriceVnd: 49_000, lineTotalVnd: 49_000 });
+      expect([data.items.create].flat()[0]).toMatchObject({ dimensions: PROJECT.dimensions, unitPriceVnd: 49_000, lineTotalVnd: 49_000 });
+    });
+
+    it('puts several designs in one order with one bill', async () => {
+      const second = { ...PROJECT, id: 'proj-456', title: 'Hộp Thứ Hai', version: 2 };
+      prisma.packagingProject.findMany.mockResolvedValueOnce([PROJECT, second]);
+
+      const order = await service.createSampleBundle('user-1', {
+        ...base,
+        phone: '0912345678',
+        items: [{ projectId: 'proj-123' }, { projectId: 'proj-456', quantity: 2 }],
+      });
+
+      expect(prisma.order.create).toHaveBeenCalledTimes(1);
+      const { data } = prisma.order.create.mock.calls[0][0];
+      expect(data.items.create).toHaveLength(2);
+      // 49.000 + (49.000 + 25.000) = 123.000, one total for the whole bill
+      expect(order.sampleFeeVnd).toBe(123_000);
+      expect(order.totalVnd).toBe(123_000);
+      expect(order.quantity).toBe(3);
+      expect(order.items.map((line) => line.projectId)).toEqual(['proj-123', 'proj-456']);
     });
 
     it('accepts the recipientPhone alias and prices extra boxes at 25.000đ', async () => {
@@ -138,7 +156,7 @@ describe('OrdersService', () => {
     });
 
     it('answers 404 for a project that is missing or belongs to someone else', async () => {
-      prisma.packagingProject.findFirst.mockResolvedValueOnce(null);
+      prisma.packagingProject.findMany.mockResolvedValueOnce([]);
       await expect(service.createSampleOrder('user-2', { ...base, phone: '0912345678' })).rejects.toThrow(NotFoundException);
     });
 

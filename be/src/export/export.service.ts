@@ -8,11 +8,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ExportFileType, Prisma } from '@prisma/client';
-import type { BoxDimensions, CanvasElement, Entitlements, ExportMode } from '@wrapfit/shared';
+import type { BoxDimensions, CanvasElement, ExportMode } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
 import { ProductEventsService } from '../analytics';
-import { CreditsService, EntitlementsService, exportCreditRequired } from '../billing';
+import { CreditsService, EntitlementsService, orderPaymentRequired } from '../billing';
 import { currentRequestId, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { StorageService } from '../storage';
@@ -43,7 +42,6 @@ const jobSelect = {
 
 type JobRow = Prisma.ExportJobGetPayload<{ select: typeof jobSelect }>;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** What an export request is allowed to produce, decided before the job is created (docs/16 §5.2 steps 4–5). */
 interface ExportGrant {
@@ -122,10 +120,11 @@ export class ExportService {
       });
     }
 
-    // The owner's plan pays: ProjectOwnerGuard already made sure the caller is the owner.
-    const { entitlements } = await this.entitlements.of(project.userId);
+    // ProjectOwnerGuard already made sure the caller is the owner. `useCredit` is kept for older clients and ignored:
+    // the print file is sold only through the print cart now.
+    void useCredit;
     const { job, grant } = await this.prisma.$transaction(async (tx) => {
-      const grant = await this.grant(tx, projectId, project.userId, fileType, useCredit, entitlements);
+      const grant = await this.grant(tx, projectId);
       const job = await tx.exportJob.create({
         data: { projectId, fileType, watermarked: grant.watermarked, unlockId: grant.unlockId },
         select: jobSelect,
@@ -165,55 +164,45 @@ export class ExportService {
   }
 
   /**
-   * Clean or watermarked, and who pays (docs/16 §5.2 steps 4–5). Runs in the transaction that creates the job, with
-   * the project row locked: two requests for the same version wait for each other, so only the first one pays.
+   * Whether the print file of this version may be exported (clean, never watermarked). The print file is sold through
+   * the print cart: a paid order (not cancelled) holding this exact version unlocks it; Pro and export credits no
+   * longer skip the cart. An unlock bought before this flow still counts until it expires. Runs in the transaction
+   * that creates the job, with the project row locked, so an edit cannot slip in between the check and the job.
    */
-  private async grant(
-    tx: Prisma.TransactionClient,
-    projectId: string,
-    userId: string,
-    fileType: ExportFileType,
-    useCredit: boolean,
-    entitlements: Entitlements,
-  ): Promise<ExportGrant> {
-    if (entitlements.export.mode === 'UNLIMITED') return { watermarked: false, charged: false, unlockId: null };
-
+  private async grant(tx: Prisma.TransactionClient, projectId: string): Promise<ExportGrant> {
     const [row] = await tx.$queryRaw<{ version: number }[]>`
       SELECT version FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
-    const now = new Date();
+    if (await this.paidOrderHolds(tx, projectId, row.version)) return { watermarked: false, charged: false, unlockId: null };
     const unlock = await tx.exportUnlock.findFirst({
-      where: validUnlock(projectId, row.version, now),
+      where: validUnlock(projectId, row.version, new Date()),
       orderBy: { expiresAt: 'desc' },
       select: { id: true },
     });
     if (unlock) return { watermarked: false, charged: false, unlockId: unlock.id };
-    // No free print file: every format, the home-print A4 PDF included, needs a purchase (a credit or Pro).
-    if (!useCredit) throw exportCreditRequired(await this.credits.balance(userId, tx));
-
-    // The unlock records the operation id first; the debit (402 INSUFFICIENT_CREDITS when empty) rolls it back.
-    const operationId = randomUUID();
-    const created = await tx.exportUnlock.create({
-      data: {
-        projectId,
-        projectVersion: row.version,
-        userId,
-        debitOperationId: operationId,
-        expiresAt: new Date(now.getTime() + entitlements.export.unlockDays * DAY_MS),
-      },
-      select: { id: true },
-    });
-    const { balance } = await this.credits.debit(userId, { reason: 'EXPORT_UNLOCK', refId: created.id, operationId }, tx);
-    return { watermarked: false, charged: true, unlockId: created.id, balance };
+    throw orderPaymentRequired();
   }
 
-  /** What the export dialog shows before a request: plan mode, whether this version is unlocked, credits left. */
+  /** A paid print order (not cancelled) holds this version of the design. */
+  private async paidOrderHolds(db: Prisma.TransactionClient, projectId: string, version: number): Promise<boolean> {
+    const item = await db.orderItem.findFirst({
+      where: { projectId, projectVersion: version, order: { paidAt: { not: null }, status: { not: 'CANCELLED' } } },
+      select: { id: true },
+    });
+    return item !== null;
+  }
+
+  /**
+   * What the studio shows before a request: whether this version is unlocked (a paid print order holds it, or an
+   * older unlock is still valid). `mode` and `balance` stay in the answer for older clients.
+   */
   async access(projectId: string): Promise<{ mode: ExportMode; unlocked: boolean; unlockExpiresAt: Date | null; balance: number }> {
     const project = await this.prisma.packagingProject.findUniqueOrThrow({
       where: { id: projectId },
       select: { userId: true, version: true },
     });
     const { entitlements } = await this.entitlements.of(project.userId);
-    const [unlock, balance] = await Promise.all([
+    const [paid, unlock, balance] = await Promise.all([
+      this.paidOrderHolds(this.prisma, projectId, project.version),
       this.prisma.exportUnlock.findFirst({
         where: validUnlock(projectId, project.version, new Date()),
         orderBy: { expiresAt: 'desc' },
@@ -221,11 +210,10 @@ export class ExportService {
       }),
       this.credits.balance(project.userId),
     ]);
-    const mode = entitlements.export.mode;
     return {
-      mode,
-      unlocked: mode === 'UNLIMITED' || unlock !== null,
-      unlockExpiresAt: unlock?.expiresAt ?? null,
+      mode: entitlements.export.mode,
+      unlocked: paid || unlock !== null,
+      unlockExpiresAt: paid ? null : (unlock?.expiresAt ?? null),
       balance,
     };
   }

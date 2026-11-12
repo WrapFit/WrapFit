@@ -26,6 +26,12 @@ export const PAYMENT_TERMS_CLAUSES: PaymentTermsClause[] = [
       "Lượt xuất file, gói Pro và xu Wrap là dịch vụ số, được kích hoạt ngay khi WrapFit nhận đủ tiền. Đơn in mẫu là dịch vụ in do xưởng đối tác thực hiện.",
   },
   {
+    id: "studio-thiet-ke",
+    title: "Thiết kế miễn phí, trả tiền khi xuất file in",
+    body:
+      "Trong studio, bạn thiết kế, xem 3D, chạy FitCheck và lưu dự án miễn phí, bất cứ lúc nào trong quá trình làm hộp. File in (PDF CMYK, PDF A4, SVG, DXF) chỉ xuất được sau khi bạn thanh toán đơn in của bản thiết kế đó ở giỏ in mẫu, và chỉ khi FitCheck không còn lỗi chặn; gói Pro hay lượt xuất không thay cho bước này. Đơn đã trả mở khóa đúng phiên bản thiết kế trong đơn; sửa thiết kế sau đó thì cần thanh toán đơn mới.",
+  },
+  {
     id: "file-khong-nhu-ky-vong",
     title: "File in có thể không như kỳ vọng",
     body:

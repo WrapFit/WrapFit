@@ -133,8 +133,9 @@ const TERMS: LegalDoc = {
   label: "Điều khoản",
   title: "Điều khoản sử dụng",
   lead: "Những thỏa thuận giữa bạn và WrapFit khi dùng studio, xuất file in và đặt in mẫu — viết ngắn gọn, đặc biệt là phần trách nhiệm khi in.",
-  updated: "2026-10-12",
+  updated: "2026-11-12",
   versions: [
+    { version: "1.2", date: "2026-11-12", change: "Thêm luồng studio: lưu dự án miễn phí mọi lúc, file in chỉ xuất sau khi thanh toán đơn in ở giỏ." },
     { version: "1.1", date: "2026-10-12", change: "Làm rõ trách nhiệm về màu in và hộp mẫu." },
     { version: "1.0", date: "2026-09-20", change: "Bản đầu tiên cho bản thử nghiệm (beta)." },
   ],
@@ -148,6 +149,21 @@ const TERMS: LegalDoc = {
       id: "noi-dung",
       title: "Nội dung của bạn",
       body: <P>Logo, ảnh, chữ và thiết kế bạn tạo thuộc về bạn. Bạn cho phép WrapFit lưu, hiển thị và chuyển chúng đến xưởng in chỉ để cung cấp dịch vụ. Bạn cam kết có quyền sử dụng mọi hình ảnh, nhãn hiệu tải lên.</P>,
+    },
+    {
+      id: "studio",
+      title: "Studio thiết kế",
+      body: (
+        <UL
+          items={[
+            "Thiết kế, xem hộp 3D, chạy FitCheck™ và xem báo giá miễn phí.",
+            "Bạn lưu dự án được ở mọi bước làm hộp; dự án đã lưu tự lưu lên cloud khi bạn sửa.",
+            "File in chỉ xuất được sau khi bạn bấm Thanh toán ở bước Đặt in, trả tiền đơn in của bản thiết kế đó ở giỏ, và khi FitCheck™ không còn lỗi chặn. Gói Pro hay lượt xuất không thay cho bước này.",
+            "Đơn đã trả mở khóa đúng phiên bản thiết kế trong đơn; sửa thiết kế sau đó thì cần thanh toán đơn mới.",
+            "Trước khi thanh toán, bạn phải đọc và đồng ý điều khoản thanh toán.",
+          ]}
+        />
+      ),
     },
     {
       id: "file-in",
@@ -181,7 +197,7 @@ const TERMS: LegalDoc = {
       body: (
         <>
           <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Lượt xuất mua theo gói ${EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(', ')}, còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng; mỗi lượt mở khóa file in sạch của một bản thiết kế trong 7 ngày. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất đã dùng không được hoàn.</P>
-          <P><strong>Quy định về Xu Wrap:</strong> Xu Wrap là đơn vị tín dụng nội bộ dùng cho các dịch vụ AI (tạo ảnh mặt hộp, hoa văn AI, công cụ phóng to, xóa nền và vector hóa) với tỷ giá niêm yết 1 xu = 100đ. Xu Wrap không có giá trị quy đổi thành tiền mặt, không chuyển nhượng giữa các tài khoản và không áp dụng chính sách hoàn tiền sau khi nạp thành công. Xu tặng kèm theo gói có hiệu lực theo kỳ (được dồn tối đa một kỳ tiếp theo); xu nạp lẻ có thời hạn 12 tháng kể từ ngày thanh toán. Trong trường hợp tác vụ AI hoặc hệ thống phát sinh lỗi kỹ thuật, số xu tương ứng sẽ được hoàn lại tự động vào ví của bạn.</P>
+          <P><strong>Quy định về Xu Wrap:</strong> Xu Wrap là đơn vị tín dụng nội bộ dùng cho các dịch vụ AI (tạo ảnh mặt hộp, hoa văn AI, công cụ phóng to, xóa nền và vector hóa), nạp theo các gói và số xu niêm yết khi thanh toán. Xu Wrap không có giá trị quy đổi thành tiền mặt, không chuyển nhượng giữa các tài khoản và không áp dụng chính sách hoàn tiền sau khi nạp thành công. Xu tặng kèm theo gói có hiệu lực theo kỳ (được dồn tối đa một kỳ tiếp theo); xu nạp lẻ có thời hạn 12 tháng kể từ ngày thanh toán. Trong trường hợp tác vụ AI hoặc hệ thống phát sinh lỗi kỹ thuật, số xu tương ứng sẽ được hoàn lại tự động vào ví của bạn.</P>
         </>
       ),
     },

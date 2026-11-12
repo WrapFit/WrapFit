@@ -18,6 +18,7 @@ const PACKAGE_NAMES: Record<PaymentPurpose, string> = {
   XU_500: "gói 500 xu Wrap",
   XU_1050: "gói 1.050 xu Wrap",
   XU_2200: "gói 2.200 xu Wrap",
+  XU_CUSTOM: "gói xu Wrap",
 };
 
 /** What the purchase unlocked, in three short lines. */

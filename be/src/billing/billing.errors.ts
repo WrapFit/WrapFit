@@ -14,6 +14,17 @@ export function insufficientCredits(balance: number, kind: CreditKind = 'EXPORT'
  * 402: a clean export of this design version needs one export credit and the client did not send `useCredit: true`
  * (docs/16 §5.2). The client asks "Dùng 1 lượt? Còn N lượt" with `balance`, or offers a pack when it is 0.
  */
+/** The print file of this design version is sold through the print cart: no paid order holds it yet. */
+export function orderPaymentRequired(): HttpException {
+  return new HttpException(
+    {
+      code: 'ORDER_PAYMENT_REQUIRED',
+      message: 'File in chỉ xuất được sau khi thanh toán đơn in của bản thiết kế này ở giỏ in mẫu',
+    },
+    HttpStatus.PAYMENT_REQUIRED,
+  );
+}
+
 export function exportCreditRequired(balance: number): HttpException {
   return new HttpException(
     { code: 'EXPORT_CREDIT_REQUIRED', message: 'Xuất file sạch cần dùng 1 lượt xuất', balance },

@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from 
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { ACCESS_COOKIE, AuthUser, CurrentUser, Roles } from '../common';
+import { CreateSampleBundleDto } from './dto/create-sample-bundle.dto';
 import { CreateSampleOrderDto } from './dto/create-sample-order.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -17,6 +18,12 @@ export class OrdersController {
   @ApiOperation({ summary: 'Đặt in mẫu thử (Sample Box 1–10 chiếc) chuyển tới xưởng đối tác; đơn mới chờ thanh toán' })
   createSample(@CurrentUser('id') userId: string, @Body() dto: CreateSampleOrderDto) {
     return this.service.createSampleOrder(userId, dto);
+  }
+
+  @Post('sample/bundle')
+  @ApiOperation({ summary: 'Đặt in mẫu nhiều thiết kế trong một đơn: một hóa đơn, thanh toán một lần' })
+  createSampleBundle(@CurrentUser('id') userId: string, @Body() dto: CreateSampleBundleDto) {
+    return this.service.createSampleBundle(userId, dto);
   }
 
   @Get('my-orders')
