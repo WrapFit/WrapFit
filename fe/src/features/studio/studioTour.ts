@@ -36,23 +36,16 @@ export const STUDIO_INTRO_TOUR: TourStep[] = [
     mascot: "measuring",
   },
   {
-    target: '[aria-label="Xuất file in"]',
-    title: "Xuất file in",
-    body: "Khi xong, **bấm đây** để tải file PDF gửi xưởng in hoặc tự in ở nhà. Bạn chưa cần bấm bây giờ.",
-    tryIt: "Chưa cần bấm. Khi xong thiết kế, **bấm nút này** để mở bảng xuất file in.",
+    target: '[aria-label="Bước 6: Đặt in"]',
+    title: "Thanh toán & xuất file in",
+    body: "Ở bước cuối **Đặt in**, bạn chọn gói và thanh toán. Thanh toán xong, nút **Thanh toán** đổi thành **Xuất file in**. Bạn chưa cần bấm bây giờ.",
+    tryIt: "Chưa cần bấm. Khi xong thiết kế, **bấm bước Đặt in** để xem báo giá, thanh toán và xuất file.",
     mascot: "delivery",
   },
 ];
 
 export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
   1: [
-    {
-      target: '[aria-labelledby="quick-start-title"]',
-      title: "Bắt đầu nhanh từ một mẫu",
-      body: "**Chọn dịp và loại sản phẩm**, rồi **bấm một mẫu**: hộp đã có sẵn hình in, bạn chỉ cần chỉnh kích thước và chữ.",
-      tryIt: "**Thử chọn một dịp**: ba mẫu đổi theo. **Bấm hẳn một mẫu** thì Studio sang bước Kích thước và hướng dẫn này đóng.",
-      mascot: "presenting",
-    },
     {
       target: '[aria-label="Cấu trúc hộp"]',
       title: "Chọn kiểu hộp",
@@ -128,9 +121,9 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
   4: [
     {
       target: '[role="toolbar"][aria-label="Công cụ thiết kế"]',
-      title: "Hộp công cụ",
-      body: "Từ trên xuống: chọn & di chuyển, thêm chữ, tải ảnh hoặc logo, sticker, phông & màu, ảnh AI và hoa văn AI (trả bằng xu Wrap). **Rê chuột lên mỗi nút** để xem tên.",
-      tryIt: "**Thử bấm “Thêm chữ”**: khuôn bế 2D bật lên và ô soạn chữ mở ra.",
+      title: "Thanh công cụ bên trái",
+      body: "Giống Canva: **bấm một mục** (Thành phần, Văn bản, Tải lên, Màu & nền, Hoa văn AI, Ảnh AI, Kích thước, FitCheck) để mở bảng chọn ngay bên cạnh. Bấm lại mục đó để thu gọn.",
+      tryIt: "**Thử bấm “Văn bản”**: bảng chữ mở ra cạnh thanh công cụ.",
       mascot: "folding",
       placement: "right",
     },
@@ -149,12 +142,12 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
       mascot: "folding",
     },
     {
-      target: 'aside[aria-label="Bảng thuộc tính"]',
-      title: "Bảng chỉnh sửa",
-      body: "Kiểu: màu nền, phông chữ. Sticker: tem, dấu sáp. Cỡ: sửa kích thước hộp. FitCheck: danh sách lỗi và nút sửa nhanh.",
-      tryIt: "**Thử bấm một tab** (Kiểu, Sticker, Cỡ, FitCheck): nội dung bảng bên dưới đổi theo tab.",
+      target: 'aside[aria-label="Bảng công cụ"]',
+      title: "Bảng chọn",
+      body: "Nội dung của mục đang mở: tem, sticker, phông chữ, bảng màu, ảnh của bạn… **Bấm một thứ** để đặt lên mặt hộp đang chọn. Mũi tên ở mép bảng thu gọn bảng để khung thiết kế rộng hơn.",
+      tryIt: "**Thử bấm một mục khác** trên thanh bên trái: bảng đổi nội dung theo.",
       mascot: "presenting",
-      placement: "left",
+      placement: "right",
     },
     {
       target: NEXT,
@@ -206,16 +199,16 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     },
     {
       target: '[data-tour="s6-quote"]',
-      title: "Báo giá theo số lượng",
-      body: "**Chọn số hộp cần in**: WrapFit tính giá mỗi hộp, cách in (in kỹ thuật số hay offset) và số ngày làm. Có thể đặt in thử 1 hộp trước.",
+      title: "Báo giá in",
+      body: "**Chọn số hộp cần in**: WrapFit tính giá mỗi hộp, cách in (in kỹ thuật số hay offset) và số ngày làm. Báo giá chi tiết từng khoản nằm ngay bên dưới. Có thể đặt in thử 1 hộp trước.",
       tryIt: "**Bấm một mức số lượng** hoặc **gõ số khác**: giá mỗi hộp, cách in và số ngày làm đổi theo.",
       mascot: "delivery",
     },
     {
       target: '[data-tour="s6-export"]',
-      title: "Xuất file in",
-      body: "**Bấm nút này** để tải file PDF gửi xưởng in. Nút chỉ bấm được khi FitCheck™ đạt. Chúc mừng bạn đã làm xong chiếc hộp đầu tiên!",
-      tryIt: "**Bấm nút này khi FitCheck™ đạt**: bảng xuất file in mở ra, hướng dẫn tạm ẩn và hiện lại khi bạn đóng bảng.",
+      title: "Thanh toán rồi xuất file in",
+      body: "File in chỉ xuất được sau khi mua gói. **Chọn gói và bấm Thanh toán** (đọc và đồng ý điều khoản trước); trả xong, nút đổi thành **Xuất file in**. Nút chỉ bấm được khi FitCheck™ đạt.",
+      tryIt: "**Chọn một gói**: giá trên nút Thanh toán đổi theo. Đã mua thì bấm **Xuất file in** để mở bảng tải file.",
       mascot: "celebration",
     },
   ],

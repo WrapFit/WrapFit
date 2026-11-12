@@ -57,7 +57,7 @@ function EditorRouteHandler() {
 }
 
 /**
- * The offline demo, optionally on a template (`?template=<id>`, from the template hub or /editor/new without a backend):
+ * The offline demo, optionally on a template (`?template=<id>`, from the template hub, the structure pages and the home page):
  * `getTemplate` falls back to the templates built into the app, so this works with no API at all.
  */
 function DemoEditor() {
@@ -125,7 +125,7 @@ function ProjectEditor({ projectId }: { projectId: string }) {
                   Về danh sách dự án
                 </Link>
                 <Link
-                  href={ROUTES.editorNew}
+                  href={ROUTES.editorDemo}
                   className="text-sm font-semibold text-landing-ink underline-offset-4 hover:underline"
                 >
                   Tạo dự án mới

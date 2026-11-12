@@ -119,7 +119,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   const fontsVersion = useBoxFonts(elements, artFonts);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
-  const padding = 35; // 35mm margin
+  const padding = 20; // 20 mm around the sheet: the 14 mm rulers and the bleed fit, the dieline gets the rest
   const viewBoxW = totalW + 2 * padding;
   const viewBoxH = totalH + 2 * padding;
 
@@ -177,7 +177,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     const pt = getSvgCoordinates(e.clientX, e.clientY);
     const mmX = Math.round(pt.x - padding);
     const mmY = Math.round(pt.y - padding);
-    setCursorMm({ x: mmX, y: mmY });
+    // The measuring guides follow the pointer only over the sheet (and its rulers): outside it they would float in the
+    // empty part of a wide stage.
+    const onSheet = mmX >= 0 && mmY >= 0 && mmX <= viewBoxW - 2 * padding && mmY <= viewBoxH - 2 * padding;
+    setCursorMm(onSheet ? { x: mmX, y: mmY } : null);
 
     if (!dragState || !onElementsChange) return;
 
@@ -436,7 +439,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       </div>
       )}
 
-      <div className={`relative flex min-h-0 flex-1 items-center justify-center ${isStage ? "" : "overflow-hidden bg-mist-150 p-4"}`}>
+      <div className={`relative flex min-h-0 flex-1 items-center justify-center ${isStage ? "" : "overflow-hidden bg-mist-150 p-2"}`}>
       {/* Cutting mat: fine dot grid with a soft light in the middle (the stage shows the page's own backdrop) */}
       {!isStage && (
         <>
@@ -556,7 +559,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
-          className={`relative w-full h-full ${isStage ? "max-h-[94%]" : "max-h-[85%]"} ${
+          className={`relative w-full h-full max-h-[94%] ${
             dragState ? "cursor-grabbing" : "cursor-default"
           }`}
           onPointerMove={handleSvgPointerMove}

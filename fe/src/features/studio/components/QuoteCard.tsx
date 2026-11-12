@@ -77,96 +77,99 @@ export function QuoteCard({
   };
 
   return (
-    <StudioCard data-tour="s6-quote" className="p-5" aria-labelledby="quote-title">
-      <CardTitle id="quote-title" action={<span className="text-caption text-fg-muted">Ước tính</span>}>
-        Báo giá in
-      </CardTitle>
+    <StudioCard data-tour="s6-quote" className="p-5 sm:p-6" aria-labelledby="quote-title">
+      {/* Wide layout: quantity | price | actions, side by side from lg, stacked on phones. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)_260px] lg:gap-0 lg:divide-x lg:divide-line">
+        <div className="lg:pr-6">
+          <CardTitle id="quote-title" action={<span className="text-caption text-fg-muted">Ước tính</span>}>
+            Báo giá in
+          </CardTitle>
+          <p className="mt-1 text-caption text-fg-muted">Số lượng hộp</p>
+          <div role="radiogroup" aria-label="Số lượng hộp" className="mt-2 flex flex-wrap gap-1.5">
+            {QUANTITIES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={quantity === value}
+                onClick={() => setQuantity(value)}
+                className={cn(
+                  "h-9 min-w-11 rounded-full px-3 text-sm tabular-nums outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40",
+                  quantity === value ? "bg-fpt-orange-light font-semibold text-accent ring-1 ring-fpt-orange/30" : "bg-surface-raised font-medium text-fg ring-1 ring-line hover:ring-line-strong"
+                )}
+              >
+                {value}
+              </button>
+            ))}
+            <label className="flex h-9 items-center gap-1.5 rounded-full bg-surface-sunken px-3 text-label-sm text-fg-muted">
+              <span>Khác</span>
+              <input
+                type="number"
+                min={1}
+                max={100000}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Math.min(100000, Number(e.target.value) || 1)))}
+                className="w-16 bg-transparent text-fg tabular-nums outline-none"
+                aria-label="Số lượng hộp khác"
+              />
+            </label>
+          </div>
+          {saving && (
+            <p className="mt-3 rounded-control bg-success-bg px-3 py-2 text-body-sm text-success-fg">
+              Bớt {saving.deltaMm} mm {AXIS_LABELS[saving.axis]} thì được {saving.perSheet} hộp mỗi tờ, còn {formatVnd(saving.perBox)}/hộp
+              (rẻ hơn {Math.round(saving.saving * 100)}%) nếu món quà vẫn vừa.
+            </p>
+          )}
+        </div>
 
-      <div role="radiogroup" aria-label="Số lượng hộp" className="mt-3 flex flex-wrap gap-1.5">
-        {QUANTITIES.map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="radio"
-            aria-checked={quantity === value}
-            onClick={() => setQuantity(value)}
-            className={buttonClass({ variant: quantity === value ? "dark" : "secondary", size: "sm", className: "min-h-11 min-w-11 tabular-nums" })}
-          >
-            {value}
-          </button>
-        ))}
-        <label className="flex min-h-11 items-center gap-1.5 rounded-full bg-surface-sunken px-3 text-label-sm text-fg-muted">
-          <span>Khác</span>
-          <input
-            type="number"
-            min={1}
-            max={100000}
-            value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, Math.min(100000, Number(e.target.value) || 1)))}
-            className="w-16 bg-transparent text-fg tabular-nums outline-none"
-            aria-label="Số lượng hộp khác"
-          />
-        </label>
-      </div>
-
-      <div className="mt-4 flex items-end justify-between gap-3">
-        <div>
+        <div className="lg:px-6">
           <p className="font-landing-heading text-heading-md font-bold tabular-nums text-fg">
             {formatVnd(result.perBox)}
             <span className="text-body-sm font-semibold text-fg-muted"> /hộp</span>
           </p>
           <p className="text-body-sm tabular-nums text-fg-muted">
-            Tổng {formatVnd(result.total)} cho {result.quantity} hộp
+            Tổng <strong className="font-semibold text-fg">{formatVnd(result.total)}</strong> cho {result.quantity} hộp
           </p>
+          <ul className="mt-3 flex flex-col gap-1.5 text-caption text-fg-muted">
+            <li className="flex items-start gap-1.5">
+              <Scissors className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              {result.methodLabel} · {result.perSheet} hộp mỗi tờ B1
+            </li>
+            <li className="flex items-start gap-1.5">
+              <Clock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              Sản xuất khoảng {result.leadDays} ngày làm việc
+            </li>
+          </ul>
+          <p className="mt-3 text-caption leading-5 text-fg-muted">Giá hộp hoàn thiện tại xưởng đối tác, chưa gồm VAT và vận chuyển.</p>
+          <a href="#quote-detail" className="mt-1 inline-flex min-h-8 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
+            Xem báo giá chi tiết
+          </a>
         </div>
-        <p className="text-right text-caption text-fg-muted">
-          <Clock className="mr-1 inline size-3.5" aria-hidden />
-          sản xuất khoảng {result.leadDays} ngày
-        </p>
-      </div>
 
-      <p className="mt-2 flex items-start gap-1.5 text-caption text-fg-muted">
-        <Scissors className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        {result.methodLabel} · {result.perSheet} hộp mỗi tờ B1
-      </p>
-
-      {saving && (
-        <p className="mt-3 rounded-control bg-success-bg px-3 py-2 text-body-sm text-success-fg">
-          Bớt {saving.deltaMm} mm {AXIS_LABELS[saving.axis]} thì được {saving.perSheet} hộp mỗi tờ, còn {formatVnd(saving.perBox)}/hộp
-          (rẻ hơn {Math.round(saving.saving * 100)}%) nếu món quà vẫn vừa.
-        </p>
-      )}
-
-      <p className="mt-3 text-caption leading-5 text-fg-muted">
-        Giá hộp hoàn thiện tại xưởng đối tác, chưa gồm VAT. Vận chuyển và lưu kho bạn thỏa thuận trực tiếp với xưởng.
-      </p>
-      <a href="#quote-detail" className="mt-2 inline-flex min-h-9 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
-        Xem từng khoản và giá theo số lượng
-      </a>
-
-      <div className="mt-4 grid gap-2">
-        {sampleRequested ? (
-          <p role="status" className="flex items-start gap-2 rounded-control bg-success-bg px-3 py-2.5 text-body-sm text-success-fg">
-            <PackageCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-            Đã ghi nhận yêu cầu in mẫu 1 hộp ({formatVnd(sample.total)}). Bản dùng thử chưa gửi đơn tới xưởng: đăng nhập và lưu dự án để đặt thật.
-          </p>
-        ) : projectId ? (
-          <Link
-            href={`/cart?add=${encodeURIComponent(projectId)}`}
-            aria-disabled={blocked}
-            className={buttonClass({ variant: "brand", size: "lg", block: true, className: cn(blocked && "pointer-events-none opacity-50") })}
-          >
-            <PackageCheck className="size-4" aria-hidden />
-            Đặt in mẫu 1 hộp · {formatVnd(sample.total)}
-          </Link>
-        ) : (
-          <Button variant="brand" size="lg" block disabled={blocked} onClick={() => setSampleRequested(true)} leadingIcon={<PackageCheck className="size-4" aria-hidden />}>
-            Đặt in mẫu 1 hộp · {formatVnd(sample.total)}
+        <div className="flex flex-col justify-center gap-2 lg:pl-6">
+          {sampleRequested ? (
+            <p role="status" className="flex items-start gap-2 rounded-control bg-success-bg px-3 py-2.5 text-body-sm text-success-fg">
+              <PackageCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
+              Đã ghi nhận yêu cầu in mẫu 1 hộp ({formatVnd(sample.total)}). Đăng nhập và lưu dự án để đặt thật.
+            </p>
+          ) : projectId ? (
+            <Link
+              href={`/cart?add=${encodeURIComponent(projectId)}`}
+              aria-disabled={blocked}
+              className={buttonClass({ variant: "brand", size: "lg", block: true, className: cn(blocked && "pointer-events-none opacity-50") })}
+            >
+              <PackageCheck className="size-4" aria-hidden />
+              In mẫu 1 hộp · {formatVnd(sample.total)}
+            </Link>
+          ) : (
+            <Button variant="brand" size="lg" block disabled={blocked} onClick={() => setSampleRequested(true)} leadingIcon={<PackageCheck className="size-4" aria-hidden />}>
+              In mẫu 1 hộp · {formatVnd(sample.total)}
+            </Button>
+          )}
+          <Button variant="secondary" size="lg" block onClick={() => void copy()} leadingIcon={<Copy className="size-4" aria-hidden />}>
+            Chép báo giá {result.quantity} hộp
           </Button>
-        )}
-        <Button variant="secondary" size="lg" block onClick={() => void copy()} leadingIcon={<Copy className="size-4" aria-hidden />}>
-          Chép báo giá {result.quantity} hộp
-        </Button>
+        </div>
       </div>
     </StudioCard>
   );

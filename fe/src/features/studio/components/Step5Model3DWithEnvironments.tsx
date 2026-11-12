@@ -119,7 +119,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="relative flex flex-col overflow-hidden rounded-sheet bg-white lg:col-span-8">
-          <div className="relative h-[520px] w-full overflow-hidden bg-landing-canvas">
+          <div className="relative h-[520px] w-full flex-1 overflow-hidden bg-landing-canvas lg:h-auto lg:min-h-[520px]">
             <Box3DView
               dimensions={dimensions}
               foldProgress={foldProgress}

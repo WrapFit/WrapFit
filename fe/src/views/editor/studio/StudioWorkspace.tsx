@@ -3,12 +3,15 @@
 import dynamic from "next/dynamic";
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useCtrlWheelZoom } from "@/hooks/dom";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useAuth } from "@/features/auth";
+import { queryKeys } from "@/hooks/data";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import {
   CircleHelp,
-  Download,
   ShieldCheck,
   ShieldAlert,
   ArrowRight,
@@ -17,6 +20,8 @@ import {
   History,
   Share2,
   RotateCcw,
+  Save,
+  LogIn,
   X,
   Box,
   LayoutPanelTop,
@@ -25,11 +30,11 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Palette,
-  Gift,
   Ruler,
-  ImagePlus,
-  type LucideIcon,
+  Type,
+  Upload,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 import { buttonClass, hasSeenTour, markTourSeen, ProductTour, useTourContinuation } from "@/components/ui";
 import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
@@ -43,7 +48,7 @@ import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanv
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
 import { FitCheckDrawer } from "@/features/studio/components/fitcheck/FitCheckDrawer";
-import { StudioToolDock, StudioToolId } from "@/features/studio/components/StudioToolDock";
+import { DesignFlyout, DesignRail, type DesignRailId } from "@/features/studio/components/DesignRail";
 import { PanelNavigator } from "@/features/studio/components/PanelNavigator";
 import {
   BoxBackgroundPicker,
@@ -67,7 +72,7 @@ import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useSt
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
-import { errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
+import { createProject, errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
 import type { AiImageOutput, BoxStructure, ProjectDetail, SnapshotSummary, TemplateDetail } from "@/types/api";
@@ -93,18 +98,8 @@ const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const HISTORY_GAP_MS = 600;
 const HISTORY_LIMIT = 60;
 
-/** Keys of the step 4 tool dock (StudioToolDock shows the same letters). */
-const TOOL_KEYS: Record<string, StudioToolId> = { v: "select", t: "text", u: "image", s: "stickers", c: "palette", a: "patterns", i: "aiImage" };
-
-type InspectorTab = "style" | "stickers" | "ai" | "dimensions" | "fitcheck";
-
-const INSPECTOR_TABS: { id: InspectorTab; label: string; icon: LucideIcon }[] = [
-  { id: "style", label: "Kiểu", icon: Palette },
-  { id: "stickers", label: "Sticker", icon: Gift },
-  { id: "ai", label: "Ảnh AI", icon: ImagePlus },
-  { id: "dimensions", label: "Cỡ", icon: Ruler },
-  { id: "fitcheck", label: "FitCheck", icon: ShieldCheck },
-];
+/** Keys of the step 4 rail (DesignRail shows the same letters in its tooltips). */
+const RAIL_KEYS: Record<string, DesignRailId> = { t: "text", u: "uploads", s: "elements", c: "colors", a: "patterns", i: "aiImage" };
 
 /** Seamless patterns of older designs (`canvasState.backgroundPattern`), shown on screen only: converted to printed
  *  library backgrounds when the design opens. */
@@ -123,11 +118,11 @@ const DEFAULT_BACKGROUND_PALETTE = "kem-sua";
 /** Library backgrounds (`bg-*` art on a pattern element). */
 const isLibraryBackground = (el: CanvasElement) => el.type === "pattern" && !!parseLibraryArt(el.content)?.design.startsWith("bg-");
 
-/** Icon button of the dark view dock under the stage: 40 px, lime when on. */
-const darkDockButton = (on: boolean, className?: string) =>
+/** Icon button of the light toolbars around the stage: 40 px, orange tint when on. */
+const lightToolButton = (on: boolean, className?: string) =>
   cn(
-    "flex size-10 shrink-0 items-center justify-center rounded-control outline-none transition-[background-color,color,transform] duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:ring-[3px] focus-visible:ring-focus/70",
-    on ? "bg-action text-action-fg" : "text-white/75 hover:bg-white/10 hover:text-white",
+    "flex size-10 shrink-0 items-center justify-center rounded-control outline-none transition-[background-color,color,transform] duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:ring-[3px] focus-visible:ring-focus/50 disabled:pointer-events-none disabled:opacity-35",
+    on ? "bg-fpt-orange-light text-accent" : "text-fg-muted hover:bg-surface-sunken hover:text-fg",
     className,
   );
 
@@ -227,7 +222,7 @@ export function StudioWorkspace({
   const [replay, setReplay] = useState(0);
   const [chainedStep, setChainedStep] = useState<StudioStep | null>(null);
 
-  // Query parameter overrides for demo mode (e.g. from /editor/new or direct links)
+  // Query parameter overrides for demo mode (home page, structure pages, template hub or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
   const initialStructure =
     isDemo && paramStructure && BOX_STRUCTURES.some((s) => s.id === paramStructure)
@@ -322,12 +317,11 @@ export function StudioWorkspace({
   // 2D Canvas State
   const [zoomScale, setZoomScale] = useState<number>(1.0);
   const [showRulers, setShowRulers] = useState<boolean>(true);
-  const [activeTool, setActiveTool] = useState<StudioToolId>("select");
   const [activePanelId, setActivePanelId] = useState<string>("panel_front");
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
 
-  // Inspector Tabs in Step 4: "style" | "dimensions" | "fitcheck" | "stickers"
-  const [activeInspectorTab, setActiveInspectorTab] = useState<InspectorTab>("style");
+  // Step 4 rail: the open flyout panel (Canva-like); clicking the open one again folds it.
+  const [railPanel, setRailPanel] = useState<DesignRailId | null>("elements");
 
   // Step 4 stage: the flat dieline to edit, or the folded box to check it; the dock's text tool opens the composer
   const [artView, setArtView] = useState<"2d" | "3d">("2d");
@@ -646,24 +640,20 @@ export function StudioWorkspace({
     setSelectedElementId(pattern.id);
   }, []);
 
-  // Step 4 tool dock: text and image act on the flat dieline, the others open their inspector tab.
+  // Step 4 rail: "Văn bản" opens the text composer on the flat dieline, "Tải lên" the file picker (shortcut U).
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const selectTool = useCallback(
-    (tool: StudioToolId) => {
-      if (tool === "image") {
-        if (!uploading) imageInputRef.current?.click();
-        return;
-      }
-      setActiveTool(tool);
-      if (tool === "text") {
-        setArtView("2d");
-        setTextComposerOpen(true);
-      }
-      if (tool === "stickers") setActiveInspectorTab("stickers");
-      if (tool === "aiImage") setActiveInspectorTab("ai");
-      if (tool === "palette" || tool === "patterns") setActiveInspectorTab("style");
+  const openTextComposer = useCallback(() => {
+    setArtView("2d");
+    setTextComposerOpen(true);
+  }, []);
+  const toggleRail = useCallback((id: DesignRailId) => setRailPanel((open) => (open === id ? null : id)), []);
+  const selectRailKey = useCallback(
+    (id: DesignRailId) => {
+      setRailPanel(id);
+      if (id === "text") openTextComposer();
+      if (id === "uploads" && !uploading) imageInputRef.current?.click();
     },
-    [uploading]
+    [openTextComposer, uploading]
   );
 
   // Keyboard of step 4: tool letters, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, never while typing in a field.
@@ -681,20 +671,20 @@ export function StudioWorkspace({
         return;
       }
       if (e.altKey || textComposerOpen) return;
-      const tool = TOOL_KEYS[key];
-      if (tool) {
+      const rail = RAIL_KEYS[key];
+      if (rail) {
         e.preventDefault();
-        selectTool(tool);
+        selectRailKey(rail);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [currentStep, readOnly, textComposerOpen, travel, selectTool]);
+  }, [currentStep, readOnly, textComposerOpen, travel, selectRailKey]);
 
   // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
   const openDialog = (id: StudioDialogId) => {
-    // Export and the QR code are built in the browser when there is no saved project (demo, Vercel).
-    if (!project && id !== "export" && id !== "unboxing") {
+    // The QR code is built in the browser when there is no saved project (demo, Vercel); the print file never is.
+    if (!project && id !== "unboxing") {
       toast.show({
         tone: "info",
         title: "Bản dùng thử chưa lưu lên Cloud",
@@ -726,6 +716,43 @@ export function StudioWorkspace({
       if (err instanceof UnsavedChangesError) toast.show({ tone: "error", title: "Chưa hoàn tác được", description: err.message });
       else toast.error(err, "Chưa hoàn tác được");
       setUndoing(false);
+    }
+  };
+
+  // /editor/demo is the only way into the studio (no more /editor/new): a signed-in user saves the demo as a project
+  // (POST /projects) and lands on /editor/<id>, where it autosaves and the print file can be bought and exported.
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { status: authStatus } = useAuth();
+  const [savingProject, setSavingProject] = useState(false);
+  const saveAsProject = async () => {
+    // Images uploaded in the demo live only in this tab (blob: URLs): the API refuses them.
+    const local = elements.filter((el) => el.content.startsWith("blob:"));
+    if (invalidReason) {
+      toast.show({ tone: "error", title: "Chưa lưu được dự án", description: invalidReason });
+      return;
+    }
+    setSavingProject(true);
+    try {
+      const created = await createProject({
+        templateId: boxType,
+        title: payload.title,
+        dimensions,
+        materialSpec: payload.materialSpec,
+        canvasState: { ...payload.canvasState, elements: elements.filter((el) => !el.content.startsWith("blob:")) },
+        occasion: (occasion as never) ?? undefined,
+      });
+      queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+      toast.show({
+        tone: "success",
+        title: "Đã lưu thành dự án",
+        description: local.length ? `${local.length} ảnh tải lên ở bản dùng thử chưa được lưu: hãy tải lại trong dự án.` : "Thiết kế giờ tự lưu lên cloud.",
+      });
+      router.replace(`${ROUTES.editor(created.id)}?step=${currentStep}`);
+    } catch (err) {
+      toast.error(err, "Chưa lưu được dự án");
+      setSavingProject(false);
     }
   };
 
@@ -826,17 +853,26 @@ export function StudioWorkspace({
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
             {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
 
-            {/* Export CTA Button */}
-            <button
-              type="button"
-              onClick={() => openDialog("export")}
-              disabled={readOnly}
-              aria-label="Xuất file in"
-              className="min-h-[40px] px-4 py-2 rounded-full whitespace-nowrap bg-fpt-orange hover:bg-fpt-orange-dark text-white text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-xs disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Xuất file in</span>
-            </button>
+            {isDemo &&
+              (authStatus === "authenticated" ? (
+                <button
+                  type="button"
+                  onClick={() => void saveAsProject()}
+                  disabled={savingProject}
+                  className={buttonClass({ variant: "brand", size: "sm", className: "min-h-10" })}
+                >
+                  <Save aria-hidden />
+                  {savingProject ? "Đang lưu…" : "Lưu dự án"}
+                </button>
+              ) : (
+                <Link href={`${ROUTES.login}?redirect=${encodeURIComponent(ROUTES.editorDemo)}`} className={buttonClass({ variant: "secondary", size: "sm", className: "min-h-10" })}>
+                  <LogIn aria-hidden />
+                  <span className="hidden sm:inline">Đăng nhập để lưu</span>
+                </Link>
+              ))}
+
+            {/* No export button here: the print file is sold. Step 6 shows "Thanh toán", which becomes "Xuất file in"
+                once a package covers the design (ExportPurchaseCard). */}
           </div>
         </div>
       </header>
@@ -963,21 +999,6 @@ export function StudioWorkspace({
               setPieceIndex(0);
             }}
             onNext={() => setCurrentStep(2)}
-            onQuickStart={(template) => {
-              // A finished design: its box, paper, artwork and palette, then on to the size of the gift.
-              setBoxType(template.structure);
-              setDimensions({ ...template.dimensions });
-              setActiveMaterial(materialThemeOf(template.canvasState.materialTheme, template.materialSpec));
-              setProjectTitle(template.title);
-              setOccasion(template.occasion);
-              setElements(template.canvasState.elements);
-              setPaletteId(template.canvasState.elements.map((el) => parseLibraryArt(el.content)).find((ref) => ref && ref.design.startsWith("bg-"))?.palette ?? null);
-              const nextPieces = dielinePiecesOf(template.structure, template.dimensions, project?.formulaVersion);
-              setPieceIndex(Math.max(0, pieceIndexOfPanel(nextPieces, mainPanelOf(template.structure) ?? "")));
-              setActivePanelId(mainPanelOf(template.structure) ?? "panel_front");
-              setSelectedElementId(null);
-              setCurrentStep(2);
-            }}
           />
         )}
 
@@ -1019,297 +1040,82 @@ export function StudioWorkspace({
           />
         )}
 
-        {/* STEP 4: HÌNH IN — a full-height CAD stage: floating tool dock, dieline or folded box in the middle, inspector
-            on the right, view dock at the bottom. On phones the same pieces stack in one column. */}
+        {/* STEP 4: THIẾT KẾ — Canva-like: icon rail on the left, its flyout panel next to it, the stage (dieline or folded
+            box) like a slide in the middle, the faces of the dieline as a page strip and the zoom at the bottom. */}
         {currentStep === 4 && (
           <section
-            aria-label="Hình in trên khuôn bế"
-            className="bg-studio-stage relative flex flex-1 flex-col gap-3 px-4 pb-8 pt-3 lg:block lg:h-[calc(100dvh-72px)] lg:min-h-[660px] lg:overflow-hidden lg:p-0"
+            aria-label="Thiết kế hình in trên khuôn bế"
+            className="flex flex-1 flex-col bg-surface-sunken lg:h-[calc(100dvh-72px)] lg:min-h-[640px] lg:flex-none lg:flex-row lg:overflow-hidden"
           >
-            {/* ── Top bar: 2D / 3D switch and the way to the next step ── */}
-            <div className="pointer-events-none z-30 flex flex-wrap items-center justify-between gap-2 lg:absolute lg:inset-x-4 lg:top-4">
-              <div className="pointer-events-none hidden sm:block sm:w-10" />
+            <DesignRail active={railPanel} onSelect={toggleRail} fitcheckIssues={displayReport.violations.length} />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept={[...PHOTO_TYPES, ...VECTOR_TYPES].join(",")}
+              onChange={(e) => void handleImageUpload(e)}
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden
+            />
 
-              <div className="pointer-events-auto order-last w-full rounded-full bg-surface-raised/90 p-1 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-xl sm:order-none sm:w-auto">
-                <ViewToggle<"2d" | "3d">
-                  label="Chế độ xem"
-                  value={artView}
-                  onChange={setArtView}
-                  options={[
-                    { value: "2d", label: "Khuôn bế 2D", icon: LayoutPanelTop },
-                    { value: "3d", label: "Gập hộp 3D", icon: Box },
-                  ]}
-                />
-              </div>
-
-              <div className="pointer-events-auto flex w-full items-center justify-end gap-2 sm:w-auto">
-                {uploading && (
-                  <span role="status" className="flex min-h-11 items-center gap-1.5 rounded-full bg-info-bg px-3.5 text-label-sm font-semibold text-info-fg">
-                    <ImageUp className="size-4 animate-pulse motion-reduce:animate-none" aria-hidden />
-                    <span className="hidden sm:inline">Đang tải ảnh…</span>
-                  </span>
+            {railPanel && (
+              <DesignFlyout id={railPanel} onClose={() => setRailPanel(null)}>
+                {railPanel === "elements" && placementPanel && (
+                  <LibraryPanel
+                    panel={placementPanel}
+                    geometry={dieline}
+                    onAddElement={(element: CanvasElement) => {
+                      // Backgrounds go under the other elements of the panel, like AI patterns.
+                      if (element.type === "pattern") handleInsertPattern(element);
+                      else handleAddElement(element);
+                      setSelectedElementId(element.id);
+                    }}
+                    selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
+                    onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
+                    box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
+                  />
                 )}
-                <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "min-h-11" })}>
-                  <span>
-                    Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
-                  </span>
-                  <ArrowRight className="size-4" aria-hidden />
-                </button>
-              </div>
-            </div>
 
-            {/* ── Pieces and panels of the dieline (2D only): where new elements land ── */}
-            {artView === "2d" && (
-              <div className="pointer-events-none z-30 flex min-w-0 justify-center lg:absolute lg:left-[84px] lg:right-[396px] lg:top-[76px]">
-              <div className="pointer-events-auto flex min-w-0 max-w-full items-center gap-1 rounded-full bg-surface-raised/90 p-1 shadow-soft-8 ring-1 ring-line/70 backdrop-blur-xl">
-                {pieces.length > 1 && (
-                  <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
-                    {pieces.map((piece, index) => (
-                      <button
-                        key={piece.name}
-                        type="button"
-                        aria-pressed={index === pieceIndex}
-                        onClick={() => {
-                          setPieceIndex(index);
-                          setActivePanelId("all");
-                        }}
-                        className={`min-h-8 whitespace-nowrap rounded-full px-3 text-label-sm font-semibold transition-colors ${
-                          index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
-                        }`}
-                      >
-                        {piece.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} className="min-w-0" />
-              </div>
-              </div>
-            )}
-
-            {/* ── Left: tool dock ── */}
-            <div className="z-30 flex lg:absolute lg:left-4 lg:top-1/2 lg:-translate-y-1/2">
-              <StudioToolDock
-                activeTool={activeTool}
-                onSelectTool={selectTool}
-                showRulers={showRulers}
-                onToggleRulers={() => setShowRulers((on) => !on)}
-                canUndo={historySize.past > 0}
-                canRedo={historySize.future > 0}
-                onUndo={() => travel("undo")}
-                onRedo={() => travel("redo")}
-              />
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept={[...PHOTO_TYPES, ...VECTOR_TYPES].join(",")}
-                onChange={(e) => void handleImageUpload(e)}
-                className="hidden"
-                tabIndex={-1}
-                aria-hidden
-              />
-            </div>
-
-            {/* ── Centre: the stage ── */}
-            <div ref={stageRef} data-tour="studio-stage" className="relative z-10 h-[62vh] min-h-[420px] overflow-hidden rounded-sheet bg-surface-raised/40 ring-1 ring-line/50 lg:absolute lg:inset-auto lg:bottom-[84px] lg:left-[84px] lg:right-[396px] lg:top-[124px] lg:h-auto lg:min-h-0 lg:overflow-visible lg:rounded-none lg:bg-transparent lg:ring-0">
-              {artView === "2d" ? (
-                <DielineCanvas2D
-                  variant="stage"
-                  dieline={dieline}
-                  scale={zoomScale}
-                  onScaleChange={setZoomScale}
-                  elements={elements}
-                  onElementsChange={setElements}
-                  selectedElementId={selectedElementId}
-                  onSelectElement={setSelectedElementId}
-                  backgroundPatternSvg={backgroundPatternSvg}
-                  activePanelId={activePanelId}
-                  onSelectPanel={selectPanel}
-                  showRulers={showRulers}
-                  flaggedElementIds={flaggedElementIds}
-                  textComposerOpen={textComposerOpen}
-                  onTextComposerOpenChange={(open) => {
-                    setTextComposerOpen(open);
-                    if (!open) setActiveTool("select");
-                  }}
-                />
-              ) : (
-                <Box3DView
-                  dimensions={dimensions}
-                  foldProgress={foldProgress}
-                  faceLabels
-                  boxType={boxType}
-                  theme={activeMaterial}
-                  elements={elements}
-                  formulaVersion={project?.formulaVersion}
-                  backgroundPatternSvg={backgroundPatternSvg}
-                  environment="transparent"
-                  interactiveOpenState={lidOpen}
-                  showHud={false}
-                  showStatusBar={false}
-                  frameless
-                  minHeight={false}
-                />
-              )}
-            </div>
-
-            {/* ── Bottom: view dock (zoom in 2D, folding in 3D) ── */}
-            <div className="pointer-events-none z-30 flex justify-center lg:absolute lg:bottom-4 lg:left-[84px] lg:right-[396px]">
-              <div
-                role="toolbar"
-                aria-label={artView === "2d" ? "Thu phóng khuôn bế" : "Gập hộp 3D"}
-                className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-panel bg-landing-ink/95 p-1.5 text-white shadow-popover ring-1 ring-white/10 backdrop-blur-xl no-scrollbar"
-              >
-                {artView === "2d" ? (
-                  <>
-                    <button type="button" onClick={() => setZoomScale((s) => Math.max(0.4, +(s - 0.15).toFixed(2)))} className={darkDockButton(false)} aria-label="Thu nhỏ" title="Thu nhỏ">
-                      <ZoomOut className="size-4" aria-hidden />
+                {railPanel === "text" && (
+                  <div className="space-y-5">
+                    <button type="button" onClick={openTextComposer} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
+                      <Type className="size-4" aria-hidden />
+                      Thêm hộp văn bản
                     </button>
-                    <span className="w-14 text-center font-mono text-label-sm tabular-nums text-white" aria-live="polite">
-                      {Math.round(zoomScale * 100)}%
-                    </span>
-                    <button type="button" onClick={() => setZoomScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)))} className={darkDockButton(false)} aria-label="Phóng to" title="Phóng to">
-                      <ZoomIn className="size-4" aria-hidden />
-                    </button>
-                    <button type="button" onClick={() => setZoomScale(1)} className={darkDockButton(zoomScale === 1)} aria-label="Vừa màn hình" title="Vừa màn hình">
-                      <Maximize2 className="size-4" aria-hidden />
-                    </button>
-                    <span className="mx-1 h-6 w-px shrink-0 bg-white/15" aria-hidden />
-                    <span className="hidden whitespace-nowrap px-2 text-caption text-white/70 xl:inline">
-                      Đang in lên <strong className="font-semibold text-white">{placementPanel?.name ?? "—"}</strong>
-                      {placementPanel && (
-                        <span className="font-mono tabular-nums"> · {formatMm(placementPanel.bounds.width)}×{formatMm(placementPanel.bounds.height)} mm</span>
-                      )}
-                    </span>
-                    <button type="button" onClick={() => setArtView("3d")} className={darkDockButton(false, "px-3 w-auto gap-1.5 text-label-sm font-semibold")}>
-                      <Box className="size-4" aria-hidden />
-                      Gập thử
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLidOpen(false);
-                        setFoldProgress(0);
-                      }}
-                      className={darkDockButton(foldProgress === 0)}
-                      aria-label="Trải phẳng"
-                      title="Trải phẳng"
-                    >
-                      <LayoutPanelTop className="size-4" aria-hidden />
-                    </button>
-                    <label className="flex items-center gap-2.5 px-2">
-                      <span className="whitespace-nowrap font-mono text-cad-spec-micro text-white/70">Phẳng</span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={Math.round(foldProgress * 100)}
-                        onChange={(e) => {
-                          const value = Number(e.target.value) / 100;
-                          setFoldProgress(value);
-                          if (value < 0.9) setLidOpen(false);
-                        }}
-                        aria-label="Mức gập hộp"
-                        aria-valuetext={`${Math.round(foldProgress * 100)}% gập`}
-                        className="studio-dock-range w-28 cursor-pointer sm:w-40"
-                      />
-                      <span className="whitespace-nowrap font-mono text-cad-spec-micro text-white/70">Gập</span>
-                      <span className="w-11 text-right font-mono text-label-sm font-bold tabular-nums text-action">{Math.round(foldProgress * 100)}%</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLidOpen(false);
-                        setFoldProgress(1);
-                      }}
-                      className={darkDockButton(foldProgress === 1 && !lidOpen)}
-                      aria-label="Gập kín"
-                      title="Gập kín"
-                    >
-                      <Box className="size-4" aria-hidden />
-                    </button>
-                    {boxType !== "pillow" && (
-                      <button
-                        type="button"
-                        aria-pressed={lidOpen}
-                        onClick={() => {
-                          setFoldProgress(1);
-                          setLidOpen((open) => !open);
-                        }}
-                        className={darkDockButton(lidOpen, "px-3 w-auto gap-1.5 text-label-sm font-semibold")}
-                      >
-                        <PackageOpen className="size-4" aria-hidden />
-                        {lidOpen ? "Đóng nắp" : "Mở nắp"}
-                      </button>
-                    )}
-                    <span className="mx-1 h-6 w-px shrink-0 bg-white/15" aria-hidden />
-                    <button type="button" onClick={() => setArtView("2d")} className={darkDockButton(false, "px-3 w-auto gap-1.5 text-label-sm font-semibold")}>
-                      <PenTool className="size-4" aria-hidden />
-                      Sửa hình in
-                    </button>
-                  </>
-                )}
-                {!isDemo && (
-                  <>
-                    <span className="mx-1 h-6 w-px shrink-0 bg-white/15 sm:hidden" aria-hidden />
-                    <div className="flex items-center gap-1 sm:hidden">{projectActions}</div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* ── Right: inspector; it ends above the folded Gói button of the corner (lg:bottom-24) ── */}
-            <aside
-              aria-label="Bảng thuộc tính"
-              className="z-20 flex flex-col overflow-hidden rounded-sheet bg-surface-raised/95 shadow-popover ring-1 ring-line/70 backdrop-blur-xl lg:absolute lg:bottom-24 lg:right-4 lg:top-[76px] lg:w-[364px]"
-            >
-              <div className="border-b border-line/70 p-3">
-                <div role="tablist" aria-label="Bảng thuộc tính" className="flex gap-0.5 rounded-full bg-surface-sunken p-1 text-label-sm">
-                  {INSPECTOR_TABS.map((tab) => {
-                    const on = activeInspectorTab === tab.id;
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveInspectorTab(tab.id)}
-                        role="tab"
-                        aria-selected={on}
-                        className={`relative flex min-h-9 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full px-1.5 outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 ${
-                          on ? "bg-surface-raised font-semibold text-fg shadow-xs" : "text-fg-muted hover:text-fg"
-                        }`}
-                      >
-                        <Icon className="size-3.5 shrink-0" aria-hidden />
-                        {tab.label}
-                        {tab.id === "fitcheck" && displayReport.violations.length > 0 && (
-                          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-danger-solid font-mono text-cad-spec-micro text-white">
-                            {Math.min(9, displayReport.violations.length)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
-                {/* TAB 1: STYLE (fonts, palette, AI pattern, seamless patterns) */}
-                {activeInspectorTab === "style" && (
-                  <div className="space-y-5 animate-fadeIn">
+                    <p className="text-caption leading-5 text-fg-muted">
+                      Chữ được đặt lên <strong className="text-fg">{placementPanel?.name ?? "mặt đang chọn"}</strong>. Chọn mặt khác ở dải “Mặt hộp” dưới khung thiết kế.
+                    </p>
                     <FontSelectorCards
                       selectedFontId={selectedFont.id}
                       onSelectFont={(f) => {
                         setSelectedFont(f);
-                        setElements((prev) =>
-                          prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el))
-                        );
+                        setElements((prev) => prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el)));
                       }}
                     />
+                  </div>
+                )}
 
+                {railPanel === "uploads" && (
+                  <div className="space-y-4">
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => imageInputRef.current?.click()}
+                      className={buttonClass({ variant: "brand", size: "lg", block: true })}
+                    >
+                      <Upload className="size-4" aria-hidden />
+                      {uploading ? "Đang tải ảnh…" : "Tải ảnh hoặc logo lên"}
+                    </button>
+                    <ul className="list-disc space-y-1.5 rounded-panel bg-surface-sunken py-3 pl-8 pr-4 text-caption leading-5 text-fg-muted">
+                      <li>Ảnh PNG, JPG, WebP hoặc logo SVG, tối đa 15 MB.</li>
+                      <li>Ảnh cần ≥ 300 DPI ở kích thước in để rõ nét; FitCheck báo khi ảnh mờ.</li>
+                      <li>Logo SVG in sắc nét ở mọi cỡ.</li>
+                    </ul>
+                  </div>
+                )}
+
+                {railPanel === "colors" && (
+                  <div className="space-y-5">
                     <ColorPaletteSelector
                       selectedPaletteId={paletteId}
                       onSelectPalette={(id) => {
@@ -1331,66 +1137,20 @@ export function StudioWorkspace({
                           : null
                       }
                     />
-
                     <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={applyBoxBackground} />
-
-                    <div className="border-t border-line pt-4">
-                      <AiPatternPanel
-                        projectId={project?.id ?? null}
-                        panel={placementPanel}
-                        geometry={dieline}
-                        colors={paletteColors(paletteId)}
-                        onInsert={handleInsertPattern}
-                      />
-                    </div>
-
                   </div>
                 )}
 
-                {/* TAB 2: STICKERS & ASSET BANK */}
-                {activeInspectorTab === "stickers" && placementPanel && (
-                  <div className="animate-fadeIn">
-                    <LibraryPanel
-                      panel={placementPanel}
-                      geometry={dieline}
-                      onAddElement={(element: CanvasElement) => {
-                        // Backgrounds go under the other elements of the panel, like AI patterns.
-                        if (element.type === "pattern") handleInsertPattern(element);
-                        else handleAddElement(element);
-                        setSelectedElementId(element.id);
-                      }}
-                      selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
-                      onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
-                      box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
-                      onApplyKit={(kitElements: CanvasElement[]) =>
-                        // The previous kit's elements go, the user's own stay; the kit's backgrounds go under them.
-                        setElements((prev) => {
-                          const kitHasBackground = kitElements.some((el) => el.type === "pattern");
-                          const own = prev.filter((el) => !el.id.startsWith("kit_") && !(kitHasBackground && isLibraryBackground(el)));
-                          return [...kitElements.filter((el) => el.type === "pattern"), ...own, ...kitElements.filter((el) => el.type !== "pattern")];
-                        })
-                      }
-                    />
-                  </div>
+                {railPanel === "patterns" && (
+                  <AiPatternPanel projectId={project?.id ?? null} panel={placementPanel} geometry={dieline} colors={paletteColors(paletteId)} onInsert={handleInsertPattern} />
                 )}
 
-                {/* TAB: AI IMAGES (xu, docs/19) */}
-                {activeInspectorTab === "ai" && (
-                  <div className="animate-fadeIn">
-                    <AiImagePanel projectId={project?.id ?? null} panel={placementPanel} onPlace={handlePlaceAiImage} />
-                  </div>
-                )}
+                {railPanel === "aiImage" && <AiImagePanel projectId={project?.id ?? null} panel={placementPanel} onPlace={handlePlaceAiImage} />}
 
-                {/* TAB 3: DIMENSIONS CAD */}
-                {activeInspectorTab === "dimensions" && (
-                  <div className="space-y-4 animate-fadeIn">
-                    <DimensionControls dimensions={dimensions} onChange={setDimensions} limits={limits} />
-                  </div>
-                )}
+                {railPanel === "dimensions" && <DimensionControls dimensions={dimensions} onChange={setDimensions} limits={limits} />}
 
-                {/* TAB 4: FITCHECK AUDIT */}
-                {activeInspectorTab === "fitcheck" && (
-                  <div className="space-y-3 animate-fadeIn">
+                {railPanel === "fitcheck" && (
+                  <div className="space-y-3">
                     {!isDemo && (
                       <p className="text-caption leading-relaxed text-fg-muted">
                         {sync.dirty || !sync.serverReport
@@ -1407,8 +1167,226 @@ export function StudioWorkspace({
                     <FitCheckDrawer report={blockingReport ?? displayReport} onAutoFix={handleAutoFix} />
                   </div>
                 )}
+              </DesignFlyout>
+            )}
+
+            {/* ── The workspace: toolbar, stage, page strip and zoom ── */}
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              {/* Context toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-raised px-3 py-2">
+                <div className="flex items-center gap-1">
+                  <button type="button" aria-label="Hoàn tác" title="Hoàn tác · Ctrl+Z" disabled={historySize.past === 0} onClick={() => travel("undo")} className={lightToolButton(false)}>
+                    <Undo2 className="size-4" aria-hidden />
+                  </button>
+                  <button type="button" aria-label="Làm lại" title="Làm lại · Ctrl+Y" disabled={historySize.future === 0} onClick={() => travel("redo")} className={lightToolButton(false)}>
+                    <Redo2 className="size-4" aria-hidden />
+                  </button>
+                  <span className="mx-1 h-6 w-px bg-line" aria-hidden />
+                  <button
+                    type="button"
+                    aria-pressed={showRulers}
+                    aria-label="Thước đo mm"
+                    title={showRulers ? "Ẩn thước mm" : "Hiện thước mm"}
+                    onClick={() => setShowRulers((on) => !on)}
+                    className={lightToolButton(showRulers)}
+                  >
+                    <Ruler className="size-4" aria-hidden />
+                  </button>
+                  {uploading && (
+                    <span role="status" className="ml-1 flex min-h-9 items-center gap-1.5 rounded-full bg-info-bg px-3 text-label-sm font-semibold text-info-fg">
+                      <ImageUp className="size-4 animate-pulse motion-reduce:animate-none" aria-hidden />
+                      <span className="hidden sm:inline">Đang tải ảnh…</span>
+                    </span>
+                  )}
+                </div>
+
+                <ViewToggle<"2d" | "3d">
+                  label="Chế độ xem"
+                  value={artView}
+                  onChange={setArtView}
+                  options={[
+                    { value: "2d", label: "Khuôn bế 2D", icon: LayoutPanelTop },
+                    { value: "3d", label: "Gập hộp 3D", icon: Box },
+                  ]}
+                />
+
+                <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "min-h-10" })}>
+                  <span>
+                    Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
+                  </span>
+                  <ArrowRight className="size-4" aria-hidden />
+                </button>
               </div>
-            </aside>
+
+              {/* Stage: the dieline sits on the grey desk like a slide */}
+              <div ref={stageRef} data-tour="studio-stage" className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-auto lg:min-h-0 lg:flex-1">
+                {artView === "2d" ? (
+                  <DielineCanvas2D
+                    variant="stage"
+                    dieline={dieline}
+                    scale={zoomScale}
+                    onScaleChange={setZoomScale}
+                    elements={elements}
+                    onElementsChange={setElements}
+                    selectedElementId={selectedElementId}
+                    onSelectElement={setSelectedElementId}
+                    backgroundPatternSvg={backgroundPatternSvg}
+                    activePanelId={activePanelId}
+                    onSelectPanel={selectPanel}
+                    showRulers={showRulers}
+                    flaggedElementIds={flaggedElementIds}
+                    textComposerOpen={textComposerOpen}
+                    onTextComposerOpenChange={setTextComposerOpen}
+                  />
+                ) : (
+                  <Box3DView
+                    dimensions={dimensions}
+                    foldProgress={foldProgress}
+                    faceLabels
+                    boxType={boxType}
+                    theme={activeMaterial}
+                    elements={elements}
+                    formulaVersion={project?.formulaVersion}
+                    backgroundPatternSvg={backgroundPatternSvg}
+                    environment="transparent"
+                    interactiveOpenState={lidOpen}
+                    showHud={false}
+                    showStatusBar={false}
+                    frameless
+                    minHeight={false}
+                  />
+                )}
+              </div>
+
+              {/* Bottom bar: where new elements land, zoom (2D) or folding (3D) */}
+              <div
+                role="toolbar"
+                aria-label={artView === "2d" ? "Thu phóng khuôn bế" : "Gập hộp 3D"}
+                className="flex min-h-12 items-center justify-between gap-2 border-t border-line bg-surface-raised px-3 py-1.5 md:pr-24"
+              >
+                {artView === "2d" ? (
+                  <>
+                    {/* Faces of the dieline (like Canva's pages): where new elements land. */}
+                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto no-scrollbar">
+                      {pieces.length > 1 && (
+                        <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
+                          {pieces.map((piece, index) => (
+                            <button
+                              key={piece.name}
+                              type="button"
+                              aria-pressed={index === pieceIndex}
+                              onClick={() => {
+                                setPieceIndex(index);
+                                setActivePanelId("all");
+                              }}
+                              className={`min-h-8 whitespace-nowrap rounded-full px-3 text-label-sm font-semibold transition-colors ${
+                                index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
+                              }`}
+                            >
+                              {piece.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} className="min-w-0" />
+                    </div>
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                      <button type="button" onClick={() => setArtView("3d")} className={lightToolButton(false, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}>
+                        <Box className="size-4" aria-hidden />
+                        Gập thử
+                      </button>
+                      <span className="mx-1 h-6 w-px bg-line" aria-hidden />
+                      <button type="button" onClick={() => setZoomScale((s) => Math.max(0.4, +(s - 0.15).toFixed(2)))} className={lightToolButton(false)} aria-label="Thu nhỏ" title="Thu nhỏ">
+                        <ZoomOut className="size-4" aria-hidden />
+                      </button>
+                      <input
+                        type="range"
+                        min={40}
+                        max={250}
+                        step={5}
+                        value={Math.round(zoomScale * 100)}
+                        onChange={(e) => setZoomScale(Number(e.target.value) / 100)}
+                        aria-label="Mức thu phóng"
+                        className="hidden w-32 cursor-pointer accent-fpt-orange sm:block"
+                      />
+                      <button type="button" onClick={() => setZoomScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)))} className={lightToolButton(false)} aria-label="Phóng to" title="Phóng to">
+                        <ZoomIn className="size-4" aria-hidden />
+                      </button>
+                      <span className="w-12 text-center text-label-sm font-semibold tabular-nums text-fg" aria-live="polite">
+                        {Math.round(zoomScale * 100)}%
+                      </span>
+                      <button type="button" onClick={() => setZoomScale(1)} className={lightToolButton(zoomScale === 1)} aria-label="Vừa màn hình" title="Vừa màn hình">
+                        <Maximize2 className="size-4" aria-hidden />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => setArtView("2d")} className={lightToolButton(false, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}>
+                      <PenTool className="size-4" aria-hidden />
+                      Sửa hình in
+                    </button>
+                    <div className="ml-auto flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLidOpen(false);
+                          setFoldProgress(0);
+                        }}
+                        className={lightToolButton(foldProgress === 0)}
+                        aria-label="Trải phẳng"
+                        title="Trải phẳng"
+                      >
+                        <LayoutPanelTop className="size-4" aria-hidden />
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(foldProgress * 100)}
+                        onChange={(e) => {
+                          const value = Number(e.target.value) / 100;
+                          setFoldProgress(value);
+                          if (value < 0.9) setLidOpen(false);
+                        }}
+                        aria-label="Mức gập hộp"
+                        aria-valuetext={`${Math.round(foldProgress * 100)}% gập`}
+                        className="w-28 cursor-pointer accent-fpt-orange sm:w-40"
+                      />
+                      <span className="w-10 text-right text-label-sm font-semibold tabular-nums text-fg">{Math.round(foldProgress * 100)}%</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLidOpen(false);
+                          setFoldProgress(1);
+                        }}
+                        className={lightToolButton(foldProgress === 1 && !lidOpen)}
+                        aria-label="Gập kín"
+                        title="Gập kín"
+                      >
+                        <Box className="size-4" aria-hidden />
+                      </button>
+                      {boxType !== "pillow" && (
+                        <button
+                          type="button"
+                          aria-pressed={lidOpen}
+                          onClick={() => {
+                            setFoldProgress(1);
+                            setLidOpen((open) => !open);
+                          }}
+                          className={lightToolButton(lidOpen, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}
+                        >
+                          <PackageOpen className="size-4" aria-hidden />
+                          {lidOpen ? "Đóng nắp" : "Mở nắp"}
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+                {!isDemo && <div className="flex items-center gap-1 sm:hidden">{projectActions}</div>}
+              </div>
+            </div>
           </section>
         )}
 
@@ -1447,11 +1425,14 @@ export function StudioWorkspace({
             onBack={() => setCurrentStep(5)}
             onAutoFix={handleAutoFix}
             onExport={() => openDialog("export")}
+            signedIn={authStatus === "authenticated"}
+            onSaveProject={isDemo ? () => void saveAsProject() : undefined}
+            saving={savingProject}
             title={projectTitle}
             projectId={project?.id ?? null}
             onDesign={() => {
               setCurrentStep(4);
-              setActiveInspectorTab("stickers");
+              setRailPanel("elements");
             }}
           />
         )}
@@ -1476,9 +1457,9 @@ export function StudioWorkspace({
       )}
 
       {/* ================= 3. PROJECT DIALOGS ================= */}
-      {dialog === "export" && (
+      {project && dialog === "export" && (
         <ExportDialog
-          projectId={project?.id ?? "demo-project"}
+          projectId={project.id}
           flush={sync.flush}
           onBlocked={showBlockingReport}
           onClose={() => setDialog(null)}

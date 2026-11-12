@@ -14,7 +14,7 @@ import { SINGLE_EXPORT_PRICE, formatVndShort } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import type { ExportFileType, ExportJob } from "@/types/api";
 import { StudioDialog } from "../dialog/StudioDialog";
-import { buildPrintFile, fileNameFor, isDemoProjectId, OFFLINE_DEMO, saveFile, type ExportDesign } from "./offline";
+import { buildPrintFile, fileNameFor, isDemoProjectId, saveFile, type ExportDesign } from "./offline";
 
 const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
@@ -51,8 +51,6 @@ const STATUS_LABELS: Record<ExportJob["status"], string> = {
   FAILED: "Lỗi",
 };
 
-/** Clean formats: without Pro or an unlocked design they need one export credit (docs/16 §5.2). */
-const isWatermarkable = (type: ExportFileType) => type === "PDF_A4_PRINT";
 
 /** A 402 of the export: confirm spending a credit, or buy one. */
 interface CreditAsk {
@@ -102,7 +100,8 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
   /** VietQR checkout of one export credit, opened from the "out of credits" box; the export resumes once paid. */
   const [buying, setBuying] = useState<ExportFileType | null>(null);
   // No backend (Vercel, demo project, API unreachable): the files are built in the browser from the design on screen.
-  const [offline, setOffline] = useState(() => Boolean(design) && (OFFLINE_DEMO || isDemoProjectId(projectId)));
+  // Files are built in the browser only as a fallback for a design the server confirmed as paid (see start()).
+  const [offline, setOffline] = useState(false);
   const [localJob, setLocalJob] = useState<LocalJob | null>(null);
   const [localJobs, setLocalJobs] = useState<LocalJob[]>(() => localHistory.get(projectId) ?? []);
 
@@ -207,7 +206,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
         const balance = err.body?.balance ?? 0;
         setCreditAsk({ fileType, balance, empty: err.code === "INSUFFICIENT_CREDITS" || balance < 1 });
         void queryClient.invalidateQueries({ queryKey: accessKey });
-      } else if (design && !(err instanceof ApiError && err.status < 500)) {
+      } else if (design && access.data?.unlocked && !(err instanceof ApiError && err.status < 500)) {
         // The API cannot be reached (offline demo, server down): build the file in the browser instead.
         setOffline(true);
         await startLocal(fileType);
@@ -264,8 +263,8 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
             <span>
               <span className="font-semibold text-sm text-landing-ink group-hover:text-fpt-orange block">{format.title}</span>
               {locked && (
-                <Badge size="sm" tone={isWatermarkable(format.type) ? "warning" : "neutral"} className="mt-1">
-                  {isWatermarkable(format.type) ? "Có watermark" : "Cần 1 lượt xuất"}
+                <Badge size="sm" tone="neutral" className="mt-1">
+                  Dùng 1 lượt xuất
                 </Badge>
               )}
               <span className="text-xs text-landing-muted block mt-0.5 leading-relaxed">{format.hint}</span>
@@ -290,8 +289,8 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
                 <Button size="sm" onClick={() => setBuying(creditAsk.fileType)}>
                   Mua 1 lượt · {formatVndShort(SINGLE_EXPORT_PRICE)}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => void start("PDF_A4_PRINT")}>
-                  Xuất PDF A4 có watermark
+                <Button variant="secondary" size="sm" onClick={() => setCreditAsk(null)}>
+                  Để sau
                 </Button>
               </>
             ) : (
@@ -307,7 +306,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
           }
         >
           {creditAsk.empty
-            ? `File ${FORMAT_NAMES[creditAsk.fileType]} sạch cần 1 lượt xuất hoặc gói Pro. PDF A4 có watermark ở tai dán vẫn miễn phí.`
+            ? `File ${FORMAT_NAMES[creditAsk.fileType]} cần 1 lượt xuất hoặc gói Pro. WrapFit không xuất file in khi chưa thanh toán.`
             : `1 lượt mở khóa file sạch mọi định dạng (PDF CMYK, SVG, DXF, PDF A4) của bản thiết kế này trong 7 ngày. Sửa thiết kế thì cần lượt mới.`}
         </Alert>
       )}
