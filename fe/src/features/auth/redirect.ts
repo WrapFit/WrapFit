@@ -13,25 +13,22 @@ export function safeRedirect(value: string | null | undefined, fallback: string 
   return value;
 }
 
-/** Set once the home tour has run: from then on a sign-in opens the workspace instead of the home page. */
+/** Name of the home tour; its "seen" flag lives under `wrapfit.tour.<id>` (localStorage). */
 export const ONBOARDING_TOUR_ID = "home-v1";
 
+/** Home page opened after signing in: `?welcome=1` starts the guided tour there (views/home). */
+export const WELCOME_HOME = `${ROUTES.home}?welcome=1`;
+
 /**
- * Where to go after signing in (browser only). An explicit `?redirect=` wins; otherwise a first-time user lands on
- * the home page, where the guided tour walks through the product, and a returning one on the dashboard.
+ * Where to go after signing in. An explicit `?redirect=` wins; otherwise a maker lands on the home page with the
+ * guided tour (skippable). The tour used to run once per browser, so any later sign-in, another account or one
+ * after the demo, opened the dashboard with no guide.
  */
 export function afterSignInTarget(redirect: string | null | undefined, user?: SafeUser | null): string {
   const explicit = safeRedirect(redirect, "");
   // An administrator goes to the admin console: no maker onboarding, and a `?redirect=` only into /admin.
   if (user && isRealAdmin(user)) return explicit.startsWith(ADMIN_HOME) ? explicit : ADMIN_HOME;
-  if (explicit) return explicit;
-  let onboarded = true;
-  try {
-    onboarded = window.localStorage.getItem(`wrapfit.tour.${ONBOARDING_TOUR_ID}`) !== null;
-  } catch {
-    // Storage blocked: treat as returning, never loop through the home page.
-  }
-  return onboarded ? DEFAULT_AFTER_LOGIN : `${ROUTES.home}?welcome=1`;
+  return explicit || WELCOME_HOME;
 }
 
 /** Login page that comes back to `path` (path + query of the current page) once signed in. */

@@ -137,7 +137,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <HeaderSearch />
           {user && !isRealAdmin(user) && <XuBalancePill className="hidden sm:inline-flex" />}
-          {showCta && (
+          {showCta && !isRealAdmin(user) && (
             <Link
               href={ROUTES.editorDemo}
               data-tour="header-start"

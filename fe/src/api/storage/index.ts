@@ -34,15 +34,10 @@ export async function uploadFileToStorage(
     const { mockUpload } = await import("@/services/mock-api");
     return { fileUrl: await mockUpload(file, purpose) };
   }
-  try {
-    const ticket = await presignUpload({ purpose, contentType: file.type, size: file.size, projectId });
-    // Signed URL of the bucket: no credentials, exactly the signed headers.
-    const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
-    if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
-    return { fileUrl: ticket.fileUrl };
-  } catch (err) {
-    console.warn("[Storage API] Upload offline fallback:", err);
-    // Return object URL for demo mode
-    return { fileUrl: URL.createObjectURL(file) };
-  }
+  const ticket = await presignUpload({ purpose, contentType: file.type, size: file.size, projectId });
+  // Signed URL of the bucket: no credentials, exactly the signed headers.
+  const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
+  // No blob: URL fallback: the image would show in this tab only, the save would be refused and it would vanish.
+  if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
+  return { fileUrl: ticket.fileUrl };
 }
