@@ -1,6 +1,9 @@
 /* ds-artwork: logo lockup: its sizes and gradient colours are part of the mark. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
+"use client";
+
 import Link from "next/link";
-import React, { useId } from "react";
+import React, { useContext, useId } from "react";
+import { ADMIN_HOME, AuthContext, isRealAdmin } from "@/features/auth";
 import { cn } from "@/utils/helpers";
 import { MARK_H, MARK_ORANGE, MARK_PIECES } from "./WrapFitMark";
 
@@ -30,11 +33,14 @@ const WORD_STOPS = [
 export function LandingLogo({ tone = "dark", className, size = "md" }: LandingLogoProps) {
   const height = HEIGHT_PX[size];
   const uid = useId().replace(/:/g, "");
+  // An administrator's home is the console: the logo never leads them into the maker site.
+  const user = useContext(AuthContext)?.user ?? null;
+  const isAdmin = isRealAdmin(user);
 
   return (
     <Link
-      href="/"
-      aria-label="WrapFit — trang chủ"
+      href={isAdmin ? ADMIN_HOME : "/"}
+      aria-label={isAdmin ? "WrapFit — trang quản trị" : "WrapFit — trang chủ"}
       data-logo=""
       data-tone={tone}
       className={cn("group inline-flex shrink-0 items-center select-none", className)}

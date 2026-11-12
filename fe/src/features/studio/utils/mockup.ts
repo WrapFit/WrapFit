@@ -38,11 +38,13 @@ export function renderMockup(frame: HTMLCanvasElement, backdrop: Backdrop, forma
   ctx.fillStyle = light;
   ctx.fillRect(0, 0, width, height);
 
-  // The stage frame keeps its aspect; it fills most of the image, a little low like a product shot.
-  const scale = Math.min((width * 0.92) / frame.width, (height * 0.86) / frame.height);
-  const w = frame.width * scale;
-  const h = frame.height * scale;
-  ctx.drawImage(frame, (width - w) / 2, (height - h) / 2 + height * 0.03, w, h);
+  // Only the box (and its shadow), cut out of the wide stage frame: each format then frames it at its own aspect.
+  // Pasting the whole frame made the three sizes the same small landscape picture on more or less background.
+  const box = opaqueBounds(frame);
+  const scale = Math.min((width * 0.9) / box.width, (height * 0.86) / box.height);
+  const w = box.width * scale;
+  const h = box.height * scale;
+  ctx.drawImage(frame, box.x, box.y, box.width, box.height, (width - w) / 2, (height - h) / 2 + height * 0.02, w, h);
 
   ctx.font = `600 ${Math.round(height * 0.022)}px Inter, system-ui, sans-serif`;
   ctx.textAlign = "right";
@@ -53,6 +55,51 @@ export function renderMockup(frame: HTMLCanvasElement, backdrop: Backdrop, forma
   return new Promise((resolve, reject) =>
     canvas.toBlob((png) => (png ? resolve(png) : reject(new Error("PNG encoding failed"))), "image/png")
   );
+}
+
+/** Rectangle of the opaque pixels of `frame` (the box, not its soft shadow) (the whole frame when it has none or cannot be read). */
+function opaqueBounds(frame: HTMLCanvasElement): { x: number; y: number; width: number; height: number } {
+  const whole = { x: 0, y: 0, width: frame.width, height: frame.height };
+  // Scanned on a small copy: fast, and a few pixels of slack do not matter.
+  const step = Math.max(1, Math.ceil(Math.max(frame.width, frame.height) / 400));
+  const sw = Math.ceil(frame.width / step);
+  const sh = Math.ceil(frame.height / step);
+  const probe = document.createElement("canvas");
+  probe.width = sw;
+  probe.height = sh;
+  const pctx = probe.getContext("2d", { willReadFrequently: true });
+  if (!pctx || sw === 0 || sh === 0) return whole;
+  pctx.drawImage(frame, 0, 0, sw, sh);
+  let data: Uint8ClampedArray;
+  try {
+    data = pctx.getImageData(0, 0, sw, sh).data;
+  } catch {
+    return whole;
+  }
+  let minX = sw, minY = sh, maxX = -1, maxY = -1;
+  for (let y = 0; y < sh; y++) {
+    for (let x = 0; x < sw; x++) {
+      // Above the ground shadow (ShadowMaterial, opacity 0.18 ≈ alpha 46): the box itself is opaque.
+      if (data[(y * sw + x) * 4 + 3] > 128) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return whole;
+  // Back to frame pixels, with room around the box for its soft shadow (never a hard edge cut through it).
+  const padX = Math.ceil((maxX - minX + 1) * 0.3);
+  const padY = Math.ceil((maxY - minY + 1) * 0.3);
+  const x = Math.max(0, (minX - padX) * step);
+  const y = Math.max(0, (minY - padY) * step);
+  return {
+    x,
+    y,
+    width: Math.min(frame.width, (maxX + 1 + padX) * step) - x,
+    height: Math.min(frame.height, (maxY + 1 + padY) * step) - y,
+  };
 }
 
 /** Saves a blob under this file name (the browser's download). */

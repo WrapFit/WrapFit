@@ -1077,7 +1077,7 @@ export function StudioWorkspace({
             aria-label="Thiết kế hình in trên khuôn bế"
             className="flex flex-1 flex-col bg-surface-sunken lg:h-[calc(100dvh-72px)] lg:min-h-[640px] lg:flex-none lg:flex-row lg:overflow-hidden"
           >
-            <DesignRail active={railPanel} onSelect={toggleRail} fitcheckIssues={displayReport.violations.length} />
+            <DesignRail active={railPanel} onSelect={toggleRail} fitcheckIssues={displayReport.violations.filter((v) => v.severity !== "info").length} />
             <input
               ref={imageInputRef}
               type="file"

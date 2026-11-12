@@ -80,7 +80,7 @@ export default function HomePage() {
 }
 
 /**
- * The onboarding tour, when the address carries `?welcome=1` (set by the sign-in page for a first sign-in).
+ * The onboarding tour, when the address carries `?welcome=1` (set by the sign-in page after a sign-in).
  * useSearchParams follows client navigations, so it also works when the sign-in page routes here without a reload.
  */
 function WelcomeTour() {
@@ -91,6 +91,8 @@ function WelcomeTour() {
       id={ONBOARDING_TOUR_ID}
       steps={HOME_TOUR}
       autoStart={welcome}
+      // Right after signing in the tour always runs, even if this browser saw it before (another account, the demo).
+      force={welcome}
       startDelayMs={900}
       onClose={(completed) => {
         // Drop `?welcome=1` from the address without a navigation, so a reload does not look like a first visit.

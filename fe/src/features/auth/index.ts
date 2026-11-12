@@ -3,5 +3,5 @@ export { AuthProvider, useAuth, AuthContext, signedInOnPurpose } from "./AuthPro
 export type { AuthContextValue, AuthStatus } from "./AuthProvider";
 export { RequireAuth } from "./RequireAuth";
 export { DEMO_USER } from "@/features/dashboard/demoData";
-export { afterSignInTarget, loginUrl, ONBOARDING_TOUR_ID, safeRedirect } from "./redirect";
-export { ADMIN_HOME, homeForRole, isAccountPage, isDemoUser, isRealAdmin } from "./roles";
+export { afterSignInTarget, loginUrl, ONBOARDING_TOUR_ID, safeRedirect, WELCOME_HOME } from "./redirect";
+export { ADMIN_HOME, homeForRole, isAccountPage, isDemoUser, isMakerOnlyPage, isRealAdmin } from "./roles";

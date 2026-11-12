@@ -1,7 +1,7 @@
 /** Uploads to object storage through pre-signed URLs (`be/src/storage`). Rules: docs/06, section 4. */
 
 import { OFFLINE_DEMO } from "@/config";
-import { request } from "@/services/api";
+import { ApiError, request } from "@/services/api";
 import type { PresignedUpload, PresignUploadRequest, StorageUsage, UploadPurpose } from "@/types/api";
 import { DEMO_STORAGE_USAGE } from "@/features/dashboard/demoData";
 
@@ -34,15 +34,21 @@ export async function uploadFileToStorage(
     const { mockUpload } = await import("@/services/mock-api");
     return { fileUrl: await mockUpload(file, purpose) };
   }
+  let ticket: PresignedUpload;
   try {
-    const ticket = await presignUpload({ purpose, contentType: file.type, size: file.size, projectId });
-    // Signed URL of the bucket: no credentials, exactly the signed headers.
-    const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
-    if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
-    return { fileUrl: ticket.fileUrl };
+    ticket = await presignUpload({ purpose, contentType: file.type, size: file.size, projectId });
   } catch (err) {
-    console.warn("[Storage API] Upload offline fallback:", err);
-    // Return object URL for demo mode
-    return { fileUrl: URL.createObjectURL(file) };
+    // Backend out of reach (a deploy without its API): keep the image like the offline demo, as a data URL that
+    // survives a reload. A real refusal (format, size, quota) is the user's to see.
+    const unreachable = !(err instanceof ApiError) || err.status === 0 || err.status === 404 || err.status >= 500;
+    if (!unreachable) throw err;
+    console.warn("[Storage API] Backend unreachable, keeping the upload in the browser:", err);
+    const { mockUpload } = await import("@/services/mock-api");
+    return { fileUrl: await mockUpload(file, purpose) };
   }
+  // Signed URL of the bucket: no credentials, exactly the signed headers.
+  const res = await fetch(ticket.uploadUrl, { method: ticket.method, headers: ticket.headers, body: file });
+  // No blob: URL fallback: the image would show in this tab only, the save would be refused and it would vanish.
+  if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
+  return { fileUrl: ticket.fileUrl };
 }

@@ -31,3 +31,14 @@ const ACCOUNT_PAGES = [ROUTES.profile, ROUTES.settings];
 export function isAccountPage(pathname: string): boolean {
   return ACCOUNT_PAGES.some((page) => pathname === page || pathname.startsWith(`${page}/`));
 }
+
+/**
+ * Maker features an administrator must not open (the studio, cart, checkout, payments, affiliate). Links to them from
+ * the home page or a typed address send the administrator back to the console. /dashboard is guarded by
+ * WorkspaceShell, which keeps the account pages open.
+ */
+const MAKER_ONLY_PREFIXES = ["/editor", "/cart", "/checkout", "/payments", "/affiliate"];
+
+export function isMakerOnlyPage(pathname: string): boolean {
+  return MAKER_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}

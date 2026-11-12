@@ -12,7 +12,7 @@ import type { SafeUser } from "@/types/api";
 import { OFFLINE_DEMO } from "@/config";
 import { DEMO_USER } from "@/features/dashboard/demoData";
 import { setMockSession } from "@/services/mock-api/store";
-import { ADMIN_HOME, isAccountPage, isRealAdmin } from "./roles";
+import { ADMIN_HOME, isAccountPage, isMakerOnlyPage, isRealAdmin } from "./roles";
 
 /** Set once an administrator has been sent to /admin in this tab: afterwards they may browse the site freely. */
 const ADMIN_LANDED_KEY = "wrapfit_admin_landed";
@@ -160,13 +160,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 /**
  * Opening the site with an administrator session (a fresh tab, `npm run dev`) lands straight on the admin console
- * instead of the maker's pages. Only the first page of the tab is redirected, so the admin can still visit the site.
+ * instead of the maker's pages. Only the first page of the tab is redirected, so the admin can still visit the site,
+ * but never the maker features (studio, cart, checkout…): those always send the admin back to the console.
  */
 function AdminLanding({ user }: { user: SafeUser | null }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   useEffect(() => {
     if (!isRealAdmin(user)) return;
+    if (isMakerOnlyPage(pathname)) {
+      router.replace(ADMIN_HOME);
+      return;
+    }
     try {
       if (window.sessionStorage.getItem(ADMIN_LANDED_KEY) === "1") return;
       window.sessionStorage.setItem(ADMIN_LANDED_KEY, "1");

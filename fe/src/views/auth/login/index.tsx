@@ -16,7 +16,7 @@ import { googleSignInUrl, login, register } from "@/api/auth";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 import { ROUTES } from "@/constants";
-import { ADMIN_HOME, afterSignInTarget, isDemoUser, ONBOARDING_TOUR_ID, signedInOnPurpose, useAuth } from "@/features/auth";
+import { ADMIN_HOME, afterSignInTarget, isDemoUser, ONBOARDING_TOUR_ID, signedInOnPurpose, useAuth, WELCOME_HOME } from "@/features/auth";
 import { DEMO_ADMIN_USER, DEMO_USER, DEMO_USERS } from "@/features/dashboard/demoData";
 import { useHydrated } from "@/hooks/dom";
 import { ApiError, isApiError } from "@/services/api";
@@ -163,7 +163,7 @@ function AuthLoginScreen({
   const goToTarget = useCallback((user?: SafeUser | null) => {
     if (redirected.current) return;
     redirected.current = true;
-    // First sign-in on this browser: the home page and its guided tour, not straight into the workspace.
+    // The home page and its guided tour (or the `?redirect=` page), not straight into the workspace.
     router.replace(afterSignInTarget(redirectParam, user));
   }, [redirectParam, router]);
 
@@ -507,7 +507,7 @@ function AuthLoginScreen({
                           redirected.current = true;
                           setDemoOpen(false);
                           signedIn(DEMO_USER);
-                          router.replace(`${ROUTES.home}?welcome=1`);
+                          router.replace(WELCOME_HOME);
                         }}
                       />
                       <DemoChoice
