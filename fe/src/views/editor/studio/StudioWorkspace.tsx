@@ -726,20 +726,34 @@ export function StudioWorkspace({
   const { status: authStatus } = useAuth();
   const [savingProject, setSavingProject] = useState(false);
   const saveAsProject = async () => {
-    // Images uploaded in the demo live only in this tab (blob: URLs): the API refuses them.
-    const local = elements.filter((el) => el.content.startsWith("blob:"));
     if (invalidReason) {
       toast.show({ tone: "error", title: "Chưa lưu được dự án", description: invalidReason });
       return;
     }
     setSavingProject(true);
     try {
+      // Images uploaded in the demo live only in this tab (blob: URLs) and the API refuses them: the user is signed in
+      // now, so they go to WrapFit storage first. Only the ones that fail are left out.
+      const uploaded = new Map<string, string | null>();
+      for (const url of new Set(elements.filter((el) => el.content.startsWith("blob:")).map((el) => el.content))) {
+        try {
+          const blob = await (await fetch(url)).blob();
+          const purpose = VECTOR_TYPES.includes(blob.type) ? "LOGO" : "IMAGE";
+          uploaded.set(url, (await uploadFileToStorage(blob, purpose)).fileUrl);
+        } catch {
+          uploaded.set(url, null);
+        }
+      }
+      const local = [...uploaded.values()].filter((v) => v === null);
+      const savedElements = elements
+        .map((el) => (uploaded.has(el.content) ? { ...el, content: uploaded.get(el.content) ?? "" } : el))
+        .filter((el) => el.content !== "");
       const created = await createProject({
         templateId: boxType,
         title: payload.title,
         dimensions,
         materialSpec: payload.materialSpec,
-        canvasState: { ...payload.canvasState, elements: elements.filter((el) => !el.content.startsWith("blob:")) },
+        canvasState: { ...payload.canvasState, elements: savedElements },
         occasion: (occasion as never) ?? undefined,
       });
       queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
@@ -747,7 +761,7 @@ export function StudioWorkspace({
       toast.show({
         tone: "success",
         title: "Đã lưu thành dự án",
-        description: local.length ? `${local.length} ảnh tải lên ở bản dùng thử chưa được lưu: hãy tải lại trong dự án.` : "Thiết kế giờ tự lưu lên cloud.",
+        description: local.length ? `${local.length} ảnh tải lên ở bản dùng thử chưa lưu được: hãy tải lại trong dự án.` : "Thiết kế giờ tự lưu lên cloud.",
       });
       router.replace(`${ROUTES.editor(created.id)}?step=${currentStep}`);
     } catch (err) {
