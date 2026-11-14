@@ -25,6 +25,7 @@ import { EventsModule } from './events';
 import { BaseModule } from './base';
 import { ProjectsModule } from './projects';
 import { PublicShowcaseModule } from './public-showcase';
+import { ReviewsModule } from './reviews';
 import { StorageMaintenanceModule, StorageModule } from './storage';
 import { LibraryModule } from './library';
 import { TemplatesModule } from './templates';
@@ -61,6 +62,7 @@ import { CloudinaryModule } from './shared/cloudinary';
     ProjectsModule,
     CollectionsModule,
     PublicShowcaseModule,
+    ReviewsModule,
     TemplatesModule,
     LibraryModule,
     AiModule,

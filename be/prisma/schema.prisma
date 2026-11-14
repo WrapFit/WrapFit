@@ -114,25 +114,26 @@ model User {
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  referredBy    User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
-  referrals     User[]              @relation("UserReferrals")
-  refreshTokens RefreshToken[]
-  authTokens    AuthToken[]
-  projects      PackagingProject[]
-  productEvents ProductEvent[]
-  collections   ProjectCollection[]
-  mockups       SocialMockup[]
-  projectLikes  ProjectLike[]
-  storedFiles   StoredFile[]
-  aiGenerations AiGeneration[]
-  aiImageJobs   AiImageJob[]
-  payments      Payment[]
-  creditLots    CreditLot[]
-  exportUnlocks ExportUnlock[]
-  subscriptions Subscription[]
-  orders        Order[]
-  shopMember    PrintShopMember?
-  resolvedBankTransactions BankTransaction[] @relation("BankTransactionResolver")
+  referredBy               User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals                User[]              @relation("UserReferrals")
+  refreshTokens            RefreshToken[]
+  authTokens               AuthToken[]
+  projects                 PackagingProject[]
+  productEvents            ProductEvent[]
+  collections              ProjectCollection[]
+  mockups                  SocialMockup[]
+  projectLikes             ProjectLike[]
+  storedFiles              StoredFile[]
+  aiGenerations            AiGeneration[]
+  aiImageJobs              AiImageJob[]
+  designComments           DesignComment[]
+  payments                 Payment[]
+  creditLots               CreditLot[]
+  exportUnlocks            ExportUnlock[]
+  subscriptions            Subscription[]
+  orders                   Order[]
+  shopMember               PrintShopMember?
+  resolvedBankTransactions BankTransaction[]   @relation("BankTransactionResolver")
 
   @@index([referredById])
   @@map("users")
@@ -282,6 +283,8 @@ model PackagingProject {
   fileRefs       ProjectFileRef[]
   exportUnlocks  ExportUnlock[]
   orderItems     OrderItem[]
+  review         ProjectReview?
+  comments       DesignComment[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -392,12 +395,12 @@ model StoredFile {
   confirmedAt DateTime?   @map("confirmed_at") @db.Timestamptz(3)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  refs    ProjectFileRef[]
-  library LibraryAsset?
-  aiImage AiImageOutput?
-  aiToolJobs AiImageJob[] @relation("AiImageToolUpload")
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  refs       ProjectFileRef[]
+  library    LibraryAsset?
+  aiImage    AiImageOutput?
+  aiToolJobs AiImageJob[]      @relation("AiImageToolUpload")
 
   @@index([userId])
   @@index([projectId])
@@ -528,10 +531,10 @@ model AiImageJob {
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
 
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  source  AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
-  sourceFile StoredFile?   @relation("AiImageToolUpload", fields: [sourceFileId], references: [id], onDelete: SetNull)
-  outputs AiImageOutput[] @relation("AiImageJobOutputs")
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source     AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
+  sourceFile StoredFile?     @relation("AiImageToolUpload", fields: [sourceFileId], references: [id], onDelete: SetNull)
+  outputs    AiImageOutput[] @relation("AiImageJobOutputs")
 
   @@unique([userId, clientRequestId])
   @@index([userId, createdAt])
@@ -540,6 +543,45 @@ model AiImageJob {
   @@index([sourceOutputId])
   @@index([sourceFileId])
   @@map("ai_image_jobs")
+}
+
+// Link duyệt mẫu của một dự án (docs/23 S23): khách / xưởng in mở bằng token, không cần tài khoản, góp ý và bấm
+// "Duyệt in". Duyệt gắn với phiên bản thiết kế lúc bấm: sửa thiết kế sau đó thì mẫu thành "đã sửa sau khi duyệt".
+// Tắt link chỉ xóa token, giữ lại lần duyệt.
+model ProjectReview {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  projectId       String    @unique @map("project_id") @db.Uuid
+  token           String?   @unique
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  approvedAt      DateTime? @map("approved_at") @db.Timestamptz(3)
+  approvedBy      String?   @map("approved_by") // Tên người duyệt tự gõ
+  approvedVersion Int?      @map("approved_version") // packaging_projects.version lúc duyệt
+
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_reviews")
+}
+
+// Góp ý trên thiết kế (docs/23 S23): của chủ dự án (author_user_id) hoặc của khách qua link duyệt (chỉ có tên).
+// Có thể ghim vào một mặt hộp (panel_id) tại một điểm (x, y mm trên mặt).
+model DesignComment {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  projectId    String    @map("project_id") @db.Uuid
+  authorUserId String?   @map("author_user_id") @db.Uuid
+  authorName   String    @map("author_name")
+  body         String
+  panelId      String?   @map("panel_id")
+  x            Float?
+  y            Float?
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User?            @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([authorUserId])
+  @@map("design_comments")
 }
 
 // Một ảnh một job tạo ra. Ảnh chưa đặt lên thiết kế nào được giữ tới keep_until (30 ngày) rồi bị dọn như ảnh upload;
@@ -641,20 +683,20 @@ enum SubscriptionStatus {
 // One payment request (VietQR transfer confirmed by SePay, VNPay sandbox for demo users, or simulated). `reference` is
 // the transfer content.
 model Payment {
-  id        String         @id @default(uuid(7)) @db.Uuid
-  userId    String         @map("user_id") @db.Uuid
-  purpose   PaymentPurpose
-  amountVnd Int            @map("amount_vnd")
-  reference String         @unique // "WF" + 6 ký tự [A-Z0-9] (CHECK), khớp nội dung chuyển khoản
-  status    PaymentStatus  @default(PENDING)
-  expiresAt DateTime       @map("expires_at") @db.Timestamptz(3)
-  paidAt    DateTime?      @map("paid_at") @db.Timestamptz(3)
-  metadata  Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
+  id            String               @id @default(uuid(7)) @db.Uuid
+  userId        String               @map("user_id") @db.Uuid
+  purpose       PaymentPurpose
+  amountVnd     Int                  @map("amount_vnd")
+  reference     String               @unique // "WF" + 6 ký tự [A-Z0-9] (CHECK), khớp nội dung chuyển khoản
+  status        PaymentStatus        @default(PENDING)
+  expiresAt     DateTime             @map("expires_at") @db.Timestamptz(3)
+  paidAt        DateTime?            @map("paid_at") @db.Timestamptz(3)
+  metadata      Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
   provider      PaymentProvider      @default(VIETQR) // Chọn lúc tạo: user.isDemo ? VNPAY : VIETQR
   confirmedVia  PaymentConfirmation? @map("confirmed_via") // Đường đã xác nhận, null khi chưa PAID
   providerTxnId String?              @map("provider_txn_id") // id giao dịch SePay hoặc vnp_TransactionNo
-  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   creditLots       CreditLot[]
