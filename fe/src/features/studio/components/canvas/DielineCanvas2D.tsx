@@ -1,12 +1,40 @@
 "use client";
 
 import { stageBarButton } from "@/features/studio/components/studioUi";
-import React, { useId, useMemo, useState, useRef } from "react";
-import { artDesignOf, BLEED_BOX_MM, DielineGeometry, CanvasElement, ean13Digits, matchesPanel, parseLibraryArt, safeMarginsOf, SAFE_MARGIN_CUT_MM, SAFE_MARGIN_CREASE_MM, TEXT_FONT_WEIGHT } from "@wrapfit/shared";
+import React, { useEffect, useId, useMemo, useState, useRef } from "react";
+import {
+  BLEED_BOX_MM,
+  canMoveLayer,
+  duplicateElements,
+  envelopeOf,
+  resizeBox,
+  selectionOf,
+  snapBox,
+  type Handle,
+  type SnapLine,
+  FINISH_SPOTS,
+  DielineGeometry,
+  CanvasElement,
+  isBackground,
+  isMovable,
+  matchesPanel,
+  moveLayer,
+  newElementId,
+  orderElements,
+  panelPrintBox,
+  safeMarginsOf,
+  SAFE_MARGIN_CUT_MM,
+  SAFE_MARGIN_CREASE_MM,
+  sideOf,
+  type LayerMove,
+  type PrintSide,
+} from "@wrapfit/shared";
 import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Info } from "lucide-react";
-import { cssFontFamily, layoutBoxText, useBoxFonts } from "./boxText";
+import { layoutBoxText, useBoxFonts } from "./boxText";
 import { ArtShapes, elementArt } from "../library/elementArt";
+import { FramedImage, TextVisual, useImageSizes } from "./elementVisuals";
 import { formatMm } from "@/features/studio/utils/dieline";
+import { elementLabel } from "@/features/studio/utils/elementLabel";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
 import { Checkbox } from "@/components/ui";
@@ -18,15 +46,6 @@ const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, 
 const NEW_TEXT_MARGIN_MM = SAFE_MARGIN_CUT_MM + 1;
 /** Loaded ahead, so the first text added is measured with its real font. */
 const NEW_TEXT_FONTS = [printFontOf(NEW_TEXT_STYLE.fontFamily)];
-/** Name of an element for the toolbar: its words, the name of its library design, or what kind of file it is. */
-function elementLabel(el: CanvasElement): string {
-  if (el.type === "text") return el.content || "Chữ";
-  if (el.type === "barcode") return ean13Digits(el.content) ? "Mã vạch" : "Mã QR";
-  const ref = parseLibraryArt(el.content);
-  if (ref) return artDesignOf(ref.design)?.name ?? "Tem";
-  return el.type === "pattern" ? "Hoa văn" : el.type === "logo" ? "Logo" : "Hình ảnh";
-}
-
 /** Bleed of the print file: the artwork may run this far past the cut lines. */
 const BLEED_MM = BLEED_BOX_MM;
 
@@ -38,15 +57,23 @@ export interface DielineLayers {
   bleed: boolean;
   safeMargin: boolean;
   dimensions: boolean;
+  /** 5 mm grid on the sheet; moved layers snap to it (docs/23 S12). */
+  grid: boolean;
 }
 
-export const DEFAULT_DIELINE_LAYERS: DielineLayers = { cut: true, crease: true, bleed: true, safeMargin: true, dimensions: true };
+export const DEFAULT_DIELINE_LAYERS: DielineLayers = { cut: true, crease: true, bleed: true, safeMargin: true, dimensions: true, grid: false };
+
+/** Grid step of the sheet, mm. */
+const GRID_MM = 5;
+/** Distance under which a moved layer snaps to a guide, an edge or the grid, mm. */
+const SNAP_MM = 1.5;
 
 const LEGEND_LAYERS = [
   { key: "cut", label: "Nét cắt", hint: "Nét cắt dao", swatch: "h-0.5 bg-dieline-cut rounded-full" },
   { key: "crease", label: "Nếp gấp", hint: "Nếp cấn gập", swatch: "h-0 border-b-2 border-dashed border-dieline-crease" },
   { key: "bleed", label: "Tràn lề", hint: "Tràn lề ≥ 2 mm", swatch: "h-0 border-b-2 border-dotted border-dieline-bleed" },
   { key: "safeMargin", label: "Vùng an toàn", hint: `Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm từ nét cắt, ${SAFE_MARGIN_CREASE_MM} mm từ nếp gấp`, swatch: "h-0 border-b-2 border-dashed border-warning" },
+  { key: "grid", label: "Lưới", hint: "Lưới 5 mm (phần tử bắt dính vào lưới)", swatch: "h-2 border border-dashed border-line-strong" },
 ] as const;
 
 /** The legend of the dieline lines as a row of chips; each chip shows or hides its layer. */
@@ -92,6 +119,9 @@ interface DielineCanvas2DProps {
   onElementsChange?: (elements: CanvasElement[]) => void;
   selectedElementId?: string | null;
   onSelectElement?: (id: string | null) => void;
+  /** Every selected layer (docs/23 S12); `selectedElementId` alone when omitted. */
+  selectedIds?: string[];
+  onSelectIds?: (ids: string[]) => void;
   backgroundPatternSvg?: string | null;
   activePanelId?: string;
   onSelectPanel?: (panelId: string) => void;
@@ -106,22 +136,49 @@ interface DielineCanvas2DProps {
   /** Opens the "Thêm chữ" composer from outside (a tool dock); uncontrolled when omitted. */
   textComposerOpen?: boolean;
   onTextComposerOpenChange?: (open: boolean) => void;
+  /** Side of the sheet on screen: the outside (default) or the inside (docs/23 S5). */
+  side?: PrintSide;
   className?: string;
 }
 
-interface DragState {
-  elementId: string;
-  startPointerMm: { x: number; y: number };
-  startElX: number;
-  startElY: number;
-  startElWidth: number;
-  startElHeight: number;
-  /** Print resolution of a raster when the drag started (recomputed from it, never from a rounded value). */
-  startElDpi?: number;
-  startPanelBounds: { x: number; y: number; width: number; height: number };
-  mode: "move" | "resize";
-  resizeHandle?: "tl" | "tr" | "bl" | "br";
-}
+/** What the pointer is doing (docs/23 S8, S12). Points are SVG coordinates (mm, padding included). */
+type DragState =
+  | {
+      mode: "move";
+      startPointerMm: { x: number; y: number };
+      starts: Record<string, { x: number; y: number }>;
+      primaryId: string;
+      /** A click (no move) on a layer of a larger selection selects that layer (or its group) alone, like Canva. */
+      collapseTo: string[] | null;
+    }
+  | {
+      mode: "resize";
+      elementId: string;
+      handle: Handle;
+      startPointerMm: { x: number; y: number };
+      start: { x: number; y: number; width: number; height: number; rotation: number };
+      startFontSize?: number;
+      /** Print resolution of a raster when the drag started (recomputed from it, never from a rounded value). */
+      startDpi?: number;
+    }
+  | { mode: "rotate"; elementId: string; center: { x: number; y: number }; startRotation: number; startAngle: number }
+  | { mode: "marquee"; start: { x: number; y: number }; current: { x: number; y: number } }
+  | { mode: "guide"; guideId: number };
+
+/** The 8 resize handles, clockwise from the top-left corner. */
+const HANDLES: { key: string; handle: Handle; cursor: string }[] = [
+  { key: "tl", handle: { sx: -1, sy: -1 }, cursor: "cursor-nwse-resize" },
+  { key: "t", handle: { sx: 0, sy: -1 }, cursor: "cursor-ns-resize" },
+  { key: "tr", handle: { sx: 1, sy: -1 }, cursor: "cursor-nesw-resize" },
+  { key: "r", handle: { sx: 1, sy: 0 }, cursor: "cursor-ew-resize" },
+  { key: "br", handle: { sx: 1, sy: 1 }, cursor: "cursor-nwse-resize" },
+  { key: "b", handle: { sx: 0, sy: 1 }, cursor: "cursor-ns-resize" },
+  { key: "bl", handle: { sx: -1, sy: 1 }, cursor: "cursor-nesw-resize" },
+  { key: "l", handle: { sx: -1, sy: 0 }, cursor: "cursor-ew-resize" },
+];
+
+const PHOTO_TYPES = new Set<CanvasElement["type"]>(["image", "logo", "pattern"]);
+const round1 = (value: number) => Math.round(value * 10) / 10;
 
 export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   dieline,
@@ -131,6 +188,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   onElementsChange,
   selectedElementId,
   onSelectElement,
+  selectedIds,
+  onSelectIds,
   backgroundPatternSvg,
   activePanelId = "panel_front",
   onSelectPanel,
@@ -139,6 +198,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   variant = "card",
   textComposerOpen,
   onTextComposerOpenChange,
+  side = "outside",
   className = "",
 }) => {
   const isStage = variant === "stage";
@@ -164,13 +224,58 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     [elements]
   );
   const fontsVersion = useBoxFonts(elements, artFonts);
+  // Re-renders once the sizes of cropped photos are known (docs/23 S10).
+  const imagesVersion = useImageSizes(elements);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
   const padding = 20; // 20 mm around the sheet: the 14 mm rulers and the bleed fit, the dieline gets the rest
   const viewBoxW = totalW + 2 * padding;
   const viewBoxH = totalH + 2 * padding;
 
-  const selectedEl = elements.find((e) => e.id === selectedElementId);
+  const selectedEl = elements.find((e) => e.id === selectedElementId && !isBackground(e));
+  // Every selected layer: a click selects one layer (or its group), Shift + click adds / removes, a drag on the empty
+  // sheet selects what the rectangle touches (docs/23 S12).
+  const selection = selectedIds ?? (selectedElementId ? [selectedElementId] : []);
+  const select = (ids: string[], primary?: string | null) => {
+    onSelectIds?.(ids);
+    onSelectElement?.(primary !== undefined ? primary : (ids[ids.length - 1] ?? null));
+  };
+  // Lines the moved layer snapped to, the marquee, the ruler guides (sheet mm) and the text being edited in place.
+  const [snapHits, setSnapHits] = useState<SnapLine[]>([]);
+  const [guides, setGuides] = useState<{ id: number; axis: "x" | "y"; at: number }[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  // Right-click menu of a layer, at the pointer (px from the top-left of the canvas root).
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent && e.key !== "Escape") return;
+      if (e.target instanceof Node && menuRef.current?.contains(e.target)) return;
+      setMenu(null);
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", close);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", close);
+    };
+  }, [menu]);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /** Is the sheet point (mm in the SVG, padding included) inside the turned box of the element? */
+  const contains = (el: CanvasElement, pt: { x: number; y: number }) => {
+    const panel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
+    if (!panel) return false;
+    const cx = panel.bounds.x + el.x + el.width / 2 + padding;
+    const cy = panel.bounds.y + el.y + el.height / 2 + padding;
+    const a = (-(el.rotation || 0) * Math.PI) / 180;
+    const dx = pt.x - cx;
+    const dy = pt.y - cy;
+    const lx = dx * Math.cos(a) - dy * Math.sin(a);
+    const ly = dx * Math.sin(a) + dy * Math.cos(a);
+    return Math.abs(lx) <= el.width / 2 && Math.abs(ly) <= el.height / 2;
+  };
 
   // Convert client pointer event (px) to SVG viewBox millimeter coordinates
   const getSvgCoordinates = (clientX: number, clientY: number): { x: number; y: number } => {
@@ -187,39 +292,89 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     };
   };
 
-  // Pointer Down on Element or Handle -> Start Dragging
+  // Pointer down on a layer or one of its handles: select, then move, resize or turn it.
   const handleElementPointerDown = (
     e: React.PointerEvent,
     el: CanvasElement,
-    mode: "move" | "resize" = "move",
-    resizeHandle?: "tl" | "tr" | "bl" | "br"
+    mode: "move" | "resize" | "rotate" = "move",
+    handle?: Handle
   ) => {
     e.stopPropagation();
     e.preventDefault();
-    
-
-    if (onSelectElement) onSelectElement(el.id);
-
-    const targetPanel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
-    const panelBounds = targetPanel ? targetPanel.bounds : { x: 0, y: 0, width: 100, height: 100 };
-
+    if (e.button === 2) return; // the context menu handles right-clicks
     const pt = getSvgCoordinates(e.clientX, e.clientY);
 
+    if (mode === "move") {
+      if (e.altKey && onSelectElement) {
+        const hits = orderElements(elements)
+          .filter((item) => !item.hidden && !isBackground(item) && sideOf(item) === side && contains(item, pt))
+          .reverse(); // top first
+        if (hits.length > 1) {
+          const current = hits.findIndex((item) => item.id === selectedElementId);
+          select([hits[(current + 1) % hits.length].id]);
+          return;
+        }
+      }
+      const group = selectionOf(elements, el.id);
+      if (e.shiftKey) {
+        const has = group.every((id) => selection.includes(id));
+        const next = has ? selection.filter((id) => !group.includes(id)) : [...new Set([...selection, ...group])];
+        select(next, has ? (next[next.length - 1] ?? null) : el.id);
+        return;
+      }
+      const ids = selection.includes(el.id) ? selection : group;
+      select(ids, el.id);
+      const movers = elements.filter((item) => ids.includes(item.id) && isMovable(item));
+      if (!movers.length || !onElementsChange) return;
+      const collapseTo = selection.includes(el.id) && selection.length > group.length ? group : null;
+      setDragState({ mode: "move", startPointerMm: pt, starts: Object.fromEntries(movers.map((m) => [m.id, { x: m.x, y: m.y }])), primaryId: el.id, collapseTo });
+      return;
+    }
+
+    if (!isMovable(el) || !onElementsChange) return;
+    const panel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
+    if (!panel) return;
+    if (mode === "rotate") {
+      const center = { x: panel.bounds.x + el.x + el.width / 2 + padding, y: panel.bounds.y + el.y + el.height / 2 + padding };
+      setDragState({ mode: "rotate", elementId: el.id, center, startRotation: el.rotation || 0, startAngle: Math.atan2(pt.y - center.y, pt.x - center.x) });
+      return;
+    }
     setDragState({
+      mode: "resize",
       elementId: el.id,
+      handle: handle ?? { sx: 1, sy: 1 },
       startPointerMm: pt,
-      startElX: el.x,
-      startElY: el.y,
-      startElWidth: el.width,
-      startElHeight: el.height,
-      startElDpi: el.dpi,
-      startPanelBounds: panelBounds,
-      mode,
-      resizeHandle,
+      start: { x: el.x, y: el.y, width: el.width, height: el.height, rotation: el.rotation || 0 },
+      startFontSize: el.style?.fontSize,
+      startDpi: el.dpi,
     });
   };
 
-  // Pointer Move on SVG Canvas -> Drag, Glide & Auto-Bind Panel
+  /** Lines a layer moving on `panel` snaps to, in panel coordinates: the face, its safe area, other layers, guides, grid. */
+  const snapLinesFor = (panel: DielineGeometry["panels"][number], moving: string[], box: { x: number; y: number; width: number; height: number }): SnapLine[] => {
+    const { width, height } = panel.bounds;
+    const m = safeMarginsOf(panel, dieline);
+    const lines: SnapLine[] = [
+      { axis: "x", at: 0 }, { axis: "x", at: width / 2 }, { axis: "x", at: width },
+      { axis: "y", at: 0 }, { axis: "y", at: height / 2 }, { axis: "y", at: height },
+      { axis: "x", at: m.left }, { axis: "x", at: width - m.right }, { axis: "y", at: m.top }, { axis: "y", at: height - m.bottom },
+    ];
+    for (const other of elements) {
+      if (moving.includes(other.id) || other.hidden || isBackground(other) || sideOf(other) !== side || !matchesPanel(panel, other.panelId)) continue;
+      const env = envelopeOf(other);
+      lines.push({ axis: "x", at: env.x }, { axis: "x", at: env.x + env.width / 2 }, { axis: "x", at: env.x + env.width });
+      lines.push({ axis: "y", at: env.y }, { axis: "y", at: env.y + env.height / 2 }, { axis: "y", at: env.y + env.height });
+    }
+    for (const guide of guides) lines.push({ axis: guide.axis, at: guide.at - (guide.axis === "x" ? panel.bounds.x : panel.bounds.y) });
+    if (showLayers.grid) {
+      // The grid lines nearest to the edges of the box (sheet coordinates), as panel lines.
+      for (const x of [box.x, box.x + box.width]) lines.push({ axis: "x", at: Math.round((panel.bounds.x + x) / GRID_MM) * GRID_MM - panel.bounds.x });
+      for (const y of [box.y, box.y + box.height]) lines.push({ axis: "y", at: Math.round((panel.bounds.y + y) / GRID_MM) * GRID_MM - panel.bounds.y });
+    }
+    return lines;
+  };
+
+  // Pointer move over the sheet: the crosshair, then the current drag.
   const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const pt = getSvgCoordinates(e.clientX, e.clientY);
     const mmX = Math.round(pt.x - padding);
@@ -228,80 +383,139 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     // empty part of a wide stage.
     const onSheet = mmX >= 0 && mmY >= 0 && mmX <= viewBoxW - 2 * padding && mmY <= viewBoxH - 2 * padding;
     setCursorMm(onSheet ? { x: mmX, y: mmY } : null);
+    if (!dragState) return;
 
-    if (!dragState || !onElementsChange) return;
+    if (dragState.mode === "marquee") {
+      setDragState({ ...dragState, current: pt });
+      return;
+    }
+    if (dragState.mode === "guide") {
+      setGuides((list) => list.map((g) => (g.id === dragState.guideId ? { ...g, at: round1((g.axis === "x" ? pt.x : pt.y) - padding) } : g)));
+      return;
+    }
+    if (!onElementsChange) return;
+
+    if (dragState.mode === "move") {
+      let dx = pt.x - dragState.startPointerMm.x;
+      let dy = pt.y - dragState.startPointerMm.y;
+      const primary = elements.find((item) => item.id === dragState.primaryId);
+      const start = dragState.starts[dragState.primaryId];
+      const panel = primary && dieline.panels.find((p) => matchesPanel(p, primary.panelId));
+      // Alt moves freely; otherwise the box snaps to the face, the safe area, other layers, guides and the grid.
+      if (primary && start && panel && !e.altKey) {
+        const box = envelopeOf({ ...primary, x: start.x + dx, y: start.y + dy });
+        const snap = snapBox(box, snapLinesFor(panel, Object.keys(dragState.starts), box), SNAP_MM);
+        dx += snap.dx;
+        dy += snap.dy;
+        setSnapHits(snap.hits.map((hit) => ({ axis: hit.axis, at: hit.at + (hit.axis === "x" ? panel.bounds.x : panel.bounds.y) + padding })));
+      } else {
+        setSnapHits([]);
+      }
+      // The layers keep their faces (docs/23 D5): what leaves the face + bleed is cut, FitCheck flags it.
+      const next = elements.map((item) => {
+        const from = dragState.starts[item.id];
+        return from ? { ...item, x: round1(from.x + dx), y: round1(from.y + dy) } : item;
+      });
+      if (next.some((item, i) => item !== elements[i] && (item.x !== elements[i].x || item.y !== elements[i].y))) onElementsChange(next);
+      return;
+    }
 
     const el = elements.find((item) => item.id === dragState.elementId);
     if (!el) return;
+    if (dragState.mode === "rotate") {
+      const angle = Math.atan2(pt.y - dragState.center.y, pt.x - dragState.center.x);
+      let rotation = dragState.startRotation + ((angle - dragState.startAngle) * 180) / Math.PI;
+      if (e.shiftKey) rotation = Math.round(rotation / 15) * 15; // Shift: steps of 15°
+      rotation = round1(((((rotation + 180) % 360) + 360) % 360) - 180);
+      if (rotation !== el.rotation) onElementsChange(elements.map((item) => (item.id === el.id ? { ...item, rotation } : item)));
+      return;
+    }
 
+    // Resize in the element's own (turned) axes; photos and corners of texts keep their proportions.
     const dx = pt.x - dragState.startPointerMm.x;
     const dy = pt.y - dragState.startPointerMm.y;
-
-    if (dragState.mode === "move") {
-      // Calculate current global millimeter coordinate
-      const currentGlobalX = dragState.startPanelBounds.x + dragState.startElX + dx;
-      const currentGlobalY = dragState.startPanelBounds.y + dragState.startElY + dy;
-
-      // Element Center coordinate for Panel Auto-Detection
-      const centerX = currentGlobalX + el.width / 2;
-      const centerY = currentGlobalY + el.height / 2;
-
-      // Detect which panel contains the element center
-      const targetPanel =
-        dieline.panels.find(
-          (p) =>
-            centerX >= p.bounds.x &&
-            centerX <= p.bounds.x + p.bounds.width &&
-            centerY >= p.bounds.y &&
-            centerY <= p.bounds.y + p.bounds.height
-        ) ||
-        dieline.panels.find((p) => matchesPanel(p, el.panelId)) ||
-        dieline.panels[0];
-
-      // Relative coordinates inside target panel
-      const relX = Math.round(currentGlobalX - targetPanel.bounds.x);
-      const relY = Math.round(currentGlobalY - targetPanel.bounds.y);
-
-      const updated = elements.map((item) =>
-        item.id === el.id
-          ? { ...item, panelId: targetPanel.id, x: relX, y: relY }
-          : item
-      );
-      onElementsChange(updated);
-    } else if (dragState.mode === "resize") {
-      const isRight = dragState.resizeHandle?.includes("r");
-      const isBottom = dragState.resizeHandle?.includes("b");
-      const deltaW = isRight ? dx : -dx;
-      const deltaH = isBottom ? dy : -dy;
-
-      const newW = Math.max(15, Math.round(dragState.startElWidth + deltaW));
-      const newH = Math.max(10, Math.round(dragState.startElHeight + deltaH));
-
-      // A raster printed bigger has fewer pixels per inch: FitCheck reads the DPI at the new size.
-      const updated = elements.map((item) =>
+    const a = (-dragState.start.rotation * Math.PI) / 180;
+    const local = { x: dx * Math.cos(a) - dy * Math.sin(a), y: dx * Math.sin(a) + dy * Math.cos(a) };
+    const corner = !!dragState.handle.sx && !!dragState.handle.sy;
+    const textCorner = el.type === "text" && corner;
+    const box = resizeBox(dragState.start, dragState.handle, local, {
+      keepRatio: e.shiftKey !== (corner && (PHOTO_TYPES.has(el.type) || textCorner)),
+      fromCenter: e.altKey,
+      min: 1,
+    });
+    // A text dragged by a corner scales its letters too (like Canva); by a side it only rewraps.
+    const fontSize = textCorner && dragState.startFontSize ? round1((dragState.startFontSize * box.width) / dragState.start.width) : undefined;
+    onElementsChange(
+      elements.map((item) =>
         item.id === el.id
           ? {
               ...item,
-              width: newW,
-              height: newH,
-              ...(dragState.startElDpi ? { dpi: Math.round((dragState.startElDpi * dragState.startElWidth) / newW) } : {}),
+              ...box,
+              ...(fontSize ? { style: { ...item.style, fontSize } } : {}),
+              // A raster printed bigger has fewer pixels per inch: FitCheck reads the DPI at the new size.
+              ...(dragState.startDpi ? { dpi: Math.round((dragState.startDpi * dragState.start.width) / box.width) } : {}),
             }
           : item
-      );
-      onElementsChange(updated);
-    }
+      )
+    );
   };
 
-  // Pointer Up -> Snap & Finish Drag
+  // Pointer up: ends the drag; a marquee selects what it touches; a guide dropped off the sheet is removed.
   const handleSvgPointerUp = () => {
-    if (dragState) {
-      
-      const el = elements.find((item) => item.id === dragState.elementId);
-      if (el && onSelectPanel) {
-        onSelectPanel(el.panelId);
+    if (!dragState) return;
+    if (dragState.mode === "marquee") {
+      const [x1, x2] = [Math.min(dragState.start.x, dragState.current.x), Math.max(dragState.start.x, dragState.current.x)];
+      const [y1, y2] = [Math.min(dragState.start.y, dragState.current.y), Math.max(dragState.start.y, dragState.current.y)];
+      if (x2 - x1 < 1.5 && y2 - y1 < 1.5) {
+        if (selection.length) select([], null); // a click on the empty sheet clears the selection
+      } else {
+        const ids = elements
+          .filter((item) => {
+            const panel = dieline.panels.find((p) => matchesPanel(p, item.panelId));
+            if (!panel || item.hidden || isBackground(item) || sideOf(item) !== side) return false;
+            const env = envelopeOf(item);
+            const [ex, ey] = [panel.bounds.x + env.x + padding, panel.bounds.y + env.y + padding];
+            return ex < x2 && ex + env.width > x1 && ey < y2 && ey + env.height > y1;
+          })
+          .map((item) => item.id);
+        select(ids);
       }
-      setDragState(null);
+    } else if (dragState.mode === "guide") {
+      setGuides((list) => list.filter((g) => g.id !== dragState.guideId || (g.at > 0 && g.at < (g.axis === "x" ? totalW : totalH))));
+    } else if (dragState.mode === "move") {
+      const el = elements.find((item) => item.id === dragState.primaryId);
+      if (el && onSelectPanel) onSelectPanel(el.panelId);
+      const still = elements.every((item) => !dragState.starts[item.id] || (item.x === dragState.starts[item.id].x && item.y === dragState.starts[item.id].y));
+      if (still && dragState.collapseTo) select(dragState.collapseTo, dragState.primaryId);
     }
+    setSnapHits([]);
+    setDragState(null);
+  };
+
+  // Pointer down on the empty sheet: starts a selection rectangle.
+  const handleSvgPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.button !== 0 || !onSelectElement || !onElementsChange) return;
+    const pt = getSvgCoordinates(e.clientX, e.clientY);
+    setDragState({ mode: "marquee", start: pt, current: pt });
+  };
+
+  // Pointer down on a ruler: a new guide, dragged into place (drop it back on the ruler to remove it).
+  const startGuide = (e: React.PointerEvent, axis: "x" | "y") => {
+    e.stopPropagation();
+    e.preventDefault();
+    const pt = getSvgCoordinates(e.clientX, e.clientY);
+    const id = Date.now();
+    setGuides((list) => [...list, { id, axis, at: round1((axis === "x" ? pt.x : pt.y) - padding) }]);
+    setDragState({ mode: "guide", guideId: id });
+  };
+
+  // Text edited in place (double-click), committed on blur or Ctrl + Enter.
+  const commitEditing = () => {
+    if (editingId && onElementsChange) {
+      const text = editingText.replace(/\s+$/, "");
+      onElementsChange(text ? elements.map((item) => (item.id === editingId ? { ...item, content: text } : item)) : elements.filter((item) => item.id !== editingId));
+    }
+    setEditingId(null);
   };
 
   // Zoom handlers
@@ -330,7 +544,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   // Rotate Element
   const handleRotate = (angleDelta: number) => {
-    if (!selectedEl || !onElementsChange) return;
+    if (!selectedEl || !onElementsChange || selectedEl.locked) return;
     
     const updated = elements.map((el) =>
       el.id === selectedEl.id
@@ -342,7 +556,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   // Resize Element via Button
   const handleResize = (multiplier: number) => {
-    if (!selectedEl || !onElementsChange) return;
+    if (!selectedEl || !onElementsChange || selectedEl.locked) return;
     
     const updated = elements.map((el) => {
       if (el.id !== selectedEl.id) return el;
@@ -357,7 +571,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   // Delete Element
   const handleDeleteElement = () => {
-    if (!selectedEl || !onElementsChange) return;
+    if (!selectedEl || !onElementsChange || selectedEl.locked) return;
     
     onElementsChange(elements.filter((el) => el.id !== selectedEl.id));
     if (onSelectElement) onSelectElement(null);
@@ -365,7 +579,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   // Nudge Move
   const handleMove = (dx: number, dy: number) => {
-    if (!selectedEl || !onElementsChange) return;
+    if (!selectedEl || !onElementsChange || selectedEl.locked) return;
     
     const updated = elements.map((el) => {
       if (el.id !== selectedEl.id) return el;
@@ -417,6 +631,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       rotation: 0,
       content,
       style: { ...NEW_TEXT_STYLE },
+      ...(side === "inside" ? { side } : {}),
     };
 
     onElementsChange([...elements, newElement]);
@@ -495,9 +710,110 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         </>
       )}
 
+      {menu && onElementsChange && (() => {
+        const target = elements.find((item) => item.id === menu.id);
+        if (!target) return null;
+        const close = () => setMenu(null);
+        const apply = (next: CanvasElement[]) => {
+          onElementsChange(next);
+          close();
+        };
+        const others = dieline.panels.filter((p) => !matchesPanel(p, target.panelId));
+        const item = "flex min-h-10 w-full items-center gap-2 rounded-control px-3 text-left text-body-sm text-fg hover:bg-surface-sunken focus-visible:bg-surface-sunken focus-visible:outline-none disabled:opacity-40";
+        const order: [LayerMove, string][] = [
+          ["front", "Lên trên cùng"],
+          ["forward", "Lên một lớp"],
+          ["backward", "Xuống một lớp"],
+          ["back", "Xuống dưới cùng"],
+        ];
+        return (
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`Thao tác với ${elementLabel(target)}`}
+            className="absolute z-40 max-h-[min(420px,calc(100%-16px))] w-56 overflow-y-auto rounded-panel bg-surface-raised p-1 shadow-popover ring-1 ring-line"
+            style={{ left: Math.max(8, menu.x), top: Math.max(8, menu.y) }}
+          >
+            {order.map(([how, label]) => (
+              <button key={how} type="button" role="menuitem" className={item} disabled={!canMoveLayer(elements, target.id, how)} onClick={() => apply(moveLayer(elements, target.id, how))}>
+                {label}
+              </button>
+            ))}
+            <div className="my-1 h-px bg-line" role="separator" />
+            <button
+              type="button"
+              role="menuitem"
+              className={item}
+              onClick={() => {
+                const result = duplicateElements(elements, [target.id], (el) => newElementId(el.type));
+                apply(result.elements);
+                onSelectElement?.(result.ids[0] ?? null);
+              }}
+            >
+              Nhân bản
+            </button>
+            <button type="button" role="menuitem" className={item} onClick={() => apply(elements.map((el) => (el.id === target.id ? { ...el, locked: !el.locked || undefined } : el)))}>
+              {target.locked ? "Mở khóa" : "Khóa lớp"}
+            </button>
+            <button type="button" role="menuitem" className={item} onClick={() => apply(elements.map((el) => (el.id === target.id ? { ...el, hidden: true } : el)))}>
+              Ẩn lớp
+            </button>
+            {others.length > 0 && !target.locked && (
+              <>
+                <div className="my-1 h-px bg-line" role="separator" />
+                <p className="px-3 pb-0.5 pt-1 text-caption text-fg-muted">Chuyển sang mặt</p>
+                {others.map((panel) => (
+                  <button
+                    key={panel.id}
+                    type="button"
+                    role="menuitem"
+                    className={item}
+                    onClick={() =>
+                      apply(
+                        elements.map((el) =>
+                          el.id === target.id
+                            ? {
+                                ...el,
+                                panelId: panel.id,
+                                x: Math.round(((panel.bounds.width - el.width) / 2) * 10) / 10,
+                                y: Math.round(((panel.bounds.height - el.height) / 2) * 10) / 10,
+                              }
+                            : el
+                        )
+                      )
+                    }
+                  >
+                    {panel.name}
+                  </button>
+                ))}
+              </>
+            )}
+            <div className="my-1 h-px bg-line" role="separator" />
+            <button
+              type="button"
+              role="menuitem"
+              className={`${item} text-danger-fg`}
+              disabled={!!target.locked}
+              onClick={() => {
+                apply(elements.filter((el) => el.id !== target.id));
+                onSelectElement?.(null);
+              }}
+            >
+              Xóa
+            </button>
+          </div>
+        );
+      })()}
+
+      {side === "inside" && (
+        <p className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-full bg-fg/85 px-3 py-1 text-caption font-semibold text-fg-inverse">
+          Mặt trong · khuôn nhìn từ trong hộp ra (đã lật gương)
+        </p>
+      )}
+
       {/* FLOATING GIZMO TOOLBAR FOR SELECTED ELEMENT
           Bottom-centre, clear of the flaps and rulers; one line while it fits. */}
-      {selectedEl && (
+      {selectedEl && !isStage && (
         <div className={`absolute ${isStage ? "bottom-2" : "bottom-6"} left-1/2 -translate-x-1/2 z-30 flex w-max max-w-[calc(100%-1rem)] flex-wrap items-center gap-2 bg-landing-ink/95 text-white backdrop-blur-xl px-4 py-2 rounded-2xl shadow-popover ring-1 ring-white/10 text-xs animate-fadeIn`}>
           <div className="flex items-center gap-2 pr-2.5 border-r border-white/20">
             <Move className="w-3.5 h-3.5 text-fpt-orange-ink animate-pulse" />
@@ -609,6 +925,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           className={`relative w-full h-full max-h-[94%] ${
             dragState ? "cursor-grabbing" : "cursor-default"
           }`}
+          onPointerDown={handleSvgPointerDown}
           onPointerMove={handleSvgPointerMove}
           onPointerUp={handleSvgPointerUp}
           onPointerLeave={handleSvgPointerUp}
@@ -726,6 +1043,34 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               className="pointer-events-none"
             />
           )}
+
+          {/* Windows and hand holes: cut out, nothing printed there remains (FitCheck UNDER_OPENING, docs/23 S17) */}
+          {dieline.openings?.map((opening, index) => (
+            <g key={`opening_${index}`} className="pointer-events-none">
+              <rect
+                x={opening.x + padding}
+                y={opening.y + padding}
+                width={opening.width}
+                height={opening.height}
+                rx={opening.radius}
+                fill={opening.kind === "window" ? "#E0F2FE" : "#F1F5F9"}
+                fillOpacity={0.7}
+              />
+              {opening.kind === "window" && opening.width >= 24 && (
+                <text
+                  x={opening.x + padding + opening.width / 2}
+                  y={opening.y + padding + opening.height / 2}
+                  fontSize="3.4"
+                  fontWeight="600"
+                  fill="#0369A1"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                >
+                  CỬA SỔ (MÀNG PET)
+                </text>
+              )}
+            </g>
+          ))}
 
           {/* Glue flaps: no ink there (FitCheck GLUE_CONTAMINATED), hatched like on a die maker's drawing */}
           {dieline.glueAreas?.map((area, index) => (
@@ -908,149 +1253,291 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             );
           })}
 
-          {/* Layer 4: Placed Artwork Elements (Images, Logos, Stickers, Texts)
-              Now equipped with FREE DRAG & DROP POINTER LISTENERS! */}
-          {elements.map((el) => {
+          {/* Layer 4: the design, in paint order (docs/23 D3). Each element is cut to its face + bleed (D5), then turned
+              and mirrored around its centre like the print files. Backgrounds are not grabbed: clicks reach the face. */}
+          <defs>
+            {dieline.panels.map((panel) => {
+              const box = panelPrintBox(panel, dieline);
+              return (
+                <clipPath key={panel.id} id={`${uid}-face-${panel.id}`}>
+                  <rect x={panel.bounds.x + box.x + padding} y={panel.bounds.y + box.y + padding} width={box.width} height={box.height} />
+                </clipPath>
+              );
+            })}
+          </defs>
+          {orderElements(elements).map((el) => {
             // Elements of the other piece of a two-piece box are drawn when that piece is on screen.
             const targetPanel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
-            if (!targetPanel) return null;
+            if (!targetPanel || el.hidden || sideOf(el) !== side) return null;
             const panelOffset = targetPanel.bounds;
             const elX = panelOffset.x + el.x + padding;
             const elY = panelOffset.y + el.y + padding;
-            const isSelected = el.id === selectedElementId;
+            const cx = elX + el.width / 2;
+            const cy = elY + el.height / 2;
+            const isSelected = selection.includes(el.id);
+            const single = isSelected && selection.length === 1;
+            const editing = editingId === el.id;
+            const background = isBackground(el);
+            const movable = !!onElementsChange && isMovable(el);
+            const turn = `rotate(${el.rotation || 0} ${cx} ${cy})`;
+            const mirror = el.flipX || el.flipY ? ` translate(${cx} ${cy}) scale(${el.flipX ? -1 : 1} ${el.flipY ? -1 : 1}) translate(${-cx} ${-cy})` : "";
+            const opacity = typeof el.style?.opacity === "number" ? el.style.opacity : undefined;
 
             // FitCheck flags it (safe margin on every side, bleed, glue flap…)
             const isMarginBreached = flaggedElementIds?.has(el.id) ?? false;
-            // Library art and barcodes are vectors, drawn like the print files.
+            // Shapes, library art and barcodes are vectors, drawn like the print files.
             const art = elementArt(el);
+
+            const content = art ? (
+              <ArtShapes art={art} x={elX} y={elY} />
+            ) : el.type === "barcode" ? null : el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
+              <FramedImage el={el} x={elX} y={elY} />
+            ) : (
+              // Same lines, font, face, spacing, outline and curve as the print files (docs/12 Phase 9, docs/23 S9).
+              <TextVisual el={el} x={elX} y={elY} fontsVersion={fontsVersion + imagesVersion} />
+            );
 
             return (
               <g
                 key={el.id}
-                onPointerDown={(e) => handleElementPointerDown(e, el, "move")}
-                className="cursor-grab active:cursor-grabbing select-none"
-                transform={`rotate(${el.rotation || 0} ${elX + el.width / 2} ${elY + el.height / 2})`}
+                data-element-id={el.id}
+                onPointerDown={background || editing ? undefined : (e) => handleElementPointerDown(e, el, "move")}
+                onDoubleClick={
+                  el.type === "text" && movable
+                    ? (e) => {
+                        e.stopPropagation();
+                        setEditingText(el.content);
+                        setEditingId(el.id);
+                      }
+                    : undefined
+                }
+                onContextMenu={
+                  background || !onElementsChange
+                    ? undefined
+                    : (e) => {
+                        e.preventDefault();
+                        onSelectElement?.(el.id);
+                        const box = rootRef.current?.getBoundingClientRect();
+                        // Kept inside the canvas: 224 px wide, at most 420 px tall (it scrolls past that).
+                        const x = Math.min(e.clientX - (box?.left ?? 0), (box?.width ?? 0) - 232);
+                        const y = Math.min(e.clientY - (box?.top ?? 0), (box?.height ?? 0) - Math.min(420, (box?.height ?? 0) - 16) - 8);
+                        setMenu({ id: el.id, x, y });
+                      }
+                }
+                className={background ? "pointer-events-none" : movable ? "cursor-grab active:cursor-grabbing select-none" : "cursor-pointer select-none"}
               >
-                {/* Selection / Warning Box */}
-                <rect
-                  x={elX}
-                  y={elY}
-                  width={el.width}
-                  height={el.height}
-                  fill={
-                    isSelected
-                      ? "rgba(37, 99, 235, 0.12)"
-                      : isMarginBreached
-                      ? "rgba(255, 107, 107, 0.12)"
-                      : "rgba(255, 255, 255, 0.3)"
-                  }
-                  stroke={
-                    isSelected
-                      ? "#2563EB"
-                      : isMarginBreached
-                      ? "#FF6B6B"
-                      : "#94A3B8"
-                  }
-                  strokeWidth={isSelected ? "1" : "0.5"}
-                  strokeDasharray={isSelected ? "3 2" : undefined}
-                  rx="1"
-                />
-
-                {/* Safe margin breached warning badge */}
-                {isMarginBreached && (
-                  <circle cx={elX + el.width} cy={elY} r="2.5" fill="#FF6B6B" />
-                )}
-
-                {/* Content: library art / barcode, Image/Logo, or Text */}
-                {art ? (
-                  <ArtShapes art={art} x={elX} y={elY} />
-                ) : el.type === "barcode" ? null : el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
-                  <image
-                    href={el.content}
+                {/* Hit area and selection box (turned with the element, never cut) */}
+                {!background && (
+                  <rect
                     x={elX}
                     y={elY}
                     width={el.width}
                     height={el.height}
-                    preserveAspectRatio="xMidYMid meet"
-                    className="pointer-events-none"
+                    transform={turn}
+                    fill={isSelected ? "rgba(37, 99, 235, 0.08)" : isMarginBreached ? "rgba(255, 107, 107, 0.12)" : "transparent"}
+                    stroke={isSelected ? "#2563EB" : isMarginBreached ? "#FF6B6B" : "none"}
+                    strokeWidth={isSelected ? "1" : "0.5"}
+                    strokeDasharray={isSelected ? "3 2" : undefined}
+                    rx="1"
                   />
-                ) : (
-                  // Same lines, font, size and alignment as the print files (docs/12 Phase 9).
-                  (() => {
-                    const box = layoutBoxText(el);
-                    return (
-                      <g
-                        data-fonts={fontsVersion}
-                        fontSize={box.fontSizeMm}
-                        fontWeight={TEXT_FONT_WEIGHT}
-                        fill={el.style?.color || "#1C1917"}
-                        style={{ fontFamily: cssFontFamily(box.font) }}
-                        className="pointer-events-none select-none"
-                      >
-                        {box.lines.map((line, index) =>
-                          line.text ? (
-                            <text key={index} x={elX + line.x} y={elY + line.baseline}>
-                              {line.text}
-                            </text>
-                          ) : null
-                        )}
-                      </g>
-                    );
-                  })()
                 )}
 
-                {/* 4 Interactive Corner Resize Handles for selected element */}
-                {isSelected && (
-                  <>
-                    <rect
-                      x={elX - 2}
-                      y={elY - 2}
-                      width={4}
-                      height={4}
-                      fill="#2563EB"
-                      stroke="#FFFFFF"
-                      strokeWidth="0.5"
-                      className="cursor-nwse-resize"
-                      onPointerDown={(e) => handleElementPointerDown(e, el, "resize", "tl")}
-                    />
-                    <rect
-                      x={elX + el.width - 2}
-                      y={elY - 2}
-                      width={4}
-                      height={4}
-                      fill="#2563EB"
-                      stroke="#FFFFFF"
-                      strokeWidth="0.5"
-                      className="cursor-nesw-resize"
-                      onPointerDown={(e) => handleElementPointerDown(e, el, "resize", "tr")}
-                    />
-                    <rect
-                      x={elX - 2}
-                      y={elY + el.height - 2}
-                      width={4}
-                      height={4}
-                      fill="#2563EB"
-                      stroke="#FFFFFF"
-                      strokeWidth="0.5"
-                      className="cursor-nesw-resize"
-                      onPointerDown={(e) => handleElementPointerDown(e, el, "resize", "bl")}
-                    />
-                    <rect
-                      x={elX + el.width - 2}
-                      y={elY + el.height - 2}
-                      width={4}
-                      height={4}
-                      fill="#2563EB"
-                      stroke="#FFFFFF"
-                      strokeWidth="0.5"
-                      className="cursor-nwse-resize"
-                      onPointerDown={(e) => handleElementPointerDown(e, el, "resize", "br")}
-                    />
-                  </>
+                {/* Content: cut to the printable box of its face */}
+                <g clipPath={`url(#${uid}-face-${targetPanel.id})`}>
+                  <g transform={`${turn}${mirror}`} opacity={opacity}>
+                    {editing ? null : content}
+                  </g>
+                </g>
+                {/* Print finish (foil, UV, embossing): a dashed outline in the colour of its spot layer */}
+                {el.finish && (
+                  <rect
+                    x={elX - 0.6}
+                    y={elY - 0.6}
+                    width={el.width + 1.2}
+                    height={el.height + 1.2}
+                    transform={turn}
+                    fill="none"
+                    stroke={FINISH_SPOTS[el.finish].display}
+                    strokeWidth="0.6"
+                    strokeDasharray="1.5 1"
+                    rx="1"
+                    className="pointer-events-none"
+                  />
                 )}
+
+                <g transform={turn}>
+                  {/* Safe margin breached warning badge */}
+                  {isMarginBreached && <circle cx={elX + el.width} cy={elY} r="2.5" fill="#FF6B6B" />}
+                  {/* Locked layer: a small lock in the corner while selected */}
+                  {isSelected && el.locked && (
+                    <g transform={`translate(${elX + el.width - 5} ${elY + 1})`} className="pointer-events-none">
+                      <rect width="4" height="4" rx="1" fill="#1D293D" />
+                      <path d="M 1.2 2 V 1.5 A 0.8 0.8 0 0 1 2.8 1.5 V 2 M 0.9 2 H 3.1 V 3.4 H 0.9 Z" fill="none" stroke="#FFFFFF" strokeWidth="0.35" />
+                    </g>
+                  )}
+                  {/* Handles of the one selected layer: 8 to resize (Shift keeps the proportions, Alt from the centre), one
+                      above to turn (Shift: steps of 15°). Not for locked layers. */}
+                  {single && movable && !editing && (
+                    <>
+                      <line x1={cx} y1={elY} x2={cx} y2={elY - 6} stroke="#2563EB" strokeWidth="0.4" className="pointer-events-none" />
+                      <circle
+                        cx={cx}
+                        cy={elY - 7.5}
+                        r={2.2}
+                        fill="#FFFFFF"
+                        stroke="#2563EB"
+                        strokeWidth="0.6"
+                        className="cursor-grab"
+                        aria-label="Xoay"
+                        onPointerDown={(e) => handleElementPointerDown(e, el, "rotate")}
+                      />
+                      {HANDLES.map(({ key, handle, cursor }) => {
+                        const hx = elX + ((handle.sx + 1) / 2) * el.width;
+                        const hy = elY + ((handle.sy + 1) / 2) * el.height;
+                        const corner = handle.sx && handle.sy;
+                        return (
+                          <rect
+                            key={key}
+                            x={hx - (corner ? 2 : handle.sx ? 1.2 : 2.5)}
+                            y={hy - (corner ? 2 : handle.sy ? 1.2 : 2.5)}
+                            width={corner ? 4 : handle.sx ? 2.4 : 5}
+                            height={corner ? 4 : handle.sy ? 2.4 : 5}
+                            rx="0.6"
+                            fill="#FFFFFF"
+                            stroke="#2563EB"
+                            strokeWidth="0.5"
+                            className={cursor}
+                            onPointerDown={(e) => handleElementPointerDown(e, el, "resize", handle)}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
+                </g>
               </g>
             );
           })}
+
+          {/* Grid (5 mm) over the sheet */}
+          {showLayers.grid && (
+            <g className="pointer-events-none" stroke="#7C8BA1" strokeOpacity="0.35" strokeWidth="0.15">
+              {Array.from({ length: Math.floor(totalW / GRID_MM) + 1 }, (_, i) => (
+                <line key={`gx${i}`} x1={padding + i * GRID_MM} y1={padding} x2={padding + i * GRID_MM} y2={padding + totalH} />
+              ))}
+              {Array.from({ length: Math.floor(totalH / GRID_MM) + 1 }, (_, i) => (
+                <line key={`gy${i}`} x1={padding} y1={padding + i * GRID_MM} x2={padding + totalW} y2={padding + i * GRID_MM} />
+              ))}
+            </g>
+          )}
+
+          {/* Guides pulled from the rulers: drag to move, drop on the ruler to remove */}
+          {guides.map((guide) =>
+            guide.axis === "x" ? (
+              <g key={guide.id}>
+                <line x1={padding + guide.at} y1={padding - 4} x2={padding + guide.at} y2={padding + totalH} stroke="#06B6D4" strokeWidth="0.35" className="pointer-events-none" />
+                <line
+                  x1={padding + guide.at}
+                  y1={padding - 4}
+                  x2={padding + guide.at}
+                  y2={padding + totalH}
+                  stroke="transparent"
+                  strokeWidth="2.5"
+                  className="cursor-ew-resize"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    setDragState({ mode: "guide", guideId: guide.id });
+                  }}
+                />
+              </g>
+            ) : (
+              <g key={guide.id}>
+                <line x1={padding - 4} y1={padding + guide.at} x2={padding + totalW} y2={padding + guide.at} stroke="#06B6D4" strokeWidth="0.35" className="pointer-events-none" />
+                <line
+                  x1={padding - 4}
+                  y1={padding + guide.at}
+                  x2={padding + totalW}
+                  y2={padding + guide.at}
+                  stroke="transparent"
+                  strokeWidth="2.5"
+                  className="cursor-ns-resize"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    setDragState({ mode: "guide", guideId: guide.id });
+                  }}
+                />
+              </g>
+            )
+          )}
+
+          {/* Smart guides: the lines the moved layer snapped to */}
+          {snapHits.map((hit, i) =>
+            hit.axis === "x" ? (
+              <line key={i} x1={hit.at} y1={padding} x2={hit.at} y2={padding + totalH} stroke="#DB2777" strokeWidth="0.35" strokeDasharray="1.5 1" className="pointer-events-none" />
+            ) : (
+              <line key={i} x1={padding} y1={hit.at} x2={padding + totalW} y2={hit.at} stroke="#DB2777" strokeWidth="0.35" strokeDasharray="1.5 1" className="pointer-events-none" />
+            )
+          )}
+
+          {/* Selection rectangle */}
+          {dragState?.mode === "marquee" && (
+            <rect
+              x={Math.min(dragState.start.x, dragState.current.x)}
+              y={Math.min(dragState.start.y, dragState.current.y)}
+              width={Math.abs(dragState.current.x - dragState.start.x)}
+              height={Math.abs(dragState.current.y - dragState.start.y)}
+              fill="rgba(37, 99, 235, 0.08)"
+              stroke="#2563EB"
+              strokeWidth="0.35"
+              strokeDasharray="1.5 1"
+              className="pointer-events-none"
+            />
+          )}
+
+          {/* Text edited in place */}
+          {editingId &&
+            (() => {
+              const el = elements.find((item) => item.id === editingId);
+              const panel = el && dieline.panels.find((p) => matchesPanel(p, el.panelId));
+              if (!el || !panel) return null;
+              const box = layoutBoxText(el);
+              const [ex, ey] = [panel.bounds.x + el.x + padding, panel.bounds.y + el.y + padding];
+              return (
+                <foreignObject
+                  x={ex}
+                  y={ey}
+                  width={Math.max(el.width, 20)}
+                  height={Math.max(el.height, box.lineHeightMm * 2)}
+                  transform={`rotate(${el.rotation || 0} ${ex + el.width / 2} ${ey + el.height / 2})`}
+                >
+                  <textarea
+                    autoFocus
+                    value={editingText}
+                    aria-label="Sửa chữ"
+                    onChange={(e) => setEditingText(e.target.value)}
+                    onBlur={commitEditing}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setEditingId(null);
+                      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) commitEditing();
+                    }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      fontSize: `${box.fontSizeMm}px`,
+                      lineHeight: `${box.lineHeightMm}px`,
+                      textAlign: el.style?.textAlign ?? "center",
+                      color: el.style?.color ?? "#1C1917",
+                      background: "rgba(255,255,255,0.85)",
+                      border: "0.4px solid #2563EB",
+                      padding: 0,
+                      resize: "none",
+                      outline: "none",
+                      overflow: "hidden",
+                    }}
+                  />
+                </foreignObject>
+              );
+            })()}
 
           {/* Layer 5: CAD Millimeter Rulers & Interactive Crosshairs */}
           {showRulers && (
@@ -1193,6 +1680,16 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   />
                 </>
               )}
+            </g>
+          )}
+          {showRulers && onElementsChange && (
+            <g>
+              <rect x={padding} y={padding - 14} width={totalW} height={10} fill="transparent" className="cursor-s-resize" onPointerDown={(e) => startGuide(e, "x")}>
+                <title>Kéo xuống để tạo đường gióng dọc</title>
+              </rect>
+              <rect x={padding - 14} y={padding} width={10} height={totalH} fill="transparent" className="cursor-e-resize" onPointerDown={(e) => startGuide(e, "y")}>
+                <title>Kéo sang phải để tạo đường gióng ngang</title>
+              </rect>
             </g>
           )}
         </svg>
