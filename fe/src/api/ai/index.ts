@@ -55,6 +55,11 @@ export function listAiImages(params: { before?: string; limit?: number } = {}): 
   return request(`/ai/images${qs ? `?${qs}` : ""}`);
 }
 
+/** The same tools on an image of the canvas the user uploaded (its URL), docs/23 S20. */
+export function runAiUploadTool(content: string, tool: AiImageTool, clientRequestId?: string): Promise<AiImageJobStarted> {
+  return request(`/ai/images/uploads/${tool}`, { method: "POST", json: { content, clientRequestId } });
+}
+
 /** Upscale, remove the background of, or vectorize one AI image: a new job, priced in xu. */
 export function runAiImageTool(outputId: string, tool: AiImageTool, clientRequestId?: string): Promise<AiImageJobStarted> {
   return request(`/ai/images/${encodeURIComponent(outputId)}/${tool}`, { method: "POST", json: { clientRequestId } });

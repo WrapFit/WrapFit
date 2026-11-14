@@ -30,7 +30,7 @@ const running = (job: AiImageJob | undefined) => job?.status === "PENDING" || jo
  * One click, one id: the server answers a repeated request with the same job instead of charging twice. A UUID v4;
  * `crypto.randomUUID` is missing on plain-http pages other than localhost (a phone on the LAN).
  */
-function newRequestId(): string {
+export function newRequestId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
