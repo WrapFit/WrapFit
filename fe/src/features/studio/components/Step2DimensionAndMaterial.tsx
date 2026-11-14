@@ -20,6 +20,9 @@ import {
   CanvasElement,
   CURRENT_FORMULA_VERSION,
   DEFAULT_CELLS,
+  DEFAULT_CUPS,
+  MAX_CUPS,
+  cupCarrierSizesOf,
   FLAT_STRUCTURES,
   MAX_CELLS,
   SHEET_ONLY_STRUCTURES,
@@ -89,6 +92,10 @@ function axisLabelOf(structure: BoxStructureType, axis: DimensionAxis): { name: 
   }
   if (structure === "belly-band") {
     const hints = { length: "Chiều dài hộp cần bọc (phủ bì)", width: "Chiều sâu hộp; đai rộng khoảng 40 %", height: "Chiều cao hộp cần bọc" };
+    return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
+  }
+  if (structure === "cup-carrier") {
+    const hints = { length: "Dài theo hàng ly: số ly × miệng ly (+5 mm mỗi ly)", width: "Sâu: miệng ly + 5 mm (2 hàng: gấp đôi)", height: "Cao thành khay, ôm phần nắp ly" };
     return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
   }
   if (structure === "insert") {
@@ -404,8 +411,17 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             />
           )}
 
+          {/* Card: cups of a cup carrier */}
+          {boxType === "cup-carrier" && (
+            <CupsCard
+              cups={draft.cells ?? DEFAULT_CUPS}
+              diameter={cupCarrierSizesOf(draft).cupDiameter}
+              onChange={(cells) => change({ ...draft, cells }, true)}
+            />
+          )}
+
           {/* Card 2: Món quà mẫu (boxes only: a tag, a card or a band has no gift inside) */}
-          {!flat && <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+          {!flat && boxType !== "cup-carrier" && <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
               <h2 className="font-landing-heading text-title font-bold text-slate-900">
                 Món quà mẫu
@@ -680,6 +696,33 @@ function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number };
       <div className="mt-3 flex flex-wrap gap-4">
         <SegmentedSwitch label="Hàng" value={String(cells.rows)} options={options(MAX_CELLS.rows)} onChange={(v) => onChange({ ...cells, rows: Number(v) })} />
         <SegmentedSwitch label="Cột" value={String(cells.cols)} options={options(MAX_CELLS.cols)} onChange={(v) => onChange({ ...cells, cols: Number(v) })} />
+      </div>
+    </div>
+  );
+}
+
+/** "Số ly": rows × columns of cup holes in the base of a cup carrier (shared/src/parametric/cup-carrier.ts). */
+function CupsCard({
+  cups,
+  diameter,
+  onChange,
+}: {
+  cups: { rows: number; cols: number };
+  diameter: number;
+  onChange(cups: { rows: number; cols: number }): void;
+}) {
+  const options = (max: number) => Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
+  return (
+    <div data-tour="s2-cups" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <h2 className="font-landing-heading text-title font-bold text-slate-900">Số ly</h2>
+      <p className="mt-1 text-caption text-fg-muted">
+        {diameter > 0
+          ? `${cups.rows * cups.cols} ly, lỗ đặt ly Ø ${Math.round(diameter)} mm: chọn ly có miệng lớn hơn lỗ 3–8 mm để ly treo bằng vành.`
+          : "Khay quá nhỏ cho số ly này: tăng chiều dài, chiều sâu hoặc bớt số ly."}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-4">
+        <SegmentedSwitch label="Hàng" value={String(cups.rows)} options={options(MAX_CUPS.rows)} onChange={(v) => onChange({ ...cups, rows: Number(v) })} />
+        <SegmentedSwitch label="Ly mỗi hàng" value={String(cups.cols)} options={options(MAX_CUPS.cols)} onChange={(v) => onChange({ ...cups, cols: Number(v) })} />
       </div>
     </div>
   );

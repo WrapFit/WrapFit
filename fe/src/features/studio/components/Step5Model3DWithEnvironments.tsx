@@ -128,7 +128,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   };
 
   const structureName =
-    boxType === "sleeve-drawer" ? "Hộp bao diêm" : boxType === "lid-base" ? "Hộp âm dương" : boxType === "pillow" ? "Hộp gối" : boxType === "mailer" ? "Hộp nắp cài" : boxType === "gable" ? "Hộp quai xách" : boxType === "insert" ? "Khay chia ngăn" : boxType === "hang-tag" ? "Thẻ treo" : boxType === "folded-card" ? "Thiệp gấp đôi" : boxType === "belly-band" ? "Đai giấy" : "Hộp nắp gài";
+    boxType === "sleeve-drawer" ? "Hộp bao diêm" : boxType === "lid-base" ? "Hộp âm dương" : boxType === "pillow" ? "Hộp gối" : boxType === "mailer" ? "Hộp nắp cài" : boxType === "gable" ? "Hộp quai xách" : boxType === "cup-carrier" ? "Khay xách ly" : boxType === "insert" ? "Khay chia ngăn" : boxType === "hang-tag" ? "Thẻ treo" : boxType === "folded-card" ? "Thiệp gấp đôi" : boxType === "belly-band" ? "Đai giấy" : "Hộp nắp gài";
   const lidLabel =
     boxType === "sleeve-drawer"
       ? isLidOpen

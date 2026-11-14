@@ -11,7 +11,9 @@ import {
   orderElements,
   printsInside,
   panelTransforms,
+  blendOf,
   insertLayoutOf,
+  shadowOf,
   pillowShapeOf,
   sideOf,
   transformPoint,
@@ -304,8 +306,22 @@ function panelTexture(
     for (const el of elements) {
       ctx.save();
       if (typeof el.style?.opacity === "number") ctx.globalAlpha = Math.min(1, Math.max(0, el.style.opacity));
+      const blend = blendOf(el.style);
+      if (blend) ctx.globalCompositeOperation = blend;
       ctx.translate(el.x + el.width / 2, el.y + el.height / 2);
       ctx.rotate(((el.rotation || 0) * Math.PI) / 180);
+      const shadow = shadowOf(el.style);
+      if (shadow) {
+        // Canvas shadows live in device pixels: the offset goes through the current (turned) transform by hand.
+        const m = ctx.getTransform();
+        const r = parseInt(shadow.color.slice(1, 3), 16);
+        const g = parseInt(shadow.color.slice(3, 5), 16);
+        const b = parseInt(shadow.color.slice(5, 7), 16);
+        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${shadow.opacity})`;
+        ctx.shadowBlur = shadow.blur * Math.hypot(m.a, m.b);
+        ctx.shadowOffsetX = m.a * shadow.x + m.c * shadow.y;
+        ctx.shadowOffsetY = m.b * shadow.x + m.d * shadow.y;
+      }
       if (el.flipX || el.flipY) ctx.scale(el.flipX ? -1 : 1, el.flipY ? -1 : 1);
       ctx.translate(-el.width / 2, -el.height / 2);
       drawFinished(ctx, el, (target) => {
@@ -401,6 +417,13 @@ function stagedProgress(structure: string, progress: number, open: number) {
         return mix(clamp01((progress - 0.55) / 0.45), -0.6, open);
       }
       return clamp01(progress / 0.55);
+    }
+    if (structure === "cup-carrier") {
+      // Walls rise from the base, then the shoulders close in and the handles meet; open, the shoulders swing out.
+      if (panel.id.startsWith("carrier_shoulder_") || panel.id.startsWith("carrier_handle_")) {
+        return mix(clamp01((progress - 0.5) / 0.5), -0.5, open);
+      }
+      return clamp01(progress / 0.5);
     }
     if (structure === "mailer") {
       if (panel.id === "mailer_lid") return mix(clamp01((progress - 0.6) / 0.4), -0.25, open);
