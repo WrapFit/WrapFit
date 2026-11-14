@@ -31,6 +31,7 @@ import type {
   MaterialSpecification,
   MaterialType,
 } from '@wrapfit/shared';
+import { BLEND_MODES, SHADOW_LIMITS, type BlendMode } from '@wrapfit/shared';
 import type { CanvasState } from '../../domain/project.types';
 
 /** Editor presets (pattern, palette, paper look) are ids, never raw SVG / CSS that a public page would render. */
@@ -191,6 +192,32 @@ export class GradientDto implements NonNullable<Style['gradient']> {
   stops: GradientStopDto[];
 }
 
+/** Drop shadow of an element (docs/23 S22): #RRGGBB, opacity 0..1, blur and offset in mm. */
+export class ShadowDto {
+  @Matches(/^#[0-9a-fA-F]{6}$/, { message: '$property must be a #RRGGBB color' })
+  color: string;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Max(1)
+  opacity: number;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0)
+  @Max(SHADOW_LIMITS.blur)
+  blur: number;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(-SHADOW_LIMITS.offset)
+  @Max(SHADOW_LIMITS.offset)
+  x: number;
+
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(-SHADOW_LIMITS.offset)
+  @Max(SHADOW_LIMITS.offset)
+  y: number;
+}
+
 /** One colour of an SVG logo swapped for another (docs/23 S14). */
 export class ColorSwapDto {
   @Matches(HEX_COLOR, { message: HEX_COLOR_MESSAGE })
@@ -252,6 +279,15 @@ export class CanvasElementStyleDto implements Style {
   @Min(0)
   @Max(1)
   opacity?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ShadowDto)
+  shadow?: ShadowDto;
+
+  @IsOptional()
+  @IsIn(BLEND_MODES.map((mode) => mode.id))
+  blendMode?: BlendMode;
 
   @IsOptional()
   @IsIn([400, 700])

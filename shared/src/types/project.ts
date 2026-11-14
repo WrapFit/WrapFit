@@ -46,6 +46,10 @@ export interface CanvasElementStyle {
   fillColor?: string;
   /** 0..1. */
   opacity?: number;
+  /** Drop shadow (docs/23 S22, print/effects.ts): colour, opacity, blur and offset in mm. */
+  shadow?: { color: string; opacity: number; blur: number; x: number; y: number };
+  /** How the element mixes with what is under it (docs/23 S22); none = normal. */
+  blendMode?: "multiply" | "screen" | "overlay" | "darken" | "lighten";
   /** Text weight: 400 regular or 700 bold (the default, the weight the print files have always used). */
   fontWeight?: 400 | 700;
   fontStyle?: "normal" | "italic";

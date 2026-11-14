@@ -36,6 +36,11 @@ import {
   parseLibraryArt,
   PRINT_FONTS,
   PRODUCT_LABEL_LINES,
+  BLEND_MODES,
+  misspelledWords,
+  DEFAULT_SHADOW,
+  SHADOW_LIMITS,
+  type BlendMode,
   printFontOf,
   safeMarginsOf,
   SHAPE_KINDS,
@@ -337,12 +342,62 @@ function CommonControls({ element, onChange }: InspectorProps) {
           <FlipVertical2 className="size-4" aria-hidden />
         </button>
       </div>
+      <EffectsField element={element} onChange={onChange} />
       <AnchorField element={element} onChange={onChange} />
     </div>
   );
 }
 
-const ANCHOR_H = { left: "Trái", center: "Giữa", right: "Phải", stretch: "Giãn theo mặt" } as const;
+/**
+ * "Đổ bóng" and "Hòa trộn" (docs/23 S22): a drop shadow (colour, opacity, blur, offset in mm) and a blend mode, the
+ * same on the 2D sheet, the 3D box and in the print files (print/effects.ts).
+ */
+function EffectsField({ element, onChange }: Pick<InspectorProps, "element" | "onChange">) {
+  const shadow = element.style?.shadow;
+  const setShadow = (next: Partial<typeof DEFAULT_SHADOW> | null) =>
+    onChange({ ...element, style: { ...element.style, shadow: next === null ? undefined : { ...(shadow ?? DEFAULT_SHADOW), ...next } } });
+  return (
+    <fieldset className="space-y-3 rounded-panel bg-surface-raised p-3 ring-1 ring-inset ring-line">
+      <legend className="px-1 text-label font-semibold text-fg">Hiệu ứng</legend>
+      <label className="flex items-center justify-between gap-2 text-label text-fg">
+        Đổ bóng
+        <input type="checkbox" checked={!!shadow} onChange={(e) => setShadow(e.target.checked ? {} : null)} className="size-4 accent-fpt-orange" />
+      </label>
+      {shadow && (
+        <div className="space-y-2">
+          <label className="flex items-center justify-between gap-2 text-caption text-fg-muted">
+            Màu bóng
+            <input type="color" value={shadow.color} onChange={(e) => setShadow({ color: e.target.value.toUpperCase() })} className="h-7 w-10 cursor-pointer rounded border border-line" />
+          </label>
+          <Stepper label="Độ đậm" unit="%" min={5} max={100} step={5} value={Math.round(shadow.opacity * 100)} onChange={(v) => setShadow({ opacity: v / 100 })} />
+          <Stepper label="Độ nhòe" unit="mm" min={0} max={SHADOW_LIMITS.blur} step={0.5} value={shadow.blur} onChange={(v) => setShadow({ blur: v })} />
+          <Stepper label="Lệch ngang" unit="mm" min={-SHADOW_LIMITS.offset} max={SHADOW_LIMITS.offset} step={0.5} value={shadow.x} onChange={(v) => setShadow({ x: v })} />
+          <Stepper label="Lệch dọc" unit="mm" min={-SHADOW_LIMITS.offset} max={SHADOW_LIMITS.offset} step={0.5} value={shadow.y} onChange={(v) => setShadow({ y: v })} />
+        </div>
+      )}
+      <label className="block space-y-1.5">
+        <span className="text-label text-fg">Hòa trộn với lớp dưới</span>
+        <select
+          value={element.style?.blendMode ?? ""}
+          onChange={(e) => onChange({ ...element, style: { ...element.style, blendMode: (e.target.value || undefined) as BlendMode | undefined } })}
+          className={fieldClass}
+        >
+          <option value="">Bình thường</option>
+          {BLEND_MODES.map((mode) => (
+            <option key={mode.id} value={mode.id} title={mode.hint}>
+              {mode.label}
+            </option>
+          ))}
+        </select>
+        {element.style?.blendMode && (
+          <span className="block text-caption leading-5 text-fg-muted">{BLEND_MODES.find((m) => m.id === element.style?.blendMode)?.hint}. In ra đúng như trên màn hình (PDF giữ chế độ hòa trộn).</span>
+        )}
+      </label>
+    </fieldset>
+  );
+}
+
+const ANCHOR_H ={ left: "Trái", center: "Giữa", right: "Phải", stretch: "Giãn theo mặt" } as const;
 const ANCHOR_V = { top: "Trên", middle: "Giữa", bottom: "Dưới", stretch: "Giãn theo mặt" } as const;
 
 /**
@@ -393,8 +448,15 @@ export function TextInspector({ element, onChange, onApplyFontToAll }: Inspector
   const italic = !uploaded && style.fontStyle === "italic";
   const underline = style.textDecoration === "underline";
   const align = style.textAlign ?? "center";
+  // docs/23 S22: words that are not possible Vietnamese syllables (a note, never blocking).
+  const typos = misspelledWords(element.content);
   return (
     <div className="space-y-4">
+      {typos.length > 0 && (
+        <p role="status" className="rounded-control bg-warning-bg px-3 py-2 text-caption leading-5 text-warning-fg">
+          Có thể sai chính tả: {typos.map((w) => `“${w}”`).join(", ")}. Kiểm tra lại dấu và chữ cái; tên riêng, từ nước ngoài thì bỏ qua.
+        </p>
+      )}
       <label className="block space-y-1.5">
         <span className="text-label text-fg">Phông chữ</span>
         <select

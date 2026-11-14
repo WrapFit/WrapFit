@@ -34,6 +34,10 @@ import {
   WATERMARK_TEXT,
   watermarkPlacement,
   type Cmyk,
+  pdfBlendName,
+  shadowLayers,
+  type BlendMode,
+  type ElementShadow,
   type MeasureText,
   type OutlineFont,
   type PlacedBase,
@@ -318,14 +322,25 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), ima
     if (!clips.has(key)) clips.set(key, { id: `face${clips.size + 1}`, box });
     return clips.get(key)!.id;
   };
+  // Drop shadows (docs/23 S22): one filter per element, in the frame of the element before its mirror.
+  const effectDefs: string[] = [];
   const placed = (b: PlacedBase, content: string) => {
     const { cx, cy } = centreOf(b);
     const flip = flipMatrix(b);
-    const transform = [b.rotation ? `rotate(${n(b.rotation)} ${n(cx)} ${n(cy)})` : '', flip ? `matrix(${flip.map(n).join(' ')})` : '']
-      .filter(Boolean)
-      .join(' ');
-    const inner = transform ? `<g transform="${transform}">${content}</g>` : content;
-    return `<g clip-path="url(#${clipId(b.clip)})"${b.opacity < 1 ? ` opacity="${n(b.opacity)}"` : ''}>${inner}</g>`;
+    let body = flip ? `<g transform="matrix(${flip.map(n).join(' ')})">${content}</g>` : content;
+    if (b.shadow) {
+      const s = b.shadow;
+      const id = `shadow${effectDefs.length + 1}`;
+      const pad = Math.abs(s.x) + Math.abs(s.y) + 3 * s.blur + 1;
+      effectDefs.push(
+        `<filter id="${id}" filterUnits="userSpaceOnUse" x="${n(b.x - pad)}" y="${n(b.y - pad)}" width="${n(b.width + 2 * pad)}" height="${n(b.height + 2 * pad)}" color-interpolation-filters="sRGB">` +
+          `<feDropShadow dx="${n(s.x)}" dy="${n(s.y)}" stdDeviation="${n(s.blur / 2)}" flood-color="${escapeXml(s.color)}" flood-opacity="${n(s.opacity)}"/></filter>`,
+      );
+      body = `<g filter="url(#${id})">${body}</g>`;
+    }
+    const inner = b.rotation ? `<g transform="rotate(${n(b.rotation)} ${n(cx)} ${n(cy)})">${body}</g>` : body;
+    const blend = b.blend ? ` style="mix-blend-mode:${b.blend}"` : '';
+    return `<g clip-path="url(#${clipId(b.clip)})"${b.opacity < 1 ? ` opacity="${n(b.opacity)}"` : ''}${blend}>${inner}</g>`;
   };
   const artworkSvg = drawList(layout, artwork)
     .map(({ kind, item }) => {
@@ -368,7 +383,7 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), ima
     .filter(({ item }) => item.finish)
     .map(({ kind, item }) => {
       const colour = escapeXml(FINISH_SPOTS[item.finish!].display);
-      const solid = { ...item, opacity: 1 };
+      const solid = { ...item, opacity: 1, shadow: null, blend: null };
       if (kind === 'art') {
         const shapes = item.art.shapes
           .map((sh) => `<path d="${sh.d}" fill="${sh.fill ? colour : 'none'}"${sh.stroke ? ` stroke="${colour}" stroke-width="${n(sh.strokeWidth ?? LINE_MM)}"` : ''}/>`)
@@ -380,11 +395,12 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), ima
       return placed(solid, `<rect x="${n(item.x)}" y="${n(item.y)}" width="${n(item.width)}" height="${n(item.height)}" fill="${colour}"/>`);
     })
     .join('');
-  const defs = clips.size
-    ? `<defs>${[...clips.values()]
-        .map(({ id, box }) => `<clipPath id="${id}"><rect x="${n(box.x)}" y="${n(box.y)}" width="${n(box.width)}" height="${n(box.height)}"/></clipPath>`)
-        .join('')}</defs>`
-    : '';
+  const defs =
+    clips.size || effectDefs.length
+      ? `<defs>${[...clips.values()]
+          .map(({ id, box }) => `<clipPath id="${id}"><rect x="${n(box.x)}" y="${n(box.y)}" width="${n(box.width)}" height="${n(box.height)}"/></clipPath>`)
+          .join('')}${effectDefs.join('')}</defs>`
+      : '';
   const strokes = (type: 'cut' | 'crease') =>
     layout.strokes.filter((s) => s.type === type).map((s) => `<path d="${escapeXml(s.d)}"/>`).join('');
   const marks = dimensionMarks(layout);
@@ -546,6 +562,36 @@ export interface PdfRenderOptions {
  * (overprint), four layers (Dimensions does not print), TrimBox = dielines, BleedBox +3 mm.
  * Home Print mode: the sheet centred on A4/A3 with crop marks and a 50 mm ruler, for DIY crafters.
  */
+/**
+ * Drop shadow of a photo for the PDF (docs/23 S22): the image's alpha (a full rectangle when it has none), padded and
+ * blurred like the screen's gaussian, as the soft mask of a plain CMYK image in the shadow colour. `padMm`: how far
+ * the shadow image reaches past the drawn picture on each side.
+ */
+async function imageShadow(prepared: PreparedImage, shadow: ElementShadow): Promise<{ image: PreparedImage; padMm: { x: number; y: number } }> {
+  const { width, height } = prepared;
+  const pxPerMm = width / Math.max(prepared.draw.dw, 1e-6);
+  const pad = Math.ceil(shadow.blur * 1.6 * pxPerMm) + 2;
+  const alpha = prepared.alpha ?? new Uint8Array(width * height).fill(255);
+  let pipeline = sharp(Buffer.from(alpha), { raw: { width, height, channels: 1 } }).extend({
+    top: pad,
+    bottom: pad,
+    left: pad,
+    right: pad,
+    background: { r: 0, g: 0, b: 0, alpha: 1 },
+  });
+  const sigma = (shadow.blur / 2) * pxPerMm;
+  if (sigma >= 0.3) pipeline = pipeline.blur(sigma);
+  const { data, info } = await pipeline.toColourspace('b-w').raw().toBuffer({ resolveWithObject: true });
+  const mask = info.channels === 1 ? data : Uint8Array.from({ length: info.width * info.height }, (_, i) => data[i * info.channels]);
+  const [c, m, y, k] = hexToCmyk(shadow.color).map((v) => Math.round(v * 2.55));
+  const cmyk = new Uint8Array(info.width * info.height * 4);
+  for (let i = 0; i < cmyk.length; i += 4) cmyk.set([c, m, y, k], i);
+  return {
+    image: { ...prepared, width: info.width, height: info.height, cmyk, alpha: new Uint8Array(mask) },
+    padMm: { x: pad / pxPerMm, y: pad / (height / Math.max(prepared.draw.dh, 1e-6)) },
+  };
+}
+
 export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(), options?: PdfRenderOptions): Promise<Buffer> {
   const isA4Print = !!options?.withCropMarks;
   let pageWidth = layout.width;
@@ -629,13 +675,52 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     draw();
     doc.restore();
   };
+  /** Blend modes (docs/23 S22): one ExtGState per mode, registered on each page that uses it. */
+  const blendStates = new Map<BlendMode, RawRef>();
+  const useBlend = (mode: BlendMode) => {
+    const name = `GsBM${pdfBlendName(mode)}`;
+    let state = blendStates.get(mode);
+    if (!state) {
+      state = raw.ref({ Type: 'ExtGState', BM: pdfBlendName(mode) });
+      state.end();
+      blendStates.set(mode, state);
+    }
+    raw.page.ext_gstates[name] = state;
+    doc.addContent(`/${name} gs`);
+  };
+  /** Paints one outline of an element's silhouette: filled and / or stroked `width` mm wider. */
+  type Paint = (d: string, fill: boolean, width?: number) => void;
+  /**
+   * A drop shadow drawn from the element's silhouette, in vector CMYK layers that widen and fade (print/effects.ts).
+   * Called inside `placed`, before the element's mirror: the offset is in the frame of the turned element.
+   */
+  const vectorShadow = (b: PlacedBase, shadow: ElementShadow, silhouette: (paint: Paint) => void) => {
+    const colour = hexToCmyk(shadow.color);
+    const flip = flipMatrix(b);
+    for (const layer of shadowLayers(shadow)) {
+      doc.save();
+      doc.translate(shadow.x, shadow.y);
+      if (flip) doc.transform(...flip);
+      doc.opacity(b.opacity * layer.opacity);
+      silhouette((d, fill, width = 0) => {
+        doc.path(d).lineJoin('round').lineCap('round');
+        const w = width + layer.strokeWidth;
+        if (fill && w > 0) doc.lineWidth(w).fillAndStroke(colour, colour);
+        else if (fill) doc.fill(colour);
+        else if (w > 0) doc.lineWidth(w).stroke(colour);
+      });
+      doc.restore();
+    }
+  };
   /** An element: cut to its face + bleed, with its opacity, turned and mirrored around its centre (like the canvas). */
-  const placed = (b: PlacedBase, draw: () => void) => {
+  const placed = (b: PlacedBase, draw: () => void, shadow?: () => void) => {
     const { cx, cy } = centreOf(b);
     doc.save();
     doc.rect(b.clip.x, b.clip.y, b.clip.width, b.clip.height).clip();
     if (b.opacity < 1) doc.opacity(b.opacity);
+    if (b.blend) useBlend(b.blend);
     if (b.rotation) doc.rotate(b.rotation, { origin: [cx, cy] });
+    if (b.shadow && shadow) shadow();
     const flip = flipMatrix(b);
     if (flip) doc.transform(...flip);
     draw();
@@ -661,7 +746,9 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
 
   /** Library art in CMYK: shapes (fill and / or stroke), then its outlined texts. */
   const drawArt = (a: ReturnType<typeof artVectors>[number]) =>
-    placed(a, () => {
+    placed(
+      a,
+      () => {
       doc.translate(a.x, a.y);
       for (const shape of a.art.shapes) {
         doc.lineCap(shape.round ? 'round' : 'butt').lineJoin(shape.round ? 'round' : 'miter');
@@ -678,7 +765,14 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
         else doc.fill(shape.cmyk ?? hexToCmyk(shape.fill ?? '#FFFFFF'));
       }
       for (const t of a.texts) if (t.d) doc.path(t.d).fill(hexToCmyk(t.color));
-    });
+      },
+      () =>
+        vectorShadow(a, a.shadow!, (paint) => {
+          doc.translate(a.x, a.y);
+          for (const shape of a.art.shapes) paint(shape.d, !!(shape.fill || shape.gradient), shape.stroke ? (shape.strokeWidth ?? LINE_MM) : 0);
+          for (const t of a.texts) if (t.d) paint(t.d, true);
+        }),
+    );
 
   beginLayer('Artwork');
   for (const { kind, item } of drawList(layout, artwork)) {
@@ -686,18 +780,26 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     else if (kind === 'text') {
       const text = item;
       if (text.d) {
-        placed(text, () => {
-          if (text.stroke) doc.lineWidth(text.stroke.widthMm * 2).lineJoin('round').path(text.d).stroke(hexToCmyk(text.stroke.color));
-          doc.path(text.d).fill(text.cmyk);
-        });
+        placed(
+          text,
+          () => {
+            if (text.stroke) doc.lineWidth(text.stroke.widthMm * 2).lineJoin('round').path(text.d).stroke(hexToCmyk(text.stroke.color));
+            doc.path(text.d).fill(text.cmyk);
+          },
+          () => vectorShadow(text, text.shadow!, (paint) => paint(text.d!, true, text.stroke ? text.stroke.widthMm * 2 : 0)),
+        );
       }
     } else if (kind === 'barcode') {
       const b = item;
-      placed(b, () => {
-        // White knockout (no ink, never overprinted), then the modules in plain black.
-        doc.rect(b.x, b.y, b.width, b.height).fill(PAPER);
-        doc.path(b.d).fill(K100);
-      });
+      placed(
+        b,
+        () => {
+          // White knockout (no ink, never overprinted), then the modules in plain black.
+          doc.rect(b.x, b.y, b.width, b.height).fill(PAPER);
+          doc.path(b.d).fill(K100);
+        },
+        () => vectorShadow(b, b.shadow!, (paint) => paint(`M${n(b.x)} ${n(b.y)}h${n(b.width)}v${n(b.height)}h${n(-b.width)}Z`, true)),
+      );
     } else {
       const image = item;
       const file = artwork.get(image.url);
@@ -705,7 +807,32 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
       if (!prepared) continue;
       const label = embedImage(prepared);
       const { dx, dy, dw, dh } = prepared.draw;
-      placed(image, () => {
+      // Shadow of a photo: its own alpha, blurred, as a soft mask over the shadow colour; a framed photo uses its frame.
+      const softShadow = image.shadow && !image.mask ? await imageShadow(prepared, image.shadow) : null;
+      const shadowLabel = softShadow ? embedImage(softShadow.image) : null;
+      const drawShadow = () => {
+        const s = image.shadow!;
+        if (softShadow && shadowLabel) {
+          doc.save();
+          doc.opacity(image.opacity * s.opacity);
+          const flip = flipMatrix(image);
+          doc.translate(s.x, s.y);
+          if (flip) doc.transform(...flip);
+          const pad = softShadow.padMm;
+          doc.transform(dw + 2 * pad.x, 0, 0, -(dh + 2 * pad.y), image.x + dx - pad.x, image.y + dy + dh + pad.y);
+          doc.addContent(`/${shadowLabel} Do`);
+          doc.restore();
+        } else if (image.mask) {
+          const mask = image.mask;
+          vectorShadow(image, s, (paint) => {
+            doc.translate(image.x, image.y);
+            paint(mask, true);
+          });
+        }
+      };
+      placed(
+        image,
+        () => {
         if (image.mask) {
           // Frame of the photo (rounded, circle, arch).
           doc.translate(image.x, image.y);
@@ -714,7 +841,9 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
         }
         doc.transform(dw, 0, 0, -dh, image.x + dx, image.y + dy + dh);
         doc.addContent(`/${label} Do`);
-      });
+        },
+        drawShadow,
+      );
     }
   }
   const watermark = options?.watermarked ? watermarkOutline(layout) : null;
@@ -738,7 +867,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     doc.addContent('/GsOverprint gs');
     for (const { kind, item } of finished) {
       const colour = FINISH_SPOTS[item.finish!].name;
-      placed({ ...item, opacity: 1 }, () => {
+      placed({ ...item, opacity: 1, shadow: null, blend: null }, () => {
         if (kind === 'art') {
           doc.translate(item.x, item.y);
           for (const shape of item.art.shapes) {

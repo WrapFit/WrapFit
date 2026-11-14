@@ -15,7 +15,9 @@ import {
   FINISH_SPOTS,
   DielineGeometry,
   CanvasElement,
+  blendOf,
   isBackground,
+  shadowOf,
   isMovable,
   matchesPanel,
   moveLayer,
@@ -1282,6 +1284,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             const turn = `rotate(${el.rotation || 0} ${cx} ${cy})`;
             const mirror = el.flipX || el.flipY ? ` translate(${cx} ${cy}) scale(${el.flipX ? -1 : 1} ${el.flipY ? -1 : 1}) translate(${-cx} ${-cy})` : "";
             const opacity = typeof el.style?.opacity === "number" ? el.style.opacity : undefined;
+            const shadow = shadowOf(el.style);
+            const blend = blendOf(el.style);
 
             // FitCheck flags it (safe margin on every side, bleed, glue flap…)
             const isMarginBreached = flaggedElementIds?.has(el.id) ?? false;
@@ -1342,10 +1346,17 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   />
                 )}
 
-                {/* Content: cut to the printable box of its face */}
-                <g clipPath={`url(#${uid}-face-${targetPanel.id})`}>
-                  <g transform={`${turn}${mirror}`} opacity={opacity}>
-                    {editing ? null : content}
+                {/* Content: cut to the printable box of its face; drop shadow and blend mode (docs/23 S22) */}
+                <g clipPath={`url(#${uid}-face-${targetPanel.id})`} style={blend ? { mixBlendMode: blend } : undefined}>
+                  {shadow && (
+                    <defs>
+                      <filter id={`${uid}-shadow-${el.id}`} x="-60%" y="-60%" width="220%" height="220%" colorInterpolationFilters="sRGB">
+                        <feDropShadow dx={shadow.x} dy={shadow.y} stdDeviation={shadow.blur / 2} floodColor={shadow.color} floodOpacity={shadow.opacity} />
+                      </filter>
+                    </defs>
+                  )}
+                  <g transform={turn} opacity={opacity} filter={shadow ? `url(#${uid}-shadow-${el.id})` : undefined}>
+                    <g transform={mirror || undefined}>{editing ? null : content}</g>
                   </g>
                 </g>
                 {/* Print finish (foil, UV, embossing): a dashed outline in the colour of its spot layer */}
@@ -1417,6 +1428,24 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               </g>
             );
           })}
+
+          {/* Holes over the design: a full-panel background would otherwise hide the hand holes and the cup holes of a
+              carrier. Whatever is printed there is cut away, so they show as holes with their cut line. */}
+          {dieline.openings?.map((opening, index) => (
+            <rect
+              key={`knockout_${index}`}
+              x={opening.x + padding}
+              y={opening.y + padding}
+              width={opening.width}
+              height={opening.height}
+              rx={opening.radius}
+              fill={opening.kind === "window" ? "#E0F2FE" : "#F1F5F9"}
+              fillOpacity={opening.kind === "window" ? 0.45 : 0.92}
+              className={`pointer-events-none ${showLayers.cut ? "dieline-cut" : ""}`}
+              vectorEffect="non-scaling-stroke"
+              style={showLayers.cut ? { strokeWidth: 1.6 } : undefined}
+            />
+          ))}
 
           {/* Grid (5 mm) over the sheet */}
           {showLayers.grid && (

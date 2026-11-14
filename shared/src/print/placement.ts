@@ -15,6 +15,7 @@ import type { DielineGeometry } from "../types/dieline";
 import type { CanvasElement, CanvasElementStyle, ElementFinish, PrintSide } from "../types/project";
 import { fontSizeMmOf, PT_TO_MM } from "./text-layout";
 import { hasFilters, maskPath, type ImageFilters } from "./imagery";
+import { blendOf, shadowOf, type BlendMode, type ElementShadow } from "./effects";
 
 export interface PlacedBase {
   /** Paint order across every kind (lower first). */
@@ -33,6 +34,9 @@ export interface PlacedBase {
   /** Printable box of the face on the sheet: the element is cut to it. */
   clip: Box;
   finish: ElementFinish | null;
+  /** Drop shadow and blend mode (docs/23 S22); null = none. */
+  shadow: ElementShadow | null;
+  blend: BlendMode | null;
 }
 
 export interface PlacedText extends PlacedBase {
@@ -114,6 +118,8 @@ export function placeElements(
       flipY: !!element.flipY,
       clip: { x: piece.x + panel.bounds.x + face.x, y: piece.y + panel.bounds.y + face.y, width: face.width, height: face.height },
       finish: element.finish ?? null,
+      shadow: shadowOf(element.style),
+      blend: blendOf(element.style),
     };
     if (art) {
       placed.arts.push({ ...base, art, background: element.type === "pattern" });
