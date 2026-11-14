@@ -21,8 +21,10 @@ interface QuoteCardProps {
   dimensions: BoxDimensions;
   formulaVersion?: number;
   material: BoxMaterialTheme;
-  /** Finishes chosen in step 3. */
+  /** Finishes chosen in step 3 and those of the elements (foil, UV, embossing). */
   finishes: QuoteFinish[];
+  /** The design prints on the inside of the sheet too (second printing pass). */
+  insidePrint?: boolean;
   title: string;
   /** Saved project: the sample goes to the cart; the offline demo confirms it here. */
   projectId: string | null;
@@ -40,6 +42,7 @@ export function QuoteCard({
   formulaVersion,
   material,
   finishes,
+  insidePrint = false,
   title,
   projectId,
   blocked,
@@ -49,11 +52,11 @@ export function QuoteCard({
   const toast = useToast();
   const [sampleRequested, setSampleRequested] = useState(false);
   const paper = paperStockOf(material).quotePaper;
-  const result = useMemo(() => quote({ structure, pieces, quantity, paper, finishes }), [structure, pieces, quantity, paper, finishes]);
-  const sample = useMemo(() => quote({ structure, pieces, quantity: 1, paper, finishes }), [structure, pieces, paper, finishes]);
+  const result = useMemo(() => quote({ structure, pieces, quantity, paper, finishes, insidePrint }), [structure, pieces, quantity, paper, finishes, insidePrint]);
+  const sample = useMemo(() => quote({ structure, pieces, quantity: 1, paper, finishes, insidePrint }), [structure, pieces, paper, finishes, insidePrint]);
   const saving = useMemo(
-    () => (quantity >= 20 ? quoteSaving({ structure, dimensions, formulaVersion, quantity, paper, finishes }) : null),
-    [structure, dimensions, formulaVersion, quantity, paper, finishes]
+    () => (quantity >= 20 ? quoteSaving({ structure, dimensions, formulaVersion, quantity, paper, finishes, insidePrint }) : null),
+    [structure, dimensions, formulaVersion, quantity, paper, finishes, insidePrint]
   );
 
   const summary = [

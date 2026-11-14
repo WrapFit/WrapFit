@@ -25,7 +25,7 @@ import { cn } from "@/utils/helpers";
 
 /** Prices of this step are per box for a run of this many boxes. */
 const PRICE_QUANTITY = 50;
-const EXTRAS: QuoteFinish[] = ["foil", "spot-uv"];
+const EXTRAS: QuoteFinish[] = ["foil", "spot-uv", "emboss"];
 const LAMINATION_SHORT: Partial<Record<QuoteFinish, string>> = {
   "matte-lamination": "Mờ",
   "gloss-lamination": "Bóng",
@@ -37,6 +37,7 @@ const FINISH_NOTES: Record<QuoteFinish, string> = {
   "soft-touch-lamination": "Êm như nhung, sang tay",
   foil: "Ánh kim trên chữ, logo",
   "spot-uv": "Bóng nổi từng chi tiết",
+  emboss: "Nổi hoặc chìm trên giấy, không mực",
 };
 
 interface Step3PaperFinishProps {

@@ -12,10 +12,8 @@ import type { SafeUser } from "@/types/api";
 import { OFFLINE_DEMO } from "@/config";
 import { DEMO_USER } from "@/features/dashboard/demoData";
 import { setMockSession } from "@/services/mock-api/store";
-import { ADMIN_HOME, isAccountPage, isMakerOnlyPage, isRealAdmin } from "./roles";
-
-/** Set once an administrator has been sent to /admin in this tab: afterwards they may browse the site freely. */
-const ADMIN_LANDED_KEY = "wrapfit_admin_landed";
+import { PageLoader } from "@/components/common/StatusViews";
+import { ADMIN_HOME, isAdminAllowedPage, isRealAdmin } from "./roles";
 
 /** Set when this tab signed in (form, Google, demo buttons); unset for the demo account given to every visitor. */
 export const SIGNED_IN_KEY = "wrapfit_signed_in";
@@ -87,7 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           else window.sessionStorage?.removeItem("wrapfit_demo_role");
         } else {
           window.sessionStorage?.removeItem("wrapfit_demo_role");
-          window.sessionStorage?.removeItem(ADMIN_LANDED_KEY);
           window.sessionStorage?.removeItem(SIGNED_IN_KEY);
           window.sessionStorage?.setItem("wrapfit_demo_logged_out", "1");
         }
@@ -152,34 +149,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      <AdminLanding user={value.user} />
-      {children}
+      <AdminRouteGate user={value.user}>{children}</AdminRouteGate>
     </AuthContext.Provider>
   );
 }
 
 /**
- * Opening the site with an administrator session (a fresh tab, `npm run dev`) lands straight on the admin console
- * instead of the maker's pages. Only the first page of the tab is redirected, so the admin can still visit the site,
- * but never the maker features (studio, cart, checkout…): those always send the admin back to the console.
+ * An administrator works only in the console: every page outside it (the customer site, studio, cart, checkout…)
+ * sends them back to /admin, whether reached by a link or a typed address. The customer page is never rendered for
+ * them, not even for the instant before the redirect. Allowed pages: isAdminAllowedPage in ./roles.
  */
-function AdminLanding({ user }: { user: SafeUser | null }) {
+function AdminRouteGate({ user, children }: { user: SafeUser | null; children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
+  const blocked = isRealAdmin(user) && !isAdminAllowedPage(pathname);
   useEffect(() => {
-    if (!isRealAdmin(user)) return;
-    if (isMakerOnlyPage(pathname)) {
-      router.replace(ADMIN_HOME);
-      return;
-    }
-    try {
-      if (window.sessionStorage.getItem(ADMIN_LANDED_KEY) === "1") return;
-      window.sessionStorage.setItem(ADMIN_LANDED_KEY, "1");
-    } catch {
-      return;
-    }
-    if (pathname.startsWith(ADMIN_HOME) || pathname.startsWith("/auth/") || isAccountPage(pathname)) return;
-    router.replace(ADMIN_HOME);
-  }, [user, pathname, router]);
-  return null;
+    if (blocked) router.replace(ADMIN_HOME);
+  }, [blocked, router]);
+  if (blocked) return <PageLoader label="Đang chuyển tới trang quản trị…" />;
+  return <>{children}</>;
 }

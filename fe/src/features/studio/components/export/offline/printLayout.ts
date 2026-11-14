@@ -1,15 +1,18 @@
 // Print layout of a design, ported from be/src/export/rendering/print-layout.ts so the demo without a backend (Vercel)
 // builds the same sheet as the export worker: same pieces, same placement, same joined cut / crease strokes.
 import {
-  fontSizeMmOf,
-  libraryArt,
-  matchesPanel,
-  PT_TO_MM,
+  insidePieces,
+  placeElements,
+  printsInside,
   segmentPoints,
   type BoxDimensions,
   type CanvasElement,
   type DielineGeometry,
-  type VectorArt,
+  type PlacedArt,
+  type PlacedBarcode,
+  type PlacedImage,
+  type PlacedText,
+  type PrintSide,
 } from "@wrapfit/shared";
 import { dielinePiecesOf } from "@/features/studio/utils/dieline";
 
@@ -43,31 +46,18 @@ export interface PrintLayout {
   width: number;
   height: number;
   pieces: PlacedPiece[];
-  texts: {
-    content: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    fontSizeMm: number;
-    /** Size in points: large black texts print in rich black. */
-    fontSizePt: number;
-    fontFamily: string | undefined;
-    fontSize: number | undefined;
-    color: string;
-    rotation: number;
-  }[];
-  /** Photos and patterns print near-black as rich black; logos keep plain K. */
-  images: { url: string; type: CanvasElement["type"]; x: number; y: number; width: number; height: number; rotation: number }[];
-  /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white. */
-  barcodes: { content: string; x: number; y: number; width: number; height: number; rotation: number }[];
-  /** Vector art of the built-in library (`wf-art:`), at the element size; backgrounds under the images. */
-  arts: { art: VectorArt; background: boolean; x: number; y: number; width: number; height: number; rotation: number }[];
+  /** Placed elements (shared `placeElements`): `order` is the paint order across all kinds. */
+  texts: PlacedText[];
+  images: PlacedImage[];
+  barcodes: PlacedBarcode[];
+  arts: PlacedArt[];
   strokes: Stroke[];
+  /**
+   * The inside of the sheet (docs/23 S5), when the design prints there: the same sheet mirrored left to right, as the
+   * press sees the back of the paper, with the elements of `side: "inside"`. Printed as its own page.
+   */
+  inside?: PrintLayout;
 }
-
-/** Element types drawn from a file; `content` is the file URL. */
-const IMAGE_TYPES = new Set<CanvasElement["type"]>(["logo", "image", "pattern"]);
 
 const JOIN_TOLERANCE_MM = 0.01;
 const NUMBER = /[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi;
@@ -166,6 +156,7 @@ export function buildPrintLayout(input: {
   formulaVersion?: number;
   dimensions: BoxDimensions;
   elements: CanvasElement[];
+  side?: PrintSide;
 }): PrintLayout {
   const pieces: PlacedPiece[] = [];
   let cursor = SHEET_MARGIN_MM;
@@ -176,49 +167,10 @@ export function buildPrintLayout(input: {
     tallest = Math.max(tallest, piece.geometry.totalBoundingBox.height);
   }
 
-  const texts: PrintLayout["texts"] = [];
-  const images: PrintLayout["images"] = [];
-  const barcodes: PrintLayout["barcodes"] = [];
-  const arts: PrintLayout["arts"] = [];
-  for (const element of input.elements) {
-    const isText = element.type === "text";
-    const isBarcode = element.type === "barcode";
-    const art = IMAGE_TYPES.has(element.type) ? libraryArt(element.content, element.width, element.height) : null;
-    const drawn =
-      isText || isBarcode
-        ? !!element.content.trim()
-        : IMAGE_TYPES.has(element.type) && (!!art || /^(https?:|data:image\/|blob:|\/)/.test(element.content));
-    if (!drawn) continue;
-    const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
-    const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
-    if (!piece || !panel) continue;
-    const x = piece.x + panel.bounds.x + element.x;
-    const y = piece.y + panel.bounds.y + element.y;
-    if (art) {
-      arts.push({ art, background: element.type === "pattern", x, y, width: element.width, height: element.height, rotation: element.rotation });
-    } else if (isBarcode) {
-      barcodes.push({ content: element.content.trim(), x, y, width: element.width, height: element.height, rotation: element.rotation });
-    } else if (isText) {
-      const fontSizeMm = fontSizeMmOf(element);
-      texts.push({
-        content: element.content,
-        x,
-        y,
-        width: element.width,
-        height: element.height,
-        fontSizeMm,
-        fontSizePt: fontSizeMm / PT_TO_MM,
-        fontFamily: element.style?.fontFamily,
-        fontSize: element.style?.fontSize,
-        color: element.style?.color ?? "#000000",
-        rotation: element.rotation,
-      });
-    } else {
-      images.push({ url: element.content, type: element.type, x, y, width: element.width, height: element.height, rotation: element.rotation });
-    }
-  }
+  const isFile = (content: string) => /^(https?:|data:image\/|blob:|\/)/.test(content);
+  const { texts, images, barcodes, arts } = placeElements(pieces, input.elements, { isFile, side: input.side });
 
-  return {
+  const sheet: PrintLayout = {
     title: input.title,
     structure: input.structure,
     dimensions: input.dimensions,
@@ -230,5 +182,19 @@ export function buildPrintLayout(input: {
     barcodes,
     arts,
     strokes: pieces.flatMap(strokesOf),
+  };
+  if (input.side === "inside" || !printsInside(input.elements)) return sheet;
+  // Inside: every piece mirrored, and the pieces themselves in mirrored order across the sheet.
+  const insideSheet = insidePieces(pieces).map((piece) => ({ ...piece, x: sheet.width - piece.x - piece.geometry.totalBoundingBox.width }));
+  const placedInside = placeElements(insideSheet, input.elements, { isFile, side: "inside" });
+  return {
+    ...sheet,
+    inside: {
+      ...sheet,
+      title: `${input.title} (mặt trong)`,
+      pieces: insideSheet,
+      ...placedInside,
+      strokes: insideSheet.flatMap(strokesOf),
+    },
   };
 }

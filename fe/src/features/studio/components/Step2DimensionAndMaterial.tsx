@@ -19,6 +19,10 @@ import {
   BoxStructureType,
   CanvasElement,
   CURRENT_FORMULA_VERSION,
+  DEFAULT_CELLS,
+  FLAT_STRUCTURES,
+  MAX_CELLS,
+  SHEET_ONLY_STRUCTURES,
   FitCheckReport,
   LOCK_BOTTOM_MIN_WEIGHT_G,
   usesLockBottom,
@@ -75,6 +79,25 @@ const AXIS_LABEL: Record<DimensionAxis, { name: string; hint: string }> = {
   height: { name: "Cao", hint: "Từ đáy lên nắp" },
 };
 
+/** Size labels per structure: flat tags and cards are measured across and up, the belly band and insert elsewhere. */
+function axisLabelOf(structure: BoxStructureType, axis: DimensionAxis): { name: string; hint: string } {
+  if (SHEET_ONLY_STRUCTURES.includes(structure)) {
+    const card = structure === "folded-card";
+    return axis === "length"
+      ? { name: "Ngang", hint: card ? "Bề ngang thiệp khi đã gấp" : "Bề ngang của thẻ" }
+      : { name: "Cao", hint: card ? "Chiều cao thiệp" : "Chiều cao thẻ, tính cả đầu vát" };
+  }
+  if (structure === "belly-band") {
+    const hints = { length: "Chiều dài hộp cần bọc (phủ bì)", width: "Chiều sâu hộp; đai rộng khoảng 40 %", height: "Chiều cao hộp cần bọc" };
+    return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
+  }
+  if (structure === "insert") {
+    const hints = { length: "Lòng khay: đo trong hộp chứa, trừ 1–2 mm", width: "Lòng khay, từ trước ra sau", height: "Cao thành khay và vách chia" };
+    return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
+  }
+  return AXIS_LABEL[axis];
+}
+
 const COMMIT_DELAY_MS = 180;
 const PREFS_KEY = "wf-dimension-panel";
 
@@ -85,7 +108,10 @@ const sameSize = (a: BoxDimensions, b: BoxDimensions) =>
   a.height === b.height &&
   a.paperThickness === b.paperThickness &&
   a.giftWeight === b.giftWeight &&
-  a.bottomType === b.bottomType;
+  a.bottomType === b.bottomType &&
+  a.window === b.window &&
+  a.cells?.rows === b.cells?.rows &&
+  a.cells?.cols === b.cells?.cols;
 
 interface Step2DimensionAndMaterialProps {
   dimensions: BoxDimensions;
@@ -126,6 +152,8 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   backgroundPatternSvg = null,
 }) => {
   const boxType = structure as BoxStructureType;
+  const sheetOnly = SHEET_ONLY_STRUCTURES.includes(boxType);
+  const flat = (FLAT_STRUCTURES as readonly string[]).includes(boxType);
   const range = (field: DimensionAxis) => limits?.[field] ?? DEFAULT_RANGES[field];
 
   // --- Draft and commit: the panel and the 3D preview follow every move; the studio gets the size after a short pause.
@@ -312,10 +340,11 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
 
             {/* 3 Dimension Rows */}
             <div className="border-t border-slate-100 pt-1 divide-y divide-slate-100">
-              {DIMENSION_AXES.map((axis) => (
+              {DIMENSION_AXES.filter((axis) => !(axis === "width" && SHEET_ONLY_STRUCTURES.includes(boxType))).map((axis) => (
                 <DimensionRow
                   key={axis}
                   axis={axis}
+                  label={axisLabelOf(boxType, axis)}
                   inner={draft[axis]}
                   range={range(axis)}
                   active={active === axis}
@@ -333,11 +362,17 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-slate-100/70 px-3.5 py-2.5 text-xs text-slate-500">
               <Paperclip className="size-4 shrink-0 text-slate-400" aria-hidden />
               <span>
-                Phủ bì:{" "}
-                <strong className="font-semibold text-slate-800">
-                  {outerL} × {outerW} × {outerH} mm
-                </strong>{" "}
-                · giấy dày {t.toFixed(2)} mm, đổi ở bước Chất liệu.
+                {flat ? (
+                  <>Giấy dày {t.toFixed(2)} mm, đổi ở bước Chất liệu.</>
+                ) : (
+                  <>
+                    Phủ bì:{" "}
+                    <strong className="font-semibold text-slate-800">
+                      {outerL} × {outerW} × {outerH} mm
+                    </strong>{" "}
+                    · giấy dày {t.toFixed(2)} mm, đổi ở bước Chất liệu.
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -352,8 +387,25 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             />
           )}
 
-          {/* Card 2: Món quà mẫu */}
-          <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+          {/* Card: display window (tuck-top front, lid & base lid; docs/23 S17) */}
+          {(boxType === "tuck-top" || boxType === "lid-base") && (
+            <WindowCard
+              on={!!draft.window}
+              where={boxType === "tuck-top" ? "mặt trước" : "mặt nắp"}
+              onChange={(window) => change({ ...draft, window: window || undefined }, true)}
+            />
+          )}
+
+          {/* Card: cells of a divider insert (docs/23 S18) */}
+          {boxType === "insert" && (
+            <CellsCard
+              cells={draft.cells ?? DEFAULT_CELLS}
+              onChange={(cells) => change({ ...draft, cells }, true)}
+            />
+          )}
+
+          {/* Card 2: Món quà mẫu (boxes only: a tag, a card or a band has no gift inside) */}
+          {!flat && <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
             <div className="flex items-center justify-between">
               <h2 className="font-landing-heading text-title font-bold text-slate-900">
                 Món quà mẫu
@@ -380,7 +432,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                         ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm`
                         : "Ngoài giới hạn của cấu trúc hộp này"
                     }
-                    onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType }, true)}
+                    onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType, window: draft.window }, true)}
                     className={cn(
                       "rounded-2xl border p-3 text-left transition-all",
                       isMatch
@@ -399,7 +451,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 );
               })}
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Right Column: 3D Box Preview & Stats */}
@@ -409,7 +461,9 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             {/* Top Left Badge */}
             <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm border border-slate-100 backdrop-blur-xs">
               <span aria-hidden className="size-2 rounded-full bg-fpt-orange" />
-              {draft.length} × {draft.width} × {draft.height} mm · lọt lòng
+              {sheetOnly
+                ? `${draft.length} × ${draft.height} mm`
+                : `${draft.length} × ${draft.width} × ${draft.height} mm · ${boxType === "belly-band" ? "phủ bì hộp" : "lọt lòng"}`}
             </span>
 
             {/* Top Right Guide Toggle Button */}
@@ -446,7 +500,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                           active,
                           labels: {
                             length: `${draft.length} mm`,
-                            width: `${draft.width} mm`,
+                            width: sheetOnly ? "" : `${draft.width} mm`,
                             height: `${draft.height} mm`,
                           },
                         }
@@ -614,6 +668,50 @@ function GiftWeightCard({
   );
 }
 
+/** "Số ngăn": rows × columns of a divider insert (shared/src/parametric/insert.ts). */
+function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number }; onChange(cells: { rows: number; cols: number }): void }) {
+  const options = (max: number) => Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
+  return (
+    <div data-tour="s2-cells" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <h2 className="font-landing-heading text-title font-bold text-slate-900">Số ngăn</h2>
+      <p className="mt-1 text-caption text-fg-muted">
+        {cells.rows * cells.cols} ô, mỗi hàng {cells.cols} ô. Vách chia cài chéo vào nhau, in trên một tờ riêng.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-4">
+        <SegmentedSwitch label="Hàng" value={String(cells.rows)} options={options(MAX_CELLS.rows)} onChange={(v) => onChange({ ...cells, rows: Number(v) })} />
+        <SegmentedSwitch label="Cột" value={String(cells.cols)} options={options(MAX_CELLS.cols)} onChange={(v) => onChange({ ...cells, cols: Number(v) })} />
+      </div>
+    </div>
+  );
+}
+
+/** "Cửa sổ trưng bày": a cut-out backed by a PET film shows the gift (shared/src/parametric/openings.ts). */
+function WindowCard({ on, where, onChange }: { on: boolean; where: string; onChange(on: boolean): void }) {
+  return (
+    <div data-tour="s2-window" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+      <div className="flex flex-col gap-3">
+        <div className="min-w-0">
+          <h2 className="font-landing-heading text-title font-bold text-slate-900">Cửa sổ trưng bày</h2>
+          <p className="mt-1 text-caption text-fg-muted">
+            {on
+              ? `Khoét một ô ở giữa ${where}, dán màng PET trong phía sau để khách thấy món quà. Hình in nằm trong ô sẽ bị cắt bỏ.`
+              : `Khoét một ô ở ${where} để khách nhìn thấy món quà bên trong, thêm 900đ/hộp tiền màng PET.`}
+          </p>
+        </div>
+        <SegmentedSwitch
+          label="Cửa sổ"
+          value={on ? "on" : "off"}
+          options={[
+            { value: "off", label: "Không" },
+            { value: "on", label: "Có cửa sổ" },
+          ]}
+          onChange={(value) => onChange(value === "on")}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Segmented switch pill component for unit and basis */
 function SegmentedSwitch<T extends string>({
   label,
@@ -661,6 +759,7 @@ function SegmentedSwitch<T extends string>({
  */
 function DimensionRow({
   axis,
+  label,
   inner,
   range,
   active,
@@ -672,6 +771,7 @@ function DimensionRow({
   onRelease,
 }: {
   axis: DimensionAxis;
+  label: { name: string; hint: string };
   inner: number;
   range: { min: number; max: number };
   active: boolean;
@@ -734,10 +834,10 @@ function DimensionRow({
           </span>
           <div className="min-w-0">
             <label htmlFor={inputId} className="block text-sm font-bold text-slate-900 cursor-pointer">
-              {AXIS_LABEL[axis].name}
+              {label.name}
             </label>
             <span className={cn("block text-xs mt-0.5", outOfRange ? "text-danger-fg" : "text-slate-400")}>
-              {outOfRange ? `Từ ${shown(range.min)} đến ${shown(range.max)} ${unitLabel}` : AXIS_LABEL[axis].hint}
+              {outOfRange ? `Từ ${shown(range.min)} đến ${shown(range.max)} ${unitLabel}` : label.hint}
             </span>
           </div>
         </div>
@@ -753,7 +853,7 @@ function DimensionRow({
           <button
             type="button"
             tabIndex={-1}
-            aria-label={`Giảm ${AXIS_LABEL[axis].name.toLowerCase()}`}
+            aria-label={`Giảm ${label.name.toLowerCase()}`}
             onClick={() => nudge(-1, false)}
             disabled={inner <= range.min}
             className="flex h-full w-8 shrink-0 items-center justify-center rounded-l-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
@@ -787,7 +887,7 @@ function DimensionRow({
           <button
             type="button"
             tabIndex={-1}
-            aria-label={`Tăng ${AXIS_LABEL[axis].name.toLowerCase()}`}
+            aria-label={`Tăng ${label.name.toLowerCase()}`}
             onClick={() => nudge(1, false)}
             disabled={inner >= range.max}
             className="flex h-full w-8 shrink-0 items-center justify-center rounded-r-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent"
@@ -800,7 +900,7 @@ function DimensionRow({
       <div className="mt-3 flex items-center">
         <input
           type="range"
-          aria-label={`${AXIS_LABEL[axis].name} (kéo)`}
+          aria-label={`${label.name} (kéo)`}
           aria-valuetext={`${shown(inner)} ${unitLabel}`}
           min={range.min}
           max={range.max}

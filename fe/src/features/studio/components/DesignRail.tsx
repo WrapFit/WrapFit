@@ -1,19 +1,21 @@
 "use client";
 
 import React from "react";
-import { ChevronLeft, Gift, ImagePlus, Palette, Ruler, ShieldCheck, Sparkles, Type, Upload, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Gift, ImagePlus, Layers, Palette, Ruler, Shapes, ShieldCheck, Sparkles, Type, Upload, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/helpers";
 
 /** Sections of the left rail of the design step (Canva-like): each opens its own flyout panel. */
-export type DesignRailId = "elements" | "text" | "uploads" | "colors" | "patterns" | "aiImage" | "dimensions" | "fitcheck";
+export type DesignRailId = "elements" | "text" | "shapes" | "uploads" | "colors" | "patterns" | "aiImage" | "layers" | "dimensions" | "fitcheck";
 
 export const DESIGN_RAIL: { id: DesignRailId; label: string; title: string; icon: LucideIcon; shortcut?: string }[] = [
   { id: "elements", label: "Thành phần", title: "Thành phần & bộ mẫu", icon: Gift, shortcut: "S" },
   { id: "text", label: "Văn bản", title: "Văn bản", icon: Type, shortcut: "T" },
+  { id: "shapes", label: "Hình khối", title: "Hình khối", icon: Shapes, shortcut: "H" },
   { id: "uploads", label: "Tải lên", title: "Ảnh & logo của bạn", icon: Upload, shortcut: "U" },
   { id: "colors", label: "Màu & nền", title: "Bảng màu & nền hộp", icon: Palette, shortcut: "C" },
   { id: "patterns", label: "Hoa văn AI", title: "Hoa văn AI", icon: Sparkles, shortcut: "A" },
   { id: "aiImage", label: "Ảnh AI", title: "Ảnh AI", icon: ImagePlus, shortcut: "I" },
+  { id: "layers", label: "Lớp", title: "Lớp & thứ tự", icon: Layers, shortcut: "L" },
   { id: "dimensions", label: "Kích thước", title: "Kích thước hộp", icon: Ruler },
   { id: "fitcheck", label: "FitCheck", title: "FitCheck™", icon: ShieldCheck },
 ];

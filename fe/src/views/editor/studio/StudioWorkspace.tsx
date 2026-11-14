@@ -41,7 +41,57 @@ import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepT
 import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
-import { artPaletteOf, autoFixElements, type QuoteFinish, boxBackgrounds, BoxDimensions, CanvasElement, FitCheckReport, mainPanelOf, parseLibraryArt, recolorDesign, safeMarginsOf } from "@wrapfit/shared";
+import {
+  artPaletteOf,
+  autoFixElements,
+  type QuoteFinish,
+  boxBackgrounds,
+  BoxDimensions,
+  CANVAS_SCHEMA_VERSION,
+  CanvasElement,
+  duplicateElements,
+  groupElements,
+  canGroup,
+  ungroupElements,
+  newElementId,
+  TEXT_COMBOS,
+  textComboStyle,
+  FitCheckReport,
+  insidePieces,
+  isBackground,
+  mainPanelOf,
+  moveLayer,
+  orderElements,
+  panelTouchesGlue,
+  parseLibraryArt,
+  printsInside,
+  quoteFinishesOf,
+  recolorDesign,
+  refitBackgrounds,
+  reflowElements,
+  PRODUCT_LABEL_DISCLAIMER,
+  safeMarginsOf,
+  samePanel,
+  setPanelBackground,
+  sideOf,
+  type CustomFont,
+  type PrintSide,
+} from "@wrapfit/shared";
+import { copyId, LayersPanel } from "@/features/studio/components/layers/LayersPanel";
+import {
+  CustomFontsContext,
+  DesignColorsContext,
+  designColorsOf,
+  ElementInspector,
+  ImageInspector,
+  newShape,
+  ShapeInspector,
+  ShapePicker,
+  TEXT_PRESETS,
+  TextInspector,
+} from "@/features/studio/components/inspector/ElementInspector";
+import { layoutBoxText } from "@/features/studio/components/canvas/boxText";
+import { SelectionToolbar } from "@/features/studio/components/inspector/SelectionToolbar";
 import { usePresentMode } from "@/features/demo/presentMode";
 import { AiCopilotAssistant } from "@/features/studio/components/copilot/AiCopilotAssistant";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
@@ -72,7 +122,8 @@ import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useSt
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
-import { createProject, errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
+import { createProject, errorMessage, inspectFont, restoreSnapshot, uploadFileToStorage } from "@/api";
+import { asFontFile, FONT_ACCEPT, inspectFontFile, MAX_FONT_BYTES, registerCustomFont } from "@/features/studio/utils/customFonts";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
 import type { AiImageOutput, BoxStructure, ProjectDetail, SnapshotSummary, TemplateDetail } from "@/types/api";
@@ -99,7 +150,7 @@ const HISTORY_GAP_MS = 600;
 const HISTORY_LIMIT = 60;
 
 /** Keys of the step 4 rail (DesignRail shows the same letters in its tooltips). */
-const RAIL_KEYS: Record<string, DesignRailId> = { t: "text", u: "uploads", s: "elements", c: "colors", a: "patterns", i: "aiImage" };
+const RAIL_KEYS: Record<string, DesignRailId> = { t: "text", h: "shapes", u: "uploads", s: "elements", c: "colors", a: "patterns", i: "aiImage", l: "layers" };
 
 /** Seamless patterns of older designs (`canvasState.backgroundPattern`), shown on screen only: converted to printed
  *  library backgrounds when the design opens. */
@@ -110,7 +161,7 @@ const LEGACY_PATTERNS: Record<string, { design: string; palette: string }> = {
   gold: { design: "bg-diamonds", palette: "kim-ngan" },
 };
 /** Faces that take the unboxing QR code, in order of preference (back or bottom first). */
-const QR_PANELS = ["panel_back", "sleeve_bottom", "pillow_back", "base_bottom", "lid_top", "panel_front", "sleeve_top", "pillow_front"];
+const QR_PANELS = ["panel_back", "sleeve_bottom", "pillow_back", "mailer_back", "gable_back", "card_back", "base_bottom", "lid_top", "panel_front", "sleeve_top", "pillow_front"];
 /** The QR code of the gift's unboxing page (online `/unbox/<slug>`, offline `/unbox/demo#g=…`). */
 const isUnboxingQr = (el: CanvasElement) => el.type === "barcode" && el.content.includes("/unbox/");
 /** Palette of a background chosen before any palette. */
@@ -325,6 +376,8 @@ export function StudioWorkspace({
 
   // Step 4 stage: the flat dieline to edit, or the folded box to check it; the dock's text tool opens the composer
   const [artView, setArtView] = useState<"2d" | "3d">("2d");
+  // Side of the sheet being designed (docs/23 S5): the inside is edited on the dieline mirrored, as seen from inside.
+  const [editSide, setEditSide] = useState<PrintSide>("outside");
   const [foldProgress, setFoldProgress] = useState<number>(1);
   const [lidOpen, setLidOpen] = useState<boolean>(false);
   const [textComposerOpen, setTextComposerOpen] = useState<boolean>(false);
@@ -342,9 +395,30 @@ export function StudioWorkspace({
   useCtrlWheelZoom(stageRef, zoomStage);
 
   // Artwork Canvas Elements
-  const [elements, setElements] = useState<CanvasElement[]>(
-    project ? (project.canvasState?.elements ?? []) : (demoTemplate?.canvasState?.elements ?? DEMO_ELEMENTS)
+  const [elements, setElements] = useState<CanvasElement[]>(() => {
+    const saved = project ? (project.canvasState?.elements ?? []) : (demoTemplate?.canvasState?.elements ?? DEMO_ELEMENTS);
+    return refitBackgrounds(orderElements(saved), dielinePiecesOf(boxType, dimensions, project?.formulaVersion));
+  });
+  // Finishes the quote prices: those chosen in step 3 and those of the elements; a second pass for the inside.
+  const quoteFinishes = useMemo(() => [...new Set([...finishes, ...quoteFinishesOf(elements)])], [finishes, elements]);
+  const insidePrint = useMemo(() => printsInside(elements), [elements]);
+  const selectedElement = elements.find((el) => el.id === selectedElementId && !isBackground(el)) ?? null;
+  // Layers selected together (Shift + click, selection rectangle, a group). A selection made elsewhere (layers panel,
+  // a new element) collapses it to that one layer.
+  const [multiIds, setMultiIds] = useState<string[]>([]);
+  const selectedIds = useMemo(
+    () => (selectedElementId && multiIds.includes(selectedElementId) ? multiIds : selectedElementId ? [selectedElementId] : []),
+    [selectedElementId, multiIds]
   );
+  const selectIds = useCallback((ids: string[], primary?: string | null) => {
+    setMultiIds(ids);
+    setSelectedElementId(primary !== undefined ? primary : (ids[ids.length - 1] ?? null));
+  }, []);
+  const updateElement = useCallback((element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el))), []);
+  /** Copied layer (Ctrl+C), pasted with Ctrl+V on the face that receives new elements. */
+  const clipboard = useRef<CanvasElement | null>(null);
+  // Fonts uploaded for this design (docs/23 S13), saved with the canvas.
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoTemplate)?.canvasState?.customFonts ?? []);
 
   // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
   const history = useRef({ past: [] as CanvasElement[][], future: [] as CanvasElement[][], current: elements, at: 0, travelling: false });
@@ -395,7 +469,17 @@ export function StudioWorkspace({
   const [pieceIndex, setPieceIndex] = useState<number>(() =>
     elements.length ? Math.max(0, pieceIndexOfPanel(pieces, elements[0].panelId)) : 0
   );
-  const dieline = (pieces[pieceIndex] ?? pieces[0]).geometry;
+  const editPieces = useMemo(() => (editSide === "inside" ? insidePieces(pieces) : pieces), [editSide, pieces]);
+  const dieline = (editPieces[pieceIndex] ?? editPieces[0]).geometry;
+  // Backgrounds follow their faces when the size, the structure or the formulas change (docs/23 D4); the other
+  // elements keep their place on their face by their anchor (docs/23 S20).
+  const fittedPieces = useRef(pieces);
+  useEffect(() => {
+    if (fittedPieces.current === pieces) return;
+    const before = fittedPieces.current;
+    fittedPieces.current = pieces;
+    setElements((prev) => refitBackgrounds(reflowElements(before, pieces, prev), pieces));
+  }, [pieces]);
   // Panel that receives new elements: the selected one, else the front (or first) panel of the piece on screen
   const placementPanel =
     dieline.panels.find((p) => p.id === activePanelId) ??
@@ -422,14 +506,16 @@ export function StudioWorkspace({
       dimensions,
       materialSpec: materialSpecFor(activeMaterial, dimensions.paperThickness, finishes),
       canvasState: {
+        schemaVersion: CANVAS_SCHEMA_VERSION,
         elements,
         backgroundPattern: backgroundPatternSvg,
         backgroundTheme: paletteId,
+        customFonts,
         materialTheme: activeMaterial,
         finishes,
       },
     }),
-    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId]
+    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId, customFonts]
   );
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
   const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
@@ -463,6 +549,13 @@ export function StudioWorkspace({
     recordAutoFix(project?.id ?? null, pieces, elements);
     setElements((prev) => autoFixElements(pieces, prev));
   }, [pieces, elements, project?.id]);
+
+  /** The one-click fix of one FitCheck violation (docs/23 S21: turn a text upright). */
+  const handleFixViolation = useCallback((violation: { elementId?: string; fix?: { rotation: number } }) => {
+    const { elementId, fix } = violation;
+    if (!elementId || !fix) return;
+    setElements((prev) => prev.map((el) => (el.id === elementId ? { ...el, rotation: fix.rotation } : el)));
+  }, []);
 
   // Background over the whole box (all pieces), in the design's palette; null leaves the paper.
   const boxBackgroundDesign = useMemo(() => {
@@ -525,10 +618,14 @@ export function StudioWorkspace({
   );
 
   // Add Element from Sticker Bank or Image Upload
-  const handleAddElement = useCallback((newEl: CanvasElement) => {
-    setElements((prev) => [...prev, newEl]);
-    setSelectedElementId(newEl.id);
-  }, []);
+  const handleAddElement = useCallback(
+    (newEl: CanvasElement) => {
+      // New elements go on the side of the sheet being designed.
+      setElements((prev) => [...prev, editSide === "inside" ? { ...newEl, side: "inside" } : newEl]);
+      setSelectedElementId(newEl.id);
+    },
+    [editSide]
+  );
 
   // Image / logo upload: the file goes to WrapFit storage first, the canvas keeps its URL (the API refuses data URLs).
   // The demo stays offline: the image is only shown in this tab.
@@ -594,6 +691,194 @@ export function StudioWorkspace({
     [placementPanel, project, toast, handleAddElement]
   );
 
+  // "Thay ảnh, giữ khung" (docs/23 S10): another file in the same box, crop reset, DPI of the new file.
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const replaceTarget = useRef<string | null>(null);
+  const requestReplaceImage = useCallback((elementId: string) => {
+    replaceTarget.current = elementId;
+    replaceInputRef.current?.click();
+  }, []);
+  const handleReplaceImage = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      const file = input.files?.[0];
+      input.value = "";
+      const targetId = replaceTarget.current;
+      const target = elements.find((el) => el.id === targetId);
+      if (!file || !target) return;
+      const isVector = VECTOR_TYPES.includes(file.type);
+      if (!isVector && !PHOTO_TYPES.includes(file.type)) {
+        toast.show({ tone: "error", title: "Định dạng ảnh chưa hỗ trợ", description: "Chọn ảnh PNG, JPG, WebP hoặc logo SVG." });
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast.show({ tone: "error", title: "Ảnh quá lớn", description: "Mỗi ảnh tối đa 15 MB." });
+        return;
+      }
+      const size = await imageSizeOf(file);
+      let content: string;
+      if (!project) {
+        content = URL.createObjectURL(file);
+      } else {
+        setUploading(true);
+        try {
+          content = (await uploadFileToStorage(file, isVector ? "LOGO" : "IMAGE", project.id)).fileUrl;
+        } catch (err) {
+          toast.error(err, "Chưa tải được ảnh lên");
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+      setElements((prev) =>
+        prev.map((el) =>
+          el.id === target.id
+            ? {
+                ...el,
+                type: isVector ? "logo" : "image",
+                content,
+                crop: undefined,
+                dpi: size && !isVector ? Math.round(size.width / (el.width / 25.4)) : 300,
+              }
+            : el
+        )
+      );
+    },
+    [elements, project, toast]
+  );
+  const { user: signedInUser } = useAuth();
+  const brandFonts = signedInUser?.brandKit?.fonts ?? [];
+  /** A ready-made text (heading, subheading, body) on the face, in the brand fonts when the Brand Kit has some. */
+  const addPresetText = useCallback(
+    (presetId: string) => {
+      const preset = TEXT_PRESETS.find((p) => p.id === presetId);
+      if (!preset || !placementPanel) return;
+      const family = presetId === "body" ? (brandFonts[1] ?? brandFonts[0]) : brandFonts[0];
+      const style = { color: "#1A362B", fontFamily: family ? `'${family}', sans-serif` : presetId === "heading" ? "'Playfair Display', serif" : "Inter, sans-serif", ...preset.style };
+      const maxWidth = Math.max(10, placementPanel.bounds.width - 10);
+      const probe = layoutBoxText({ content: preset.content, width: maxWidth, height: 1000, style });
+      const width = Math.round((Math.min(maxWidth, Math.max(...probe.lines.map((line) => line.width))) + 2) * 10) / 10;
+      const height = Math.round((probe.lines.length * probe.lineHeightMm + 2) * 10) / 10;
+      handleAddElement({
+        id: newElementId("text"),
+        type: "text",
+        panelId: placementPanel.id,
+        x: Math.round(((placementPanel.bounds.width - width) / 2) * 10) / 10,
+        y: Math.round(((placementPanel.bounds.height - height) / 2) * 10) / 10,
+        width,
+        height,
+        rotation: 0,
+        content: preset.content,
+        style,
+      });
+    },
+    [placementPanel, brandFonts, handleAddElement]
+  );
+  /** A ready-made text combo (docs/23 S14): its lines stacked and centred on the face, grouped to move as one. */
+  const addTextCombo = useCallback(
+    (comboId: string) => {
+      const combo = TEXT_COMBOS.find((c) => c.id === comboId);
+      if (!combo || !placementPanel) return;
+      const maxWidth = Math.max(10, placementPanel.bounds.width - 10);
+      const lines = combo.lines.map((line) => {
+        const style = textComboStyle(combo, line);
+        const probe = layoutBoxText({ content: line.text, width: maxWidth, height: 1000, style });
+        const width = Math.round((Math.min(maxWidth, Math.max(...probe.lines.map((l) => l.width))) + 2) * 10) / 10;
+        const height = Math.round((probe.lines.length * probe.lineHeightMm + 1) * 10) / 10;
+        return { line, style, width, height };
+      });
+      const total = lines.reduce((sum, l) => sum + l.height, 0);
+      const groupId = newElementId("group");
+      let y = Math.round(((placementPanel.bounds.height - total) / 2) * 10) / 10;
+      for (const { line, style, width, height } of lines) {
+        handleAddElement({
+          id: newElementId("text"),
+          type: "text",
+          panelId: placementPanel.id,
+          x: Math.round(((placementPanel.bounds.width - width) / 2) * 10) / 10,
+          y,
+          width,
+          height,
+          rotation: 0,
+          content: line.text,
+          style,
+          groupId,
+        });
+        y = Math.round((y + height) * 10) / 10;
+      }
+    },
+    [placementPanel, handleAddElement]
+  );
+  const designColors = useMemo(() => designColorsOf(elements), [elements]);
+
+  // Fonts uploaded for this design (docs/23 S13, D11): checked for the Vietnamese letters in the browser, then by the
+  // API after the upload; kept in the canvas so the design keeps them.
+  useEffect(() => {
+    customFonts.forEach((font) => void registerCustomFont(font));
+  }, [customFonts]);
+  const fontInputRef = useRef<HTMLInputElement>(null);
+  const [fontRights, setFontRights] = useState(false);
+  const [fontBusy, setFontBusy] = useState(false);
+  const applyCustomFont = useCallback(
+    (font: CustomFont) => {
+      if (selectedElement?.type !== "text") return;
+      updateElement({ ...selectedElement, style: { ...selectedElement.style, fontFamily: `'${font.family}', sans-serif`, fontUrl: font.url, fontWeight: undefined, fontStyle: undefined } });
+    },
+    [selectedElement, updateElement]
+  );
+  const handleFontUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      const picked = input.files?.[0];
+      input.value = "";
+      if (!picked) return;
+      const file = asFontFile(picked);
+      if (!file) {
+        toast.show({ tone: "error", title: "Định dạng phông chưa hỗ trợ", description: "Chọn tệp TTF, OTF, WOFF hoặc WOFF2." });
+        return;
+      }
+      if (file.size > MAX_FONT_BYTES) {
+        toast.show({ tone: "error", title: "Phông quá lớn", description: "Mỗi tệp phông tối đa 10 MB." });
+        return;
+      }
+      setFontBusy(true);
+      try {
+        const checked = await inspectFontFile(file);
+        if (!checked) {
+          toast.show({ tone: "error", title: "Không đọc được phông", description: "Tệp này không phải phông chữ hoặc đã hỏng." });
+          return;
+        }
+        if (checked.missing.length) {
+          toast.show({
+            tone: "error",
+            title: "Phông thiếu dấu tiếng Việt",
+            description: `Phông không vẽ được: ${checked.missing.slice(0, 16).join(" ")}${checked.missing.length > 16 ? " …" : ""}. Chữ có dấu sẽ in thành ô trống.`,
+          });
+          return;
+        }
+        let font: CustomFont;
+        if (!project) {
+          // The demo keeps the font in this tab only, like its images.
+          font = { family: checked.family, url: URL.createObjectURL(file) };
+        } else {
+          const { fileUrl } = await uploadFileToStorage(file, "FONT", project.id);
+          font = { family: checked.family, url: fileUrl };
+          // The API checks the file again (the browser check could be bypassed) and names its family.
+          if (/^https?:/.test(fileUrl)) font = { family: (await inspectFont(fileUrl)).family, url: fileUrl };
+        }
+        await registerCustomFont(font);
+        setCustomFonts((list) => [...list.filter((item) => item.url !== font.url), font]);
+        applyCustomFont(font);
+        toast.show({ tone: "success", title: "Đã thêm phông", description: `${font.family} có đủ dấu tiếng Việt và sẽ được nhúng vào file in.` });
+      } catch (err) {
+        toast.error(err, "Chưa thêm được phông");
+      } finally {
+        setFontBusy(false);
+      }
+    },
+    [project, toast, applyCustomFont]
+  );
+
   // AI image (docs/19 S4): as large as the safe area of the face allows, with the image's proportions, centred. Same
   // element and DPI as an uploaded image, so FitCheck judges it the same way; the file is already in WrapFit storage.
   const handlePlaceAiImage = useCallback(
@@ -635,10 +920,41 @@ export function StudioWorkspace({
   );
 
   // AI pattern: under the other elements of the panel
-  const handleInsertPattern = useCallback((pattern: CanvasElement) => {
-    setElements((prev) => [pattern, ...prev]);
-    setSelectedElementId(pattern.id);
-  }, []);
+  const handleInsertPattern = useCallback(
+    (pattern: CanvasElement) => {
+      setElements((prev) =>
+        refitBackgrounds(
+          orderElements([
+            { ...pattern, role: "background", ...(editSide === "inside" ? { side: "inside" as const } : {}) },
+            ...prev.filter((el) => !(isBackground(el) && samePanel(el.panelId, pattern.panelId) && sideOf(el) === sideOf(pattern))),
+          ]),
+          pieces
+        )
+      );
+      setSelectedElementId(null);
+    },
+    [pieces, editSide]
+  );
+  // Background of the face that receives new elements, and copying it to every face.
+  const faceBackground = placementPanel
+    ? elements.find((el) => isBackground(el) && samePanel(el.panelId, placementPanel.id) && sideOf(el) === editSide) ?? null
+    : null;
+  const applyFaceBackgroundEverywhere = useCallback(() => {
+    if (!faceBackground) return;
+    setElements((prev) => {
+      let next = prev;
+      for (const piece of editPieces) {
+        for (const panel of piece.geometry.panels) {
+          if (!panelTouchesGlue(panel, piece.geometry)) next = setPanelBackground(next, panel, piece.geometry, faceBackground.content, { side: editSide });
+        }
+      }
+      return next;
+    });
+  }, [faceBackground, editPieces, editSide]);
+  const removeFaceBackground = useCallback(() => {
+    if (!placementPanel) return;
+    setElements((prev) => setPanelBackground(prev, placementPanel, dieline, null, { side: editSide }));
+  }, [placementPanel, dieline, editSide]);
 
   // Step 4 rail: "Văn bản" opens the text composer on the flat dieline, "Tải lên" the file picker (shortcut U).
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -663,11 +979,76 @@ export function StudioWorkspace({
       const target = e.target as HTMLElement | null;
       if (target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
       const key = e.key.toLowerCase();
+      const sel = elements.find((el) => el.id === selectedElementId && !isBackground(el)) ?? null;
+      const chosen = elements.filter((el) => selectedIds.includes(el.id) && !isBackground(el));
+      const movable = chosen.filter((el) => !el.locked);
       if (e.ctrlKey || e.metaKey) {
+        if (key === "a" && placementPanel) {
+          // Ctrl + A: every layer of the face on screen.
+          e.preventDefault();
+          const ids = elements.filter((el) => samePanel(el.panelId, placementPanel.id) && sideOf(el) === editSide && !isBackground(el) && !el.hidden).map((el) => el.id);
+          selectIds(ids);
+          return;
+        }
+        if (key === "g" && chosen.length) {
+          e.preventDefault();
+          const ids = chosen.map((el) => el.id);
+          if (e.shiftKey) setElements((prev) => ungroupElements(prev, ids));
+          else if (canGroup(elements, ids)) setElements((prev) => groupElements(prev, ids, newElementId("group")));
+          return;
+        }
         if (key === "z" || key === "y") {
           e.preventDefault();
           travel(key === "y" || e.shiftKey ? "redo" : "undo");
+        } else if (sel && (e.code === "BracketRight" || e.code === "BracketLeft")) {
+          e.preventDefault();
+          const up = e.code === "BracketRight";
+          setElements((prev) => moveLayer(prev, sel.id, up ? (e.shiftKey ? "front" : "forward") : e.shiftKey ? "back" : "backward"));
+        } else if (chosen.length && key === "d") {
+          e.preventDefault();
+          const result = duplicateElements(elements, chosen.map((el) => el.id), copyId);
+          setElements(result.elements);
+          selectIds(result.ids);
+        } else if (sel && key === "c") {
+          clipboard.current = sel;
+        } else if (key === "v" && clipboard.current && placementPanel) {
+          e.preventDefault();
+          const source = clipboard.current;
+          const same = samePanel(source.panelId, placementPanel.id);
+          const copy: CanvasElement = {
+            ...source,
+            id: copyId(source),
+            panelId: placementPanel.id,
+            x: same ? source.x + 5 : Math.round((placementPanel.bounds.width - source.width) / 2),
+            y: same ? source.y + 5 : Math.round((placementPanel.bounds.height - source.height) / 2),
+            locked: undefined,
+            groupId: null,
+            side: editSide === "inside" ? "inside" : undefined,
+          };
+          clipboard.current = copy;
+          setElements((prev) => [...prev, copy]);
+          setSelectedElementId(copy.id);
         }
+        return;
+      }
+      if (key === "escape" && selectedIds.length) {
+        selectIds([], null);
+        return;
+      }
+      if (movable.length && (key === "delete" || key === "backspace")) {
+        e.preventDefault();
+        const gone = new Set(movable.map((el) => el.id));
+        setElements((prev) => prev.filter((el) => !gone.has(el.id)));
+        selectIds([], null);
+        return;
+      }
+      if (movable.length && key.startsWith("arrow")) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = key === "arrowleft" ? -step : key === "arrowright" ? step : 0;
+        const dy = key === "arrowup" ? -step : key === "arrowdown" ? step : 0;
+        const moving = new Set(movable.map((el) => el.id));
+        setElements((prev) => prev.map((el) => (moving.has(el.id) ? { ...el, x: Math.round((el.x + dx) * 10) / 10, y: Math.round((el.y + dy) * 10) / 10 } : el)));
         return;
       }
       if (e.altKey || textComposerOpen) return;
@@ -679,7 +1060,7 @@ export function StudioWorkspace({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [currentStep, readOnly, textComposerOpen, travel, selectRailKey]);
+  }, [currentStep, readOnly, textComposerOpen, travel, selectRailKey, elements, selectedElementId, placementPanel, selectedIds, selectIds, editSide]);
 
   // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
   const openDialog = (id: StudioDialogId) => {
@@ -1101,22 +1482,33 @@ export function StudioWorkspace({
               tabIndex={-1}
               aria-hidden
             />
+            <input
+              ref={replaceInputRef}
+              type="file"
+              accept={[...PHOTO_TYPES, ...VECTOR_TYPES].join(",")}
+              onChange={(e) => void handleReplaceImage(e)}
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden
+            />
 
             {railPanel && (
               <DesignFlyout id={railPanel} onClose={() => setRailPanel(null)}>
+                <DesignColorsContext.Provider value={designColors}>
+                <CustomFontsContext.Provider value={customFonts}>
                 {railPanel === "elements" && placementPanel && (
                   <LibraryPanel
                     panel={placementPanel}
                     geometry={dieline}
                     onAddElement={(element: CanvasElement) => {
-                      // Backgrounds go under the other elements of the panel, like AI patterns.
+                      // A background replaces the one of its face, under the artwork (docs/23 D4).
                       if (element.type === "pattern") handleInsertPattern(element);
                       else handleAddElement(element);
-                      setSelectedElementId(element.id);
                     }}
                     selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
                     onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
                     box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
+                    designElements={elements}
                   />
                 )}
 
@@ -1128,12 +1520,123 @@ export function StudioWorkspace({
                     </button>
                     <p className="text-caption leading-5 text-fg-muted">
                       Chữ được đặt lên <strong className="text-fg">{placementPanel?.name ?? "mặt đang chọn"}</strong>. Chọn mặt khác ở dải “Mặt hộp” dưới khung thiết kế.
+                      Bấm đúp vào chữ trên khung để sửa ngay tại chỗ.
+                    </p>
+                    <div role="group" aria-label="Kiểu chữ dựng sẵn" className="grid gap-2">
+                      {TEXT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => addPresetText(preset.id)}
+                          className={cn(
+                            "min-h-11 rounded-panel bg-surface-sunken px-4 text-left text-fg ring-1 ring-inset ring-transparent transition hover:ring-fg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
+                            preset.id === "heading" ? "text-heading-sm font-bold" : preset.id === "subheading" ? "text-label font-bold uppercase tracking-wider" : "text-body-sm"
+                          )}
+                          style={brandFonts[0] && preset.id !== "body" ? { fontFamily: `'${brandFonts[0]}', sans-serif` } : undefined}
+                        >
+                          Thêm {preset.label.toLowerCase()}
+                        </button>
+                      ))}
+                      {brandFonts.length > 0 && <p className="text-caption text-fg-muted">Dùng phông trong Brand Kit của bạn.</p>}
+                      <p className="text-caption leading-5 text-fg-muted">{PRODUCT_LABEL_DISCLAIMER}</p>
+                    </div>
+                    <section aria-labelledby="text-combos" className="space-y-2">
+                      <h3 id="text-combos" className="text-label font-semibold text-fg">
+                        Tổ hợp chữ <span className="font-normal text-fg-muted">· thêm cả nhóm, sửa chữ sau</span>
+                      </h3>
+                      <ul className="grid grid-cols-2 gap-2">
+                        {TEXT_COMBOS.map((combo) => (
+                          <li key={combo.id}>
+                            <button
+                              type="button"
+                              onClick={() => addTextCombo(combo.id)}
+                              title={combo.name}
+                              aria-label={`Thêm tổ hợp chữ: ${combo.name}`}
+                              className="flex min-h-20 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-panel bg-white px-2 py-2 text-center ring-1 ring-line transition hover:ring-fg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
+                            >
+                              {combo.lines.map((line, i) => {
+                                const style = textComboStyle(combo, line);
+                                return (
+                                  <span
+                                    key={i}
+                                    className="block max-w-full truncate leading-tight"
+                                    style={{
+                                      fontFamily: style.fontFamily,
+                                      fontWeight: style.fontWeight,
+                                      fontStyle: style.fontStyle,
+                                      color: style.color,
+                                      fontSize: `${Math.max(8, Math.min(18, line.sizePt * 0.62))}px`,
+                                      letterSpacing: style.letterSpacing ? `${style.letterSpacing / 1000}em` : undefined,
+                                    }}
+                                  >
+                                    {line.text}
+                                  </span>
+                                );
+                              })}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                    <section aria-label="Phông của bạn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                      <h3 className="text-label font-semibold text-fg">Phông của bạn</h3>
+                      {customFonts.length > 0 && (
+                        <ul className="space-y-1">
+                          {customFonts.map((font) => (
+                            <li key={font.url} className="flex items-center justify-between gap-2">
+                              <span className="truncate text-body-sm text-fg">{font.family}</span>
+                              <button
+                                type="button"
+                                disabled={selectedElement?.type !== "text"}
+                                className={buttonClass({ variant: "ghost", size: "sm", shape: "rounded" })}
+                                title={selectedElement?.type === "text" ? "Dùng cho chữ đang chọn" : "Chọn một chữ trước"}
+                                onClick={() => applyCustomFont(font)}
+                              >
+                                Dùng
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <label className="flex items-start gap-2 text-caption leading-5 text-fg-muted">
+                        <input type="checkbox" checked={fontRights} onChange={(e) => setFontRights(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
+                        Tôi có quyền dùng phông này cho bao bì in (phông tự làm, đã mua giấy phép, hoặc giấy phép mở như OFL).
+                      </label>
+                      <input ref={fontInputRef} type="file" accept={FONT_ACCEPT} onChange={(e) => void handleFontUpload(e)} className="hidden" tabIndex={-1} aria-hidden />
+                      <button
+                        type="button"
+                        disabled={!fontRights || fontBusy || readOnly}
+                        onClick={() => fontInputRef.current?.click()}
+                        className={buttonClass({ variant: "secondary", size: "sm", block: true })}
+                      >
+                        <Upload className="size-4" aria-hidden />
+                        {fontBusy ? "Đang kiểm tra phông…" : "Tải phông lên (TTF, OTF, WOFF)"}
+                      </button>
+                      <p className="text-caption leading-5 text-fg-muted">Phông phải có đủ dấu tiếng Việt. Một tệp là một kiểu chữ (muốn đậm thì tải tệp Bold).</p>
+                    </section>
+                    {selectedElement?.type === "text" && (
+                      <section aria-label="Chữ đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Chữ đang chọn</h3>
+                        <TextInspector
+                          element={selectedElement}
+                          onChange={updateElement}
+                          onApplyFontToAll={(fontFamily) =>
+                            setElements((prev) => prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily } } : el)))
+                          }
+                        />
+                      </section>
+                    )}
+                    <p className="text-caption leading-5 text-fg-muted">
+                      {selectedElement?.type === "text" ? "Bộ phông dưới đây đổi phông của chữ đang chọn." : "Chưa chọn chữ nào: bộ phông dưới đây đổi phông của mọi chữ."}
                     </p>
                     <FontSelectorCards
                       selectedFontId={selectedFont.id}
                       onSelectFont={(f) => {
                         setSelectedFont(f);
-                        setElements((prev) => prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el)));
+                        const target = selectedElement?.type === "text" ? selectedElement.id : null;
+                        setElements((prev) =>
+                          prev.map((el) => (el.type === "text" && (!target || el.id === target) ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el))
+                        );
                       }}
                     />
                   </div>
@@ -1155,6 +1658,12 @@ export function StudioWorkspace({
                       <li>Ảnh cần ≥ 300 DPI ở kích thước in để rõ nét; FitCheck báo khi ảnh mờ.</li>
                       <li>Logo SVG in sắc nét ở mọi cỡ.</li>
                     </ul>
+                    {selectedElement && (selectedElement.type === "image" || selectedElement.type === "logo") && !parseLibraryArt(selectedElement.content) && (
+                      <section aria-label="Ảnh đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Ảnh đang chọn</h3>
+                        <ImageInspector element={selectedElement} onChange={updateElement} onReplaceImage={requestReplaceImage} />
+                      </section>
+                    )}
                   </div>
                 )}
 
@@ -1182,6 +1691,64 @@ export function StudioWorkspace({
                       }
                     />
                     <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={applyBoxBackground} />
+                    <section aria-label="Nền của mặt đang chọn" className="space-y-2 rounded-panel bg-surface-sunken p-3">
+                      <h3 className="text-label font-semibold text-fg">Nền mặt {placementPanel?.name ?? ""}</h3>
+                      <p className="text-caption leading-5 text-fg-muted">
+                        {faceBackground
+                          ? "Nền gắn chặt vào mặt, phủ cả phần tràn lề và tự khớp khi đổi kích thước."
+                          : "Mặt này chưa có nền riêng. Chọn một nền ở “Thành phần” hoặc tạo bằng “Hoa văn AI”."}
+                      </p>
+                      {faceBackground && !readOnly && (
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" className={buttonClass({ variant: "secondary", size: "sm" })} onClick={applyFaceBackgroundEverywhere}>
+                            Áp nền này cho mọi mặt
+                          </button>
+                          <button type="button" className={buttonClass({ variant: "ghost", size: "sm" })} onClick={removeFaceBackground}>
+                            Xóa nền mặt này
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                )}
+
+                {railPanel === "shapes" && (
+                  <div className="space-y-5">
+                    <p className="text-caption leading-5 text-fg-muted">
+                      Hình được đặt lên <strong className="text-fg">{placementPanel?.name ?? "mặt đang chọn"}</strong>, trong vùng an toàn.
+                    </p>
+                    <ShapePicker
+                      disabled={!placementPanel}
+                      onPick={(kind) => placementPanel && handleAddElement(newShape(kind, placementPanel, dieline, `shape_${Date.now().toString(36)}`))}
+                    />
+                    {selectedElement?.type === "shape" && (
+                      <section aria-label="Hình đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Hình đang chọn</h3>
+                        <ShapeInspector element={selectedElement} onChange={updateElement} />
+                      </section>
+                    )}
+                  </div>
+                )}
+
+                {railPanel === "layers" && placementPanel && (
+                  <div className="space-y-5">
+                    <LayersPanel
+                      elements={elements}
+                      onChange={setElements}
+                      selectedId={selectedElement?.id ?? null}
+                      onSelect={setSelectedElementId}
+                      faces={pieces.flatMap((piece) => piece.geometry.panels.map((panel) => ({ id: panel.id, name: pieces.length > 1 ? `${piece.name} · ${panel.name}` : panel.name })))}
+                      faceId={placementPanel.id}
+                      onFaceChange={selectPanel}
+                      readOnly={readOnly}
+                      side={editSide}
+                    />
+                    {selectedElement && !readOnly && (
+                      <section aria-label="Thuộc tính lớp đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Thuộc tính</h3>
+                        <ElementInspector element={selectedElement} onChange={updateElement} onReplaceImage={requestReplaceImage} />
+                      </section>
+                    )}
                   </div>
                 )}
 
@@ -1208,9 +1775,11 @@ export function StudioWorkspace({
                         Máy chủ chặn xuất file vì các lỗi dưới đây. Sửa xong thì xuất lại.
                       </p>
                     )}
-                    <FitCheckDrawer report={blockingReport ?? displayReport} onAutoFix={handleAutoFix} />
+                    <FitCheckDrawer report={blockingReport ?? displayReport} onAutoFix={handleAutoFix} onFixViolation={handleFixViolation} />
                   </div>
                 )}
+                </CustomFontsContext.Provider>
+                </DesignColorsContext.Provider>
               </DesignFlyout>
             )}
 
@@ -1245,7 +1814,7 @@ export function StudioWorkspace({
                   )}
                 </div>
 
-                <div className="flex items-center justify-center">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   <ViewToggle<"2d" | "3d">
                     label="Chế độ xem"
                     value={artView}
@@ -1255,6 +1824,20 @@ export function StudioWorkspace({
                       { value: "3d", label: "Gập hộp 3D", icon: Box },
                     ]}
                   />
+                  {artView === "2d" && (
+                    <ViewToggle<PrintSide>
+                      label="Mặt giấy đang thiết kế"
+                      value={editSide}
+                      onChange={(side) => {
+                        setEditSide(side);
+                        setSelectedElementId(null);
+                      }}
+                      options={[
+                        { value: "outside", label: "Mặt ngoài" },
+                        { value: "inside", label: "Mặt trong" },
+                      ]}
+                    />
+                  )}
                 </div>
 
                 <div className="flex min-w-0 items-center gap-2">
@@ -1299,6 +1882,24 @@ export function StudioWorkspace({
                 </div>
               )}
 
+              {/* Toolbar of the selection (docs/23 S8): exact place, size and turn, align, group */}
+              {artView === "2d" && !readOnly && selectedIds.length > 0 && (
+                <SelectionToolbar
+                  elements={elements}
+                  selectedIds={selectedIds}
+                  onChange={setElements}
+                  onSelect={selectIds}
+                  faceSize={(panelId) => {
+                    for (const piece of editPieces) {
+                      const panel = piece.geometry.panels.find((p) => samePanel(p.id, panelId));
+                      if (panel) return { width: panel.bounds.width, height: panel.bounds.height };
+                    }
+                    return null;
+                  }}
+                  onOpenSettings={() => setRailPanel(selectedElement?.type === "text" ? "text" : selectedElement?.type === "shape" ? "shapes" : "layers")}
+                />
+              )}
+
               {/* Stage: the dieline sits on the grey desk like a slide */}
               <div ref={stageRef} data-tour="studio-stage" className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-auto lg:min-h-0 lg:flex-1">
                 {artView === "2d" ? (
@@ -1311,6 +1912,8 @@ export function StudioWorkspace({
                     onElementsChange={setElements}
                     selectedElementId={selectedElementId}
                     onSelectElement={setSelectedElementId}
+                    selectedIds={selectedIds}
+                    onSelectIds={setMultiIds}
                     backgroundPatternSvg={backgroundPatternSvg}
                     activePanelId={activePanelId}
                     onSelectPanel={selectPanel}
@@ -1318,6 +1921,7 @@ export function StudioWorkspace({
                     flaggedElementIds={flaggedElementIds}
                     textComposerOpen={textComposerOpen}
                     onTextComposerOpenChange={setTextComposerOpen}
+                    side={editSide}
                   />
                 ) : (
                   <Box3DView
@@ -1472,7 +2076,8 @@ export function StudioWorkspace({
             boxType={boxType}
             dimensions={dimensions}
             activeMaterial={activeMaterial}
-            finishes={finishes}
+            finishes={quoteFinishes}
+            insidePrint={insidePrint}
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
             formulaVersion={project?.formulaVersion}

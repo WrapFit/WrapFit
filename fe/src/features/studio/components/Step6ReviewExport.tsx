@@ -26,6 +26,9 @@ const RULES: { title: string; detail: string; codes: FitCheckErrorCode[] }[] = [
   { title: "Mã vạch & QR", detail: "Đủ lớn để quét, đúng số kiểm tra; in đen K100 trên nền trắng", codes: ["BARCODE_UNREADABLE"] },
   { title: "Khổ phôi", detail: "Phôi trải phẳng vừa khổ B1 1020 × 720 mm", codes: ["DIMENSION_OUT_OF_BOUNDS"] },
   { title: "Phần tử trên mặt hộp", detail: "Mọi phần tử nằm trên một mặt của khuôn", codes: ["NO_PANEL"] },
+  { title: "Hướng đọc", detail: "Chữ đứng xuôi khi hộp đã gấp", codes: ["READING_DIRECTION"] },
+  { title: "Chữ dễ đọc", detail: "Cỡ ≥ 6 pt, đủ tương phản với nền, không vắt qua nếp gấp", codes: ["TEXT_TOO_SMALL", "LOW_CONTRAST", "TEXT_ON_CREASE"] },
+  { title: "Cửa sổ & lỗ khoét", detail: "Không đặt hình chính dưới cửa sổ, lỗ xỏ tay, lỗ xỏ dây", codes: ["UNDER_OPENING"] },
 ];
 
 interface Step6ReviewExportProps {
@@ -34,6 +37,8 @@ interface Step6ReviewExportProps {
   dimensions: BoxDimensions;
   activeMaterial: BoxMaterialTheme;
   finishes: QuoteFinish[];
+  /** The design prints on the inside of the sheet too (priced as a second pass). */
+  insidePrint?: boolean;
   elements: CanvasElement[];
   backgroundPatternSvg: string | null;
   formulaVersion?: number;
@@ -63,6 +68,7 @@ export function Step6ReviewExport({
   dimensions,
   activeMaterial,
   finishes,
+  insidePrint = false,
   elements,
   backgroundPatternSvg,
   formulaVersion,
@@ -92,7 +98,7 @@ export function Step6ReviewExport({
   const passed = errors === 0;
   // No artwork: a plain box can be printed, but it is not "print-ready art".
   const empty = report.violations.some((v) => v.code === "EMPTY_DESIGN");
-  const fixable = report.violations.some((v) => ["CUT_OVERLAP", "CREASE_OVERLAP", "BLEED_INSUFFICIENT"].includes(v.code));
+  const fixable = report.violations.some((v) => (["CUT_OVERLAP", "CREASE_OVERLAP", "BLEED_INSUFFICIENT"].includes(v.code) || (v.code === "READING_DIRECTION" && v.severity === "warning")));
   const piece = pieces[pieceIndex] ?? pieces[0];
 
   return (
@@ -272,6 +278,7 @@ export function Step6ReviewExport({
           formulaVersion={formulaVersion}
           material={activeMaterial}
           finishes={finishes}
+          insidePrint={insidePrint}
           title={title}
           projectId={projectId}
           blocked={!passed}
@@ -286,6 +293,7 @@ export function Step6ReviewExport({
           pieces={pieces}
           material={activeMaterial}
           finishes={finishes}
+          insidePrint={insidePrint}
           quantity={quantity}
         />
       </div>

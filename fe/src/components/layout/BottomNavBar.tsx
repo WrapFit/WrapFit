@@ -34,7 +34,9 @@ export const BottomNavBar: React.FC = () => {
   const isIntro = routePath.startsWith("/intro");
   // Hide completely on the admin console: admin console has its own dedicated navigation
   const isAdminRoute = routePath.startsWith("/admin");
-  if (isFullscreenStudio || isIntro || isAdminRoute) return null;
+  // An administrator never uses the customer tabs (home, projects, studio): their profile and settings pages run in
+  // the admin shell, whose menu is the way back to the console.
+  if (isFullscreenStudio || isIntro || isAdminRoute || isAdmin) return null;
 
   const isHome = pathname === "/";
   const isDashboard = pathname.startsWith("/dashboard");

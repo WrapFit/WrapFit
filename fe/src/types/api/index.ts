@@ -413,7 +413,7 @@ export interface LikeState {
 
 // ---------------------------------------------------------------- storage
 
-export type UploadPurpose = "LOGO" | "IMAGE" | "THUMBNAIL" | "AVATAR";
+export type UploadPurpose = "LOGO" | "IMAGE" | "THUMBNAIL" | "AVATAR" | "FONT";
 
 export interface PresignUploadRequest {
   purpose: UploadPurpose;
@@ -898,6 +898,34 @@ export interface CreateSampleBundleRequest extends Omit<CreateSampleOrderRequest
 export type LibraryAssetCategory = "STICKER" | "LABEL" | "ILLUSTRATION" | "BACKGROUND" | "ICON";
 
 /** An asset an admin imported from a licensed source; `url` is the file every user may place on a box. */
+/** A stock photo of the studio (Pexels, through the backend). */
+export interface StockPhoto {
+  id: number;
+  width: number;
+  height: number;
+  alt: string;
+  thumbUrl: string;
+  photographer: string;
+  photographerUrl: string;
+  pageUrl: string;
+}
+
+export interface StockPhotoPage {
+  enabled: boolean;
+  items: StockPhoto[];
+  page: number;
+  hasMore: boolean;
+}
+
+/** A stock photo copied into the user's files. */
+export interface ImportedStockPhoto {
+  url: string;
+  width: number;
+  height: number;
+  attribution: string;
+  pageUrl: string;
+}
+
 export interface LibraryAsset {
   id: string;
   category: LibraryAssetCategory;
