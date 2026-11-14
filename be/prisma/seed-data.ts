@@ -96,6 +96,18 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
     formulaVersion: CURRENT_FORMULA_VERSION,
   },
   {
+    id: 'cup-carrier',
+    name: 'Khay Xách Ly (Cup Carrier)',
+    category: 'beverage',
+    description:
+      'Vỏ bìa một mảnh hở hai đầu: đáy khoét lỗ đặt ly, hai vai gập vào, quai đôi dán lưng có lỗ xỏ tay — cho quán cà phê, trà sữa giao 1–4 ly (dài theo hàng ly, rộng theo miệng ly).',
+    formulaSchema: {
+      generator: 'generateCupCarrierDieline',
+      params: dimensionParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
     id: 'insert',
     name: 'Khay Chia Ngăn',
     category: 'insert',

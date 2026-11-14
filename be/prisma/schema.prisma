@@ -53,6 +53,7 @@ enum Industry {
   BAKERY // Bánh ngọt & Bếp thủ công
   JEWELRY // Trang sức & Phụ kiện
   TEA_AGRI // Trà hoa & Nông sản cao cấp
+  BEVERAGE // Đồ uống: cà phê, trà sữa, nước ép mang đi
 }
 
 // Mục đích của file người dùng tải lên (IT3-08): quyết định định dạng và dung lượng tối đa được phép.
@@ -877,7 +878,7 @@ model OrderItem {
   projectId      String? @map("project_id") @db.Uuid // null khi dự án đã bị xóa vĩnh viễn
   projectVersion Int     @map("project_version")
   projectTitle   String  @map("project_title")
-  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band)
+  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, cup-carrier, insert, hang-tag, folded-card, belly-band)
   dimensions     Json // { length, width, height, paperThickness } lúc đặt
   paperStock     String  @map("paper_stock")
   quantity       Int // 1–10 (CHECK)
