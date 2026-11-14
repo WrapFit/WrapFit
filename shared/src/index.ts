@@ -7,6 +7,7 @@ export * from "./parametric/lid-base";
 export * from "./parametric/pillow";
 export * from "./parametric/mailer";
 export * from "./parametric/gable";
+export * from "./parametric/cup-carrier";
 export * from "./parametric/insert";
 export * from "./parametric/flat";
 export * from "./media/gif";

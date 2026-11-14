@@ -66,6 +66,7 @@ export const QUOTE_PRICES = {
     pillow: 300,
     mailer: 400,
     gable: 700,
+    "cup-carrier": 400,
     insert: 1_200,
     "hang-tag": 300,
     "folded-card": 150,
@@ -174,12 +175,13 @@ export interface QuoteInput {
 /** What the last step of each product is, when it is not "Gấp và dán" (docs/23 S16, S18). */
 const FINISHING_LABELS: Record<string, string> = {
   mailer: "Gấp hộp (không dùng keo)",
+  "cup-carrier": "Gấp khay và dán quai",
   insert: "Dán khay và cài vách chia ngăn",
   "hang-tag": "Đục lỗ và xỏ dây",
   "folded-card": "Cấn nếp và gấp thiệp",
   "belly-band": "Dán đai",
 };
-const UNITS: Record<string, string> = { insert: "bộ", "hang-tag": "thẻ", "folded-card": "thiệp", "belly-band": "đai", "sticker-label": "tem" };
+const UNITS: Record<string, string> = { "cup-carrier": "khay", insert: "bộ", "hang-tag": "thẻ", "folded-card": "thiệp", "belly-band": "đai", "sticker-label": "tem" };
 /** "hộp", or the word for one flat product. */
 export const unitOf = (structure: string) => UNITS[structure] ?? "hộp";
 

@@ -363,7 +363,7 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
     const opening = geometry.openings?.find((o) => o.panelId === panel.id && overlapsOpening(onSheet, o));
     if (opening) {
       const window = opening.kind === "window";
-      const hole = opening.kind === "hole" ? "lỗ xỏ dây" : "lỗ xỏ tay";
+      const hole = opening.kind === "hole" ? "lỗ xỏ dây" : opening.kind === "cup" ? "lỗ đặt ly" : "lỗ xỏ tay";
       violations.push({
         id: `opening_${element.id}`,
         code: "UNDER_OPENING",
@@ -374,7 +374,9 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
         message: `${label} chồng lên ${window ? "cửa sổ" : hole} của mặt ${panel.name}: phần đó bị khoét bỏ khi bế, không in ra.`,
         suggestion: window
           ? "Dời chữ, logo ra khung viền quanh cửa sổ; để sản phẩm bên trong làm điểm nhấn."
-          : `Dời phần tử xuống dưới ${hole}.`,
+          : opening.kind === "cup"
+            ? "Dời phần tử ra khỏi lỗ đặt ly, hoặc đưa lên mặt trước, mặt sau."
+            : `Dời phần tử xuống dưới ${hole}.`,
       });
     }
 
@@ -714,6 +716,8 @@ export function autoFixElements(pieces: DielinePiece[], elements: CanvasElement[
 
 /** Shortest gable box: its handle needs room for a hand hole. */
 export const GABLE_MIN_LENGTH_MM = 60;
+/** Shortest cup carrier: its handle needs room for a hand hole. */
+export const CUP_CARRIER_MIN_LENGTH_MM = 70;
 
 /**
  * Size rules a box structure needs beyond the min / max of each dimension (the API answers 400 for them, the editor
@@ -729,6 +733,15 @@ export function dimensionRuleErrors(
         field: "length",
         message: `dimensions.length must be at least ${GABLE_MIN_LENGTH_MM} for a gable box (room for the hand hole)`,
         vi: `Hộp quai xách cần dài tối thiểu ${GABLE_MIN_LENGTH_MM} mm để khoét lỗ xỏ tay.`,
+      },
+    ];
+  }
+  if (structure === "cup-carrier" && dimensions.length < CUP_CARRIER_MIN_LENGTH_MM) {
+    return [
+      {
+        field: "length",
+        message: `dimensions.length must be at least ${CUP_CARRIER_MIN_LENGTH_MM} for a cup carrier (room for the hand hole)`,
+        vi: `Khay xách ly cần dài tối thiểu ${CUP_CARRIER_MIN_LENGTH_MM} mm để khoét lỗ xỏ tay.`,
       },
     ];
   }

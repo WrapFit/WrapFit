@@ -10,6 +10,7 @@ export type BoxStructureType =
   | "pillow"
   | "mailer"
   | "gable"
+  | "cup-carrier"
   | "insert"
   | "hang-tag"
   | "folded-card"
@@ -30,7 +31,7 @@ export interface BoxDimensions {
   bottomType?: "tuck" | "lock"; // "tuck": Đáy gài thường (STE); "lock": Đáy khóa chịu lực (FEFCO 0215)
   /** Display window (docs/23 S17): a cut-out in the front of a tuck-top box or the top of a lid & base lid, backed by a PET film. */
   window?: boolean;
-  /** Cells of a divider insert (docs/23 S18): rows along W × columns along L, default 2 × 3. */
+  /** Cells of a divider insert (docs/23 S18): rows along W × columns along L, default 2 × 3. Cups of a cup carrier, default 1 × 2. */
   cells?: { rows: number; cols: number };
 }
 
@@ -72,12 +73,12 @@ export interface PanelFace {
 }
 
 /**
- * A hole cut inside a panel (docs/23 S17, S18): a display window (backed by a PET film), the hand hole of a handle or
- * the string hole of a hang tag. A
+ * A hole cut inside a panel (docs/23 S17, S18): a display window (backed by a PET film), the hand hole of a handle,
+ * the string hole of a hang tag or the hole a cup hangs in (cup carrier). A
  * rounded rectangle on the sheet; whatever is printed there is cut away.
  */
 export interface DielineOpening {
-  kind: "window" | "handle" | "hole";
+  kind: "window" | "handle" | "hole" | "cup";
   panelId: string;
   x: number;
   y: number;
