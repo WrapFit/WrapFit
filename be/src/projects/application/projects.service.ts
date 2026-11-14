@@ -332,6 +332,8 @@ export class ProjectsService {
       paperThickness: dto.paperThickness ?? material.caliper,
       ...(dto.giftWeight !== undefined && { giftWeight: dto.giftWeight }),
       ...(dto.bottomType !== undefined && { bottomType: dto.bottomType }),
+      ...(dto.window && { window: true }),
+      ...(dto.cells && { cells: { rows: dto.cells.rows, cols: dto.cells.cols } }),
     };
   }
 

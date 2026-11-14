@@ -5,7 +5,7 @@ import { PACKAGE_README, packageFileNames, printPackageReadme, PROOF_DPI } from 
 import { strToU8, zipSync, type Zippable } from 'fflate';
 import sharp from 'sharp';
 import type { PrintLayout } from './print-layout';
-import { imageResolutions, renderDxf, renderPdf, renderSvg, type Artwork } from './print-renderers';
+import { imageResolutions, renderDxf, renderPdf, renderSvg, svgImages, type Artwork } from './print-renderers';
 
 /** The SVG of the sheet as a JPG on white paper, for checking the print file against. */
 export async function renderProofJpeg(svg: string, dpi = PROOF_DPI): Promise<Buffer> {
@@ -15,7 +15,7 @@ export async function renderProofJpeg(svg: string, dpi = PROOF_DPI): Promise<Buf
 /** ZIP with the `.ai` source, the print PDF, the JPG proof, SVG, DXF and the checklist. */
 export async function renderPrintPackage(layout: PrintLayout, artwork: Artwork, base: string): Promise<Buffer> {
   const pdf = await renderPdf(layout, artwork);
-  const svg = renderSvg(layout, artwork);
+  const svg = renderSvg(layout, artwork, await svgImages(layout, artwork));
   const proof = await renderProofJpeg(svg);
   const names = packageFileNames(base);
   const { title, structure, dimensions } = layout;

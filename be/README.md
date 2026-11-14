@@ -184,6 +184,7 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `FAL_KEY` | `ai.image.falKey` | *(trống)* | Khóa fal.ai. Trống với `AI_IMAGE_PROVIDER=fal` = tắt ảnh AI (`503 AI_IMAGE_UNAVAILABLE`, studio ẩn công cụ) |
 | `AI_IMAGE_MODELS` | `ai.image.models` | *(model có `enabled: true`)* | Khóa model ảnh đang bán, cách nhau bằng dấu phẩy (`shared/src/billing/ai-image-models.ts`); bật model chưa chốt giá mà không sửa code |
 | `AI_IMAGE_TIMEOUT_MS` | `ai.image.timeoutMs` | `180000` | Thời gian chờ tối đa một job ảnh ở provider |
+| `PEXELS_API_KEY` | `stock.pexelsKey` | *(trống)* | Khóa API Pexels cho ảnh kho trong studio (docs/23 S15, D10), chỉ nằm ở backend. Trống = tắt ảnh kho (`GET /library/stock/photos` trả `enabled: false`, studio ẩn mục) |
 | `AI_IMAGE_CONCURRENCY` | `ai.image.concurrency` | `2` | Số job ảnh worker chạy cùng lúc |
 | `USD_VND_RATE` | `ai.usdVndRate` | `26000` | Tỉ giá quy đổi chi phí provider sang VNĐ trong báo cáo xu |
 | `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs/17 M6). `false` → route giả lập trả 404 |

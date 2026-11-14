@@ -1,15 +1,19 @@
 // Pure layout for print files: which dieline pieces a box has and where each one sits on the sheet (mm).
 // Geometry comes from the parametric engine of IT2 (`@wrapfit/shared`); nothing here depends on NestJS.
 import {
-  fontSizeMmOf,
-  libraryArt,
   MASCOT_FILES,
-  PT_TO_MM,
+  insidePieces,
+  placeElements,
+  printsInside,
   segmentPoints,
   type BoxDimensions,
   type CanvasElement,
   type DielineGeometry,
-  type VectorArt,
+  type PlacedArt,
+  type PlacedBarcode,
+  type PlacedImage,
+  type PlacedText,
+  type PrintSide,
 } from '@wrapfit/shared';
 import { dielinePieces, matchesPanel } from '../../projects';
 
@@ -48,49 +52,23 @@ export interface PrintLayout {
   /**
    * Text elements placed on the sheet (mm, top-left of the element box). The renderers lay the lines out with
    * `layoutTextBox` of `@wrapfit/shared`, exactly like the editor canvas.
+   * Every placed element has `order` (paint order across all kinds), `clip` (its face + bleed), `opacity` and flips.
    */
-  texts: {
-    content: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    fontSizeMm: number;
-    /** Size in points: large black texts print in rich black. */
-    fontSizePt: number;
-    fontFamily: string | undefined;
-    fontSize: number | undefined;
-    color: string;
-    /** Degrees, around the centre of the box (like the canvas). */
-    rotation: number;
-  }[];
-  /**
-   * Logos, images and patterns (by URL) placed on the sheet, drawn under the texts (mm, top-left of the box). The file
-   * keeps its proportions, centred in the box; rotation is around the centre of the box.
-   */
-  images: {
-    url: string;
-    /** Photos and patterns print near-black as rich black; logos keep plain K. */
-    type: CanvasElement['type'];
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rotation: number;
-  }[];
-  /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white (mm, top-left of the box). */
-  barcodes: { content: string; x: number; y: number; width: number; height: number; rotation: number }[];
-  /**
-   * Vector art of the built-in library (`wf-art:` contents), generated at the element size. Backgrounds print under the
-   * images, stickers and labels over them (mm, top-left of the element box; rotation around its centre).
-   */
-  arts: { art: VectorArt; background: boolean; x: number; y: number; width: number; height: number; rotation: number }[];
+  texts: PlacedText[];
+  /** Logos, images and patterns (by URL). The file keeps its proportions, centred in the box. */
+  images: PlacedImage[];
+  /** Barcode elements (EAN-13 or QR code of `content`), drawn as vectors in K100 on white. */
+  barcodes: PlacedBarcode[];
+  /** Vector art: library stickers, labels and backgrounds (`wf-art:`) and shapes, generated at the element size. */
+  arts: PlacedArt[];
   /** Cut and crease lines joined end to end: die makers need unbroken cut lines. */
   strokes: Stroke[];
+  /**
+   * The inside of the sheet (docs/23 S5), when the design prints there: the same sheet mirrored left to right, as the
+   * press sees the back of the paper, with the elements of `side: "inside"`. Printed as its own page.
+   */
+  inside?: PrintLayout;
 }
-
-/** Element types drawn from an uploaded file; `content` is the file URL. */
-const IMAGE_TYPES = new Set<CanvasElement['type']>(['logo', 'image', 'pattern']);
 
 /** Two segment ends closer than this (mm) are joined. */
 const JOIN_TOLERANCE_MM = 0.01;
@@ -197,6 +175,8 @@ export function buildPrintLayout(input: {
   formulaVersion: number;
   dimensions: BoxDimensions;
   elements: CanvasElement[];
+  /** Side of the sheet to lay out (docs/23 S5); the outside when omitted. */
+  side?: PrintSide;
 }): PrintLayout {
   const pieces: PlacedPiece[] = [];
   let cursor = SHEET_MARGIN_MM;
@@ -207,52 +187,11 @@ export function buildPrintLayout(input: {
     tallest = Math.max(tallest, piece.geometry.totalBoundingBox.height);
   }
 
-  const texts: PrintLayout['texts'] = [];
-  const images: PrintLayout['images'] = [];
-  const barcodes: PrintLayout['barcodes'] = [];
-  const arts: PrintLayout['arts'] = [];
-  for (const element of input.elements) {
-    const isText = element.type === 'text';
-    const isBarcode = element.type === 'barcode';
-    const art = IMAGE_TYPES.has(element.type) ? libraryArt(element.content, element.width, element.height) : null;
-    // Files: uploads (by URL) and Gói's drawings, which the worker ships.
-    const isFile = /^https?:\/\//.test(element.content) || (MASCOT_FILES as readonly string[]).includes(element.content);
-    const drawn = isText || isBarcode ? !!element.content.trim() : IMAGE_TYPES.has(element.type) && (!!art || isFile);
-    if (!drawn) continue;
-    // The first piece that has the panel wins (see matchesPanel for the accepted ids).
-    const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
-    const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
-    if (!piece || !panel) continue;
-    const x = piece.x + panel.bounds.x + element.x;
-    const y = piece.y + panel.bounds.y + element.y;
-    if (art) {
-      const { width, height, rotation } = element;
-      arts.push({ art, background: element.type === 'pattern', x, y, width, height, rotation });
-    } else if (isBarcode) {
-      const content = element.content.trim();
-      barcodes.push({ content, x, y, width: element.width, height: element.height, rotation: element.rotation });
-    } else if (isText) {
-      // Font sizes are points in the editor.
-      const fontSizeMm = fontSizeMmOf(element);
-      texts.push({
-        content: element.content,
-        x,
-        y,
-        width: element.width,
-        height: element.height,
-        fontSizeMm,
-        fontSizePt: fontSizeMm / PT_TO_MM,
-        fontFamily: element.style?.fontFamily,
-        fontSize: element.style?.fontSize,
-        color: element.style?.color ?? '#000000',
-        rotation: element.rotation,
-      });
-    } else {
-      images.push({ url: element.content, type: element.type, x, y, width: element.width, height: element.height, rotation: element.rotation });
-    }
-  }
+  // Files: uploads (by URL) and Gói's drawings, which the worker ships.
+  const isFile = (content: string) => /^https?:\/\//.test(content) || (MASCOT_FILES as readonly string[]).includes(content);
+  const { texts, images, barcodes, arts } = placeElements(pieces, input.elements, { isFile, side: input.side });
 
-  return {
+  const sheet: PrintLayout = {
     title: input.title,
     structure: input.structure,
     dimensions: input.dimensions,
@@ -264,5 +203,19 @@ export function buildPrintLayout(input: {
     barcodes,
     arts,
     strokes: pieces.flatMap(strokesOf),
+  };
+  if (input.side === 'inside' || !printsInside(input.elements)) return sheet;
+  // Inside: every piece mirrored, and the pieces themselves in mirrored order across the sheet.
+  const insideSheet = insidePieces(pieces).map((piece) => ({ ...piece, x: sheet.width - piece.x - piece.geometry.totalBoundingBox.width }));
+  const placedInside = placeElements(insideSheet, input.elements, { isFile, side: 'inside' });
+  return {
+    ...sheet,
+    inside: {
+      ...sheet,
+      title: `${input.title} (mặt trong)`,
+      pieces: insideSheet,
+      ...placedInside,
+      strokes: insideSheet.flatMap(strokesOf),
+    },
   };
 }

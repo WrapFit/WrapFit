@@ -321,6 +321,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   MAIL_FROM: string = 'WrapFit <no-reply@wrapfit.local>';
+
+  /** Pexels API key for the studio's stock photos (docs/23 S15, D10). Empty = stock photos off (503 STOCK_UNAVAILABLE). */
+  @IsString()
+  PEXELS_API_KEY: string = '';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

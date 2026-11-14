@@ -61,6 +61,7 @@ enum FilePurpose {
   IMAGE // Ảnh đặt lên mặt hộp (PNG, JPEG, WebP; tối đa 15 MB)
   THUMBNAIL // Ảnh xem trước dự án / mốc phiên bản (PNG, JPEG, WebP; tối đa 2 MB)
   AVATAR // Ảnh đại diện (PNG, JPEG, WebP; tối đa 2 MB)
+  FONT // Phông chữ người dùng tải lên cho thiết kế (TTF, OTF, WOFF, WOFF2; tối đa 10 MB; phải đủ dấu tiếng Việt)
   QR_CODE // Mã QR mở hộp do backend sinh (PNG + SVG), người dùng không upload được
   EXPORT // File in (PDF / SVG / DXF) do worker xuất (IT3-11)
 }
@@ -192,7 +193,7 @@ model ProjectCollection {
 }
 
 model BoxTemplate {
-  id             String  @id // tuck-top, sleeve-drawer, lid-base, pillow
+  id             String  @id // tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band
   name           String
   category       String  @default("retail") // retail, luxury, food, accessories
   description    String?
@@ -396,6 +397,7 @@ model StoredFile {
   refs    ProjectFileRef[]
   library LibraryAsset?
   aiImage AiImageOutput?
+  aiToolJobs AiImageJob[] @relation("AiImageToolUpload")
 
   @@index([userId])
   @@index([projectId])
@@ -515,6 +517,7 @@ model AiImageJob {
   allowText         Boolean          @default(false) @map("allow_text")
   numImages         Int              @default(1) @map("num_images")
   sourceOutputId    String?          @map("source_output_id") @db.Uuid // Công cụ: ảnh AI được xử lý
+  sourceFileId      String?          @map("source_file_id") @db.Uuid // Công cụ: ảnh tải lên được xử lý (docs/23 S20)
   xuCost            Int              @map("xu_cost")
   estCostUsd        Decimal          @map("est_cost_usd") @db.Decimal(10, 4) // Chi phí provider ước tính (cầu chì, báo cáo)
   status            AiImageJobStatus @default(PENDING)
@@ -527,6 +530,7 @@ model AiImageJob {
 
   user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   source  AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
+  sourceFile StoredFile?   @relation("AiImageToolUpload", fields: [sourceFileId], references: [id], onDelete: SetNull)
   outputs AiImageOutput[] @relation("AiImageJobOutputs")
 
   @@unique([userId, clientRequestId])
@@ -534,6 +538,7 @@ model AiImageJob {
   @@index([status, createdAt]) // AiImageReconcileTask
   @@index([createdAt]) // Cầu chì chi phí tháng
   @@index([sourceOutputId])
+  @@index([sourceFileId])
   @@map("ai_image_jobs")
 }
 
@@ -830,7 +835,7 @@ model OrderItem {
   projectId      String? @map("project_id") @db.Uuid // null khi dự án đã bị xóa vĩnh viễn
   projectVersion Int     @map("project_version")
   projectTitle   String  @map("project_title")
-  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow)
+  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band)
   dimensions     Json // { length, width, height, paperThickness } lúc đặt
   paperStock     String  @map("paper_stock")
   quantity       Int // 1–10 (CHECK)

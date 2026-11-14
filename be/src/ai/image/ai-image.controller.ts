@@ -3,7 +3,7 @@ import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ACCESS_COOKIE, CurrentUser } from '../../common';
 import { AiImageService } from './ai-image.service';
-import { AiGalleryQueryDto, AiImageToolDto, AiImageToolParams } from './dto/ai-image-tool.dto';
+import { AiGalleryQueryDto, AiImageToolDto, AiImageToolParams, AiUploadToolDto, AiUploadToolParams } from './dto/ai-image-tool.dto';
 import { CreateAiImageDto } from './dto/create-ai-image.dto';
 
 @ApiTags('ai')
@@ -38,6 +38,15 @@ export class AiImageController {
   @ApiOperation({ summary: 'One of my AI image jobs and its images' })
   job(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.images.job(userId, id);
+  }
+
+  // Before images/:outputId/:tool, which would take "uploads" for an output id.
+  @Post('images/uploads/:tool')
+  @HttpCode(202)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Upscale, remove the background of, or vectorize one of my uploaded images (xu)' })
+  uploadTool(@CurrentUser('id') userId: string, @Param() params: AiUploadToolParams, @Body() dto: AiUploadToolDto) {
+    return this.images.runToolOnUpload(userId, dto.content, params.tool, dto);
   }
 
   @Post('images/:outputId/:tool')

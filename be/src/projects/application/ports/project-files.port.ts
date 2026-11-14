@@ -1,7 +1,7 @@
 export const PROJECT_FILES = Symbol('PROJECT_FILES');
 
 /** Same values as the Prisma enum FilePurpose (uploads only). */
-export type UploadPurpose = 'LOGO' | 'IMAGE' | 'THUMBNAIL' | 'AVATAR';
+export type UploadPurpose = 'LOGO' | 'IMAGE' | 'THUMBNAIL' | 'AVATAR' | 'FONT';
 
 export interface ProjectFile {
   projectId: string;

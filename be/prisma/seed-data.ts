@@ -11,8 +11,16 @@ const dimensionParams = {
   paperThickness: { unit: 'mm', min: 0.2, max: 1.5 },
 };
 
+/** Hang tags and folded cards: L wide × H tall, W unused (docs/23 S18). */
+const sheetParams = {
+  length: { unit: 'mm', min: 30, max: 300 },
+  width: { unit: 'mm', min: 1, max: 600 },
+  height: { unit: 'mm', min: 30, max: 400 },
+  paperThickness: { unit: 'mm', min: 0.15, max: 1 },
+};
+
 /**
- * The 4 box structures. Every start of the seed sets their `formulaVersion` to the current dieline formulas of
+ * The box structures. Every start of the seed sets their `formulaVersion` to the current dieline formulas of
  * @wrapfit/shared: new projects get it, existing projects keep the version they were created with.
  */
 export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
@@ -59,6 +67,74 @@ export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
       'Hai mặt phồng, hai đầu gập theo nếp cong, hợp cho trang sức, phụ kiện nhỏ.',
     formulaSchema: {
       generator: 'generatePillowDieline',
+      params: dimensionParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
+    id: 'mailer',
+    name: 'Hộp Nắp Cài (Mailer)',
+    category: 'shipping',
+    description:
+      'Một mảnh, không dùng keo: vách đôi cuộn mép, nắp cài vào mặt trước — hợp gửi quà, giao hàng, hộp mở quà.',
+    formulaSchema: {
+      generator: 'generateMailerDieline',
+      params: dimensionParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
+    id: 'gable',
+    name: 'Hộp Quai Xách (Gable)',
+    category: 'gift',
+    description:
+      'Thân hộp nắp gài, hai mái dốc và quai xách có lỗ xỏ tay — hợp quà Tết, hộp bánh mang đi, set quà sự kiện.',
+    formulaSchema: {
+      generator: 'generateGableDieline',
+      params: dimensionParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
+    id: 'insert',
+    name: 'Khay Chia Ngăn',
+    category: 'insert',
+    description: 'Khay lót đặt vừa lòng hộp, vách cài chéo chia thành 1–4 hàng × 1–6 cột để chai lọ, bánh không xô lệch.',
+    formulaSchema: {
+      generator: 'generateInsertDieline',
+      params: dimensionParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
+    id: 'hang-tag',
+    name: 'Thẻ Treo',
+    category: 'flat',
+    description: 'Thẻ cứng vát góc có lỗ xỏ dây, in hai mặt — treo quai túi, cổ chai, quần áo.',
+    formulaSchema: {
+      generator: 'generateHangTagDieline',
+      params: sheetParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
+    id: 'folded-card',
+    name: 'Thiệp Gấp Đôi',
+    category: 'flat',
+    description: 'Thiệp một nếp gấp: bìa in mặt ngoài, lời nhắn in hai trang trong — thiệp cảm ơn, thiệp chúc mừng.',
+    formulaSchema: {
+      generator: 'generateFoldedCardDieline',
+      params: sheetParams,
+    },
+    formulaVersion: CURRENT_FORMULA_VERSION,
+  },
+  {
+    id: 'belly-band',
+    name: 'Đai Giấy Bọc Hộp',
+    category: 'flat',
+    description: 'Đai giấy quấn quanh hộp có sẵn qua mặt trên, hai đầu và đáy, dán mép ở đáy — khoác áo mới cho hộp trơn.',
+    formulaSchema: {
+      generator: 'generateBellyBandDieline',
       params: dimensionParams,
     },
     formulaVersion: CURRENT_FORMULA_VERSION,

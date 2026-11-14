@@ -19,15 +19,28 @@ import {
   rgbaToCmyk,
   textCmyk,
   fitWatermark,
+  FINISH_SPOTS,
+  applyFilters,
+  flipMatrix,
+  gradientLine,
+  imageDraw,
+  isCropped,
+  outlineTextOnArc,
+  recolorSvg,
+  type ImageDraw,
+  fontPackagePath,
+  underlineOf,
   WATERMARK_COLOR,
   WATERMARK_TEXT,
   watermarkPlacement,
   type Cmyk,
   type MeasureText,
   type OutlineFont,
+  type PlacedBase,
   type PrintFontId,
+  type TextFace,
 } from '@wrapfit/shared';
-import { openSync } from 'fontkit';
+import { create as createFont, openSync } from 'fontkit';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
 import sharp from 'sharp';
@@ -58,22 +71,23 @@ const VECTOR_DPI = 600;
 /** Layers of the PDF (Optional Content Groups) and the SVG, bottom to top. `Dimensions` is not printed. */
 // No crease layer in the print files: the dashed fold lines printed on the box (docs: business rule CP4). Creases stay
 // in the DXF for the die maker only.
-export const PRINT_LAYERS = ['Artwork', 'CutContour', 'Dimensions'] as const;
+export const PRINT_LAYERS = ['Artwork', 'Finish', 'CutContour', 'Dimensions'] as const;
 
-/** Bold font files, the weight the editor draws texts with (TEXT_FONT_WEIGHT); `info` and `watermark` are not texts of the design. */
-const FONT_FILES: Record<PrintFontId | 'info' | 'watermark', string> = {
-  'be-vietnam-pro': require.resolve('@expo-google-fonts/be-vietnam-pro/700Bold/BeVietnamPro_700Bold.ttf'),
-  'playfair-display': require.resolve('@expo-google-fonts/playfair-display/700Bold/PlayfairDisplay_700Bold.ttf'),
-  'cormorant-garamond': require.resolve('@expo-google-fonts/cormorant-garamond/700Bold/CormorantGaramond_700Bold.ttf'),
-  'big-shoulders-display': require.resolve('@expo-google-fonts/big-shoulders-display/BigShouldersDisplay_700Bold.ttf'),
-  inter: require.resolve('@expo-google-fonts/inter/700Bold/Inter_700Bold.ttf'),
+/** Fonts that are not texts of the design: the spec line and dimensions (`info`) and the free-export watermark. */
+const EXTRA_FONT_FILES = {
   info: require.resolve('@expo-google-fonts/be-vietnam-pro/400Regular/BeVietnamPro_400Regular.ttf'),
   watermark: require.resolve('@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf'),
 };
+type FontKey = PrintFontId | keyof typeof EXTRA_FONT_FILES;
 const fonts = new Map<string, OutlineFont>();
-const fontOf = (id: PrintFontId | 'info' | 'watermark'): OutlineFont => {
-  if (!fonts.has(id)) fonts.set(id, openSync(FONT_FILES[id]));
-  return fonts.get(id)!;
+/** A font file of the design (four faces per family, @expo-google-fonts) or one of the extra fonts. */
+const fontOf = (id: FontKey, face: TextFace = 'bold'): OutlineFont => {
+  const key = `${id}:${face}`;
+  if (!fonts.has(key)) {
+    const file = id === 'info' || id === 'watermark' ? EXTRA_FONT_FILES[id] : require.resolve(fontPackagePath(id, face));
+    fonts.set(key, openSync(file));
+  }
+  return fonts.get(key)!;
 };
 
 const n = (value: number) => Number(value.toFixed(3)).toString();
@@ -87,7 +101,7 @@ const specLine = (layout: PrintLayout) =>
   `WrapFit — ${layout.title} — ${layout.structure} ${layout.dimensions.length} x ${layout.dimensions.width} x ${layout.dimensions.height} mm, giấy ${layout.dimensions.paperThickness} mm`;
 
 /** Text widths from the font files, with the shaping of the outlines. */
-const measure: MeasureText = (text, font, fontSizeMm) => outlineAdvanceMm(fontOf(font), text, fontSizeMm);
+const measure: MeasureText = (text, font, fontSizeMm, face) => outlineAdvanceMm(fontOf(font, face), text, fontSizeMm);
 
 /** Area of the dielines on the sheet (mm): the trim box of the print file. */
 function trimArea(layout: PrintLayout) {
@@ -117,7 +131,7 @@ function dimensionMarks(layout: PrintLayout) {
 }
 
 /** Outlines of a one-line label whose baseline starts (or, `centred`, is centred) at (x, y). */
-function labelPath(text: string, x: number, y: number, sizeMm: number, centred: boolean, font: PrintFontId | 'info' = 'info') {
+function labelPath(text: string, x: number, y: number, sizeMm: number, centred: boolean, font: FontKey = 'info') {
   const left = centred ? x - outlineAdvanceMm(fontOf(font), text, sizeMm) / 2 : x;
   return outlineText(fontOf(font), text, left, y, sizeMm);
 }
@@ -140,15 +154,48 @@ export function watermarkOutline(layout: PrintLayout) {
   return { d, placement, sizeMm: fit.sizeMm };
 }
 
-/** Every text element as outlines (one path per element) with its print ink. */
-function textOutlines(layout: PrintLayout) {
+/** Uploaded fonts of a render (docs/23 S13), opened once from the files the worker loaded with the images. */
+const uploadedFonts = new WeakMap<Artwork, Map<string, OutlineFont | null>>();
+function uploadedFont(artwork: Artwork, url: string | null | undefined): OutlineFont | null {
+  if (!url) return null;
+  let fonts = uploadedFonts.get(artwork);
+  if (!fonts) uploadedFonts.set(artwork, (fonts = new Map()));
+  if (!fonts.has(url)) {
+    const file = artwork.get(url);
+    let font: OutlineFont | null = null;
+    try {
+      font = file ? createFont(file.body) : null;
+    } catch {
+      font = null; // not a font: the text falls back to its built-in print font
+    }
+    fonts.set(url, font);
+  }
+  return fonts.get(url) ?? null;
+}
+
+/** Every text element as outlines (one path per element, underlines included) with its print ink. */
+function textOutlines(layout: PrintLayout, artwork: Artwork = new Map()) {
+  const measureAny: MeasureText = (text, font, fontSizeMm, face, fontUrl) => {
+    const custom = uploadedFont(artwork, fontUrl);
+    return custom ? outlineAdvanceMm(custom, text, fontSizeMm) : measure(text, font, fontSizeMm, face);
+  };
   return layout.texts.map((t) => {
-    const box = layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t }, measure);
-    const d = box.lines
-      .filter((line) => line.text)
-      .map((line) => outlineText(fontOf(box.font), line.text, t.x + line.x, t.y + line.baseline, box.fontSizeMm))
-      .join(' ');
-    return { d, color: t.color, cmyk: textCmyk(t.color, t.fontSizePt), rotation: t.rotation, cx: t.x + t.width / 2, cy: t.y + t.height / 2 };
+    const box = layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t.style }, measureAny);
+    const font = uploadedFont(artwork, box.fontUrl) ?? fontOf(box.font, box.face);
+    const lines = box.lines.filter((line) => line.text);
+    const glyphs = lines.map((line) =>
+      box.curve
+        ? outlineTextOnArc(font, line.text, t.x + t.width / 2, t.y + line.baseline, box.fontSizeMm, box.spacingMm, box.curve)
+        : outlineText(font, line.text, t.x + line.x, t.y + line.baseline, box.fontSizeMm, box.spacingMm),
+    );
+    const bars = box.underline
+      ? lines.map((line) => {
+          const u = underlineOf(line, box.fontSizeMm);
+          const [x, y] = [t.x + u.x, t.y + u.y];
+          return `M ${n(x)} ${n(y)} H ${n(x + u.width)} V ${n(y + u.height)} H ${n(x)} Z`;
+        })
+      : [];
+    return { ...t, d: [...glyphs, ...bars].join(' '), cmyk: t.style.cmyk ?? textCmyk(t.color, t.fontSizePt), stroke: box.stroke };
   });
 }
 
@@ -174,58 +221,170 @@ function barcodeVectors(layout: PrintLayout) {
     const digits = art.digits
       .map((digit) => labelPath(digit.text, b.x + digit.x, b.y + digit.baseline, digit.sizeMm, true, 'inter'))
       .join(' ');
-    return [{ box: b, d: `${bars} ${digits}`.trim(), rotation: b.rotation, cx: b.x + b.width / 2, cy: b.y + b.height / 2 }];
+    return [{ ...b, d: `${bars} ${digits}`.trim() }];
   });
 }
 
-/** Library art (`layout.arts`) of one kind: its shapes, and its texts outlined, in the coordinates of the element. */
-function artVectors(layout: PrintLayout, background: boolean) {
-  return layout.arts
-    .filter((a) => a.background === background)
-    .map((a) => ({
-      ...a,
-      cx: a.x + a.width / 2,
-      cy: a.y + a.height / 2,
-      texts: a.art.texts.map((t) => ({ d: labelPath(t.text, t.x, t.baseline, t.size, t.anchor === 'middle', t.font), color: t.color })),
-    }));
+/** Vector art (`layout.arts`: library art and shapes) with its texts outlined, in the coordinates of the element. */
+function artVectors(layout: PrintLayout) {
+  return layout.arts.map((a) => ({
+    ...a,
+    texts: a.art.texts.map((t) => ({ d: labelPath(t.text, t.x, t.baseline, t.size, t.anchor === 'middle', t.font), color: t.color })),
+  }));
 }
 
-/** SVG group of library art: placed on the sheet, turned around the centre of its element. */
+/** Everything of the artwork layer in paint order (the order of the layers in the editor, docs/23 D3). */
+type DrawItem =
+  | { kind: 'art'; item: ReturnType<typeof artVectors>[number] }
+  | { kind: 'image'; item: PrintLayout['images'][number] }
+  | { kind: 'text'; item: ReturnType<typeof textOutlines>[number] }
+  | { kind: 'barcode'; item: ReturnType<typeof barcodeVectors>[number] };
+
+function drawList(layout: PrintLayout, artwork: Artwork = new Map()): DrawItem[] {
+  const items: DrawItem[] = [
+    ...artVectors(layout).map((item) => ({ kind: 'art' as const, item })),
+    ...layout.images.map((item) => ({ kind: 'image' as const, item })),
+    ...textOutlines(layout, artwork).map((item) => ({ kind: 'text' as const, item })),
+    ...barcodeVectors(layout).map((item) => ({ kind: 'barcode' as const, item })),
+  ];
+  return items.sort((a, b) => a.item.order - b.item.order);
+}
+
+const centreOf = (b: PlacedBase) => ({ cx: b.x + b.width / 2, cy: b.y + b.height / 2 });
+
+/** SVG of vector art in sheet coordinates (the caller adds the clip, the turn and the mirror). */
+let gradientCount = 0;
 function artSvg(a: ReturnType<typeof artVectors>[number]): string {
-  const turn = a.rotation ? `rotate(${n(a.rotation)} ${n(a.cx)} ${n(a.cy)}) ` : '';
+  const defs: string[] = [];
+  const fillOf = (s: (typeof a.art.shapes)[number]) => {
+    if (!s.gradient) return escapeXml(s.fill ?? 'none');
+    const id = `grad${++gradientCount}`;
+    const line = gradientLine(s.gradient.angle, a.width, a.height);
+    const stops = s.gradient.stops.map((stop) => `<stop offset="${n(stop.offset)}" stop-color="${escapeXml(stop.color)}"/>`).join('');
+    defs.push(`<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${n(line.x1)}" y1="${n(line.y1)}" x2="${n(line.x2)}" y2="${n(line.y2)}">${stops}</linearGradient>`);
+    return `url(#${id})`;
+  };
   const shapes = a.art.shapes.map(
     (s) =>
-      `<path d="${s.d}" fill="${escapeXml(s.fill ?? 'none')}"` +
+      `<path d="${s.d}" fill="${fillOf(s)}"` +
       (s.stroke ? ` stroke="${escapeXml(s.stroke)}" stroke-width="${n(s.strokeWidth ?? LINE_MM)}"` : '') +
       (s.round ? ' stroke-linecap="round" stroke-linejoin="round"' : '') +
       '/>',
   );
   const texts = a.texts.filter((t) => t.d).map((t) => `<path d="${t.d}" fill="${escapeXml(t.color)}"/>`);
-  return `<g transform="${turn}translate(${n(a.x)} ${n(a.y)})">${shapes.join('')}${texts.join('')}</g>`;
+  const gradients = defs.length ? `<defs>${defs.join('')}</defs>` : '';
+  return `<g transform="translate(${n(a.x)} ${n(a.y)})">${gradients}${shapes.join('')}${texts.join('')}</g>`;
 }
 
 /** Layered SVG (layers: artwork, crease, cut, dimensions) for cutting plotters such as Cricut or laser cutters. */
-export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): string {
-  const rotate = (deg: number, cx: number, cy: number) => (deg ? ` transform="rotate(${n(deg)} ${n(cx)} ${n(cy)})"` : '');
-  // Images are embedded as data URIs so the file works offline in Cricut Design Space / Illustrator.
-  const images = layout.images.flatMap((image) => {
-    const file = artwork.get(image.url);
-    if (!file?.contentType.startsWith('image/')) return [];
-    return [
-      `<image x="${n(image.x)}" y="${n(image.y)}" width="${n(image.width)}" height="${n(image.height)}" preserveAspectRatio="xMidYMid meet"` +
-        rotate(image.rotation, image.x + image.width / 2, image.y + image.height / 2) +
-        ` href="data:${escapeXml(file.contentType)};base64,${file.body.toString('base64')}"/>`,
-    ];
-  });
-  // Texts are outlined: the file needs no font to open.
-  const texts = textOutlines(layout)
-    .filter((t) => t.d)
-    .map((t) => `<path d="${t.d}" fill="${escapeXml(t.color)}"${rotate(t.rotation, t.cx, t.cy)}/>`);
-  const barcodes = barcodeVectors(layout).map(
-    (b) =>
-      `<g${rotate(b.rotation, b.cx, b.cy)}><rect x="${n(b.box.x)}" y="${n(b.box.y)}" width="${n(b.box.width)}" height="${n(b.box.height)}" fill="#FFFFFF"/>` +
-      `<path d="${b.d}" fill="#000000"/></g>`,
-  );
+/** An image of the SVG file: its file (cropped and adjusted when needed) and where it lands in its box. */
+export interface SvgImage {
+  dataUri: string;
+  draw: ImageDraw;
+}
+
+/** Prepares the images of the SVG print file (crop, fill, adjustments); renderSvg falls back to the plain file. */
+export async function svgImages(layout: PrintLayout, artwork: Artwork): Promise<Map<PrintLayout['images'][number], SvgImage>> {
+  const prepared = new Map<PrintLayout['images'][number], SvgImage>();
+  for (const image of layout.images) {
+    const stored = artwork.get(image.url);
+    const file = stored && imageFileOf(stored, image);
+    if (!file?.contentType.startsWith('image/') || (!isCropped(image) && !image.filters)) continue;
+    const source = await sourceSize(file);
+    if (!source || source.vector) continue;
+    try {
+      const draw = imageDraw(image, source);
+      let pipeline = sharp(file.body).autoOrient();
+      if (isCropped(image)) {
+        pipeline = pipeline.extract({ left: Math.round(draw.sx), top: Math.round(draw.sy), width: Math.max(1, Math.round(draw.sw)), height: Math.max(1, Math.round(draw.sh)) });
+      }
+      const { data, info } = await pipeline.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      applyFilters(data, 4, image.filters ?? undefined);
+      const png = await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
+      prepared.set(image, { dataUri: `data:image/png;base64,${png.toString('base64')}`, draw: { ...draw, sx: 0, sy: 0, sw: info.width, sh: info.height } });
+    } catch {
+      // The plain file is embedded instead.
+    }
+  }
+  return prepared;
+}
+
+export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), images: Map<PrintLayout['images'][number], SvgImage> = new Map()): string {
+  let maskCount = 0;
+  // Each element is cut to its face + bleed (one clip path per face), then turned and mirrored around its centre.
+  const clips = new Map<string, { id: string; box: PlacedBase['clip'] }>();
+  const clipId = (box: PlacedBase['clip']) => {
+    const key = [box.x, box.y, box.width, box.height].map(n).join(',');
+    if (!clips.has(key)) clips.set(key, { id: `face${clips.size + 1}`, box });
+    return clips.get(key)!.id;
+  };
+  const placed = (b: PlacedBase, content: string) => {
+    const { cx, cy } = centreOf(b);
+    const flip = flipMatrix(b);
+    const transform = [b.rotation ? `rotate(${n(b.rotation)} ${n(cx)} ${n(cy)})` : '', flip ? `matrix(${flip.map(n).join(' ')})` : '']
+      .filter(Boolean)
+      .join(' ');
+    const inner = transform ? `<g transform="${transform}">${content}</g>` : content;
+    return `<g clip-path="url(#${clipId(b.clip)})"${b.opacity < 1 ? ` opacity="${n(b.opacity)}"` : ''}>${inner}</g>`;
+  };
+  const artworkSvg = drawList(layout, artwork)
+    .map(({ kind, item }) => {
+      if (kind === 'art') return placed(item, artSvg(item));
+      if (kind === 'text') {
+        if (!item.d) return '';
+        // The outline sits under the fill: twice its width, half of it hidden by the letters.
+        const outline = item.stroke
+          ? ` stroke="${escapeXml(item.stroke.color)}" stroke-width="${n(item.stroke.widthMm * 2)}" stroke-linejoin="round" paint-order="stroke"`
+          : '';
+        return placed(item, `<path d="${item.d}" fill="${escapeXml(item.color)}"${outline}/>`);
+      }
+      if (kind === 'barcode') {
+        return placed(
+          item,
+          `<rect x="${n(item.x)}" y="${n(item.y)}" width="${n(item.width)}" height="${n(item.height)}" fill="#FFFFFF"/>` +
+            `<path d="${item.d}" fill="#000000"/>`,
+        );
+      }
+      // Images are embedded as data URIs so the file works offline in Cricut Design Space / Illustrator.
+      const stored = artwork.get(item.url);
+      const file = stored && imageFileOf(stored, item);
+      if (!file?.contentType.startsWith('image/')) return '';
+      const ready = images.get(item);
+      const picture = ready
+        ? `<image x="${n(item.x + ready.draw.dx)}" y="${n(item.y + ready.draw.dy)}" width="${n(ready.draw.dw)}" height="${n(ready.draw.dh)}" preserveAspectRatio="none" href="${ready.dataUri}"/>`
+        : `<image x="${n(item.x)}" y="${n(item.y)}" width="${n(item.width)}" height="${n(item.height)}" preserveAspectRatio="xMidYMid meet"` +
+          ` href="data:${escapeXml(file.contentType)};base64,${file.body.toString('base64')}"/>`;
+      if (!item.mask) return placed(item, picture);
+      // Frame of the photo (rounded, circle, arch): a clip path in the coordinates of its box.
+      const id = `mask${++maskCount}`;
+      return placed(
+        item,
+        `<clipPath id="${id}"><path transform="translate(${n(item.x)} ${n(item.y)})" d="${item.mask}"/></clipPath><g clip-path="url(#${id})">${picture}</g>`,
+      );
+    })
+    .join('');
+  // Finishes (docs/23 S6): the shapes of each foil / UV / embossed element in the colour of its spot, on their own layer.
+  const finishSvg = drawList(layout, artwork)
+    .filter(({ item }) => item.finish)
+    .map(({ kind, item }) => {
+      const colour = escapeXml(FINISH_SPOTS[item.finish!].display);
+      const solid = { ...item, opacity: 1 };
+      if (kind === 'art') {
+        const shapes = item.art.shapes
+          .map((sh) => `<path d="${sh.d}" fill="${sh.fill ? colour : 'none'}"${sh.stroke ? ` stroke="${colour}" stroke-width="${n(sh.strokeWidth ?? LINE_MM)}"` : ''}/>`)
+          .join('');
+        const texts = item.texts.filter((t) => t.d).map((t) => `<path d="${t.d}" fill="${colour}"/>`).join('');
+        return placed(solid, `<g transform="translate(${n(item.x)} ${n(item.y)})">${shapes}${texts}</g>`);
+      }
+      if (kind === 'text' || kind === 'barcode') return item.d ? placed(solid, `<path d="${item.d}" fill="${colour}"/>`) : '';
+      return placed(solid, `<rect x="${n(item.x)}" y="${n(item.y)}" width="${n(item.width)}" height="${n(item.height)}" fill="${colour}"/>`);
+    })
+    .join('');
+  const defs = clips.size
+    ? `<defs>${[...clips.values()]
+        .map(({ id, box }) => `<clipPath id="${id}"><rect x="${n(box.x)}" y="${n(box.y)}" width="${n(box.width)}" height="${n(box.height)}"/></clipPath>`)
+        .join('')}</defs>`
+    : '';
   const strokes = (type: 'cut' | 'crease') =>
     layout.strokes.filter((s) => s.type === type).map((s) => `<path d="${escapeXml(s.d)}"/>`).join('');
   const marks = dimensionMarks(layout);
@@ -233,18 +392,15 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map()): st
     `<g id="${id}" inkscape:groupmode="layer" inkscape:label="${label}"${attributes}>${content}</g>`;
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n(layout.width)}mm" height="${n(layout.height)}mm" viewBox="0 0 ${n(layout.width)} ${n(layout.height)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="${n(layout.width)}mm" height="${n(layout.height)}mm" viewBox="0 0 ${n(layout.width)} ${n(layout.height)}">` + defs,
     layer(
       'artwork',
       'Artwork',
       '',
-      artVectors(layout, true).map(artSvg).join('') +
-        images.join('') +
-        artVectors(layout, false).map(artSvg).join('') +
-        texts.join('') +
-        barcodes.join('') +
+      artworkSvg +
         `<path fill="${COLORS.info}" d="${labelPath(marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
+    ...(finishSvg ? [layer('finish', 'Finish', '', finishSvg)] : []),
     layer('cut', 'CutContour', ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes('cut')),
     layer(
       'dimensions',
@@ -272,10 +428,18 @@ export interface PreparedImage {
   alpha: Uint8Array | null;
   /** Resolution of the source at its printed size (vector files: VECTOR_DPI). */
   dpi: number;
+  /** Where the pixels land in the element box, mm. */
+  draw: ImageDraw;
 }
 
 const isSvgFile = (file: { body: Buffer; contentType: string }) =>
   file.contentType.includes('svg') || /^\s*(<\?xml|<svg)/.test(file.body.subarray(0, 256).toString('utf8'));
+
+/** The file an image prints from: an SVG logo with its colours swapped (docs/23 S14), any other file as it is. */
+export function imageFileOf<F extends { body: Buffer; contentType: string }>(file: F, image: PrintLayout['images'][number]): F {
+  if (!image.colorMap?.length || !isSvgFile(file)) return file;
+  return { ...file, body: Buffer.from(recolorSvg(file.body.toString('utf8'), image.colorMap), 'utf8') };
+}
 
 /** Pixel size of an image (EXIF orientation applied) and whether it is a vector; null when it cannot be decoded. */
 async function sourceSize(file: { body: Buffer; contentType: string }) {
@@ -289,10 +453,10 @@ async function sourceSize(file: { body: Buffer; contentType: string }) {
   }
 }
 
-/** Printed size (mm) of an image in its box: the file keeps its proportions, centred. */
-const printedSize = (box: { width: number; height: number }, source: { width: number; height: number }) => {
-  const scale = Math.min(box.width / source.width, box.height / source.height);
-  return { width: source.width * scale, height: source.height * scale };
+/** Pixels of the source used and the printed width (mm) of an image in its box (crop and fit, docs/23 S10). */
+const printedOf = (image: PrintLayout['images'][number], source: { width: number; height: number }) => {
+  const draw = imageDraw(image, source);
+  return { draw, sourceWidth: draw.sw, width: draw.dw };
 };
 
 /** Resolution of each image of the layout at its printed size (the print package lists them). */
@@ -302,7 +466,10 @@ export async function imageResolutions(layout: PrintLayout, artwork: Artwork) {
     const file = artwork.get(image.url);
     const source = file && (await sourceSize(file));
     if (!source) result.push({ url: image.url, dpi: null, vector: false });
-    else result.push({ url: image.url, dpi: source.vector ? null : effectiveDpi(source.width, printedSize(image, source).width), vector: source.vector });
+    else {
+      const printed = printedOf(image, source);
+      result.push({ url: image.url, dpi: source.vector ? null : effectiveDpi(printed.sourceWidth, printed.width), vector: source.vector });
+    }
   }
   return result;
 }
@@ -317,20 +484,30 @@ export async function prepareImage(
 ): Promise<PreparedImage | null> {
   const source = await sourceSize(file);
   if (!source) return null;
-  const printed = printedSize(image, source);
+  const { draw, sourceWidth, width: printedWidth } = printedOf(image, source);
+  const region = { left: Math.round(draw.sx), top: Math.round(draw.sy), width: Math.max(1, Math.round(draw.sw)), height: Math.max(1, Math.round(draw.sh)) };
   try {
     let pipeline;
     if (source.vector) {
-      const target = pixelsFor(printed.width, VECTOR_DPI);
-      const density = Math.min(2400, Math.max(1, (72 * target) / source.width));
-      pipeline = sharp(file.body, { density }).resize({ width: target });
+      // Rasterise the whole logo at VECTOR_DPI for its printed size, then cut the region at that scale.
+      const scale = pixelsFor(printedWidth, VECTOR_DPI) / sourceWidth;
+      const density = Math.min(2400, Math.max(1, 72 * scale));
+      pipeline = sharp(file.body, { density });
+      if (isCropped(image)) {
+        const meta = await sharp(file.body, { density }).metadata();
+        const k = (meta.width ?? source.width) / source.width;
+        pipeline = pipeline.extract({ left: Math.round(region.left * k), top: Math.round(region.top * k), width: Math.max(1, Math.round(region.width * k)), height: Math.max(1, Math.round(region.height * k)) });
+      }
     } else {
-      const target = Math.min(source.width, pixelsFor(printed.width, MAX_EMBED_DPI));
+      const target = Math.min(region.width, pixelsFor(printedWidth, MAX_EMBED_DPI));
       pipeline = sharp(file.body).autoOrient();
-      if (target < source.width) pipeline = pipeline.resize({ width: target });
+      if (isCropped(image)) pipeline = pipeline.extract(region);
+      if (target < region.width) pipeline = pipeline.resize({ width: target });
     }
     const { data, info } = await pipeline.toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     if (info.channels !== 4 || data.length !== info.width * info.height * 4) return null;
+    // Photo adjustments baked into the printed pixels, the same formulas as the editor (docs/23 S10).
+    applyFilters(data, 4, image.filters ?? undefined);
     // Rich black on photos and patterns; logos (often small black lettering) stay on the K plate.
     const { cmyk, alpha } = rgbaToCmyk(data, { richBlack: image.type !== 'logo' });
     return {
@@ -338,7 +515,8 @@ export async function prepareImage(
       height: info.height,
       cmyk,
       alpha,
-      dpi: source.vector ? VECTOR_DPI : effectiveDpi(source.width, printed.width),
+      dpi: source.vector ? VECTOR_DPI : effectiveDpi(sourceWidth, printedWidth),
+      draw,
     };
   } catch {
     return null;
@@ -401,16 +579,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     doc.on('error', reject);
   });
 
-  // Page boxes, in points from the bottom-left corner.
-  const area = trimArea(layout);
-  const box = (grow: number) =>
-    [offsetX + area.left - grow, pageHeight - (offsetY + area.bottom) - grow, offsetX + area.right + grow, pageHeight - (offsetY + area.top) + grow].map(
-      (mm) => Number((mm * PT_PER_MM).toFixed(3)),
-    );
-  raw.page.dictionary.data.TrimBox = box(0);
-  raw.page.dictionary.data.BleedBox = box(BLEED_BOX_MM);
-
-  // Layers.
+  // Layers (shared by the pages).
   const groups = PRINT_LAYERS.map((name) => {
     const printed = name !== 'Dimensions';
     const group = raw.ref({
@@ -421,7 +590,6 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     group.end();
     return group;
   });
-  raw.page.resources.data.Properties = Object.fromEntries(groups.map((group, index) => [`L${index}`, group]));
   raw._root.data.OCProperties = {
     OCGs: groups,
     D: {
@@ -437,9 +605,8 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
   // Overprint for the dielines, and their spot colors.
   const overprint = raw.ref({ Type: 'ExtGState', OP: true, op: true, OPM: 1 });
   overprint.end();
-  raw.page.ext_gstates.GsOverprint = overprint;
   const spot = doc as unknown as { addSpotColor(name: string, c: number, m: number, y: number, k: number): void };
-  for (const { name, cmyk } of Object.values(SPOT_COLORS)) spot.addSpotColor(name, cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
+  for (const { name, cmyk } of [...Object.values(SPOT_COLORS), ...Object.values(FINISH_SPOTS)]) spot.addSpotColor(name, cmyk[0], cmyk[1], cmyk[2], cmyk[3]);
 
   /** A CMYK image XObject (with its alpha as a soft mask), registered on the page. */
   let imageCount = 0;
@@ -462,49 +629,93 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     draw();
     doc.restore();
   };
+  /** An element: cut to its face + bleed, with its opacity, turned and mirrored around its centre (like the canvas). */
+  const placed = (b: PlacedBase, draw: () => void) => {
+    const { cx, cy } = centreOf(b);
+    doc.save();
+    doc.rect(b.clip.x, b.clip.y, b.clip.width, b.clip.height).clip();
+    if (b.opacity < 1) doc.opacity(b.opacity);
+    if (b.rotation) doc.rotate(b.rotation, { origin: [cx, cy] });
+    const flip = flipMatrix(b);
+    if (flip) doc.transform(...flip);
+    draw();
+    doc.restore();
+  };
 
+  /** One sheet on the current page: page boxes, layers, artwork, finishes, cut, dimensions, home-print marks. */
+  const drawSheet = async (layout: PrintLayout) => {
+  // Page boxes, in points from the bottom-left corner.
+  const area = trimArea(layout);
+  const box = (grow: number) =>
+    [offsetX + area.left - grow, pageHeight - (offsetY + area.bottom) - grow, offsetX + area.right + grow, pageHeight - (offsetY + area.top) + grow].map(
+      (mm) => Number((mm * PT_PER_MM).toFixed(3)),
+    );
+  raw.page.dictionary.data.TrimBox = box(0);
+  raw.page.dictionary.data.BleedBox = box(BLEED_BOX_MM);
+  raw.page.resources.data.Properties = Object.fromEntries(groups.map((group, index) => [`L${index}`, group]));
+  raw.page.ext_gstates.GsOverprint = overprint;
+
+  doc.save();
   doc.scale(PT_PER_MM); // draw in mm from here on
   if (offsetX !== 0 || offsetY !== 0) doc.translate(offsetX, offsetY);
 
   /** Library art in CMYK: shapes (fill and / or stroke), then its outlined texts. */
   const drawArt = (a: ReturnType<typeof artVectors>[number]) =>
-    turned(a.rotation, a.cx, a.cy, () => {
+    placed(a, () => {
       doc.translate(a.x, a.y);
       for (const shape of a.art.shapes) {
         doc.lineCap(shape.round ? 'round' : 'butt').lineJoin(shape.round ? 'round' : 'miter');
         doc.path(shape.d);
-        if (shape.fill && shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(hexToCmyk(shape.fill), hexToCmyk(shape.stroke));
+        if (shape.gradient) {
+          // Linear gradient in CMYK across the element (docs/23 S11).
+          const line = gradientLine(shape.gradient.angle, a.width, a.height);
+          const gradient = doc.linearGradient(line.x1, line.y1, line.x2, line.y2);
+          for (const stop of shape.gradient.stops) gradient.stop(stop.offset, hexToCmyk(stop.color) as unknown as string); // PDFKit takes CMYK arrays; its typings say string
+          if (shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(gradient, hexToCmyk(shape.stroke));
+          else doc.fill(gradient);
+        } else if (shape.fill && shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(shape.cmyk ?? hexToCmyk(shape.fill), hexToCmyk(shape.stroke));
         else if (shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).stroke(hexToCmyk(shape.stroke));
-        else doc.fill(hexToCmyk(shape.fill ?? '#FFFFFF'));
+        else doc.fill(shape.cmyk ?? hexToCmyk(shape.fill ?? '#FFFFFF'));
       }
       for (const t of a.texts) if (t.d) doc.path(t.d).fill(hexToCmyk(t.color));
     });
 
   beginLayer('Artwork');
-  for (const a of artVectors(layout, true)) drawArt(a);
-  for (const image of layout.images) {
-    const file = artwork.get(image.url);
-    const prepared = file && (await prepareImage(file, image));
-    if (!prepared) continue;
-    const label = embedImage(prepared);
-    const size = printedSize(image, prepared);
-    const x = image.x + (image.width - size.width) / 2;
-    const y = image.y + (image.height - size.height) / 2;
-    turned(image.rotation, image.x + image.width / 2, image.y + image.height / 2, () => {
-      doc.transform(size.width, 0, 0, -size.height, x, y + size.height);
-      doc.addContent(`/${label} Do`);
-    });
-  }
-  for (const a of artVectors(layout, false)) drawArt(a);
-  for (const t of textOutlines(layout)) {
-    if (t.d) turned(t.rotation, t.cx, t.cy, () => doc.path(t.d).fill(t.cmyk));
-  }
-  for (const b of barcodeVectors(layout)) {
-    turned(b.rotation, b.cx, b.cy, () => {
-      // White knockout (no ink, never overprinted), then the modules in plain black.
-      doc.rect(b.box.x, b.box.y, b.box.width, b.box.height).fill(PAPER);
-      doc.path(b.d).fill(K100);
-    });
+  for (const { kind, item } of drawList(layout, artwork)) {
+    if (kind === 'art') drawArt(item);
+    else if (kind === 'text') {
+      const text = item;
+      if (text.d) {
+        placed(text, () => {
+          if (text.stroke) doc.lineWidth(text.stroke.widthMm * 2).lineJoin('round').path(text.d).stroke(hexToCmyk(text.stroke.color));
+          doc.path(text.d).fill(text.cmyk);
+        });
+      }
+    } else if (kind === 'barcode') {
+      const b = item;
+      placed(b, () => {
+        // White knockout (no ink, never overprinted), then the modules in plain black.
+        doc.rect(b.x, b.y, b.width, b.height).fill(PAPER);
+        doc.path(b.d).fill(K100);
+      });
+    } else {
+      const image = item;
+      const file = artwork.get(image.url);
+      const prepared = file && (await prepareImage(imageFileOf(file, image), image));
+      if (!prepared) continue;
+      const label = embedImage(prepared);
+      const { dx, dy, dw, dh } = prepared.draw;
+      placed(image, () => {
+        if (image.mask) {
+          // Frame of the photo (rounded, circle, arch).
+          doc.translate(image.x, image.y);
+          doc.path(image.mask).clip();
+          doc.translate(-image.x, -image.y);
+        }
+        doc.transform(dw, 0, 0, -dh, image.x + dx, image.y + dy + dh);
+        doc.addContent(`/${label} Do`);
+      });
+    }
   }
   const watermark = options?.watermarked ? watermarkOutline(layout) : null;
   if (watermark) {
@@ -518,6 +729,35 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
   const spec = dimensionMarks(layout).info;
   doc.path(labelPath(spec.text, spec.x, spec.y, SPEC_LINE_FONT_MM, false)).fill(CMYK_INFO);
   endLayer();
+
+  // Finishes (docs/23 S6, D8): each foil / UV / embossed element in its spot colour, 100 %, overprinted.
+  const finished = drawList(layout, artwork).filter(({ item }) => item.finish);
+  if (finished.length) {
+    beginLayer('Finish');
+    doc.save();
+    doc.addContent('/GsOverprint gs');
+    for (const { kind, item } of finished) {
+      const colour = FINISH_SPOTS[item.finish!].name;
+      placed({ ...item, opacity: 1 }, () => {
+        if (kind === 'art') {
+          doc.translate(item.x, item.y);
+          for (const shape of item.art.shapes) {
+            doc.path(shape.d);
+            if (shape.fill && shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(colour, colour);
+            else if (shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).stroke(colour);
+            else doc.fill(colour);
+          }
+          for (const t of item.texts) if (t.d) doc.path(t.d).fill(colour);
+        } else if (kind === 'text' || kind === 'barcode') {
+          if (item.d) doc.path(item.d).fill(colour);
+        } else {
+          doc.rect(item.x, item.y, item.width, item.height).fill(colour);
+        }
+      });
+    }
+    doc.restore();
+    endLayer();
+  }
 
   // Only the cut line: the dashed crease lines are not part of the print file.
   beginLayer('CutContour');
@@ -566,6 +806,15 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     doc.path(labelPath('<- Thước chuẩn 50 mm (In đúng 100% tỷ lệ thật) ->', rulerX, rulerY - 2, 2.8, false)).fill(CMYK_INFO);
     doc.path(labelPath('Cắt nét đỏ | Cấn nếp gập nét xanh — WrapFit DIY Studio', rulerX, rulerY + 5, 2.8, false)).fill(CMYK_INFO);
     doc.restore();
+  }
+  doc.restore();
+  };
+
+  await drawSheet(layout);
+  // The inside of the sheet (docs/23 S5): its own page, the dieline mirrored as the printer sees the back.
+  if (layout.inside) {
+    doc.addPage({ size: [pageWidth * PT_PER_MM, pageHeight * PT_PER_MM], margin: 0 });
+    await drawSheet(layout.inside);
   }
 
   doc.end();

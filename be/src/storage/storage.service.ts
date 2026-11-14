@@ -18,8 +18,11 @@ import {
   Logger,
   NotFoundException,
   ServiceUnavailableException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { create as createFont } from 'fontkit';
+import { cleanFamilyName, missingVietnamese } from '@wrapfit/shared';
 import { ConfigService } from '../common';
 import { PrismaService } from '../shared/prisma';
 import type { IProjectFiles, ProjectFile, UploadPurpose } from '../projects';
@@ -56,6 +59,9 @@ export const fileUrlNotAllowed = () =>
     code: 'FILE_URL_NOT_ALLOWED',
     message: 'Only files uploaded to WrapFit can be used here (POST /api/storage/presigned-upload)',
   });
+const fontUnreadable = () =>
+  new UnprocessableEntityException({ code: 'FONT_UNREADABLE', message: 'This file is not a font WrapFit can read (TTF, OTF, WOFF, WOFF2)' });
+
 const fileNotOwned = () =>
   new BadRequestException({ code: 'FILE_NOT_OWNED', message: 'This file is not one of your uploads' });
 /** Rows handled per maintenance run (StorageMaintenanceTask); the rest wait for the next run. */
@@ -264,9 +270,34 @@ export class StorageService implements IProjectFiles {
     added = added.filter((key) => !shared.has(key));
     if (!added.length) return;
     const owned = await this.prisma.storedFile.count({
-      where: { key: { in: added }, userId, purpose: { in: ['LOGO', 'IMAGE'] } },
+      where: { key: { in: added }, userId, purpose: { in: ['LOGO', 'IMAGE', 'FONT'] } },
     });
     if (owned !== added.length) throw fileNotOwned();
+  }
+
+  /**
+   * Checks an uploaded font (docs/23 S13, D11): it must open and draw every Vietnamese letter, otherwise 422
+   * FONT_NO_VIETNAMESE with the missing letters (a missing glyph prints as an empty box). Returns its family name.
+   */
+  async inspectFont(userId: string, url: string): Promise<{ url: string; family: string }> {
+    const key = await this.resolveUpload(url, userId, ['FONT']);
+    const file = await this.getObject(key);
+    let font: ReturnType<typeof createFont>;
+    try {
+      font = createFont(file.body);
+    } catch {
+      throw fontUnreadable();
+    }
+    if (typeof font?.hasGlyphForCodePoint !== 'function') throw fontUnreadable();
+    const missing = missingVietnamese(font);
+    if (missing.length) {
+      throw new UnprocessableEntityException({
+        code: 'FONT_NO_VIETNAMESE',
+        message: `This font cannot draw: ${missing.slice(0, 20).join(' ')}`,
+        missing,
+      });
+    }
+    return { url, family: cleanFamilyName(font.familyName) };
   }
 
   /** Downloads a file from the bucket (print exports embed the user's images). */
@@ -436,7 +467,7 @@ export class StorageService implements IProjectFiles {
       DELETE FROM stored_files
       WHERE id IN (
         SELECT f.id FROM stored_files f
-        WHERE f.purpose IN ('LOGO', 'IMAGE', 'THUMBNAIL', 'AVATAR')
+        WHERE f.purpose IN ('LOGO', 'IMAGE', 'THUMBNAIL', 'AVATAR', 'FONT')
           AND f.confirmed_at IS NOT NULL
           AND f.created_at < ${before}
           AND NOT EXISTS (SELECT 1 FROM project_file_refs r WHERE r.stored_file_id = f.id)

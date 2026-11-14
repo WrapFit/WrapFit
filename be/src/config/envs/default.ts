@@ -55,6 +55,11 @@ export const config = (env: EnvironmentVariables) => ({
     /** Encrypted database dumps, written by the backup job. Empty = none. */
     backupBucket: env.STORAGE_BACKUP_BUCKET,
   },
+  /** Stock photos of the studio through the backend (docs/23 D10): the key never reaches the browser. */
+  stock: {
+    pexelsKey: env.PEXELS_API_KEY,
+    enabled: env.PEXELS_API_KEY !== '',
+  },
   /** Public image CDN (shared/cloudinary). `cloudName` empty = disabled. */
   cloudinary: {
     cloudName: env.CLOUDINARY_CLOUD_NAME,

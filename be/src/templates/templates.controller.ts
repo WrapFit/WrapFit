@@ -18,7 +18,7 @@ export class TemplatesController {
   constructor(private readonly templatesService: TemplatesService) {}
 
   @Get('structures')
-  @ApiOperation({ summary: 'Box structures (tuck-top, sleeve-drawer, lid-base, pillow) with their size limits' })
+  @ApiOperation({ summary: 'Box structures (tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band) with their size limits' })
   structures() {
     return this.templatesService.structures();
   }

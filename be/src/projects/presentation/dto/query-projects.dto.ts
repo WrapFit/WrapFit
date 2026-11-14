@@ -13,7 +13,7 @@ export class QueryProjectsDto extends PaginationQueryDto {
   @IsEnum(ProjectStatus)
   status: ProjectStatus = ProjectStatus.ACTIVE;
 
-  @ApiPropertyOptional({ example: 'tuck-top', description: 'Box structure: tuck-top, sleeve-drawer, lid-base, pillow' })
+  @ApiPropertyOptional({ example: 'tuck-top', description: 'Box structure: tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band' })
   @IsOptional()
   @Matches(/^[a-z0-9-]{1,64}$/)
   templateId?: string;

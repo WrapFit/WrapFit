@@ -93,8 +93,14 @@ describe('analytics stats', () => {
       { type: 'sleeve-drawer', count: 0 },
       { type: 'lid-base', count: 0 },
       { type: 'pillow', count: 1 },
+      { type: 'mailer', count: 0 },
+      { type: 'gable', count: 0 },
+      { type: 'insert', count: 0 },
+      { type: 'hang-tag', count: 0 },
+      { type: 'folded-card', count: 0 },
+      { type: 'belly-band', count: 0 },
       { type: 'other', count: 2 },
     ]);
-    expect(boxTypesOf([])).toHaveLength(4);
+    expect(boxTypesOf([])).toHaveLength(10);
   });
 });

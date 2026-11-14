@@ -11,8 +11,9 @@ import { ExportCreditRefunds } from './export-credits';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
 import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
+import { fontUrlsOf } from '@wrapfit/shared';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
-import { Artwork, imageResolutions, renderDxf, renderPdf, renderSvg } from './rendering/print-renderers';
+import { Artwork, imageResolutions, renderDxf, renderPdf, renderSvg, svgImages } from './rendering/print-renderers';
 
 export const EXPORT_COMPLETED = 'export.completed';
 
@@ -111,7 +112,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
           ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4', watermarked: job.watermarked })
           : job.fileType === 'PRINT_PACKAGE'
             ? await renderPrintPackage(layout, artwork, titleSlug(project.title))
-            : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork) : renderDxf(layout));
+            : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork, await svgImages(layout, artwork)) : renderDxf(layout));
 
     // Private bucket: the file is only handed out through the 15-minute links of ExportService.
     const storageKey = `${PRIVATE_KEY_PREFIX}projects/${project.id}/exports/${exportJobId}.${format.extension}`;
@@ -169,7 +170,10 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
   private async loadArtwork(layout: PrintLayout): Promise<Artwork> {
     const artwork: Artwork = new Map();
     let total = 0;
-    for (const { url } of layout.images) {
+    // The inside sheet (docs/23 S5) prints its own images too.
+    // The inside sheet (docs/23 S5) prints its own images too; uploaded fonts (S13) are loaded like images.
+    const fonts = fontUrlsOf([...layout.texts, ...(layout.inside?.texts ?? [])].map((t) => ({ type: 'text' as const, style: t.style })));
+    for (const url of [...[...layout.images, ...(layout.inside?.images ?? [])].map((image) => image.url), ...fonts]) {
       if (artwork.has(url)) continue;
       const builtIn = libraryFile(url);
       if (builtIn) {

@@ -23,7 +23,7 @@ export const normalizeTags = ({ value }: { value: unknown }) =>
     : value;
 
 export class CreateProjectDto {
-  @ApiProperty({ example: 'tuck-top', description: 'Id of an active box template: tuck-top, sleeve-drawer, lid-base, pillow' })
+  @ApiProperty({ example: 'tuck-top', description: 'Id of an active box template: tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)

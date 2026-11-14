@@ -74,20 +74,36 @@ export function isAllowedMediaUrl(url: string): boolean {
 }
 
 interface CanvasLike {
-  elements?: { type: string; content: string }[];
+  elements?: { type: string; content: string; style?: { fontUrl?: string } }[];
+  /** Fonts uploaded for the design (docs/23 S13). */
+  customFonts?: { family: string; url: string }[];
 }
 
-const mapFileContents = <T extends CanvasLike>(canvas: T, map: (content: string) => string): T =>
-  Array.isArray(canvas?.elements)
-    ? {
-        ...canvas,
-        elements: canvas.elements.map((element) =>
-          FILE_ELEMENT_TYPES.has(element.type) && typeof element.content === 'string'
-            ? { ...element, content: map(element.content) }
-            : element,
-        ),
-      }
-    : canvas;
+const mapFileContents = <T extends CanvasLike>(canvas: T, map: (content: string) => string): T => {
+  if (!Array.isArray(canvas?.elements)) return canvas;
+  return {
+    ...canvas,
+    elements: canvas.elements.map((element) => {
+      let next = element;
+      if (FILE_ELEMENT_TYPES.has(element.type) && typeof element.content === 'string') next = { ...next, content: map(element.content) };
+      // A text set in an uploaded font points at its file (docs/23 S13).
+      if (typeof element.style?.fontUrl === 'string') next = { ...next, style: { ...element.style, fontUrl: map(element.style.fontUrl) } };
+      return next;
+    }),
+    ...(Array.isArray(canvas.customFonts) ? { customFonts: canvas.customFonts.map((font) => ({ ...font, url: map(font.url) })) } : {}),
+  };
+};
+
+/** Every file reference of a canvas: file elements, fonts of texts, uploaded fonts. */
+function fileReferences(canvas: CanvasLike | null | undefined): { content: string; font: boolean }[] {
+  const refs: { content: string; font: boolean }[] = [];
+  for (const element of canvas?.elements ?? []) {
+    if (FILE_ELEMENT_TYPES.has(element.type) && typeof element.content === 'string') refs.push({ content: element.content, font: false });
+    if (typeof element.style?.fontUrl === 'string') refs.push({ content: element.style.fontUrl, font: true });
+  }
+  for (const font of canvas?.customFonts ?? []) if (typeof font?.url === 'string') refs.push({ content: font.url, font: true });
+  return refs;
+}
 
 /** Canvas as stored: upload URLs become keys, every other content is kept as sent. Idempotent. */
 export const toStoredCanvas = <T extends CanvasLike>(canvas: T): T =>
@@ -100,11 +116,7 @@ export const toClientCanvas = <T extends CanvasLike>(canvas: T): T =>
 /** Upload keys a stored canvas points at (each once). */
 export function storedCanvasKeys(canvas: CanvasLike | null | undefined): string[] {
   const keys = new Set<string>();
-  for (const element of canvas?.elements ?? []) {
-    if (FILE_ELEMENT_TYPES.has(element.type) && typeof element.content === 'string' && isUploadKey(element.content)) {
-      keys.add(element.content);
-    }
-  }
+  for (const { content } of fileReferences(canvas)) if (isUploadKey(content)) keys.add(content);
   return [...keys];
 }
 
@@ -113,13 +125,13 @@ export function storedCanvasKeys(canvas: CanvasLike | null | undefined): string[
  * canvas (`current`, client or stored form) already shows are kept, so a design saved before this rule still saves.
  */
 export function disallowedFileContents(canvas: CanvasLike | null | undefined, current?: CanvasLike | null): string[] {
-  const kept = new Set((current?.elements ?? []).map((element) => element.content));
+  const kept = new Set(fileReferences(current).map((ref) => ref.content));
   const disallowed = new Set<string>();
-  for (const element of canvas?.elements ?? []) {
-    const { type, content } = element;
-    if (FILE_ELEMENT_TYPES.has(type) && typeof content === 'string' && !kept.has(content) && !isAllowedFileContent(content)) {
-      disallowed.add(content);
-    }
+  for (const { content, font } of fileReferences(canvas)) {
+    if (kept.has(content)) continue;
+    // A font must be an upload of WrapFit: the editor and the public pages load it in the browser.
+    const allowed = font ? isUploadKey(content) || uploadKeyOf(content) !== null : isAllowedFileContent(content);
+    if (!allowed) disallowed.add(content);
   }
   return [...disallowed];
 }
