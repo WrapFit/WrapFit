@@ -31,4 +31,4 @@ export function materialThemeOf(
 
 /** Finishes stored in the canvas, known ones only. */
 export const finishesOf = (stored: readonly string[] | undefined): QuoteFinish[] =>
-  (stored ?? []).filter((f): f is QuoteFinish => ["matte-lamination", "gloss-lamination", "soft-touch-lamination", "foil", "spot-uv"].includes(f));
+  (stored ?? []).filter((f): f is QuoteFinish => ["matte-lamination", "gloss-lamination", "soft-touch-lamination", "foil", "spot-uv", "emboss"].includes(f));

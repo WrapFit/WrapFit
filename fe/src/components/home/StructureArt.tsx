@@ -77,6 +77,83 @@ function Pillow() {
   );
 }
 
+function Mailer() {
+  return (
+    <>
+      {/* Open top with the inside, and the rolled rim of the double walls */}
+      <path d="M40 100 L100 76 L164 100 L104 124 Z" fill={INSIDE} />
+      <path d="M48 102 L104 123 L156 102" stroke={STROKE} strokeWidth="1.5" opacity="0.5" />
+      {/* Lid hinged on the back wall, swung open, and its tuck flap */}
+      <path d="M100 76 L164 100 L170 52 L106 28 Z" fill={FACE} />
+      <path d="M106 28 L170 52 L173 43 L110 19 Z" fill={SIDE} />
+      {/* Front and right walls */}
+      <path d="M40 100 L104 124 L104 168 L40 144 Z" fill={FACE} />
+      <path d="M104 124 L164 100 L164 144 L104 168 Z" fill={SIDE} />
+    </>
+  );
+}
+
+function Gable() {
+  return (
+    <>
+      {/* Handle with its hand hole, the two roofs, the pentagon end and the front */}
+      <path d="M78 22 L142 46 L142 70 L78 46 Z" fill={FACE} />
+      <path d="M96 34 L124 44" stroke={INSIDE} strokeWidth="7" strokeLinecap="round" />
+      <path d="M44 92 L78 46 L142 70 L108 116 Z" fill={SIDE} />
+      <path d="M78 46 L142 70 L170 104 L106 80 Z" fill={FACE} opacity="0.9" />
+      <path d="M44 92 L108 116 L108 170 L44 146 Z" fill={FACE} />
+      <path d="M108 116 L142 70 L170 104 L170 156 L108 170 Z" fill={SIDE} />
+    </>
+  );
+}
+
+function Insert() {
+  return (
+    <>
+      {/* Open tray seen from above, split into cells by crossing partitions */}
+      <path d="M30 104 L110 72 L176 100 L96 132 Z" fill={INSIDE} />
+      <path d="M30 104 L96 132 L96 154 L30 126 Z" fill={FACE} />
+      <path d="M96 132 L176 100 L176 122 L96 154 Z" fill={SIDE} />
+      <path d="M52 113 L132 81 M74 122 L154 90 M58 94 L124 122 M84 84 L150 112" stroke={STROKE} strokeWidth="2" opacity="0.7" />
+    </>
+  );
+}
+
+function HangTag() {
+  return (
+    <>
+      <path d="M92 40 Q60 30 70 18" fill="none" strokeWidth="1.5" />
+      <path d="M82 40 L118 40 L136 58 L136 170 L64 170 L64 58 Z" fill={FACE} />
+      <circle cx="100" cy="52" r="5" fill={INSIDE} />
+      <path d="M78 100 L122 100 M84 114 L116 114" strokeWidth="2" opacity="0.5" />
+    </>
+  );
+}
+
+function FoldedCard() {
+  return (
+    <>
+      {/* A card standing half open */}
+      <path d="M100 50 L160 70 L160 170 L100 150 Z" fill={SIDE} />
+      <path d="M100 50 L44 74 L44 174 L100 150 Z" fill={FACE} />
+      <path d="M60 104 L86 94 M60 118 L86 108" strokeWidth="2" opacity="0.5" />
+    </>
+  );
+}
+
+function BellyBand() {
+  return (
+    <>
+      {/* A plain box with a printed band around its middle */}
+      <path d="M30 96 L100 70 L174 96 L104 122 Z" fill={INSIDE} />
+      <path d="M30 96 L104 122 L104 168 L30 142 Z" fill={SIDE} />
+      <path d="M104 122 L174 96 L174 142 L104 168 Z" fill={SIDE} />
+      <path d="M58 86 L128 60 L150 68 L80 94 Z" fill={FACE} />
+      <path d="M80 94 L104 102 L104 148 L80 140 Z" fill={FACE} />
+    </>
+  );
+}
+
 function StickerLabel() {
   return (
     <>
@@ -97,6 +174,12 @@ const ART: Record<BoxStructureType, () => React.JSX.Element> = {
   "sleeve-drawer": SleeveDrawer,
   "lid-base": LidBase,
   pillow: Pillow,
+  mailer: Mailer,
+  gable: Gable,
+  insert: Insert,
+  "hang-tag": HangTag,
+  "folded-card": FoldedCard,
+  "belly-band": BellyBand,
   "sticker-label": StickerLabel,
 };
 

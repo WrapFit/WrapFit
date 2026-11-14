@@ -10,6 +10,7 @@ import { buildBoxModel, foldablePieces, type BoxMaterialTheme, type BoxModel } f
 import { stageBarButton } from "../studioUi";
 import { BACKDROPS, type Backdrop, type BoxEnvironment } from "./backdrops";
 import { AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, type DimensionAxis, type DimensionGuides } from "./guides";
+import { filmPose, type FilmApi } from "../../utils/film";
 
 export type { BoxMaterialTheme } from "./boxModel";
 export type { BoxStructureType };
@@ -69,6 +70,8 @@ interface InteractiveFoldingBox3DProps {
    * once, in the same task: the drawing buffer is not kept (mockup images).
    */
   captureRef?: React.MutableRefObject<(() => HTMLCanvasElement) | null>;
+  /** Filled with the scripted clip of the stage (folding-box video and GIF, docs/23 S19). */
+  filmRef?: React.MutableRefObject<FilmApi | null>;
   /**
    * Names of the faces (Nắp, Đáy, Mặt trước…) on the model, with a toggle in the dock: on by default once the box is
    * folded to FACE_LABELS_FROM or more (studio).
@@ -90,6 +93,12 @@ const STRUCTURE_LABEL: Record<BoxStructureType, string> = {
   "sleeve-drawer": "Hộp bao diêm (khay rút)",
   "lid-base": "Hộp âm dương (nắp rời)",
   pillow: "Hộp gối cánh cung",
+  mailer: "Hộp nắp cài (mailer)",
+  gable: "Hộp quai xách (gable)",
+  insert: "Khay chia ngăn",
+  "hang-tag": "Thẻ treo",
+  "folded-card": "Thiệp gấp đôi",
+  "belly-band": "Đai giấy bọc hộp",
   "sticker-label": "Tem nhãn / Đai giấy",
 };
 
@@ -98,6 +107,12 @@ const OPEN_LABEL: Record<BoxStructureType, [string, string]> = {
   "sleeve-drawer": ["Rút khay ra", "Đóng khay"],
   "lid-base": ["Nhấc nắp lên", "Đậy nắp"],
   pillow: ["Mở nắp", "Đóng nắp"],
+  mailer: ["Mở nắp", "Đóng nắp"],
+  gable: ["Mở mái", "Gập mái"],
+  insert: ["Nhấc vách ra", "Cài vách vào"],
+  "hang-tag": ["Xem trước", "Thu gọn"],
+  "folded-card": ["Mở thiệp", "Gấp thiệp"],
+  "belly-band": ["Mở đai", "Đóng đai"],
   "sticker-label": ["Xem trước", "Thu gọn"],
 };
 
@@ -255,6 +270,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   barStart,
   barEnd,
   captureRef,
+  filmRef,
   faceLabels = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -471,6 +487,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     let visible = true;
     let hoverPoint: THREE.Vector2 | null = null;
     let dragging = false;
+    /** The clip recorder has the stage (docs/23 S19): the loop leaves the camera and the fold alone. */
+    let filming = false;
 
     const framingDistance = (radius: number) => {
       const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
@@ -624,7 +642,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const loop = () => {
       frame = requestAnimationFrame(loop);
       const dt = Math.min(clock.getDelta(), 0.05);
-      if (!visible || !model) return;
+      if (!visible || !model || filming) return;
 
       if (progress !== target.progress || openness !== target.open) {
         progress = reducedMotion ? target.progress : approach(progress, target.progress, 9, dt);
@@ -772,12 +790,53 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         renderer.render(scene, camera);
         return renderer.domElement;
       };
+    if (filmRef) {
+      let saved: { position: THREE.Vector3; target: THREE.Vector3 } | null = null;
+      /** Smoothed framing radius: the camera moves in as the sheet folds into a smaller box. */
+      let radius = 0;
+      filmRef.current = {
+        start() {
+          if (!model) return false;
+          filming = true;
+          tween = null;
+          saved = { position: camera.position.clone(), target: controls.target.clone() };
+          radius = 0;
+          return true;
+        },
+        frame(t) {
+          if (model) {
+            const pose = filmPose(t);
+            model.update(pose.progress, pose.open);
+            measure();
+            const dir = VIEWS.angle.dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), pose.yaw);
+            radius = radius ? radius + (fit.radius - radius) * 0.25 : fit.radius;
+            // A margin around the box: the clip is cut square out of the stage, the shadow needs room too.
+            camera.position.copy(fit.center).addScaledVector(dir, framingDistance(radius) * 1.18);
+            camera.lookAt(fit.center);
+          }
+          renderer.render(scene, camera);
+          return renderer.domElement;
+        },
+        end() {
+          filming = false;
+          model?.update(progress, openness);
+          if (saved) {
+            camera.position.copy(saved.position);
+            controls.target.copy(saved.target);
+            camera.lookAt(saved.target);
+          }
+          boundsDirty = true;
+          dirty = true;
+        },
+      };
+    }
     loop();
 
     return () => {
       cancelAnimationFrame(frame);
       stageRef.current = null;
       if (captureRef) captureRef.current = null;
+      if (filmRef) filmRef.current = null;
       resizeObserver.disconnect();
       visibility.disconnect();
       el.removeEventListener("pointerdown", onPointerDown);
@@ -978,6 +1037,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       {guides && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           {DIMENSION_AXES.map((axis) => {
+            // An empty label hides the measure (the width of a flat tag or card, docs/23 S18).
+            if (!guides.labels[axis]) return null;
             const active = guides.active === axis;
             return (
               <div

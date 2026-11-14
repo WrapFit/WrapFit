@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Box, CheckCircle2, Download, Gift, Image as ImageIcon, QrCode, Sliders } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Box, CheckCircle2, Download, Film, Gift, Image as ImageIcon, QrCode, Sliders } from "lucide-react";
 import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
 import { useToast } from "@/components/common/Toast";
 import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, stageBarButton } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { BACKDROPS, SCENE_IDS, sceneForOccasion, type SceneId } from "@/features/studio/components/three/backdrops";
 import { fileSlug, MOCKUP_FORMATS, renderMockup, saveBlob, type MockupFormat } from "@/features/studio/utils/mockup";
+import { CLIP_SECONDS, MAX_CLIP_BYTES, recordGif, recordVideo, videoFormat, type FilmApi } from "@/features/studio/utils/film";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
 import { useBoxFonts } from "./canvas/boxText";
@@ -55,6 +56,16 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const [isLidOpen, setIsLidOpen] = useState<boolean>(false);
   const [saving, setSaving] = useState<MockupFormat["id"] | null>(null);
   const capture = useRef<(() => HTMLCanvasElement) | null>(null);
+  const film = useRef<FilmApi | null>(null);
+  /** Clip being made (docs/23 S19): its kind and how far it is. */
+  const [filming, setFilming] = useState<{ kind: "video" | "gif"; done: number } | null>(null);
+  const [clip, setClip] = useState<{ url: string; kind: "video" | "gif"; name: string; bytes: number } | null>(null);
+  const [playClip, setPlayClip] = useState(false);
+  const [canRecordVideo, setCanRecordVideo] = useState(true);
+  useEffect(() => setCanRecordVideo(videoFormat() !== null), []);
+  useEffect(() => () => {
+    if (clip) URL.revokeObjectURL(clip.url);
+  }, [clip]);
   const paper = paperStockOf(activeMaterial);
   const occasionLabel = LIBRARY_OCCASIONS.find((o) => o.id === occasion)?.label;
   useBoxFonts(elements);
@@ -87,8 +98,37 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
     }
   };
 
+  const makeClip = async (kind: "video" | "gif") => {
+    if (!film.current) {
+      toast.show({ tone: "error", title: "Chưa quay được", description: "Hộp 3D chưa hiện xong, thử lại sau một giây." });
+      return;
+    }
+    setFilming({ kind, done: 0 });
+    const onProgress = (done: number) => setFilming({ kind, done });
+    try {
+      const { blob, extension } =
+        kind === "video"
+          ? await recordVideo(film.current, BACKDROPS[scene], { onProgress })
+          : { blob: await recordGif(film.current, BACKDROPS[scene], { onProgress }), extension: "gif" };
+      const name = `${fileSlug(title)}-${scene}-gap-hop.${extension}`;
+      saveBlob(blob, name);
+      setClip({ url: URL.createObjectURL(blob), kind, name, bytes: blob.size });
+      setPlayClip(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      const mb = (blob.size / 1024 / 1024).toFixed(1).replace(".", ",");
+      toast.show(
+        blob.size > MAX_CLIP_BYTES
+          ? { tone: "error", title: "File hơi nặng", description: `${mb} MB, quá 10 MB: một số nơi không nhận. Thử GIF hoặc bối cảnh trơn hơn.` }
+          : { tone: "success", title: kind === "video" ? "Đã tải video" : "Đã tải ảnh GIF", description: `${CLIP_SECONDS} giây, ${mb} MB, ${BACKDROPS[scene].name}.` }
+      );
+    } catch {
+      toast.show({ tone: "error", title: "Chưa quay được", description: kind === "video" ? "Trình duyệt không ghi được video; thử tải GIF." : "Trình duyệt không tạo được GIF." });
+    } finally {
+      setFilming(null);
+    }
+  };
+
   const structureName =
-    boxType === "sleeve-drawer" ? "Hộp bao diêm" : boxType === "lid-base" ? "Hộp âm dương" : boxType === "pillow" ? "Hộp gối" : "Hộp nắp gài";
+    boxType === "sleeve-drawer" ? "Hộp bao diêm" : boxType === "lid-base" ? "Hộp âm dương" : boxType === "pillow" ? "Hộp gối" : boxType === "mailer" ? "Hộp nắp cài" : boxType === "gable" ? "Hộp quai xách" : boxType === "insert" ? "Khay chia ngăn" : boxType === "hang-tag" ? "Thẻ treo" : boxType === "folded-card" ? "Thiệp gấp đôi" : boxType === "belly-band" ? "Đai giấy" : "Hộp nắp gài";
   const lidLabel =
     boxType === "sleeve-drawer"
       ? isLidOpen
@@ -132,6 +172,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               environment={scene}
               interactiveOpenState={isLidOpen}
               captureRef={capture}
+              filmRef={film}
               showHud={false}
               showStatusBar={false}
               frameless
@@ -272,6 +313,70 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="border-t border-line pt-3">
+              <p className="flex items-center gap-1.5 text-body-sm font-semibold text-fg">
+                <Film className="size-4 text-fpt-orange" aria-hidden />
+                Video hộp gập
+              </p>
+              <p className="text-caption text-fg-muted">
+                {CLIP_SECONDS} giây: khuôn phẳng tự gập thành hộp, xoay quanh rồi mở nắp, trong bối cảnh đang chọn. Video nét hơn; GIF xem được ở mọi nơi.
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(["video", "gif"] as const).map((kind) => {
+                  const busy = filming?.kind === kind;
+                  const disabled = filming !== null || saving !== null || (kind === "video" && !canRecordVideo);
+                  return (
+                    <button
+                      key={kind}
+                      type="button"
+                      onClick={() => makeClip(kind)}
+                      disabled={disabled}
+                      title={kind === "video" && !canRecordVideo ? "Trình duyệt này không ghi được video" : undefined}
+                      className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border border-line-strong bg-surface-raised px-1 py-1.5 text-center transition-colors hover:border-fg disabled:opacity-60"
+                    >
+                      <span className="inline-flex items-center gap-1 text-caption font-semibold text-fg">
+                        <Download className="size-3.5" aria-hidden />
+                        {kind === "video" ? "Video" : "GIF động"}
+                      </span>
+                      <span className="text-label-sm tabular-nums text-fg-muted" aria-live="polite">
+                        {busy
+                          ? `${kind === "video" ? "Đang quay" : "Đang tạo"} ${Math.round((filming?.done ?? 0) * 100)}%`
+                          : kind === "video"
+                            ? canRecordVideo ? "720×720" : "Không hỗ trợ"
+                            : "400×400"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {clip && (
+                // A small thumbnail: a tall preview would stretch the 3D stage beside this column.
+                <div className="mt-3 flex items-center gap-3">
+                  {/* Reduced motion: nothing plays by itself; the clip starts on request. */}
+                  <div className="size-24 shrink-0 overflow-hidden rounded-control bg-surface-sunken">
+                    {clip.kind === "video" ? (
+                      <video src={clip.url} controls={!playClip} loop muted playsInline autoPlay={playClip} className="size-full object-cover" />
+                    ) : playClip ? (
+                      <img src={clip.url} alt="Hộp gập (ảnh GIF)" className="size-full object-cover" />
+                    ) : (
+                      <button type="button" onClick={() => setPlayClip(true)} className="size-full text-caption font-semibold text-fg">
+                        Xem GIF
+                      </button>
+                    )}
+                  </div>
+                  <div className="min-w-0 space-y-1 text-caption text-fg-muted">
+                    <p className="truncate font-semibold text-fg">{clip.name}</p>
+                    <p>
+                      {CLIP_SECONDS} giây · {(clip.bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB
+                    </p>
+                    <a href={clip.url} download={clip.name} className="font-semibold text-fpt-orange-ink hover:underline">
+                      Tải lại
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         </div>

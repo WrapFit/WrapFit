@@ -30,13 +30,7 @@ export function renderMockup(frame: HTMLCanvasElement, backdrop: Backdrop, forma
   const ctx = canvas.getContext("2d");
   if (!ctx) return Promise.reject(new Error("Canvas 2D unavailable"));
 
-  const [centre, middle, edge] = backdrop.mockup;
-  const light = ctx.createRadialGradient(width / 2, height * 0.32, 0, width / 2, height * 0.32, Math.max(width, height) * 0.85);
-  light.addColorStop(0, centre);
-  light.addColorStop(0.55, middle);
-  light.addColorStop(1, edge);
-  ctx.fillStyle = light;
-  ctx.fillRect(0, 0, width, height);
+  paintScene(ctx, backdrop, width, height);
 
   // Only the box (and its shadow), cut out of the wide stage frame: each format then frames it at its own aspect.
   // Pasting the whole frame made the three sizes the same small landscape picture on more or less background.
@@ -46,15 +40,31 @@ export function renderMockup(frame: HTMLCanvasElement, backdrop: Backdrop, forma
   const h = box.height * scale;
   ctx.drawImage(frame, box.x, box.y, box.width, box.height, (width - w) / 2, (height - h) / 2 + height * 0.02, w, h);
 
+  paintSignature(ctx, backdrop, width, height);
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((png) => (png ? resolve(png) : reject(new Error("PNG encoding failed"))), "image/png")
+  );
+}
+
+/** The scene's light as a radial gradient over the whole canvas (mockups and the folding-box clip). */
+export function paintScene(ctx: CanvasRenderingContext2D, backdrop: Backdrop, width: number, height: number) {
+  const [centre, middle, edge] = backdrop.mockup;
+  const light = ctx.createRadialGradient(width / 2, height * 0.32, 0, width / 2, height * 0.32, Math.max(width, height) * 0.85);
+  light.addColorStop(0, centre);
+  light.addColorStop(0.55, middle);
+  light.addColorStop(1, edge);
+  ctx.fillStyle = light;
+  ctx.fillRect(0, 0, width, height);
+}
+
+/** "Thiết kế với WrapFit" in the bottom right corner. */
+export function paintSignature(ctx: CanvasRenderingContext2D, backdrop: Backdrop, width: number, height: number) {
   ctx.font = `600 ${Math.round(height * 0.022)}px Inter, system-ui, sans-serif`;
   ctx.textAlign = "right";
   ctx.textBaseline = "bottom";
   ctx.fillStyle = backdrop.dark ? "rgba(255,255,255,0.55)" : "rgba(29,41,61,0.45)";
   ctx.fillText("Thiết kế với WrapFit", width - height * 0.035, height - height * 0.03);
-
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((png) => (png ? resolve(png) : reject(new Error("PNG encoding failed"))), "image/png")
-  );
 }
 
 /** Rectangle of the opaque pixels of `frame` (the box, not its soft shadow) (the whole frame when it has none or cannot be read). */

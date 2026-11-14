@@ -6,7 +6,7 @@ export interface BoxSizePreset {
   label: "S" | "M" | "L";
   name: string;
   description: string;
-  dims: { length: number; width: number; height: number; paperThickness: number };
+  dims: { length: number; width: number; height: number; paperThickness: number; cells?: { rows: number; cols: number } };
 }
 
 export interface BoxStructureOption {
@@ -22,7 +22,7 @@ export interface BoxStructureOption {
   foldDifficulty: "Dễ" | "Trung bình" | "Cao cấp";
   foldTimeSec?: number;
   feasibilityRate?: string;
-  defaultDims: { length: number; width: number; height: number; paperThickness: number };
+  defaultDims: { length: number; width: number; height: number; paperThickness: number; cells?: { rows: number; cols: number } };
   sizePresets?: BoxSizePreset[];
   svgPath: string; // SVG visual icon
 }
@@ -111,6 +111,132 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
       { label: "L", name: "Lớn", description: "Áo sơ mi gấp, khăn choàng lụa dài", dims: { length: 220, width: 150, height: 50, paperThickness: caliperOf(350) } },
     ],
     svgPath: "M15 50 Q50 15 85 50 Q50 85 15 50 Z",
+  },
+  {
+    id: "mailer",
+    name: "Mailer Box",
+    vietnameseName: "Hộp nắp cài",
+    subtitle: "Gửi quà, giao hàng, mở hộp",
+    description: "Một mảnh giấy, không cần keo: vách đôi cuộn mép chắc tay, nắp liền cài vào mặt trước. Mở nắp là thấy ngay lời cảm ơn in ở mặt trong — hợp hộp quà giao tận nơi và bộ quà thương mại điện tử.",
+    badge: "Mới",
+    badgeColor: "bg-sky-50 text-sky-700 border-sky-200",
+    recommendedGifts: ["Bộ mỹ phẩm", "Bánh giao tận nơi", "Áo thun gấp", "Hộp quà doanh nghiệp"],
+    recommendedPaper: "Duplex 350 GSM hoặc carton sóng E",
+    foldDifficulty: "Trung bình",
+    foldTimeSec: 10,
+    feasibilityRate: "Không cần keo",
+    defaultDims: { length: 220, width: 160, height: 70, paperThickness: caliperOf(350) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ (Mini)", description: "Son, nước hoa mini, phụ kiện", dims: { length: 150, width: 110, height: 50, paperThickness: caliperOf(300) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Bộ mỹ phẩm, bánh, quà vừa", dims: { length: 220, width: 160, height: 70, paperThickness: caliperOf(350) } },
+      { label: "L", name: "Lớn", description: "Áo gấp, set quà doanh nghiệp", dims: { length: 300, width: 220, height: 100, paperThickness: caliperOf(350) } },
+    ],
+    svgPath: "M10 40 L50 25 L90 40 L90 75 L50 90 L10 75 Z M50 55 L50 90 M10 40 L50 55 L90 40 M50 25 L30 8 L10 40",
+  },
+  {
+    id: "gable",
+    name: "Gable Box",
+    vietnameseName: "Hộp quai xách",
+    subtitle: "Xách tay đi biếu, mang đi",
+    description: "Thân hộp nắp gài với hai mái dốc và quai xách có lỗ xỏ tay, không cần túi giấy. Hai đầu hồi hình tam giác là chỗ đẹp để in họa tiết — hợp quà Tết, hộp bánh mang đi, set quà sự kiện.",
+    badge: "Mới",
+    badgeColor: "bg-sky-50 text-sky-700 border-sky-200",
+    recommendedGifts: ["Quà Tết", "Bánh mang đi", "Trà, cà phê biếu", "Quà sự kiện"],
+    recommendedPaper: "Ivory hoặc Duplex 350 GSM",
+    foldDifficulty: "Trung bình",
+    foldTimeSec: 14,
+    feasibilityRate: "Xách được ngay",
+    defaultDims: { length: 180, width: 100, height: 90, paperThickness: caliperOf(350) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ", description: "Bánh, kẹo, phụ kiện", dims: { length: 120, width: 70, height: 80, paperThickness: caliperOf(300) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Hộp bánh, trà biếu", dims: { length: 180, width: 100, height: 90, paperThickness: caliperOf(350) } },
+      { label: "L", name: "Lớn", description: "Set quà Tết, quà sự kiện", dims: { length: 260, width: 140, height: 160, paperThickness: caliperOf(350) } },
+    ],
+    svgPath: "M15 45 L85 45 L85 90 L15 90 Z M15 45 L50 22 L85 45 M40 22 L40 6 L60 6 L60 22 M44 12 L56 12",
+  },
+  {
+    id: "insert",
+    name: "Divider Insert",
+    vietnameseName: "Khay chia ngăn",
+    subtitle: "Lót trong hộp, chia ô từng món",
+    description: "Khay lót đặt vừa lòng hộp, có vách cài chéo chia thành từng ô để chai, lọ, bánh không xô lệch khi vận chuyển. Chọn số hàng × số cột ở bước Kích thước; mỗi ô in được họa tiết riêng.",
+    badge: "Mới",
+    badgeColor: "bg-sky-50 text-sky-700 border-sky-200",
+    recommendedGifts: ["Set nến, tinh dầu", "Hộp bánh nhiều vị", "Bộ mỹ phẩm", "Set trà"],
+    recommendedPaper: "Duplex 350 GSM hoặc carton bồi",
+    foldDifficulty: "Trung bình",
+    foldTimeSec: 20,
+    feasibilityRate: "Đặt vừa hộp có sẵn",
+    defaultDims: { length: 180, width: 120, height: 50, paperThickness: caliperOf(350), cells: { rows: 2, cols: 3 } },
+    sizePresets: [
+      { label: "S", name: "Hộp nhỏ", description: "4 ô: son, nước hoa mini", dims: { length: 120, width: 80, height: 40, paperThickness: caliperOf(300), cells: { rows: 2, cols: 2 } } },
+      { label: "M", name: "Tiêu chuẩn", description: "6 ô: bánh, lọ tinh dầu", dims: { length: 180, width: 120, height: 50, paperThickness: caliperOf(350), cells: { rows: 2, cols: 3 } } },
+      { label: "L", name: "Lớn", description: "12 ô: set bánh, socola", dims: { length: 260, width: 180, height: 40, paperThickness: caliperOf(350), cells: { rows: 3, cols: 4 } } },
+    ],
+    svgPath: "M10 30 L90 30 L90 80 L10 80 Z M10 55 L90 55 M37 30 L37 80 M63 30 L63 80",
+  },
+  {
+    id: "hang-tag",
+    name: "Hang Tag",
+    vietnameseName: "Thẻ treo",
+    subtitle: "Treo lên quai, cổ chai, móc",
+    description: "Thẻ cứng vát hai góc trên, có lỗ xỏ dây. In được cả hai mặt: mặt trước logo, mặt sau lời chúc hoặc thông tin sản phẩm (mặt sau là \"Mặt trong\" trong studio).",
+    badge: "Sản phẩm phẳng",
+    badgeColor: "bg-success-bg text-success-fg border-success/30",
+    recommendedGifts: ["Quai túi quà", "Cổ chai rượu, mật ong", "Trang sức", "Quần áo"],
+    recommendedPaper: "Ivory 350 GSM hoặc Kraft 300 GSM",
+    foldDifficulty: "Dễ",
+    foldTimeSec: 3,
+    feasibilityRate: "Không cần gấp",
+    defaultDims: { length: 55, width: 1, height: 90, paperThickness: caliperOf(350) },
+    sizePresets: [
+      { label: "S", name: "Nhỏ", description: "Trang sức, phụ kiện", dims: { length: 40, width: 1, height: 65, paperThickness: caliperOf(300) } },
+      { label: "M", name: "Tiêu chuẩn", description: "Quai túi, cổ chai", dims: { length: 55, width: 1, height: 90, paperThickness: caliperOf(350) } },
+      { label: "L", name: "Lớn", description: "Quần áo, set quà", dims: { length: 70, width: 1, height: 120, paperThickness: caliperOf(350) } },
+    ],
+    svgPath: "M38 15 L62 15 L75 28 L75 90 L25 90 L25 28 Z M50 24 m-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0",
+  },
+  {
+    id: "folded-card",
+    name: "Folded Card",
+    vietnameseName: "Thiệp gấp đôi",
+    subtitle: "Thiệp cảm ơn, thiệp chúc mừng",
+    description: "Một tờ gấp đôi theo nếp cấn: bìa trước, bìa sau in ở mặt ngoài, lời nhắn in ở hai trang bên trong (\"Mặt trong\" trong studio). Kích thước nhập là thiệp khi đã gấp lại.",
+    badge: "Sản phẩm phẳng",
+    badgeColor: "bg-success-bg text-success-fg border-success/30",
+    recommendedGifts: ["Thiệp cảm ơn kèm đơn", "Thiệp chúc Tết", "Thiệp sinh nhật", "Thiệp cưới"],
+    recommendedPaper: "Ivory 300 GSM hoặc giấy mỹ thuật",
+    foldDifficulty: "Dễ",
+    foldTimeSec: 2,
+    feasibilityRate: "Gấp một nếp",
+    defaultDims: { length: 100, width: 1, height: 150, paperThickness: caliperOf(300) },
+    sizePresets: [
+      { label: "S", name: "Thiệp nhỏ", description: "Kèm đơn hàng, 90 × 90", dims: { length: 90, width: 1, height: 90, paperThickness: caliperOf(300) } },
+      { label: "M", name: "A6", description: "Thiệp cảm ơn, 105 × 148", dims: { length: 105, width: 1, height: 148, paperThickness: caliperOf(300) } },
+      { label: "L", name: "A5", description: "Thiệp chúc mừng, 148 × 210", dims: { length: 148, width: 1, height: 210, paperThickness: caliperOf(350) } },
+    ],
+    svgPath: "M50 15 L85 25 L85 90 L50 80 Z M50 15 L15 25 L15 90 L50 80",
+  },
+  {
+    id: "belly-band",
+    name: "Belly Band",
+    vietnameseName: "Đai giấy bọc hộp",
+    subtitle: "Khoác áo mới cho hộp trơn",
+    description: "Đai giấy quấn quanh hộp có sẵn qua mặt trên, hai đầu và đáy, dán mép ở mặt dưới. Nhập kích thước phủ bì của hộp cần bọc; đai rộng khoảng 40 % chiều sâu hộp.",
+    badge: "Sản phẩm phẳng",
+    badgeColor: "bg-success-bg text-success-fg border-success/30",
+    recommendedGifts: ["Hộp kraft trơn", "Hộp bánh có sẵn", "Hộp quà doanh nghiệp", "Hộp xà phòng"],
+    recommendedPaper: "Ivory 250–300 GSM hoặc Kraft",
+    foldDifficulty: "Dễ",
+    foldTimeSec: 5,
+    feasibilityRate: "Hộp có sẵn",
+    defaultDims: { length: 200, width: 200, height: 60, paperThickness: caliperOf(300) },
+    sizePresets: [
+      { label: "S", name: "Hộp xà phòng", description: "Hộp 90 × 60 × 30", dims: { length: 90, width: 60, height: 30, paperThickness: caliperOf(250) } },
+      { label: "M", name: "Hộp bánh vuông", description: "Hộp 200 × 200 × 60", dims: { length: 200, width: 200, height: 60, paperThickness: caliperOf(300) } },
+      { label: "L", name: "Hộp quà lớn", description: "Hộp 300 × 220 × 100", dims: { length: 300, width: 220, height: 100, paperThickness: caliperOf(300) } },
+    ],
+    svgPath: "M10 35 L90 35 L90 80 L10 80 Z M38 35 L38 80 M62 35 L62 80",
   },
   {
     id: "sticker-label",

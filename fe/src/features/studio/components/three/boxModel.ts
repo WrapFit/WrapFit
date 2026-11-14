@@ -7,18 +7,26 @@ import {
   generateDielinePieces,
   matchesPanel,
   multiply,
+  FINISH_SPOTS,
+  orderElements,
+  printsInside,
   panelTransforms,
+  insertLayoutOf,
   pillowShapeOf,
-  TEXT_FONT_WEIGHT,
+  sideOf,
   transformPoint,
   type BoxDimensions,
   type CanvasElement,
   type DielineGeometry,
   type DielinePiece,
   type Mat4,
+  type DielineOpening,
   type PanelFace,
+  type Point2D,
+  type PrintSide,
 } from "@wrapfit/shared";
-import { cssFontFamily, layoutBoxText } from "../canvas/boxText";
+import { elementImageKey, recoloredSrc } from "../../utils/svgRecolor";
+import { drawImageOnCanvas, drawTextOnCanvas } from "../canvas/elementVisuals";
 import { drawArt, elementArt } from "../library/elementArt";
 
 /**
@@ -45,7 +53,7 @@ const PAPER: Record<BoxMaterialTheme, { outside: string; inside: string; ink: st
 };
 
 /** Panel that carries the showcase decoration when there is no design (home page, intro). */
-const MAIN_PANEL = ["panel_front", "lid_top", "sleeve_top", "pillow_front", "panel_sticker"];
+const MAIN_PANEL = ["panel_front", "lid_top", "sleeve_top", "pillow_front", "mailer_lid", "gable_front", "tag_front", "card_front", "band_top", "panel_sticker"];
 const IMAGE_TYPES = new Set<CanvasElement["type"]>(["image", "logo", "pattern"]);
 // blob: and data: URLs are uploads kept in the browser (offline demo, storage out of reach): they load into the 3D
 // texture too.
@@ -177,14 +185,6 @@ function drawPreset(ctx: CanvasRenderingContext2D, preset: string, width: number
   ctx.restore();
 }
 
-/** Image drawn inside its box keeping its proportions, centred (like `preserveAspectRatio="xMidYMid meet"`). */
-function drawContained(ctx: CanvasRenderingContext2D, image: HTMLImageElement, width: number, height: number) {
-  const ratio = Math.min(width / image.naturalWidth, height / image.naturalHeight);
-  const w = image.naturalWidth * ratio;
-  const h = image.naturalHeight * ratio;
-  ctx.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
-}
-
 function drawDecoration(ctx: CanvasRenderingContext2D, panel: PanelFace, text: string, theme: BoxMaterialTheme) {
   const { width, height } = panel.bounds;
   const color = theme === "forest" ? "#D4AF37" : theme === "gold_foil" ? "#4A2F08" : "#1A362B";
@@ -213,6 +213,57 @@ interface PanelTexture {
 }
 
 /**
+ * Draws an element with the look of its print finish (docs/23 S6): the element is drawn on its own layer, then foil
+ * becomes a metal gradient, spot UV a glossy sheen and embossing a light / shadow relief, inside its own shape only.
+ */
+function drawFinished(ctx: CanvasRenderingContext2D, el: CanvasElement, draw: (layer: CanvasRenderingContext2D) => void) {
+  const finish = el.finish ? FINISH_SPOTS[el.finish] : null;
+  if (!finish) return draw(ctx);
+  const layer = document.createElement("canvas");
+  layer.width = ctx.canvas.width;
+  layer.height = ctx.canvas.height;
+  const lctx = layer.getContext("2d");
+  if (!lctx) return draw(ctx);
+  const at = ctx.getTransform();
+  lctx.setTransform(at);
+  draw(lctx);
+  lctx.globalCompositeOperation = "source-atop";
+  if (finish.metallic) {
+    const gradient = lctx.createLinearGradient(0, 0, el.width, el.height);
+    gradient.addColorStop(0, "#FFFFFF");
+    gradient.addColorStop(0.35, finish.display);
+    gradient.addColorStop(0.65, "#FFFFFF");
+    gradient.addColorStop(1, finish.display);
+    lctx.globalAlpha = 0.85;
+    lctx.fillStyle = gradient;
+    lctx.fillRect(0, 0, el.width, el.height);
+  } else if (el.finish === "spot_uv") {
+    const gradient = lctx.createLinearGradient(0, 0, el.width, el.height);
+    gradient.addColorStop(0, "rgba(255,255,255,0.55)");
+    gradient.addColorStop(0.5, "rgba(255,255,255,0.05)");
+    gradient.addColorStop(1, "rgba(255,255,255,0.4)");
+    lctx.fillStyle = gradient;
+    lctx.fillRect(0, 0, el.width, el.height);
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (el.finish === "emboss" || el.finish === "deboss") {
+    // Relief: a light edge on one side and a shadow on the other (swapped for debossing).
+    const off = Math.max(1, Math.round(ctx.canvas.width / 400));
+    const raised = el.finish === "emboss";
+    ctx.globalAlpha = 0.35;
+    ctx.filter = "brightness(0)";
+    ctx.drawImage(layer, raised ? off : -off, raised ? off : -off);
+    ctx.filter = "brightness(2)";
+    ctx.drawImage(layer, raised ? -off : off, raised ? -off : off);
+    ctx.filter = "none";
+    ctx.globalAlpha = 1;
+  }
+  ctx.drawImage(layer, 0, 0);
+  ctx.restore();
+}
+
+/**
  * Texture of one panel. `region` is the sheet rectangle the texture covers (the panel itself, or for a pillow face
  * the whole face between its tips); elements are placed in panel coordinates, like on the 2D canvas.
  */
@@ -220,7 +271,9 @@ function panelTexture(
   panel: PanelFace,
   region: Rect,
   options: BoxModelOptions,
-  images: Map<string, HTMLImageElement | null>
+  images: Map<string, HTMLImageElement | null>,
+  /** The inside is seen from inside the box: its elements are drawn mirrored on the back of the panel (docs/23 S5). */
+  side: PrintSide = "outside"
 ): PanelTexture {
   const scale = Math.min(8, Math.max(2, 2048 / Math.max(region.width, region.height)));
   const canvas = document.createElement("canvas");
@@ -230,41 +283,45 @@ function panelTexture(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   const paper = PAPER[options.theme];
-  const elements = options.elements.filter((el) => matchesPanel(panel, el.panelId));
+  // One side of the sheet, visible layers only, in paint order (docs/23 D3).
+  const elements = orderElements(options.elements).filter((el) => matchesPanel(panel, el.panelId) && !el.hidden && sideOf(el) === side);
 
   const redraw = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.fillStyle = paper.outside;
+    ctx.fillStyle = side === "inside" ? paper.inside : paper.outside;
     ctx.fillRect(0, 0, region.width, region.height);
-    if (options.pattern) drawPreset(ctx, options.pattern, region.width, region.height);
+    if (side === "inside") {
+      // The back of the panel shows the texture mirrored: draw it mirrored so it reads right from inside the box.
+      ctx.translate(region.width, 0);
+      ctx.scale(-1, 1);
+    } else if (options.pattern) {
+      drawPreset(ctx, options.pattern, region.width, region.height);
+    }
     ctx.translate(panel.bounds.x - region.x, panel.bounds.y - region.y);
 
-    // Backgrounds first, like the print file.
-    const ordered = [...elements].sort((a, b) => Number(b.type === "pattern") - Number(a.type === "pattern"));
-    for (const el of ordered) {
+    for (const el of elements) {
       ctx.save();
+      if (typeof el.style?.opacity === "number") ctx.globalAlpha = Math.min(1, Math.max(0, el.style.opacity));
       ctx.translate(el.x + el.width / 2, el.y + el.height / 2);
       ctx.rotate(((el.rotation || 0) * Math.PI) / 180);
+      if (el.flipX || el.flipY) ctx.scale(el.flipX ? -1 : 1, el.flipY ? -1 : 1);
       ctx.translate(-el.width / 2, -el.height / 2);
-      const art = elementArt(el);
-      if (art) {
-        drawArt(ctx, art); // library stickers, labels, backgrounds and barcodes: vectors
-      } else if (IMAGE_TYPES.has(el.type)) {
-        const image = images.get(el.content);
-        if (image) drawContained(ctx, image, el.width, el.height);
-      } else if (el.type === "text") {
-        const box = layoutBoxText(el);
-        ctx.font = `${TEXT_FONT_WEIGHT} ${box.fontSizeMm}px ${cssFontFamily(box.font)}`;
-        ctx.fillStyle = el.style?.color || paper.ink;
-        ctx.textBaseline = "alphabetic";
-        ctx.textAlign = "left";
-        for (const line of box.lines) if (line.text) ctx.fillText(line.text, line.x, line.baseline);
-      }
+      drawFinished(ctx, el, (target) => {
+        const art = elementArt(el);
+        if (art) {
+          drawArt(target, art); // shapes, library stickers, labels, backgrounds and barcodes: vectors
+        } else if (IMAGE_TYPES.has(el.type)) {
+          const image = images.get(elementImageKey(el));
+          if (image) drawImageOnCanvas(target, el, image); // crop, fill, frame, adjustments (docs/23 S10)
+        } else if (el.type === "text") {
+          drawTextOnCanvas(target, el, paper.ink); // spacing, outline, curve (docs/23 S9)
+        }
+      });
       ctx.restore();
     }
-    if (options.decoration && MAIN_PANEL.includes(panel.id)) drawDecoration(ctx, panel, options.decoration, options.theme);
+    if (side === "outside" && options.decoration && MAIN_PANEL.includes(panel.id)) drawDecoration(ctx, panel, options.decoration, options.theme);
     texture.needsUpdate = true;
   };
   redraw();
@@ -274,8 +331,53 @@ function panelTexture(
 // ---------------------------------------------------------------------------------------------------------------
 // Geometry
 
-/** A panel as two triangles in sheet coordinates (printed side towards −z, see fold.ts), texture upright. */
-function panelGeometry({ x, y, width, height }: Rect): THREE.BufferGeometry {
+/**
+ * A panel in sheet coordinates (printed side towards −z, see fold.ts), texture upright: two triangles, or its outline
+ * (gable ends) with its windows and hand holes cut out (docs/23 S17).
+ */
+function panelGeometry({ x, y, width, height }: Rect, outline?: Point2D[], holes: DielineOpening[] = []): THREE.BufferGeometry {
+  if (outline || holes.length > 0) {
+    const corners = outline ?? [
+      { x, y },
+      { x: x + width, y },
+      { x: x + width, y: y + height },
+      { x, y: y + height },
+    ];
+    const shape = new THREE.Shape(corners.map((p) => new THREE.Vector2(p.x, p.y)));
+    for (const hole of holes) {
+      const r = Math.min(hole.radius, hole.width / 2, hole.height / 2);
+      const path = new THREE.Path();
+      const x1 = hole.x + hole.width;
+      const y1 = hole.y + hole.height;
+      path.moveTo(hole.x + r, hole.y);
+      path.lineTo(x1 - r, hole.y);
+      path.quadraticCurveTo(x1, hole.y, x1, hole.y + r);
+      path.lineTo(x1, y1 - r);
+      path.quadraticCurveTo(x1, y1, x1 - r, y1);
+      path.lineTo(hole.x + r, y1);
+      path.quadraticCurveTo(hole.x, y1, hole.x, y1 - r);
+      path.lineTo(hole.x, hole.y + r);
+      path.quadraticCurveTo(hole.x, hole.y, hole.x + r, hole.y);
+      shape.holes.push(path);
+    }
+    const geometry = new THREE.ShapeGeometry(shape, 6);
+    const position = geometry.getAttribute("position");
+    const uv = new Float32Array(position.count * 2);
+    for (let i = 0; i < position.count; i++) {
+      uv[2 * i] = (position.getX(i) - x) / width;
+      uv[2 * i + 1] = 1 - (position.getY(i) - y) / height;
+    }
+    geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    // ShapeGeometry faces +z; the printed side of a panel faces −z.
+    const index = geometry.getIndex()!;
+    for (let i = 0; i < index.count; i += 3) {
+      const b = index.getX(i + 1);
+      index.setX(i + 1, index.getX(i + 2));
+      index.setX(i + 2, b);
+    }
+    geometry.computeVertexNormals();
+    return geometry;
+  }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute([x, y, 0, x + width, y, 0, x + width, y + height, 0, x, y + height, 0], 3));
   geometry.setAttribute("uv", new THREE.Float32BufferAttribute([0, 1, 1, 1, 1, 0, 0, 0], 2));
@@ -284,9 +386,27 @@ function panelGeometry({ x, y, width, height }: Rect): THREE.BufferGeometry {
   return geometry;
 }
 
-/** Progress of each panel: walls first, then the lid and bottom of a tuck-top box (open: lid swings back past upright). */
+/**
+ * Progress of each panel: walls first, then the lid and bottom of a tuck-top box (open: lid swings back past upright).
+ * Mailer: the walls rise, their inner layers roll over the rim, then the lid closes; open, the lid swings back.
+ */
 function stagedProgress(structure: string, progress: number, open: number) {
   return (panel: PanelFace) => {
+    // A card opens like a book, a belly band comes off the box (docs/23 S18).
+    if (structure === "folded-card") return mix(progress, 0.42, open);
+    if (structure === "belly-band") return mix(progress, 0.55, open);
+    if (structure === "gable") {
+      // Walls and bottom first, then the roofs close and the handles rise; open, the roofs swing back out.
+      if (panel.id.startsWith("gable_roof_") || panel.id.startsWith("gable_handle_")) {
+        return mix(clamp01((progress - 0.55) / 0.45), -0.6, open);
+      }
+      return clamp01(progress / 0.55);
+    }
+    if (structure === "mailer") {
+      if (panel.id === "mailer_lid") return mix(clamp01((progress - 0.6) / 0.4), -0.25, open);
+      if (panel.id.endsWith("_inner")) return clamp01((progress - 0.3) / 0.4);
+      return clamp01(progress / 0.45);
+    }
     if (structure !== "tuck-top") return progress;
     if (panel.id === "panel_top_lid") return mix(clamp01((progress - 0.55) / 0.45), -0.32, open);
     if (panel.id === "panel_bottom") return clamp01((progress - 0.45) / 0.45);
@@ -301,7 +421,7 @@ function foldedPiece(
   geometry: DielineGeometry,
   textures: Map<string, PanelTexture>,
   makePrinted: MakePrinted,
-  inside: THREE.Material,
+  insideOf: (panelId: string) => THREE.Material,
   edges: THREE.LineBasicMaterial,
   disposables: { dispose(): void }[]
 ) {
@@ -310,10 +430,10 @@ function foldedPiece(
   // Rotation only: the shift to the ground is recomputed for each fold state.
   const rotation: Mat4 = [...frame.slice(0, 12), 0, 0, 0, 1];
   const meshes = geometry.panels.map((panel) => {
-    const shape = panelGeometry(panel.bounds);
+    const shape = panelGeometry(panel.bounds, panel.outline, geometry.openings?.filter((o) => o.panelId === panel.id));
     const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
     const front = new THREE.Mesh(shape, printed);
-    const back = new THREE.Mesh(shape, inside);
+    const back = new THREE.Mesh(shape, insideOf(panel.id));
     // Hairline on the panel edges: folds and cut edges read crisply, like a pressed crease.
     const outline = new THREE.EdgesGeometry(shape);
     const edge = new THREE.LineSegments(outline, edges);
@@ -355,6 +475,50 @@ function foldedPiece(
     });
   };
   return { group, update };
+}
+
+/**
+ * Partitions of a divider insert, standing in the tray where insertLayoutOf puts them (they have no hinges): long ones
+ * along L between the rows, cross ones along W between the columns, on the bottom of the tray.
+ */
+function placedDividers(
+  geometry: DielineGeometry,
+  dimensions: BoxDimensions,
+  textures: Map<string, PanelTexture>,
+  makePrinted: MakePrinted,
+  insideOf: (panelId: string) => THREE.Material,
+  edges: THREE.LineBasicMaterial,
+  disposables: { dispose(): void }[]
+) {
+  const group = new THREE.Group();
+  const layout = insertLayoutOf(dimensions);
+  const base = dimensions.paperThickness / 2;
+  for (const panel of geometry.panels) {
+    const { x, y, width: w, height: h } = panel.bounds;
+    const index = Number(panel.id.split("_").pop()) - 1;
+    const long = panel.id.startsWith("divider_long_");
+    const top = base + y + h;
+    // Sheet (x right, y down) → box: x along the partition, y up.
+    const m: Mat4 = long
+      ? [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, -x - w / 2, top, layout.rowLines[index] - dimensions.width / 2, 1]
+      : [0, 0, 1, 0, 0, -1, 0, 0, 1, 0, 0, 0, layout.colLines[index] - dimensions.length / 2, top, -x - w / 2, 1];
+    const shape = panelGeometry(panel.bounds);
+    const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.DoubleSide, panel.id);
+    const mesh = new THREE.Mesh(shape, printed);
+    mesh.name = panel.id;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(shape), edges);
+    edge.raycast = () => {};
+    for (const object of [mesh, edge]) {
+      object.matrixAutoUpdate = false;
+      object.matrix.copy(toMatrix(m));
+      group.add(object);
+    }
+    void insideOf;
+    disposables.push(shape, printed, edge.geometry);
+  }
+  return group;
 }
 
 /**
@@ -530,15 +694,20 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     textures.forEach((t) => t.redraw());
     options.onChange?.();
   };
-  for (const url of new Set(options.elements.filter((el) => IMAGE_TYPES.has(el.type) && isFileUrl(el.content)).map((el) => el.content))) {
-    const image = new Image();
-    image.crossOrigin = "anonymous"; // a storage image without CORS would taint the WebGL texture: it is then skipped
-    image.onload = () => {
-      images.set(url, image);
-      redrawAll();
-    };
-    image.onerror = () => images.set(url, null);
-    image.src = new URL(url, location.href).href;
+  // One image per file and colour swaps (recoloured SVG logos, docs/23 S14).
+  const sources = new Map(options.elements.filter((el) => IMAGE_TYPES.has(el.type) && isFileUrl(el.content)).map((el) => [elementImageKey(el), el] as const));
+  for (const [key, el] of sources) {
+    void recoloredSrc(el.content, el.style?.colorMap).then((src) => {
+      if (disposed) return;
+      const image = new Image();
+      image.crossOrigin = "anonymous"; // a storage image without CORS would taint the WebGL texture: it is then skipped
+      image.onload = () => {
+        images.set(key, image);
+        redrawAll();
+      };
+      image.onerror = () => images.set(key, null);
+      image.src = src.startsWith("data:") ? src : new URL(src, location.href).href;
+    });
   }
   if (typeof document !== "undefined" && document.fonts) void document.fonts.ready.then(redrawAll);
 
@@ -560,9 +729,31 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     };
   }
 
-  const folded = pieces.map((piece) => foldedPiece(piece.geometry, textures, makePrinted, inside, edges, disposables));
+  // The inside print (docs/23 S5): a textured copy of the inside paper for each panel, when the design prints there.
+  const insideMaterials = new Map<string, THREE.Material>();
+  if (printsInside(options.elements)) {
+    for (const piece of pieces) {
+      for (const panel of piece.geometry.panels) {
+        const texture = panelTexture(panel, panel.bounds, options, images, "inside");
+        textures.set(`inside:${panel.id}`, texture);
+        const material = inside.clone() as THREE.MeshStandardMaterial;
+        material.color = new THREE.Color("#FFFFFF");
+        material.emissiveIntensity = 0.15;
+        material.map = texture.texture;
+        insideMaterials.set(panel.id, material);
+        disposables.push(texture.texture, material);
+      }
+    }
+  }
+  const insideOf = (panelId: string) => insideMaterials.get(panelId) ?? inside;
+  // Pieces that fold; the partitions of an insert have no hinges and are placed in the tray instead.
+  const foldable = pieces.filter((piece) => piece.geometry.orientation);
+  const loose = structure === "insert" ? pieces.find((piece) => !piece.geometry.orientation) : undefined;
+  const dividers = loose ? placedDividers(loose.geometry, dimensions, textures, makePrinted, insideOf, edges, disposables) : null;
+  if (dividers) group.add(dividers);
+  const folded = foldable.map((piece) => foldedPiece(piece.geometry, textures, makePrinted, insideOf, edges, disposables));
   folded.forEach((piece) => group.add(piece.group));
-  const sizes = pieces.map((piece) => {
+  const sizes = foldable.map((piece) => {
     const frame = boxFrameOf(piece.geometry)!;
     const corners = piece.geometry.panels.flatMap((panel) => {
       const m = multiply(frame, panelTransforms(piece.geometry, 1)[panel.id]);
@@ -581,6 +772,12 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   const update = (progress: number, open: number) => {
     const progressOf = stagedProgress(structure, progress, open);
     folded.forEach((piece) => piece.update(progressOf));
+    if (dividers) {
+      // The partitions drop into the tray once its walls stand; "open" lifts them out.
+      const settle = clamp01((progress - 0.7) / 0.3);
+      dividers.visible = progress > 0.55;
+      dividers.position.y = ((1 - settle) * 1.5 + open * 1.1) * dimensions.height;
+    }
     if (structure === "lid-base") {
       // The lid top rests on the rim of the base (mid-planes one thickness apart), lifted while open or folding.
       const [base, lid] = sizes;
