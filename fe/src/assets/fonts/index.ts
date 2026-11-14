@@ -26,31 +26,55 @@ export const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "700"],
 });
 
-// Fonts of the texts on a box: the very files the print PDF embeds (./print/README.md), so a text measures and
-// wraps the same on screen and on paper. Not preloaded: only pages that draw box texts download them.
+// Fonts of the texts on a box: the very files the print PDF embeds (./print/README.md), four faces each (regular,
+// italic, bold, bold italic), so a text measures and wraps the same on screen and on paper. Not preloaded: only pages that draw box texts download them.
 // (next/font only accepts literal options, hence the repetition.)
 const beVietnam = localFont({
-  src: [{ path: "./print/BeVietnamPro_700Bold.ttf", weight: "700" }],
+  src: [
+    { path: "./print/BeVietnamPro_400Regular.ttf", weight: "400", style: "normal" },
+    { path: "./print/BeVietnamPro_400Regular_Italic.ttf", weight: "400", style: "italic" },
+    { path: "./print/BeVietnamPro_700Bold.ttf", weight: "700", style: "normal" },
+    { path: "./print/BeVietnamPro_700Bold_Italic.ttf", weight: "700", style: "italic" },
+  ],
   variable: "--font-print-be-vietnam",
   preload: false,
 });
 const playfairPrint = localFont({
-  src: [{ path: "./print/PlayfairDisplay_700Bold.ttf", weight: "700" }],
+  src: [
+    { path: "./print/PlayfairDisplay_400Regular.ttf", weight: "400", style: "normal" },
+    { path: "./print/PlayfairDisplay_400Regular_Italic.ttf", weight: "400", style: "italic" },
+    { path: "./print/PlayfairDisplay_700Bold.ttf", weight: "700", style: "normal" },
+    { path: "./print/PlayfairDisplay_700Bold_Italic.ttf", weight: "700", style: "italic" },
+  ],
   variable: "--font-print-playfair",
   preload: false,
 });
 const cormorant = localFont({
-  src: [{ path: "./print/CormorantGaramond_700Bold.ttf", weight: "700" }],
+  src: [
+    { path: "./print/CormorantGaramond_400Regular.ttf", weight: "400", style: "normal" },
+    { path: "./print/CormorantGaramond_400Regular_Italic.ttf", weight: "400", style: "italic" },
+    { path: "./print/CormorantGaramond_700Bold.ttf", weight: "700", style: "normal" },
+    { path: "./print/CormorantGaramond_700Bold_Italic.ttf", weight: "700", style: "italic" },
+  ],
   variable: "--font-print-cormorant",
   preload: false,
 });
+// No italic file: italic texts in this family print upright (printedFace of @wrapfit/shared).
 const bigShoulders = localFont({
-  src: [{ path: "./print/BigShouldersDisplay_700Bold.ttf", weight: "700" }],
+  src: [
+    { path: "./print/BigShouldersDisplay_400Regular.ttf", weight: "400", style: "normal" },
+    { path: "./print/BigShouldersDisplay_700Bold.ttf", weight: "700", style: "normal" },
+  ],
   variable: "--font-print-big-shoulders",
   preload: false,
 });
 const inter = localFont({
-  src: [{ path: "./print/Inter_700Bold.ttf", weight: "700" }],
+  src: [
+    { path: "./print/Inter_400Regular.ttf", weight: "400", style: "normal" },
+    { path: "./print/Inter_400Regular_Italic.ttf", weight: "400", style: "italic" },
+    { path: "./print/Inter_700Bold.ttf", weight: "700", style: "normal" },
+    { path: "./print/Inter_700Bold_Italic.ttf", weight: "700", style: "italic" },
+  ],
   variable: "--font-print-inter",
   preload: false,
 });

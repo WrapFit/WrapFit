@@ -1,4 +1,4 @@
-Bold (700) files of the five fonts the print files embed (docs/12 Phase 9). They are the same files the backend
+Regular, italic, bold and bold italic files (Big Shoulders Display: regular and bold only) of the five fonts the print files embed (docs/12 Phase 9). They are the same files the backend
 embeds (be/src/export/rendering/print-renderers.ts, packages @expo-google-fonts/*), so a text measures and breaks
 the same on screen and in the PDF. Keep both in step when changing a font.
 
