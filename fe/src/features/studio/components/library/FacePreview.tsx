@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { generateDielinePieces, mainPanelOf, TEXT_FONT_WEIGHT, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
-import { cssFontFamily, layoutBoxText } from "../canvas/boxText";
+import { generateDielinePieces, mainPanelOf, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
+import { cssFontFamily, faceAttributes, layoutBoxText } from "../canvas/boxText";
 import { ArtShapes, elementArt } from "./elementArt";
 
 interface FacePreviewProps {
@@ -41,7 +41,7 @@ export function FacePreview({ structure, dimensions, formulaVersion, elements, p
       <g clipPath={`url(#${clipId})`}>
         <rect width={width} height={height} fill={paper} />
         {elements
-          .filter((el) => el.panelId === face.id)
+          .filter((el) => el.panelId === face.id && !el.hidden && (el.side ?? "outside") === "outside")
           .map((el) => {
             const turn = el.rotation ? `rotate(${el.rotation} ${el.x + el.width / 2} ${el.y + el.height / 2})` : undefined;
             const art = elementArt(el);
@@ -54,7 +54,7 @@ export function FacePreview({ structure, dimensions, formulaVersion, elements, p
             if (el.type !== "text") return null;
             const box = layoutBoxText(el);
             return (
-              <g key={el.id} transform={turn} fontSize={box.fontSizeMm} fontWeight={TEXT_FONT_WEIGHT} fill={el.style?.color ?? "#1C1917"} style={{ fontFamily: cssFontFamily(box.font) }}>
+              <g key={el.id} transform={turn} fontSize={box.fontSizeMm} {...faceAttributes(box.font, box.face)} fill={el.style?.color ?? "#1C1917"} style={{ fontFamily: cssFontFamily(box.font) }}>
                 {box.lines.map((line, i) => (line.text ? <text key={i} x={el.x + line.x} y={el.y + line.baseline}>{line.text}</text> : null))}
               </g>
             );
