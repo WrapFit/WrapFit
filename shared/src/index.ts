@@ -37,6 +37,7 @@ export * from "./canvas/arrange";
 export * from "./canvas/reflow";
 export * from "./fitcheck/reading";
 export * from "./library/product-label";
+export * from "./text/vi-spell";
 export * from "./library/art";
 export * from "./library/shapes";
 export * from "./library/catalog";

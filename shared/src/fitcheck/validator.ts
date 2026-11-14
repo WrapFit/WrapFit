@@ -28,6 +28,7 @@ import { parseLibraryArt } from "../library/art";
 import { FINISH_SPOTS, MIN_FOIL_LINE_MM, MIN_FOIL_TEXT_PT } from "../print/finishes";
 import { overlapsOpening } from "../parametric/openings";
 import { contrastRatio, turnFromUpright, uprightRotationOf } from "./reading";
+import { misspelledWords } from "../text/vi-spell";
 
 /** Smallest text size worth printing (docs/23 S21): below it most readers cannot read it. */
 export const MIN_TEXT_PT = 6;
@@ -495,6 +496,20 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
           suggestion: "Đổi màu chữ đậm hơn hoặc sáng hơn hẳn màu nền, hoặc thêm khối màu sau chữ.",
           currentValue: Number(ratio.toFixed(2)),
           expectedValue: MIN_TEXT_CONTRAST,
+        });
+      }
+
+      const typos = misspelledWords(element.content);
+      if (typos.length) {
+        violations.push({
+          id: `spelling_${element.id}`,
+          code: "SPELLING",
+          severity: "info",
+          elementId: element.id,
+          panelId: panel.id,
+          title: "Có thể sai chính tả",
+          message: `${label}: ${typos.map((w) => `"${w}"`).join(", ")} không phải âm tiết tiếng Việt viết đúng.`,
+          suggestion: "Kiểm tra lại dấu và chữ cái (ví dụ đẹp, không phải đep; Tết, không phải Têt). Tên riêng, từ nước ngoài thì bỏ qua.",
         });
       }
 

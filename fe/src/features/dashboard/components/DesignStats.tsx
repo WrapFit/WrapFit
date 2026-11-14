@@ -33,6 +33,7 @@ const BOX_TYPE_LABELS: Record<AnalyticsBoxType, string> = {
   pillow: "Hộp gối",
   mailer: "Hộp nắp cài",
   gable: "Hộp quai xách",
+  "cup-carrier": "Khay xách ly",
   insert: "Khay chia ngăn",
   "hang-tag": "Thẻ treo",
   "folded-card": "Thiệp gấp đôi",

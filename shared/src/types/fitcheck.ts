@@ -25,7 +25,9 @@ export type FitCheckErrorCode =
   /** Text under 6 pt. */
   | "TEXT_TOO_SMALL"
   /** Text across a crease inside its face. */
-  | "TEXT_ON_CREASE";
+  | "TEXT_ON_CREASE"
+  /** Words that are not possible Vietnamese syllables (docs/23 S22): likely typos. */
+  | "SPELLING";
 
 export type SeverityLevel = "error" | "warning" | "info";
 
