@@ -10,7 +10,7 @@ import { LIBRARY_ICONS } from "./icons";
 
 export type LibraryCategory = "sticker" | "icon" | "label" | "mark" | "background" | "mascot" | "barcode";
 /** Trades of the makers (docs/23 S14), the industries of the templates; an item without one suits every trade. */
-export type LibraryIndustry = "BAKERY" | "CANDLES" | "COSMETICS" | "JEWELRY" | "TEA_AGRI";
+export type LibraryIndustry = "BAKERY" | "CANDLES" | "COSMETICS" | "JEWELRY" | "TEA_AGRI" | "BEVERAGE";
 export type LibraryOccasion = "TET" | "CHRISTMAS" | "WEDDING" | "VALENTINE" | "BIRTHDAY" | "MINIMAL";
 
 export interface LibraryItem {
@@ -61,6 +61,7 @@ export const LIBRARY_INDUSTRIES: { id: LibraryIndustry; label: string }[] = [
   { id: "COSMETICS", label: "Mỹ phẩm" },
   { id: "JEWELRY", label: "Trang sức" },
   { id: "TEA_AGRI", label: "Trà & nông sản" },
+  { id: "BEVERAGE", label: "Đồ uống" },
 ];
 
 /** Words that tie an item to a trade (folded, without accents). */
@@ -70,6 +71,7 @@ const INDUSTRY_WORDS: Record<LibraryIndustry, RegExp> = {
   COSMETICS: /\b(?:my pham|organic|huu co|tu nhien|serum|duong|sen|flower|hoa|leaf|la cay)\b/,
   JEWELRY: /\b(?:trang suc|gem|diamond|kim cuong|nhan cuoi|nhan bac|day chuyen|crown|vuong mien|tinh te|cao cap|premium)\b/,
   TEA_AGRI: /\b(?:tra|nong san|mat ong|coffee|ca phe|wheat|lua mi|sprout|leafy|cherry|apple|citrus|grape|banana|egg|organic|huu co)\b/,
+  BEVERAGE: /\b(?:do uong|nuoc|nuoc ep|tra sua|ca phe|coffee|cafe|cold brew|matcha|latte|juice|smoothie|soda|take away|mang di|ly nuoc|cup-soda)\b/,
 };
 
 const fold = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
@@ -150,6 +152,18 @@ const PRESETS: { design: string; occasion: LibraryOccasion; texts: string[]; pal
   { design: "ribbon", occasion: "MINIMAL", texts: ["Món quà lấp lánh"], palettes: ["kim-ngan", "hong-phan"], keywords: ["trang sức", "quà tặng", "lấp lánh"] },
   { design: "label", occasion: "MINIMAL", texts: ["Bảo hành trọn đời", "Đánh bóng miễn phí"], palettes: ["den-sang", "kim-ngan"], keywords: ["trang sức", "bảo hành"] },
   { design: "tag", occasion: "MINIMAL", texts: ["Dành tặng", "người đặc biệt"], palettes: ["kim-ngan", "hong-phan"], keywords: ["trang sức", "thẻ quà"] },
+  // Đồ uống: quán cà phê, trà sữa, nước ép mang đi
+  { design: "seal", occasion: "MINIMAL", texts: ["COLD BREW", "Cà Phê", "Ủ LẠNH 12H"], palettes: ["den-than", "nau-ca-phe", "kraft-moc"], keywords: ["đồ uống", "cà phê", "cold brew"] },
+  { design: "label", occasion: "MINIMAL", texts: ["Trà Sữa Nhà Mây", "Size M • Ít đá • 50% đường"], palettes: ["xanh-matcha", "kem-sua", "den-than"], keywords: ["đồ uống", "trà sữa", "nhãn ly"] },
+  { design: "ticket", occasion: "MINIMAL", texts: ["TAKE AWAY", "Mang đi • Uống liền"], palettes: ["den-than", "nau-ca-phe"], keywords: ["đồ uống", "mang đi", "take away"] },
+  { design: "oval", occasion: "MINIMAL", texts: ["Tiệm Cà Phê Nhỏ", "since 2026"], palettes: ["nau-ca-phe", "den-than", "xanh-matcha"], keywords: ["đồ uống", "cà phê", "logo quán"] },
+  { design: "burst", occasion: "MINIMAL", texts: ["MUA 1 TẶNG 1", "Trà sữa mang đi"], palettes: ["cam-fpt", "xanh-matcha"], keywords: ["đồ uống", "khuyến mãi", "trà sữa"] },
+  { design: "bubble", occasion: "MINIMAL", texts: ["Cảm ơn bạn", "đã ghé quán!"], palettes: ["xanh-matcha", "nau-ca-phe"], keywords: ["đồ uống", "cảm ơn", "quán nước"] },
+  { design: "band", occasion: "MINIMAL", texts: ["CẨN THẬN NÓNG • HOT DRINK"], palettes: ["cam-fpt", "den-than"], keywords: ["đồ uống", "nóng", "cảnh báo"] },
+  { design: "info", occasion: "MINIMAL", texts: ["THÔNG TIN ĐỒ UỐNG", "Dung tích: 500 ml", "Bảo quản lạnh 2–6 °C", "Dùng trong 24 giờ"], palettes: ["toi-gian", "nau-ca-phe"], keywords: ["đồ uống", "dung tích", "bảo quản"] },
+  { design: "hexagon", occasion: "MINIMAL", texts: ["Matcha", "Uji Nhật Bản"], palettes: ["xanh-matcha", "den-than"], keywords: ["đồ uống", "matcha", "latte"] },
+  { design: "arch", occasion: "MINIMAL", texts: ["Nước Ép", "Ép lạnh mỗi sáng"], palettes: ["cam-fpt", "xanh-matcha"], keywords: ["đồ uống", "nước ép", "juice"] },
+  { design: "tag", occasion: "MINIMAL", texts: ["Một ly cho bạn", "chúc ngày vui!"], palettes: ["kem-sua", "xanh-matcha"], keywords: ["đồ uống", "thẻ quà", "lời nhắn"] },
   // Print marks a box usually needs (docs/23 S14)
   { design: "recycle-mark", occasion: "MINIMAL", texts: ["TÁI CHẾ"], palettes: ["toi-gian", "xanh-reu", "kraft-moc"], keywords: ["tái chế", "recycle", "môi trường", "ký hiệu in"], category: "mark" },
   { design: "recycle-mark", occasion: "MINIMAL", texts: ["RECYCLABLE"], palettes: ["toi-gian", "xanh-reu"], keywords: ["tái chế", "recycle", "ký hiệu in"], category: "mark" },
@@ -186,6 +200,7 @@ const BACKGROUND_OCCASIONS: Record<string, LibraryOccasion[]> = {
   "bg-diamonds": ["WEDDING", "TET", "MINIMAL"],
   "bg-blossoms": ["TET", "WEDDING", "VALENTINE"],
   "bg-waves": ["MINIMAL", "TET"],
+  "bg-pixels": ["MINIMAL", "BIRTHDAY"],
 };
 
 /** Default width of a design (mm); the height follows its aspect. */

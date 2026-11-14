@@ -76,6 +76,9 @@ export const ART_PALETTES: ArtPalette[] = [
   { id: "bien-xanh", name: "Xanh biển", base: "#DBEAFE", ink: "#1E3A8A", accent: "#2563EB", deep: "#93C5FD" },
   { id: "kem-sua", name: "Kem sữa", base: "#FFF7ED", ink: "#7C2D12", accent: "#EA580C", deep: "#FED7AA" },
   { id: "den-sang", name: "Đen ánh kim", base: "#1C1917", ink: "#F5E6B8", accent: "#D4AF37", deep: "#000000" },
+  { id: "xanh-matcha", name: "Xanh matcha", base: "#9CBF7A", ink: "#FFFFFF", accent: "#7FA65A", deep: "#557F3A" },
+  { id: "den-than", name: "Đen than", base: "#161616", ink: "#F5F5F4", accent: "#9CBF7A", deep: "#000000" },
+  { id: "nau-ca-phe", name: "Nâu cà phê", base: "#EADBC8", ink: "#3B2416", accent: "#8B5A3C", deep: "#5C3A24" },
 ];
 
 const PALETTES = new Map(ART_PALETTES.map((p) => [p.id, p]));
@@ -928,6 +931,14 @@ const DESIGNS: ArtDesign[] = [
       }, 3.2),
   },
   {
+    id: "bg-pixels",
+    name: "Nền ô pixel",
+    kind: "background",
+    aspect: 1,
+    lines: [],
+    draw: (w, h, p) => pixels(w, h, p, 6),
+  },
+  {
     id: "bg-waves",
     name: "Nền sóng nước",
     kind: "background",
@@ -949,6 +960,46 @@ const DESIGNS: ArtDesign[] = [
     },
   },
 ];
+
+/** 0 … 1, the same for the same cell (pixel mosaics). */
+function cellNoise(i: number, j: number, seed: number): number {
+  let h = Math.imul(i + 0x9e37, 0x85ebca6b) ^ Math.imul(j + 0x7f4a, 0xc2b2ae35) ^ seed;
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+  h ^= h >>> 13;
+  return (h >>> 0) / 0xffffffff;
+}
+
+/**
+ * A mosaic of square pixels in the shades of the palette, in blotches (a coarse noise plus a fine one), like a
+ * pixelated photo. One path per shade, so even a large panel stays a handful of shapes.
+ */
+function pixels(w: number, h: number, p: ArtPalette, size: number): VectorArt {
+  const cols = Math.ceil(w / size);
+  const rows = Math.ceil(h / size);
+  const paths: Record<"accent" | "deep" | "ink", string[]> = { accent: [], deep: [], ink: [] };
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const v = 0.55 * cellNoise(Math.floor(i / 3), Math.floor(j / 3), 17) + 0.45 * cellNoise(i, j, 71);
+      const shade = v > 0.82 ? "deep" : v > 0.58 ? "accent" : v < 0.12 ? "ink" : null;
+      if (!shade) continue;
+      const x = i * size;
+      const y = j * size;
+      paths[shade].push(rect(x, y, Math.min(size, w - x), Math.min(size, h - y)));
+    }
+  }
+  const shapes: ArtShape[] = [{ d: rect(0, 0, w, h), fill: p.base }];
+  if (paths.accent.length) shapes.push({ d: paths.accent.join(" "), fill: p.accent });
+  if (paths.deep.length) shapes.push({ d: paths.deep.join(" "), fill: p.deep });
+  // A few light pixels: a lighter tint of the base (the ink is white or near-black, too strong on a large area).
+  if (paths.ink.length && luminanceOf(p.ink) > 0.5) shapes.push({ d: paths.ink.join(" "), fill: mixHex(p.base, p.ink, 0.35) });
+  return { width: w, height: h, shapes, texts: [] };
+}
+
+/** `a` mixed with `t` of `b` (`#RRGGBB`). */
+function mixHex(a: string, b: string, t: number): string {
+  const ch = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+  return `#${[1, 3, 5].map((i) => Math.round(ch(a, i) * (1 - t) + ch(b, i) * t).toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+}
 
 /** Base fill plus a motif repeated every `step` mm, keeping only motifs `margin` mm or more inside the element. */
 function tiled(w: number, h: number, p: ArtPalette, step: number, motif: (x: number, y: number, row: number) => ArtShape[], margin: number): VectorArt {

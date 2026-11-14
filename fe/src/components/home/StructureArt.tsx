@@ -107,6 +107,23 @@ function Gable() {
   );
 }
 
+function CupCarrier() {
+  return (
+    <>
+      {/* Two cups hanging under the carrier */}
+      <path d="M56 128 L98 128 L92 184 L62 184 Z" fill={SIDE} />
+      <path d="M108 128 L150 128 L144 184 L114 184 Z" fill={SIDE} />
+      {/* Open end: the inside of the shoulder and wall */}
+      <path d="M132 60 L160 92 L160 128 L172 120 L172 88 L142 54 Z" fill={INSIDE} />
+      {/* Handle with its hand hole, the front shoulder and the front wall */}
+      <path d="M72 18 L132 18 L132 60 L72 60 Z" fill={FACE} />
+      <path d="M90 32 L114 32" stroke={INSIDE} strokeWidth="9" strokeLinecap="round" />
+      <path d="M72 60 L132 60 L160 92 L44 92 Z" fill={SIDE} />
+      <path d="M44 92 L160 92 L160 128 L44 128 Z" fill={FACE} />
+    </>
+  );
+}
+
 function Insert() {
   return (
     <>
@@ -176,6 +193,7 @@ const ART: Record<BoxStructureType, () => React.JSX.Element> = {
   pillow: Pillow,
   mailer: Mailer,
   gable: Gable,
+  "cup-carrier": CupCarrier,
   insert: Insert,
   "hang-tag": HangTag,
   "folded-card": FoldedCard,

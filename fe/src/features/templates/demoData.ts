@@ -829,6 +829,7 @@ export function getStructureTemplateCounts(tab: "curated" | "community"): Record
     pillow: 0,
     mailer: 0,
     gable: 0,
+    "cup-carrier": 0,
     insert: 0,
     "hang-tag": 0,
     "folded-card": 0,

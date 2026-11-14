@@ -16,7 +16,7 @@ import type { CanvasElement, CanvasState, MaterialSpecification } from "../types
 import { artDesignOf, artPaletteOf, libraryArtContent } from "./art";
 import type { LibraryOccasion } from "./catalog";
 
-export type TemplateIndustry = "COSMETICS" | "CANDLES" | "BAKERY" | "JEWELRY" | "TEA_AGRI";
+export type TemplateIndustry = "COSMETICS" | "CANDLES" | "BAKERY" | "JEWELRY" | "TEA_AGRI" | "BEVERAGE";
 
 export interface StyleKit {
   id: string;
@@ -68,7 +68,7 @@ export const STYLE_KITS: StyleKit[] = [
     label: { design: "tag", palette: "kem-sua" }, tags: ["valentine", "tình yêu", "hồng"],
   },
   {
-    id: "sinh-nhat-cam", name: "Sinh Nhật Cam Tươi", occasion: "BIRTHDAY", industries: ["BAKERY", "CANDLES", "COSMETICS"], material: "ivory",
+    id: "sinh-nhat-cam", name: "Sinh Nhật Cam Tươi", occasion: "BIRTHDAY", industries: ["BAKERY", "CANDLES", "COSMETICS", "BEVERAGE"], material: "ivory",
     background: { design: "bg-stripes", palette: "cam-fpt" }, ink: "#FFFFFF", titleFont: "big-shoulders-display", bodyFont: "be-vietnam-pro",
     tagline: "Happy Birthday", sticker: { design: "burst", palette: "bien-xanh", texts: ["HPBD", "Sinh nhật vui vẻ"] },
     label: { design: "ribbon", palette: "bien-xanh" }, tags: ["sinh nhật", "vui tươi", "cam"],
@@ -80,7 +80,7 @@ export const STYLE_KITS: StyleKit[] = [
     label: { design: "label", palette: "oai-huong" }, tags: ["sinh nhật", "tím", "nhẹ nhàng"],
   },
   {
-    id: "toi-gian-kraft", name: "Kraft Thủ Công", occasion: "MINIMAL", industries: ["CANDLES", "TEA_AGRI", "BAKERY", "COSMETICS"], material: "kraft",
+    id: "toi-gian-kraft", name: "Kraft Thủ Công", occasion: "MINIMAL", industries: ["CANDLES", "TEA_AGRI", "BAKERY", "COSMETICS", "BEVERAGE"], material: "kraft",
     background: null, ink: "#3F2A1D", titleFont: "cormorant-garamond", bodyFont: "be-vietnam-pro",
     tagline: "Làm thủ công từng chiếc", sticker: { design: "seal", palette: "kraft-moc", texts: ["HANDMADE", "With Love", "SINCE 2026"] },
     label: { design: "oval", palette: "kraft-moc" }, tags: ["kraft", "handmade", "mộc mạc"],
@@ -103,12 +103,31 @@ export const STYLE_KITS: StyleKit[] = [
     tagline: "Phiên bản giới hạn", sticker: { design: "seal", palette: "den-sang", texts: ["LUXURY", "Edition", "2026"] },
     label: { design: "ticket", palette: "den-sang" }, tags: ["sang trọng", "đen", "ánh kim"],
   },
+  // Đồ uống mang đi: vỏ khay xách đen than chữ trắng, ly pixel xanh matcha.
+  {
+    id: "do-uong-den-than", name: "Đen Than Mang Đi", occasion: "MINIMAL", industries: ["BEVERAGE"], material: "ivory",
+    background: { design: "bg-solid", palette: "den-than" }, ink: "#F5F5F4", titleFont: "inter", bodyFont: "inter",
+    tagline: "Coffee • Take away", sticker: { design: "seal", palette: "xanh-matcha", texts: ["TAKE AWAY", "Coffee", "SINCE 2026"] },
+    label: { design: "ticket", palette: "den-than" }, tags: ["đồ uống", "cà phê", "đen", "mang đi"],
+  },
+  {
+    id: "do-uong-matcha-pixel", name: "Matcha Pixel", occasion: "MINIMAL", industries: ["BEVERAGE"], material: "ivory",
+    background: { design: "bg-pixels", palette: "xanh-matcha" }, ink: "#FFFFFF", titleFont: "inter", bodyFont: "inter",
+    tagline: "Matcha latte", sticker: { design: "hexagon", palette: "den-than", texts: ["Matcha", "Uji Nhật Bản"] },
+    label: { design: "label", palette: "den-than" }, tags: ["đồ uống", "matcha", "pixel", "trà sữa"],
+  },
+  {
+    id: "do-uong-ca-phe-sua", name: "Cà Phê Sữa", occasion: "MINIMAL", industries: ["BEVERAGE"], material: "kraft",
+    background: null, ink: "#3B2416", titleFont: "big-shoulders-display", bodyFont: "be-vietnam-pro",
+    tagline: "Rang mộc • Pha phin", sticker: { design: "seal", palette: "nau-ca-phe", texts: ["COLD BREW", "Cà Phê", "Ủ LẠNH 12H"] },
+    label: { design: "oval", palette: "nau-ca-phe" }, tags: ["đồ uống", "cà phê", "kraft", "mộc mạc"],
+  },
 ];
 
 interface Product {
   id: string;
   industry: TemplateIndustry;
-  structure: "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow" | "mailer" | "gable" | "hang-tag" | "folded-card" | "belly-band";
+  structure: "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow" | "mailer" | "gable" | "cup-carrier" | "hang-tag" | "folded-card" | "belly-band";
   dimensions: BoxDimensions;
   name: string;
   detail: string;
@@ -116,7 +135,13 @@ interface Product {
 }
 
 const PAPER_350 = caliperOf(350);
-const dims = (length: number, width: number, height: number): BoxDimensions => ({ length, width, height, paperThickness: PAPER_350 });
+const dims = (length: number, width: number, height: number, cells?: BoxDimensions["cells"]): BoxDimensions => ({
+  length,
+  width,
+  height,
+  paperThickness: PAPER_350,
+  ...(cells && { cells }),
+});
 
 const PRODUCTS: Product[] = [
   { id: "nen-thom", industry: "CANDLES", structure: "tuck-top", dimensions: dims(90, 90, 110), name: "Nến Thơm", detail: "Sáp đậu nành thủ công", info: ["Thành phần: sáp đậu nành", "Khối lượng: 200 g", "Thời gian cháy: 40 giờ"] },
@@ -135,6 +160,12 @@ const PRODUCTS: Product[] = [
   { id: "thiep-cam-on", industry: "CANDLES", structure: "folded-card", dimensions: dims(100, 1, 140), name: "Thiệp Cảm Ơn", detail: "Cảm ơn bạn đã ghé tiệm", info: [] },
   { id: "dai-hop-banh", industry: "BAKERY", structure: "belly-band", dimensions: dims(200, 200, 60), name: "Đai Hộp Bánh", detail: "Bánh nướng mỗi sáng", info: [] },
   { id: "ca-phe", industry: "TEA_AGRI", structure: "tuck-top", dimensions: dims(80, 80, 150), name: "Cà Phê Rang Xay", detail: "Arabica Cầu Đất", info: ["Khối lượng: 250 g", "Rang mộc, xay vừa", "Ngày rang: xem đáy hộp"] },
+  // Đồ uống: khay xách ly mang đi (ly 90 mm, nắp vòm), hộp chai nước ép, set quà cà phê, thẻ treo cổ chai.
+  { id: "khay-2-ly", industry: "BEVERAGE", structure: "cup-carrier", dimensions: dims(190, 95, 60, { rows: 1, cols: 2 }), name: "Khay Xách 2 Ly", detail: "Cà phê mang đi", info: ["Vừa ly giấy 12–16 oz", "Miệng ly Ø 90 mm", "Tái chế được"] },
+  { id: "khay-4-ly", industry: "BEVERAGE", structure: "cup-carrier", dimensions: dims(190, 190, 60, { rows: 2, cols: 2 }), name: "Khay Xách 4 Ly", detail: "Trà sữa giao tận nơi", info: [] },
+  { id: "chai-nuoc-ep", industry: "BEVERAGE", structure: "tuck-top", dimensions: dims(70, 70, 210), name: "Nước Ép Lạnh", detail: "Ép lạnh mỗi sáng", info: ["Dung tích: 330 ml", "Bảo quản lạnh 2–6 °C", "Dùng trong 3 ngày"] },
+  { id: "set-cold-brew", industry: "BEVERAGE", structure: "gable", dimensions: dims(160, 80, 200), name: "Set Cold Brew", detail: "Hai chai ủ lạnh 12 giờ", info: [] },
+  { id: "the-treo-chai", industry: "BEVERAGE", structure: "hang-tag", dimensions: dims(55, 1, 90), name: "Thẻ Treo Cổ Chai", detail: "Ủ lạnh, uống ngay", info: [] },
 ];
 
 /** The face that sells the box, and the one that carries the product information. */
@@ -145,6 +176,7 @@ const MAIN_PANEL: Record<Product["structure"], string> = {
   pillow: "pillow_front",
   mailer: "mailer_lid",
   gable: "gable_front",
+  "cup-carrier": "carrier_front",
   "hang-tag": "tag_front",
   "folded-card": "card_front",
   "belly-band": "band_top",
@@ -157,6 +189,7 @@ const INFO_PANEL: Partial<Record<Product["structure"], string>> = {
   pillow: "pillow_back",
   mailer: "mailer_back",
   gable: "gable_back",
+  "cup-carrier": "carrier_back",
 };
 /** Where a small seal goes when it is not on the main face. */
 const SEAL_PANEL: Partial<Record<Product["structure"], string>> = { "tuck-top": "panel_top_lid" };
@@ -368,6 +401,7 @@ const STRUCTURE_NAMES: Record<Product["structure"], string> = {
   pillow: "hộp gối",
   mailer: "hộp nắp cài",
   gable: "hộp quai xách",
+  "cup-carrier": "khay xách ly",
   "hang-tag": "thẻ treo",
   "folded-card": "thiệp gấp đôi",
   "belly-band": "đai giấy bọc hộp",
