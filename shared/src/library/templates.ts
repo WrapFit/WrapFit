@@ -5,10 +5,11 @@
  * warning are kept, so a generated template always exports. The seed of the API and the offline demo of the editor
  * use the same list, so both show the same designs.
  */
-import { checkBox, safeMarginsOf, cutSidesOf } from "../fitcheck/validator";
+import { backgroundFor, panelTouchesGlue } from "../canvas/elements";
+import { turnTextsUpright, withAnchors } from "../canvas/reflow";
+import { checkBox, safeMarginsOf } from "../fitcheck/validator";
 import { caliperOf } from "../parametric/paper";
 import { generateDielinePieces, type DielinePiece } from "../parametric/registry";
-import { BLEED_BOX_MM } from "../print/prepress";
 import { PT_TO_MM, PRINT_FONTS, type PrintFontId } from "../print/text-layout";
 import type { BoxDimensions, PanelFace } from "../types/dieline";
 import type { CanvasElement, CanvasState, MaterialSpecification } from "../types/project";
@@ -107,7 +108,7 @@ export const STYLE_KITS: StyleKit[] = [
 interface Product {
   id: string;
   industry: TemplateIndustry;
-  structure: "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
+  structure: "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow" | "mailer" | "gable" | "hang-tag" | "folded-card" | "belly-band";
   dimensions: BoxDimensions;
   name: string;
   detail: string;
@@ -126,6 +127,13 @@ const PRODUCTS: Product[] = [
   { id: "trang-suc", industry: "JEWELRY", structure: "pillow", dimensions: dims(100, 80, 30), name: "Trang Sức", detail: "Bạc ta thủ công", info: [] },
   { id: "nhan-bac", industry: "JEWELRY", structure: "lid-base", dimensions: dims(90, 90, 40), name: "Nhẫn Bạc", detail: "Quà tặng tinh tế", info: [] },
   { id: "tra-sen", industry: "TEA_AGRI", structure: "lid-base", dimensions: dims(180, 120, 85), name: "Trà Sen", detail: "Ướp sen Tây Hồ", info: [] },
+  { id: "hop-qua-my-pham", industry: "COSMETICS", structure: "mailer", dimensions: dims(200, 150, 60), name: "Hộp Quà Mỹ Phẩm", detail: "Giao tận tay, mở là thấy quà", info: [] },
+  { id: "hop-banh-giao", industry: "BAKERY", structure: "mailer", dimensions: dims(220, 160, 70), name: "Hộp Bánh Giao Tận Nơi", detail: "Bánh nướng mới mỗi sáng", info: [] },
+  { id: "tra-tet-xach", industry: "TEA_AGRI", structure: "gable", dimensions: dims(160, 90, 120), name: "Hộp Quà Trà Tết", detail: "Xách tay đi biếu", info: [] },
+  { id: "hop-banh-xach", industry: "BAKERY", structure: "gable", dimensions: dims(180, 100, 90), name: "Hộp Bánh Xách Tay", detail: "Mang đi tiện, không lo móp", info: [] },
+  { id: "the-treo-trang-suc", industry: "JEWELRY", structure: "hang-tag", dimensions: dims(55, 1, 90), name: "Thẻ Treo Trang Sức", detail: "Bạc ta thủ công", info: [] },
+  { id: "thiep-cam-on", industry: "CANDLES", structure: "folded-card", dimensions: dims(100, 1, 140), name: "Thiệp Cảm Ơn", detail: "Cảm ơn bạn đã ghé tiệm", info: [] },
+  { id: "dai-hop-banh", industry: "BAKERY", structure: "belly-band", dimensions: dims(200, 200, 60), name: "Đai Hộp Bánh", detail: "Bánh nướng mỗi sáng", info: [] },
   { id: "ca-phe", industry: "TEA_AGRI", structure: "tuck-top", dimensions: dims(80, 80, 150), name: "Cà Phê Rang Xay", detail: "Arabica Cầu Đất", info: ["Khối lượng: 250 g", "Rang mộc, xay vừa", "Ngày rang: xem đáy hộp"] },
 ];
 
@@ -135,6 +143,11 @@ const MAIN_PANEL: Record<Product["structure"], string> = {
   "sleeve-drawer": "sleeve_top",
   "lid-base": "lid_top",
   pillow: "pillow_front",
+  mailer: "mailer_lid",
+  gable: "gable_front",
+  "hang-tag": "tag_front",
+  "folded-card": "card_front",
+  "belly-band": "band_top",
 };
 /** The face that sells the box (title, label), or null for a structure without one. */
 export const mainPanelOf = (structure: string): string | null => MAIN_PANEL[structure as Product["structure"]] ?? null;
@@ -142,6 +155,8 @@ const INFO_PANEL: Partial<Record<Product["structure"], string>> = {
   "tuck-top": "panel_back",
   "sleeve-drawer": "sleeve_bottom",
   pillow: "pillow_back",
+  mailer: "mailer_back",
+  gable: "gable_back",
 };
 /** Where a small seal goes when it is not on the main face. */
 const SEAL_PANEL: Partial<Record<Product["structure"], string>> = { "tuck-top": "panel_top_lid" };
@@ -207,7 +222,11 @@ function safeArea(panel: PanelFace, piece: DielinePiece) {
   const m = safeMarginsOf(panel, piece.geometry);
   // A little more than the minimum, so rounding never touches the limit.
   const pad = 1;
-  return { x: m.left + pad, y: m.top + pad, width: panel.bounds.width - m.left - m.right - 2 * pad, height: panel.bounds.height - m.top - m.bottom - 2 * pad };
+  // Below the holes cut near the top of the face (the string hole of a hang tag), and the clipped corners next to them.
+  const top = (piece.geometry.openings ?? [])
+    .filter((o) => o.kind === "hole" && o.panelId === panel.id)
+    .reduce((y, o) => Math.max(y, o.y + o.height - panel.bounds.y + 2), m.top);
+  return { x: m.left + pad, y: top + pad, width: panel.bounds.width - m.left - m.right - 2 * pad, height: panel.bounds.height - top - m.bottom - 2 * pad };
 }
 
 /** A one-line text element as large as `maxPt` that still fits `width` (estimated). */
@@ -251,20 +270,10 @@ export function boxBackgrounds(
   const elements: CanvasElement[] = [];
   for (const piece of pieces) {
     for (const panel of piece.geometry.panels) {
-      const cut = cutSidesOf(panel, piece.geometry);
-      const bleed = (side: "top" | "right" | "bottom" | "left") => (cut.has(side) ? BLEED_BOX_MM : 0);
-      const box = {
-        x: -bleed("left"),
-        y: -bleed("top"),
-        width: panel.bounds.width + bleed("left") + bleed("right"),
-        height: panel.bounds.height + bleed("top") + bleed("bottom"),
-      };
-      const onSheet = { x: panel.bounds.x + box.x, y: panel.bounds.y + box.y, width: box.width, height: box.height };
-      const glued = piece.geometry.glueAreas?.some(
-        (g) => onSheet.x < g.x + g.width && g.x < onSheet.x + onSheet.width && onSheet.y < g.y + g.height && g.y < onSheet.y + onSheet.height
-      );
       // Exact sizes (not rounded): a background that only touches a glue flap must not grow onto it.
-      if (!glued) elements.push({ id: `bg_${panel.id}`, type: "pattern", panelId: panel.id, ...box, rotation: 0, content: panel.id === plainPanelId ? plain : content });
+      if (!panelTouchesGlue(panel, piece.geometry)) {
+        elements.push(backgroundFor(panel, piece.geometry, panel.id === plainPanelId ? plain : content));
+      }
     }
   }
   return elements;
@@ -357,6 +366,11 @@ const STRUCTURE_NAMES: Record<Product["structure"], string> = {
   "sleeve-drawer": "hộp kéo bao diêm",
   "lid-base": "hộp âm dương",
   pillow: "hộp gối",
+  mailer: "hộp nắp cài",
+  gable: "hộp quai xách",
+  "hang-tag": "thẻ treo",
+  "folded-card": "thiệp gấp đôi",
+  "belly-band": "đai giấy bọc hộp",
 };
 
 /** Candidates FitCheck turned down, with the reasons (tests and the generator's tuning). */
@@ -372,7 +386,7 @@ function build(): GeneratedTemplate[] {
       const start = (kitIndex + productIndex) % LAYOUTS.length;
       for (const layout of [LAYOUTS[start], LAYOUTS[(start + 2) % LAYOUTS.length]]) {
         const pieces = generateDielinePieces(product.structure, product.dimensions);
-        const elements = dress(product, kit, layout, pieces);
+        const elements = withAnchors(pieces, turnTextsUpright(pieces, dress(product, kit, layout, pieces)));
         const report = checkBox(pieces, elements);
         const blocking = report.violations.filter((v) => v.severity !== "info");
         if (blocking.length) {
@@ -448,7 +462,7 @@ export function dressWithKit(input: {
   const pieces = generateDielinePieces(structure, input.dimensions, input.formulaVersion);
   const order = [input.layout ?? "classic", ...LAYOUTS].filter((layout, i, all) => all.indexOf(layout) === i);
   for (const layout of order) {
-    const elements = dress(product, kit, layout, pieces);
+    const elements = withAnchors(pieces, turnTextsUpright(pieces, dress(product, kit, layout, pieces)));
     if (!checkBox(pieces, elements).violations.some((v) => v.severity !== "info")) return elements;
   }
   return [];

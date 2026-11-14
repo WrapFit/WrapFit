@@ -9,6 +9,10 @@
 import { BoxDimensions, DielineGeometry } from "../types/dieline";
 import { generateLidBaseDieline } from "./lid-base";
 import { generateLidBaseDielineV1 } from "./lid-base.v1";
+import { generateBellyBandDieline, generateFoldedCardDieline, generateHangTagDieline } from "./flat";
+import { generateGableDieline } from "./gable";
+import { generateInsertDieline } from "./insert";
+import { generateMailerDieline } from "./mailer";
 import { generatePillowBoxDieline } from "./pillow";
 import { generatePillowBoxDielineV1 } from "./pillow.v1";
 import { generateSleeveDrawerDieline } from "./sleeve-drawer";
@@ -24,6 +28,9 @@ import { generateTuckTopDielineV2 } from "./tuck-top.v2";
  * 3: L × W × H is the inside of the box and the paper thickness is added; cut lines for the pillow, lid & base and
  *    sleeve boxes; corner glue tabs on their trays; the sleeve wraps around W × H so the drawer slides along L; panel
  *    hinges for the 3D model. Summaries for the studio: FORMULA_CHANGES.
+ *    New structures join the current version (docs/23 S16: mailer, S17: gable, S18: insert and the flat products):
+ *    no older project uses them, so
+ *    nothing moves. So do new options that are off by default (S17: `window` on tuck-top and lid-base).
  */
 export const CURRENT_FORMULA_VERSION = 3;
 
@@ -88,6 +95,15 @@ const VERSION_3: Record<string, PieceGenerator> = {
     ];
   },
   "sticker-label": (d) => [{ name: "Nhãn dán", geometry: generateStickerLabelDieline(d) }],
+  mailer: (d) => [{ name: "Thân hộp", geometry: generateMailerDieline(d) }],
+  gable: (d) => [{ name: "Thân hộp", geometry: generateGableDieline(d) }],
+  insert: (d) => {
+    const { tray, dividers } = generateInsertDieline(d);
+    return [{ name: "Khay lót", geometry: tray }, ...(dividers ? [{ name: "Vách chia ngăn", geometry: dividers }] : [])];
+  },
+  "hang-tag": (d) => [{ name: "Thẻ treo", geometry: generateHangTagDieline(d) }],
+  "folded-card": (d) => [{ name: "Thiệp", geometry: generateFoldedCardDieline(d) }],
+  "belly-band": (d) => [{ name: "Đai giấy", geometry: generateBellyBandDieline(d) }],
 };
 
 const FORMULAS: Record<number, Record<string, PieceGenerator>> = {

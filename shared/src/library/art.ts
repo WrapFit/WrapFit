@@ -23,6 +23,10 @@ export interface ArtShape {
   strokeWidth?: number;
   /** Round line caps and joins (line icons). */
   round?: boolean;
+  /** Fill ink the user typed in CMYK (docs/23 S7): printed as is instead of converting `fill`. */
+  cmyk?: [number, number, number, number];
+  /** Linear gradient of the fill, in the coordinates of the element (docs/23 S11); `fill` is its first colour. */
+  gradient?: { angle: number; stops: { offset: number; color: string }[] };
 }
 
 export interface ArtText {
@@ -751,6 +755,108 @@ const DESIGNS: ArtDesign[] = [
     },
   },
   // ---- backgrounds: drawn over the whole element (a panel plus its bleed); motifs that would cross the edge are left out
+  // ---- print marks a box usually needs (docs/23 S14): recycling, origin, dates, handling
+  {
+    id: "recycle-mark",
+    name: "Ký hiệu tái chế",
+    kind: "sticker",
+    aspect: 1,
+    lines: ["TÁI CHẾ"],
+    draw: (w, h, p, [word]) => {
+      const { s, cx, cy } = square(w, h);
+      const r = s / 2;
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: circle(cx, cy, r), fill: p.base },
+          { d: circle(cx, cy, r * 0.88), stroke: p.ink, strokeWidth: line(s * 0.02) },
+          iconShape("recycle", cx - s * 0.23, cy - s * 0.33, s * 0.46, p.ink),
+        ],
+        texts: fit(word, cx, cy + s * 0.33, s * 0.11, s * 0.62, "be-vietnam-pro", p.ink),
+      };
+    },
+  },
+  {
+    id: "made-in",
+    name: "Xuất xứ Việt Nam",
+    kind: "label",
+    aspect: 2.6,
+    lines: ["MADE IN", "VIETNAM"],
+    draw: (w, h, p, [small, big]) => {
+      const starR = h * 0.3;
+      const sx = h * 0.55;
+      const points: [number, number][] = Array.from({ length: 10 }, (_, i) => {
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        const radius = i % 2 ? starR * 0.42 : starR;
+        return [sx + radius * Math.cos(a), h / 2 + radius * Math.sin(a)];
+      });
+      const textX = sx + starR + h * 0.22;
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: roundRect(0, 0, w, h, h * 0.22), fill: p.base },
+          { d: roundRect(h * 0.08, h * 0.08, w - h * 0.16, h - h * 0.16, h * 0.16), stroke: p.accent, strokeWidth: line(h * 0.03) },
+          { d: polygon(points), fill: p.accent },
+        ],
+        texts: [
+          ...fit(small, textX, h * 0.42, h * 0.2, w - textX - h * 0.2, "inter", p.ink, "start"),
+          ...fit(big, textX, h * 0.76, h * 0.34, w - textX - h * 0.2, "big-shoulders-display", p.ink, "start"),
+        ],
+      };
+    },
+  },
+  {
+    id: "date-block",
+    name: "Ô ngày sản xuất, hạn dùng",
+    kind: "label",
+    aspect: 1.7,
+    lines: ["NSX:", "HSD:", "Số lô:"],
+    draw: (w, h, p, rows) => {
+      const pad = w * 0.07;
+      const rowH = (h - 2 * pad) / rows.length;
+      const ink = isLight(p.base) ? p.ink : p.base;
+      const dots: ArtShape[] = [];
+      rows.forEach((_, i) => {
+        // A dotted line to write or stamp the date on.
+        const y = pad + rowH * (i + 0.78);
+        for (let x = w * 0.4; x < w - pad; x += h * 0.06) dots.push({ d: rect(x, y, h * 0.03, line(h * 0.012)), fill: ink });
+      });
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: rect(0, 0, w, h), fill: "#FFFFFF" },
+          { d: rect(line(h * 0.015) / 2, line(h * 0.015) / 2, w - line(h * 0.015), h - line(h * 0.015)), stroke: ink, strokeWidth: line(h * 0.015) },
+          ...dots,
+        ],
+        texts: rows.flatMap((row, i) => fit(row, pad, pad + rowH * (i + 0.72), rowH * 0.42, w * 0.3, "be-vietnam-pro", ink, "start")),
+      };
+    },
+  },
+  {
+    id: "care-row",
+    name: "Hàng ký hiệu bảo quản",
+    kind: "label",
+    aspect: 3.2,
+    lines: ["Giữ khô", "Tránh nắng", "Dễ vỡ"],
+    draw: (w, h, p, words) => {
+      const icons = ["droplet", "sun", "glass-water"];
+      const cell = w / 3;
+      const size = Math.min(cell * 0.5, h * 0.52);
+      const ink = isLight(p.base) ? p.ink : p.base;
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: roundRect(0, 0, w, h, h * 0.12), stroke: ink, strokeWidth: line(h * 0.02) },
+          ...icons.map((icon, i) => iconShape(icon, cell * i + (cell - size) / 2, h * 0.1, size, ink)),
+        ],
+        texts: words.slice(0, 3).flatMap((word, i) => fit(word, cell * i + cell / 2, h * 0.86, h * 0.17, cell * 0.9, "inter", ink)),
+      };
+    },
+  },
   {
     id: "bg-solid",
     name: "Nền màu trơn",

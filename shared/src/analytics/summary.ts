@@ -10,8 +10,8 @@ export type AnalyticsScope = "me" | "global";
 export const ANALYTICS_PERIODS = [7, 30, 90] as const;
 export type AnalyticsPeriod = (typeof ANALYTICS_PERIODS)[number];
 
-/** The four MVP box structures, in the order the dashboard lists them; anything else counts as "other". */
-export const ANALYTICS_BOX_TYPES = ["tuck-top", "sleeve-drawer", "lid-base", "pillow"] as const;
+/** The box structures, in the order the dashboard lists them; anything else counts as "other". */
+export const ANALYTICS_BOX_TYPES = ["tuck-top", "sleeve-drawer", "lid-base", "pillow", "mailer", "gable", "insert", "hang-tag", "folded-card", "belly-band"] as const;
 export type AnalyticsBoxType = (typeof ANALYTICS_BOX_TYPES)[number] | "other";
 
 export interface AnalyticsSummary {

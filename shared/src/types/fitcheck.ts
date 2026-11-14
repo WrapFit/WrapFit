@@ -13,7 +13,19 @@ export type FitCheckErrorCode =
   | "NO_PANEL"
   | "LINE_TOO_THIN"
   | "BARCODE_UNREADABLE"
-  | "EMPTY_DESIGN";
+  | "EMPTY_DESIGN"
+  /** A screen colour CMYK prints visibly duller (docs/23 S7). */
+  | "OUT_OF_GAMUT"
+  /** Artwork on a window or a hand hole: that part is cut away (docs/23 S17). */
+  | "UNDER_OPENING"
+  /** Text that reads upside down (or sideways) once the box is folded (docs/23 S21). */
+  | "READING_DIRECTION"
+  /** Text too close in colour to the solid colour under it. */
+  | "LOW_CONTRAST"
+  /** Text under 6 pt. */
+  | "TEXT_TOO_SMALL"
+  /** Text across a crease inside its face. */
+  | "TEXT_ON_CREASE";
 
 export type SeverityLevel = "error" | "warning" | "info";
 
@@ -28,6 +40,8 @@ export interface FitCheckViolation {
   suggestion: string;
   currentValue?: number;
   expectedValue?: number;
+  /** One-click fix of this violation alone (e.g. turn the text upright), applied to `elementId`. */
+  fix?: { rotation: number };
 }
 
 export interface FitCheckReport {

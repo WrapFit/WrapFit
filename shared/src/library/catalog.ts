@@ -8,7 +8,9 @@ import type { CanvasElement } from "../types/project";
 import { ART_DESIGNS, ART_PALETTES, artDesignOf, libraryArtContent } from "./art";
 import { LIBRARY_ICONS } from "./icons";
 
-export type LibraryCategory = "sticker" | "icon" | "label" | "background" | "mascot" | "barcode";
+export type LibraryCategory = "sticker" | "icon" | "label" | "mark" | "background" | "mascot" | "barcode";
+/** Trades of the makers (docs/23 S14), the industries of the templates; an item without one suits every trade. */
+export type LibraryIndustry = "BAKERY" | "CANDLES" | "COSMETICS" | "JEWELRY" | "TEA_AGRI";
 export type LibraryOccasion = "TET" | "CHRISTMAS" | "WEDDING" | "VALENTINE" | "BIRTHDAY" | "MINIMAL";
 
 export interface LibraryItem {
@@ -30,12 +32,15 @@ export interface LibraryItem {
   dpi?: number;
   /** Listing order: 0 for the first variant of every design, so the first page shows different shapes, not recolours. */
   rank: number;
+  /** Trades the item is made for; empty = any trade. */
+  industries: LibraryIndustry[];
 }
 
 export const LIBRARY_CATEGORIES: { id: LibraryCategory; label: string }[] = [
   { id: "sticker", label: "Tem & sticker" },
   { id: "icon", label: "Biểu tượng" },
   { id: "label", label: "Nhãn & băng rôn" },
+  { id: "mark", label: "Ký hiệu in" },
   { id: "background", label: "Nền & hoa văn" },
   { id: "mascot", label: "Bé Gói" },
   { id: "barcode", label: "QR & mã vạch" },
@@ -50,8 +55,33 @@ export const LIBRARY_OCCASIONS: { id: LibraryOccasion; label: string }[] = [
   { id: "MINIMAL", label: "Thương hiệu" },
 ];
 
+export const LIBRARY_INDUSTRIES: { id: LibraryIndustry; label: string }[] = [
+  { id: "BAKERY", label: "Bánh & kẹo" },
+  { id: "CANDLES", label: "Nến thơm" },
+  { id: "COSMETICS", label: "Mỹ phẩm" },
+  { id: "JEWELRY", label: "Trang sức" },
+  { id: "TEA_AGRI", label: "Trà & nông sản" },
+];
+
+/** Words that tie an item to a trade (folded, without accents). */
+const INDUSTRY_WORDS: Record<LibraryIndustry, RegExp> = {
+  BAKERY: /\b(?:banh|keo|cake|cookie|croissant|donut|dessert|ice-cream|kem|lollipop|candy|socola|ngot|nha lam|chef)\b/,
+  CANDLES: /\b(?:nen|nen thom|candle|flame|ngon lua|tinh dau|sap)\b/,
+  COSMETICS: /\b(?:my pham|organic|huu co|tu nhien|serum|duong|sen|flower|hoa|leaf|la cay)\b/,
+  JEWELRY: /\b(?:trang suc|gem|diamond|kim cuong|nhan cuoi|nhan bac|day chuyen|crown|vuong mien|tinh te|cao cap|premium)\b/,
+  TEA_AGRI: /\b(?:tra|nong san|mat ong|coffee|ca phe|wheat|lua mi|sprout|leafy|cherry|apple|citrus|grape|banana|egg|organic|huu co)\b/,
+};
+
+const fold = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase();
+
+/** Trades an item's words point at (none = it suits every trade). */
+export function industriesOf(words: string[]): LibraryIndustry[] {
+  const text = fold(words.join(" "));
+  return (Object.keys(INDUSTRY_WORDS) as LibraryIndustry[]).filter((id) => INDUSTRY_WORDS[id].test(text));
+}
+
 /** Words of each design for an occasion, and the palettes that suit it. */
-const PRESETS: { design: string; occasion: LibraryOccasion; texts: string[]; palettes: string[]; keywords: string[] }[] = [
+const PRESETS: { design: string; occasion: LibraryOccasion; texts: string[]; palettes: string[]; keywords: string[]; category?: LibraryCategory }[] = [
   // Tết
   { design: "seal", occasion: "TET", texts: ["TẾT 2026", "An Khang", "VẠN SỰ NHƯ Ý"], palettes: ["son-do", "kim-ngan", "den-sang"], keywords: ["tết", "xuân", "lì xì"] },
   { design: "rosette", occasion: "TET", texts: ["Xuân", "LỘC"], palettes: ["son-do", "kim-ngan"], keywords: ["tết", "lộc", "xuân"] },
@@ -106,6 +136,29 @@ const PRESETS: { design: string; occasion: LibraryOccasion; texts: string[]; pal
   { design: "bubble", occasion: "MINIMAL", texts: ["Cảm ơn bạn", "đã ủng hộ tiệm!"], palettes: ["kem-sua", "bien-xanh", "hong-phan"], keywords: ["cảm ơn", "lời nhắn"] },
   { design: "bubble", occasion: "BIRTHDAY", texts: ["Chúc mừng", "sinh nhật nha!"], palettes: ["cam-fpt", "oai-huong"], keywords: ["sinh nhật", "lời nhắn"] },
   { design: "bubble", occasion: "VALENTINE", texts: ["Yêu bạn", "nhiều lắm!"], palettes: ["hong-phan", "son-do"], keywords: ["valentine", "lời nhắn"] },
+  // Trades with few items of their own (docs/23 S14: at least 20 per trade)
+  { design: "seal", occasion: "MINIMAL", texts: ["NẾN THƠM", "Handmade", "SÁP ĐẬU NÀNH"], palettes: ["kraft-moc", "kem-sua", "den-sang"], keywords: ["nến thơm", "sáp đậu nành", "handmade"] },
+  { design: "label", occasion: "MINIMAL", texts: ["Nến Thơm Oải Hương", "Sáp đậu nành • 40 giờ"], palettes: ["oai-huong", "kraft-moc", "toi-gian"], keywords: ["nến thơm", "oải hương", "nhãn"] },
+  { design: "arch", occasion: "MINIMAL", texts: ["Hương Quế", "Nến thủ công"], palettes: ["kraft-moc", "son-do"], keywords: ["nến thơm", "quế", "mùa đông"] },
+  { design: "oval", occasion: "MINIMAL", texts: ["Candle Studio", "est. 2026"], palettes: ["den-sang", "kem-sua"], keywords: ["nến thơm", "candle", "logo"] },
+  { design: "info", occasion: "MINIMAL", texts: ["HƯỚNG DẪN DÙNG NẾN", "Cắt bấc 5 mm trước khi đốt", "Đốt tối đa 3 giờ mỗi lần", "Tránh xa tầm tay trẻ em"], palettes: ["toi-gian", "kraft-moc"], keywords: ["nến thơm", "hướng dẫn", "an toàn"] },
+  { design: "tag", occasion: "MINIMAL", texts: ["Thắp nến lên", "và thư giãn nhé"], palettes: ["kem-sua", "oai-huong"], keywords: ["nến thơm", "thẻ quà", "thư giãn"] },
+  { design: "ticket", occasion: "MINIMAL", texts: ["SOY WAX", "Nến thơm • Lô 01"], palettes: ["den-sang", "kraft-moc"], keywords: ["nến thơm", "soy wax", "giới hạn"] },
+  { design: "seal", occasion: "MINIMAL", texts: ["JEWELRY", "Bạc ta", "THỦ CÔNG"], palettes: ["den-sang", "kim-ngan", "toi-gian"], keywords: ["trang sức", "bạc", "thủ công"] },
+  { design: "oval", occasion: "MINIMAL", texts: ["Tiệm Bạc Nhà Mây", "since 2026"], palettes: ["den-sang", "kim-ngan"], keywords: ["trang sức", "tiệm bạc", "logo"] },
+  { design: "shield", occasion: "MINIMAL", texts: ["925", "Bạc Thật", "SILVER"], palettes: ["toi-gian", "den-sang"], keywords: ["trang sức", "bạc 925", "chứng nhận"] },
+  { design: "ribbon", occasion: "MINIMAL", texts: ["Món quà lấp lánh"], palettes: ["kim-ngan", "hong-phan"], keywords: ["trang sức", "quà tặng", "lấp lánh"] },
+  { design: "label", occasion: "MINIMAL", texts: ["Bảo hành trọn đời", "Đánh bóng miễn phí"], palettes: ["den-sang", "kim-ngan"], keywords: ["trang sức", "bảo hành"] },
+  { design: "tag", occasion: "MINIMAL", texts: ["Dành tặng", "người đặc biệt"], palettes: ["kim-ngan", "hong-phan"], keywords: ["trang sức", "thẻ quà"] },
+  // Print marks a box usually needs (docs/23 S14)
+  { design: "recycle-mark", occasion: "MINIMAL", texts: ["TÁI CHẾ"], palettes: ["toi-gian", "xanh-reu", "kraft-moc"], keywords: ["tái chế", "recycle", "môi trường", "ký hiệu in"], category: "mark" },
+  { design: "recycle-mark", occasion: "MINIMAL", texts: ["RECYCLABLE"], palettes: ["toi-gian", "xanh-reu"], keywords: ["tái chế", "recycle", "ký hiệu in"], category: "mark" },
+  { design: "made-in", occasion: "MINIMAL", texts: ["MADE IN", "VIETNAM"], palettes: ["son-do", "toi-gian", "kraft-moc"], keywords: ["xuất xứ", "việt nam", "made in vietnam", "ký hiệu in"], category: "mark" },
+  { design: "made-in", occasion: "MINIMAL", texts: ["SẢN XUẤT TẠI", "VIỆT NAM"], palettes: ["son-do", "toi-gian"], keywords: ["xuất xứ", "việt nam", "ký hiệu in"], category: "mark" },
+  { design: "date-block", occasion: "MINIMAL", texts: ["NSX:", "HSD:", "Số lô:"], palettes: ["toi-gian", "kraft-moc"], keywords: ["nsx", "hsd", "hạn dùng", "ngày sản xuất", "số lô", "ký hiệu in"], category: "mark" },
+  { design: "date-block", occasion: "MINIMAL", texts: ["MFG:", "EXP:", "LOT:"], palettes: ["toi-gian"], keywords: ["mfg", "exp", "hạn dùng", "ký hiệu in"], category: "mark" },
+  { design: "care-row", occasion: "MINIMAL", texts: ["Giữ khô", "Tránh nắng", "Dễ vỡ"], palettes: ["toi-gian", "bien-xanh"], keywords: ["bảo quản", "dễ vỡ", "giữ khô", "vận chuyển", "ký hiệu in"], category: "mark" },
+  { design: "info", occasion: "MINIMAL", texts: ["THÔNG TIN SẢN PHẨM", "Tên hàng:", "Thành phần:", "Định lượng:"], palettes: ["toi-gian", "kraft-moc"], keywords: ["thông tin bắt buộc", "nhãn hàng hóa", "thành phần", "ký hiệu in"], category: "mark" },
 ];
 
 /** Palettes of each icon group, the words of its label style and its occasions. */
@@ -138,6 +191,7 @@ const BACKGROUND_OCCASIONS: Record<string, LibraryOccasion[]> = {
 /** Default width of a design (mm); the height follows its aspect. */
 const DEFAULT_WIDTH: Record<string, number> = {
   ribbon: 64, label: 56, oval: 48, tag: 56, ticket: 60, arch: 34, info: 52, band: 64,
+  "recycle-mark": 18, "made-in": 38, "date-block": 40, "care-row": 48,
   stamp: 32, shield: 32, cloud: 42, hexagon: 34, bubble: 50, lantern: 26, lotus: 34, icon: 22, "icon-badge": 26, "icon-label": 48,
 };
 
@@ -153,9 +207,10 @@ function buildCatalog(): LibraryItem[] {
       const paletteName = ART_PALETTES.find((p) => p.id === palette)!.name;
       items.push({
         rank,
-        id: `${design.id}-${preset.occasion.toLowerCase()}-${preset.texts[0]}-${palette}`.toLowerCase().replace(/\s+/g, "-"),
+        // Print marks may reuse a label design with the same words: their own suffix keeps the ids unique.
+        id: `${design.id}-${preset.occasion.toLowerCase()}-${preset.texts[0]}-${palette}${preset.category === "mark" ? "-mark" : ""}`.toLowerCase().replace(/\s+/g, "-"),
         name: `${design.name} “${preset.texts.filter(Boolean).slice(0, 2).join(" ")}”`,
-        category: design.kind === "sticker" ? "sticker" : "label",
+        category: preset.category ?? (design.kind === "sticker" ? "sticker" : "label"),
         elementType: "logo",
         content: libraryArtContent({ design: design.id, palette, texts: preset.texts }),
         widthMm: width,
@@ -163,6 +218,7 @@ function buildCatalog(): LibraryItem[] {
         occasions: [preset.occasion],
         keywords: [...preset.keywords, ...preset.texts, design.name, paletteName],
         editable: true,
+        industries: industriesOf([...preset.keywords, ...preset.texts]),
       });
     });
   }
@@ -189,6 +245,7 @@ function buildCatalog(): LibraryItem[] {
         occasions: group.occasions,
         keywords: [icon.name, icon.keywords, design.name, "icon biểu tượng", ...texts],
         editable: true,
+        industries: industriesOf([iconId, icon.name, icon.keywords]),
       });
     });
   }
@@ -206,6 +263,7 @@ function buildCatalog(): LibraryItem[] {
         occasions: BACKGROUND_OCCASIONS[design.id] ?? ["MINIMAL"],
         keywords: ["nền", "hoa văn", design.name, palette.name],
         editable: true,
+        industries: [],
       });
     });
   }
@@ -224,6 +282,7 @@ function buildCatalog(): LibraryItem[] {
       keywords: ["mascot", "gói", "linh vật"],
       editable: false,
       dpi: Math.round(512 / (35 / 25.4)),
+      industries: [],
     })
   );
   items.push(
@@ -239,6 +298,7 @@ function buildCatalog(): LibraryItem[] {
       occasions: ["MINIMAL"],
       keywords: ["mã vạch", "ean", "barcode"],
       editable: false,
+      industries: [],
     },
     {
       rank: 2,
@@ -252,6 +312,7 @@ function buildCatalog(): LibraryItem[] {
       occasions: ["MINIMAL", "BIRTHDAY", "VALENTINE"],
       keywords: ["qr", "mở hộp", "unboxing"],
       editable: false,
+      industries: [],
     }
   );
   // The first variant of every design first, then icons, then the recolours; inside a rank the designs take turns
@@ -279,17 +340,22 @@ export const foldVietnamese = (text: string) =>
 
 /** Items of the catalogue matching a search (every word must appear), a category and an occasion. */
 export function searchLibrary(
-  query: { q?: string; category?: LibraryCategory | null; occasion?: LibraryOccasion | null },
+  query: { q?: string; category?: LibraryCategory | null; occasion?: LibraryOccasion | null; industry?: LibraryIndustry | null },
   items: readonly LibraryItem[] = LIBRARY_ITEMS
 ): LibraryItem[] {
   const words = foldVietnamese(query.q ?? "").split(/\s+/).filter(Boolean);
-  return items.filter((item) => {
+  const found = items.filter((item) => {
     if (query.category && item.category !== query.category) return false;
     if (query.occasion && !item.occasions.includes(query.occasion)) return false;
+    // A trade shows its own items first-class and the general ones (no trade) with them.
+    if (query.industry && item.industries.length && !item.industries.includes(query.industry)) return false;
     if (!words.length) return true;
     const haystack = foldVietnamese([item.name, ...item.keywords].join(" "));
     return words.every((word) => haystack.includes(word));
   });
+  // A trade lists its own items first, then the general ones (stable: each part keeps the catalogue order).
+  const industry = query.industry;
+  return industry ? [...found.filter((item) => item.industries.includes(industry)), ...found.filter((item) => !item.industries.includes(industry))] : found;
 }
 
 /** Element types whose `content` is a file or library art (the others are text and barcodes). */

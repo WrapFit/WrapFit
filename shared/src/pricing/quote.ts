@@ -36,7 +36,7 @@ export function sheetYield(pieces: DielinePiece[]): SheetYield[] {
 }
 
 export type QuotePaper = "ivory" | "kraft" | "duplex" | "rigid";
-export type QuoteFinish = "matte-lamination" | "gloss-lamination" | "soft-touch-lamination" | "foil" | "spot-uv";
+export type QuoteFinish = "matte-lamination" | "gloss-lamination" | "soft-touch-lamination" | "foil" | "spot-uv" | "emboss";
 /** One lamination per box: the films exclude each other. */
 export const LAMINATIONS: readonly QuoteFinish[] = ["matte-lamination", "gloss-lamination", "soft-touch-lamination"];
 export type PrintMethod = "digital" | "offset";
@@ -58,8 +58,22 @@ export const QUOTE_PRICES = {
   dieCutPerSheet: 1_000,
   /** Sheets spoiled while setting up. */
   wasteSheets: { digital: 2, offset: 50 } satisfies Record<PrintMethod, number>,
-  /** Folding and gluing, per box. */
-  gluePerBox: { "tuck-top": 500, "sleeve-drawer": 800, "lid-base": 1_500, pillow: 300 } as Record<string, number>,
+  /** Folding and gluing, per box (the mailer folds without glue). */
+  gluePerBox: {
+    "tuck-top": 500,
+    "sleeve-drawer": 800,
+    "lid-base": 1_500,
+    pillow: 300,
+    mailer: 400,
+    gable: 700,
+    insert: 1_200,
+    "hang-tag": 300,
+    "folded-card": 150,
+    "belly-band": 200,
+    "sticker-label": 0,
+  } as Record<string, number>,
+  /** PET film cut and glued behind each display window (docs/23 S17). */
+  windowFilmPerBox: 900,
   /** Finishes: per B1 sheet (laminations, UV) or per box (foil, plus its plate). */
   finishes: {
     "matte-lamination": { perSheet: 3_000, perBox: 0, setup: 0 },
@@ -67,6 +81,8 @@ export const QUOTE_PRICES = {
     "soft-touch-lamination": { perSheet: 6_500, perBox: 0, setup: 0 },
     foil: { perSheet: 0, perBox: 1_500, setup: 300_000 },
     "spot-uv": { perSheet: 4_000, perBox: 0, setup: 200_000 },
+    /** Embossing or debossing: a male / female die, then one pass per box. */
+    emboss: { perSheet: 0, perBox: 1_000, setup: 400_000 },
   } satisfies Record<QuoteFinish, { perSheet: number; perBox: number; setup: number }>,
   /** WrapFit's commission (CP2), paid by the partner out of the quoted price: never added to the customer's total. */
   partnerShare: 0.15,
@@ -81,6 +97,7 @@ export const FINISH_LABELS: Record<QuoteFinish, string> = {
   "soft-touch-lamination": "Cán màng nhung",
   foil: "Ép kim",
   "spot-uv": "UV định hình",
+  emboss: "Dập nổi / dập chìm",
 };
 
 /** What a cost pays for: the box material, printing, converting (cutting, finishes, gluing) up to the finished box. */
@@ -148,9 +165,23 @@ export interface QuoteInput {
   quantity: number;
   paper: QuotePaper;
   finishes?: QuoteFinish[];
+  /** The design prints on the inside of the sheet too: a second printing pass (docs/23 S5). */
+  insidePrint?: boolean;
   /** Force a method (comparisons); otherwise by quantity. */
   method?: PrintMethod;
 }
+
+/** What the last step of each product is, when it is not "Gấp và dán" (docs/23 S16, S18). */
+const FINISHING_LABELS: Record<string, string> = {
+  mailer: "Gấp hộp (không dùng keo)",
+  insert: "Dán khay và cài vách chia ngăn",
+  "hang-tag": "Đục lỗ và xỏ dây",
+  "folded-card": "Cấn nếp và gấp thiệp",
+  "belly-band": "Dán đai",
+};
+const UNITS: Record<string, string> = { insert: "bộ", "hang-tag": "thẻ", "folded-card": "thiệp", "belly-band": "đai", "sticker-label": "tem" };
+/** "hộp", or the word for one flat product. */
+export const unitOf = (structure: string) => UNITS[structure] ?? "hộp";
 
 const round100 = (vnd: number) => Math.round(vnd / 100) * 100;
 /** "4.500đ": the Vietnamese way, without depending on the runtime's locales. */
@@ -169,7 +200,7 @@ export function quote(input: QuoteInput): Quote {
   return digital.total <= offset.total ? digital : offset;
 }
 
-function priceWith({ structure, pieces, quantity: asked, paper, finishes = [] }: QuoteInput, method: PrintMethod): Quote {
+function priceWith({ structure, pieces, quantity: asked, paper, finishes = [], insidePrint = false }: QuoteInput, method: PrintMethod): Quote {
   const P = QUOTE_PRICES;
   const quantity = Math.max(1, Math.round(asked));
   const yields = sheetYield(pieces);
@@ -179,7 +210,8 @@ function priceWith({ structure, pieces, quantity: asked, paper, finishes = [] }:
   const waste = P.wasteSheets[method];
   const sheets = printedSheets + waste;
   const areaM2 = yields.reduce((sum, y) => sum + ((y.width + SHEET_GUTTER_MM) * (y.height + SHEET_GUTTER_MM)) / 1e6, 0);
-  const area = `${decimal(Math.round(areaM2 * 1000) / 1000)} m²/hộp × ${quantity} hộp`;
+  const unit = unitOf(structure);
+  const area = `${decimal(Math.round(areaM2 * 1000) / 1000)} m²/${unit} × ${quantity} ${unit}`;
   const lines: QuoteLine[] = [];
   const add = (line: QuoteLine) => lines.push(line);
 
@@ -193,10 +225,17 @@ function priceWith({ structure, pieces, quantity: asked, paper, finishes = [] }:
   });
   if (method === "digital") {
     add({ id: "print", group: "print", kind: "perUnit", label: "In kỹ thuật số (CMYK)", detail: `${area} × ${vndText(P.digitalPrintPerM2)}/m²`, vnd: areaM2 * quantity * P.digitalPrintPerM2 });
+    if (insidePrint) {
+      add({ id: "print-inside", group: "print", kind: "perUnit", label: "In mặt trong (CMYK)", detail: `${area} × ${vndText(P.digitalPrintPerM2)}/m², lượt in thứ hai`, vnd: areaM2 * quantity * P.digitalPrintPerM2 });
+    }
     add({ id: "cut", group: "converting", kind: "perUnit", label: "Cắt bằng plotter", detail: `${area} × ${vndText(P.plotterCutPerM2)}/m², không cần khuôn`, vnd: areaM2 * quantity * P.plotterCutPerM2 });
   } else {
     add({ id: "setup", group: "print", kind: "fixed", label: "Chế bản và canh máy", detail: "Kẽm 4 màu và canh màu, làm một lần cho cả đơn", vnd: P.offsetSetup });
     add({ id: "print", group: "print", kind: "perUnit", label: "In offset (CMYK)", detail: `${sheets} tờ × ${vndText(P.offsetPerSheet)}`, vnd: sheets * P.offsetPerSheet });
+    if (insidePrint) {
+      add({ id: "setup-inside", group: "print", kind: "fixed", label: "Chế bản mặt trong", detail: "Bộ kẽm thứ hai cho mặt sau của tờ giấy", vnd: P.offsetSetup });
+      add({ id: "print-inside", group: "print", kind: "perUnit", label: "In mặt trong (CMYK)", detail: `${sheets} tờ × ${vndText(P.offsetPerSheet)}`, vnd: sheets * P.offsetPerSheet });
+    }
     add({ id: "die", group: "converting", kind: "fixed", label: "Khuôn bế", detail: "Làm một lần, xưởng giữ lại cho lần in sau", vnd: P.die });
     add({ id: "cut", group: "converting", kind: "perUnit", label: "Bế hộp", detail: `${sheets} tờ × ${vndText(P.dieCutPerSheet)}`, vnd: sheets * P.dieCutPerSheet });
   }
@@ -208,7 +247,14 @@ function priceWith({ structure, pieces, quantity: asked, paper, finishes = [] }:
     add({ id: finish, group: "converting", kind: "perUnit", label, detail: how, vnd: sheets * price.perSheet + quantity * price.perBox });
   }
   const glue = P.gluePerBox[structure] ?? 500;
-  add({ id: "glue", group: "converting", kind: "perUnit", label: "Gấp và dán", detail: `${quantity} hộp × ${vndText(glue)}`, vnd: quantity * glue });
+  if (glue > 0) {
+    add({ id: "glue", group: "converting", kind: "perUnit", label: FINISHING_LABELS[structure] ?? "Gấp và dán", detail: `${quantity} ${unitOf(structure)} × ${vndText(glue)}`, vnd: quantity * glue });
+  }
+  const windows = pieces.reduce((sum, piece) => sum + (piece.geometry.openings ?? []).filter((o) => o.kind === "window").length, 0);
+  if (windows > 0) {
+    const film = windows * P.windowFilmPerBox;
+    add({ id: "window", group: "converting", kind: "perUnit", label: "Màng PET cửa sổ", detail: `${quantity} hộp × ${vndText(film)}, cắt và dán màng sau cửa sổ`, vnd: quantity * film });
+  }
 
   const production = lines.reduce((sum, line) => sum + line.vnd, 0);
   if (method === "digital" && production < P.digitalMinimum) {
