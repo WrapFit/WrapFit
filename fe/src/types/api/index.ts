@@ -161,7 +161,7 @@ export interface AdminUpdateUserRequest {
 // ---------------------------------------------------------------- projects
 
 export type Occasion = "TET" | "CHRISTMAS" | "WEDDING" | "VALENTINE" | "BIRTHDAY" | "MINIMAL";
-export type Industry = "COSMETICS" | "CANDLES" | "BAKERY" | "JEWELRY" | "TEA_AGRI";
+export type Industry = "COSMETICS" | "CANDLES" | "BAKERY" | "JEWELRY" | "TEA_AGRI" | "BEVERAGE";
 
 /** A dashboard card: no canvas. */
 export interface ProjectSummary {
@@ -973,3 +973,55 @@ export interface CreateLibraryAsset {
 }
 
 export type UpdateLibraryAsset = Partial<Omit<CreateLibraryAsset, "fileUrl">> & { isActive?: boolean };
+
+// ---------------------------------------------------------------------------------------------------------------
+// Design review (docs/23 S23, be/src/reviews)
+
+/** A comment on a design: by the owner in the studio, or by a reviewer through the link (a name only). */
+export interface ReviewComment {
+  id: string;
+  authorName: string;
+  byOwner: boolean;
+  body: string;
+  /** Face of the box it is about, and a point on it (mm), when pinned. */
+  panelId: string | null;
+  x: number | null;
+  y: number | null;
+  resolved: boolean;
+  createdAt: string;
+}
+
+/** "Duyệt in": who approved which version; `current` false once the design changed after it. */
+export interface ReviewApproval {
+  approvedAt: string;
+  approvedBy: string;
+  approvedVersion: number;
+  current: boolean;
+}
+
+/** The owner's view of the review of a design. */
+export interface ReviewState {
+  token: string | null;
+  approval: ReviewApproval | null;
+  comments: ReviewComment[];
+}
+
+/** What the review page shows (`GET /review/:token`). */
+export interface PublicReview {
+  title: string;
+  structure: string;
+  formulaVersion: number;
+  version: number;
+  dimensions: BoxDimensions;
+  materialSpec: MaterialSpecification;
+  canvasState: CanvasState;
+  approval: ReviewApproval | null;
+  comments: ReviewComment[];
+}
+
+export interface NewReviewComment {
+  body: string;
+  panelId?: string;
+  x?: number;
+  y?: number;
+}

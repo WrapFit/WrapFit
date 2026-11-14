@@ -7,6 +7,7 @@ import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanv
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { CardTitle, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { ReviewPanel } from "@/features/studio/components/review/ReviewPanel";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
@@ -227,6 +228,13 @@ export function Step6ReviewExport({
           )}
 
           <ExportPurchaseCard projectId={projectId} blocked={!passed} onExport={onExport} signedIn={signedIn} onSaveProject={onSaveProject} saving={saving} />
+
+          {/* Comments and the print approval of customers / print shops (docs/23 S23); saved projects only. */}
+          {projectId && (
+            <StudioCard data-tour="s6-review" className="p-5">
+              <ReviewPanel projectId={projectId} pieces={pieces} />
+            </StudioCard>
+          )}
 
           <StudioCard data-tour="s6-checks" className="p-5">
             <CardTitle action={<span className="text-xs text-landing-muted">{RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code) && v.severity !== "info")).length}/{RULES.length} đạt</span>}>

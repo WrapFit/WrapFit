@@ -16,6 +16,7 @@ import * as paymentsApi from "./payments";
 import * as printShopsApi from "./print-shops";
 import * as projectsApi from "./projects";
 import * as publicApi from "./public";
+import * as reviewsApi from "./reviews";
 import * as storageApi from "./storage";
 import * as templatesApi from "./templates";
 import * as unboxingApi from "./unboxing";
@@ -34,6 +35,7 @@ export * from "./payments";
 export * from "./print-shops";
 export * from "./projects";
 export * from "./public";
+export * from "./reviews";
 export * from "./storage";
 export * from "./templates";
 export * from "./unboxing";
@@ -53,6 +55,7 @@ export const apiClient = {
   ...printShopsApi,
   ...projectsApi,
   ...publicApi,
+  ...reviewsApi,
   ...storageApi,
   ...templatesApi,
   ...unboxingApi,

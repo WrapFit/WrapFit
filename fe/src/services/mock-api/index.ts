@@ -14,6 +14,7 @@ import { billingRoutes } from "./handlers/billing";
 import { orderRoutes } from "./handlers/orders";
 import { platformRoutes } from "./handlers/platform";
 import { projectRoutes } from "./handlers/projects";
+import { reviewRoutes } from "./handlers/reviews";
 
 export { resetMockDb } from "./store";
 
@@ -25,7 +26,7 @@ interface Route {
 }
 
 // Order matters: fixed paths (`/users/me`) before parameters (`/users/:id`).
-const ROUTES: Route[] = [...accountRoutes, ...projectRoutes, ...billingRoutes, ...orderRoutes, ...platformRoutes].map(([method, path, handler]) => {
+const ROUTES: Route[] = [...accountRoutes, ...reviewRoutes, ...projectRoutes, ...billingRoutes, ...orderRoutes, ...platformRoutes].map(([method, path, handler]) => {
   const keys: string[] = [];
   const pattern = new RegExp(
     `^${path.replace(/:([A-Za-z]+)/g, (_, key: string) => {
