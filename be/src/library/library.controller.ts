@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { CurrentUser, Public, Roles } from '../common';
 import { CreateLibraryAssetDto, QueryLibraryDto, UpdateLibraryAssetDto } from './dto/library.dto';
@@ -17,20 +18,26 @@ export class LibraryController {
   ) {}
 
   @Get('stock/photos')
+  // The Pexels key is shared by everyone (200 requests per hour): answers are cached, and one client cannot drain it.
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Stock photos (Pexels) for the studio, searched through the backend',
-    description: 'Answers { enabled: false, items: [] } when PEXELS_API_KEY is not set; 502 STOCK_PROVIDER_ERROR when Pexels fails.',
+    description:
+      'Answers { enabled: false, items: [] } when PEXELS_API_KEY is not set; 502 STOCK_PROVIDER_ERROR when Pexels fails. ' +
+      'Identical searches are cached 10 minutes (curated pages 1 hour). 30 requests per minute.',
   })
   searchStock(@Query() query: SearchStockPhotosDto) {
     return this.stock.search(query);
   }
 
   @Post('stock/photos/:id/import')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Copy a stock photo into your files to place it on a design',
     description:
       'The photo is downloaded once and stored as one of your IMAGE uploads (print files never depend on an outside link); ' +
-      'the answer carries the credit to show. 503 STOCK_UNAVAILABLE without a key.',
+      'the answer carries the credit to show. 403 when the storage quota is full, 422 STOCK_PHOTO_TOO_LARGE above 60 MB, ' +
+      '503 STOCK_UNAVAILABLE without a key. 10 requests per minute.',
   })
   importStock(@CurrentUser('id') userId: string, @Param('id', ParseIntPipe) id: number) {
     return this.stock.import(userId, id);

@@ -143,14 +143,12 @@ export class StorageService implements IProjectFiles {
     if (dto.projectId) await this.assertEditableProject(dto.projectId, userId);
 
     const key = `users/${userId}/${dto.purpose.toLowerCase()}/${randomUUID()}.${extension}`;
-    // Check and reserve the space in one transaction, serialized per user: parallel requests cannot all pass the check.
-    const file = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(4801, hashtext(${userId}))`;
-      await this.assertQuota(tx, userId, dto.size);
-      return tx.storedFile.create({
-        data: { userId, projectId: dto.projectId, key, purpose: dto.purpose, contentType: dto.contentType, size: dto.size },
-        select: { id: true },
-      });
+    const file = await this.reserveUpload(userId, {
+      key,
+      projectId: dto.projectId,
+      purpose: dto.purpose,
+      contentType: dto.contentType,
+      size: dto.size,
     });
 
     const disposition = DOWNLOAD_ONLY_TYPES.has(dto.contentType) ? 'attachment' : undefined;
@@ -178,6 +176,37 @@ export class StorageService implements IProjectFiles {
       fileUrl: assetUrl(key)!,
       expiresIn: UPLOAD_URL_TTL_SECONDS,
     };
+  }
+
+  /**
+   * Checks that `size` more bytes fit in the user's quota (403 otherwise) and records the file as a pending upload,
+   * in one transaction serialized per user. The lock ends with the transaction, but the pending row it wrote counts in
+   * the usage the next request reads (for PENDING_UPLOAD_RESERVE_MS), so parallel requests cannot all pass the check
+   * even when the bytes are written after the lock is released. The row is confirmed by `putGeneratedFile` (same key)
+   * or by StorageMaintenanceTask; one whose bytes never arrive is dropped by the maintenance task.
+   */
+  async reserveUpload(
+    userId: string,
+    file: { key: string; purpose: FilePurpose; contentType: string; size: number; projectId?: string },
+  ): Promise<{ id: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(4801, hashtext(${userId}))`;
+      await this.assertQuota(userId, file.size, tx);
+      return tx.storedFile.create({ data: { userId, ...file }, select: { id: true } });
+    });
+  }
+
+  /**
+   * 403 when `size` more bytes would not fit in the user's quota. Without the lock of `reserveUpload` this is only an
+   * early answer (e.g. before downloading a stock photo); the space is held by `reserveUpload`.
+   */
+  async assertQuota(userId: string, size: number, db: Db = this.prisma): Promise<void> {
+    const { usedBytes, quotaBytes } = await this.usage(userId, db);
+    if (usedBytes + size > quotaBytes) {
+      throw new ForbiddenException(
+        `Storage quota exceeded: ${Math.ceil(usedBytes / 1024 / 1024)} MB of ${quotaBytes / 1024 / 1024} MB used`,
+      );
+    }
   }
 
   /**
@@ -567,15 +596,6 @@ export class StorageService implements IProjectFiles {
     if (project?.userId !== userId) throw new NotFoundException('Project not found');
     if (project.status === 'DELETED') {
       throw new ConflictException('Restore the project from the trash before uploading files to it');
-    }
-  }
-
-  private async assertQuota(db: Db, userId: string, size: number): Promise<void> {
-    const { usedBytes, quotaBytes } = await this.usage(userId, db);
-    if (usedBytes + size > quotaBytes) {
-      throw new ForbiddenException(
-        `Storage quota exceeded: ${Math.ceil(usedBytes / 1024 / 1024)} MB of ${quotaBytes / 1024 / 1024} MB used`,
-      );
     }
   }
 }
