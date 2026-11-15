@@ -3,7 +3,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Search, ShieldCheck, Star } from "lucide-react";
+import { ExternalLink, Search, ShieldCheck, Shuffle, Star } from "lucide-react";
 import {
   ART_PALETTES,
   BLEED_BOX_MM,
@@ -27,7 +27,6 @@ import {
   type LibraryOccasion,
   type PanelFace,
   type PrintFontId,
-  artPaletteOf,
   dressWithKit,
   STYLE_KITS,
   TEMPLATE_LAYOUTS,
@@ -35,12 +34,13 @@ import {
 } from "@wrapfit/shared";
 import { importStockPhoto, listLibraryAssets, searchStockPhotos } from "@/api";
 import { useToast } from "@/components/common/Toast";
-import { buttonClass, Field, Input } from "@/components/ui";
+import { buttonClass, Field, Input, Select } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 import { queryKeys } from "@/hooks/data";
 import type { LibraryAsset } from "@/types/api";
 import { useBoxFonts } from "../canvas/boxText";
 import { ArtShapes, elementArt } from "./elementArt";
+import { FacePreview } from "./FacePreview";
 import { type ShelfItem, useLibraryShelves } from "./libraryShelves";
 
 const ALL_FONTS = Object.keys(PRINT_FONTS) as PrintFontId[];
@@ -334,38 +334,6 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
         </section>
       )}
 
-      {box && onApplyKit && (
-        <section aria-labelledby="library-kits" className="space-y-2">
-          <h3 id="library-kits" className="text-label font-semibold text-fg">
-            Phong cách cả hộp <span className="font-normal text-fg-muted">· bấm lần nữa để đổi bố cục</span>
-          </h3>
-          <ul className="flex gap-2 overflow-x-auto pb-1">
-            {STYLE_KITS.map((kit) => {
-              const colors = [kit.background?.palette ?? kit.label.palette, kit.sticker.palette, kit.label.palette].map((id) => artPaletteOf(id)!);
-              const active = applied?.kit === kit.id;
-              return (
-                <li key={kit.id} className="shrink-0">
-                  <button
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => applyKit(kit.id)}
-                    className="flex min-h-11 w-28 flex-col items-start gap-1.5 rounded-panel border border-line bg-surface-raised p-2 text-left transition hover:border-fg/40 aria-pressed:border-fg aria-pressed:bg-accent-bg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
-                  >
-                    <span className="flex h-7 w-full overflow-hidden rounded-control" aria-hidden>
-                      {colors.map((palette, i) => (
-                        <span key={i} className="flex-1" style={{ background: i === 0 ? palette.base : palette.accent }} />
-                      ))}
-                    </span>
-                    <span className="line-clamp-2 text-caption font-semibold text-fg">{kit.name}</span>
-                    {active && <span className="text-caption text-fg-muted">{TEMPLATE_LAYOUTS[applied.layout].name}</span>}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
       <Input
         inputSize="md"
         leadingIcon={<Search className="size-4" aria-hidden />}
@@ -378,7 +346,7 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
         aria-label="Tìm trong thư viện"
       />
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Bộ sưu tập">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="group" aria-label="Bộ sưu tập">
         {(
           [
             ["all", "Thư viện"],
@@ -491,38 +459,52 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
 
       {shelf === "all" && (
       <>
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Loại">
-        <button type="button" className={chip(!category)} aria-pressed={!category} onClick={() => setCategory(null)}>
-          Tất cả
+      {/* One row of occasions drives everything below: whole-box designs and single pieces. */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="group" aria-label="Dịp">
+        <button type="button" className={chip(!occasion)} aria-pressed={!occasion} onClick={() => setOccasion(null)}>
+          Mọi dịp
         </button>
-        {LIBRARY_CATEGORIES.map((c) => (
-          <button key={c.id} type="button" className={chip(category === c.id)} aria-pressed={category === c.id} onClick={() => setCategory(category === c.id ? null : c.id)}>
-            {c.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-3" role="group" aria-label="Dịp">
-        <span className="mr-1 text-caption font-semibold uppercase tracking-wide text-fg-muted">Dịp</span>
         {LIBRARY_OCCASIONS.map((o) => (
           <button key={o.id} type="button" className={chip(occasion === o.id)} aria-pressed={occasion === o.id} onClick={() => setOccasion(occasion === o.id ? null : o.id)}>
             {o.label}
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Ngành hàng">
-        <span className="mr-1 text-caption font-semibold uppercase tracking-wide text-fg-muted">Ngành</span>
-        {LIBRARY_INDUSTRIES.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            className={chip(industry === o.id)}
-            aria-pressed={industry === o.id}
-            onClick={() => {
-              setIndustry(industry === o.id ? null : o.id);
+
+      {box && onApplyKit && (
+        <KitGallery box={box} occasion={occasion} q={q} industry={industry} applied={applied} onApply={applyKit} />
+      )}
+
+      <div className="flex items-center justify-between gap-2 border-t border-line/70 pt-3">
+        <h3 id="library-builtin" className="text-label font-semibold text-fg">
+          Thành phần <span className="font-normal tabular-nums text-fg-muted">· {items.length}</span>
+        </h3>
+        <div className="w-36">
+          <Select
+            inputSize="sm"
+            aria-label="Ngành hàng"
+            value={industry ?? ""}
+            onChange={(event) => {
+              setIndustry((event.target.value || null) as LibraryIndustry | null);
               setShown(PAGE);
             }}
           >
-            {o.label}
+            <option value="">Mọi ngành</option>
+            {LIBRARY_INDUSTRIES.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]" role="group" aria-label="Loại">
+        <button type="button" className={chip(!category)} aria-pressed={!category} onClick={() => setCategory(null)}>
+          Tất cả
+        </button>
+        {LIBRARY_CATEGORIES.map((c) => (
+          <button key={c.id} type="button" className={chip(category === c.id)} aria-pressed={category === c.id} onClick={() => setCategory(category === c.id ? null : c.id)}>
+            {c.label}
           </button>
         ))}
       </div>
@@ -537,11 +519,8 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
       )}
 
       <section aria-labelledby="library-builtin" className="space-y-2">
-        <h3 id="library-builtin" className="text-label font-semibold text-fg">
-          Mẫu dựng sẵn <span className="font-normal text-fg-muted">· {items.length} mẫu, đổi màu và chữ sau khi thêm</span>
-        </h3>
         {items.length === 0 ? (
-          <p className="text-body-sm text-fg-muted">Không có mẫu khớp. Thử từ khác, hoặc bỏ bớt bộ lọc.</p>
+          <p className="text-body-sm text-fg-muted">Không có mẫu khớp.</p>
         ) : (
           <ItemGrid items={items.slice(0, shown)} onPick={pick} favorite={favorite} />
         )}
@@ -554,6 +533,110 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
       </>
       )}
     </div>
+  );
+}
+
+/** Colour of the printed side of each paper a kit is made for, for its preview. */
+const KIT_PAPER: Record<string, string> = { ivory: "#FAF6EE", kraft: "#D9B897", duplex: "#F7F7F3" };
+const KITS_SHOWN = 4;
+
+/**
+ * Whole-box designs, each shown as it would look on the front of this very box: the user picks by sight, not by name.
+ * Filtered by the occasion row, the search words and the industry above; a second click on the applied one changes its
+ * layout.
+ */
+function KitGallery({
+  box,
+  occasion,
+  q,
+  industry,
+  applied,
+  onApply,
+}: {
+  box: NonNullable<LibraryPanelProps["box"]>;
+  occasion: LibraryOccasion | null;
+  q: string;
+  industry: LibraryIndustry | null;
+  applied: { kit: string; layout: number } | null;
+  onApply(kitId: string): void;
+}) {
+  const [all, setAll] = useState(false);
+  const words = q.trim().toLowerCase();
+  const kits = STYLE_KITS.filter(
+    (kit) =>
+      (!occasion || kit.occasion === occasion) &&
+      (!industry || (kit.industries as string[]).includes(industry)) &&
+      (!words || kit.name.toLowerCase().includes(words) || kit.tags.some((tag) => tag.includes(words)))
+  );
+  // The front of the box dressed by each kit, once per box size (dressWithKit lays out the whole dieline).
+  const previews = useMemo(
+    () =>
+      Object.fromEntries(
+        STYLE_KITS.map((kit) => {
+          try {
+            return [kit.id, dressWithKit({ ...box, kitId: kit.id, layout: TEMPLATE_LAYOUTS[0].id })];
+          } catch {
+            return [kit.id, [] as CanvasElement[]];
+          }
+        })
+      ),
+    // The box object is rebuilt each render; its shape is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [box.structure, box.dimensions.length, box.dimensions.width, box.dimensions.height, box.formulaVersion]
+  );
+  if (kits.length === 0) return null;
+  const shown = all ? kits : kits.slice(0, KITS_SHOWN);
+
+  return (
+    <section aria-labelledby="library-kits" className="space-y-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 id="library-kits" className="text-label font-semibold text-fg">
+          Mẫu cả hộp <span className="font-normal tabular-nums text-fg-muted">· {kits.length}</span>
+        </h3>
+        {kits.length > KITS_SHOWN && (
+          <button type="button" onClick={() => setAll((v) => !v)} className={buttonClass({ variant: "link", className: "text-caption" })}>
+            {all ? "Thu gọn" : "Xem tất cả"}
+          </button>
+        )}
+      </div>
+      <ul className="grid grid-cols-2 gap-2">
+        {shown.map((kit) => {
+          const active = applied?.kit === kit.id;
+          return (
+            <li key={kit.id}>
+              <button
+                type="button"
+                aria-pressed={active}
+                onClick={() => onApply(kit.id)}
+                title={active ? "Bấm lần nữa để đổi bố cục" : kit.name}
+                className={cn(
+                  "group relative flex w-full flex-col overflow-hidden rounded-panel border-2 bg-surface-raised text-left transition focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
+                  active ? "border-fpt-orange-ink" : "border-transparent ring-1 ring-line hover:ring-fg/40"
+                )}
+              >
+                <span className="flex aspect-[4/3] items-center justify-center bg-canvas p-2">
+                  <FacePreview
+                    structure={box.structure}
+                    dimensions={box.dimensions}
+                    formulaVersion={box.formulaVersion}
+                    elements={previews[kit.id] ?? []}
+                    paper={KIT_PAPER[kit.material] ?? KIT_PAPER.ivory}
+                    className="h-full w-full drop-shadow-sm"
+                  />
+                </span>
+                <span className="truncate px-2 py-1.5 text-caption font-semibold text-fg">{kit.name}</span>
+                {active && (
+                  <span className="absolute right-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-fpt-orange-ink px-2 py-0.5 text-[11px] font-semibold text-white">
+                    <Shuffle className="size-3" aria-hidden />
+                    Đổi bố cục
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -579,9 +662,9 @@ function ItemGrid({
   favorite?: { isFavorite(id: string): boolean; onToggle(item: ShelfItem): void };
 }) {
   return (
-    <ul className="grid grid-cols-2 gap-2">
+    <ul className="grid grid-cols-3 gap-1.5">
       {items.map((item) => (
-        <li key={item.id} className="relative">
+        <li key={item.id} className="group/item relative">
           {favorite && (
             <button
               type="button"
@@ -589,24 +672,27 @@ function ItemGrid({
               aria-label={favorite.isFavorite(item.id) ? `Bỏ yêu thích ${item.name}` : `Yêu thích ${item.name}`}
               title={favorite.isFavorite(item.id) ? "Bỏ yêu thích" : "Yêu thích"}
               onClick={() => favorite.onToggle(item)}
-              className="absolute right-1 top-1 z-10 grid size-8 place-items-center rounded-full bg-surface-raised/90 text-fg-muted ring-1 ring-line transition hover:text-fg aria-pressed:text-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
+              // Shown on hover or focus, and always once starred: the tiles stay clean.
+              className={cn(
+                "absolute right-1 top-1 z-10 grid size-7 place-items-center rounded-full bg-surface-raised/90 text-fg-muted ring-1 ring-line transition hover:text-fg aria-pressed:text-accent focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 group-hover/item:opacity-100 [@media(hover:none)]:opacity-100",
+                favorite.isFavorite(item.id) ? "opacity-100" : "opacity-0"
+              )}
             >
-              <Star className={cn("size-4", favorite.isFavorite(item.id) && "fill-current")} aria-hidden />
+              <Star className={cn("size-3.5", favorite.isFavorite(item.id) && "fill-current")} aria-hidden />
             </button>
           )}
+          {/* The picture is the label: the name stays one short line (full name on hover). */}
           <button
             type="button"
             onClick={() => onPick(item)}
             title={item.attribution ? `${item.name} — ${item.attribution}` : item.name}
-            className="group flex min-h-[44px] w-full flex-col items-center gap-1.5 rounded-panel border border-line bg-surface-raised p-2 text-center transition hover:border-fg/40 hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
+            aria-label={`Thêm ${item.name}`}
+            className="flex w-full flex-col items-center gap-1 rounded-panel border border-line bg-surface-raised p-1.5 text-center transition hover:border-fg/40 hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
           >
-            <span className="flex h-16 w-full items-center justify-center overflow-hidden rounded-control bg-canvas p-1">
+            <span className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-control bg-canvas p-1">
               <Preview item={item} />
             </span>
-            <span className="line-clamp-2 text-caption font-semibold text-fg">{item.name}</span>
-            <span className="text-caption tabular-nums text-fg-muted">
-              {item.category === "background" ? "phủ cả mặt" : `${item.widthMm} × ${item.heightMm} mm`}
-            </span>
+            <span className="w-full truncate text-[11px] font-medium leading-4 text-fg-muted">{item.name}</span>
           </button>
         </li>
       ))}

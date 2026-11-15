@@ -35,7 +35,7 @@ import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Inf
 import { layoutBoxText, useBoxFonts } from "./boxText";
 import { ArtShapes, elementArt } from "../library/elementArt";
 import { FramedImage, TextVisual, useImageSizes } from "./elementVisuals";
-import { formatMm } from "@/features/studio/utils/dieline";
+import { formatMm, panelLabel } from "@/features/studio/utils/dieline";
 import { elementLabel } from "@/features/studio/utils/elementLabel";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
@@ -785,7 +785,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                       )
                     }
                   >
-                    {panel.name}
+                    {panelLabel(panel.name)}
                   </button>
                 ))}
               </>
@@ -1201,7 +1201,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                       fill={isPanelActive ? "#152B07" : "#475569"}
                       fillOpacity={isPanelActive || isHovered ? 1 : 0.75}
                     >
-                      {panel.name}
+                      {panelLabel(panel.name)}
                     </text>
                     <text
                       x={px + safeInset + 1.2}
@@ -1745,28 +1745,28 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             compact
             checked={showLayers.cut}
             onChange={(e) => setShowLayers({ ...showLayers, cut: e.target.checked })}
-            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-dieline-cut rounded-full inline-block" aria-hidden />Nét cắt dao</span>}
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-dieline-cut rounded-full inline-block" aria-hidden />Nét cắt</span>}
             className="min-h-0 py-0"
           />
           <Checkbox
             compact
             checked={showLayers.crease}
             onChange={(e) => setShowLayers({ ...showLayers, crease: e.target.checked })}
-            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dashed border-dieline-crease inline-block" aria-hidden />Nếp cấn gập</span>}
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dashed border-dieline-crease inline-block" aria-hidden />Nếp gấp</span>}
             className="min-h-0 py-0"
           />
           <Checkbox
             compact
             checked={showLayers.bleed}
             onChange={(e) => setShowLayers({ ...showLayers, bleed: e.target.checked })}
-            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dotted border-dieline-bleed inline-block" aria-hidden />Tràn lề (Bleed ≥2mm)</span>}
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dotted border-dieline-bleed inline-block" aria-hidden />Tràn lề ≥ 2 mm</span>}
             className="min-h-0 py-0"
           />
           <Checkbox
             compact
             checked={showLayers.safeMargin}
             onChange={(e) => setShowLayers({ ...showLayers, safeMargin: e.target.checked })}
-            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dashed border-warning inline-block" aria-hidden />Vùng an toàn (≥3mm)</span>}
+            label={<span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 border-b border-dashed border-warning inline-block" aria-hidden />{`Vùng an toàn ≥ ${SAFE_MARGIN_CUT_MM} mm`}</span>}
             className="min-h-0 py-0"
           />
         </div>
@@ -1802,7 +1802,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 >
                   {dieline.panels.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({formatMm(p.bounds.width)}×{formatMm(p.bounds.height)}mm)
+                      {panelLabel(p.name)} · {formatMm(p.bounds.width)} × {formatMm(p.bounds.height)} mm
                     </option>
                   ))}
                 </select>

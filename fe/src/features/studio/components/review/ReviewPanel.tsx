@@ -9,6 +9,7 @@ import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
 import type { ReviewComment, ReviewState } from "@/types/api";
 import { cn } from "@/utils/helpers";
+import { panelLabel } from "@/features/studio/utils/dieline";
 import { ApprovalBadge, CommentItem } from "@/views/review";
 
 const reviewKey = (projectId: string) => ["projects", projectId, "review"];
@@ -118,7 +119,7 @@ export function ReviewPanel({ projectId, pieces }: { projectId: string; pieces: 
     },
     onError: (e) => toast.error(e, "Chưa gửi được"),
   });
-  const faceName = (id: string | null) => (id ? (pieces.flatMap((p) => p.geometry.panels).find((p) => p.id === id)?.name ?? id) : null);
+  const faceName = (id: string | null) => (id ? panelLabel(pieces.flatMap((p) => p.geometry.panels).find((p) => p.id === id)?.name ?? id) : null);
   const comments = review.data?.comments ?? [];
   // Feedback still open: the reviewers' comments not resolved yet (the owner's replies are not to-dos).
   const waiting = comments.filter((c) => !c.resolved && !c.byOwner).length;
