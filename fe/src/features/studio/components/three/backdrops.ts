@@ -30,7 +30,13 @@ export interface Backdrop {
   rim: string;
   rimIntensity: number;
   dark?: boolean;
+  /** The tabletop the box stands on in the studio set (sceneSet.ts): its look and colours. */
+  surface: { kind: SurfaceKind; base: string; accent: string; name: string };
+  /** What stands around the box (sceneSet.ts), in words; null: nothing, a clean product shot. */
+  props: string | null;
 }
+
+export type SurfaceKind = "sweep" | "marble" | "wood" | "velvet" | "linen" | "silk" | "paper";
 
 export type SceneId = Exclude<BoxEnvironment, "transparent">;
 
@@ -44,6 +50,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     key: "#FFFFFF",
     rim: "#FFFFFF",
     rimIntensity: 0.45,
+    surface: { kind: "sweep", base: "#F1F3EF", accent: "#DDE3D8", name: "Phông giấy liền" },
+    props: null,
   },
   marble: {
     name: "Đá cẩm thạch",
@@ -58,6 +66,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     key: "#F4F8FF",
     rim: "#FFFFFF",
     rimIntensity: 0.5,
+    surface: { kind: "marble", base: "#F6F7F9", accent: "#9AA4B2", name: "Mặt đá cẩm thạch" },
+    props: "Bình gốm, cành bạch đàn, sỏi",
   },
   kraft_wood: {
     name: "Bàn gỗ mộc",
@@ -71,6 +81,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     key: "#FFF1DE",
     rim: "#FFD9A8",
     rimIntensity: 0.4,
+    surface: { kind: "wood", base: "#C9955E", accent: "#8A5A2E", name: "Mặt bàn gỗ sồi" },
+    props: "Cuộn dây gai, lá khô, thanh quế",
   },
   forest_velvet: {
     name: "Nhung xanh rừng",
@@ -82,6 +94,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     rim: "#98E665",
     rimIntensity: 0.9,
     dark: true,
+    surface: { kind: "velvet", base: "#1E4A37", accent: "#0F2A1F", name: "Vải nhung xanh" },
+    props: "Chuỗi ngọc trai, nhẫn vàng",
   },
   festive_glow: {
     name: "Không khí Tết",
@@ -95,6 +109,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     key: "#FFE9C9",
     rim: "#FF9F5A",
     rimIntensity: 0.8,
+    surface: { kind: "linen", base: "#F3D9B1", accent: "#D9A86C", name: "Khăn lanh vàng ấm" },
+    props: "Bao lì xì, quả quýt, cánh mai",
   },
   valentine: {
     name: "Valentine",
@@ -108,6 +124,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     key: "#FFF0F5",
     rim: "#FF8FB1",
     rimIntensity: 0.7,
+    surface: { kind: "silk", base: "#F7C9D6", accent: "#E48AA6", name: "Lụa hồng" },
+    props: "Trái tim, cánh hoa hồng",
   },
   birthday: {
     name: "Sinh nhật",
@@ -124,6 +142,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     key: "#FFFFFF",
     rim: "#FFC27A",
     rimIntensity: 0.6,
+    surface: { kind: "paper", base: "#FBEFD9", accent: "#EBCB9E", name: "Giấy kem" },
+    props: "Nến sinh nhật, giấy kim tuyến",
   },
   christmas: {
     name: "Giáng Sinh",
@@ -138,6 +158,8 @@ export const BACKDROPS: Record<SceneId, Backdrop> = {
     rim: "#FFC46B",
     rimIntensity: 0.9,
     dark: true,
+    surface: { kind: "velvet", base: "#6E1D1D", accent: "#3A0C0C", name: "Nhung đỏ rượu" },
+    props: "Quả châu, cành thông, quả thông",
   },
 };
 
@@ -158,5 +180,25 @@ export function sceneForOccasion(occasion: string | null | undefined): SceneId {
       return "marble";
     default:
       return "studio";
+  }
+}
+
+/** The tabletop of a scene in CSS: the scene thumbnails show what the box will stand on. */
+export function surfaceCss({ kind, base, accent }: Backdrop["surface"]): string {
+  switch (kind) {
+    case "marble":
+      return `linear-gradient(118deg, transparent 38%, ${accent}66 40%, transparent 43%), linear-gradient(30deg, transparent 62%, ${accent}44 63.5%, transparent 66%), ${base}`;
+    case "wood":
+      return `repeating-linear-gradient(0deg, ${accent}55 0 1px, transparent 1px 6px), linear-gradient(0deg, ${accent}33 0 2px, transparent 2px) 0 0 / 100% 14px, ${base}`;
+    case "velvet":
+      return `radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,0.16), transparent 60%), ${base}`;
+    case "linen":
+    case "paper":
+      return `repeating-linear-gradient(90deg, ${accent}40 0 1px, transparent 1px 4px), repeating-linear-gradient(0deg, ${accent}40 0 1px, transparent 1px 4px), ${base}`;
+    case "silk":
+      return `linear-gradient(100deg, ${base} 0%, rgba(255,255,255,0.45) 38%, ${base} 55%, ${accent}88 100%)`;
+    case "sweep":
+    default:
+      return base;
   }
 }

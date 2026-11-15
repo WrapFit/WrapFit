@@ -2,6 +2,7 @@
 
 import * as THREE from "three";
 import {
+  CUBIC_ARC_K,
   boxFrameOf,
   CURRENT_FORMULA_VERSION,
   generateDielinePieces,
@@ -365,15 +366,21 @@ function panelGeometry({ x, y, width, height }: Rect, outline?: Point2D[], holes
       const path = new THREE.Path();
       const x1 = hole.x + hole.width;
       const y1 = hole.y + hole.height;
+      // Cup holes are true circles (cubic corners, like their cut line); the older holes keep their quadratic corners.
+      const round = hole.kind === "cup";
+      const corner = (cx: number, cy: number, ex: number, ey: number, sx: number, sy: number) =>
+        round
+          ? path.bezierCurveTo(sx + (cx - sx) * CUBIC_ARC_K, sy + (cy - sy) * CUBIC_ARC_K, ex + (cx - ex) * CUBIC_ARC_K, ey + (cy - ey) * CUBIC_ARC_K, ex, ey)
+          : path.quadraticCurveTo(cx, cy, ex, ey);
       path.moveTo(hole.x + r, hole.y);
       path.lineTo(x1 - r, hole.y);
-      path.quadraticCurveTo(x1, hole.y, x1, hole.y + r);
+      corner(x1, hole.y, x1, hole.y + r, x1 - r, hole.y);
       path.lineTo(x1, y1 - r);
-      path.quadraticCurveTo(x1, y1, x1 - r, y1);
+      corner(x1, y1, x1 - r, y1, x1, y1 - r);
       path.lineTo(hole.x + r, y1);
-      path.quadraticCurveTo(hole.x, y1, hole.x, y1 - r);
+      corner(hole.x, y1, hole.x, y1 - r, hole.x + r, y1);
       path.lineTo(hole.x, hole.y + r);
-      path.quadraticCurveTo(hole.x, hole.y, hole.x + r, hole.y);
+      corner(hole.x, hole.y, hole.x + r, hole.y, hole.x, hole.y + r);
       shape.holes.push(path);
     }
     const geometry = new THREE.ShapeGeometry(shape, 6);
