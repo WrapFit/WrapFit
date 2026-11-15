@@ -15,7 +15,7 @@ import {
   type PlacedText,
   type PrintSide,
 } from '@wrapfit/shared';
-import { dielinePieces, matchesPanel } from '../../projects';
+import { dielinePieces } from '../../projects';
 
 export { dielinePieces, matchesPanel, UnsupportedFormulaVersionError, UnsupportedStructureError } from '../../projects';
 
