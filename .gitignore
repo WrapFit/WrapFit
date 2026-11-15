@@ -67,6 +67,11 @@ desktop.ini
 # Desktop / phone screenshots of app pages (fe/scripts/page-shots.mjs)
 .page-shots/
 
+# graphify: commit the graph (graph.json, GRAPH_REPORT.md…), not its per-file extraction cache, which every
+# `graphify update` rewrites by the hundred and each machine rebuilds on its own
+graphify-out/cache/
+graphify-out/**/*.tmp
+
 # AI agent tooling: keep the project skills, ignore local tool state and vendored repositories
 .claude/
 .agents/*
