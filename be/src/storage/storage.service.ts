@@ -311,14 +311,17 @@ export class StorageService implements IProjectFiles {
   async inspectFont(userId: string, url: string): Promise<{ url: string; family: string }> {
     const key = await this.resolveUpload(url, userId, ['FONT']);
     const file = await this.getObject(key);
-    let font: ReturnType<typeof createFont>;
+    let missing: string[];
+    let family: string;
     try {
-      font = createFont(file.body);
+      const font = createFont(file.body);
+      if (typeof font?.hasGlyphForCodePoint !== 'function') throw fontUnreadable();
+      // fontkit reads the tables when they are first used: a broken `cmap` or `name` table throws here, not above.
+      missing = missingVietnamese(font);
+      family = cleanFamilyName(font.familyName);
     } catch {
       throw fontUnreadable();
     }
-    if (typeof font?.hasGlyphForCodePoint !== 'function') throw fontUnreadable();
-    const missing = missingVietnamese(font);
     if (missing.length) {
       throw new UnprocessableEntityException({
         code: 'FONT_NO_VIETNAMESE',
@@ -326,7 +329,7 @@ export class StorageService implements IProjectFiles {
         missing,
       });
     }
-    return { url, family: cleanFamilyName(font.familyName) };
+    return { url, family };
   }
 
   /** Downloads a file from the bucket (print exports embed the user's images). */

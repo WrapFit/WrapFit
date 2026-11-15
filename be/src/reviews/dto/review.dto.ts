@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export const COMMENT_MAX_LENGTH = 1000;
 export const REVIEWER_NAME_MAX_LENGTH = 60;
@@ -63,7 +63,7 @@ export class ApproveDto {
   name: string;
 
   @ApiProperty({ description: 'Version of the design the reviewer approves (409 when it changed meanwhile)' })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   version: number;
 }

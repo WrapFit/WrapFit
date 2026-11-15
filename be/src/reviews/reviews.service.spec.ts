@@ -87,6 +87,14 @@ describe('ReviewsService (docs/23 S23)', () => {
     expect(comment.byOwner).toBe(true);
   });
 
+  it('caps guest comments and the owner comments apart: guests who fill their share never lock the owner out', async () => {
+    // 500 guest comments, 3 of the owner.
+    prisma.designComment.count.mockImplementation(async ({ where }) => (where.authorUserId === null ? MAX_COMMENTS_PER_PROJECT : 3));
+    await expect(service.addGuestComment(TOKEN, { authorName: 'Spam', body: 'x' })).rejects.toMatchObject({ status: 400 });
+    await expect(service.addOwnerComment('p1', 'u1', { body: 'Đã nhận góp ý' })).resolves.toMatchObject({ byOwner: true });
+    expect(prisma.designComment.count).toHaveBeenLastCalledWith({ where: { projectId: 'p1', authorUserId: { not: null } } });
+  });
+
   it('approves the version the reviewer saw, and refuses one that changed meanwhile', async () => {
     const approval = await service.approve(TOKEN, { name: 'Xưởng in Minh', version: 7 });
     expect(approval).toMatchObject({ approvedBy: 'Xưởng in Minh', approvedVersion: 7, current: true });

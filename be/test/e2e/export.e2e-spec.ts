@@ -133,7 +133,8 @@ describe('Print export (e2e)', () => {
     // The text is outlined: a filled path in the artwork layer, never a <text> with a font.
     expect(svgText).not.toContain('An khang thịnh vượng');
     expect(svgText).not.toContain('<text');
-    expect(svgText).toMatch(/<g id="artwork"[^>]*><path d="M /);
+    // Each element sits in the clip group of its face (+ bleed), `<g clip-path="url(#face1)">`.
+    expect(svgText).toMatch(/<g id="artwork"[^>]*>(?:<g [^>]*>)*<path d="M /);
 
     const dxf = await exportAs('DXF');
     expect(await (await fetch(dxf.downloadUrl)).text()).toMatch(/^0\nSECTION\n2\nHEADER/);

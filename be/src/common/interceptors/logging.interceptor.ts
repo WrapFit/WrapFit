@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
+import { loggableUrl } from '../utils/log-url.util';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -24,7 +25,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const log = (status: number) => {
       const userId = (request.user as { id?: string } | undefined)?.id;
       const user = userId ? ` user=${userId}` : '';
-      this.logger.log(`${request.method} ${request.originalUrl} ${status} +${Date.now() - startedAt}ms${user}`);
+      this.logger.log(`${request.method} ${loggableUrl(request.originalUrl)} ${status} +${Date.now() - startedAt}ms${user}`);
     };
 
     return next.handle().pipe(

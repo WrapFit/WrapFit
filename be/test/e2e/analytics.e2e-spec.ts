@@ -1,5 +1,6 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { ANALYTICS_BOX_TYPES } from '@wrapfit/shared';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
@@ -71,7 +72,7 @@ describe('Analytics (e2e)', () => {
     await app.close();
   }, 30_000);
 
-  it('starts empty: every day of the period, the four box types, no creation time', async () => {
+  it('starts empty: every day of the period, every box type, no creation time', async () => {
     const body = await summary(ana);
     expect(body).toMatchObject({
       scope: 'me',
@@ -83,12 +84,9 @@ describe('Analytics (e2e)', () => {
     });
     expect(body.boxes.byDay).toHaveLength(7);
     expect(body.boxes.byDay.at(-1).date).toBe(body.to);
-    expect(body.boxTypes).toEqual([
-      { type: 'tuck-top', count: 0 },
-      { type: 'sleeve-drawer', count: 0 },
-      { type: 'lid-base', count: 0 },
-      { type: 'pillow', count: 0 },
-    ]);
+    // One entry per structure the dashboard lists, in its order (the list grows with new box types), no "other".
+    expect(body.boxTypes).toEqual(ANALYTICS_BOX_TYPES.map((type) => ({ type, count: 0 })));
+    expect(body.boxTypes.slice(0, 4).map((t: { type: string }) => t.type)).toEqual(['tuck-top', 'sleeve-drawer', 'lid-base', 'pillow']);
   });
 
   it('records the projects, the blocked export, Auto-Fix and the studio heartbeats', async () => {

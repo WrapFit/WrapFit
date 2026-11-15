@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import type { CanvasElement } from '@wrapfit/shared';
 import QRCode from 'qrcode';
 import { fileNameFor } from '../export.service';
@@ -373,6 +374,23 @@ describe('editing tools (docs/23 phase 3)', () => {
     const pdf = await renderPdf(layout, artwork);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
   });
+
+  it('downsamples an adjusted photo of the SVG to 450 DPI at its printed size, never upsamples (audit finding 19)', async () => {
+    const url = 'https://cdn/users/u/big.png';
+    const big = await sharp({ create: { width: 2000, height: 1000, channels: 3, background: { r: 30, g: 120, b: 200 } } }).png().toBuffer();
+    // 50 x 25 mm printed: ceil(50 / 25.4 * 450) = 886 px wide instead of the 2000 px of the file.
+    const photo = { ...greeting, id: 'big', type: 'image' as const, content: url, width: 50, height: 25, fit: 'fill' as const, style: { filters: { brightness: 10 } } };
+    const artwork: Artwork = new Map([[url, { body: big, contentType: 'image/png' }]]);
+    const [prepared] = [...(await svgImages(layoutOf('tuck-top', [photo]), artwork)).values()];
+    expect(prepared.draw).toMatchObject({ sw: 886, sh: 443 });
+    const embedded = await sharp(Buffer.from(prepared.dataUri.split(',')[1], 'base64')).metadata();
+    expect([embedded.width, embedded.height]).toEqual([886, 443]);
+
+    // A small crop stays at its own pixels: 100 x 100 px printed 50 mm wide would need 886.
+    const cropped = { ...photo, crop: { x: 0, y: 0, width: 0.05, height: 0.1 }, height: 50 };
+    const [small] = [...(await svgImages(layoutOf('tuck-top', [cropped]), artwork)).values()];
+    expect(small.draw).toMatchObject({ sw: 100, sh: 100 });
+  });
 });
 
 describe('uploaded fonts (docs/23 S13)', () => {
@@ -398,6 +416,24 @@ describe('uploaded fonts (docs/23 S13)', () => {
     expect(path(withFont)).toBeTruthy();
     expect(path(without)).toBeTruthy();
     expect(path(withFont)).not.toBe(path(without));
+  });
+
+  it('prints a text with a letter its uploaded font cannot draw in the built-in font, and logs it once (audit finding 22)', () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const url = 'https://cdn/users/u/font/a.ttf';
+    // Playfair Display draws Vietnamese but no CJK: the 茶 would print as an empty box.
+    const text = { ...greeting, content: 'Trà xanh 茶', style: { ...greeting.style, fontFamily: "'Nét Tay', sans-serif", fontUrl: url } };
+    const layout = layoutOf('tuck-top', [text]);
+    const artwork: Artwork = new Map([[url, { body: fontFile(playfair), contentType: 'font/ttf' }]]);
+    const path = (svg: string) => /<path d="([^"]+)" fill="#C0392B"/.exec(svg)?.[1];
+
+    const printed = renderSvg(layout, artwork);
+    expect(path(printed)).toBeTruthy();
+    expect(path(printed)).toBe(path(renderSvg(layout))); // the same outlines as without the font file
+    renderSvg(layout, artwork); // a second file of the same export: no second warning
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toBe(`Uploaded font ${url} cannot draw "茶" of the text "Trà xanh 茶": printed with the built-in font be-vietnam-pro`);
+    warn.mockRestore();
   });
 });
 

@@ -9,6 +9,7 @@ import {
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { currentRequestId } from '../context/request-context';
+import { loggableUrl } from '../utils/log-url.util';
 
 interface NormalizedError {
   status: number;
@@ -46,7 +47,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(
-        `${request.method} ${request.url} -> ${status}`,
+        `${request.method} ${loggableUrl(request.originalUrl ?? request.url)} -> ${status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
     }

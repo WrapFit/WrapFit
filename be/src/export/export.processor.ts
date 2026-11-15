@@ -170,7 +170,6 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
   private async loadArtwork(layout: PrintLayout): Promise<Artwork> {
     const artwork: Artwork = new Map();
     let total = 0;
-    // The inside sheet (docs/23 S5) prints its own images too.
     // The inside sheet (docs/23 S5) prints its own images too; uploaded fonts (S13) are loaded like images.
     const fonts = fontUrlsOf([...layout.texts, ...(layout.inside?.texts ?? [])].map((t) => ({ type: 'text' as const, style: t.style })));
     for (const url of [...[...layout.images, ...(layout.inside?.images ?? [])].map((image) => image.url), ...fonts]) {

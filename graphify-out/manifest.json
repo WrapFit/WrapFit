@@ -7260,9 +7260,9 @@
     "semantic_hash": ""
   },
   "be/src/common/filters/all-exceptions.filter.ts": {
-    "mtime": 1794776149.7194147,
-    "seen": 1794776383.3346565,
-    "ast_hash": "85bb06fd768b4f19e383603e87b43bfa",
+    "mtime": 1794776673.118024,
+    "seen": 1794777222.7430873,
+    "ast_hash": "13256bffcbe1dd27cf0fdcba55fd0dd0",
     "semantic_hash": ""
   },
   "be/src/common/filters/index.ts": {
@@ -7314,9 +7314,9 @@
     "semantic_hash": ""
   },
   "be/src/common/interceptors/logging.interceptor.ts": {
-    "mtime": 1791643198.0514452,
-    "seen": 1794327103.3117971,
-    "ast_hash": "9fc3d53c63227e13d47529909efa5550",
+    "mtime": 1794776672.991877,
+    "seen": 1794777222.7439084,
+    "ast_hash": "520d2719cef7e961537df25345b5bfad",
     "semantic_hash": ""
   },
   "be/src/common/interfaces/auth.interfaces.ts": {
@@ -7374,9 +7374,9 @@
     "semantic_hash": ""
   },
   "be/src/common/utils/index.ts": {
-    "mtime": 1792086094.642409,
-    "seen": 1794327103.311805,
-    "ast_hash": "5f1c63bc6c156ce3978ee18b49c76e1c",
+    "mtime": 1794776672.8681517,
+    "seen": 1794777222.7448037,
+    "ast_hash": "70a3604db0e0866b02ed03b9706d6999",
     "semantic_hash": ""
   },
   "be/src/common/utils/redis.util.ts": {
@@ -7542,9 +7542,9 @@
     "semantic_hash": ""
   },
   "be/src/export/export.processor.ts": {
-    "mtime": 1794715430.197276,
-    "seen": 1794775302.8150463,
-    "ast_hash": "dee53f4b02a2a5fec868e20f539bc808",
+    "mtime": 1794776661.4230628,
+    "seen": 1794777222.7475555,
+    "ast_hash": "1c823d5ba8a8f97619122bc7e96234c1",
     "semantic_hash": ""
   },
   "be/src/export/export.service.spec.ts": {
@@ -7590,15 +7590,15 @@
     "semantic_hash": ""
   },
   "be/src/export/rendering/print-renderers.ts": {
-    "mtime": 1794715430.2002711,
-    "seen": 1794775302.8152404,
-    "ast_hash": "5c75d9578f64827365d6ff7349b7f510",
+    "mtime": 1794776961.996901,
+    "seen": 1794777222.7494614,
+    "ast_hash": "742fc51f91d6feb65a5f83bdecb86431",
     "semantic_hash": ""
   },
   "be/src/export/rendering/print-rendering.spec.ts": {
-    "mtime": 1794715430.2012725,
-    "seen": 1794775302.8152423,
-    "ast_hash": "69b969c6f75e58b1b4854c8c64d4872f",
+    "mtime": 1794776983.131844,
+    "seen": 1794777222.7494643,
+    "ast_hash": "59c032bfdf6bb329af570e23d542056e",
     "semantic_hash": ""
   },
   "be/src/export/worker-heartbeat.ts": {
@@ -8232,15 +8232,15 @@
     "semantic_hash": ""
   },
   "be/src/storage/storage.service.spec.ts": {
-    "mtime": 1791692852.3516996,
-    "seen": 1794327103.3119667,
-    "ast_hash": "205d671c8f42cef6cd292bbb7e3b2114",
+    "mtime": 1794776896.0973656,
+    "seen": 1794777222.7648218,
+    "ast_hash": "a3a46fce6aade8095f11763657b7bc4b",
     "semantic_hash": ""
   },
   "be/src/storage/storage.service.ts": {
-    "mtime": 1794775679.7533357,
-    "seen": 1794775930.7525485,
-    "ast_hash": "94b7769d0e338b9db2582a1532decd42",
+    "mtime": 1794776862.7526073,
+    "seen": 1794777222.7648232,
+    "ast_hash": "88bc1629b1a9ef0a5d63fdbe03c05986",
     "semantic_hash": ""
   },
   "be/src/swagger.ts": {
@@ -8418,9 +8418,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/analytics.e2e-spec.ts": {
-    "mtime": 1794498330.3226838,
-    "seen": 1794775302.8294575,
-    "ast_hash": "b6b29836de81f047c7ad7220104be6ea",
+    "mtime": 1794777115.582527,
+    "seen": 1794777222.7677755,
+    "ast_hash": "0471bab41c8dc43c917e4d5fcc1411cb",
     "semantic_hash": ""
   },
   "be/test/e2e/app.e2e-spec.ts": {
@@ -8448,9 +8448,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/export.e2e-spec.ts": {
-    "mtime": 1794498330.3226838,
-    "seen": 1794775302.829813,
-    "ast_hash": "447783e2e0bdcfe457199daff7a6ae67",
+    "mtime": 1794777100.056796,
+    "seen": 1794777222.7681527,
+    "ast_hash": "08ac8bdc1883af5ff4c17eb4f343f243",
     "semantic_hash": ""
   },
   "be/test/e2e/helpers/accounts.ts": {
@@ -13950,9 +13950,9 @@
     "semantic_hash": ""
   },
   "be/src/reviews/dto/review.dto.ts": {
-    "mtime": 1794715430.2090333,
-    "seen": 1794775302.8243873,
-    "ast_hash": "f5f3ba477df1405884f643ed354fa17e",
+    "mtime": 1794776661.3787122,
+    "seen": 1794777222.7622082,
+    "ast_hash": "ebb3fe6f3c06b086fb1f746e07987b6b",
     "semantic_hash": ""
   },
   "be/src/reviews/index.ts": {
@@ -13974,15 +13974,15 @@
     "semantic_hash": ""
   },
   "be/src/reviews/reviews.service.spec.ts": {
-    "mtime": 1794715430.210081,
-    "seen": 1794775302.824392,
-    "ast_hash": "0d123f09a13162da57e01fcdc6e9c0af",
+    "mtime": 1794777018.6187558,
+    "seen": 1794777222.7625203,
+    "ast_hash": "02411ce17aa9025360489440e562b7c5",
     "semantic_hash": ""
   },
   "be/src/reviews/reviews.service.ts": {
-    "mtime": 1794715430.2106147,
-    "seen": 1794775302.8243935,
-    "ast_hash": "cf87ff8112a22e7de29d3999c33f7774",
+    "mtime": 1794777011.641962,
+    "seen": 1794777222.7625225,
+    "ast_hash": "f26cb80b7348dbf5e79b41e4cb228e64",
     "semantic_hash": ""
   },
   "be/src/storage/dto/inspect-font.dto.ts": {
@@ -14478,15 +14478,33 @@
     "semantic_hash": ""
   },
   "docs/25_BACKEND_AUDIT_FIX_PLAN.md": {
-    "mtime": 1794775897.5665226,
-    "seen": 1794775930.8812325,
-    "ast_hash": "f6d501e334659c15a7efcf884416a968",
+    "mtime": 1794776419.5163722,
+    "seen": 1794777222.8413155,
+    "ast_hash": "ba8f92a4a26940e73aae60879b8b053e",
     "semantic_hash": ""
   },
   "be/src/common/filters/all-exceptions.filter.spec.ts": {
-    "mtime": 1794776295.1501586,
-    "seen": 1794776383.334653,
-    "ast_hash": "d436033b575ff6306ae92461067aaadb",
+    "mtime": 1794776710.3529158,
+    "seen": 1794777222.743084,
+    "ast_hash": "55b4fa91babcc54ea69ad91854381e55",
+    "semantic_hash": ""
+  },
+  "be/src/common/interceptors/logging.interceptor.spec.ts": {
+    "mtime": 1794776691.8929389,
+    "seen": 1794777222.7439065,
+    "ast_hash": "fd5e6ac6b537f4c4d31327fcb35aa98d",
+    "semantic_hash": ""
+  },
+  "be/src/common/utils/log-url.util.ts": {
+    "mtime": 1794776672.7767694,
+    "seen": 1794777222.744806,
+    "ast_hash": "c8ce44cf68227c3f5fcffc93b4f5aff3",
+    "semantic_hash": ""
+  },
+  "be/test/e2e/reviews.e2e-spec.ts": {
+    "mtime": 1794777065.391903,
+    "seen": 1794777222.7687414,
+    "ast_hash": "0cae155d13a4516dc25158906c0bbeac",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {
