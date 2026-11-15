@@ -217,6 +217,29 @@ describe('Payments API (e2e)', () => {
     expect((await exportSvg(true).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
   });
 
+  it('pages the history by (createdAt, id): two payments of the same millisecond both appear across a page boundary', async () => {
+    const payer = await register('pager');
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i++) ids.push((await pay(payer, { purpose: 'XU_500' })).id);
+    // The two oldest share one millisecond, so the boundary of the second page falls between them.
+    await prisma.payment.updateMany({ where: { id: { in: ids.slice(0, 2) } }, data: { createdAt: new Date(Date.now() - 60_000) } });
+
+    const seen: string[] = [];
+    let before: string | null = null;
+    do {
+      const query: string = before ? `&before=${encodeURIComponent(before)}` : '';
+      const page = (await as(payer).get(`/api/payments?limit=1${query}`).expect(200)).body;
+      seen.push(...page.entries.map((entry: { id: string }) => entry.id));
+      before = page.nextBefore;
+    } while (before);
+    expect(seen).toEqual([ids[2], ...ids.slice(0, 2).sort().reverse()]);
+
+    // A bare date, the cursor of the former API that a client may still hold, is still read; anything else is 400.
+    const old = (await as(payer).get(`/api/payments?before=${encodeURIComponent(new Date().toISOString())}`).expect(200)).body;
+    expect(old.entries).toHaveLength(3);
+    await as(payer).get('/api/payments?before=nope').expect(400);
+  });
+
   it('answers 404 to simulate-confirm when PAYMENT_SIMULATION is off', async () => {
     const payment = await pay(buyer, { purpose: 'EXPORT_1' });
     const previous = process.env.PAYMENT_SIMULATION;

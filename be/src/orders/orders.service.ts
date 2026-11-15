@@ -155,7 +155,8 @@ export class OrdersService {
       history: { create: { toStatus: free ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT, changedById: userId } },
     });
 
-    // WF-<year>-<4 digits>: short enough to read over the phone. A taken code is retried with a new number.
+    // WF-<year>-<6 digits>: short enough to read over the phone. The unique index on order_code catches a taken code
+    // (also between two requests at once), which is retried with a new number.
     for (let attempt = 1; ; attempt++) {
       try {
         const order = await this.prisma.order.create({ data: data(newOrderCode()), include: ORDER_INCLUDE });
@@ -323,10 +324,13 @@ export class OrdersService {
   }
 }
 
-/** `WF-<year in Vietnam>-<4 digits>`. */
-function newOrderCode(now = new Date()): string {
+/**
+ * `WF-<year in Vietnam>-<6 digits>`: a million codes a year. Orders made before 2026-11-16 keep their 4 digits; the CHECK
+ * chk_orders_order_code accepts both, and nothing parses the code (it is only shown and searched as text).
+ */
+export function newOrderCode(now = new Date()): string {
   const year = new Date(now.getTime() + 7 * 3_600_000).getUTCFullYear();
-  return `WF-${year}-${String(randomInt(0, 10_000)).padStart(4, '0')}`;
+  return `WF-${year}-${String(randomInt(0, 1_000_000)).padStart(6, '0')}`;
 }
 
 function isOrderCodeTaken(error: unknown): boolean {

@@ -12,7 +12,15 @@ import {
 import { Role } from '@prisma/client';
 import { parse as parseCookies } from 'cookie';
 import { Namespace, Socket } from 'socket.io';
-import { ACCESS_COOKIE, AuthUser, ConfigService, JwtPayload, SESSIONS_REVOKED, SessionsRevokedEvent } from '../common';
+import {
+  ACCESS_COOKIE,
+  AuthUser,
+  ConfigService,
+  JwtPayload,
+  readCookie,
+  SESSIONS_REVOKED,
+  SessionsRevokedEvent,
+} from '../common';
 import { PrismaService } from '../shared/prisma';
 
 /**
@@ -109,6 +117,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (typeof header === 'string' && header.startsWith('Bearer ')) return header.slice(7);
 
     const cookieHeader = socket.handshake.headers.cookie;
-    return cookieHeader ? parseCookies(cookieHeader)[ACCESS_COOKIE] : undefined;
+    return cookieHeader ? readCookie(parseCookies(cookieHeader), ACCESS_COOKIE) : undefined;
   }
 }

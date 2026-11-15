@@ -5,6 +5,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
 import { PrismaService } from '../../src/shared/prisma';
+import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
 
 /**
@@ -226,6 +227,51 @@ describe('Storage (e2e)', () => {
       await remove(copy);
       expect((await fetch(ticket.fileUrl)).status).toBe(404);
       expect(await prisma.storedFile.findUnique({ where: { key: ticket.key } })).toBeNull();
+    });
+
+    it('hand a file other projects show to the oldest of them, and leave every other file where it is', async () => {
+      const kimId = (await as(kim).get('/api/users/me').expect(200)).body.id as string;
+      const gone = await newProject(kim);
+      const alsoGone = await newProject(kim);
+      const heir = await newProject(kim);
+      const younger = await newProject(kim);
+      const file = (projectId: string, name: string) =>
+        prisma.storedFile.create({
+          data: {
+            userId: kimId,
+            projectId,
+            key: `users/${kimId}/IMAGE/detach-${run}-${name}.png`,
+            purpose: 'IMAGE',
+            contentType: 'image/png',
+            size: 10,
+            confirmedAt: new Date(),
+          },
+        });
+      const shared = await file(gone, 'shared'); // also shown by heir and younger
+      const unshared = await file(gone, 'unshared'); // shown by its project only
+      const between = await file(alsoGone, 'between'); // shown by the two deleted projects only
+      const kept = await file(heir, 'kept'); // of a project that stays, shown by a deleted one too
+      const ids = [shared, unshared, between, kept].map((f) => f.id);
+      await prisma.projectFileRef.createMany({
+        data: [
+          [gone, shared], [younger, shared], [heir, shared],
+          [gone, unshared],
+          [gone, between], [alsoGone, between],
+          [heir, kept], [gone, kept],
+        ].map(([projectId, f]) => ({ projectId: projectId as string, storedFileId: (f as { id: string }).id })),
+      });
+      try {
+        await app.get(StorageService).detachSharedFiles([gone, alsoGone]);
+        const owners = await prisma.storedFile.findMany({ where: { id: { in: ids } }, select: { id: true, projectId: true } });
+        const ownerOf = (id: string) => owners.find((o) => o.id === id)?.projectId;
+        expect(ownerOf(shared.id)).toBe(heir);
+        expect(ownerOf(unshared.id)).toBe(gone);
+        expect(ownerOf(between.id)).toBe(alsoGone);
+        expect(ownerOf(kept.id)).toBe(heir);
+      } finally {
+        await prisma.projectFileRef.deleteMany({ where: { storedFileId: { in: ids } } });
+        await prisma.storedFile.deleteMany({ where: { id: { in: ids } } });
+      }
     });
 
     it('are deleted by the trash purge, but kept for projects restored in time', async () => {

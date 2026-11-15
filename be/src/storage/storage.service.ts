@@ -382,12 +382,15 @@ export class StorageService implements IProjectFiles {
     // project that shows it, instead of staying in the bucket with no project at all. Its owner and quota stay.
     // A remix that starts showing a file after this statement makes the deletion of the projects fail on the foreign
     // key instead of deleting a file it shows (the next run retries).
+    // The heir subquery reads only the refs of files these projects own (stored_files_project_id_idx, then
+    // project_file_refs_stored_file_id_idx), not the whole project_file_refs table.
     await this.prisma.$executeRaw`
       UPDATE stored_files f SET project_id = heir.project_id
       FROM (
         SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id
         FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
-        WHERE r.project_id <> ALL(${projectIds}::uuid[])
+        WHERE r.stored_file_id IN (SELECT id FROM stored_files WHERE project_id = ANY(${projectIds}::uuid[]))
+          AND r.project_id <> ALL(${projectIds}::uuid[])
         ORDER BY r.stored_file_id, p.created_at, p.id
       ) heir
       WHERE heir.stored_file_id = f.id AND f.project_id = ANY(${projectIds}::uuid[])`;

@@ -491,6 +491,7 @@ model AiGeneration {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([debitOperationId]) // Hoàn xu AI_PATTERN không có kết quả (AiPatternService.refundOrphanedDebits)
   @@map("ai_generations")
 }
 
@@ -781,6 +782,7 @@ model CreditDebit {
   @@unique([operationId, lotId])
   @@index([lotId])
   @@index([userId, createdAt])
+  @@index([reason, createdAt]) // Hoàn xu AI_PATTERN không có kết quả
   @@map("credit_debits")
 }
 

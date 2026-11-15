@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BankTxStatus } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
-  IsDate,
   IsEnum,
   IsIn,
   IsInt,
@@ -15,6 +14,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
+import { IsPageCursor } from '../../common/utils/page-cursor.util';
 
 export const BANK_TX_MAX_LIMIT = 100;
 
@@ -24,11 +24,11 @@ export class BankTransactionsQueryDto {
   @IsEnum(BankTxStatus)
   status?: BankTxStatus;
 
-  @ApiPropertyOptional({ description: '`nextBefore` of the previous page; omitted = from now' })
+  @ApiPropertyOptional({ description: '`nextBefore` of the previous page (opaque); omitted = from the newest' })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  before?: Date;
+  @IsString()
+  @IsPageCursor()
+  before?: string;
 
   @ApiPropertyOptional({ default: 30, maximum: BANK_TX_MAX_LIMIT })
   @IsOptional()

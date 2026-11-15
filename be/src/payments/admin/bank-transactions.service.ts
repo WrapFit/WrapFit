@@ -8,6 +8,7 @@ import {
   PaymentStatus,
   Prisma,
 } from '@prisma/client';
+import { encodePageCursor, olderThan } from '../../common';
 import { PrismaService } from '../../shared/prisma';
 import { PaymentsService } from '../payments.service';
 import { BANK_TX_MAX_LIMIT, type BankTransactionsQueryDto, type ResolveBankTransactionDto } from './bank-transactions.dto';
@@ -104,14 +105,14 @@ export class BankTransactionsService {
     private readonly payments: PaymentsService,
   ) {}
 
-  /** Newest first by arrival; `nextBefore` continues the list, null at the end. */
-  async list({ status, before = new Date(), limit = 30 }: BankTransactionsQueryDto = {}): Promise<{
+  /** Newest first by arrival (`created_at`, then id); `nextBefore` continues the list, null at the end. */
+  async list({ status, before, limit = 30 }: BankTransactionsQueryDto = {}): Promise<{
     entries: BankTransactionView[];
     nextBefore: string | null;
   }> {
     const take = Math.min(Math.max(limit, 1), BANK_TX_MAX_LIMIT);
     const rows = await this.prisma.bankTransaction.findMany({
-      where: { createdAt: { lt: before }, ...(status ? { status } : {}) },
+      where: { ...olderThan(before), ...(status ? { status } : {}) },
       include: { payment: { select: paymentSelect } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: take + 1,
@@ -119,7 +120,7 @@ export class BankTransactionsService {
     const page = rows.slice(0, take);
     return {
       entries: page.map(toView),
-      nextBefore: rows.length > take ? page[page.length - 1].createdAt.toISOString() : null,
+      nextBefore: rows.length > take ? encodePageCursor(page[page.length - 1]) : null,
     };
   }
 

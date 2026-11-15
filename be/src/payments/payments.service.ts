@@ -29,7 +29,7 @@ import {
 } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
 import { CreditsService, PlanService } from '../billing';
-import { ConfigService } from '../common';
+import { ConfigService, encodePageCursor, olderThan } from '../common';
 import { OrdersService } from '../orders';
 import { PrismaService } from '../shared/prisma';
 import type { CreatePaymentDto } from './dto/create-payment.dto';
@@ -211,10 +211,10 @@ export class PaymentsService {
    * The caller's payments, newest first, for "Lịch sử thanh toán". No QR or pay URL: reopen one with `GET /payments/:id`.
    * A PENDING payment past its expiry is reported EXPIRED (the row is updated the next time it is read on its own).
    */
-  async listMine(userId: string, limit: number, before?: Date): Promise<PaymentHistoryPage> {
+  async listMine(userId: string, limit: number, before?: string): Promise<PaymentHistoryPage> {
     const rows = await this.prisma.payment.findMany({
-      where: { userId, ...(before ? { createdAt: { lt: before } } : {}) },
-      orderBy: { createdAt: 'desc' },
+      where: { userId, ...olderThan(before) },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
     });
     const now = new Date();
@@ -239,7 +239,7 @@ export class PaymentsService {
           orderId: metadata.orderId ?? null,
         };
       }),
-      nextBefore: rows.length > limit ? page[page.length - 1].createdAt.toISOString() : null,
+      nextBefore: rows.length > limit ? encodePageCursor(page[page.length - 1]) : null,
     };
   }
 

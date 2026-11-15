@@ -6576,15 +6576,15 @@
     "semantic_hash": ""
   },
   "be/src/ai/ai-pattern.service.spec.ts": {
-    "mtime": 1793458487.467122,
-    "seen": 1794327103.3116891,
-    "ast_hash": "d839249d2311956f443e718bbe58aabf",
+    "mtime": 1794778136.9711783,
+    "seen": 1794778469.079437,
+    "ast_hash": "faecbaea2b17f2636da5a84035d9de74",
     "semantic_hash": ""
   },
   "be/src/ai/ai-pattern.service.ts": {
-    "mtime": 1793458487.467122,
-    "seen": 1794327103.31169,
-    "ast_hash": "c225b9b871dfd45739d4c8ad145fbd47",
+    "mtime": 1794778054.3055112,
+    "seen": 1794778469.0794392,
+    "ast_hash": "be34bf6e04c5f9e5f43015b8ef4fa029",
     "semantic_hash": ""
   },
   "be/src/ai/ai-pricing.spec.ts": {
@@ -6618,9 +6618,9 @@
     "semantic_hash": ""
   },
   "be/src/ai/image/ai-image-reconcile.task.ts": {
-    "mtime": 1793458487.468627,
-    "seen": 1794327103.311695,
-    "ast_hash": "cd3a253917ede6d1a10cf5a226df624e",
+    "mtime": 1794778068.0229585,
+    "seen": 1794778469.079915,
+    "ast_hash": "68dcdb59f3bfa924154ea916bf168ccb",
     "semantic_hash": ""
   },
   "be/src/ai/image/ai-image-refunds.ts": {
@@ -6858,9 +6858,9 @@
     "semantic_hash": ""
   },
   "be/src/auth/auth-cookie.service.ts": {
-    "mtime": 1791644572.7484875,
-    "seen": 1794327103.3117306,
-    "ast_hash": "cf53b53bb1f4bdbaf88c1ceba2129dac",
+    "mtime": 1794778247.2674234,
+    "seen": 1794778469.0843444,
+    "ast_hash": "ced84f23fe4ba32974da39a2a74481c1",
     "semantic_hash": ""
   },
   "be/src/auth/auth-maintenance.task.ts": {
@@ -6882,9 +6882,9 @@
     "semantic_hash": ""
   },
   "be/src/auth/auth.controller.ts": {
-    "mtime": 1791710221.1305451,
-    "seen": 1794327103.3117344,
-    "ast_hash": "c5d4de1e70b4e66e59e883077067dde5",
+    "mtime": 1794778255.5636635,
+    "seen": 1794778469.0846536,
+    "ast_hash": "1c4504145167f3d2b1747140f08ea355",
     "semantic_hash": ""
   },
   "be/src/auth/auth.module.ts": {
@@ -6960,9 +6960,9 @@
     "semantic_hash": ""
   },
   "be/src/auth/strategies/jwt.strategy.ts": {
-    "mtime": 1791661891.3833342,
-    "seen": 1794327103.3117456,
-    "ast_hash": "1a733161b76c92c7ce938233a6a73a1a",
+    "mtime": 1794778247.2681315,
+    "seen": 1794778469.086036,
+    "ast_hash": "c7fd6b484ba04edecc55443e2cc7d8f1",
     "semantic_hash": ""
   },
   "be/src/auth/strategies/oauth-state.store.spec.ts": {
@@ -6972,9 +6972,9 @@
     "semantic_hash": ""
   },
   "be/src/auth/strategies/oauth-state.store.ts": {
-    "mtime": 1791644572.75413,
-    "seen": 1794327103.3117473,
-    "ast_hash": "00c3b382121fdc221bb52e026938e5d1",
+    "mtime": 1794778247.268641,
+    "seen": 1794778469.086171,
+    "ast_hash": "6c59d43e7b96ac54b8187cbf12319e6a",
     "semantic_hash": ""
   },
   "be/src/base/base.module.ts": {
@@ -7152,9 +7152,9 @@
     "semantic_hash": ""
   },
   "be/src/common/constants/cookies.constants.ts": {
-    "mtime": 1791644572.7586408,
-    "seen": 1794327103.3117735,
-    "ast_hash": "482be0dff8341ec3ebe3ab6c21a56d5c",
+    "mtime": 1794778247.2670796,
+    "seen": 1794778469.0903187,
+    "ast_hash": "38c50e8347a6f9e68fcabb40baae7f1c",
     "semantic_hash": ""
   },
   "be/src/common/constants/index.ts": {
@@ -7218,9 +7218,9 @@
     "semantic_hash": ""
   },
   "be/src/common/decorators/throttle-per-session.decorator.ts": {
-    "mtime": 1791710213.1494708,
-    "seen": 1794327103.3117828,
-    "ast_hash": "902f1ea145bb4e2fe4bd398d02eb8d08",
+    "mtime": 1794778247.268641,
+    "seen": 1794778469.0914717,
+    "ast_hash": "2a583dbbddc78696f0ae8f4164ad039e",
     "semantic_hash": ""
   },
   "be/src/common/dto/error-response.dto.ts": {
@@ -7374,9 +7374,9 @@
     "semantic_hash": ""
   },
   "be/src/common/utils/index.ts": {
-    "mtime": 1794776672.8681517,
-    "seen": 1794777222.7448037,
-    "ast_hash": "70a3604db0e0866b02ed03b9706d6999",
+    "mtime": 1794777856.1727407,
+    "seen": 1794778469.0951831,
+    "ast_hash": "d274c469f0ca7504a82705a2fc0d9b53",
     "semantic_hash": ""
   },
   "be/src/common/utils/redis.util.ts": {
@@ -7470,9 +7470,9 @@
     "semantic_hash": ""
   },
   "be/src/events/events.gateway.ts": {
-    "mtime": 1791661891.3833342,
-    "seen": 1794327103.3118186,
-    "ast_hash": "3f19f45d45294e99cdbbc4c5239b5677",
+    "mtime": 1794778251.8290594,
+    "seen": 1794778469.096733,
+    "ast_hash": "4e1a56a4b897be565a7e2f67f6b4286d",
     "semantic_hash": ""
   },
   "be/src/events/events.module.ts": {
@@ -7746,15 +7746,15 @@
     "semantic_hash": ""
   },
   "be/src/orders/orders.service.spec.ts": {
-    "mtime": 1794485224.1164649,
-    "seen": 1794775302.8177717,
-    "ast_hash": "0c81bdfd9d21e18c365419ac2c68fdd9",
+    "mtime": 1794777784.8102012,
+    "seen": 1794778469.1023774,
+    "ast_hash": "cb2af77b8f5db7abe36beddce89e280b",
     "semantic_hash": ""
   },
   "be/src/orders/orders.service.ts": {
-    "mtime": 1794485224.1169848,
-    "seen": 1794775302.8177733,
-    "ast_hash": "9c0f7a42c5a907b5c17b7a1c5e50bc17",
+    "mtime": 1794777778.532838,
+    "seen": 1794778469.102379,
+    "ast_hash": "a5ab77869e961e1c766a276d6c511fb5",
     "semantic_hash": ""
   },
   "be/src/payments/dto/create-payment.dto.ts": {
@@ -7788,9 +7788,9 @@
     "semantic_hash": ""
   },
   "be/src/payments/payments.service.ts": {
-    "mtime": 1794485224.1180243,
-    "seen": 1794775302.8183644,
-    "ast_hash": "2b4bbd9fd21eb594ca27473500b2a5d2",
+    "mtime": 1794777861.4790652,
+    "seen": 1794778469.1034644,
+    "ast_hash": "1be6a8ddb6ba883bd62ea97ac2e92b33",
     "semantic_hash": ""
   },
   "be/src/payments/vietqr.spec.ts": {
@@ -8238,9 +8238,9 @@
     "semantic_hash": ""
   },
   "be/src/storage/storage.service.ts": {
-    "mtime": 1794776862.7526073,
-    "seen": 1794777222.7648232,
-    "ast_hash": "88bc1629b1a9ef0a5d63fdbe03c05986",
+    "mtime": 1794777912.2144828,
+    "seen": 1794778469.115011,
+    "ast_hash": "b6456551bf27bd663f193974035385a3",
     "semantic_hash": ""
   },
   "be/src/swagger.ts": {
@@ -8412,9 +8412,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/ai.e2e-spec.ts": {
-    "mtime": 1793458487.4837277,
-    "seen": 1794327103.3119936,
-    "ast_hash": "59faab191a3f76ef7246081d6d0c0fa0",
+    "mtime": 1794778161.4310448,
+    "seen": 1794778469.1185496,
+    "ast_hash": "51428a0d47d127aa20b4a01f900b11af",
     "semantic_hash": ""
   },
   "be/test/e2e/analytics.e2e-spec.ts": {
@@ -8424,9 +8424,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/app.e2e-spec.ts": {
-    "mtime": 1791662071.4663353,
-    "seen": 1794327103.311995,
-    "ast_hash": "bb8d0a297a6952c0d831d6a0caa98a8f",
+    "mtime": 1794778531.492421,
+    "seen": 1794778701.8535757,
+    "ast_hash": "b40e2b7b401418bc6fe72e1f12afde15",
     "semantic_hash": ""
   },
   "be/test/e2e/auth.e2e-spec.ts": {
@@ -8460,15 +8460,15 @@
     "semantic_hash": ""
   },
   "be/test/e2e/orders.e2e-spec.ts": {
-    "mtime": 1793290884.8922002,
-    "seen": 1794327103.3120008,
-    "ast_hash": "7aa6064818d5202bcf0e6088360f7462",
+    "mtime": 1794777806.949552,
+    "seen": 1794778469.1192858,
+    "ast_hash": "d5b71241bc10b6749c4e709b4718fc58",
     "semantic_hash": ""
   },
   "be/test/e2e/payments.e2e-spec.ts": {
-    "mtime": 1794485224.1200852,
-    "seen": 1794775302.8299942,
-    "ast_hash": "fd085cc4b1548d9160ddb64b464f9bc5",
+    "mtime": 1794777903.6385674,
+    "seen": 1794778469.119288,
+    "ast_hash": "a68384840fc6e41219c45de430cfd7a9",
     "semantic_hash": ""
   },
   "be/test/e2e/projects.e2e-spec.ts": {
@@ -8484,9 +8484,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/storage.e2e-spec.ts": {
-    "mtime": 1791692198.8065934,
-    "seen": 1794327103.3120043,
-    "ast_hash": "588b5011ee3b58cacff0b3bdb188f64c",
+    "mtime": 1794777989.2509708,
+    "seen": 1794778469.119959,
+    "ast_hash": "1c357a5a497ed6ec003673f691014ceb",
     "semantic_hash": ""
   },
   "be/test/e2e/templates.e2e-spec.ts": {
@@ -13758,9 +13758,9 @@
     "semantic_hash": ""
   },
   "be/src/payments/admin/bank-transactions.dto.ts": {
-    "mtime": 1794328517.578537,
-    "seen": 1794330167.884483,
-    "ast_hash": "44a994f0e42fc9461f910780f88ef6f6",
+    "mtime": 1794777856.1737344,
+    "seen": 1794778469.102688,
+    "ast_hash": "c08ab340d6d22b039764730bd821a2f3",
     "semantic_hash": ""
   },
   "be/src/payments/admin/bank-transactions.service.spec.ts": {
@@ -13770,15 +13770,15 @@
     "semantic_hash": ""
   },
   "be/src/payments/admin/bank-transactions.service.ts": {
-    "mtime": 1794328517.6280694,
-    "seen": 1794330167.8844879,
-    "ast_hash": "9866fd26c231a3e7d2657daa2ab85cf1",
+    "mtime": 1794777861.511822,
+    "seen": 1794778469.1028008,
+    "ast_hash": "b3e9cebba6776678c12869ba0643db1f",
     "semantic_hash": ""
   },
   "be/test/e2e/admin-bank-transactions.e2e-spec.ts": {
-    "mtime": 1794498330.3216383,
-    "seen": 1794775302.8292656,
-    "ast_hash": "9786c249fa90450b8a5267005cc4a375",
+    "mtime": 1794777903.6395721,
+    "seen": 1794778469.1184397,
+    "ast_hash": "d71bb6ed9bb1add18f759f013d3ed096",
     "semantic_hash": ""
   },
   "fe/src/api/admin/bank-transactions.ts": {
@@ -13896,9 +13896,9 @@
     "semantic_hash": ""
   },
   "be/src/payments/dto/list-payments.dto.ts": {
-    "mtime": 1794466064.1647675,
-    "seen": 1794775302.8181689,
-    "ast_hash": "06150ba22196d35f13fe04d1f6590963",
+    "mtime": 1794777856.1727407,
+    "seen": 1794778469.1029217,
+    "ast_hash": "b63d390454e48bde7bc463247d7e6c3b",
     "semantic_hash": ""
   },
   "be/src/payments/dto/simulate-transfer.dto.ts": {
@@ -14478,9 +14478,9 @@
     "semantic_hash": ""
   },
   "docs/25_BACKEND_AUDIT_FIX_PLAN.md": {
-    "mtime": 1794776419.5163722,
-    "seen": 1794777222.8413155,
-    "ast_hash": "ba8f92a4a26940e73aae60879b8b053e",
+    "mtime": 1794778670.6000347,
+    "seen": 1794778701.9254162,
+    "ast_hash": "a9f77cc3f768296131dc3396271fff95",
     "semantic_hash": ""
   },
   "be/src/common/filters/all-exceptions.filter.spec.ts": {
@@ -14505,6 +14505,24 @@
     "mtime": 1794777065.391903,
     "seen": 1794777222.7687414,
     "ast_hash": "0cae155d13a4516dc25158906c0bbeac",
+    "semantic_hash": ""
+  },
+  "be/src/auth/auth-cookie.service.spec.ts": {
+    "mtime": 1794778341.4451904,
+    "seen": 1794778469.0843418,
+    "ast_hash": "cc00e4875ac1fd67d1201b9a955750cb",
+    "semantic_hash": ""
+  },
+  "be/src/common/utils/page-cursor.util.spec.ts": {
+    "mtime": 1794777876.7808924,
+    "seen": 1794778469.0952797,
+    "ast_hash": "0baa3040ebfefbc5bca226d321195e6a",
+    "semantic_hash": ""
+  },
+  "be/src/common/utils/page-cursor.util.ts": {
+    "mtime": 1794777843.885578,
+    "seen": 1794778469.0952814,
+    "ast_hash": "91579ef2d9199b8f92e0506d4cbcb588",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {

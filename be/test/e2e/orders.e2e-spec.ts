@@ -6,6 +6,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { createPaidOrder } from './helpers/orders';
 
 /**
  * Sample print orders stored in PostgreSQL (docs/17, S4): they survive an API restart, only their owner reads them,
@@ -89,7 +90,7 @@ describe('Orders API (e2e)', () => {
   it('stores the order, waiting for payment, and keeps it after the API restarts', async () => {
     const created = await as(owner).post('/api/orders/sample').send(order(projectId)).expect(201);
     expect(created.body).toMatchObject({
-      orderCode: expect.stringMatching(/^WF-\d{4}-\d{4}$/),
+      orderCode: expect.stringMatching(/^WF-\d{4}-\d{6}$/),
       userId: owner.id,
       projectId,
       projectTitle: 'Hộp nến 80×80×95',
@@ -124,6 +125,21 @@ describe('Orders API (e2e)', () => {
     await as(stranger).get('/api/orders/00000000-0000-7000-8000-000000000000').expect(404);
     await as(owner).get('/api/orders/not-a-uuid').expect(400);
     expect((await as(stranger).get('/api/orders/my-orders').expect(200)).body).toEqual([]);
+  });
+
+  it('still reads an order with a code of the former 4 digits, and the database refuses other shapes', async () => {
+    const oldId = await createPaidOrder(prisma, owner.id, projectId, run);
+    try {
+      const old = await as(owner).get(`/api/orders/${oldId}`).expect(200);
+      expect(old.body.orderCode).toMatch(/^WF-\d{4}-\d{4}$/);
+      const row = await prisma.order.findUniqueOrThrow({ where: { id: oldId }, select: { orderCode: true } });
+      for (const code of ['WF-2026-12345', 'WF-2026-1234567', 'WF-26-123456']) {
+        await expect(prisma.order.update({ where: { id: oldId }, data: { orderCode: code } })).rejects.toThrow(/chk_orders_order_code/);
+      }
+      await prisma.order.update({ where: { id: oldId }, data: { orderCode: row.orderCode.replace(/-(\d{4})$/, '-00$1') } });
+    } finally {
+      await prisma.order.delete({ where: { id: oldId } });
+    }
   });
 
   it("refuses an order on someone else's project, and a shop that does not take orders", async () => {

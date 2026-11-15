@@ -152,6 +152,22 @@ describe('Admin bank transactions (e2e)', () => {
       }
       expect(seen.has(a.id) && seen.has(b.id)).toBe(true);
     });
+
+    it('keeps both transfers of one millisecond across a page boundary', async () => {
+      const at = new Date(Date.UTC(2001, 0, 1) + (run % 86_400_000));
+      const twins = [await unmatched(3_000, { status: 'IGNORED' }), await unmatched(4_000, { status: 'IGNORED' })];
+      await prisma.bankTransaction.updateMany({ where: { id: { in: twins.map((t) => t.id) } }, data: { createdAt: at } });
+
+      // Start just after them with a bare date (the cursor of the former API), one row per page.
+      const page = async (before: string) =>
+        (await as(admin).get(`/api/admin/bank-transactions?status=IGNORED&limit=1&before=${encodeURIComponent(before)}`).expect(200))
+          .body as { entries: { id: string }[]; nextBefore: string | null };
+      const first = await page(new Date(at.getTime() + 1).toISOString());
+      const second = await page(first.nextBefore!);
+      const expected = twins.map((t) => t.id).sort().reverse();
+      expect([first.entries[0].id, second.entries[0].id]).toEqual(expected);
+      await as(admin).get('/api/admin/bank-transactions?before=2026-11-16T00:00:00.000Z_x').expect(400);
+    });
   });
 
   describe('payment preview', () => {
