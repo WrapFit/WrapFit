@@ -1,12 +1,13 @@
 "use client";
 
 import { BLEED_MM, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, Gift, Grid3x3, Wand2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Check, Gift, Grid3x3, Palette, Wand2 } from "lucide-react";
 import React, { useState } from "react";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { CardTitle, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { studioStep } from "@/features/studio/components/StudioStepper";
 import { ReviewPanel } from "@/features/studio/components/review/ReviewPanel";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
@@ -105,13 +106,14 @@ export function Step6ReviewExport({
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
       <StepHeader
-        title="Kiểm tra & đặt in"
+        title={studioStep(6).title}
         subtitle={`${structureName} · ${dimensions.length} × ${dimensions.width} × ${dimensions.height} mm · ${paper.name}`}
       />
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Stage */}
-        <StudioCard className="flex flex-col overflow-hidden">
+        {/* Sticky with a viewport height: the right column is much taller, and a stage stretched to it left the dieline far down. */}
+        <StudioCard className="flex flex-col overflow-hidden lg:sticky lg:top-[88px] lg:self-start">
           <div className="flex flex-wrap items-center justify-between gap-3 p-4">
             <ViewToggle<"2d" | "3d">
               label="Chế độ xem"
@@ -133,7 +135,7 @@ export function Step6ReviewExport({
           </div>
 
           {/* A definite height: the dieline fits inside it instead of growing with the width and sinking to the bottom. */}
-          <div className="relative mx-4 h-[560px] overflow-hidden rounded-squircle-md bg-landing-canvas lg:h-auto lg:min-h-[560px] lg:flex-1">
+          <div className="relative mx-4 h-[560px] overflow-hidden rounded-squircle-md bg-landing-canvas lg:h-[calc(100dvh-240px)] lg:min-h-[440px]">
             {view === "2d" && piece ? (
               // Read-only: no onElementsChange, nothing moves here.
               <div className="absolute inset-0 flex">
@@ -203,7 +205,21 @@ export function Step6ReviewExport({
 
         {/* Report */}
         <div className="flex flex-col gap-4">
-          {!empty && (
+          {empty ? (
+            // No artwork yet: say so instead of a "100/100" that checked nothing, and lead to the design step.
+            <StudioCard data-tour="s6-status" className="border border-landing-line p-5">
+              <p className="text-xs font-semibold text-fpt-orange-ink">FitCheck™</p>
+              <p className="mt-1 font-landing-heading text-xl font-bold text-landing-ink">Hộp chưa có hình in</p>
+              <p className="mt-1 text-sm leading-6 text-landing-muted">
+                Hộp trơn vẫn đặt in được. Thêm mẫu, chữ hoặc logo thì FitCheck mới kiểm tra được lề an toàn, tràn lề và độ nét của
+                bản in.
+              </p>
+              <button type="button" onClick={onDesign} className={`${PRIMARY_PILL} mt-4 w-full`}>
+                <Palette className="size-4" aria-hidden />
+                Thêm hình in ở bước Thiết kế
+              </button>
+            </StudioCard>
+          ) : (
           <StudioCard data-tour="s6-status" className={cn("p-5", passed ? "bg-orange-50 border border-orange-200" : "bg-danger-bg")}>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -237,7 +253,13 @@ export function Step6ReviewExport({
           )}
 
           <StudioCard data-tour="s6-checks" className="p-5">
-            <CardTitle action={<span className="text-xs text-landing-muted">{RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code) && v.severity !== "info")).length}/{RULES.length} đạt</span>}>
+            <CardTitle
+              action={
+                <span className="text-xs text-landing-muted">
+                  {empty ? "Mới xét khuôn" : `${RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code) && v.severity !== "info")).length}/${RULES.length} đạt`}
+                </span>
+              }
+            >
               Quy tắc sản xuất
             </CardTitle>
             <ul className="mt-3 flex flex-col gap-2">
@@ -310,7 +332,7 @@ export function Step6ReviewExport({
         back={
           <button type="button" onClick={onBack} className={SECONDARY_PILL}>
             <ArrowLeft className="size-4" aria-hidden />
-            Quà & mở hộp
+            {studioStep(5).label}
           </button>
         }
         summary={

@@ -1,4 +1,4 @@
-import type { TourStep } from "@/components/ui";
+import { hasSeenTour, markTourSeen, type TourStep } from "@/components/ui";
 import type { StudioStep } from "./components/StudioStepper";
 
 /**
@@ -13,6 +13,16 @@ import type { StudioStep } from "./components/StudioStepper";
 export const STUDIO_INTRO_TOUR_ID = "studio-intro-v1";
 export const studioStepTourId = (step: StudioStep) => `studio-step-${step}-v1`;
 
+/**
+ * The user skipped the overview: the step guides do not start on their own either (one "Bỏ qua" means "no guide"),
+ * only from the "Hướng dẫn" button. Guides already seen keep their flag.
+ */
+export function skipStudioStepTours() {
+  for (const step of [1, 2, 3, 4, 5, 6] as StudioStep[]) {
+    if (!hasSeenTour(studioStepTourId(step))) markTourSeen(studioStepTourId(step), false);
+  }
+}
+
 const NEXT = '[data-tour="studio-next"]';
 
 export const STUDIO_INTRO_TOUR: TourStep[] = [
@@ -24,7 +34,7 @@ export const STUDIO_INTRO_TOUR: TourStep[] = [
   {
     target: 'nav[aria-label="Các bước thiết kế"]',
     title: "6 bước, đi từ trái sang phải",
-    body: "Khởi đầu → Kích thước → Giấy & hoàn thiện → Thiết kế → Quà & mở hộp → Đặt in. Bước đang làm được tô đậm; **bấm tên một bước** để quay lại sửa.",
+    body: "Kiểu hộp → Kích thước → Giấy & hoàn thiện → Thiết kế → Quà & mở hộp → Đặt in. Bước đang làm được tô đậm; **bấm tên một bước** để quay lại sửa.",
     tryIt: "**Thử bấm tên một bước**: Studio nhảy tới bước đó và hướng dẫn giới thiệu này đóng lại.",
     mascot: "presenting",
   },
@@ -49,16 +59,16 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[aria-label="Cấu trúc hộp"]',
       title: "Chọn kiểu hộp",
-      body: "**Bấm vào một kiểu** trong danh sách. Hộp nắp gài hợp mỹ phẩm, nến; hộp âm dương sang cho quà tặng; hộp kéo cho trang sức; hộp gối cho phụ kiện nhỏ.",
+      body: "**Bấm vào hình một kiểu hộp.** Lọc nhanh theo Hộp, Khay hoặc Thẻ, thiệp, đai ở hàng trên.",
       tryIt: "**Thử bấm một kiểu hộp**: hộp xem trước đổi theo ngay.",
       mascot: "presenting",
     },
     {
-      // The whole stage card, not only the picture, so the 3D / 2D switch and the fold slider are inside the lit area.
+      // The whole preview card, so the 3D / 2D switch is inside the lit area.
       target: '[aria-label^="Xem trước"]',
       title: "Xem hộp trước khi làm",
-      body: "Đây là kiểu hộp bạn vừa chọn. **Đổi giữa** “Hộp 3D” và “Khuôn bế 2D”, **kéo thanh gấp** để xem hộp được gấp thế nào.",
-      tryIt: "**Thử kéo thanh gấp**: hộp 3D gập lại hoặc mở ra theo tay bạn.",
+      body: "Kiểu hộp bạn vừa chọn. **Kéo để xoay**, bấm “Khuôn” để xem khuôn bế phẳng.",
+      tryIt: "**Thử kéo hộp 3D** để xoay nó.",
       mascot: "folding",
     },
     {
@@ -168,9 +178,9 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     },
     {
       target: '[aria-labelledby="step5-scenes"]',
-      title: "Đặt hộp vào bối cảnh",
-      body: "**Chọn một khung cảnh** để xem hộp như ảnh chụp thật, tiện gửi khách duyệt.",
-      tryIt: "**Bấm một khung cảnh**: hộp 3D ở trên đổi nền theo ngay.",
+      title: "Dựng bàn chụp cho hộp",
+      body: "**Chọn một bối cảnh**: hộp được đặt lên mặt bàn thật (đá, gỗ, nhung…) cùng đạo cụ theo dịp. Xoay hộp để căn góc rồi tải ảnh đúng khung đó.",
+      tryIt: "**Bấm một bối cảnh**: mặt bàn, ánh sáng và đạo cụ đổi theo ngay trên khung bên trái.",
       mascot: "presenting",
     },
     {
