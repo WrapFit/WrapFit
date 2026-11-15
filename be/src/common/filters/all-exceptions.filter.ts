@@ -51,6 +51,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // A 429 whose body says when to come back (`retryAfterSeconds`) also says it the standard way.
+    const retryAfter = details?.retryAfterSeconds;
+    if (status === HttpStatus.TOO_MANY_REQUESTS && typeof retryAfter === 'number' && retryAfter > 0) {
+      response.setHeader('Retry-After', String(Math.ceil(retryAfter)));
+    }
+
     response.status(status).json({
       ...details,
       statusCode: status,

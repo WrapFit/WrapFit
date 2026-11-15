@@ -1,5 +1,7 @@
 import {
   BadGatewayException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   Logger,
@@ -37,6 +39,21 @@ const PHOTO_CACHE_SECONDS = 60 * 60;
 /** Bump the version when the cached shape changes. */
 const CACHE_PREFIX = `stock:pexels:v1:${PER_PAGE}:${LOCALE}`;
 
+/**
+ * Budget of calls to Pexels (cache misses only: cached answers are free), counted per hour in Redis.
+ * - Whole key: Pexels allows 200 per hour; the app stops at 180 so it fails on its own terms (STOCK_RATE_LIMITED)
+ *   rather than on Pexels' 429, with room for the calls that pass the check at the same moment and for other users
+ *   of the key (e2e runs, manual tests).
+ * - Per user: a studio session (curated pages, 3 to 5 searches of 2 pages, a few imports) misses the cache about
+ *   20 times; 30 leaves room for that, and 6 users at their cap still fit under 180, so one user paging through
+ *   distinct searches cannot take stock photos away from everyone.
+ * The monthly allowance (20,000) is not guarded: 180 per hour sustained would spend it in 5 days.
+ */
+export const PEXELS_CALLS_PER_HOUR = 180;
+export const USER_PEXELS_CALLS_PER_HOUR = 30;
+const HOUR_MS = 60 * 60 * 1000;
+const BUDGET_PREFIX = 'stock:pexels:calls';
+
 /** A stock photo as the studio lists it. */
 export interface StockPhoto {
   id: number;
@@ -64,6 +81,15 @@ interface PexelsPhoto {
 
 const credit = (photo: Pick<StockPhoto, 'photographer'>) => `Ảnh: ${photo.photographer} / Pexels`;
 const providerError = (message: string) => new BadGatewayException({ code: 'STOCK_PROVIDER_ERROR', message });
+const rateLimited = (retryAfterSeconds: number) =>
+  new HttpException(
+    {
+      code: 'STOCK_RATE_LIMITED',
+      message: 'Stock photo search is busy; try again later (photos already shown keep working)',
+      retryAfterSeconds,
+    },
+    HttpStatus.TOO_MANY_REQUESTS,
+  );
 const tooLarge = () =>
   new UnprocessableEntityException({
     code: 'STOCK_PHOTO_TOO_LARGE',
@@ -88,7 +114,7 @@ export class StockPhotosService {
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
-  async search(query: SearchStockPhotosDto): Promise<{ enabled: boolean; items: StockPhoto[]; page: number; hasMore: boolean }> {
+  async search(userId: string, query: SearchStockPhotosDto): Promise<{ enabled: boolean; items: StockPhoto[]; page: number; hasMore: boolean }> {
     const page = query.page ?? 1;
     if (!this.config.get('stock.enabled')) return { enabled: false, items: [], page, hasMore: false };
     const q = normalizeQuery(query.q);
@@ -100,7 +126,7 @@ export class StockPhotosService {
         ]
       : [`${CACHE_PREFIX}:curated:${page}`, CURATED_CACHE_SECONDS, `/curated?per_page=${PER_PAGE}&page=${page}`];
     const result = await this.cached(cacheKey, ttl, async () => {
-      const body = (await this.call(path)) as { photos?: PexelsPhoto[]; next_page?: string };
+      const body = (await this.call(userId, path)) as { photos?: PexelsPhoto[]; next_page?: string };
       return { items: (body.photos ?? []).map(toStockPhoto), hasMore: !!body.next_page };
     });
     return { enabled: true, page, ...result };
@@ -109,14 +135,14 @@ export class StockPhotosService {
   /**
    * Copies a photo into the user's files (IMAGE upload); its public URL, size and credit. 403 when the quota is full
    * (checked before downloading, and again with the size actually stored), 422 for an original above
-   * MAX_DOWNLOAD_BYTES.
+   * MAX_DOWNLOAD_BYTES, 429 when the photo lookup misses the cache and the Pexels budget is spent.
    */
   async import(userId: string, id: number): Promise<{ url: string; width: number; height: number; attribution: string; pageUrl: string }> {
     if (!this.config.get('stock.enabled')) throw new ServiceUnavailableException({ code: 'STOCK_UNAVAILABLE', message: 'Stock photos are not configured' });
     if (!this.storage.enabled) throw new ServiceUnavailableException({ code: 'STORAGE_UNAVAILABLE', message: 'File storage is not configured' });
     // Early answer for a full account: nothing is downloaded. The space itself is held below, once the size is known.
     await this.storage.assertQuota(userId, 1);
-    const photo = await this.cached(`${CACHE_PREFIX}:photo:${id}`, PHOTO_CACHE_SECONDS, () => this.call(`/photos/${id}`) as Promise<PexelsPhoto>);
+    const photo = await this.cached(`${CACHE_PREFIX}:photo:${id}`, PHOTO_CACHE_SECONDS, () => this.call(userId, `/photos/${id}`) as Promise<PexelsPhoto>);
     if (!photo?.src?.original) throw new NotFoundException('Stock photo not found');
 
     // shortcut: the photo is downloaded (up to MAX_DOWNLOAD_BYTES) and decoded by sharp inside the API process, which
@@ -204,7 +230,44 @@ export class StockPhotosService {
     return Buffer.concat(chunks);
   }
 
-  private async call(path: string): Promise<unknown> {
+  /**
+   * Spends one Pexels call of `userId` and of the whole key, or answers 429 STOCK_RATE_LIMITED when either is spent.
+   * Sliding hour (two clock-hour counters, the previous one weighted by the part of it still inside the last hour),
+   * so a burst at the end of one hour and the start of the next cannot pass twice the budget. Redis down: allowed.
+   *
+   * shortcut: check and spend are two Redis round trips, so calls arriving at the same moment can all pass the check;
+   * the overshoot is a few calls, inside the 20 left under Pexels' 200. A Lua script would make it exact.
+   */
+  private async spendPexelsCall(userId: string): Promise<void> {
+    const now = Date.now();
+    const hour = Math.floor(now / HOUR_MS);
+    const keys = (scope: string) => [`${BUDGET_PREFIX}:${scope}:${hour}`, `${BUDGET_PREFIX}:${scope}:${hour - 1}`];
+    const [userNow, userBefore] = keys(`user:${userId}`);
+    const [allNow, allBefore] = keys('all');
+    const counts = await this.redis.mget(userNow, userBefore, allNow, allBefore).catch(() => null);
+    if (!counts) return; // Redis down: fail open, like the cache (RedisModule logs the outage)
+    const [un, ub, an, ab] = counts.map((count) => Number(count ?? 0));
+    const elapsed = (now % HOUR_MS) / HOUR_MS;
+    const wait = Math.max(waitSeconds(un, ub, USER_PEXELS_CALLS_PER_HOUR, elapsed), waitSeconds(an, ab, PEXELS_CALLS_PER_HOUR, elapsed));
+    if (wait > 0) throw rateLimited(wait);
+    await this.redis
+      .multi()
+      .incr(userNow)
+      .pexpire(userNow, 2 * HOUR_MS)
+      .incr(allNow)
+      .pexpire(allNow, 2 * HOUR_MS)
+      .exec()
+      .catch(() => undefined);
+  }
+
+  /** Pexels answered 429: no call to it until the counters of the whole key say so (about a minute into the next hour). */
+  private async markKeySpent(): Promise<void> {
+    const key = `${BUDGET_PREFIX}:all:${Math.floor(Date.now() / HOUR_MS)}`;
+    await this.redis.set(key, String(PEXELS_CALLS_PER_HOUR), 'PX', 2 * HOUR_MS).catch(() => undefined);
+  }
+
+  private async call(userId: string, path: string): Promise<unknown> {
+    await this.spendPexelsCall(userId);
     let response: Response;
     try {
       response = await fetch(`${PEXELS_API}${path}`, {
@@ -216,12 +279,32 @@ export class StockPhotosService {
       throw providerError('Pexels is unreachable');
     }
     if (response.status === 404) throw new NotFoundException('Stock photo not found');
+    if (response.status === 429) {
+      this.logger.warn('Pexels answered 429: the key is over its hourly or monthly allowance');
+      await this.markKeySpent();
+      throw rateLimited(Number(response.headers?.get('retry-after')) || 60);
+    }
     if (!response.ok) {
       this.logger.warn(`Pexels answered ${response.status} for ${path.split('?')[0]}`);
       throw providerError(`Pexels answered ${response.status}`);
     }
     return response.json();
   }
+}
+
+/**
+ * Seconds before one more call fits in `limit` per sliding hour (0: it fits now), `current` and `previous` being the
+ * calls counted in this clock hour and the one before, `elapsed` the part of this hour gone (0 to 1).
+ */
+export function waitSeconds(current: number, previous: number, limit: number, elapsed: number): number {
+  const room = limit - 1; // the estimate must stay at most this before the call is added
+  // Hours to whole seconds, at least 1; the epsilon keeps float noise (90.0000001) from adding a second.
+  const toSeconds = (hours: number) => Math.max(1, Math.ceil(hours * (HOUR_MS / 1000) - 1e-6));
+  if (current + previous * (1 - elapsed) <= room) return 0;
+  // Within this hour, only the weight of the previous hour shrinks.
+  if (current <= room) return toSeconds(1 - (room - current) / previous - elapsed);
+  // Over the budget in this hour alone: wait for the next one, then for this hour's weight to shrink enough.
+  return toSeconds(1 - elapsed + 1 - room / current);
 }
 
 /** https on PHOTO_HOST exactly: no other scheme, host, port or credentials. */

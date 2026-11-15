@@ -1,10 +1,16 @@
 // Stock photos through the backend (docs/23 S15, D10): the key stays on the server, placed photos are copied.
-import { BadGatewayException, ForbiddenException, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ForbiddenException,
+  HttpException,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import sharp from 'sharp';
 import type { ConfigService } from '../common';
 import type { StorageService } from '../storage';
-import { isPhotoUrl, MAX_DOWNLOAD_BYTES, StockPhotosService } from './stock-photos.service';
+import { isPhotoUrl, MAX_DOWNLOAD_BYTES, PEXELS_CALLS_PER_HOUR, StockPhotosService, USER_PEXELS_CALLS_PER_HOUR, waitSeconds } from './stock-photos.service';
 
 const PHOTO = {
   id: 42,
@@ -26,6 +32,31 @@ const download = (body: Uint8Array | ReadableStream<Uint8Array>, contentLength?:
   const headers = new Headers({ 'content-type': 'image/jpeg' });
   if (contentLength !== undefined) headers.set('content-length', contentLength);
   return new Response(body as BodyInit, { status: 200, headers });
+};
+
+/** In-memory Redis: the commands the service sends (get / set / mget / multi with incr + pexpire). */
+const memoryRedis = (store: Map<string, string>) => {
+  const multi = () => {
+    const ops: (() => void)[] = [];
+    const chain = {
+      incr: (key: string) => (ops.push(() => store.set(key, String(Number(store.get(key) ?? 0) + 1))), chain),
+      pexpire: () => chain,
+      exec: async () => ops.map((op) => op()),
+    };
+    return chain;
+  };
+  return {
+    get: jest.fn(async (key: string) => store.get(key) ?? null),
+    set: jest.fn(async (key: string, value: string) => void store.set(key, value)),
+    mget: jest.fn(async (...keys: string[]) => keys.map((key) => store.get(key) ?? null)),
+    multi: jest.fn(multi),
+  } as unknown as Redis;
+};
+/** Redis down: every command fails fast (enableOfflineQueue: false). */
+const downRedis = () => {
+  const fail = () => Promise.reject(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
+  const chain = { incr: () => chain, pexpire: () => chain, exec: fail };
+  return { get: jest.fn(fail), set: jest.fn(fail), mget: jest.fn(fail), multi: jest.fn(() => chain) } as unknown as Redis;
 };
 
 describe('StockPhotosService', () => {
@@ -50,23 +81,20 @@ describe('StockPhotosService', () => {
     assertQuota.mockReset().mockResolvedValue(undefined);
     reserveUpload.mockReset().mockResolvedValue({ id: 'file-1' });
     store = new Map();
-    redis = {
-      get: jest.fn(async (key: string) => store.get(key) ?? null),
-      set: jest.fn(async (key: string, value: string) => void store.set(key, value)),
-    } as unknown as Redis;
+    redis = memoryRedis(store);
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 
   it('is off without a key, without calling Pexels', async () => {
     const service = build('');
-    await expect(service.search({ q: 'bánh' })).resolves.toEqual({ enabled: false, items: [], page: 1, hasMore: false });
+    await expect(service.search('u1', { q: 'bánh' })).resolves.toEqual({ enabled: false, items: [], page: 1, hasMore: false });
     await expect(service.import('u1', 42)).rejects.toBeInstanceOf(ServiceUnavailableException);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('searches with the key on the server and lists previews with their credit', async () => {
     fetchMock.mockResolvedValue(json({ photos: [PHOTO], next_page: 'x' }));
-    const result = await build().search({ q: 'bánh quy', page: 2 });
+    const result = await build().search('u1', { q: 'bánh quy', page: 2 });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/search?query=b%C3%A1nh+quy&per_page=24&page=2');
     expect(init.headers).toEqual({ Authorization: 'secret' });
@@ -80,49 +108,145 @@ describe('StockPhotosService', () => {
 
   it('lists curated photos without words', async () => {
     fetchMock.mockResolvedValue(json({ photos: [] }));
-    await build().search({});
+    await build().search('u1', {});
     expect(fetchMock.mock.calls[0][0]).toContain('/curated?per_page=24&page=1');
   });
 
   it('turns a Pexels failure into 502', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
-    await expect(build().search({ q: 'x' })).rejects.toBeInstanceOf(BadGatewayException);
+    await expect(build().search('u1', { q: 'x' })).rejects.toBeInstanceOf(BadGatewayException);
   });
 
   describe('search cache (Redis)', () => {
     it('calls Pexels once for two searches with the same keyword', async () => {
       fetchMock.mockResolvedValue(json({ photos: [PHOTO], next_page: 'x' }));
       const service = build();
-      const first = await service.search({ q: 'Bánh  quy ', page: 2 });
-      const second = await service.search({ q: 'bánh quy', page: 2 });
+      const first = await service.search('u1', { q: 'Bánh  quy ', page: 2 });
+      const second = await service.search('u1', { q: 'bánh quy', page: 2 });
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(second).toEqual(first);
       expect(redis.set).toHaveBeenCalledWith(expect.stringContaining(':search:2:bánh quy'), expect.any(String), 'EX', 600);
 
       // Another page is another answer.
-      await service.search({ q: 'bánh quy', page: 3 });
+      await service.search('u1', { q: 'bánh quy', page: 3 });
       expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
     it('keeps curated pages one hour', async () => {
       fetchMock.mockResolvedValue(json({ photos: [] }));
       const service = build();
-      await service.search({});
-      await service.search({ page: 1 });
+      await service.search('u1', {});
+      await service.search('u1', { page: 1 });
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(redis.set).toHaveBeenCalledWith(expect.stringContaining(':curated:1'), expect.any(String), 'EX', 3600);
     });
 
     it('falls back to Pexels when Redis is down', async () => {
       fetchMock.mockResolvedValue(json({ photos: [PHOTO] }));
-      const down = {
-        get: jest.fn().mockRejectedValue(new Error('Stream isn\'t writeable')),
-        set: jest.fn().mockRejectedValue(new Error('Stream isn\'t writeable')),
-      } as unknown as Redis;
+      const down = downRedis();
       const service = build('secret', down);
-      await expect(service.search({ q: 'hộp' })).resolves.toMatchObject({ enabled: true, items: [{ id: 42 }] });
-      await expect(service.search({ q: 'hộp' })).resolves.toMatchObject({ enabled: true });
+      await expect(service.search('u1', { q: 'hộp' })).resolves.toMatchObject({ enabled: true, items: [{ id: 42 }] });
+      await expect(service.search('u1', { q: 'hộp' })).resolves.toMatchObject({ enabled: true });
       expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Pexels budget (200 per hour for the whole key)', () => {
+    const HOUR = 60 * 60 * 1000;
+    let now: jest.SpyInstance;
+    beforeEach(() => {
+      now = jest.spyOn(Date, 'now').mockReturnValue(500_000 * HOUR + HOUR / 2); // half way through an hour
+      fetchMock.mockImplementation(async () => json({ photos: [PHOTO] }));
+    });
+    afterEach(() => now.mockRestore());
+
+    /** Distinct searches of `userId` until one is refused; the error, or undefined when all `count` passed. */
+    const searchUntilRefused = async (service: StockPhotosService, userId: string, count: number) => {
+      for (let i = 0; i < count; i++) {
+        const error = await service.search(userId, { q: `${userId} hộp ${i}` }).then(() => undefined, (e: unknown) => e);
+        if (error) return error as HttpException;
+      }
+      return undefined;
+    };
+
+    it('answers 429 STOCK_RATE_LIMITED to a user over the hourly budget, while a cached search still answers', async () => {
+      const service = build();
+      expect(await searchUntilRefused(service, 'u1', USER_PEXELS_CALLS_PER_HOUR)).toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledTimes(USER_PEXELS_CALLS_PER_HOUR);
+
+      const refused = await service.search('u1', { q: 'one more' }).catch((e: HttpException) => e);
+      expect(refused).toBeInstanceOf(HttpException);
+      expect((refused as HttpException).getStatus()).toBe(429);
+      expect((refused as HttpException).getResponse()).toMatchObject({ code: 'STOCK_RATE_LIMITED', retryAfterSeconds: expect.any(Number) });
+      expect(((refused as HttpException).getResponse() as { retryAfterSeconds: number }).retryAfterSeconds).toBeGreaterThan(0);
+      expect(fetchMock).toHaveBeenCalledTimes(USER_PEXELS_CALLS_PER_HOUR);
+
+      // Already cached: free, answered.
+      await expect(service.search('u1', { q: 'u1 hộp 0' })).resolves.toMatchObject({ enabled: true, items: [{ id: 42 }] });
+      expect(fetchMock).toHaveBeenCalledTimes(USER_PEXELS_CALLS_PER_HOUR);
+    });
+
+    it('keeps serving a second user while the first is blocked', async () => {
+      const service = build();
+      await searchUntilRefused(service, 'u1', USER_PEXELS_CALLS_PER_HOUR);
+      await expect(service.search('u1', { q: 'blocked' })).rejects.toBeInstanceOf(HttpException);
+      await expect(service.search('u2', { q: 'u2 hộp' })).resolves.toMatchObject({ enabled: true });
+    });
+
+    it('also spends the budget on the photo lookup of an import', async () => {
+      const service = build();
+      await searchUntilRefused(service, 'u1', USER_PEXELS_CALLS_PER_HOUR);
+      const refused = await service.import('u1', 42).catch((e: HttpException) => e);
+      expect((refused as HttpException).getStatus()).toBe(429);
+      expect(putGeneratedFile).not.toHaveBeenCalled();
+    });
+
+    it('stops calling Pexels at the threshold of the whole key, before Pexels does', async () => {
+      const service = build();
+      for (let user = 0; user * USER_PEXELS_CALLS_PER_HOUR < PEXELS_CALLS_PER_HOUR + USER_PEXELS_CALLS_PER_HOUR; user++) {
+        await searchUntilRefused(service, `user${user}`, USER_PEXELS_CALLS_PER_HOUR);
+      }
+      expect(fetchMock).toHaveBeenCalledTimes(PEXELS_CALLS_PER_HOUR);
+      expect(PEXELS_CALLS_PER_HOUR).toBeLessThan(200);
+
+      const refused = await service.search('newcomer', { q: 'first search' }).catch((e: HttpException) => e);
+      expect((refused as HttpException).getResponse()).toMatchObject({ code: 'STOCK_RATE_LIMITED' });
+      expect(fetchMock).toHaveBeenCalledTimes(PEXELS_CALLS_PER_HOUR);
+    });
+
+    it('counts the previous hour too: the budget does not come back all at once on the hour', async () => {
+      const service = build();
+      await searchUntilRefused(service, 'u1', USER_PEXELS_CALLS_PER_HOUR);
+      now.mockReturnValue(500_001 * HOUR + 60_000); // one minute into the next hour
+      await expect(service.search('u1', { q: 'next hour' })).rejects.toBeInstanceOf(HttpException);
+      now.mockReturnValue(500_001 * HOUR + HOUR / 2); // half the old calls have aged out
+      await expect(service.search('u1', { q: 'later' })).resolves.toMatchObject({ enabled: true });
+    });
+
+    it('turns a 429 from Pexels into STOCK_RATE_LIMITED and stops calling it for everyone', async () => {
+      fetchMock.mockResolvedValueOnce({ ok: false, status: 429, headers: new Headers({ 'retry-after': '120' }), json: async () => ({}) });
+      const service = build();
+      const refused = await service.search('u1', { q: 'busy' }).catch((e: HttpException) => e);
+      expect((refused as HttpException).getStatus()).toBe(429);
+      expect((refused as HttpException).getResponse()).toMatchObject({ code: 'STOCK_RATE_LIMITED', retryAfterSeconds: 120 });
+
+      await expect(service.search('u2', { q: 'other' })).rejects.toBeInstanceOf(HttpException);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not block a request when Redis is down', async () => {
+      const service = build('secret', downRedis());
+      await expect(searchUntilRefused(service, 'u1', USER_PEXELS_CALLS_PER_HOUR + 5)).resolves.toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledTimes(USER_PEXELS_CALLS_PER_HOUR + 5);
+    });
+
+    it('says how long until one more call fits in the sliding hour', () => {
+      expect(waitSeconds(0, 0, 30, 0.5)).toBe(0);
+      expect(waitSeconds(29, 0, 30, 0.5)).toBe(0);
+      // 10 now + 40 last hour weighted 0.5 = 30: one more fits once the old hour weighs 19 (0.475), 90 s later.
+      expect(waitSeconds(10, 40, 30, 0.5)).toBe(90);
+      // 30 in this hour alone: the end of this hour (1800 s), then 1/30 of the next one (120 s).
+      expect(waitSeconds(30, 0, 30, 0.5)).toBe(1920);
     });
   });
 
