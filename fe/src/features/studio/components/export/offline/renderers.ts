@@ -7,6 +7,9 @@
 // - images are embedded (PDF XObjects, SVG data URIs) up to 450 DPI at their printed size, SVG logos at 600 DPI;
 // - barcodes and QR codes are vectors in K100 on a white knockout; TrimBox = dielines, BleedBox +3 mm.
 import {
+  areaCmyk,
+  foldTicks,
+  pathBoxArea,
   barcodeArt,
   BLEED_BOX_MM,
   ean13Digits,
@@ -460,6 +463,7 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
         `<path fill="${COLORS.info}" d="${labelPath(info, marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
     ...(finishSvg ? [layer("finish", "Finish", "", finishSvg)] : []),
+    layer("crease", "Crease", ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes("crease")),
     layer("cut", "CutContour", ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes("cut")),
     layer(
       "dimensions",
@@ -824,6 +828,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
   const ocgs = [
     ["OCart", "Artwork", true],
     ["OCfin", "Finish", true],
+    ["OCcrease", "Crease", true],
     ["OCcut", "CutContour", true],
     ["OCdim", "Dimensions", false],
   ] as const;
@@ -871,7 +876,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
         if (shape.stroke) content.push(`${ink(hexToCmyk(shape.stroke)).replace(/k$/, "K")} ${f((shape.strokeWidth ?? LINE_MM) * k)} w`, path, "S");
         continue;
       }
-      const fill = shape.fill ? ink(shape.cmyk ?? hexToCmyk(shape.fill)) : "";
+      const fill = shape.fill ? ink(shape.cmyk ?? areaCmyk(shape.fill, pathBoxArea(shape.d))) : "";
       const stroke = shape.stroke
         ? `${ink(hexToCmyk(shape.stroke)).replace(/k$/, "K")} ${f((shape.strokeWidth ?? LINE_MM) * k)} w ${shape.round ? "1 J 1 j" : "0 J 0 j"}`
         : "";
@@ -984,11 +989,12 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     content.push("Q EMC");
   }
 
-  const strokeLayer = (type: "cut", ocg: string, cs: string, dash: string) => {
+  const strokeLayer = (type: "cut" | "crease", ocg: string, cs: string, dash: string) => {
     const paths = layout.strokes.filter((s) => s.type === type).map((s) => pathToPdf(s.d, map) + " S");
     content.push(`/OC /${ocg} BDC q /GSop gs /${cs} CS 1 SCN ${f(LINE_MM * k)} w ${dash} 1 J 1 j`, ...paths, "Q EMC");
   };
-  // No crease layer: the dashed fold lines are not printed (same as the server file).
+  // Fold lines for the die maker (spot Crease, dashed, overprinted); the home-print sheet gets fold ticks instead.
+  if (!options.homePrint) strokeLayer("crease", "OCcrease", "CsCrease", `[${f(DASH_MM * k)} ${f(DASH_MM * k)}] 0 d`);
   strokeLayer("cut", "OCcut", "CsCut", "[] 0 d");
 
   const marks = dimensionMarks(layout);
@@ -1013,6 +1019,8 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
       content.push(`${map(x + sxDir * gap, y).map(f).join(" ")} m ${map(x + sxDir * (gap + len), y).map(f).join(" ")} l S`);
       content.push(`${map(x, y + syDir * gap).map(f).join(" ")} m ${map(x, y + syDir * (gap + len)).map(f).join(" ")} l S`);
     }
+    // Fold ticks in the margin, in line with each crease (the fold lines themselves stay off the artwork).
+    for (const [x1, y1, x2, y2] of foldTicks(layout.strokes)) content.push(`${map(x1, y1).map(f).join(" ")} m ${map(x2, y2).map(f).join(" ")} l S`);
     const rx = -ox + 10;
     const ry = pageH - oy - 8;
     content.push(`${map(rx, ry).map(f).join(" ")} m ${map(rx + 50, ry).map(f).join(" ")} l S`);

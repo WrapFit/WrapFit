@@ -405,10 +405,9 @@ describe('print renderers', () => {
   it('writes a layered SVG at true size with the text laid out like the canvas', () => {
     const svg = renderSvg(layoutOf('tuck-top'));
     expect(svg).toMatch(/<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" [^>]*width="[\d.]+mm" height="[\d.]+mm"/);
-    for (const layer of ['artwork', 'cut', 'dimensions']) expect(svg).toContain(`<g id="${layer}"`);
-    // No dashed fold lines in the print file.
-    expect(svg).not.toContain('<g id="crease"');
-    expect(svg).not.toContain('stroke-dasharray');
+    for (const layer of ['artwork', 'crease', 'cut', 'dimensions']) expect(svg).toContain(`<g id="${layer}"`);
+    // Fold lines dashed on their own layer (cutting plotters score them).
+    expect(svg).toContain('stroke-dasharray="4,4"');
     expect(svg).toContain('stroke="#E53E3E"');
     // Texts are outlined: filled paths in the colour of the element, no font needed to open the file.
     expect(svg).not.toContain('<text');
@@ -509,7 +508,7 @@ describe('print renderers', () => {
     // Dimensions is shown on screen, never printed.
     expect(text).toMatch(/\/Name \(Dimensions\)\s+\/Usage <<\s+\/Print <<\s+\/PrintState \/OFF/);
     expect(text).toMatch(/\[\/Separation \/CutContour \/DeviceCMYK/);
-    expect(text).not.toMatch(/\/Name \(Crease\)/);
+    expect(text).toMatch(/\[\/Separation \/Crease \/DeviceCMYK/);
     expect(text).toMatch(/\/OP true\s+\/op true\s+\/OPM 1/);
 
     const box = (name: string) => /\[([\d. ]+)\]/.exec(text.slice(text.indexOf(`/${name}`)))![1].split(' ').map(Number);
