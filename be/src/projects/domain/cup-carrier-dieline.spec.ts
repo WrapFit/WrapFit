@@ -2,6 +2,7 @@ import {
   boxFrameOf,
   type BoxDimensions,
   checkBox,
+  cupCarrierSizeForCups,
   cupCarrierSizesOf,
   dimensionRuleErrors,
   type DielineGeometry,
@@ -124,6 +125,23 @@ describe('Cup carrier dieline (khay xách ly)', () => {
     expect(under?.message).toContain('lỗ đặt ly');
     expect(dimensionRuleErrors('cup-carrier', { length: 60, width: 95, height: 60 })[0]?.field).toBe('length');
     expect(dimensionRuleErrors('cup-carrier', { length: 190, width: 95, height: 60 })).toEqual([]);
+  });
+
+  it('resizes with the number of cups so every cup keeps its room', () => {
+    const base = { length: 190, width: 95, height: 60, paperThickness: T, cells: { rows: 1, cols: 2 } };
+    const hole = cupCarrierSizesOf(base).cupDiameter;
+    const four = cupCarrierSizeForCups(base, { rows: 1, cols: 4 });
+    expect([four.length, four.width, four.height]).toEqual([380, 95, 60]);
+    expect(cupCarrierSizesOf(four).cupDiameter).toBeCloseTo(hole);
+    const eight = cupCarrierSizeForCups(four, { rows: 2, cols: 4 });
+    expect([eight.length, eight.width]).toEqual([380, 190]);
+    expect(cupCarrierSizeForCups(eight, { rows: 1, cols: 2 })).toMatchObject({ length: 190, width: 95 });
+    // A carrier too small to cut any hole restarts from the standard cup.
+    const small = { length: 120, width: 80, height: 60, paperThickness: T, cells: { rows: 1, cols: 4 } };
+    expect(cupCarrierSizesOf(small).cupDiameter).toBe(0);
+    const fixed = cupCarrierSizeForCups(small, { rows: 1, cols: 3 });
+    expect([fixed.length, fixed.width]).toEqual([285, 95]);
+    expect(cupCarrierSizesOf(fixed).cupDiameter).toBeGreaterThan(0);
   });
 
   it('is quoted per carrier', () => {

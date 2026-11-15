@@ -68,6 +68,32 @@ export function cupCarrierSizesOf({ length, width, height, paperThickness: t, ce
   };
 }
 
+/** Shortest carrier that still has room for the hand hole, mm. */
+export const CUP_CARRIER_MIN_LENGTH_MM = 70;
+/** Board per cup along a row when the carrier has no usable size to go by: a Ø 90 mm rim + 5 mm, mm. */
+export const CARRIER_STANDARD_PITCH_MM = 95;
+
+/**
+ * Size of the carrier after its number of cups changes: every cup keeps the room it had (length per cup, depth per
+ * row), so the carrier grows or shrinks with the count instead of squeezing the holes. A carrier too small to cut any
+ * hole restarts from the standard cup. Only length and width change; the caller clamps them to the structure's limits.
+ */
+export function cupCarrierSizeForCups(dimensions: BoxDimensions, cups: { rows: number; cols: number }): BoxDimensions {
+  const old = cupCarrierSizesOf(dimensions);
+  const next = cupCarrierSizesOf({ ...dimensions, cells: cups });
+  const sized = (pitchL: number, pitchW: number): BoxDimensions => ({
+    ...dimensions,
+    cells: { rows: next.rows, cols: next.cols },
+    length: Math.max(CUP_CARRIER_MIN_LENGTH_MM, Math.round(next.cols * pitchL * 10) / 10),
+    width: Math.round(next.rows * pitchW * 10) / 10,
+  });
+  if (old.cupDiameter > 0) {
+    const kept = sized(dimensions.length / old.cols, dimensions.width / old.rows);
+    if (cupCarrierSizesOf(kept).cupDiameter > 0) return kept;
+  }
+  return sized(CARRIER_STANDARD_PITCH_MM, CARRIER_STANDARD_PITCH_MM);
+}
+
 export function generateCupCarrierDieline(dimensions: BoxDimensions): DielineGeometry {
   const s = cupCarrierSizesOf(dimensions);
   const { L, W, H, shoulder, handle } = s;

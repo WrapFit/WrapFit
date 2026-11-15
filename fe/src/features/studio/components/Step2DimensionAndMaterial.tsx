@@ -22,7 +22,9 @@ import {
   DEFAULT_CELLS,
   DEFAULT_CUPS,
   MAX_CUPS,
+  cupCarrierSizeForCups,
   cupCarrierSizesOf,
+  insertSizeForCells,
   FLAT_STRUCTURES,
   MAX_CELLS,
   SHEET_ONLY_STRUCTURES,
@@ -252,6 +254,11 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
     change(next, true);
   };
 
+  /** A new number of cups or cells brings its own length and width (each cup or cell keeps its room). */
+  const changeCount = (sized: BoxDimensions) => {
+    change({ ...sized, length: clampInner("length", sized.length), width: clampInner("width", sized.width) }, true);
+  };
+
   const resetToInitial = () => {
     change(initial.current, true);
   };
@@ -408,7 +415,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           {boxType === "insert" && (
             <CellsCard
               cells={draft.cells ?? DEFAULT_CELLS}
-              onChange={(cells) => change({ ...draft, cells }, true)}
+              onChange={(cells) => changeCount(insertSizeForCells(draft, cells))}
             />
           )}
 
@@ -417,7 +424,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             <CupsCard
               cups={draft.cells ?? DEFAULT_CUPS}
               diameter={cupCarrierSizesOf(draft).cupDiameter}
-              onChange={(cells) => change({ ...draft, cells }, true)}
+              onChange={(cells) => changeCount(cupCarrierSizeForCups(draft, cells))}
             />
           )}
 
@@ -719,7 +726,7 @@ function CupsCard({
       <p className="mt-1 text-caption text-fg-muted">
         {diameter > 0
           ? `${cups.rows * cups.cols} ly, lỗ đặt ly Ø ${Math.round(diameter)} mm: chọn ly có miệng lớn hơn lỗ 3–8 mm để ly treo bằng vành.`
-          : "Khay quá nhỏ cho số ly này: tăng chiều dài, chiều sâu hoặc bớt số ly."}
+          : "Khay quá nhỏ cho số ly này: tăng chiều dài, chiều sâu hoặc chọn lại số ly để khay tự giãn theo."}
       </p>
       <div className="mt-3 flex flex-wrap gap-4">
         <SegmentedSwitch label="Hàng" value={String(cups.rows)} options={options(MAX_CUPS.rows)} onChange={(v) => onChange({ ...cups, rows: Number(v) })} />
