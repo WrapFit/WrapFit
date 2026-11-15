@@ -260,7 +260,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                 Mã QR đã có trên hộp
               </p>
             )}
-            <button type="button" onClick={() => onOpenQrModal?.()} className={`${PRIMARY_PILL} mt-3 w-full`}>
+            <button type="button" onClick={() => onOpenQrModal?.()} className={`${PRIMARY_PILL} mt-3`}>
               <Gift className="size-4" aria-hidden />
               {hasUnboxingQr ? "Sửa lời chúc" : "Viết lời chúc & tạo mã QR"}
             </button>

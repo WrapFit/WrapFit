@@ -1,12 +1,12 @@
 "use client";
 
 import { BLEED_MM, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, Gift, Grid3x3, Palette, Wand2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Check, Gift, Grid3x3, Palette, ShieldCheck, Wand2 } from "lucide-react";
 import React, { useState } from "react";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { PRIMARY_PILL, SECONDARY_PILL, SectionCard, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
 import { studioStep } from "@/features/studio/components/StudioStepper";
 import { ReviewPanel } from "@/features/studio/components/review/ReviewPanel";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
@@ -102,6 +102,11 @@ export function Step6ReviewExport({
   const empty = report.violations.some((v) => v.code === "EMPTY_DESIGN");
   const fixable = report.violations.some((v) => (["CUT_OVERLAP", "CREASE_OVERLAP", "BLEED_INSUFFICIENT"].includes(v.code) || (v.code === "READING_DIRECTION" && v.severity === "warning")));
   const piece = pieces[pieceIndex] ?? pieces[0];
+  // Notes (info) do not fail a rule.
+  const ruleStates = RULES.map((rule) => {
+    const hits = report.violations.filter((v) => rule.codes.includes(v.code) && v.severity !== "info");
+    return { rule, hits, error: hits.some((v) => v.severity === "error") };
+  });
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
@@ -214,7 +219,7 @@ export function Step6ReviewExport({
                 Hộp trơn vẫn đặt in được. Thêm mẫu, chữ hoặc logo thì FitCheck mới kiểm tra được lề an toàn, tràn lề và độ nét của
                 bản in.
               </p>
-              <button type="button" onClick={onDesign} className={`${PRIMARY_PILL} mt-4 w-full`}>
+              <button type="button" onClick={onDesign} className={`${PRIMARY_PILL} mt-4`}>
                 <Palette className="size-4" aria-hidden />
                 Thêm hình in ở bước Thiết kế
               </button>
@@ -252,41 +257,43 @@ export function Step6ReviewExport({
             </StudioCard>
           )}
 
-          <StudioCard data-tour="s6-checks" className="p-5">
-            <CardTitle
-              action={
-                <span className="text-xs text-landing-muted">
-                  {empty ? "Mới xét khuôn" : `${RULES.filter((rule) => !report.violations.some((v) => rule.codes.includes(v.code) && v.severity !== "info")).length}/${RULES.length} đạt`}
-                </span>
-              }
-            >
-              Quy tắc sản xuất
-            </CardTitle>
-            <ul className="mt-3 flex flex-col gap-2">
-              {RULES.map((rule) => {
-                // Notes (info) do not fail a rule.
-                const hits = report.violations.filter((v) => rule.codes.includes(v.code) && v.severity !== "info");
-                const error = hits.some((v) => v.severity === "error");
-                return (
-                  <li key={rule.title} className="flex items-start gap-3 rounded-2xl bg-landing-canvas p-3">
-                    <span
-                      className={cn(
-                        "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
-                        hits.length === 0 ? "bg-fpt-orange text-white" : error ? "bg-danger-bg text-danger-fg" : "bg-warning-bg text-warning-fg",
-                      )}
-                    >
-                      {hits.length === 0 ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : <AlertTriangle className="size-3.5" aria-hidden />}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-landing-ink">
-                        {rule.title}
-                        {hits.length > 0 && <span className="ml-1.5 font-normal text-landing-muted">· {hits.length} chỗ</span>}
+          <SectionCard
+            data-tour="s6-checks"
+            icon={ShieldCheck}
+            title="Quy tắc sản xuất"
+            hint={empty ? "Mới xét khuôn" : `${ruleStates.filter((r) => r.hits.length === 0).length}/${RULES.length} đạt`}
+          >
+            {/* Rules that fail, in full, with what to fix; the others as a compact grid (details on hover). */}
+            {ruleStates.some((r) => r.hits.length > 0) && (
+              <ul className="mb-3 flex flex-col gap-2">
+                {ruleStates
+                  .filter((r) => r.hits.length > 0)
+                  .map(({ rule, hits, error }) => (
+                    <li key={rule.title} className={cn("flex items-start gap-2.5 rounded-xl p-3", error ? "bg-danger-bg" : "bg-warning-bg")}>
+                      <AlertTriangle className={cn("mt-0.5 size-4 shrink-0", error ? "text-danger-fg" : "text-warning-fg")} aria-hidden />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-landing-ink">
+                          {rule.title}
+                          <span className="ml-1.5 font-normal text-landing-muted">· {hits.length} chỗ</span>
+                        </span>
+                        <span className="block text-xs leading-5 text-landing-muted">{hits[0].message}</span>
                       </span>
-                      <span className="block text-xs leading-5 text-landing-muted">{hits[0]?.message ?? rule.detail}</span>
+                    </li>
+                  ))}
+              </ul>
+            )}
+            <ul className="grid grid-cols-2 gap-1.5">
+              {ruleStates
+                .filter((r) => r.hits.length === 0)
+                .map(({ rule }) => (
+                  <li key={rule.title} title={rule.detail} className="flex min-w-0 items-center gap-1.5 rounded-lg bg-landing-canvas px-2 py-1.5 text-xs font-medium text-landing-ink">
+                    <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white">
+                      <Check className="size-2.5" strokeWidth={3.5} aria-hidden />
                     </span>
+                    <span className="truncate">{rule.title}</span>
+                    <span className="sr-only">: {rule.detail}</span>
                   </li>
-                );
-              })}
+                ))}
             </ul>
             {fixable && (
               <button type="button" onClick={onAutoFix} className={`${SECONDARY_PILL} mt-3 w-full bg-landing-canvas`}>
@@ -294,7 +301,7 @@ export function Step6ReviewExport({
                 Tự sửa lề an toàn & tràn lề
               </button>
             )}
-          </StudioCard>
+          </SectionCard>
 
         </div>
       </div>

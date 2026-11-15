@@ -12,6 +12,8 @@ import {
   Plus,
   RotateCcw,
   Ruler,
+  Gift,
+  SlidersHorizontal,
   Unlink2,
 } from "lucide-react";
 import {
@@ -44,6 +46,7 @@ import {
 import {
   PRIMARY_PILL,
   SECONDARY_PILL,
+  SectionCard,
   StepActionBar,
   StepHeader,
 } from "@/features/studio/components/studioUi";
@@ -292,12 +295,13 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
         {/* Left Column: Dimension Inputs & Presets */}
         <div className="flex flex-col gap-4">
           {/* Card 1: Kích thước */}
-          <div data-tour="s2-size" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
-            {/* Row 1: Heading & Unit Segmented Switch */}
-            <div className="flex items-center justify-between pb-3">
-              <h2 className="font-landing-heading text-title font-bold text-slate-900">
-                Kích thước
-              </h2>
+          <SectionCard
+            data-tour="s2-size"
+            tone="accent"
+            icon={Ruler}
+            title="Kích thước"
+            hint={sheetOnly ? "Ngang × cao" : "Dài × rộng × cao"}
+            action={
               <SegmentedSwitch
                 label="Đơn vị"
                 value={unit}
@@ -308,10 +312,11 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 ]}
                 onChange={setUnit}
               />
-            </div>
-
-            {/* Row 2: Basis Segmented Switch & Action Icons */}
-            <div className="flex items-center justify-between border-t border-slate-100 py-3">
+            }
+            bodyClassName="pt-3 sm:pt-3"
+          >
+            {/* Basis & quick actions */}
+            <div className="flex items-center justify-between pb-3">
               <SegmentedSwitch
                 label="Đo theo"
                 value={basis}
@@ -374,15 +379,15 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             </div>
 
             {/* Bottom note: Phủ bì & paper thickness */}
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-slate-100/70 px-3.5 py-2.5 text-xs text-slate-500">
-              <Paperclip className="size-4 shrink-0 text-slate-400" aria-hidden />
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-orange-50/70 px-3.5 py-2.5 text-xs text-fg-muted">
+              <Paperclip className="size-4 shrink-0 text-fpt-orange" aria-hidden />
               <span>
                 {flat ? (
                   <>Giấy dày {t.toFixed(2).replace(".", ",")} mm</>
                 ) : (
                   <>
                     Phủ bì:{" "}
-                    <strong className="font-semibold text-slate-800">
+                    <strong className="font-semibold text-fg">
                       {outerL} × {outerW} × {outerH} mm
                     </strong>{" "}
                     · giấy dày {t.toFixed(2).replace(".", ",")} mm
@@ -390,9 +395,11 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 )}
               </span>
             </div>
-          </div>
+          </SectionCard>
 
-          {/* Card: gift weight (tuck-top only: its bottom turns into a crash-lock bottom for heavy gifts) */}
+          {/* The options of this structure, in one card: gift weight, window, cells, cups. */}
+          {(boxType === "tuck-top" || boxType === "lid-base" || boxType === "insert" || boxType === "cup-carrier") && (
+            <SectionCard icon={SlidersHorizontal} title="Tuỳ chọn hộp" hint="Riêng cho kiểu hộp này" bodyClassName="divide-y divide-line py-0 sm:py-0">
           {boxType === "tuck-top" && (
             <GiftWeightCard
               weight={draft.giftWeight}
@@ -427,18 +434,12 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               onChange={(cells) => changeCount(cupCarrierSizeForCups(draft, cells))}
             />
           )}
+            </SectionCard>
+          )}
 
-          {/* Card 2: Món quà mẫu (boxes only: a tag, a card or a band has no gift inside) */}
-          {!flat && boxType !== "cup-carrier" && <div data-tour="s2-presets" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <h2 className="font-landing-heading text-title font-bold text-slate-900">
-                Món quà mẫu
-              </h2>
-              <span className="text-xs text-slate-400">
-                Lọt lòng
-              </span>
-            </div>
-            <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+          {/* Món quà mẫu (boxes only: a tag, a card or a band has no gift inside) */}
+          {!flat && boxType !== "cup-carrier" && <SectionCard data-tour="s2-presets" icon={Gift} title="Món quà mẫu" hint="Bấm để tự điền kích thước">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {GIFT_PRESETS.map((gp) => {
                 const isMatch =
                   gp.dims.length === draft.length &&
@@ -458,10 +459,10 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                     }
                     onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType, window: draft.window }, true)}
                     className={cn(
-                      "rounded-2xl border p-3 text-left transition-all",
+                      "rounded-xl border p-3 text-left transition-all",
                       isMatch
-                        ? "border-fpt-orange bg-orange-50/20 ring-1 ring-fpt-orange shadow-xs"
-                        : "border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-xs",
+                        ? "border-fpt-orange bg-orange-50 ring-1 ring-fpt-orange"
+                        : "border-line bg-surface-sunken/50 hover:border-fpt-orange/50 hover:bg-orange-50/40",
                       !presetFits && "cursor-not-allowed opacity-40",
                     )}
                   >
@@ -475,7 +476,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 );
               })}
             </div>
-          </div>}
+          </SectionCard>}
         </div>
 
         {/* Right Column: 3D Box Preview & Stats */}
@@ -634,7 +635,7 @@ function GiftWeightCard({
   }, [weight]);
 
   return (
-    <div data-tour="s2-weight" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+    <div data-tour="s2-weight" className="py-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <Field
           label="Khối lượng quà (g)"
@@ -694,8 +695,8 @@ function GiftWeightCard({
 function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number }; onChange(cells: { rows: number; cols: number }): void }) {
   const options = (max: number) => Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
   return (
-    <div data-tour="s2-cells" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
-      <h2 className="font-landing-heading text-title font-bold text-slate-900">Số ngăn</h2>
+    <div data-tour="s2-cells" className="py-4">
+      <h3 className="text-body-sm font-semibold text-fg">Số ngăn</h3>
       <p className="mt-1 text-caption text-fg-muted">
         {cells.rows * cells.cols} ô · vách in tờ riêng
       </p>
@@ -719,8 +720,8 @@ function CupsCard({
 }) {
   const options = (max: number) => Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
   return (
-    <div data-tour="s2-cups" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
-      <h2 className="font-landing-heading text-title font-bold text-slate-900">Số ly</h2>
+    <div data-tour="s2-cups" className="py-4">
+      <h3 className="text-body-sm font-semibold text-fg">Số ly</h3>
       <p className="mt-1 text-caption text-fg-muted">
         {diameter > 0
           ? `${cups.rows * cups.cols} ly · lỗ Ø ${Math.round(diameter)} mm`
@@ -737,10 +738,10 @@ function CupsCard({
 /** "Cửa sổ trưng bày": a cut-out backed by a PET film shows the gift (shared/src/parametric/openings.ts). */
 function WindowCard({ on, where, onChange }: { on: boolean; where: string; onChange(on: boolean): void }) {
   return (
-    <div data-tour="s2-window" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+    <div data-tour="s2-window" className="py-4">
       <div className="flex flex-col gap-3">
         <div className="min-w-0">
-          <h2 className="font-landing-heading text-title font-bold text-slate-900">Cửa sổ trưng bày</h2>
+          <h3 className="text-body-sm font-semibold text-fg">Cửa sổ trưng bày</h3>
           <p className="mt-1 text-caption text-fg-muted">
             {on
               ? `Ô khoét ở ${where}, dán màng PET. Hình in trong ô bị cắt bỏ.`

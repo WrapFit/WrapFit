@@ -94,7 +94,11 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   const cards = structureCards(structures);
   const current = cards.find((s) => s.id === selectedStructure) || cards[0];
   const [group, setGroup] = React.useState<StructureGroup | "all">("all");
-  const [view, setView] = React.useState<"3d" | "2d">("3d");
+  // A tag, a card or a sticker sheet is a flat sheet: its 3D model is a thin plate off to one side, the dieline shows
+  // it better. Every new structure opens in the view that suits it.
+  const flatPick = groupOf(current.id) === "flat";
+  const [view, setView] = React.useState<"3d" | "2d">(flatPick ? "2d" : "3d");
+  React.useEffect(() => setView(flatPick ? "2d" : "3d"), [current.id, flatPick]);
   const pieces = React.useMemo(() => {
     try {
       return generateDielinePieces(current.id, current.defaultDims, CURRENT_FORMULA_VERSION);
@@ -109,10 +113,8 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6">
       <StepHeader title={studioStep(1).title} />
 
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* The structures, as pictures: one row of groups, then a grid the eye can scan. */}
-        <div className="min-w-0">
-          <div role="group" aria-label="Nhóm kiểu hộp" className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+      {/* The groups above both columns: the grid of boxes and the preview card start on the same line. */}
+          <div role="group" aria-label="Nhóm kiểu hộp" className="mt-5 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
             {(["all", ...GROUP_ORDER] as const).map((id) => {
               const count = id === "all" ? cards.length : cards.filter((card) => groupOf(card.id) === id).length;
               if (count === 0) return null;
@@ -133,7 +135,10 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             })}
           </div>
 
-          <ul aria-label="Cấu trúc hộp" className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+      <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* The structures, as pictures: a grid the eye can scan. */}
+        <div className="min-w-0">
+          <ul aria-label="Cấu trúc hộp" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
             {shown.map((item) => {
               const isSelected = item.id === selectedStructure;
               return (
@@ -233,7 +238,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
             </ul>
           )}
 
-          <button type="button" data-tour="studio-next" onClick={onNext} className={`${PRIMARY_PILL} w-full`}>
+          <button type="button" data-tour="studio-next" onClick={onNext} className={`${PRIMARY_PILL} self-start`}>
             {continueTo(2)}
             <ArrowRight className="size-4" aria-hidden />
           </button>

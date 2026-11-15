@@ -5,8 +5,58 @@ import React from "react";
 import { buttonClass, Tab, TabList, Tabs } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 
-// Building blocks of the four studio steps, in the pack.ly style: slate canvas, white 28 px cards, bold headings,
-// lime pill actions.
+// Building blocks of the studio steps: slate canvas, white cards, bold headings, orange pill actions.
+
+/**
+ * A titled panel of a step: a header band (icon chip, title, short hint, an action on the right) over its body.
+ * Every setting card of steps 2, 3 and 6 wears it, so the steps read as one tool.
+ */
+export function SectionCard({
+  icon: Icon,
+  title,
+  hint,
+  action,
+  tone = "default",
+  children,
+  className,
+  bodyClassName,
+  ...rest
+}: Omit<React.HTMLAttributes<HTMLElement>, "title"> & {
+  icon: LucideIcon;
+  title: React.ReactNode;
+  hint?: React.ReactNode;
+  action?: React.ReactNode;
+  /** "accent": the card the step is about (orange tint); "default": a supporting one. */
+  tone?: "default" | "accent";
+  bodyClassName?: string;
+}) {
+  return (
+    <section className={cn("overflow-hidden rounded-sheet border border-line bg-surface-raised", className)} {...rest}>
+      <header
+        className={cn(
+          "flex items-center gap-3 border-b px-4 py-3 sm:px-5",
+          tone === "accent" ? "border-orange-100 bg-orange-50/70" : "border-line bg-surface-sunken/60",
+        )}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center rounded-xl",
+            tone === "accent" ? "bg-fpt-orange text-white" : "bg-surface-raised text-fpt-orange ring-1 ring-line",
+          )}
+        >
+          <Icon className="size-4" strokeWidth={2} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate font-landing-heading text-body font-bold text-fg">{title}</h2>
+          {hint && <p className="truncate text-caption text-fg-muted">{hint}</p>}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </header>
+      <div className={cn("p-4 sm:p-5", bodyClassName)}>{children}</div>
+    </section>
+  );
+}
 
 /**
  * Flat tool button of the toolbars attached to the 3D stage and the dieline canvas: no fill until hovered, grey when

@@ -12,12 +12,12 @@ import {
   type DielinePiece,
   type QuoteFinish,
 } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Columns3, Info, PackageOpen, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Columns3, Info, Layers, PackageOpen, Sparkles } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { formatVnd } from "@/features/pricing";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { CardTitle, PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
+import { PRIMARY_PILL, SectionCard, SECONDARY_PILL, StepActionBar, StepHeader, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
 import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
 import { clampDimension } from "@/features/studio/utils/dieline";
 import { PAPER_STOCKS, paperAdvice, paperStockOf, type PaperStock } from "@/features/studio/utils/paperStocks";
@@ -412,18 +412,15 @@ export function Step3PaperFinish({
         </StudioCard>
 
         <div className="flex flex-col gap-4">
-          <StudioCard as="section" aria-labelledby="paper-title" className="p-5 sm:p-6">
-            <CardTitle id="paper-title" action={<span className="text-caption text-fg-muted">Giá / hộp, in {PRICE_QUANTITY} hộp</span>}>
-              Giấy
-            </CardTitle>
-            <p className="mt-1 flex items-start gap-1.5 text-body-sm text-fg-muted">
-              <Sparkles className="mt-0.5 size-4 shrink-0 text-fpt-orange" aria-hidden />
+          <SectionCard aria-label="Giấy" tone="accent" icon={Layers} title="Giấy" hint={`Giá mỗi hộp khi in ${PRICE_QUANTITY} hộp`}>
+            <p className="flex items-start gap-2 rounded-xl bg-success-bg/60 px-3 py-2 text-body-sm text-fg">
+              <Sparkles className="mt-0.5 size-4 shrink-0 text-success-fg" aria-hidden />
               <span>
-                Đề xuất <strong className="font-semibold text-fg">{paperStockOf(advice.recommended).name}</strong>: {advice.reason}
+                Đề xuất <strong className="font-semibold">{paperStockOf(advice.recommended).name}</strong>: {advice.reason}
               </span>
             </p>
 
-            <div role="radiogroup" aria-label="Giấy" className="mt-4 flex flex-col gap-2">
+            <div role="radiogroup" aria-label="Giấy" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {PAPER_STOCKS.map((stock) => {
                 const active = stock.theme === paper.theme;
                 const soft = advice.tooSoft[stock.theme];
@@ -435,7 +432,7 @@ export function Step3PaperFinish({
                     aria-checked={active}
                     onClick={() => choose(stock)}
                     className={cn(
-                      "relative flex items-center gap-3 rounded-panel border-2 bg-surface-raised p-2.5 pr-3 text-left transition-[border-color,box-shadow] motion-reduce:transition-none",
+                      "relative flex items-start gap-3 rounded-panel border-2 bg-surface-raised p-2.5 pr-3 text-left transition-[border-color,box-shadow] motion-reduce:transition-none",
                       active ? "border-fpt-orange-ink" : "border-line hover:border-fg hover:shadow-hard-sm"
                     )}
                   >
@@ -454,16 +451,16 @@ export function Step3PaperFinish({
                           </span>
                         ))}
                       </span>
+                      <span className="mt-1.5 block text-body-sm font-semibold tabular-nums text-fg">
+                        {formatVnd(prices.byPaper[stock.theme])}
+                        <span className="font-normal text-fg-muted"> / hộp</span>
+                      </span>
                       {soft && (
                         <span className="mt-1 flex items-start gap-1 text-caption text-warning-fg">
                           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                           {soft}
                         </span>
                       )}
-                    </span>
-                    <span className="shrink-0 text-right">
-                      <span className="block text-body-sm font-semibold tabular-nums text-fg">{formatVnd(prices.byPaper[stock.theme])}</span>
-                      <span className="block text-caption text-fg-muted">/ hộp</span>
                     </span>
                     {active && (
                       <span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-fpt-orange-ink text-white shadow-sm">
@@ -486,14 +483,10 @@ export function Step3PaperFinish({
                 </span>
               </p>
             )}
-          </StudioCard>
+          </SectionCard>
 
-          <StudioCard as="section" aria-labelledby="finish-title" className="p-5 sm:p-6">
-            <CardTitle id="finish-title">
-              Hoàn thiện
-            </CardTitle>
-
-            <p className="mt-3 text-label font-semibold text-fg">Cán màng</p>
+          <SectionCard aria-labelledby="finish-title" icon={Sparkles} title={<span id="finish-title">Hoàn thiện</span>} hint="Làm ở xưởng in, cộng vào giá mỗi hộp">
+            <p className="text-label font-semibold text-fg">Cán màng</p>
             <div role="radiogroup" aria-label="Cán màng" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[null, ...LAMINATIONS].map((finish) => (
                 <button key={finish ?? "none"} type="button" role="radio" aria-checked={lamination === finish} onClick={() => setLamination(finish)} className={chip(lamination === finish)}>
@@ -556,7 +549,7 @@ export function Step3PaperFinish({
                 </span>
               </label>
             </details>
-          </StudioCard>
+          </SectionCard>
         </div>
       </div>
 
