@@ -45,6 +45,7 @@ import {
   StepActionBar,
   StepHeader,
 } from "@/features/studio/components/studioUi";
+import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
 import { formatNumber, innerVolumeMl, outerSize, sheetFits } from "@/features/studio/utils/boxMetrics";
 import type { DimensionLimits } from "@/types/api";
 import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
@@ -153,7 +154,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   formulaVersion = CURRENT_FORMULA_VERSION,
   onBack,
   onNext,
-  nextLabel = "Tiếp tục: chất liệu",
+  nextLabel = continueTo(3),
   busy = false,
   elements = [],
   backgroundPatternSvg = null,
@@ -276,8 +277,8 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
       <StepHeader
-        title="Kích thước hộp"
-        subtitle={`Nhập kích thước lọt lòng của món quà; mỗi nếp gấp được cộng độ dày giấy ${t.toFixed(2)} mm để nắp đóng êm.`}
+        title={studioStep(2).title}
+        subtitle={`Nhập kích thước lọt lòng của món quà; mỗi nếp gấp được cộng độ dày giấy ${t.toFixed(2).replace(".", ",")} mm để nắp đóng êm.`}
       />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -370,14 +371,14 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               <Paperclip className="size-4 shrink-0 text-slate-400" aria-hidden />
               <span>
                 {flat ? (
-                  <>Giấy dày {t.toFixed(2)} mm, đổi ở bước Chất liệu.</>
+                  <>Giấy dày {t.toFixed(2).replace(".", ",")} mm, đổi ở bước 3 · Giấy & hoàn thiện.</>
                 ) : (
                   <>
                     Phủ bì:{" "}
                     <strong className="font-semibold text-slate-800">
                       {outerL} × {outerW} × {outerH} mm
                     </strong>{" "}
-                    · giấy dày {t.toFixed(2)} mm, đổi ở bước Chất liệu.
+                    · giấy dày {t.toFixed(2).replace(".", ",")} mm, đổi ở bước 3 · Giấy & hoàn thiện.
                   </>
                 )}
               </span>
