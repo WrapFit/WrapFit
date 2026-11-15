@@ -25,12 +25,12 @@ const RULES: { title: string; detail: string; codes: FitCheckErrorCode[] }[] = [
   { title: "Mép dán keo", detail: "Không có mực trên mép dán", codes: ["GLUE_CONTAMINATED"] },
   { title: "Độ phân giải ảnh", detail: `Ảnh ≥ ${MIN_DPI} DPI ở kích thước in (dưới ${HARD_MIN_DPI} DPI chặn xuất)`, codes: ["LOW_DPI"] },
   { title: "Độ dày nét", detail: `Nét chữ mảnh nhất ≥ ${MIN_LINE_MM} mm`, codes: ["LINE_TOO_THIN"] },
-  { title: "Mã vạch & QR", detail: "Đủ lớn để quét, đúng số kiểm tra; in đen K100 trên nền trắng", codes: ["BARCODE_UNREADABLE"] },
+  { title: "Mã vạch & QR", detail: "Đủ lớn, quét được", codes: ["BARCODE_UNREADABLE"] },
   { title: "Khổ phôi", detail: "Phôi trải phẳng vừa khổ B1 1020 × 720 mm", codes: ["DIMENSION_OUT_OF_BOUNDS"] },
   { title: "Phần tử trên mặt hộp", detail: "Mọi phần tử nằm trên một mặt của khuôn", codes: ["NO_PANEL"] },
   { title: "Hướng đọc", detail: "Chữ đứng xuôi khi hộp đã gấp", codes: ["READING_DIRECTION"] },
-  { title: "Chữ dễ đọc", detail: "Cỡ ≥ 6 pt, đủ tương phản với nền, không vắt qua nếp gấp", codes: ["TEXT_TOO_SMALL", "LOW_CONTRAST", "TEXT_ON_CREASE"] },
-  { title: "Cửa sổ & lỗ khoét", detail: "Không đặt hình chính dưới cửa sổ, lỗ xỏ tay, lỗ xỏ dây", codes: ["UNDER_OPENING"] },
+  { title: "Chữ dễ đọc", detail: "≥ 6 pt, rõ nền, tránh nếp gấp", codes: ["TEXT_TOO_SMALL", "LOW_CONTRAST", "TEXT_ON_CREASE"] },
+  { title: "Cửa sổ & lỗ khoét", detail: "Hình chính tránh lỗ khoét", codes: ["UNDER_OPENING"] },
 ];
 
 interface Step6ReviewExportProps {

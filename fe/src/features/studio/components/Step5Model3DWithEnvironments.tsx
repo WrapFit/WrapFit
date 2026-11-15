@@ -253,7 +253,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               <QrCode className="size-4 text-fpt-orange" aria-hidden />
               Lời chúc &amp; mã QR mở hộp
             </h2>
-            <p className="mt-1 text-body-sm text-fg-muted">Người nhận quét mã để xem hộp mở ra cùng lời chúc.</p>
+            <p className="mt-1 text-body-sm text-fg-muted">Quét mã để xem lời chúc.</p>
             {hasUnboxingQr && (
               <p role="status" className="mt-3 flex items-center gap-2 rounded-control bg-surface-raised px-3 py-2 text-body-sm font-semibold text-fg">
                 <CheckCircle2 className="size-4 text-fpt-orange" aria-hidden />
@@ -312,7 +312,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               </p>
             </FlowStep>
 
-            <FlowStep n={2} title="Căn góc" hint="Kéo hộp để xoay; ảnh giữ đúng góc này.">
+            <FlowStep n={2} title="Căn góc" hint="Xoay hộp để chọn góc chụp.">
               <div className="flex flex-col gap-2">
                 <Switch
                   checked={hasProps && props}

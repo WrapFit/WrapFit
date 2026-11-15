@@ -6,8 +6,8 @@ import type { StudioStep } from "./components/StudioStepper";
  * (the six steps at the top, FitCheck™, export), then a short guide the first time each step opens, ending on that
  * step's real "next" button, which the user presses to go on (`clickTarget`).
  *
- * The highlighted part is live during the tour: `tryIt` says what a click there does, and `**…**` marks the action
- * phrases (bold orange). Pressing something that leads to another step closes the current tour (it counts as skipped).
+ * One short sentence per bubble: the highlighted part is live during the tour, so the text only names the action
+ * (`**…**`, bold orange). Pressing something that leads to another step closes the current tour (it counts as skipped).
  */
 
 export const STUDIO_INTRO_TOUR_ID = "studio-intro-v1";
@@ -27,29 +27,26 @@ const NEXT = '[data-tour="studio-next"]';
 
 export const STUDIO_INTRO_TOUR: TourStep[] = [
   {
-    title: "Chào mừng tới Studio thiết kế!",
-    body: "Ở đây bạn làm một chiếc hộp từ đầu tới lúc in. Mình sẽ đi cùng bạn qua từng bước, bạn cứ làm theo là được.",
+    title: "Chào mừng tới Studio!",
+    body: "Làm một chiếc hộp từ đầu tới lúc in. Mình sẽ đi cùng bạn.",
     mascot: "waving",
   },
   {
     target: 'nav[aria-label="Các bước thiết kế"]',
-    title: "6 bước, đi từ trái sang phải",
-    body: "Kiểu hộp → Kích thước → Giấy & hoàn thiện → Thiết kế → Quà & mở hộp → Đặt in. Bước đang làm được tô đậm; **bấm tên một bước** để quay lại sửa.",
-    tryIt: "**Thử bấm tên một bước**: Studio nhảy tới bước đó và hướng dẫn giới thiệu này đóng lại.",
+    title: "6 bước, từ trái sang phải",
+    body: "**Bấm tên một bước** để quay lại sửa.",
     mascot: "presenting",
   },
   {
     target: '[data-tour="studio-fitcheck"]',
     title: "Điểm FitCheck™",
-    body: "WrapFit tự chấm điểm khuôn hộp: chữ có sát mép không, ảnh có đủ nét không. Từ 90 điểm trở lên là in đẹp. **Bấm vào điểm** để xem chi tiết.",
-    tryIt: "**Bấm vào điểm**: Studio nhảy tới bước Đặt in, nơi có danh sách kiểm tra, và hướng dẫn giới thiệu này đóng lại.",
+    body: "WrapFit tự chấm khuôn hộp. Từ 90 điểm là in đẹp. **Bấm vào điểm** để xem chi tiết.",
     mascot: "measuring",
   },
   {
     target: '[aria-label="Bước 6: Đặt in"]',
     title: "Thanh toán & xuất file in",
-    body: "Ở bước cuối **Đặt in**, bấm **Thanh toán** để đưa thiết kế vào giỏ và trả tiền đơn in. Trả xong, quay lại đây sẽ thấy nút **Xuất file in**. Bạn chưa cần bấm bây giờ.",
-    tryIt: "Chưa cần bấm. Khi xong thiết kế, **bấm bước Đặt in** để xem báo giá, thanh toán và xuất file.",
+    body: "Ở bước **Đặt in**: bấm **Thanh toán**, trả xong sẽ có nút **Xuất file in**.",
     mascot: "delivery",
   },
 ];
@@ -59,23 +56,20 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[aria-label="Cấu trúc hộp"]',
       title: "Chọn kiểu hộp",
-      body: "**Bấm vào hình một kiểu hộp.** Lọc nhanh theo Hộp, Khay hoặc Thẻ, thiệp, đai ở hàng trên.",
-      tryIt: "**Thử bấm một kiểu hộp**: hộp xem trước đổi theo ngay.",
+      body: "**Bấm một kiểu hộp.** Lọc theo Hộp, Khay hoặc Thẻ ở hàng trên.",
       mascot: "presenting",
     },
     {
       // The whole preview card, so the 3D / 2D switch is inside the lit area.
       target: '[aria-label^="Xem trước"]',
-      title: "Xem hộp trước khi làm",
-      body: "Kiểu hộp bạn vừa chọn. **Kéo để xoay**, bấm “Khuôn” để xem khuôn bế phẳng.",
-      tryIt: "**Thử kéo hộp 3D** để xoay nó.",
+      title: "Xem trước",
+      body: "**Kéo để xoay**, bấm “Khuôn” để xem khuôn phẳng.",
       mascot: "folding",
     },
     {
       target: NEXT,
-      title: "Chọn xong thì sang bước tiếp",
-      body: "**Bấm nút này** để nhập kích thước món quà.",
-      tryIt: "**Bấm nút này**: sang bước Kích thước, bước đó có hướng dẫn ngắn riêng.",
+      title: "Sang bước tiếp",
+      body: "**Bấm nút này** để nhập kích thước.",
       mascot: "thumbs_up",
       clickTarget: true,
     },
@@ -83,23 +77,20 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
   2: [
     {
       target: '[data-tour="s2-size"]',
-      title: "Nhập kích thước món quà",
-      body: "**Đo món quà bằng thước**: Dài, Rộng, Cao. Bạn có thể **chọn đơn vị** mm, cm hoặc inch. Đây là khoảng trống bên trong hộp, nên **cộng thêm 2–3 mm** cho dễ bỏ quà vào.",
-      tryIt: "**Gõ một số vào ô Dài** hoặc **kéo thanh trượt**: hộp 3D bên phải đổi theo ngay.",
+      title: "Nhập kích thước",
+      body: "Nhập **Dài, Rộng, Cao** của món quà, cộng thêm **2–3 mm**.",
       mascot: "measuring",
     },
     {
       target: '[data-tour="s2-presets"]',
-      title: "Chưa có thước? Chọn món gần giống",
-      body: "**Bấm một món quà mẫu** (hũ nến, chai nước hoa, hộp trang sức…) là kích thước tự điền.",
-      tryIt: "**Bấm một món quà mẫu**: ba ô Dài, Rộng, Cao tự điền và hộp 3D đổi theo.",
+      title: "Chưa có thước?",
+      body: "**Bấm một món quà mẫu**, kích thước tự điền.",
       mascot: "measuring",
     },
     {
       target: NEXT,
       title: "Kích thước ổn rồi",
-      body: "**Bấm nút này** để sang bước chọn giấy. Nếu nút bị mờ, một số đo đang quá nhỏ hoặc quá lớn: **xem dòng báo đỏ** phía trên.",
-      tryIt: "**Bấm nút này**: sang bước Giấy & hoàn thiện, bước đó có hướng dẫn ngắn riêng.",
+      body: "**Bấm nút này** để chọn giấy. Nút mờ là số đo chưa hợp lệ: **xem dòng báo đỏ**.",
       mascot: "thumbs_up",
       clickTarget: true,
     },
@@ -108,22 +99,19 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[role="radiogroup"][aria-label="Giấy"]',
       title: "Chọn giấy",
-      body: "Mỗi dòng là một loại giấy: mẫu giấy, độ cứng và giá mỗi hộp. Nhãn “Đề xuất” là giấy hợp với kích thước hộp của bạn. **Bấm một dòng** để chọn giấy đó.",
-      tryIt: "**Thử bấm một loại giấy**: dòng đó viền cam có dấu tick và phần mô tả giấy bên dưới đổi theo.",
+      body: "**Bấm một dòng** để chọn. “Đề xuất” là giấy hợp với hộp của bạn.",
       mascot: "folding",
     },
     {
       target: '[aria-labelledby="finish-title"]',
-      title: "Hoàn thiện ở xưởng in",
-      body: "Cán màng mờ, bóng hay nhung, thêm ép kim hoặc UV. Mỗi lựa chọn ghi rõ giá cộng thêm mỗi hộp. Không chắc thì **cứ để “Không cán”**.",
-      tryIt: "**Thử bấm một kiểu cán màng**: ô đó sáng lên và dòng ghi chú ngắn hiện bên dưới.",
+      title: "Hoàn thiện",
+      body: "Cán màng, ép kim, UV: giá cộng thêm ghi trên từng ô. Không chắc thì **để “Không cán”**.",
       mascot: "measuring",
     },
     {
       target: NEXT,
       title: "Sang phần trang trí",
-      body: "**Bấm nút này** để tới bước Thiết kế, nơi bạn thêm chữ, ảnh và hoa văn lên hộp.",
-      tryIt: "**Bấm nút này**: sang bước Thiết kế, bước đó có hướng dẫn ngắn riêng.",
+      body: "**Bấm nút này** để thêm chữ, ảnh và hoa văn.",
       mascot: "thumbs_up",
       clickTarget: true,
     },
@@ -131,39 +119,34 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
   4: [
     {
       target: '[role="toolbar"][aria-label="Công cụ thiết kế"]',
-      title: "Thanh công cụ bên trái",
-      body: "Giống Canva: **bấm một mục** (Thành phần, Văn bản, Tải lên, Màu & nền, Hoa văn AI, Ảnh AI, Kích thước, FitCheck) để mở bảng chọn ngay bên cạnh. Bấm lại mục đó để thu gọn.",
-      tryIt: "**Thử bấm “Văn bản”**: bảng chữ mở ra cạnh thanh công cụ.",
+      title: "Thanh công cụ",
+      body: "**Bấm một mục** để mở bảng chọn bên cạnh; bấm lại để thu gọn.",
       mascot: "folding",
       placement: "right",
     },
     {
       target: '[data-tour="studio-stage"]',
       title: "Mặt hộp trải phẳng",
-      body: "Đây là hộp khi chưa gấp. **Bấm vào một mặt** rồi **thêm chữ hay ảnh**, **kéo để đổi chỗ**. **Giữ nội dung quan trọng cách mép ít nhất 3 mm** để không bị cắt mất.",
-      tryIt: "**Bấm vào một mặt hộp**: mặt đó được chọn, chữ và ảnh thêm sau sẽ nằm trên mặt này.",
+      body: "**Bấm một mặt** rồi thêm chữ hay ảnh. Giữ nội dung **cách mép 3 mm**.",
       mascot: "measuring",
     },
     {
       target: '[aria-label="Chế độ xem"]',
-      title: "Xem phẳng hoặc gập 3D",
-      body: "**Đổi sang “Gập hộp 3D”** bất cứ lúc nào để xem hình in nằm trên hộp thật ra sao.",
-      tryIt: "**Thử bấm “Gập hộp 3D”**: hình in hiện trên hộp 3D. Bấm “Khuôn bế 2D” để quay lại.",
+      title: "Phẳng hoặc 3D",
+      body: "**Bấm “Gập hộp 3D”** để xem hình in trên hộp.",
       mascot: "folding",
     },
     {
       target: 'aside[aria-label="Bảng công cụ"]',
       title: "Bảng chọn",
-      body: "Nội dung của mục đang mở: tem, sticker, phông chữ, bảng màu, ảnh của bạn… **Bấm một thứ** để đặt lên mặt hộp đang chọn. Mũi tên ở mép bảng thu gọn bảng để khung thiết kế rộng hơn.",
-      tryIt: "**Thử bấm một mục khác** trên thanh bên trái: bảng đổi nội dung theo.",
+      body: "**Bấm một thứ** để đặt lên mặt đang chọn.",
       mascot: "presenting",
       placement: "right",
     },
     {
       target: NEXT,
       title: "Trang trí xong?",
-      body: "**Bấm nút này** để xem chiếc hộp 3D hoàn chỉnh.",
-      tryIt: "**Bấm nút này**: sang bước Quà & mở hộp, bước đó có hướng dẫn ngắn riêng.",
+      body: "**Bấm nút này** để xem hộp 3D hoàn chỉnh.",
       mascot: "thumbs_up",
       clickTarget: true,
     },
@@ -172,22 +155,19 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[aria-labelledby="step5-gift"]',
       title: "Lời chúc và mã QR",
-      body: "**Viết lời chúc**, rồi **đặt mã QR lên hộp**: người nhận quét là thấy hộp mở 3D cùng lời chúc trên điện thoại.",
-      tryIt: "**Bấm nút viết lời chúc**: khung soạn lời chúc mở ra, hướng dẫn tạm ẩn và hiện lại khi bạn đóng khung.",
+      body: "**Viết lời chúc** và đặt mã QR lên hộp: người nhận quét là thấy.",
       mascot: "unboxing_pop",
     },
     {
       target: '[aria-labelledby="step5-scenes"]',
-      title: "Dựng bàn chụp cho hộp",
-      body: "**Chọn một bối cảnh**: hộp được đặt lên mặt bàn thật (đá, gỗ, nhung…) cùng đạo cụ theo dịp. Xoay hộp để căn góc rồi tải ảnh đúng khung đó.",
-      tryIt: "**Bấm một bối cảnh**: mặt bàn, ánh sáng và đạo cụ đổi theo ngay trên khung bên trái.",
+      title: "Ảnh sản phẩm",
+      body: "**Chọn bối cảnh**, xoay hộp rồi tải ảnh.",
       mascot: "presenting",
     },
     {
       target: NEXT,
-      title: "Ưng rồi thì sang bước cuối",
-      body: "**Bấm nút này** để kiểm tra lần cuối, xem báo giá và đặt in.",
-      tryIt: "**Bấm nút này**: sang bước Đặt in, bước đó có hướng dẫn ngắn riêng.",
+      title: "Sang bước cuối",
+      body: "**Bấm nút này** để xem báo giá và đặt in.",
       mascot: "thumbs_up",
       clickTarget: true,
     },
@@ -196,29 +176,25 @@ export const STUDIO_STEP_TOURS: Record<StudioStep, TourStep[]> = {
     {
       target: '[data-tour="s6-status"]',
       title: "Kiểm tra lần cuối",
-      body: "Ô cam là đã sẵn sàng in. Ô đỏ nghĩa là còn lỗi: **quay lại bước Thiết kế** để sửa.",
-      tryIt: "**Nhìn điểm và màu ô này**: cam là sẵn sàng in, đỏ là còn lỗi chặn xuất file.",
+      body: "Cam là sẵn sàng in. Đỏ là còn lỗi: **quay lại bước Thiết kế** để sửa.",
       mascot: "measuring",
     },
     {
       target: '[data-tour="s6-checks"]',
       title: "Danh sách kiểm tra",
-      body: "Từng tiêu chí FitCheck™: lề an toàn, tràn lề, độ nét ảnh… Có nút sửa tự động cho những lỗi thường gặp.",
-      tryIt: "**Đọc từng dòng**: dòng có cảnh báo cho biết lỗi ở mấy chỗ. Nếu có nút “Tự sửa”, **bấm nút đó** để sửa nhanh.",
+      body: "Từng tiêu chí FitCheck™. Lỗi thường gặp có nút **Tự sửa**.",
       mascot: "measuring",
     },
     {
       target: '[data-tour="s6-quote"]',
       title: "Báo giá in",
-      body: "**Chọn số hộp cần in**: WrapFit tính giá mỗi hộp, cách in (in kỹ thuật số hay offset) và số ngày làm. Báo giá chi tiết từng khoản nằm ngay bên dưới. Có thể đặt in thử 1 hộp trước.",
-      tryIt: "**Bấm một mức số lượng** hoặc **gõ số khác**: giá mỗi hộp, cách in và số ngày làm đổi theo.",
+      body: "**Chọn số hộp**: giá, cách in và số ngày làm đổi theo.",
       mascot: "delivery",
     },
     {
       target: '[data-tour="s6-export"]',
-      title: "Thanh toán rồi xuất file in",
-      body: "File in chỉ xuất được sau khi thanh toán đơn in ở giỏ. **Bấm Thanh toán** để đưa thiết kế vào giỏ, đọc và đồng ý điều khoản rồi trả tiền; trả xong, nút ở đây đổi thành **Xuất file in**. Nút chỉ bấm được khi FitCheck™ đạt.",
-      tryIt: "Bấm **Thanh toán** khi thiết kế đã xong. Đơn đã trả thì bấm **Xuất file in** để mở bảng tải file; sửa thiết kế sau đó thì cần đơn mới.",
+      title: "Thanh toán rồi xuất file",
+      body: "**Bấm Thanh toán**; trả xong, nút đổi thành **Xuất file in**. Cần FitCheck™ đạt.",
       mascot: "celebration",
     },
   ],

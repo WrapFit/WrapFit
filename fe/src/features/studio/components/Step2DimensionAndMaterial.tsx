@@ -80,9 +80,9 @@ type Unit = keyof typeof UNITS;
 type Basis = "inner" | "outer";
 
 const AXIS_LABEL: Record<DimensionAxis, { name: string; hint: string }> = {
-  length: { name: "Dài", hint: "Chiều dài mặt trước" },
-  width: { name: "Rộng", hint: "Chiều sâu, từ trước ra sau" },
-  height: { name: "Cao", hint: "Từ đáy lên nắp" },
+  length: { name: "Dài", hint: "Mặt trước" },
+  width: { name: "Rộng", hint: "Trước ra sau" },
+  height: { name: "Cao", hint: "Đáy tới nắp" },
 };
 
 /** Size labels per structure: flat tags and cards are measured across and up, the belly band and insert elsewhere. */
@@ -90,19 +90,19 @@ function axisLabelOf(structure: BoxStructureType, axis: DimensionAxis): { name: 
   if (SHEET_ONLY_STRUCTURES.includes(structure)) {
     const card = structure === "folded-card";
     return axis === "length"
-      ? { name: "Ngang", hint: card ? "Bề ngang thiệp khi đã gấp" : "Bề ngang của thẻ" }
-      : { name: "Cao", hint: card ? "Chiều cao thiệp" : "Chiều cao thẻ, tính cả đầu vát" };
+      ? { name: "Ngang", hint: card ? "Thiệp đã gấp" : "Bề ngang thẻ" }
+      : { name: "Cao", hint: card ? "Thiệp đã gấp" : "Cả đầu vát" };
   }
   if (structure === "belly-band") {
-    const hints = { length: "Chiều dài hộp cần bọc (phủ bì)", width: "Chiều sâu hộp; đai rộng khoảng 40 %", height: "Chiều cao hộp cần bọc" };
+    const hints = { length: "Phủ bì hộp cần bọc", width: "Sâu của hộp", height: "Cao của hộp" };
     return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
   }
   if (structure === "cup-carrier") {
-    const hints = { length: "Dài theo hàng ly: số ly × miệng ly (+5 mm mỗi ly)", width: "Sâu: miệng ly + 5 mm (2 hàng: gấp đôi)", height: "Cao thành khay, ôm phần nắp ly" };
+    const hints = { length: "Số ly × (miệng ly + 5 mm)", width: "Miệng ly + 5 mm mỗi hàng", height: "Thành khay" };
     return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
   }
   if (structure === "insert") {
-    const hints = { length: "Lòng khay: đo trong hộp chứa, trừ 1–2 mm", width: "Lòng khay, từ trước ra sau", height: "Cao thành khay và vách chia" };
+    const hints = { length: "Lòng hộp chứa, trừ 1–2 mm", width: "Trước ra sau", height: "Thành khay" };
     return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
   }
   return AXIS_LABEL[axis];
@@ -285,7 +285,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
       <StepHeader
         title={studioStep(2).title}
-        subtitle={`Nhập kích thước lọt lòng của món quà; mỗi nếp gấp được cộng độ dày giấy ${t.toFixed(2).replace(".", ",")} mm để nắp đóng êm.`}
+        subtitle="Nhập kích thước bên trong hộp."
       />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -378,14 +378,14 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               <Paperclip className="size-4 shrink-0 text-slate-400" aria-hidden />
               <span>
                 {flat ? (
-                  <>Giấy dày {t.toFixed(2).replace(".", ",")} mm, đổi ở bước 3 · Giấy & hoàn thiện.</>
+                  <>Giấy dày {t.toFixed(2).replace(".", ",")} mm</>
                 ) : (
                   <>
                     Phủ bì:{" "}
                     <strong className="font-semibold text-slate-800">
                       {outerL} × {outerW} × {outerH} mm
                     </strong>{" "}
-                    · giấy dày {t.toFixed(2).replace(".", ",")} mm, đổi ở bước 3 · Giấy & hoàn thiện.
+                    · giấy dày {t.toFixed(2).replace(".", ",")} mm
                   </>
                 )}
               </span>
@@ -435,7 +435,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 Món quà mẫu
               </h2>
               <span className="text-xs text-slate-400">
-                Kích thước lọt lòng chuẩn
+                Lọt lòng
               </span>
             </div>
             <div className="mt-3.5 grid grid-cols-2 gap-2.5">
@@ -544,7 +544,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             {/* Bottom Caption */}
             <div className="border-t border-slate-100 bg-white/80 px-4 py-2.5 text-center">
               <p className="text-xs text-slate-400">
-                Kéo để xoay, cuộn để phóng to. Rê chuột lên một cạnh bên trái để thấy nó trên hộp.
+                Kéo để xoay · cuộn để phóng to
               </p>
             </div>
           </div>
@@ -552,18 +552,16 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           {/* Bottom 3 Stat Cards */}
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat
-              label="Thể tích lọt lòng"
+              label="Thể tích"
               value={`${formatNumber(innerVolumeMl(draft))} ml`}
             />
             <Stat
-              label="Khổ phôi trải phẳng"
+              label="Khổ phôi"
               value={fits.map((fit) => `${fit.width} × ${fit.height}`).join(" + ") + " mm"}
             />
             <Stat
               label="Số hộp / tờ B1"
-              value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"}
-              hint="Khổ 1020 × 720 mm"
-            />
+              value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"}            />
           </dl>
         </div>
       </div>
@@ -640,7 +638,7 @@ function GiftWeightCard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <Field
           label="Khối lượng quà (g)"
-          hint={`Quà nặng hơn ${LOCK_BOTTOM_MIN_WEIGHT_G} g nên dùng đáy khóa chịu lực.`}
+          hint={`Trên ${LOCK_BOTTOM_MIN_WEIGHT_G} g: dùng đáy khóa.`}
           className="sm:w-56"
         >
           {(control) => (
@@ -667,11 +665,11 @@ function GiftWeightCard({
           <p className="text-caption text-fg-muted">
             {lock
               ? heavy && bottomType !== "lock"
-                ? `Quà ${weight} g > ${LOCK_BOTTOM_MIN_WEIGHT_G} g: đáy tự khóa khi bung hộp, không bị sụt khi nhấc.`
-                : "Đáy tự khóa khi bung hộp, chịu được quà nặng."
+                ? `Quà ${weight} g: đáy tự khóa, không sụt.`
+                : "Đáy tự khóa, chịu quà nặng."
               : heavy
-                ? `Bạn đã chọn đáy gài cho quà ${weight} g; đáy khóa chắc hơn cho quà nặng.`
-                : "Hai tai gài ở đáy, đủ cho quà nhẹ."}
+                ? `Quà ${weight} g: đáy khóa chắc hơn.`
+                : "Đủ cho quà nhẹ."}
           </p>
         </div>
       </div>
@@ -699,7 +697,7 @@ function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number };
     <div data-tour="s2-cells" className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
       <h2 className="font-landing-heading text-title font-bold text-slate-900">Số ngăn</h2>
       <p className="mt-1 text-caption text-fg-muted">
-        {cells.rows * cells.cols} ô, mỗi hàng {cells.cols} ô. Vách chia cài chéo vào nhau, in trên một tờ riêng.
+        {cells.rows * cells.cols} ô · vách in tờ riêng
       </p>
       <div className="mt-3 flex flex-wrap gap-4">
         <SegmentedSwitch label="Hàng" value={String(cells.rows)} options={options(MAX_CELLS.rows)} onChange={(v) => onChange({ ...cells, rows: Number(v) })} />
@@ -725,8 +723,8 @@ function CupsCard({
       <h2 className="font-landing-heading text-title font-bold text-slate-900">Số ly</h2>
       <p className="mt-1 text-caption text-fg-muted">
         {diameter > 0
-          ? `${cups.rows * cups.cols} ly, lỗ đặt ly Ø ${Math.round(diameter)} mm: chọn ly có miệng lớn hơn lỗ 3–8 mm để ly treo bằng vành.`
-          : "Khay quá nhỏ cho số ly này: tăng chiều dài, chiều sâu hoặc chọn lại số ly để khay tự giãn theo."}
+          ? `${cups.rows * cups.cols} ly · lỗ Ø ${Math.round(diameter)} mm`
+          : "Khay quá nhỏ: tăng kích thước hoặc chọn lại số ly."}
       </p>
       <div className="mt-3 flex flex-wrap gap-4">
         <SegmentedSwitch label="Hàng" value={String(cups.rows)} options={options(MAX_CUPS.rows)} onChange={(v) => onChange({ ...cups, rows: Number(v) })} />
@@ -745,8 +743,8 @@ function WindowCard({ on, where, onChange }: { on: boolean; where: string; onCha
           <h2 className="font-landing-heading text-title font-bold text-slate-900">Cửa sổ trưng bày</h2>
           <p className="mt-1 text-caption text-fg-muted">
             {on
-              ? `Khoét một ô ở giữa ${where}, dán màng PET trong phía sau để khách thấy món quà. Hình in nằm trong ô sẽ bị cắt bỏ.`
-              : `Khoét một ô ở ${where} để khách nhìn thấy món quà bên trong, thêm 900đ/hộp tiền màng PET.`}
+              ? `Ô khoét ở ${where}, dán màng PET. Hình in trong ô bị cắt bỏ.`
+              : `Khoét ô ở ${where} để thấy quà · +900đ/hộp`}
           </p>
         </div>
         <SegmentedSwitch

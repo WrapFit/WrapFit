@@ -13,10 +13,10 @@ export type StudioStep = 1 | 2 | 3 | 4 | 5 | 6;
 export const STUDIO_STEPS: { step: StudioStep; label: string; title: string }[] = [
   { step: 1, label: "Kiểu hộp", title: "Chọn kiểu hộp" },
   { step: 2, label: "Kích thước", title: "Kích thước hộp" },
-  { step: 3, label: "Giấy & hoàn thiện", title: "Giấy & hoàn thiện" },
+  { step: 3, label: "Giấy", title: "Giấy & hoàn thiện" },
   { step: 4, label: "Thiết kế", title: "Thiết kế" },
   { step: 5, label: "Quà & mở hộp", title: "Quà & mở hộp" },
-  { step: 6, label: "Đặt in", title: "Kiểm tra & đặt in" },
+  { step: 6, label: "Đặt in", title: "Đặt in" },
 ];
 
 export const studioStep = (step: StudioStep) => STUDIO_STEPS[step - 1];

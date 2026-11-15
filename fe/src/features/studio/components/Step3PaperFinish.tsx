@@ -482,7 +482,7 @@ export function Step3PaperFinish({
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <span>
                   {paper.printNote}
-                  {lightCount > 0 && ` Thiết kế có ${lightCount} chữ hoặc hình màu sáng: đổi sang bảng màu đậm ở bước Thiết kế.`}
+                  {lightCount > 0 && ` ${lightCount} chữ/hình màu sáng: đổi sang màu đậm.`}
                 </span>
               </p>
             )}
@@ -530,7 +530,7 @@ export function Step3PaperFinish({
             {finishes.some((f) => EXTRAS.includes(f)) && (
               <p className="mt-2 flex items-start gap-2 text-caption leading-5 text-fg-muted">
                 <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
-                In càng nhiều, phí ép kim và UV mỗi hộp càng giảm.
+                In nhiều, phí ép kim/UV giảm.
               </p>
             )}
 
