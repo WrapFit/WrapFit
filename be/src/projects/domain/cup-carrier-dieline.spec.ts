@@ -11,6 +11,7 @@ import {
   multiply,
   panelTransforms,
   quote,
+  segmentPoints,
   transformPoint,
   unitOf,
 } from '@wrapfit/shared';
@@ -79,6 +80,17 @@ describe('Cup carrier dieline (khay xách ly)', () => {
       // A round hole is four curved corners (its straight sides have no length).
       expect(g.segments.filter((s) => s.id.startsWith('cut_cup_') && s.type === 'cut')).toHaveLength(4 * cups.length);
       expect(g.segments.some((s) => s.id === `cut_cup_${cups.length - 1}_corner_tl`)).toBe(true);
+    }
+  });
+
+  it('cuts the cup holes as true circles (the die must match the round cups)', () => {
+    const g = carrier(190, 95, 60);
+    for (const [i, cup] of g.openings!.filter((o) => o.kind === 'cup').entries()) {
+      const cx = cup.x + cup.width / 2;
+      const cy = cup.y + cup.height / 2;
+      const points = g.segments.filter((s) => s.id.startsWith(`cut_cup_${i}_`)).flatMap((s) => segmentPoints(s, 0.01));
+      expect(points.length).toBeGreaterThan(20);
+      for (const p of points) expect(Math.abs(Math.hypot(p.x - cx, p.y - cy) - cup.width / 2)).toBeLessThan(0.05);
     }
   });
 

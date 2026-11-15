@@ -25,7 +25,7 @@
  */
 
 import { BoxDimensions, DielineGeometry, DielineOpening, PanelFace, Point2D } from "../types/dieline";
-import { cutOpening } from "./openings";
+import { cutRoundOpening } from "./openings";
 import { segmentWriter } from "./segments";
 
 /** Fold of the shoulders from upright, degrees. */
@@ -156,7 +156,7 @@ export function generateCupCarrierDieline(dimensions: BoxDimensions): DielineGeo
   }
   // Hand holes first (front, back), then the cups.
   openings.forEach((opening, i) =>
-    cutOpening(writer, opening.kind === "cup" ? `cut_cup_${i - 2}` : `cut_hand_hole_${i ? "back" : "front"}`, opening),
+    cutRoundOpening(writer, opening.kind === "cup" ? `cut_cup_${i - 2}` : `cut_hand_hole_${i ? "back" : "front"}`, opening),
   );
 
   return {
