@@ -9,7 +9,7 @@ import { AuthMaintenanceTask } from '../../src/auth/auth-maintenance.task';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp, TEST_PASSWORD, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
-import { placeSampleOrder } from './helpers/orders';
+import { createPaidOrder, placeSampleOrder } from './helpers/orders';
 
 /**
  * Admin deletion of a user (docs/25 item 3) against a real PostgreSQL and SeaweedFS: a user without financial history
@@ -277,6 +277,55 @@ describe('Admin deletes a user (e2e)', () => {
       expect(billing).not.toHaveProperty('exportCredits');
       expect(await prisma.creditLot.count({ where: { userId: again.id, source: 'PURCHASE' } })).toBe(0);
     });
+  });
+
+  describe('notifications (docs/25 S8)', () => {
+    /** A PUBLIC design of `author`, remixed by `remixer`; resolves once the author's notification is stored. */
+    const remixed = async (author: Account, remixer: Account, title: string) => {
+      const project = (
+        await as(author)
+          .post('/api/projects')
+          .send({ templateId: 'tuck-top', title, dimensions: { length: 80, width: 80, height: 95 }, canvasState: { elements: [] } })
+          .expect(201)
+      ).body as { id: string; slug: string };
+      await as(author).patch(`/api/projects/${project.id}/visibility`).send({ visibility: 'PUBLIC', allowFork: true }).expect(200);
+      await as(remixer).post(`/api/public/projects/${project.slug}/fork`).expect(201);
+      for (let i = 0; i < 100; i++) {
+        if (await prisma.notification.count({ where: { userId: author.id, projectId: project.id } })) return project.id;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      throw new Error('The remix notification was not stored');
+    };
+
+    it.each(['DELETED', 'ANONYMIZED'] as const)(
+      'removes the inbox of a %s user and leaves nothing naming them in other inboxes',
+      async (result) => {
+        const keeper = await signUp(app, email(`keeper-${result.toLowerCase()}`), 'Người Ở Lại');
+        const leaver = await signUp(app, email(`leaver-${result.toLowerCase()}`), 'Phạm Rời Đi');
+        await as(leaver).patch('/api/users/me').send({ shopName: 'Tiệm Rời Đi' }).expect(200);
+        if (result === 'ANONYMIZED') {
+          // A paid order: the account is anonymized, not deleted.
+          await createPaidOrder(prisma, leaver.id, await newProject(leaver, 'Hộp đã đặt in'), run);
+        }
+        await remixed(leaver, keeper, 'Hộp của người rời đi'); // a notification in the leaver's inbox
+        const keeperProject = await remixed(keeper, leaver, 'Hộp của người ở lại'); // one naming the leaver
+        const before = (await as(keeper).get('/api/notifications').expect(200)).body.items;
+        expect(before.find((item: { project: { id: string } }) => item.project.id === keeperProject)).toMatchObject({
+          actorName: 'Phạm Rời Đi',
+        });
+
+        expect((await as(admin).delete(`/api/users/${leaver.id}`).expect(200)).body.result).toBe(result);
+
+        expect(await prisma.notification.count({ where: { userId: leaver.id } })).toBe(0);
+        expect(await prisma.notification.count({ where: { actorId: leaver.id } })).toBe(0);
+        const after = (await as(keeper).get('/api/notifications').expect(200)).body;
+        expect(after.items.find((item: { project: { id: string } }) => item.project.id === keeperProject)).toMatchObject({
+          type: 'PROJECT_REMIXED',
+          actorName: null,
+        });
+        expect(JSON.stringify(after)).not.toMatch(/Rời Đi/);
+      },
+    );
   });
 
   it('leaves unverified accounts with payments to the cleanup task untouched instead of failing it', async () => {

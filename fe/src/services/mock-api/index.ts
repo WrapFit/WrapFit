@@ -11,6 +11,7 @@ import type { UploadPurpose } from "@/types/api";
 import { MockHttpError, type Handler, type MockRequest } from "./http";
 import { accountRoutes, recordUpload } from "./handlers/account";
 import { billingRoutes } from "./handlers/billing";
+import { notificationRoutes } from "./handlers/notifications";
 import { orderRoutes } from "./handlers/orders";
 import { platformRoutes } from "./handlers/platform";
 import { projectRoutes } from "./handlers/projects";
@@ -26,7 +27,7 @@ interface Route {
 }
 
 // Order matters: fixed paths (`/users/me`) before parameters (`/users/:id`).
-const ROUTES: Route[] = [...accountRoutes, ...reviewRoutes, ...projectRoutes, ...billingRoutes, ...orderRoutes, ...platformRoutes].map(([method, path, handler]) => {
+const ROUTES: Route[] = [...accountRoutes, ...reviewRoutes, ...projectRoutes, ...billingRoutes, ...orderRoutes, ...notificationRoutes, ...platformRoutes].map(([method, path, handler]) => {
   const keys: string[] = [];
   const pattern = new RegExp(
     `^${path.replace(/:([A-Za-z]+)/g, (_, key: string) => {

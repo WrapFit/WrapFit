@@ -22,6 +22,7 @@ import { AnalyticsModule } from './analytics';
 import { ExportModule } from './export';
 import { CollectionsModule } from './collections';
 import { EventsModule } from './events';
+import { NotificationsModule } from './notifications';
 import { BaseModule } from './base';
 import { ProjectsModule } from './projects';
 import { PublicShowcaseModule } from './public-showcase';
@@ -49,7 +50,7 @@ import { CloudinaryModule } from './shared/cloudinary';
       ],
     }),
     ScheduleModule.forRoot(), // @Cron / @Interval tasks: TrashPurgeTask, ExportReconcileTask, StorageMaintenanceTask
-    EventEmitterModule.forRoot(), // internal events, e.g. project.forked
+    EventEmitterModule.forRoot(), // internal events, e.g. project.forked (NotificationsModule stores the notification)
     PrismaModule,
     RedisModule,
     StorageModule,
@@ -70,6 +71,7 @@ import { CloudinaryModule } from './shared/cloudinary';
     UnboxingModule,
     ExportModule,
     EventsModule,
+    NotificationsModule,
     PrintShopsModule,
     OrdersModule,
     PaymentsModule,

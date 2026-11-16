@@ -1028,3 +1028,27 @@ export interface NewReviewComment {
   x?: number;
   y?: number;
 }
+
+// ─── Notifications (`be/src/notifications`, docs/25 S8) ─────────────────────────────────────────────────────────────
+
+export type NotificationType = "PROJECT_REMIXED" | "EXPORT_COMPLETED";
+
+/** One row of `GET /notifications`. */
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  createdAt: string;
+  readAt: string | null;
+  /** PROJECT_REMIXED: my own design that was remixed. EXPORT_COMPLETED: the design whose print file is ready. */
+  project: { id: string; title: string };
+  /** PROJECT_REMIXED: remixes folded into this row since I last read it. */
+  count: number;
+  /** Latest remixer's name; null when unknown, deleted or anonymized ("Một người dùng WrapFit"). */
+  actorName: string | null;
+  export: { jobId: string; fileType: ExportFileType | string } | null;
+}
+
+export interface NotificationPage {
+  items: AppNotification[];
+  nextBefore: string | null;
+}

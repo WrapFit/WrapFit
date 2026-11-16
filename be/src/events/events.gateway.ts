@@ -32,8 +32,12 @@ import { PrismaService } from '../shared/prisma';
  * Every socket joins the room `user:<id>` (and `admins` for admins). The token is checked once, at the handshake: a
  * socket is closed when its access token expires (the client reconnects with the refreshed cookie) and when the
  * sessions of its user are revoked (SESSIONS_REVOKED).
+ *
+ * Server -> client events: `notifications.changed` (empty payload) when the user's inbox got a new notification, sent by
+ * NotificationsPushBridge; the client refetches the unread count. Socket.IO state is per API process (no Redis adapter).
  */
-@WebSocketGateway({ namespace: 'events', path: '/api/socket.io' })
+// addTrailingSlash: false also accepts `/api/socket.io?EIO=…`: the Next.js dev proxy strips the slash before the query.
+@WebSocketGateway({ namespace: 'events', path: '/api/socket.io', addTrailingSlash: false })
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
 
@@ -97,11 +101,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   @OnEvent(SESSIONS_REVOKED)
   closeSessions({ userId }: SessionsRevokedEvent): void {
     this.server.in(`user:${userId}`).disconnectSockets(true);
-  }
-
-  /** Sends an event to every connected client. */
-  emitToAll(event: string, payload: unknown): void {
-    this.server.emit(event, payload);
   }
 
   /** Sends an event to all sockets of one user (any device). */

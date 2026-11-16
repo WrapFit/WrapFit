@@ -138,6 +138,8 @@ model User {
   orders                   Order[]
   shopMember               PrintShopMember?
   resolvedBankTransactions BankTransaction[]   @relation("BankTransactionResolver")
+  notifications            Notification[]      @relation("NotificationRecipient")
+  notificationsCaused      Notification[]      @relation("NotificationActor")
 
   @@index([referredById])
   @@map("users")
@@ -289,6 +291,7 @@ model PackagingProject {
   orderItems     OrderItem[]
   review         ProjectReview?
   comments       DesignComment[]
+  notifications  Notification[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -954,4 +957,34 @@ model ProductEvent {
   @@index([userId, type, createdAt]) // Khối "Của bạn"
   @@index([projectId, type]) // Thời gian tạo hộp: nhịp studio và lần xuất đầu tiên của từng dự án
   @@map("product_events")
+}
+
+// Hộp thư thông báo (docs/25 S8): "có người remix thiết kế của bạn" và "file in đã xong". Chỉ lưu id: tên người remix
+// được đọc lúc hiển thị, nên tài khoản đã xóa hay ẩn danh không còn tên trong hộp thư của ai.
+enum NotificationType {
+  PROJECT_REMIXED // project = thiết kế gốc của người nhận; actor = người remix gần nhất; count = số lượt gộp lại
+  EXPORT_COMPLETED // project = thiết kế đã xuất; payload { exportJobId, fileType }
+}
+
+model Notification {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid // Người nhận
+  type      NotificationType
+  projectId String           @map("project_id") @db.Uuid
+  actorId   String?          @map("actor_id") @db.Uuid // Người gây ra (remix); null khi tài khoản bị xóa hoặc ẩn danh
+  count     Int              @default(1) // Lượt remix chưa đọc của cùng thiết kế được gộp vào một dòng
+  payload   Json             @default("{}")
+  readAt    DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user    User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor   User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Thêm trong migration (Prisma chưa khai báo được chỉ mục một phần): notifications_unread_idx (user_id, project_id)
+  // WHERE read_at IS NULL, cho số chưa đọc và luật gộp remix.
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)]) // Danh sách mới nhất trước, con trỏ (createdAt, id)
+  @@index([projectId]) // CASCADE khi xóa dự án
+  @@index([actorId]) // SET NULL khi xóa người dùng
+  @@map("notifications")
 }

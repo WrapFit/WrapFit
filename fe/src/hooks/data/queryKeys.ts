@@ -36,6 +36,12 @@ export const queryKeys = {
     unboxing: (slug: string) => ["public", "unboxing", slug] as const,
   },
 
+  notifications: {
+    all: ["notifications"] as const,
+    unread: ["notifications", "unread"] as const,
+    list: ["notifications", "list"] as const,
+  },
+
   storageUsage: ["storage", "usage"] as const,
   aiUsage: ["ai", "usage"] as const,
   aiImageCatalog: ["ai", "models"] as const,

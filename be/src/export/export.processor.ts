@@ -3,7 +3,7 @@ import { Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PRINT_DPI, type BoxDimensions, type CanvasElement } from '@wrapfit/shared';
 import { Job } from 'bullmq';
-import { ConfigService, runWithRequestId } from '../common';
+import { ConfigService, EXPORT_COMPLETED, ExportCompletedEvent, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
@@ -13,8 +13,6 @@ import { renderPrintPackage } from './rendering/print-package';
 import { fontUrlsOf } from '@wrapfit/shared';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
 import { Artwork, imageResolutions, renderDxf, renderPdf, renderSvg, svgImages } from './rendering/print-renderers';
-
-export const EXPORT_COMPLETED = 'export.completed';
 
 /**
  * Images embedded in one print file, in total. The SVG export holds them twice more as base64 text (about 1.33 x
@@ -149,7 +147,9 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       });
       await pruneAutomaticSnapshots(tx, project.id);
     });
-    this.events.emit(EXPORT_COMPLETED, { exportJobId, projectId: project.id, userId: project.userId });
+    // After the commit: NotificationsCoreModule (registered in this worker) stores "your file is ready" for the owner.
+    const completed: ExportCompletedEvent = { exportJobId, projectId: project.id, userId: project.userId, fileType: job.fileType };
+    this.events.emit(EXPORT_COMPLETED, completed);
     this.logger.log(
       `Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed in ${Date.now() - startedAt} ms`,
     );

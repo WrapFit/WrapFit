@@ -1,11 +1,11 @@
 import { inflateSync } from 'zlib';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Job } from 'bullmq';
-import type { ConfigService } from '../common';
 import type { PrismaService } from '../shared/prisma';
 import type { StorageService } from '../storage';
 import type { ExportJobData } from './export.constants';
-import { EXPORT_COMPLETED, ExportProcessor, MAX_ARTWORK_BYTES } from './export.processor';
+import { EXPORT_COMPLETED, type ConfigService } from '../common';
+import { ExportProcessor, MAX_ARTWORK_BYTES } from './export.processor';
 
 describe('ExportProcessor', () => {
   const project = {
@@ -79,7 +79,7 @@ describe('ExportProcessor', () => {
     });
     // Only the newest automatic snapshots are kept.
     expect(prisma.$executeRaw.mock.calls[0][0].join('?')).toContain('DELETE FROM project_snapshots');
-    expect(events.emit).toHaveBeenCalledWith(EXPORT_COMPLETED, { exportJobId: 'job-1', projectId: 'p-1', userId: 'u-1' });
+    expect(events.emit).toHaveBeenCalledWith(EXPORT_COMPLETED, { exportJobId: 'job-1', projectId: 'p-1', userId: 'u-1', fileType: 'DXF' });
   });
 
   it('lets BullMQ retry, and marks the job FAILED only after the last attempt', async () => {

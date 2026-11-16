@@ -35,7 +35,9 @@ export async function hasFinancialHistory(tx: Prisma.TransactionClient, userId: 
 /**
  * Hard delete of a user without financial history, inside the caller's transaction. Returns the keys of the objects
  * to delete from the bucket after the commit. Their free credit lots (ADMIN, PLAN_ALLOWANCE, with their debits) go
- * first: credit_lots.user_id is ON DELETE RESTRICT. The rest cascades from the user row, as before.
+ * first: credit_lots.user_id is ON DELETE RESTRICT. The rest cascades from the user row, as before: their own
+ * notifications go with it, and remix notifications they caused in other inboxes lose their actor (ON DELETE SET NULL),
+ * so those show "Một người dùng WrapFit".
  */
 export async function hardDeleteUser(tx: Prisma.TransactionClient, storage: StorageService, userId: string) {
   const keys = await storage.releaseUserFiles(userId, tx);
@@ -55,10 +57,11 @@ export async function hardDeleteUser(tx: Prisma.TransactionClient, storage: Stor
  *
  * Deleted: every other design with its files, as a hard delete does (uploads shown by remixes of other users are
  * handed over to them), uploads no kept design shows (avatar, logo, AI images, fonts), collections, likes (counts
- * corrected), social mockups, refresh and email tokens, the print shop membership.
+ * corrected), social mockups, refresh and email tokens, the print shop membership, the user's own notifications.
  *
  * Scrubbed: the user row (email, names, shop, avatar, brand kit, billing details, password, Google id, referral
- * code), the author name of the user's comments on kept designs, the user id of analytics events.
+ * code), the author name of the user's comments on kept designs, the user id of analytics events, the actor of the
+ * remix notifications they caused in other inboxes (those never stored a name; they now show "Một người dùng WrapFit").
  *
  * Nothing can be paid any more: PENDING payments become CANCELLED (a late transfer lands UNMATCHED for an admin to
  * refund) and PENDING_PAYMENT orders become CANCELLED, with a history row by the admin.
@@ -129,6 +132,8 @@ export async function anonymizeUser(
   await tx.refreshToken.deleteMany({ where: { userId } });
   await tx.authToken.deleteMany({ where: { userId } });
   await tx.printShopMember.deleteMany({ where: { userId } });
+  await tx.notification.deleteMany({ where: { userId } });
+  await tx.notification.updateMany({ where: { actorId: userId }, data: { actorId: null } });
   await tx.productEvent.updateMany({ where: { userId }, data: { userId: null } });
   await tx.aiGeneration.updateMany({ where: { userId }, data: { theme: '' } });
   await tx.aiImageJob.updateMany({ where: { userId }, data: { prompt: null, promptEn: null } });
