@@ -12,15 +12,32 @@ import {
   type DielinePiece,
   type QuoteFinish,
 } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Columns3, Info, Layers, PackageOpen, Sparkles } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Box,
+  Check,
+  ChevronDown,
+  Columns3,
+  ExternalLink,
+  Info,
+  Layers,
+  Lock,
+  PackageOpen,
+  SlidersHorizontal,
+  Sparkles,
+  Tag,
+} from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { formatVnd } from "@/features/pricing";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { PRIMARY_PILL, SectionCard, SECONDARY_PILL, StepActionBar, StepHeader, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
-import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
+import { PRIMARY_PILL, SectionCard, SECONDARY_PILL, StepActionBar, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
+import { continueTo } from "@/features/studio/components/StudioStepper";
 import { clampDimension } from "@/features/studio/utils/dieline";
 import { PAPER_STOCKS, paperAdvice, paperStockOf, type PaperStock } from "@/features/studio/utils/paperStocks";
+import { Dialog, Tooltip } from "@/components/ui";
 import type { DimensionLimits } from "@/types/api";
 import { cn } from "@/utils/helpers";
 
@@ -80,10 +97,10 @@ function lightOnKraft(elements: CanvasElement[]) {
 }
 
 /** A sample of the paper: its printed side, with what shows at the edge (grey back, board core, fibres). */
-function PaperSwatch({ paper }: { paper: PaperStock }) {
+function PaperSwatch({ paper, className }: { paper: PaperStock; className?: string }) {
   const { outside, inside } = paper.swatch;
   return (
-    <svg viewBox="0 0 56 56" className="size-14 shrink-0 rounded-control" aria-hidden>
+    <svg viewBox="0 0 56 56" className={cn("size-10 shrink-0 rounded-lg ring-1 ring-black/10", className)} aria-hidden>
       <rect width="56" height="56" fill={outside} />
       {paper.theme === "kraft" &&
         [6, 13, 21, 27, 34, 42, 49].map((y, i) => (
@@ -237,13 +254,24 @@ function PaperIdentity({ paper }: { paper: PaperStock }) {
   );
 }
 
-/** The four stocks side by side on what tells them apart; a column header picks that stock. */
-function PaperCompare({ current, prices, onChoose }: { current: BoxMaterialTheme; prices: Record<string, number>; onChoose(stock: PaperStock): void }) {
+/** Compare table of all paper stocks, shown in a clean Modal dialog. */
+function PaperCompareDialog({
+  open,
+  onClose,
+  current,
+  prices,
+  onChoose,
+}: {
+  open: boolean;
+  onClose(): void;
+  current: BoxMaterialTheme;
+  prices: Record<string, number>;
+  onChoose(stock: PaperStock): void;
+}) {
+  if (!open) return null;
+
   const rows: { label: string; cell(stock: PaperStock): React.ReactNode }[] = [
-    { label: "Màu in", cell: (stock) => <Meter value={stock.ratings.color} label="Màu in" /> },
-    { label: "Độ cứng", cell: (stock) => <Meter value={stock.stiffness} label="Độ cứng" /> },
-    { label: "Cảm giác cao cấp", cell: (stock) => <Meter value={stock.ratings.premium} label="Cảm giác cao cấp" /> },
-    { label: "Thân thiện môi trường", cell: (stock) => <Meter value={stock.ratings.eco} label="Thân thiện môi trường" /> },
+    { label: "Mặt in", cell: (stock) => <span className="text-xs leading-5 text-fg">{stock.identity.printSide}</span> },
     {
       label: "Mặt trong",
       cell: (stock) => (
@@ -253,42 +281,92 @@ function PaperCompare({ current, prices, onChoose }: { current: BoxMaterialTheme
         </span>
       ),
     },
-    { label: "Độ dày", cell: (stock) => <span className="tabular-nums">{stock.spec.caliper.toFixed(2).replace(".", ",")} mm</span> },
-    { label: `Giá/hộp (${PRICE_QUANTITY} hộp)`, cell: (stock) => <span className="font-semibold tabular-nums">{formatVnd(prices[stock.theme])}</span> },
+    { label: "Màu in", cell: (stock) => <Meter value={stock.ratings.color} label="Màu in" /> },
+    { label: "Độ cứng", cell: (stock) => <Meter value={stock.stiffness} label="Độ cứng" /> },
+    { label: "Cảm giác cao cấp", cell: (stock) => <Meter value={stock.ratings.premium} label="Cảm giác cao cấp" /> },
+    { label: "Thân thiện môi trường", cell: (stock) => <Meter value={stock.ratings.eco} label="Thân thiện môi trường" /> },
+    { label: "Độ dày", cell: (stock) => <span className="tabular-nums font-mono">{stock.spec.caliper.toFixed(2).replace(".", ",")} mm</span> },
+    { label: `Giá/hộp (${PRICE_QUANTITY} hộp)`, cell: (stock) => <span className="font-bold text-fpt-orange-ink tabular-nums">{formatVnd(prices[stock.theme])}</span> },
+    {
+      label: "Ưu điểm",
+      cell: (stock) => (
+        <ul className="space-y-1 text-xs text-fg">
+          {stock.pros.map((p) => (
+            <li key={p} className="flex items-start gap-1">
+              <Check className="mt-0.5 size-3 shrink-0 text-success-fg" aria-hidden />
+              <span>{p}</span>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+    {
+      label: "Cần lưu ý",
+      cell: (stock) => (
+        <ul className="space-y-1 text-xs text-fg">
+          {stock.cons.map((c) => (
+            <li key={c} className="flex items-start gap-1">
+              <AlertTriangle className="mt-0.5 size-3 shrink-0 text-warning-fg" aria-hidden />
+              <span>{c}</span>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
   ];
+
   return (
-    <details className="group mt-3 rounded-panel border border-line">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-body-sm font-semibold text-fg">
-        <span className="inline-flex items-center gap-2">
-          <Columns3 className="size-4 text-fpt-orange" aria-hidden />
-          So sánh {PAPER_STOCKS.length} loại giấy
-        </span>
-        <ChevronDown className="size-4 text-fg-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-      </summary>
-      <div className="overflow-x-auto border-t border-line">
-        <table className="w-full min-w-[520px] text-left text-caption">
+    <Dialog
+      title="So sánh chi tiết 4 loại giấy bao bì"
+      description={`Quy cách và đặc tính in ấn thực tế (Giá tính cho mẻ ${PRICE_QUANTITY} hộp)`}
+      size="xl"
+      onClose={onClose}
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[620px] text-left text-caption">
           <thead>
-            <tr>
-              <th scope="col" className="px-3 py-2 font-medium text-fg-muted">
-                <span className="sr-only">Tiêu chí</span>
+            <tr className="border-b border-line">
+              <th scope="col" className="px-3 py-2.5 font-medium text-fg-muted w-36">
+                Tiêu chí
               </th>
-              {PAPER_STOCKS.map((stock) => (
-                <th key={stock.theme} scope="col" className={cn("px-2 py-2", stock.theme === current && "bg-fpt-orange-light")}>
-                  <button type="button" onClick={() => onChoose(stock)} aria-pressed={stock.theme === current} className="text-left font-semibold text-fg hover:underline">
-                    {stock.name.replace(" GSM", "")}
-                  </button>
-                </th>
-              ))}
+              {PAPER_STOCKS.map((stock) => {
+                const isSelected = stock.theme === current;
+                return (
+                  <th key={stock.theme} scope="col" className={cn("px-3 py-2.5", isSelected && "bg-orange-50/80 rounded-t-xl")}>
+                    <div className="flex flex-col gap-1">
+                      <span className="font-bold text-sm text-fg">{stock.name}</span>
+                      <span className="text-xs text-fg-muted font-normal">{stock.finishLabel}</span>
+                      {isSelected ? (
+                        <div className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg bg-fpt-orange py-1 text-xs font-semibold text-white shadow-xs">
+                          <Check className="size-3.5 stroke-[2.5]" aria-hidden />
+                          <span>Đang chọn</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onChoose(stock);
+                            onClose();
+                          }}
+                          className="mt-1 w-full rounded-lg border border-line bg-white py-1 text-xs font-semibold text-fg hover:border-fpt-orange hover:text-fpt-orange-ink transition-colors"
+                        >
+                          Chọn loại này
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-line/60">
             {rows.map((row) => (
-              <tr key={row.label} className="border-t border-line/60">
-                <th scope="row" className="whitespace-nowrap px-3 py-2 font-medium text-fg-muted">
+              <tr key={row.label} className="hover:bg-slate-50/60 transition-colors">
+                <th scope="row" className="whitespace-nowrap px-3 py-2.5 font-medium text-fg-muted text-xs align-top">
                   {row.label}
                 </th>
                 {PAPER_STOCKS.map((stock) => (
-                  <td key={stock.theme} className={cn("px-2 py-2 text-fg", stock.theme === current && "bg-fpt-orange-light")}>
+                  <td key={stock.theme} className={cn("px-3 py-2.5 align-top", stock.theme === current && "bg-orange-50/40")}>
                     {row.cell(stock)}
                   </td>
                 ))}
@@ -297,7 +375,7 @@ function PaperCompare({ current, prices, onChoose }: { current: BoxMaterialTheme
           </tbody>
         </table>
       </div>
-    </details>
+    </Dialog>
   );
 }
 
@@ -320,11 +398,29 @@ export function Step3PaperFinish({
 }: Step3PaperFinishProps) {
   const paper = paperStockOf(activeMaterial);
   const [showInside, setShowInside] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  const [showFaceLabels, setShowFaceLabels] = useState(true);
   const t = dimensions.paperThickness;
   const range = limits?.paperThickness ?? { min: 0.3, max: 0.6 };
   const advice = useMemo(() => paperAdvice(boxType, dimensions), [boxType, dimensions]);
   const lamination = finishes.find((f) => LAMINATIONS.includes(f)) ?? null;
   const lightCount = useMemo(() => (paper.theme === "kraft" ? lightOnKraft(elements) : 0), [paper.theme, elements]);
+
+  const finishSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (lamination) {
+      parts.push(`Cán màng ${LAMINATION_SHORT[lamination] ?? lamination}`);
+    }
+    const activeExtras = EXTRAS.filter((e) => finishes.includes(e));
+    if (activeExtras.length > 0) {
+      parts.push(activeExtras.map((e) => FINISH_LABELS[e]).join(", "));
+    }
+    if (parts.length === 0) {
+      return "Mặc định: Không cán màng · Để mộc theo giấy";
+    }
+    return parts.join(" · ");
+  }, [lamination, finishes]);
 
   const perBox = (stock: PaperStock, withFinishes: QuoteFinish[]) =>
     quote({ structure: boxType, pieces, quantity: PRICE_QUANTITY, paper: stock.quotePaper, finishes: withFinishes }).perBox;
@@ -357,20 +453,16 @@ export function Step3PaperFinish({
     );
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
-      <StepHeader
-        title={studioStep(3).title}
-        subtitle="Giá mỗi hộp đổi ngay khi bạn chọn."
-      />
-
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <StudioCard className="overflow-hidden lg:sticky lg:top-24 lg:self-start">
-          <div className="relative h-[420px] bg-landing-canvas sm:h-[560px]">
+    <div className="mx-auto w-full max-w-[1600px] px-4 pb-8 pt-4 sm:px-6">
+      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <StudioCard className="flex flex-col overflow-hidden h-full min-h-[360px]">
+          <div className="relative flex-1 min-h-[320px] bg-landing-canvas">
             <div className="absolute inset-0">
               <Box3DView
                 dimensions={dimensions}
                 foldProgress={1}
-                faceLabels
+                faceLabels={showFaceLabels}
+                cameraView={cameraView}
                 interactiveOpenState={showInside}
                 boxType={boxType}
                 theme={activeMaterial}
@@ -379,51 +471,111 @@ export function Step3PaperFinish({
                 formulaVersion={formulaVersion}
                 showHud={false}
                 showStatusBar={false}
+                viewControls={false}
+                enableMacroZoom={false}
                 frameless
                 minHeight={false}
-                chrome="bar"
-                barStart={
-                  <>
-                    <span className="font-semibold text-fg">{paper.name}</span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.outside }} />
-                      Mặt in
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.inside }} />
-                      Mặt trong
-                    </span>
-                  </>
-                }
-                barEnd={
-                  <>
-                    {/* The inside is what tells the stocks apart once the box is open (white, grey, brown). */}
-                    <button type="button" onClick={() => setShowInside((v) => !v)} aria-pressed={showInside} className={stageBarButton(showInside)}>
-                      <PackageOpen className="size-3.5" aria-hidden />
-                      {showInside ? "Đóng nắp" : "Mở xem mặt trong"}
-                    </button>
-                    <span className="mx-0.5 h-4 w-px bg-line" aria-hidden />
-                  </>
-                }
                 className="h-full w-full"
               />
+            </div>
+
+            {/* Bottom HUD bar with paper info & interactive 3D Controls dock identical to Step 2 */}
+            <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white/95 via-white/85 to-transparent px-4 pb-3 pt-6 backdrop-blur-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3 text-xs text-slate-700">
+                  <span className="font-semibold text-fg">{paper.name}</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.outside }} />
+                    Mặt in
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.inside }} />
+                    Mặt trong
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowInside((v) => !v)}
+                    className={cn(
+                      "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                      showInside ? "bg-fpt-orange text-white shadow-xs" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
+                    )}
+                  >
+                    <PackageOpen className="size-3.5" aria-hidden />
+                    {showInside ? "Đóng nắp" : "Mở xem mặt trong"}
+                  </button>
+                </div>
+
+                <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
+                  {(
+                    [
+                      { view: "angle", label: "3/4" },
+                      { view: "front", label: "Trước" },
+                      { view: "side", label: "Bên" },
+                      { view: "top", label: "Trên" },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.view}
+                      type="button"
+                      onClick={() => setCameraView(item.view)}
+                      aria-pressed={cameraView === item.view}
+                      title={`Góc nhìn ${item.label.toLowerCase()}`}
+                      className={cn(
+                        "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                        cameraView === item.view
+                          ? "bg-fpt-orange text-white shadow-xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      )}
+                    >
+                      {item.view === "angle" && <Box className="size-3" aria-hidden />}
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                  <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => setShowFaceLabels((prev) => !prev)}
+                    aria-pressed={showFaceLabels}
+                    title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
+                    className={cn(
+                      "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                      showFaceLabels
+                        ? "bg-fpt-orange text-white shadow-xs"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                    )}
+                  >
+                    <Tag className="size-3" aria-hidden />
+                    <span>Nhãn mặt</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </StudioCard>
 
         <div className="flex flex-col gap-4">
-          <SectionCard aria-label="Giấy" tone="accent" icon={Layers} title="Giấy" hint={`Giá mỗi hộp khi in ${PRICE_QUANTITY} hộp`}>
-            <p className="flex items-start gap-2 rounded-xl bg-success-bg/60 px-3 py-2 text-body-sm text-fg">
-              <Sparkles className="mt-0.5 size-4 shrink-0 text-success-fg" aria-hidden />
-              <span>
-                Đề xuất <strong className="font-semibold">{paperStockOf(advice.recommended).name}</strong>: {advice.reason}
-              </span>
-            </p>
-
-            <div role="radiogroup" aria-label="Giấy" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <SectionCard
+            aria-label="Giấy"
+            tone="accent"
+            icon={Layers}
+            title="Giấy"
+            hint={`Giá mỗi hộp khi in ${PRICE_QUANTITY} hộp`}
+            action={
+              <button
+                type="button"
+                onClick={() => setShowCompare(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-fpt-orange hover:text-fpt-orange-ink hover:underline transition-colors"
+              >
+                <span>So sánh các loại giấy</span>
+                <ExternalLink className="size-3.5" aria-hidden />
+              </button>
+            }
+          >
+            <div role="radiogroup" aria-label="Giấy" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {PAPER_STOCKS.map((stock) => {
                 const active = stock.theme === paper.theme;
                 const soft = advice.tooSoft[stock.theme];
+                const isRecommended = stock.theme === advice.recommended;
                 return (
                   <button
                     key={stock.theme}
@@ -432,48 +584,56 @@ export function Step3PaperFinish({
                     aria-checked={active}
                     onClick={() => choose(stock)}
                     className={cn(
-                      "relative flex items-start gap-3 rounded-panel border-2 bg-surface-raised p-2.5 pr-3 text-left transition-[border-color,box-shadow] motion-reduce:transition-none",
-                      active ? "border-fpt-orange-ink" : "border-line hover:border-fg hover:shadow-hard-sm"
+                      "group relative flex items-start gap-3 rounded-panel border-2 p-3 text-left transition-all motion-reduce:transition-none",
+                      active
+                        ? "border-fpt-orange bg-fpt-orange-light/20 shadow-xs ring-1 ring-fpt-orange/20"
+                        : "border-line bg-surface-raised hover:border-line-strong hover:shadow-xs"
                     )}
                   >
-                    <PaperSwatch paper={stock} />
-                    <span className={cn("min-w-0 flex-1", soft && !active && "opacity-70")}>
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <span className="text-body-sm font-semibold text-fg">{stock.name}</span>
-                        {stock.theme === advice.recommended && (
-                          <span className="rounded-full bg-success-bg px-2 py-0.5 text-label-sm font-semibold text-success-fg">Đề xuất</span>
+                    <PaperSwatch paper={stock} className="size-10 rounded-lg shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-body-sm font-bold text-fg truncate">{stock.name}</span>
+                        <span
+                          className={cn(
+                            "flex size-4.5 shrink-0 items-center justify-center rounded-full transition-all",
+                            active
+                              ? "bg-fpt-orange text-white shadow-xs"
+                              : "border border-line bg-surface-sunken/40 text-transparent group-hover:border-line-strong"
+                          )}
+                          aria-hidden
+                        >
+                          <Check className="size-2.5" strokeWidth={3} />
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-caption text-fg-muted line-clamp-1">
+                        {stock.description}
+                      </p>
+                      <div className="mt-2 flex items-center justify-between gap-1">
+                        <span className="text-body-sm font-semibold tabular-nums text-fg">
+                          {formatVnd(prices.byPaper[stock.theme])}
+                          <span className="text-caption font-normal text-fg-muted"> / hộp</span>
+                        </span>
+                        {isRecommended && (
+                          <Tooltip content={advice.reason} side="top">
+                            <span className="cursor-help rounded-full bg-success-bg px-2 py-0.5 text-label-sm font-semibold text-success-fg shrink-0">
+                              Đề xuất
+                            </span>
+                          </Tooltip>
                         )}
-                      </span>
-                      <span className="mt-1 flex flex-wrap gap-1">
-                        {stock.tags.map((tag) => (
-                          <span key={tag} className="rounded-full bg-surface-sunken px-2 py-0.5 text-label-sm font-medium text-fg">
-                            {tag}
-                          </span>
-                        ))}
-                      </span>
-                      <span className="mt-1.5 block text-body-sm font-semibold tabular-nums text-fg">
-                        {formatVnd(prices.byPaper[stock.theme])}
-                        <span className="font-normal text-fg-muted"> / hộp</span>
-                      </span>
+                      </div>
                       {soft && (
-                        <span className="mt-1 flex items-start gap-1 text-caption text-warning-fg">
+                        <span className="mt-1.5 flex items-start gap-1 text-caption text-warning-fg">
                           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                           {soft}
                         </span>
                       )}
-                    </span>
-                    {active && (
-                      <span className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-fpt-orange-ink text-white shadow-sm">
-                        <Check className="size-3.5" strokeWidth={3} aria-hidden />
-                      </span>
-                    )}
+                    </div>
                   </button>
                 );
               })}
             </div>
 
-            <PaperIdentity paper={paper} />
-            <PaperCompare current={paper.theme} prices={prices.byPaper} onChoose={choose} />
             {(paper.printNote || lightCount > 0) && (
               <p role="note" className="mt-3 flex items-start gap-2 rounded-control bg-warning-bg px-3 py-2 text-body-sm text-warning-fg">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -483,75 +643,110 @@ export function Step3PaperFinish({
                 </span>
               </p>
             )}
+
+            {/* Tinh chỉnh độ dày giấy thực tế (sổ ra sẵn cố định để khách hàng tùy chỉnh) */}
+            <div className="mt-3.5 border-t border-line/60 pt-3">
+              <div className="flex items-center justify-between text-caption font-semibold text-fg">
+                <span className="inline-flex items-center gap-1.5">
+                  <SlidersHorizontal className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span>Tinh chỉnh độ dày giấy thực tế (nâng cao)</span>
+                </span>
+                <span className="rounded-full bg-fpt-orange-light px-2.5 py-0.5 text-caption font-semibold tabular-nums text-fpt-orange-ink">
+                  {t.toFixed(2).replace(".", ",")} mm
+                </span>
+              </div>
+              <div className="mt-2 rounded-xl bg-surface-sunken/60 p-3">
+                <label className="block">
+                  <input
+                    type="range"
+                    min={range.min}
+                    max={range.max}
+                    step={0.01}
+                    value={t}
+                    onChange={(e) =>
+                      onDimensionsChange({
+                        ...dimensions,
+                        paperThickness: clampDimension(limits, "paperThickness", Number(Number(e.target.value).toFixed(2))),
+                      })
+                    }
+                    className="w-full cursor-pointer accent-fpt-orange"
+                  />
+                  <span className="mt-1 flex justify-between text-caption tabular-nums text-fg-muted">
+                    <span>{range.min.toFixed(2).replace(".", ",")} mm</span>
+                    <span>{range.max.toFixed(2).replace(".", ",")} mm</span>
+                  </span>
+                </label>
+              </div>
+            </div>
           </SectionCard>
 
-          <SectionCard aria-labelledby="finish-title" icon={Sparkles} title={<span id="finish-title">Hoàn thiện</span>} hint="Làm ở xưởng in, cộng vào giá mỗi hộp">
-            <p className="text-label font-semibold text-fg">Cán màng</p>
-            <div role="radiogroup" aria-label="Cán màng" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[null, ...LAMINATIONS].map((finish) => (
-                <button key={finish ?? "none"} type="button" role="radio" aria-checked={lamination === finish} onClick={() => setLamination(finish)} className={chip(lamination === finish)}>
-                  <span className="text-body-sm font-semibold text-fg">{finish ? LAMINATION_SHORT[finish] : "Không cán"}</span>
-                  <span className="text-caption tabular-nums text-fg-muted">{finish ? `+${formatVnd(prices.extra(finish))}` : "Giấy để mộc"}</span>
-                </button>
-              ))}
-            </div>
-            {lamination && <p className="mt-1.5 text-caption text-fg-muted">{FINISH_NOTES[lamination]}.</p>}
-
-            <p className="mt-4 text-label font-semibold text-fg">Thêm</p>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {EXTRAS.map((finish) => {
-                const needsLamination = finish === "spot-uv" && !lamination;
-                const on = finishes.includes(finish);
-                return (
+          {/* Tùy chọn hoàn thiện (sổ ra sẵn cố định để khách hàng chọn) */}
+          <SectionCard
+            aria-labelledby="finish-title"
+            icon={Sparkles}
+            title={<span id="finish-title">Tùy chọn hoàn thiện</span>}
+            hint="Làm ở xưởng in, cộng vào giá mỗi hộp"
+          >
+            <div>
+              <p className="text-label font-semibold text-fg">Cán màng</p>
+              <div role="radiogroup" aria-label="Cán màng" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[null, ...LAMINATIONS].map((finish) => (
                   <button
-                    key={finish}
+                    key={finish ?? "none"}
                     type="button"
-                    aria-pressed={on}
-                    disabled={needsLamination}
-                    onClick={() => toggle(finish)}
-                    className={chip(on, needsLamination)}
+                    role="radio"
+                    aria-checked={lamination === finish}
+                    onClick={() => setLamination(finish)}
+                    className={chip(lamination === finish)}
                   >
-                    <span className="flex w-full items-center justify-between gap-2">
-                      <span className="text-body-sm font-semibold text-fg">{FINISH_LABELS[finish]}</span>
-                      <span className="text-caption tabular-nums text-fg-muted">+{formatVnd(prices.extra(finish))}</span>
-                    </span>
-                    <span className="text-caption text-fg-muted">{needsLamination ? "Cần cán màng trước" : FINISH_NOTES[finish]}</span>
+                    <span className="text-body-sm font-semibold text-fg">{finish ? LAMINATION_SHORT[finish] : "Không cán"}</span>
+                    <span className="text-caption tabular-nums text-fg-muted">{finish ? `+${formatVnd(prices.extra(finish))}` : "Giấy để mộc"}</span>
                   </button>
-                );
-              })}
-            </div>
-            {finishes.some((f) => EXTRAS.includes(f)) && (
-              <p className="mt-2 flex items-start gap-2 text-caption leading-5 text-fg-muted">
-                <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
-                In nhiều, phí ép kim/UV giảm.
-              </p>
-            )}
+                ))}
+              </div>
+              {lamination && <p className="mt-1.5 text-caption text-fg-muted">{FINISH_NOTES[lamination]}.</p>}
 
-            <details className="mt-4 border-t border-line pt-3">
-              <summary className="cursor-pointer text-body-sm font-medium text-fg">Tinh chỉnh độ dày giấy (nâng cao)</summary>
-              <label className="mt-3 block">
-                <span className="flex items-center justify-between text-body-sm text-fg-muted">
-                  Độ dày đo thực tế
-                  <span className="rounded-full bg-fpt-orange-light px-2.5 py-0.5 text-caption font-semibold tabular-nums text-fpt-orange-ink">{t.toFixed(2).replace(".", ",")} mm</span>
-                </span>
-                <input
-                  type="range"
-                  min={range.min}
-                  max={range.max}
-                  step={0.01}
-                  value={t}
-                  onChange={(e) => onDimensionsChange({ ...dimensions, paperThickness: clampDimension(limits, "paperThickness", Number(Number(e.target.value).toFixed(2))) })}
-                  className="mt-2 w-full cursor-pointer accent-fpt-orange"
-                />
-                <span className="flex justify-between text-caption tabular-nums text-fg-muted">
-                  <span>{range.min.toFixed(2).replace(".", ",")} mm</span>
-                  <span>{range.max.toFixed(2).replace(".", ",")} mm</span>
-                </span>
-              </label>
-            </details>
+              <p className="mt-4 text-label font-semibold text-fg">Gia công thêm</p>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {EXTRAS.map((finish) => {
+                  const needsLamination = finish === "spot-uv" && !lamination;
+                  const on = finishes.includes(finish);
+                  return (
+                    <button
+                      key={finish}
+                      type="button"
+                      aria-pressed={on}
+                      disabled={needsLamination}
+                      onClick={() => toggle(finish)}
+                      className={chip(on, needsLamination)}
+                    >
+                      <span className="flex w-full items-center justify-between gap-1">
+                        <span className="text-body-sm font-semibold text-fg truncate">{FINISH_LABELS[finish]}</span>
+                        <span className="text-caption tabular-nums text-fg-muted shrink-0">+{formatVnd(prices.extra(finish))}</span>
+                      </span>
+                      <span className="text-caption text-fg-muted line-clamp-1">{needsLamination ? "Cần cán màng" : FINISH_NOTES[finish]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {finishes.some((f) => EXTRAS.includes(f)) && (
+                <p className="mt-2 flex items-start gap-2 text-caption leading-5 text-fg-muted">
+                  <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
+                  In nhiều mẻ lớn, phí khuôn ép kim / bản phim UV sẽ được tối ưu.
+                </p>
+              )}
+            </div>
           </SectionCard>
         </div>
       </div>
+
+      <PaperCompareDialog
+        open={showCompare}
+        onClose={() => setShowCompare(false)}
+        current={paper.theme}
+        prices={prices.byPaper}
+        onChoose={choose}
+      />
 
       <StepActionBar
         back={

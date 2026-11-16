@@ -196,13 +196,8 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const tile = "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border border-line-strong bg-surface-raised px-1 py-1.5 text-center transition-colors hover:border-fg disabled:opacity-60";
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
-      <StepHeader
-        title={studioStep(5).title}
-        subtitle={`${structureName} · ${dimensions.length} × ${dimensions.width} × ${dimensions.height} mm · ${paper.name}`}
-      />
-
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-4 sm:px-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
         {/* The set: what the photo will be. Sticky, so it stays in view while the panel scrolls. */}
         <div className="flex flex-col overflow-hidden rounded-sheet bg-surface-raised lg:sticky lg:top-[88px] lg:self-start">
           <div className="relative h-[480px] w-full overflow-hidden bg-landing-canvas lg:h-[calc(100dvh-160px)] lg:min-h-[480px]">

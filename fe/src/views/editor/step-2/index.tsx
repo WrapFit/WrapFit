@@ -171,9 +171,9 @@ export default function Step2DimensionsPage() {
       </section>
 
       {/* ================= 3. CENTRAL 2-COLUMN WORKSPACE ================= */}
-      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 py-4 min-h-0 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* LEFT COLUMN (5 COLS): PARAMETRIC CONTROLS & CALIPER SWATCHES */}
-        <section className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-3xl border border-stone-200/90 shadow-[0_4px_24px_rgba(28,25,23,0.03)] space-y-6">
+        <section className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-3xl border border-stone-200/90 shadow-[0_4px_24px_rgba(28,25,23,0.03)] space-y-6 lg:overflow-y-auto lg:max-h-[calc(100vh-260px)]">
           {/* Measurement Mode Segmented Switch */}
           <div>
             <div className="bg-stone-100 p-1 rounded-2xl flex items-center text-xs font-semibold border border-stone-200">
@@ -433,7 +433,7 @@ export default function Step2DimensionsPage() {
         </section>
 
         {/* RIGHT COLUMN (7 COLS): 3D REAL-TIME VIEWPORT & 3 KPI METRICS */}
-        <section className="lg:col-span-7 space-y-4">
+        <section className="lg:col-span-7 lg:sticky lg:top-24 lg:self-start">
           {/* 3D Viewport Box with Top Badges & Camera Presets */}
           <div className="relative rounded-3xl bg-gradient-to-b from-white to-[#F5EFE6] border border-stone-200/90 shadow-[0_4px_24px_rgba(28,25,23,0.03)] h-[460px] overflow-hidden flex flex-col justify-between p-4">
             {/* Top Row Overlay: Realtime badge & Camera buttons */}
@@ -500,6 +500,26 @@ export default function Step2DimensionsPage() {
               />
             </div>
 
+            {/* HUD Stats Bar — inside viewport bottom */}
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-white/90 via-white/70 to-transparent px-4 pb-3 pt-8 pointer-events-none">
+              <div className="flex items-center gap-6 text-xs font-mono tabular-nums">
+                <div>
+                  <span className="text-[10px] text-stone-400 block">THỂ TÍCH</span>
+                  <span className="font-bold text-neutral-800">{volumeMl.toLocaleString('vi-VN')} ml</span>
+                </div>
+                <span className="h-4 w-px bg-stone-200" />
+                <div>
+                  <span className="text-[10px] text-stone-400 block">TRẢI RẬP</span>
+                  <span className="font-bold text-neutral-800">{dielineAreaCm2.toLocaleString('vi-VN')} cm²</span>
+                </div>
+                <span className="h-4 w-px bg-stone-200" />
+                <div>
+                  <span className="text-[10px] text-stone-400 block">KHỔ IN</span>
+                  <span className="font-bold text-neutral-800">2 Hộp / Tờ</span>
+                </div>
+              </div>
+            </div>
+
             {/* Bottom-left Mascot Floating Speech Card */}
             <div className="relative z-10 max-w-md bg-white/95 backdrop-blur-md rounded-2xl p-3.5 border border-stone-200/90 shadow-md flex items-start gap-3">
               <img
@@ -523,41 +543,6 @@ export default function Step2DimensionsPage() {
             </div>
           </div>
 
-          {/* 3 KPI Specification Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            {/* Card 1: Thể tích lọt lòng */}
-            <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-1">
-              <p className="text-cad-spec-micro font-mono tabular-nums font-bold text-stone-400 uppercase tracking-wider">
-                THỂ TÍCH LỌT LÒNG
-              </p>
-              <p className="font-mono tabular-nums text-xl font-bold text-neutral-900">
-                {volumeMl.toLocaleString('vi-VN')} ml
-              </p>
-              <p className="text-[11px] text-stone-500">Khối lượng khuyến nghị: ≤ 850g</p>
-            </div>
-
-            {/* Card 2: Diện tích trải rập */}
-            <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-1">
-              <p className="text-cad-spec-micro font-mono tabular-nums font-bold text-stone-400 uppercase tracking-wider">
-                DIỆN TÍCH TRẢI RẬP
-              </p>
-              <p className="font-mono tabular-nums text-xl font-bold text-neutral-900">
-                {dielineAreaCm2.toLocaleString('vi-VN')} cm²
-              </p>
-              <p className="text-[11px] text-stone-500">Tiêu hao vật tư: Tối ưu 94.2%</p>
-            </div>
-
-            {/* Card 3: Khổ in kinh tế */}
-            <div className="p-4 rounded-2xl bg-white border border-stone-200/90 shadow-xs space-y-1">
-              <p className="text-cad-spec-micro font-mono tabular-nums font-bold text-stone-400 uppercase tracking-wider">
-                KHỔ IN KINH TẾ
-              </p>
-              <p className="font-mono tabular-nums text-xl font-bold text-neutral-900">
-                2 Hộp / Tờ In
-              </p>
-              <p className="text-[11px] text-stone-500">Khổ 65 × 86 cm • Tiết kiệm 28%</p>
-            </div>
-          </div>
         </section>
       </main>
 

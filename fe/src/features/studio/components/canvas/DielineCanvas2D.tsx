@@ -141,6 +141,8 @@ interface DielineCanvas2DProps {
   /** Side of the sheet on screen: the outside (default) or the inside (docs/23 S5). */
   side?: PrintSide;
   className?: string;
+  /** Extra specifications or widgets rendered inline on the header bar */
+  headerExtra?: React.ReactNode;
 }
 
 /** What the pointer is doing (docs/23 S8, S12). Points are SVG coordinates (mm, padding included). */
@@ -202,6 +204,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   onTextComposerOpenChange,
   side = "outside",
   className = "",
+  headerExtra,
 }) => {
   const isStage = variant === "stage";
   const [showLayers, setShowLayers] = useState<DielineLayers>(DEFAULT_DIELINE_LAYERS);
@@ -659,6 +662,12 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <span className="tabular-nums">
             {formatMm(totalW)} × {formatMm(totalH)} mm
           </span>
+          {headerExtra && (
+            <>
+              <span className="text-slate-300" aria-hidden>•</span>
+              {headerExtra}
+            </>
+          )}
           {backgroundPatternSvg && (
             <span className="inline-flex items-center gap-1.5">
               <Sparkles className="size-3.5 text-warning" aria-hidden />
