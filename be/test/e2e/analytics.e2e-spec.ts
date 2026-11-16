@@ -1,6 +1,7 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { ANALYTICS_BOX_TYPES } from '@wrapfit/shared';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
@@ -83,12 +84,7 @@ describe('Analytics (e2e)', () => {
     });
     expect(body.boxes.byDay).toHaveLength(7);
     expect(body.boxes.byDay.at(-1).date).toBe(body.to);
-    expect(body.boxTypes).toEqual([
-      { type: 'tuck-top', count: 0 },
-      { type: 'sleeve-drawer', count: 0 },
-      { type: 'lid-base', count: 0 },
-      { type: 'pillow', count: 0 },
-    ]);
+    expect(body.boxTypes).toEqual(ANALYTICS_BOX_TYPES.map((type) => ({ type, count: 0 })));
   });
 
   it('records the projects, the blocked export, Auto-Fix and the studio heartbeats', async () => {

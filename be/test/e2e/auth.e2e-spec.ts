@@ -176,7 +176,7 @@ describe('Account emails (e2e)', () => {
       const hour = Math.floor(Date.now() / ACCOUNT_EXISTS_WINDOW_MS);
       const notice = await mailQueue.getJob(`account-exists-${user.id}-${hour}`);
       expect(notice?.data).toMatchObject({ userId: user.id });
-      expect((await mailQueue.getJobs(['waiting', 'delayed'])).filter((j) => j.data.userId === user.id)).toHaveLength(1);
+      expect((await mailQueue.getJobs(['waiting', 'delayed', 'active', 'completed'])).filter((j) => j.data.userId === user.id)).toHaveLength(1);
       await notice?.remove();
       await expect(signIn(owner, TEST_PASSWORD)).resolves.toBeDefined();
     });
