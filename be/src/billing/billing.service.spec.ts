@@ -11,7 +11,8 @@ describe('BillingService.me', () => {
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ subscriptionTier: 'FREE', isDemo }) },
       subscription: { findFirst: jest.fn().mockResolvedValue(null) },
     };
-    const credits = { lots: jest.fn().mockResolvedValue([{ remaining: 2 }, { remaining: 3 }]) };
+    // No export credit is read any more (docs/25 item 7): any call to the ledger fails the test.
+    const credits = {};
     const xuWallet = { wallet: jest.fn().mockResolvedValue({ balance: 100 }) };
     const config = { get: jest.fn().mockReturnValue(true) };
     const service = new BillingService(
@@ -28,7 +29,8 @@ describe('BillingService.me', () => {
     const { service, prisma } = build(isDemo);
     const summary = await service.me('user-1');
     // Simulation is on (config): only a demo account is offered the button (docs/25 item 6).
-    expect(summary).toMatchObject({ tier: 'FREE', isDemo, paymentSimulation: isDemo, exportCredits: { balance: 5 } });
+    expect(summary).toMatchObject({ tier: 'FREE', isDemo, paymentSimulation: isDemo, xu: { balance: 100 } });
+    expect(summary).not.toHaveProperty('exportCredits');
     expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       select: { subscriptionTier: true, isDemo: true },

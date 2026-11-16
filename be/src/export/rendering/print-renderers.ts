@@ -18,7 +18,6 @@ import {
   pixelsFor,
   rgbaToCmyk,
   textCmyk,
-  fitWatermark,
   FINISH_SPOTS,
   applyFilters,
   flipMatrix,
@@ -30,9 +29,6 @@ import {
   type ImageDraw,
   fontPackagePath,
   underlineOf,
-  WATERMARK_COLOR,
-  WATERMARK_TEXT,
-  watermarkPlacement,
   type Cmyk,
   pdfBlendName,
   shadowLayers,
@@ -78,10 +74,9 @@ const VECTOR_DPI = 600;
 // in the DXF for the die maker only.
 export const PRINT_LAYERS = ['Artwork', 'Finish', 'CutContour', 'Dimensions'] as const;
 
-/** Fonts that are not texts of the design: the spec line and dimensions (`info`) and the free-export watermark. */
+/** Fonts that are not texts of the design: the spec line and dimensions (`info`). */
 const EXTRA_FONT_FILES = {
   info: require.resolve('@expo-google-fonts/be-vietnam-pro/400Regular/BeVietnamPro_400Regular.ttf'),
-  watermark: require.resolve('@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf'),
 };
 type FontKey = PrintFontId | keyof typeof EXTRA_FONT_FILES;
 const fonts = new Map<string, OutlineFont>();
@@ -89,7 +84,7 @@ const fonts = new Map<string, OutlineFont>();
 const fontOf = (id: FontKey, face: TextFace = 'bold'): OutlineFont => {
   const key = `${id}:${face}`;
   if (!fonts.has(key)) {
-    const file = id === 'info' || id === 'watermark' ? EXTRA_FONT_FILES[id] : require.resolve(fontPackagePath(id, face));
+    const file = id === 'info' ? EXTRA_FONT_FILES[id] : require.resolve(fontPackagePath(id, face));
     fonts.set(key, openSync(file));
   }
   return fonts.get(key)!;
@@ -139,24 +134,6 @@ function dimensionMarks(layout: PrintLayout) {
 function labelPath(text: string, x: number, y: number, sizeMm: number, centred: boolean, font: FontKey = 'info') {
   const left = centred ? x - outlineAdvanceMm(fontOf(font), text, sizeMm) / 2 : x;
   return outlineText(fontOf(font), text, left, y, sizeMm);
-}
-
-/**
- * Outlines of the watermark of the free A4 PDF (docs/16 §5.4), already turned and placed on the sheet (mm), so the
- * path coordinates are sheet coordinates. Null when the layout has nowhere to put it.
- */
-export function watermarkOutline(layout: PrintLayout) {
-  const placement = watermarkPlacement(layout.pieces);
-  if (!placement) return null;
-  const font = fontOf('watermark');
-  const fit = fitWatermark(placement, (sizeMm) => outlineAdvanceMm(font, WATERMARK_TEXT, sizeMm));
-  const { origin, rotation } = fit;
-  // outlineText writes every point as "x y": turn each pair around the start of the baseline (-90: x' = y, y' = -x).
-  const d = outlineText(font, WATERMARK_TEXT, 0, 0, fit.sizeMm).replace(/(-?[\d.]+) (-?[\d.]+)/g, (_, px: string, py: string) => {
-    const [x, y] = rotation === -90 ? [Number(py), -Number(px)] : [Number(px), Number(py)];
-    return `${n(origin.x + x)} ${n(origin.y + y)}`;
-  });
-  return { d, placement, sizeMm: fit.sizeMm };
 }
 
 /** Uploaded fonts of a render (docs/23 S13), opened once from the files the worker loaded with the images. */
@@ -599,8 +576,6 @@ type RawPage = {
 export interface PdfRenderOptions {
   withCropMarks?: boolean;
   paperSize?: 'A4' | 'A3';
-  /** Free A4 export without an export credit: draws the WrapFit watermark on a glue flap (docs/16 §5.4). */
-  watermarked?: boolean;
 }
 
 /**
@@ -892,14 +867,6 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
         drawShadow,
       );
     }
-  }
-  const watermark = options?.watermarked ? watermarkOutline(layout) : null;
-  if (watermark) {
-    // ActualText: the outlines read as the sentence when the PDF is searched or its text copied.
-    const actualText = `FEFF${Buffer.from(WATERMARK_TEXT, 'utf16le').swap16().toString('hex').toUpperCase()}`;
-    doc.addContent(`/Span <</ActualText <${actualText}>>> BDC`);
-    doc.path(watermark.d).fill(hexToCmyk(WATERMARK_COLOR));
-    doc.addContent('EMC');
   }
   // Spec line in the margin: printed with the artwork so the print shop and the customer can read the box size.
   const spec = dimensionMarks(layout).info;

@@ -1,9 +1,9 @@
+import { inflateSync } from 'zlib';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Job } from 'bullmq';
 import type { ConfigService } from '../common';
 import type { PrismaService } from '../shared/prisma';
 import type { StorageService } from '../storage';
-import type { ExportCreditRefunds } from './export-credits';
 import type { ExportJobData } from './export.constants';
 import { EXPORT_COMPLETED, ExportProcessor, MAX_ARTWORK_BYTES } from './export.processor';
 
@@ -26,7 +26,6 @@ describe('ExportProcessor', () => {
   };
   let storage: { putGeneratedFile: jest.Mock; uploadedKeyOf: jest.Mock; getObject: jest.Mock };
   let events: { emit: jest.Mock };
-  let refunds: { refundFailed: jest.Mock };
   let processor: ExportProcessor;
   const job = (attemptsMade: number) =>
     ({ data: { exportJobId: 'job-1' }, attemptsMade, opts: { attempts: 3 } }) as unknown as Job<ExportJobData>;
@@ -46,13 +45,11 @@ describe('ExportProcessor', () => {
       getObject: jest.fn().mockResolvedValue({ body: Buffer.from([0x89, 0x50, 0x4e, 0x47]), contentType: 'image/png' }),
     };
     events = { emit: jest.fn() };
-    refunds = { refundFailed: jest.fn().mockResolvedValue(1) };
     processor = new ExportProcessor(
       prisma as unknown as PrismaService,
       storage as unknown as StorageService,
       events as unknown as EventEmitter2,
       { get: () => 2 } as unknown as ConfigService,
-      refunds as unknown as ExportCreditRefunds,
     );
     jest.spyOn(processor['logger'], 'warn').mockImplementation(() => undefined);
     jest.spyOn(processor['logger'], 'log').mockImplementation(() => undefined);
@@ -91,7 +88,6 @@ describe('ExportProcessor', () => {
     await expect(processor.process(job(0))).rejects.toThrow('bucket unreachable');
     await expect(processor.process(job(1))).rejects.toThrow('bucket unreachable');
     expect(prisma.exportJob.updateMany).not.toHaveBeenCalled();
-    expect(refunds.refundFailed).not.toHaveBeenCalled();
 
     await expect(processor.process(job(2))).rejects.toThrow('bucket unreachable');
     // Only an unfinished row: a job completed meanwhile (stalled, then re-run) is never turned into FAILED.
@@ -99,25 +95,27 @@ describe('ExportProcessor', () => {
       where: { id: 'job-1', status: { in: ['PENDING', 'PROCESSING'] } },
       data: { status: 'FAILED', errorLog: 'bucket unreachable' },
     });
-    // docs/16 §5.3: the last attempt gives the credit back (ExportCreditRefunds decides whether it was used).
-    expect(refunds.refundFailed).toHaveBeenCalledWith('job-1');
   });
 
-  it('keeps the original error when the refund fails too', async () => {
-    jest.spyOn(processor['logger'], 'error').mockImplementation(() => undefined);
-    storage.putGeneratedFile.mockRejectedValue(new Error('bucket unreachable'));
-    refunds.refundFailed.mockRejectedValue(new Error('db down'));
-    await expect(processor.process(job(2))).rejects.toThrow('bucket unreachable');
-  });
-
-  it('draws the watermark on a free A4 PDF and records it on the analytics event', async () => {
+  it('renders the A4 PDF clean, even for an old job row flagged watermarked (docs/25 item 7)', async () => {
     prisma.exportJob.update.mockResolvedValueOnce({ fileType: 'PDF_A4_PRINT', watermarked: true, project });
     await processor.process(job(0));
-    expect(prisma.productEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ payload: { exportJobId: 'job-1', fileType: 'PDF_A4_PRINT', watermarked: true } }),
-    });
     const [{ body }] = storage.putGeneratedFile.mock.calls[0];
-    expect((body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+    const pdf = body as Buffer;
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    // The watermark was the only marked text (/ActualText) of a print PDF: no content stream carries one now.
+    const text = pdf.toString('latin1');
+    const streams = [...text.matchAll(/stream\s/g)].map((match) => {
+      const start = match.index + match[0].length;
+      try {
+        return inflateSync(pdf.subarray(start, text.indexOf('endstream', start))).toString('latin1');
+      } catch {
+        return ''; // not a Flate stream (images are raw)
+      }
+    });
+    const content = streams.join('\n');
+    expect(content).toContain('/OC /L0 BDC');
+    expect(content).not.toContain('/ActualText');
   });
 
   describe('artwork', () => {

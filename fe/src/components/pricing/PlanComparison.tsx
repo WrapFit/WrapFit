@@ -3,12 +3,12 @@
 import React from "react";
 import { Container, Reveal } from "@/components/landing";
 import { DataTable, type DataColumn } from "@/components/ui";
-import { PLANS, PLAN_ORDER } from "@/features/pricing";
+import { PLANS, PLANS_ON_SALE } from "@/features/pricing";
 import { COMPARISON, type ComparisonRow } from "./content";
 
 const COLUMNS: DataColumn<ComparisonRow>[] = [
   { key: "feature", label: "Tính năng", primary: true, render: (row) => <span className="font-medium text-fg">{row.feature}</span> },
-  ...PLAN_ORDER.map((tier) => ({ key: tier, label: PLANS[tier].name, render: (row: ComparisonRow) => row.values[tier] })),
+  ...PLANS_ON_SALE.map((tier) => ({ key: tier, label: PLANS[tier].name, render: (row: ComparisonRow) => row.values[tier] })),
 ];
 
 /** What each plan gives, row by row: makes clear that the free plan cannot export a print file without a purchase. */

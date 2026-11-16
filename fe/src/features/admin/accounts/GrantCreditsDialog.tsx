@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Coins, FileDown, PlusCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { grantUserCredits, type GrantCreditsRequest } from '@/api/admin';
 import { useToast } from '@/components/common/Toast';
 import { Button, Dialog, Input, Select } from '@/components/ui';
@@ -18,7 +18,6 @@ export interface GrantCreditsDialogProps {
 export function GrantCreditsDialog({ user, onClose }: GrantCreditsDialogProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [kind, setKind] = useState<'XU' | 'EXPORT'>('XU');
   const [quantity, setQuantity] = useState<number>(100);
   const [expiresInDays, setExpiresInDays] = useState<number>(365);
   const [note, setNote] = useState<string>('Hỗ trợ người dùng');
@@ -29,7 +28,7 @@ export function GrantCreditsDialog({ user, onClose }: GrantCreditsDialogProps) {
       toast.show({
         tone: 'success',
         title: 'Cấp tài nguyên thành công',
-        description: `Đã cấp ${quantity.toLocaleString('vi-VN')} ${kind === 'XU' ? 'xu Wrap' : 'lượt xuất'} cho ${displayName(user)}.`,
+        description: `Đã cấp ${quantity.toLocaleString('vi-VN')} xu Wrap cho ${displayName(user)}.`,
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.users() });
       void queryClient.invalidateQueries({ queryKey: queryKeys.admin.user(user.id) });
@@ -43,8 +42,9 @@ export function GrantCreditsDialog({ user, onClose }: GrantCreditsDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (quantity <= 0) return;
+    // Only xu: export credits are no longer granted (docs/25 item 7).
     mutation.mutate({
-      kind,
+      kind: 'XU',
       quantity,
       expiresInDays: expiresInDays > 0 ? expiresInDays : undefined,
       note: note.trim() || undefined,
@@ -53,7 +53,7 @@ export function GrantCreditsDialog({ user, onClose }: GrantCreditsDialogProps) {
 
   return (
     <Dialog
-      title="Cấp xu / Lượt xuất thủ công"
+      title="Cấp xu Wrap thủ công"
       description={`Cấp tài nguyên cho ${displayName(user)} (${user.email})`}
       icon={<PlusCircle className="size-5 text-fpt-orange-ink" aria-hidden />}
       onClose={onClose}
@@ -78,50 +78,13 @@ export function GrantCreditsDialog({ user, onClose }: GrantCreditsDialogProps) {
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-sm">
         <div className="space-y-1.5">
-          <label className="block text-caption font-semibold text-library-ink">Loại tài nguyên</label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setKind('XU');
-                if (quantity < 100) setQuantity(100);
-              }}
-              className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-semibold transition-all ${
-                kind === 'XU'
-                  ? 'border-fpt-orange bg-orange-50/40 text-fpt-orange-ink shadow-xs'
-                  : 'border-library-line bg-white text-library-muted hover:border-library-ink/30'
-              }`}
-            >
-              <Coins className="size-4" aria-hidden />
-              <span>Xu Wrap (AI)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setKind('EXPORT');
-                if (quantity > 100) setQuantity(5);
-              }}
-              className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-semibold transition-all ${
-                kind === 'EXPORT'
-                  ? 'border-fpt-orange bg-orange-50/40 text-fpt-orange-ink shadow-xs'
-                  : 'border-library-line bg-white text-library-muted hover:border-library-ink/30'
-              }`}
-            >
-              <FileDown className="size-4" aria-hidden />
-              <span>Lượt xuất file in</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
           <label className="block text-caption font-semibold text-library-ink">
-            {kind === 'XU' ? 'Số lượng xu (1–100.000 xu)' : 'Số lượt xuất (1–100 lượt)'}
+            Số lượng xu (1–100.000 xu)
           </label>
           <Input
             type="number"
             min={1}
-            max={kind === 'XU' ? 100000 : 100}
+            max={100000}
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value) || 1)}
             required

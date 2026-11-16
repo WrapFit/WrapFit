@@ -1,21 +1,20 @@
 "use client";
 
-import type { ExportPackId } from "@wrapfit/shared";
 import { Check, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Container, Reveal } from "@/components/landing";
 import { PaymentLogos, type PaymentMethodId } from "@/components/layout/PaymentLogos";
-import { Badge, Button, RadioGroup, buttonClass } from "@/components/ui";
+import { Badge, Button, buttonClass } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useAuth } from "@/features/auth";
 import { CheckoutDialog, PurchaseSuccessDialog } from "@/features/payments";
 import type { Payment } from "@/types/api";
-import { EXPORT_PACK_LIST, PLANS, PLAN_ORDER, formatVnd, formatVndShort, perExportOf } from "@/features/pricing";
-import type { PaymentPurpose, SubscriptionTier } from "@/types/api";
+import { PLANS, PLANS_ON_SALE, formatVnd, type SaleTier } from "@/features/pricing";
+import type { SalePurpose } from "@/types/api";
 import { cn } from "@/utils/helpers";
-import { CONTACT_HREF, DEFAULT_PACK, PLAN_CARDS, PRICING_HERO, checkoutHref } from "./content";
-import { EmeraldPolyhedron, GoldCylinder, KraftBox, PurpleSlantedDisc } from "./GeometricShapes";
+import { CONTACT_HREF, PLAN_CARDS, PRICING_HERO, checkoutHref } from "./content";
+import { EmeraldPolyhedron, GoldCylinder, KraftBox } from "./GeometricShapes";
 
 interface CardLook {
   bgClass: string;
@@ -23,9 +22,8 @@ interface CardLook {
   shape: React.ComponentType<{ className?: string }>;
 }
 
-const LOOKS: Record<SubscriptionTier, CardLook> = {
+const LOOKS: Record<SaleTier, CardLook> = {
   FREE: { bgClass: "bg-surface-raised", borderClass: "border-line", shape: KraftBox },
-  PAY_PER_EXPORT: { bgClass: "bg-info-bg/60", borderClass: "border-info/15", shape: PurpleSlantedDisc },
   STARTER: { bgClass: "bg-warning-bg/50", borderClass: "border-warning/20", shape: GoldCylinder },
   PRO_BUSINESS: { bgClass: "bg-success-bg/70", borderClass: "border-success/15", shape: EmeraldPolyhedron },
 };
@@ -33,15 +31,15 @@ const LOOKS: Record<SubscriptionTier, CardLook> = {
 const PAYMENTS: PaymentMethodId[] = ["vietqr", "bank", "momo", "napas"];
 
 /**
- * Top of /pricing, in the VisualSpark layout (3D-illustrated pastel cards): the four plans of @wrapfit/shared/billing
- * (Miễn phí, Lượt xuất with its 1 / 5 / 15 packs, Pro, Business on request), payment methods and the refund rule. A
- * signed-in visitor pays a pack or Pro right here with the VietQR checkout; a guest goes through /checkout (sign-in).
+ * Top of /pricing, in the VisualSpark layout (3D-illustrated pastel cards): the plans on sale of
+ * @wrapfit/shared/billing (Miễn phí, Pro, Business on request; the export packs are no longer sold, docs/25 item 7),
+ * payment methods and the refund rule. A signed-in visitor pays Pro right here with the VietQR checkout; a guest goes
+ * through /checkout (sign-in).
  */
 export function VisualSparkPricingCards() {
   const auth = useAuth();
   const currentTier = auth.user?.subscriptionTier ?? null;
-  const [pack, setPack] = useState<ExportPackId>(DEFAULT_PACK);
-  const [buying, setBuying] = useState<PaymentPurpose | null>(null);
+  const [buying, setBuying] = useState<SalePurpose | null>(null);
   /** The payment just confirmed: shows the congratulations popup. */
   const [purchased, setPurchased] = useState<Payment | null>(null);
   const signedIn = auth.status === "authenticated";
@@ -57,10 +55,10 @@ export function VisualSparkPricingCards() {
           </Reveal>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 lg:gap-6 max-w-7xl mx-auto items-stretch">
-          {PLAN_ORDER.map((tier) => (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-6 max-w-6xl mx-auto items-stretch">
+          {PLANS_ON_SALE.map((tier) => (
             <Reveal key={tier} className="h-full">
-              <PlanCard tier={tier} isCurrent={currentTier === tier} signedIn={signedIn} pack={pack} onPack={setPack} onBuy={setBuying} />
+              <PlanCard tier={tier} isCurrent={currentTier === tier} signedIn={signedIn} onBuy={setBuying} />
             </Reveal>
           ))}
         </div>
@@ -89,42 +87,33 @@ function PlanCard({
   tier,
   isCurrent,
   signedIn,
-  pack,
-  onPack,
   onBuy,
 }: {
-  tier: SubscriptionTier;
+  tier: SaleTier;
   isCurrent: boolean;
   signedIn: boolean;
-  pack: ExportPackId;
-  onPack(pack: ExportPackId): void;
   /** Signed in: pay this plan with the VietQR checkout instead of going to /checkout. */
-  onBuy(purpose: PaymentPurpose): void;
+  onBuy(purpose: SalePurpose): void;
 }) {
   const plan = PLANS[tier];
   const copy = PLAN_CARDS[tier];
   const look = LOOKS[tier];
   const Shape = look.shape;
-  const selectedPack = EXPORT_PACK_LIST.find((item) => item.id === pack) ?? EXPORT_PACK_LIST[0];
 
   const price =
     tier === "FREE"
       ? { amount: formatVnd(0), unit: "" }
-      : plan.isPerExport
-        ? { amount: formatVnd(selectedPack.priceVnd), unit: `/${selectedPack.credits} lượt` }
-        : plan.contactOnly
-          ? { amount: "Liên hệ", unit: "" }
-          : { amount: formatVnd(plan.price.monthly), unit: "/tháng" };
+      : plan.contactOnly
+        ? { amount: "Liên hệ", unit: "" }
+        : { amount: formatVnd(plan.price.monthly), unit: "/tháng" };
 
   const action =
     tier === "FREE"
       ? { href: signedIn ? ROUTES.editorDemo : ROUTES.register, label: signedIn ? "Tạo hộp ngay" : copy.cta }
-      : plan.isPerExport
-        ? { href: checkoutHref(tier, selectedPack.id), label: `Mua ${selectedPack.credits} lượt (${formatVndShort(selectedPack.priceVnd)})` }
-        : plan.contactOnly
-          ? { href: CONTACT_HREF, label: copy.cta }
-          : { href: checkoutHref(tier), label: copy.cta };
-  const purpose: PaymentPurpose | null = !signedIn ? null : plan.isPerExport ? selectedPack.id : tier === "STARTER" ? "PRO_MONTH" : null;
+      : plan.contactOnly
+        ? { href: CONTACT_HREF, label: copy.cta }
+        : { href: checkoutHref(tier), label: copy.cta };
+  const purpose: SalePurpose | null = signedIn && tier === "STARTER" ? "PRO_MONTH" : null;
 
   return (
     <article
@@ -162,22 +151,6 @@ function PlanCard({
         <span className="mt-1 text-caption text-fg-muted">{copy.note}</span>
       </div>
 
-      {plan.isPerExport && (
-        <RadioGroup<ExportPackId>
-          label="Chọn số lượt"
-          hideLabel
-          variant="card"
-          value={selectedPack.id}
-          onChange={onPack}
-          className="mb-5"
-          options={EXPORT_PACK_LIST.map((item) => ({
-            value: item.id,
-            label: `${item.credits} lượt · ${formatVnd(item.priceVnd)}`,
-            description: item.credits === 1 ? "Mua lẻ" : `${formatVnd(perExportOf(item))}/lượt`,
-          }))}
-        />
-      )}
-
       <ul className="space-y-3 mb-6">
         {copy.features.map((feature) => (
           <li key={feature} className="flex items-start gap-2.5 text-body-sm text-fg-muted">
@@ -190,7 +163,7 @@ function PlanCard({
       </ul>
 
       <div className="mt-auto pt-2">
-        {isCurrent && !plan.isPerExport ? (
+        {isCurrent ? (
           <span className={buttonClass({ variant: "secondary", size: "lg", shape: "rounded", block: true, className: "pointer-events-none text-label text-fg-muted" })}>
             Gói đang dùng
           </span>

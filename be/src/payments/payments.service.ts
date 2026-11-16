@@ -20,7 +20,6 @@ import {
 import {
   customXuError,
   customXuPriceVnd,
-  EXPORT_PACKS,
   exportLotExpiresAt,
   isExportPackId,
   isXuPackId,
@@ -29,7 +28,7 @@ import {
   XU_PACKS,
 } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
-import { CreditsService, PlanService } from '../billing';
+import { CreditsService, PlanService, xuForExportCredits } from '../billing';
 import { ConfigService, encodePageCursor, olderThan } from '../common';
 import { OrdersService } from '../orders';
 import { PrismaService } from '../shared/prisma';
@@ -76,7 +75,7 @@ export interface PaymentView {
   expiresAt: string;
   paidAt: string | null;
   createdAt: string;
-  /** Export credits of a pack, null otherwise. */
+  /** Export credits of an old export pack payment (no longer sold), null otherwise. */
   credits: number | null;
   /** Xu of a xu pack, null otherwise. */
   xu: number | null;
@@ -111,6 +110,14 @@ export interface PaymentHistoryPage {
 }
 
 export const PAYMENT_EXPIRED = 'PAYMENT_EXPIRED';
+
+/** 400 for a new payment of an export pack (EXPORT_1/5/15): no longer sold, no export spends a credit (docs/25 item 7). */
+export const EXPORT_PACK_DISCONTINUED = 'EXPORT_PACK_DISCONTINUED';
+const exportPackDiscontinued = () =>
+  new BadRequestException({
+    code: EXPORT_PACK_DISCONTINUED,
+    message: 'Gói lượt xuất đã ngừng bán: file in mở khi thanh toán đơn in mẫu, tác vụ AI dùng xu Wrap',
+  });
 const paymentExpired = () =>
   new HttpException(
     { code: PAYMENT_EXPIRED, message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
@@ -140,8 +147,8 @@ export function httpErrorCode(error: unknown): string | undefined {
 
 /**
  * VietQR payments (docs/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
- * grants what it bought in the same transaction: an export credit lot, a xu lot (docs/19), 30 days of Pro, or a sample
- * order moved to PAID.
+ * grants what it bought in the same transaction: a xu lot (docs/19; also for an old export pack), 30 days of Pro, or
+ * a sample order moved to PAID.
  * Every path that marks a payment paid (simulate button, SePay webhook, VNPay, admin) goes through `confirmPaid`.
  */
 @Injectable()
@@ -348,10 +355,7 @@ export class PaymentsService {
     if (dto.purpose !== PaymentPurpose.SAMPLE_ORDER && dto.orderId) {
       throw new BadRequestException('orderId chỉ dùng cho thanh toán đơn in mẫu');
     }
-    if (isExportPackId(dto.purpose)) {
-      const pack = EXPORT_PACKS[dto.purpose];
-      return { amountVnd: pack.priceVnd, metadata: { credits: pack.credits } };
-    }
+    if (isExportPackId(dto.purpose)) throw exportPackDiscontinued();
     if (dto.purpose !== PaymentPurpose.XU_CUSTOM && dto.xu !== undefined) {
       throw new BadRequestException('xu chỉ dùng cho nạp số xu tùy chọn');
     }
@@ -382,14 +386,20 @@ export class PaymentsService {
     const metadata = payment.metadata as PaymentMetadata;
 
     if ('credits' in metadata) {
+      // An export pack payment created before the packs stopped (docs/25 item 7) and confirmed only now (a late
+      // transfer the admin assigns, a webhook in its last minutes): no export credit lot any more, the money becomes
+      // xu at the price paid, the rule of the one-time conversion (prisma/scripts/convert-export-credits.ts).
+      const { xu, valueVnd } = xuForExportCredits(metadata.credits, metadata.credits, payment.amountVnd);
       await this.credits.grant(
         payment.userId,
         {
-          quantity: metadata.credits,
+          kind: 'XU',
+          quantity: xu,
           source: 'PURCHASE',
           expiresAt: exportLotExpiresAt(now),
           paymentId: payment.id,
-          note: payment.reference,
+          valueVnd,
+          note: `${payment.reference} (${metadata.credits} lượt xuất đổi sang xu)`,
         },
         tx,
       );

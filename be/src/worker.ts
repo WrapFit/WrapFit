@@ -24,7 +24,7 @@ import { PrismaModule } from './shared/prisma';
     PrismaModule,
     StorageModule,
     queueRootModule('worker'),
-    BillingCoreModule, // refunds the export credit or the xu of a failed job (docs/16 section 5.3, docs/19)
+    BillingCoreModule, // refunds the xu of a failed AI job (docs/19)
     ExportWorkerModule,
     MailWorkerModule,
     AiImageWorkerModule,

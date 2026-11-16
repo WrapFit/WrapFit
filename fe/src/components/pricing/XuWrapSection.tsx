@@ -5,7 +5,7 @@ import { Coins } from "lucide-react";
 import { AI_IMAGE_MODELS, XU_PACKS, XU_PATTERN_COST, XU_TOOL_COST, XU_VALUE_VND, type XuPackId } from "@wrapfit/shared";
 import { Container, Reveal } from "@/components/landing";
 import { ButtonLink, DataTable, type DataColumn } from "@/components/ui";
-import { PLANS, PLAN_ORDER, formatVnd } from "@/features/pricing";
+import { PLANS, PLANS_ON_SALE, formatVnd } from "@/features/pricing";
 
 /** What 1.000 xu buy: the price of each AI task, and how many of it fit in 1.000 xu. */
 const BUDGET = 1_000;
@@ -63,7 +63,7 @@ export function XuWrapSection({ embedded = false }: { embedded?: boolean }) {
             </h2>
             <p className="mx-auto mt-2 max-w-2xl text-body text-fg-muted">
               Một đồng xu cho ảnh AI, hoa văn AI và công cụ ảnh. Gói cộng xu mỗi kỳ:{" "}
-              {PLAN_ORDER.map((tier) => `${PLANS[tier].name} ${xu(PLANS[tier].xuPerPeriod)}`).join(", ")}. Xu chưa dùng giữ thêm một kỳ; lỗi phía
+              {PLANS_ON_SALE.map((tier) => `${PLANS[tier].name} ${xu(PLANS[tier].xuPerPeriod)}`).join(", ")}. Xu chưa dùng giữ thêm một kỳ; lỗi phía
               WrapFit thì xu được hoàn.
             </p>
           </div>

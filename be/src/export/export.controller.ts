@@ -19,16 +19,16 @@ export class ExportController {
   @ApiOperation({
     summary: 'Request a print file (FitCheck runs first); poll GET /api/exports/:jobId',
     description:
-      'Not unlocked on a free or credit plan: PDF_A4_PRINT is watermarked, other formats answer 402 EXPORT_CREDIT_REQUIRED ' +
-      '{ balance } until the request sends useCredit: true (402 INSUFFICIENT_CREDITS when none are left).',
+      'Every format is a clean file, once a paid print order (not cancelled) holds this design version, or an unlock ' +
+      'bought before the print cart is still valid. Otherwise 402 ORDER_PAYMENT_REQUIRED. FitCheck errors: 422.',
   })
   request(@Param('id') projectId: string, @Body() dto: CreateExportDto) {
-    return this.exports.request(projectId, dto.fileType, dto.useCredit);
+    return this.exports.request(projectId, dto.fileType);
   }
 
   @Get('projects/:id/exports/access')
   @UseGuards(ProjectOwnerGuard)
-  @ApiOperation({ summary: 'Export mode of my plan, whether this design version is unlocked, export credits left' })
+  @ApiOperation({ summary: 'Whether this design version is unlocked (a paid print order holds it)' })
   access(@Param('id') projectId: string) {
     return this.exports.access(projectId);
   }

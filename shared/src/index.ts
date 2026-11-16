@@ -25,7 +25,6 @@ export * from "./print/prepress";
 export * from "./print/barcode";
 export * from "./print/outline";
 export * from "./print/package-readme";
-export * from "./print/watermark";
 export * from "./print/placement";
 export * from "./print/finishes";
 export * from "./print/color";

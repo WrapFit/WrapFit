@@ -7,7 +7,6 @@ import { ConfigService, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
-import { ExportCreditRefunds } from './export-credits';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
 import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
@@ -37,7 +36,6 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     private readonly storage: StorageService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService,
-    private readonly refunds: ExportCreditRefunds,
   ) {
     super();
   }
@@ -60,10 +58,6 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
             where: { id: exportJobId, status: UNFINISHED_EXPORT },
             data: { status: 'FAILED', errorLog: message.slice(0, 2000) },
           });
-          // docs/16 §5.3: the credit paid for this design comes back when nothing was delivered with it.
-          await this.refunds.refundFailed(exportJobId).catch((refundError: Error) =>
-            this.logger.error(`Could not refund the credit of export ${exportJobId}: ${refundError.message}`),
-          );
         }
         throw error; // lets BullMQ schedule the next attempt
       }
@@ -109,7 +103,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       job.fileType === 'PDF_CMYK'
         ? await renderPdf(layout, artwork)
         : job.fileType === 'PDF_A4_PRINT'
-          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4', watermarked: job.watermarked })
+          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
           : job.fileType === 'PRINT_PACKAGE'
             ? await renderPrintPackage(layout, artwork, titleSlug(project.title))
             : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork, await svgImages(layout, artwork)) : renderDxf(layout));

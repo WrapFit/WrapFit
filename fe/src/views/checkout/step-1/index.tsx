@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * `/checkout/step-1?plan=&pack=`: choose an export pack or Pro. Prices and quotas come from features/pricing (a display
- * layer over @wrapfit/shared/billing); the plan in use comes from `GET /auth/me`.
+ * `/checkout/step-1?plan=`: choose Pro (export packs are no longer sold, docs/25 item 7: an old `?plan=PAY_PER_EXPORT`
+ * link shows a notice and Pro). Prices and quotas come from features/pricing (a display layer over
+ * @wrapfit/shared/billing); the plan in use comes from `GET /auth/me`.
  */
 
 import { ArrowRight, Check } from 'lucide-react';
@@ -10,7 +11,7 @@ import Link from 'next/link';
 import React from 'react';
 import { CheckoutShell, priceOf, useCheckoutParams, type PaidTier } from '@/components/checkout/CheckoutShell';
 import { RequireAuth, useAuth } from '@/features/auth';
-import { EXPORT_PACK_LIST, PLANS, PLAN_ORDER, PRO_PERIOD_DAYS, formatQuota, formatVnd, perExportOf } from '@/features/pricing';
+import { PLANS, PLAN_ORDER, PRO_PERIOD_DAYS, formatQuota, formatVnd } from '@/features/pricing';
 import { cn } from '@/utils/helpers';
 
 export default function CheckoutStep1Page() {
@@ -21,17 +22,17 @@ export default function CheckoutStep1Page() {
   );
 }
 
-const PAID: PaidTier[] = ['PAY_PER_EXPORT', 'STARTER'];
+const PAID: PaidTier[] = ['STARTER'];
 
 function ChoosePlan() {
   const { user } = useAuth();
-  const { tier, pack, query } = useCheckoutParams();
+  const { tier, discontinued, query } = useCheckoutParams();
   const currentIndex = user ? PLAN_ORDER.indexOf(user.subscriptionTier) : 0;
-  const owned = (item: PaidTier) => item !== 'PAY_PER_EXPORT' && PLAN_ORDER.indexOf(item) <= currentIndex;
+  const owned = (item: PaidTier) => PLAN_ORDER.indexOf(item) <= currentIndex;
   const blocked = owned(tier);
 
   return (
-    <CheckoutShell step={1} tier={tier} pack={pack} query={query()}>
+    <CheckoutShell step={1} tier={tier} query={query()} discontinued={discontinued}>
       <section aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Chọn gói của bạn
@@ -43,7 +44,6 @@ function ChoosePlan() {
             const plan = PLANS[item];
             const active = item === tier;
             const isOwned = owned(item);
-            const isPerExport = item === 'PAY_PER_EXPORT';
             return (
               <Link
                 key={item}
@@ -69,8 +69,8 @@ function ChoosePlan() {
                   </span>
                 </span>
                 <span className="text-xl font-semibold">
-                  {isPerExport ? `từ ${formatVnd(priceOf(item, 'EXPORT_1'))}` : formatVnd(priceOf(item, pack))}
-                  <span className="ml-1 text-sm font-normal text-landing-muted">{isPerExport ? '/ lượt' : `/ ${PRO_PERIOD_DAYS} ngày`}</span>
+                  {formatVnd(priceOf(item))}
+                  <span className="ml-1 text-sm font-normal text-landing-muted">{`/ ${PRO_PERIOD_DAYS} ngày`}</span>
                 </span>
                 <span className="flex flex-col gap-1.5 text-sm text-landing-muted">
                   <span>{formatQuota(plan.storageBytes)} lưu trữ</span>
@@ -81,28 +81,6 @@ function ChoosePlan() {
             );
           })}
         </div>
-
-        {tier === 'PAY_PER_EXPORT' && (
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Số lượt xuất">
-            {EXPORT_PACK_LIST.map((item) => {
-              const active = item.id === pack;
-              return (
-                <Link
-                  key={item.id}
-                  href={query({ pack: item.id })}
-                  replace
-                  scroll={false}
-                  role="radio"
-                  aria-checked={active}
-                  className={cn('flex flex-col gap-1 rounded-2xl p-4 transition-shadow', active ? 'ring-2 ring-landing-ink' : 'ring-1 ring-landing-ink/10 hover:ring-landing-ink/40')}
-                >
-                  <span className="font-semibold">{item.credits} lượt · {formatVnd(item.priceVnd)}</span>
-                  <span className="text-sm text-landing-muted">{item.credits === 1 ? 'Mua lẻ' : `${formatVnd(perExportOf(item))} mỗi lượt`}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
 
         <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Link href="/pricing" className="py-2 text-center text-sm font-medium text-landing-muted hover:text-landing-ink hover:underline">

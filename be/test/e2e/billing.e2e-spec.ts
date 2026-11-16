@@ -149,15 +149,15 @@ describe('Billing core (e2e)', () => {
   });
 
   describe('HTTP', () => {
-    it('GET /billing/me returns the plan, its limits and the credit lots', async () => {
+    it('GET /billing/me returns the plan, its limits and the xu lots, no export credits (docs/25 item 7)', async () => {
       const empty = await api().get('/api/billing/me').set('Cookie', maker.cookie).expect(200);
       expect(empty.body).toMatchObject({
         tier: 'FREE',
         entitlements: { export: { mode: 'FREE_A4' } },
-        exportCredits: { balance: 0, lots: [] },
         xu: { balance: 50, lots: [{ source: 'PLAN_ALLOWANCE', remaining: 50 }], allowance: { perPeriod: 50 } },
         subscription: null,
       });
+      expect(empty.body).not.toHaveProperty('exportCredits');
 
       const history = await api().get('/api/billing/xu/history?limit=5').set('Cookie', maker.cookie).expect(200);
       expect(history.body).toMatchObject({ entries: [{ type: 'GRANT', quantity: 50 }], nextBefore: null });
@@ -165,7 +165,7 @@ describe('Billing core (e2e)', () => {
       await api().get('/api/billing/me').expect(401);
     });
 
-    it('lets only admins grant credits by hand', async () => {
+    it('lets only admins grant xu by hand, never export credits', async () => {
       const grant = (cookie: string, userId = maker.id) =>
         api().post(`/api/admin/users/${userId}/credits`).set('Cookie', cookie);
 
@@ -173,11 +173,16 @@ describe('Billing core (e2e)', () => {
       await grant(admin.cookie).send({ quantity: 0 }).expect(400);
       await grant(admin.cookie, '0192f3a0-0000-7000-8000-000000000000').send({ quantity: 5 }).expect(404);
 
+      await grant(admin.cookie).send({ kind: 'EXPORT', quantity: 5 }).expect(400);
+      await expect(prisma.creditLot.count({ where: { userId: maker.id, kind: 'EXPORT' } })).resolves.toBe(0);
+
       const res = await grant(admin.cookie).send({ quantity: 5, note: 'Tài khoản demo CP4' }).expect(201);
-      expect(res.body).toMatchObject({ lot: { source: 'ADMIN', quantity: 5, remaining: 5, expiresAt: null }, balance: 5 });
+      // 50 xu of the Free plan for this month (granted by GET /billing/me above) + 5.
+      expect(res.body).toMatchObject({ lot: { source: 'ADMIN', quantity: 5, remaining: 5, expiresAt: null }, balance: 55 });
+      await grant(admin.cookie).send({ kind: 'XU', quantity: 5 }).expect(201);
 
       const me = await api().get('/api/billing/me').set('Cookie', maker.cookie).expect(200);
-      expect(me.body).toMatchObject({ tier: 'FREE', exportCredits: { balance: 5, lots: [{ quantity: 5 }] } });
+      expect(me.body).toMatchObject({ tier: 'FREE', xu: { balance: 60 } });
     });
   });
 });

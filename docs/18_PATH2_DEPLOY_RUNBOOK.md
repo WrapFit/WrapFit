@@ -69,7 +69,6 @@ SMTP, Google) giữ nguyên; danh sách đầy đủ ở `be/README.md`, mục "
 | `VIETQR_BANK_BIN`, `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME` | trống, hoặc tài khoản thật (Q1) | Đặt cả ba hoặc để trống cả ba. Trống = tài khoản mẫu, giao diện ghi "Mô phỏng" |
 | `SEED_DEMO_EMAIL` | `demo@wrapfit.vn` (mặc định) | Tài khoản demo, xem 3.2 |
 | `SEED_DEMO_PASSWORD` | mật khẩu riêng, chỉ người demo biết | Trống = không tạo tài khoản demo. Không ghi vào slide, tài liệu, chat |
-| `SEED_DEMO_CREDITS` | `5` (mặc định) | Số lượt xuất được nạp lại mỗi lần container khởi động |
 | `FAL_KEY` | khóa fal.ai (Xu Wrap, docs/19) | Truyền vào cả `backend` và `worker`. Trống = tắt ảnh AI (studio báo "đang tắt"), hoa văn và phần còn lại vẫn chạy. Không ghi vào slide, tài liệu, chat |
 | `AI_IMAGE_PROVIDER` | `fal` (mặc định) | `fake` chỉ cho dev / e2e, bị từ chối khi `NODE_ENV=production` |
 | `AI_IMAGE_MODELS` | trống | Trống = các model có `enabled: true`. GPT Image 2 medium chưa đo giá thật (docs/19 §3): bỏ khỏi danh sách nếu muốn chắc biên, vd. `flux2-klein,gpt-image-2-low,seedream-4.5,nano-banana-2,recraft-v3-vector,nano-banana-pro` |
@@ -87,15 +86,12 @@ Container backend chạy `prisma db seed` mỗi lần khởi động. Khi có `S
 
 - Tạo một lần tài khoản `MAKER` gói **Free**, email đã xác minh, tên "Chị Linh (demo)", cửa hàng "Nến thơm Mộc An".
   Địa chỉ đã thuộc tài khoản khác vai trò thì bỏ qua (không chiếm tài khoản).
-- Nạp lượt xuất (lô `ADMIN`, không hết hạn) cho đủ `SEED_DEMO_CREDITS`. Buổi tập dùng hết lượt thì lần deploy / khởi
-  động lại sau nạp lại. Muốn nạp ngay không khởi động lại: admin gọi `POST /api/admin/users/:id/credits`.
+- Không còn nạp lượt xuất (docs/25 mục 7: gói lượt xuất ngừng bán, file in mở bằng đơn in mẫu đã thanh toán).
+  Trước deploy bản có thay đổi này, chạy một lần `npm --workspace=be run db:convert-export-credits` (chạy thử) rồi thêm
+  `-- --apply` để đổi lượt xuất còn lại sang xu; xem docs/25 §6.
 - Tạo một lần dự án **"Hũ nến thơm Mộc An"**: hộp nắp gài 80 × 80 × 95 mm, quà 350 g (đáy khóa FEFCO 0215), Ivory 300 GSM
   mờ, logo SVG ở mặt trước (tải lên bucket công khai như một upload của studio), FitCheck 100.
 - Muốn có lại dự án mới tinh: xóa vĩnh viễn dự án đó trong thùng rác, rồi khởi động lại backend.
-
-Lưu ý: tài khoản có 5 lượt nên trong ExportDialog file sạch hiện "Dùng 1 lượt? Còn 5 lượt", không phải khung "Bạn đã hết
-lượt xuất". Muốn diễn đúng bước "SVG → 402 → mua 1 lượt qua VietQR" của §5, dùng một tài khoản Free mới (đăng ký trước
-buổi demo) hoặc đặt `SEED_DEMO_CREDITS=0`.
 
 ### 3.3. Cloudflare R2 (còn thiếu từ 2026-10-30)
 
@@ -250,8 +246,6 @@ S8 không đọc được hóa đơn (không đăng nhập tài khoản nào). S
 | Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend`. Nút chỉ hiện với tài khoản demo (`is_demo`); tài khoản thường gọi route nhận 403 `SIMULATION_DEMO_ONLY` |
 | Sandbox VNPay lỗi lúc demo | Cổng VNPay không mở / không quay về | Đặt `PAYMENT_SIMULATION=true`: CheckoutDialog của tài khoản demo vẫn có nút "Giả lập đã thanh toán" (IPN và nút giả lập đến cùng lúc vẫn chỉ cấp quyền lợi một lần) |
 | Webhook SePay không tới | Chuyển khoản xong thanh toán vẫn `PENDING` | Xem *Tích hợp Webhooks → Nhật ký* trên SePay (401 = sai `SEPAY_WEBHOOK_API_KEY`); giao dịch tới nhưng không khớp nằm ở `/admin/bank-transactions` để gán tay |
-| Tài khoản demo hết lượt sau buổi tập | Khung "Bạn đã hết lượt xuất" | Đúng là bước 6 của §6 (mua 1 lượt qua VietQR giả lập). Muốn nạp lại: khởi động lại backend (seed nạp đủ `SEED_DEMO_CREDITS`) hoặc admin cấp lượt |
-| Tài khoản demo còn lượt nên không thấy 402 | Hộp thoại "Dùng 1 lượt? Còn N lượt" | Diễn bằng tài khoản Free mới, hoặc nói rõ "tài khoản đã mua gói 5 lượt" rồi bấm "Dùng 1 lượt" |
 | Tên xưởng "Minh Tâm Prolab" của kịch bản không có trong danh sách xưởng | Giỏ in chỉ có 4 xưởng mẫu (Sài Gòn Xanh, Hà Thành, Đà Nẵng, Cần Thơ) | Chọn "Để WrapFit chọn xưởng phù hợp" hoặc một xưởng mẫu; muốn đúng tên cần thêm xưởng vào `be/src/print-shops/print-shops.service.ts` (danh sách tĩnh) |
 | Hết ngân sách AI hoặc chưa có `ANTHROPIC_API_KEY` | Hoa văn "AI" là hoa văn thuật toán | Không chặn demo; nói rõ cầu chì chi phí là tính năng (S3) |
 | Throttle (100 request / phút / IP, 10 lần đăng nhập) khi cả hội đồng dùng chung Wi-Fi | 429 | Hội đồng thử trên 4G riêng; demo chính dùng một máy |

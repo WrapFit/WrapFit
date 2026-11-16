@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { FileDown, MessageCircleMore, Package, Ruler, ShieldCheck } from "lucide-react";
 import { ROUTES } from "@/constants";
-import { EXPORT_PACK_LIST, PLANS as TIERS, PRO_PERIOD_DAYS, formatQuota, formatVnd, perExportOf } from "@/features/pricing";
+import { PLANS as TIERS, PRO_PERIOD_DAYS, formatQuota, formatVnd } from "@/features/pricing";
 import { PHOTOS } from "@/features/site/photos";
 import type { Industry, Occasion } from "@/types/api";
 
@@ -164,21 +164,16 @@ export const PRODUCTION_ROWS: ProductionRow[] = [
 
 export const PLANS = {
   eyebrow: "Bảng giá minh bạch",
-  title: `Chỉ từ ${formatVnd(TIERS.PAY_PER_EXPORT.price.monthly)} / lượt xuất file`,
-  body: `Thiết kế miễn phí, mua lượt xuất khi cần file in hoặc ${formatVnd(TIERS.STARTER.price.monthly)}/tháng với gói ${TIERS.STARTER.name} để xuất không giới hạn.`,
+  title: "Thiết kế miễn phí, trả khi cần file in",
+  body: `Thiết kế và báo giá miễn phí; file in mở khi bạn thanh toán đơn in mẫu. Gói ${TIERS.STARTER.name} ${formatVnd(TIERS.STARTER.price.monthly)}/tháng thêm dung lượng và xu Wrap.`,
   cta: { label: "Xem bảng giá", href: "/pricing" },
-  // The plans of /pricing (@wrapfit/shared/billing): Free, the three export packs, Pro, Business.
+  // The plans of /pricing on sale (@wrapfit/shared/billing): Free, Pro, Business (export packs stopped, docs/25 item 7).
   options: [
     { price: formatVnd(0), unit: TIERS.FREE.name, detail: `Thiết kế & báo giá · ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
-    ...EXPORT_PACK_LIST.map((pack) => ({
-      price: formatVnd(pack.priceVnd),
-      unit: `${pack.credits} lượt xuất`,
-      detail: pack.credits === 1 ? "Một lượt xuất file in sạch" : `${pack.credits} lượt, ${formatVnd(perExportOf(pack))} mỗi lượt`,
-    })),
     { price: formatVnd(TIERS.STARTER.price.monthly), unit: `${TIERS.STARTER.name} · tháng`, detail: `Xuất không giới hạn trong ${PRO_PERIOD_DAYS} ngày` },
     { price: "Liên hệ", unit: TIERS.PRO_BUSINESS.name, detail: "Cho thương hiệu và xưởng in" },
   ],
-  selected: 2,
+  selected: 1,
 };
 
 export const COPILOT = {

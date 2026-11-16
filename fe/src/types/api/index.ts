@@ -41,7 +41,7 @@ export type ApiErrorCode =
   | "FILE_NOT_OWNED"
   | "PROJECT_VERSION_CONFLICT"
   | "ORIGIN_NOT_ALLOWED"
-  | "EXPORT_CREDIT_REQUIRED"
+  | "EXPORT_PACK_DISCONTINUED"
   | "INSUFFICIENT_CREDITS"
   | "PROMPT_REJECTED"
   | "AI_IMAGE_UNAVAILABLE"
@@ -64,9 +64,9 @@ export interface ApiErrorBody {
   currentVersion?: number;
   /** 422 on export: the FitCheck report with the blocking violations. */
   fitCheck?: FitCheckReport;
-  /** 402 EXPORT_CREDIT_REQUIRED / INSUFFICIENT_CREDITS: export credits or xu left. */
+  /** 402 INSUFFICIENT_CREDITS: xu left. */
   balance?: number;
-  /** 402 INSUFFICIENT_CREDITS: which ledger is short, export credits or xu (docs/19). */
+  /** 402 INSUFFICIENT_CREDITS: which ledger is short; only xu since export credits stopped (docs/25 item 7). */
   kind?: "EXPORT" | "XU";
   /** 402 INSUFFICIENT_CREDITS: what the operation costs. */
   cost?: number;
@@ -463,21 +463,14 @@ export interface ExportStarted {
   jobId: string;
   status: ExportStatus;
   fitCheck: FitCheckReport;
-  /** Free A4 PDF of a design that is not unlocked: WrapFit line on a glue flap. */
-  watermarked: boolean;
-  /** This request spent one export credit (useCredit). */
-  charged: boolean;
-  exportCredits: { balance: number };
 }
 
-/** `GET /projects/:id/exports/access`: what the export dialog shows before a request (docs/16 §5). */
+/** `GET /projects/:id/exports/access`: whether the current version of the design may be exported. */
 export interface ExportAccess {
-  /** FREE_A4: only the watermarked A4 PDF without credits; CREDIT: one credit per design version; UNLIMITED: Pro. */
-  mode: "FREE_A4" | "CREDIT" | "UNLIMITED";
-  /** Clean files of the current version need no credit (Pro, or a credit already spent on it). */
+  /** A paid print order holds this version, or an unlock bought with an export credit before the cart is still valid. */
   unlocked: boolean;
+  /** Expiry of that old unlock; null for a paid order or when locked. */
   unlockExpiresAt: string | null;
-  balance: number;
 }
 
 export interface ExportJob {
@@ -485,7 +478,7 @@ export interface ExportJob {
   projectId: string;
   fileType: ExportFileType;
   status: ExportStatus;
-  /** The free A4 PDF with the WrapFit line on a glue flap. */
+  /** Old free A4 PDF with the WrapFit line on a glue flap; every new export is clean (docs/25 item 7). */
   watermarked?: boolean;
   /** Set when FAILED. */
   error: string | null;
@@ -501,18 +494,18 @@ export interface ExportJob {
 // ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
 
 export type XuPackPurpose = "XU_500" | "XU_1050" | "XU_2200";
-export type PaymentPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15" | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose | "XU_CUSTOM";
+/** Export packs: no longer sold (docs/25 item 7), only on old payments (history, admin reconciliation). */
+export type ExportPackPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15";
+export type PaymentPurpose = ExportPackPurpose | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose | "XU_CUSTOM";
+/** What a new payment can buy. */
+export type SalePurpose = Exclude<PaymentPurpose, ExportPackPurpose>;
 export type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "CANCELLED";
 export type PaymentProvider = "VIETQR" | "VNPAY";
 export type PaymentConfirmation = "SEPAY_WEBHOOK" | "VNPAY_IPN" | "VNPAY_RETURN" | "SIMULATION" | "ADMIN";
 
-/** `GET /billing/me`: plan in use, export credits and the Pro period. */
+/** `GET /billing/me`: plan in use, xu wallet and the Pro period. */
 export interface BillingSummary {
   tier: SubscriptionTier;
-  exportCredits: {
-    balance: number;
-    lots: { id: string; source: "PURCHASE" | "ADMIN"; quantity: number; remaining: number; expiresAt: string | null; createdAt: string }[];
-  };
   subscription: { plan: SubscriptionTier; status: "ACTIVE" | "EXPIRED"; currentPeriodStart: string; currentPeriodEnd: string } | null;
   /** Xu Wrap wallet (docs/19): the allowance of the period is granted when it is read. */
   xu: XuWallet;
@@ -537,6 +530,7 @@ export interface Payment {
   expiresAt: string;
   paidAt: string | null;
   createdAt: string;
+  /** Export credits of an old export pack payment (no longer sold), null otherwise. */
   credits: number | null;
   /** Xu of a xu pack, null otherwise. */
   xu: number | null;
@@ -751,7 +745,7 @@ export interface AiImageGalleryPage {
   nextBefore: string | null;
 }
 
-/** A lot of export credits or xu: what was granted, what is left, until when. */
+/** A lot of xu: what was granted, what is left, until when. */
 export interface CreditLot {
   id: string;
   source: "PURCHASE" | "ADMIN" | "PLAN_ALLOWANCE";

@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * `/admin/revenue`: revenue per product (Pro 30 days, export packs). No payment records are read here yet: example
+ * `/admin/revenue`: revenue per product (Pro 30 days, xu packs; export packs are no longer sold, docs/25 item 7). No payment records are read here yet: example
  * sales counts multiplied by the prices of @wrapfit/shared/billing.
  */
 
-import { EXPORT_PACKS, PRO_MONTH } from '@wrapfit/shared';
+import { PRO_MONTH, XU_PACKS } from '@wrapfit/shared';
 import React from 'react';
 import { Panel, PanelTitle } from '@/components/workspace';
 import { PLANS, formatVnd } from '@/features/pricing';
@@ -20,9 +20,9 @@ interface ProductRevenue {
 
 const ROWS: ProductRevenue[] = [
   { id: 'PRO_MONTH', label: `Gói ${PLANS.STARTER.name} · ${PRO_MONTH.periodDays} ngày`, priceVnd: PRO_MONTH.priceVnd, sold: 64 },
-  ...Object.values(EXPORT_PACKS).map((pack, index) => ({
+  ...Object.values(XU_PACKS).map((pack, index) => ({
     id: pack.id,
-    label: `${pack.credits} lượt xuất`,
+    label: `${pack.xu.toLocaleString('vi-VN')} xu Wrap`,
     priceVnd: pack.priceVnd,
     sold: [118, 47, 12][index] ?? 0,
   })),
@@ -46,12 +46,12 @@ export default function AdminRevenuePage() {
   return (
     <SampleScreen<ProductRevenue>
       title="Doanh thu"
-      description={`Doanh thu theo gói ${PLANS.STARTER.name} và các gói lượt xuất.`}
+      description={`Doanh thu theo gói ${PLANS.STARTER.name} và các gói xu Wrap.`}
       note="Trang này chưa đọc bảng thanh toán. Số lượt bán dưới đây là ví dụ, nhân với giá gói hiện hành."
       stats={[
         { label: 'Doanh thu tháng này', value: formatVnd(TOTAL) },
         { label: `Gói ${PLANS.STARTER.name} đã bán`, value: String(ROWS[0].sold) },
-        { label: 'Gói lượt xuất đã bán', value: String(ROWS.slice(1).reduce((sum, row) => sum + row.sold, 0)) },
+        { label: 'Gói xu đã bán', value: String(ROWS.slice(1).reduce((sum, row) => sum + row.sold, 0)) },
         { label: 'Tăng so với T9', value: `+${Math.round((TOTAL / LAST_MONTH - 1) * 100)}%` },
       ]}
       tableTitle="Theo sản phẩm"

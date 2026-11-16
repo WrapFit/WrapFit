@@ -5,7 +5,7 @@ import Link from "next/link";
 import React from "react";
 import { Container } from "@/components/landing";
 import { Card, PageHero, SitePage, Toc } from "@/components/site";
-import { EXPORT_PACK_LIST, EXPORT_PACK_VALID_MONTHS, PLANS, PRO_PERIOD_DAYS, formatVnd } from "@/features/pricing";
+import { PLANS, PRO_PERIOD_DAYS, formatVnd } from "@/features/pricing";
 import { cn } from "@/utils/helpers";
 import { PAYMENT_TERMS_CLAUSES, PAYMENT_TERMS_PATH, PAYMENT_TERMS_VERSION } from "@wrapfit/shared";
 
@@ -158,7 +158,7 @@ const TERMS: LegalDoc = {
           items={[
             "Thiết kế, xem hộp 3D, chạy FitCheck™ và xem báo giá miễn phí.",
             "Bạn lưu dự án được ở mọi bước làm hộp; dự án đã lưu tự lưu lên cloud khi bạn sửa.",
-            "File in chỉ xuất được sau khi bạn bấm Thanh toán ở bước Đặt in, trả tiền đơn in của bản thiết kế đó ở giỏ, và khi FitCheck™ không còn lỗi chặn. Gói Pro hay lượt xuất không thay cho bước này.",
+            "File in chỉ xuất được sau khi bạn bấm Thanh toán ở bước Đặt in, trả tiền đơn in của bản thiết kế đó ở giỏ, và khi FitCheck™ không còn lỗi chặn. Gói Pro không thay cho bước này.",
             "Đơn đã trả mở khóa đúng phiên bản thiết kế trong đơn; sửa thiết kế sau đó thì cần thanh toán đơn mới.",
             "Trước khi thanh toán, bạn phải đọc và đồng ý điều khoản thanh toán.",
           ]}
@@ -193,10 +193,10 @@ const TERMS: LegalDoc = {
     },
     {
       id: "thanh-toan",
-      title: "Gói cước, lượt xuất và xu Wrap",
+      title: "Gói cước và xu Wrap",
       body: (
         <>
-          <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Lượt xuất mua theo gói ${EXPORT_PACK_LIST.map((pack) => `${pack.credits} lượt ${formatVnd(pack.priceVnd)}`).join(', ')}, còn hạn ${EXPORT_PACK_VALID_MONTHS} tháng; mỗi lượt mở khóa file in sạch của một bản thiết kế trong 7 ngày. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%. Lượt xuất đã dùng không được hoàn.</P>
+          <P>{`Gói ${PLANS.STARTER.name} ${formatVnd(PLANS.STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán và không tự gia hạn. Gói ${PLANS.PRO_BUSINESS.name} ký theo hợp đồng. Gói lượt xuất đã ngừng bán: lượt xuất bạn mua trước đó còn hạn được đổi sang xu Wrap theo số tiền đã trả (làm tròn lên), giữ nguyên hạn dùng.`} Trong 7 ngày đầu của lần thanh toán đầu tiên, nếu bạn chưa xuất file in nào, chúng tôi hoàn tiền 100%.</P>
           <P><strong>Quy định về Xu Wrap:</strong> Xu Wrap là đơn vị tín dụng nội bộ dùng cho các dịch vụ AI (tạo ảnh mặt hộp, hoa văn AI, công cụ phóng to, xóa nền và vector hóa), nạp theo các gói và số xu niêm yết khi thanh toán. Xu Wrap không có giá trị quy đổi thành tiền mặt, không chuyển nhượng giữa các tài khoản và không áp dụng chính sách hoàn tiền sau khi nạp thành công. Xu tặng kèm theo gói có hiệu lực theo kỳ (được dồn tối đa một kỳ tiếp theo); xu nạp lẻ có thời hạn 12 tháng kể từ ngày thanh toán. Trong trường hợp tác vụ AI hoặc hệ thống phát sinh lỗi kỹ thuật, số xu tương ứng sẽ được hoàn lại tự động vào ví của bạn.</P>
         </>
       ),
@@ -273,7 +273,7 @@ const PAYMENT: LegalDoc = {
   path: PAYMENT_TERMS_PATH,
   label: "Thanh toán & hồ sơ pháp lý",
   title: "Chính sách thanh toán & hồ sơ pháp lý",
-  lead: "Bạn phải đọc và đồng ý các điều khoản này trước mỗi lần trả tiền: mua lượt xuất file in, nâng Pro, nạp xu Wrap hoặc thanh toán đơn in mẫu.",
+  lead: "Bạn phải đọc và đồng ý các điều khoản này trước mỗi lần trả tiền: nâng Pro, nạp xu Wrap hoặc thanh toán đơn in mẫu.",
   updated: PAYMENT_TERMS_VERSION,
   versions: [{ version: "1.0", date: PAYMENT_TERMS_VERSION, change: "Bản đầu tiên: điều khoản rủi ro thanh toán bắt buộc đọc trước khi trả tiền." }],
   sections: [

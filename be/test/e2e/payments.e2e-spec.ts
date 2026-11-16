@@ -5,7 +5,7 @@ import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
-import { crc16 } from '../../src/payments';
+import { crc16, newPaymentReference } from '../../src/payments';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { cancelOrder, placeSampleOrder } from './helpers/orders';
@@ -15,7 +15,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * VietQR payments (docs/17 S5) against a real PostgreSQL: create, poll, expire, and the simulated confirmation that
- * grants an export pack, 30 days of Pro or pays a sample order, once. e2e-env.ts turns PAYMENT_SIMULATION on; the last
+ * grants xu, 30 days of Pro or pays a sample order, once. Export packs are no longer sold (docs/25 item 7). e2e-env.ts turns PAYMENT_SIMULATION on; the last
  * test boots a second app with it off. Needs `docker compose up -d postgres redis`.
  */
 describe('Payments API (e2e)', () => {
@@ -89,9 +89,9 @@ describe('Payments API (e2e)', () => {
 
   it('creates a 15-minute VietQR payment with a valid EMVCo payload', async () => {
     const before = Date.now();
-    const payment = await pay(buyer, { purpose: 'EXPORT_1' });
+    const payment = await pay(buyer, { purpose: 'XU_500' });
 
-    expect(payment).toMatchObject({ purpose: 'EXPORT_1', status: 'PENDING', amountVnd: 19_000, credits: 1, orderId: null });
+    expect(payment).toMatchObject({ purpose: 'XU_500', status: 'PENDING', amountVnd: 50_000, xu: 500, credits: null, orderId: null });
     expect(payment.reference).toMatch(/^WF[A-HJ-NP-Z2-9]{6}$/);
     const ttl = new Date(payment.expiresAt).getTime() - before;
     expect(ttl).toBeGreaterThan(14.9 * 60_000);
@@ -102,7 +102,7 @@ describe('Payments API (e2e)', () => {
     expect(bankName).toBe('Vietcombank');
     expect(accountNo).toBe('0000000000');
     expect(payload).toContain('0010A000000727');
-    expect(payload).toContain('5405190005802VN');
+    expect(payload).toContain('5405500005802VN');
     expect(payload).toContain(`0808${payment.reference}`);
     expect(payload.slice(-4)).toBe(crc16(payload.slice(0, -4)));
     expect(qrSvg).toMatch(/^<svg/);
@@ -118,7 +118,7 @@ describe('Payments API (e2e)', () => {
     await as(buyer).post('/api/payments').send({ purpose: 'SAMPLE_ORDER' }).expect(400);
     await as(buyer)
       .post('/api/payments')
-      .send({ purpose: 'EXPORT_5', orderId: '01970000-0000-7000-8000-000000000000' })
+      .send({ purpose: 'XU_500', orderId: '01970000-0000-7000-8000-000000000000' })
       .expect(400);
     await as(buyer)
       .post('/api/payments')
@@ -126,25 +126,80 @@ describe('Payments API (e2e)', () => {
       .expect(404);
   });
 
-  it('grants an export pack once, even when confirmed twice at the same time', async () => {
+  it('refuses a new payment for every export pack: 400 EXPORT_PACK_DISCONTINUED, nothing created (docs/25 item 7)', async () => {
+    const user = await register('nopack');
+    for (const purpose of ['EXPORT_1', 'EXPORT_5', 'EXPORT_15']) {
+      const res = await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, purpose }).expect(400);
+      expect(res.body).toMatchObject({ code: 'EXPORT_PACK_DISCONTINUED' });
+    }
+    await expect(prisma.payment.count({ where: { userId: user.id } })).resolves.toBe(0);
+  });
+
+  it('an export pack payment made before the packs stopped, confirmed late, gives xu at the price paid, once', async () => {
     const user = await register('pack');
-    const payment = await payToSimulate(user, { purpose: 'EXPORT_5' });
-    expect(payment.amountVnd).toBe(79_000);
+    // Written like PaymentsService wrote it before (no way to create one through the API any more).
+    const payment = await prisma.payment.create({
+      data: {
+        userId: user.id,
+        purpose: 'EXPORT_5',
+        amountVnd: 79_000,
+        reference: newPaymentReference(),
+        expiresAt: new Date(Date.now() + 10 * 60_000),
+        metadata: { credits: 5 },
+      },
+    });
+    await setDemo(user, true);
 
     const [first, second] = await Promise.all([confirm(user, payment.id), confirm(user, payment.id)]);
     expect(first.status).toBe(200);
     expect(second.status).toBe(200);
-    expect(first.body).toMatchObject({ status: 'PAID', vietqr: null, provider: 'VIETQR', confirmedVia: 'SIMULATION' });
-    expect((await confirm(user, payment.id).expect(200)).body.status).toBe('PAID');
+    expect(first.body).toMatchObject({ status: 'PAID', purpose: 'EXPORT_5', credits: 5, confirmedVia: 'SIMULATION' });
 
-    const lots = await prisma.creditLot.findMany({ where: { userId: user.id } });
+    // No export credit lot: one xu lot worth what was paid, 79.000đ = 790 xu.
+    const lots = await prisma.creditLot.findMany({ where: { paymentId: payment.id } });
     expect(lots).toHaveLength(1);
-    expect(lots[0]).toMatchObject({ source: 'PURCHASE', quantity: 5, remaining: 5, paymentId: payment.id });
+    expect(lots[0]).toMatchObject({ kind: 'XU', source: 'PURCHASE', quantity: 790, remaining: 790, valueVnd: 79_000 });
     expect(lots[0].expiresAt!.getTime() - Date.now()).toBeGreaterThan(360 * DAY_MS);
+    await expect(prisma.creditLot.count({ where: { userId: user.id, kind: 'EXPORT' } })).resolves.toBe(0);
 
     const billing = (await as(user).get('/api/billing/me').expect(200)).body;
-    expect(billing).toMatchObject({ tier: 'PAY_PER_EXPORT', exportCredits: { balance: 5 }, paymentSimulation: true });
+    expect(billing).not.toHaveProperty('exportCredits');
+    expect(billing.xu.balance).toBeGreaterThanOrEqual(790);
     await confirm(stranger, payment.id).expect(404);
+  });
+
+  it('still shows an old export pack payment in the history, as it was bought', async () => {
+    const user = await register('history');
+    const paidAt = new Date(Date.now() - 30 * DAY_MS);
+    const old = await prisma.payment.create({
+      data: {
+        userId: user.id,
+        purpose: 'EXPORT_15',
+        amountVnd: 199_000,
+        reference: newPaymentReference(),
+        status: 'PAID',
+        paidAt,
+        confirmedVia: 'SEPAY_WEBHOOK',
+        expiresAt: new Date(paidAt.getTime() + 15 * 60_000),
+        metadata: { credits: 15 },
+        createdAt: new Date(paidAt.getTime() - 60_000),
+      },
+    });
+    const { entries } = (await as(user).get('/api/payments').expect(200)).body;
+    expect(entries).toEqual([
+      expect.objectContaining({
+        id: old.id,
+        purpose: 'EXPORT_15',
+        status: 'PAID',
+        amountVnd: 199_000,
+        credits: 15,
+        xu: null,
+        orderId: null,
+        reference: old.reference,
+        paidAt: paidAt.toISOString(),
+      }),
+    ]);
+    expect((await as(user).get(`/api/payments/${old.id}`).expect(200)).body).toMatchObject({ purpose: 'EXPORT_15', credits: 15, vietqr: null });
   });
 
   it('gives a demo account a VNPAY payment, a real account a VIETQR one, and records the simulation', async () => {
@@ -222,7 +277,7 @@ describe('Payments API (e2e)', () => {
   });
 
   it('expires a payment after 15 minutes: no QR, no confirmation', async () => {
-    const payment = await payToSimulate(buyer, { purpose: 'EXPORT_1' });
+    const payment = await payToSimulate(buyer, { purpose: 'XU_500' });
     await prisma.payment.update({ where: { id: payment.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
 
     const res = await confirm(buyer, payment.id).expect(409);
@@ -233,16 +288,15 @@ describe('Payments API (e2e)', () => {
     await expect(prisma.creditLot.count({ where: { paymentId: payment.id } })).resolves.toBe(0);
   });
 
-  it('an export credit no longer unlocks the print file: it is sold through the print cart', async () => {
+  it('xu do not unlock the print file either: it is sold through the print cart', async () => {
     const user = await register('free');
     const projectId = await newProject(user);
-    const exportSvg = (useCredit?: boolean) =>
-      as(user).post(`/api/projects/${projectId}/exports`).send({ fileType: 'SVG', useCredit });
+    const exportSvg = () => as(user).post(`/api/projects/${projectId}/exports`).send({ fileType: 'SVG' });
 
     expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
-    const payment = await payToSimulate(user, { purpose: 'EXPORT_1' });
+    const payment = await payToSimulate(user, { purpose: 'XU_500' });
     await confirm(user, payment.id).expect(200);
-    expect((await exportSvg(true).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
+    expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
   });
 
   it('lets only a demo account simulate a VietQR payment, by the button or by a mock bank transfer (docs/25 item 6)', async () => {
@@ -289,7 +343,7 @@ describe('Payments API (e2e)', () => {
   });
 
   it('answers 404 to simulate-confirm when PAYMENT_SIMULATION is off', async () => {
-    const payment = await pay(buyer, { purpose: 'EXPORT_1' });
+    const payment = await pay(buyer, { purpose: 'XU_500' });
     const previous = process.env.PAYMENT_SIMULATION;
     process.env.PAYMENT_SIMULATION = 'false';
     let live = undefined as INestApplication | undefined;

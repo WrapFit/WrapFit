@@ -1,22 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreditKind } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { trim } from '../../common';
 
-/** Largest grant by hand: export credits, or xu (1 xu = 100đ, so 100.000 xu = 10 triệu đồng of AI). */
-export const GRANT_LIMITS: Record<CreditKind, number> = { EXPORT: 100, XU: 100_000 };
+/** Largest grant by hand, in xu (1 xu = 100đ, so 100.000 xu = 10 triệu đồng of AI). */
+export const GRANT_LIMIT_XU = 100_000;
 
 export class GrantCreditsDto {
-  @ApiPropertyOptional({ enum: CreditKind, default: CreditKind.EXPORT, description: 'Export credits or xu Wrap' })
+  /** Only xu: export credits are no longer granted, sold or spent (docs/25 item 7). Kept for older admin clients. */
+  @ApiPropertyOptional({ enum: [CreditKind.XU], default: CreditKind.XU, description: 'Xu Wrap (export credits: 400)' })
   @IsOptional()
-  @IsEnum(CreditKind)
+  @IsIn([CreditKind.XU], { message: 'Lượt xuất đã ngừng: chỉ cấp được xu Wrap' })
   kind?: CreditKind;
 
-  @ApiProperty({ example: 5, description: 'Credits to add: 1-100 export credits, or 1-100000 xu' })
+  @ApiProperty({ example: 500, description: 'Xu to add: 1-100000' })
   @IsInt()
   @Min(1)
-  @Max(GRANT_LIMITS.XU)
+  @Max(GRANT_LIMIT_XU)
   quantity: number;
 
   @ApiPropertyOptional({ example: 30, description: 'Days until the lot expires; omitted = never expires' })

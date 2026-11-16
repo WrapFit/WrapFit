@@ -272,7 +272,9 @@ describe('Admin deletes a user (e2e)', () => {
       expect(projects.items ?? projects).toHaveLength(0);
       await as(again).get(`/api/orders/${orderId}`).expect(404);
       const billing = (await as(again).get('/api/billing/me').expect(200)).body;
-      expect(billing.exportCredits.balance).toBe(0);
+      // Only the xu of the Free plan for this month: nothing bought by the old account (export credits are gone, docs/25 item 7).
+      expect(billing).toMatchObject({ tier: 'FREE', xu: { balance: 50 } });
+      expect(billing).not.toHaveProperty('exportCredits');
       expect(await prisma.creditLot.count({ where: { userId: again.id, source: 'PURCHASE' } })).toBe(0);
     });
   });

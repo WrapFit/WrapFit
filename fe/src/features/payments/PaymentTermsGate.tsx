@@ -12,7 +12,7 @@ import { cn } from "@/utils/helpers";
 const END_SLACK_PX = 12;
 
 interface PaymentTermsGateProps {
-  /** What is being bought, e.g. "Mua 1 lượt xuất". */
+  /** What is being bought, e.g. "Nâng lên Pro 30 ngày". */
   itemLabel: string;
   /** Price when known before the payment exists (packs); null for a sample order (the server prices it). */
   amountVnd: number | null;

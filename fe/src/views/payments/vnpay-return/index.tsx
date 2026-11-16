@@ -211,7 +211,8 @@ function successText(payment: Payment): string {
   if (payment.purpose === "PRO_MONTH") return "Gói Pro đã bật: xuất file in sạch không giới hạn trong 30 ngày.";
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
   if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
-  return `Đã cộng ${payment.credits ?? 0} lượt xuất vào tài khoản, dùng trong 12 tháng.`;
+  // An export pack bought before the packs stopped (docs/25 item 7): the server turned it into xu.
+  return "Thanh toán đã ghi nhận: số tiền được đổi sang xu Wrap trong ví, dùng trong 12 tháng.";
 }
 
 function Missing({

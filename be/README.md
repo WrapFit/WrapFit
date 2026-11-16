@@ -135,7 +135,7 @@ cp .env.example .env            # điền JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 docker compose up -d --build
 ```
 
-Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, mỗi lần khởi động nạp lượt xuất cho đủ `SEED_DEMO_CREDITS`, mặc định 5; dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
+Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, không còn nạp lượt xuất (docs/25 mục 7); dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
 
 Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `backend` (API), `worker` (cùng image, lệnh `worker`, chỉ chạy hàng đợi xuất file), `frontend`.
 

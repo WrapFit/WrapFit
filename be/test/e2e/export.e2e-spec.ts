@@ -271,8 +271,8 @@ describe('Print export (e2e)', () => {
   describe('print file sold through the print cart: no export before a paid order', () => {
     let rae: { id: string; cookie: string };
     let design: string;
-    const exportOf = (body: Record<string, unknown>, user = rae) =>
-      as(user).post(`/api/projects/${design}/exports`).send(body);
+    const exportOf = (body: Record<string, unknown>, user = rae, project = design) =>
+      as(user).post(`/api/projects/${project}/exports`).send(body);
     // POST /exports allows 10 requests a minute per IP, and every test here comes from one: start each with a fresh budget.
     beforeEach(() => {
       // The in-memory store keeps the hits in a second map next to `storage`: reset both.
@@ -305,8 +305,10 @@ describe('Print export (e2e)', () => {
       for (const fileType of ['PDF_A4_PRINT', 'SVG', 'DXF']) {
         expect((await exportOf({ fileType }).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
       }
+      // Export credits left from before (docs/25 item 7) open nothing, and `useCredit` is no longer accepted.
       await credits.grant(rae.id, { quantity: 2, source: 'ADMIN', expiresAt: null });
-      await exportOf({ fileType: 'SVG', useCredit: true }).expect(402);
+      await exportOf({ fileType: 'SVG' }).expect(402);
+      await exportOf({ fileType: 'SVG', useCredit: true }).expect(400);
       expect(await credits.balance(rae.id)).toBe(2);
       await prisma.user.update({ where: { id: rae.id }, data: { subscriptionTier: 'STARTER' } });
       await exportOf({ fileType: 'SVG' }).expect(402);
@@ -314,16 +316,45 @@ describe('Print export (e2e)', () => {
       expect(await prisma.exportJob.count({ where: { projectId: design } })).toBe(0);
     });
 
-    it('a paid order of this version unlocks clean files in every format, nothing charged', async () => {
+    it('a paid order of this version unlocks clean files in every format, no export credit read or spent', async () => {
       await payOrderFor(rae.id, design);
-      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toMatchObject({ unlocked: true });
+      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toEqual({
+        unlocked: true,
+        unlockExpiresAt: null,
+      });
       const started = (await exportOf({ fileType: 'SVG' }).expect(202)).body;
-      expect(started).toMatchObject({ watermarked: false, charged: false });
+      expect(Object.keys(started).sort()).toEqual(['fitCheck', 'jobId', 'status']);
       expect(await waitFor(started.jobId, rae)).toMatchObject({ status: 'COMPLETED', watermarked: false });
       for (const fileType of ['DXF', 'PDF_A4_PRINT']) {
-        expect((await exportOf({ fileType }).expect(202)).body).toMatchObject({ watermarked: false, charged: false });
+        expect((await exportOf({ fileType }).expect(202)).body).not.toHaveProperty('charged');
       }
       expect(await credits.balance(rae.id)).toBe(2);
+      expect(await prisma.creditDebit.count({ where: { userId: rae.id } })).toBe(0);
+      expect(await prisma.exportJob.count({ where: { projectId: design, OR: [{ watermarked: true }, { unlockId: { not: null } }] } })).toBe(0);
+    });
+
+    it('an unlock bought with a credit before the print cart still opens its version, without spending anything', async () => {
+      const other = (
+        await as(rae)
+          .post('/api/projects')
+          .send({ templateId: 'tuck-top', title: 'Hộp cũ Rae', dimensions: { length: 120, width: 80, height: 60 }, canvasState: { elements: [] } })
+          .expect(201)
+      ).body.id as string;
+      await exportOf({ fileType: 'SVG' }, rae, other).expect(402);
+      const { version } = await prisma.packagingProject.findUniqueOrThrow({ where: { id: other }, select: { version: true } });
+      const expiresAt = new Date(Date.now() + 86_400_000);
+      const unlock = await prisma.exportUnlock.create({
+        data: { projectId: other, projectVersion: version, userId: rae.id, debitOperationId: '01970000-0000-7000-8000-0000000000aa', expiresAt },
+      });
+      expect((await as(rae).get(`/api/projects/${other}/exports/access`).expect(200)).body).toEqual({
+        unlocked: true,
+        unlockExpiresAt: expiresAt.toISOString(),
+      });
+      const started = (await exportOf({ fileType: 'PDF_A4_PRINT' }, rae, other).expect(202)).body;
+      expect(await waitFor(started.jobId, rae)).toMatchObject({ status: 'COMPLETED', watermarked: false });
+      expect(await prisma.exportJob.findUniqueOrThrow({ where: { id: started.jobId } })).toMatchObject({ unlockId: unlock.id });
+      expect(await credits.balance(rae.id)).toBe(2);
+      expect(await prisma.creditDebit.count({ where: { userId: rae.id } })).toBe(0);
     });
 
     it('needs a new paid order after an edit', async () => {
@@ -351,8 +382,7 @@ describe('Print export (e2e)', () => {
       await as(rae).patch(`/api/projects/${design}`).send({ version: paid.version, tags: ['in-thu'] }).expect(200);
 
       expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toMatchObject({ unlocked: true });
-      const started = (await exportOf({ fileType: 'SVG' }).expect(202)).body;
-      expect(started).toMatchObject({ watermarked: false, charged: false });
+      await exportOf({ fileType: 'SVG' }).expect(202);
     });
 
     it('lets only the owner export or read the access: 404 for others', async () => {

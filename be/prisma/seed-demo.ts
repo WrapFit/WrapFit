@@ -10,16 +10,14 @@ import { caliperOf, type CanvasElement, checkBox, generateDielinePieces } from '
 // failing seed stops the backend container from starting.
 
 /**
- * Demo account of the CP4 live demo (docs/17 S8, §5): a verified MAKER on the Free plan with export credits and the
- * candle jar project of the script, its logo already on the front panel. Created only when SEED_DEMO_PASSWORD is set.
- * Runs on every start of the backend container, so every step is idempotent: the project and the logo are made once,
- * and the credits are topped up to SEED_DEMO_CREDITS (a rehearsal that spent them gets them back on the next deploy).
+ * Demo account of the CP4 live demo (docs/17 S8, §5): a verified MAKER on the Free plan with the candle jar project of
+ * the script, its logo already on the front panel. Created only when SEED_DEMO_PASSWORD is set. Runs on every start of
+ * the backend container, so every step is idempotent: the project and the logo are made once. It no longer gets export
+ * credits (docs/25 item 7): the print file opens through a paid print order, AI tasks use the xu of the plan.
  */
 
 const PROJECT_TITLE = 'Hũ nến thơm Mộc An';
-const CREDIT_NOTE = 'Tài khoản demo CP4 (seed)';
 const LOGO_FILE = join(__dirname, 'assets', 'demo-candle-logo.svg');
-const DEFAULT_CREDITS = 5;
 
 /** The candle jar of the demo script: 80 × 80 × 95 mm, 350 g (lock bottom FEFCO 0215), Ivory 300 GSM. */
 const GSM = 300;
@@ -30,7 +28,6 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   const password = process.env.SEED_DEMO_PASSWORD;
   if (!password) return;
   const email = (process.env.SEED_DEMO_EMAIL || 'demo@wrapfit.vn').toLowerCase();
-  const credits = Number(process.env.SEED_DEMO_CREDITS || DEFAULT_CREDITS);
 
   // Same rule as the admin: never take over (and verify) an account somebody registered with this address.
   const existing = await prisma.user.findUnique({ where: { email }, select: { role: true } });
@@ -54,24 +51,8 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
     },
   });
 
-  await topUpCredits(prisma, user.id, credits);
   await ensureProject(prisma, user.id);
   console.log(`Seeded demo account: ${email}`);
-}
-
-/** Adds an ADMIN lot (no expiry) so the usable balance is at least `target`. */
-async function topUpCredits(prisma: PrismaClient, userId: string, target: number): Promise<void> {
-  const now = new Date();
-  const { _sum } = await prisma.creditLot.aggregate({
-    where: { userId, kind: 'EXPORT', remaining: { gt: 0 }, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
-    _sum: { remaining: true },
-  });
-  const missing = target - (_sum.remaining ?? 0);
-  if (missing <= 0) return;
-  await prisma.creditLot.create({
-    data: { userId, kind: 'EXPORT', source: 'ADMIN', quantity: missing, remaining: missing, expiresAt: null, note: CREDIT_NOTE },
-  });
-  console.log(`Demo account: +${missing} export credits`);
 }
 
 async function ensureProject(prisma: PrismaClient, userId: string): Promise<void> {

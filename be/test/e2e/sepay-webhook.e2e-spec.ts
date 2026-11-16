@@ -115,11 +115,11 @@ describe('SePay webhook (e2e)', () => {
     expect((await bankTx(body.id))!.transactionAt.toISOString()).toBe('2026-11-10T14:30:00.000Z');
   });
 
-  it('grants export credits and Pro through the webhook too, matching a lower-case reference', async () => {
-    const pack = await pay(buyer, { purpose: 'EXPORT_5' });
+  it('grants xu and Pro through the webhook too, matching a lower-case reference', async () => {
+    const pack = await pay(buyer, { purpose: 'XU_1050' });
     await send(transfer(pack.reference.toLowerCase(), pack.amountVnd)).expect(200);
     expect(await status(pack.id)).toBe('PAID');
-    expect(await prisma.creditLot.count({ where: { userId: buyer.id, paymentId: pack.id, quantity: 5 } })).toBe(1);
+    expect(await prisma.creditLot.count({ where: { userId: buyer.id, paymentId: pack.id, kind: 'XU', quantity: 1_050 } })).toBe(1);
 
     const pro = await pay(buyer, { purpose: 'PRO_MONTH' });
     await send(transfer(`WF ${pro.reference.slice(2, 5)} ${pro.reference.slice(5)}`, pro.amountVnd)).expect(200);

@@ -214,7 +214,7 @@ describe('VNPay (e2e)', () => {
   });
 
   it('confirms from the return page for its owner, and the IPN that follows gets 02', async () => {
-    const payment = await pay(demo, { purpose: 'EXPORT_5' });
+    const payment = await pay(demo, { purpose: 'XU_1050' });
     const query = vnpayQuery(payment);
 
     const back = (await comeBack(demo, query).expect(200)).body;
