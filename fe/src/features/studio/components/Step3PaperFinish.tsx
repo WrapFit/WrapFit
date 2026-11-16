@@ -19,21 +19,29 @@ import {
   Box,
   Check,
   ChevronDown,
+  CircleSlash,
   Columns3,
+  Crown,
+  Droplets,
   ExternalLink,
+  Feather,
+  Gift,
   Info,
   Layers,
   Lock,
   PackageOpen,
+  Shield,
   SlidersHorizontal,
   Sparkles,
+  Stamp,
+  Sun,
   Tag,
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { formatVnd } from "@/features/pricing";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { PRIMARY_PILL, SectionCard, SECONDARY_PILL, StepActionBar, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
+import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
 import { continueTo } from "@/features/studio/components/StudioStepper";
 import { clampDimension } from "@/features/studio/utils/dieline";
 import { PAPER_STOCKS, paperAdvice, paperStockOf, type PaperStock } from "@/features/studio/utils/paperStocks";
@@ -400,9 +408,58 @@ export function Step3PaperFinish({
   const [showCompare, setShowCompare] = useState(false);
   const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
   const [showFaceLabels, setShowFaceLabels] = useState(true);
-  const t = dimensions.paperThickness;
+
+  // --- Draft and commit: slider and GSM / mm readouts follow every move smoothly at 60fps;
+  // the studio state and 3D rebuild happen after a short pause (matching Step 2).
+  const [draft, setDraft] = useState(dimensions);
+  const committed = useRef(dimensions);
+  const pending = useRef<{ timer: number; next: BoxDimensions } | null>(null);
+  const onChangeRef = useRef(onDimensionsChange);
+  onChangeRef.current = onDimensionsChange;
+
+  useEffect(() => {
+    if (
+      dimensions.length !== committed.current.length ||
+      dimensions.width !== committed.current.width ||
+      dimensions.height !== committed.current.height ||
+      dimensions.paperThickness !== committed.current.paperThickness
+    ) {
+      committed.current = dimensions;
+      setDraft(dimensions);
+    }
+  }, [dimensions]);
+
+  const commit = (next: BoxDimensions) => {
+    if (pending.current) window.clearTimeout(pending.current.timer);
+    pending.current = null;
+    if (
+      next.length === committed.current.length &&
+      next.width === committed.current.width &&
+      next.height === committed.current.height &&
+      next.paperThickness === committed.current.paperThickness
+    ) {
+      return;
+    }
+    committed.current = next;
+    onChangeRef.current(next);
+  };
+
+  const flush = () => {
+    if (pending.current) commit(pending.current.next);
+  };
+
+  const change = (next: BoxDimensions, now = false) => {
+    setDraft(next);
+    if (now) return commit(next);
+    if (pending.current) window.clearTimeout(pending.current.timer);
+    pending.current = { next, timer: window.setTimeout(() => commit(next), 160) };
+  };
+
+  useEffect(() => () => flush(), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const t = draft.paperThickness;
   const range = limits?.paperThickness ?? { min: 0.3, max: 0.6 };
-  const advice = useMemo(() => paperAdvice(boxType, dimensions), [boxType, dimensions]);
+  const advice = useMemo(() => paperAdvice(boxType, draft), [boxType, draft]);
   const lamination = finishes.find((f) => LAMINATIONS.includes(f)) ?? null;
   const lightCount = useMemo(() => (paper.theme === "kraft" ? lightOnKraft(elements) : 0), [paper.theme, elements]);
 
@@ -434,7 +491,8 @@ export function Step3PaperFinish({
 
   const choose = (stock: PaperStock) => {
     onMaterialChange(stock.theme);
-    onDimensionsChange({ ...dimensions, paperThickness: clampDimension(limits, "paperThickness", stock.spec.caliper) });
+    const next = { ...draft, paperThickness: clampDimension(limits, "paperThickness", stock.spec.caliper) };
+    change(next, true);
   };
   const setLamination = (next: QuoteFinish | null) => {
     const rest = finishes.filter((f) => !LAMINATIONS.includes(f));
@@ -459,10 +517,12 @@ export function Step3PaperFinish({
             <div className="absolute inset-0">
               <Box3DView
                 dimensions={dimensions}
+                liveDimensions={draft}
                 foldProgress={1}
                 faceLabels={showFaceLabels}
                 cameraView={cameraView}
                 interactiveOpenState={showInside}
+                showCups={dimensions.showCups !== false}
                 boxType={boxType}
                 theme={activeMaterial}
                 elements={elements}
@@ -491,20 +551,29 @@ export function Step3PaperFinish({
                     <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.inside }} />
                     Mặt trong
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowInside((v) => !v)}
-                    className={cn(
-                      "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                      showInside ? "bg-fpt-orange text-white shadow-xs" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50",
-                    )}
-                  >
-                    <PackageOpen className="size-3.5" aria-hidden />
-                    {showInside ? "Đóng nắp" : "Mở xem mặt trong"}
-                  </button>
                 </div>
 
                 <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
+                  {boxType !== "pillow" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowInside((v) => !v)}
+                        aria-pressed={showInside}
+                        title={showInside ? "Đóng nắp hộp" : "Mở nắp hộp"}
+                        className={cn(
+                          "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                          showInside
+                            ? "bg-fpt-orange text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                        )}
+                      >
+                        <Gift className="size-3.5" aria-hidden />
+                        <span>{showInside ? "Đóng nắp" : "Mở nắp"}</span>
+                      </button>
+                      <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                    </>
+                  )}
                   {(
                     [
                       { view: "angle", label: "3/4" },
@@ -635,18 +704,23 @@ export function Step3PaperFinish({
               </p>
             )}
 
-            {/* Tinh chỉnh độ dày giấy thực tế (sổ ra sẵn cố định để khách hàng tùy chỉnh) */}
+            {/* Tinh chỉnh độ dày giấy thực tế (đồng bộ trực quan mô hình 3D) */}
             <div className="mt-3.5 border-t border-line/60 pt-3">
               <div className="flex items-center justify-between text-caption font-semibold text-fg">
                 <span className="inline-flex items-center gap-1.5">
                   <SlidersHorizontal className="size-3.5 text-fpt-orange" aria-hidden />
-                  <span>Tinh chỉnh độ dày giấy thực tế (nâng cao)</span>
+                  <span>Tinh chỉnh độ dày giấy thực tế</span>
                 </span>
-                <span className="rounded-full bg-fpt-orange-light px-2.5 py-0.5 text-caption font-semibold tabular-nums text-fpt-orange-ink">
-                  {t.toFixed(2).replace(".", ",")} mm
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-caption font-medium tabular-nums text-fg-muted">
+                    ~{Math.round(t / 0.0014)} GSM
+                  </span>
+                  <span className="rounded-full bg-fpt-orange-light px-2.5 py-0.5 text-caption font-semibold tabular-nums text-fpt-orange-ink">
+                    {t.toFixed(2).replace(".", ",")} mm
+                  </span>
+                </div>
               </div>
-              <div className="mt-2 rounded-xl bg-surface-sunken/60 p-3">
+              <div className="mt-2 space-y-2.5 rounded-xl bg-surface-sunken/60 p-3">
                 <label className="block">
                   <input
                     type="range"
@@ -654,73 +728,180 @@ export function Step3PaperFinish({
                     max={range.max}
                     step={0.01}
                     value={t}
-                    onChange={(e) =>
-                      onDimensionsChange({
-                        ...dimensions,
-                        paperThickness: clampDimension(limits, "paperThickness", Number(Number(e.target.value).toFixed(2))),
-                      })
-                    }
+                    onChange={(e) => {
+                      const nextVal = clampDimension(limits, "paperThickness", Number(Number(e.target.value).toFixed(2)));
+                      change({ ...draft, paperThickness: nextVal });
+                    }}
                     className="w-full cursor-pointer accent-fpt-orange"
                   />
                   <span className="mt-1 flex justify-between text-caption tabular-nums text-fg-muted">
-                    <span>{range.min.toFixed(2).replace(".", ",")} mm</span>
-                    <span>{range.max.toFixed(2).replace(".", ",")} mm</span>
+                    <span>Mỏng ({range.min.toFixed(2).replace(".", ",")} mm)</span>
+                    <span className="font-medium text-fg">Độ dày viền cắt & thành hộp 3D</span>
+                    <span>Dày ({range.max.toFixed(2).replace(".", ",")} mm)</span>
                   </span>
                 </label>
+
+                {/* Quick Presets */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[11px] font-medium text-fg-muted">Định lượng phổ biến:</span>
+                  {[
+                    { label: "250 GSM (0,35mm)", val: 0.35 },
+                    { label: "300 GSM (0,42mm)", val: 0.42 },
+                    { label: "350 GSM (0,49mm)", val: 0.49 },
+                    { label: "400 GSM (0,56mm)", val: 0.56 },
+                  ].map((p) => {
+                    const isClose = Math.abs(t - p.val) < 0.02;
+                    return (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => {
+                          const nextVal = clampDimension(limits, "paperThickness", p.val);
+                          change({ ...draft, paperThickness: nextVal }, true);
+                        }}
+                        className={cn(
+                          "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-all",
+                          isClose
+                            ? "border-fpt-orange bg-fpt-orange-light font-semibold text-fpt-orange-ink shadow-2xs"
+                            : "border-line bg-surface-raised text-fg-muted hover:border-fg-muted hover:text-fg"
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Real-world tactile feel indicator */}
+                <div className="rounded-lg border border-slate-200/70 bg-white/80 p-2.5 text-caption">
+                  <div className="flex items-center gap-1.5 font-semibold text-fg">
+                    <span
+                      className={cn(
+                        "inline-block size-2 rounded-full",
+                        t <= 0.32
+                          ? "bg-blue-500"
+                          : t <= 0.45
+                          ? "bg-emerald-500"
+                          : t <= 0.65
+                          ? "bg-amber-500"
+                          : "bg-purple-500"
+                      )}
+                    />
+                    <span>
+                      {t <= 0.32
+                        ? "Giấy mỏng nhẹ (~200–240 GSM)"
+                        : t <= 0.45
+                        ? "Giấy tiêu chuẩn (~250–320 GSM)"
+                        : t <= 0.65
+                        ? "Giấy dày chịu lực (~350–450 GSM)"
+                        : "Bìa bồi carton cứng (≥ 500 GSM)"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-fg-muted">
+                    {t <= 0.32
+                      ? "Mềm mại, dễ uốn gập, phù hợp cho quà nhẹ."
+                      : t <= 0.45
+                      ? "Đứng form cứng cáp, nếp gấp sắc nét chuẩn hộp bán lẻ."
+                      : t <= 0.65
+                      ? "Thành hộp dày dặn, đầm tay, chống móp méo khi vận chuyển."
+                      : "Kết cấu siêu cứng chắc, bảo vệ tối đa cho quà nặng cao cấp."}
+                  </p>
+                </div>
               </div>
             </div>
-          </section>
 
-          {/* Tùy chọn hoàn thiện (sổ ra sẵn cố định để khách hàng chọn) */}
-          <SectionCard
-            aria-labelledby="finish-title"
-            icon={Sparkles}
-            title={<span id="finish-title">Tùy chọn hoàn thiện</span>}
-            hint="Tùy chọn gia công sau in ấn"
-          >
-            <div>
-              <p className="text-label font-semibold text-fg">Cán màng</p>
+            {/* Cán màng & Gia công thêm */}
+            <div className="mt-3.5 border-t border-line/60 pt-3">
+              <div className="flex items-center justify-between">
+                <p className="text-caption font-semibold text-fg flex items-center gap-1.5">
+                  <Layers className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span>Cán màng</span>
+                </p>
+                {lamination && (
+                  <span className="text-[11px] text-fpt-orange-ink font-semibold bg-fpt-orange-light px-2 py-0.5 rounded-full">
+                    {LAMINATION_SHORT[lamination]}
+                  </span>
+                )}
+              </div>
+
               <div role="radiogroup" aria-label="Cán màng" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {[null, ...LAMINATIONS].map((finish) => (
-                  <button
-                    key={finish ?? "none"}
-                    type="button"
-                    role="radio"
-                    aria-checked={lamination === finish}
-                    onClick={() => setLamination(finish)}
-                    className={chip(lamination === finish)}
-                  >
-                    <span className="text-body-sm font-semibold text-fg">{finish ? LAMINATION_SHORT[finish] : "Không cán"}</span>
-                    <span className="text-caption text-fg-muted">{finish ? "Cán phủ bảo vệ" : "Giấy để mộc"}</span>
-                  </button>
-                ))}
+                {[
+                  { id: null, label: "Không cán", desc: "Giấy để mộc", icon: CircleSlash },
+                  { id: "matte-lamination" as QuoteFinish, label: "Cán mờ", desc: "Chống chói, nhã nhặn", icon: Shield },
+                  { id: "gloss-lamination" as QuoteFinish, label: "Cán bóng", desc: "Tươi sáng, bắt nét", icon: Sun },
+                  { id: "soft-touch-lamination" as QuoteFinish, label: "Màng nhung", desc: "Mịn màng, đầm tay", icon: Feather },
+                ].map((item) => {
+                  const isSel = lamination === item.id;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSel}
+                      onClick={() => setLamination(item.id)}
+                      className={cn(
+                        chip(isSel),
+                        "gap-1 relative cursor-pointer"
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5 w-full">
+                        <Icon className={cn("size-3.5 shrink-0", isSel ? "text-fpt-orange" : "text-fg-muted")} aria-hidden />
+                        <span className="text-body-sm font-semibold text-fg">{item.label}</span>
+                      </div>
+                      <span className="text-[11px] text-fg-muted line-clamp-1">{item.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
               {lamination && <p className="mt-1.5 text-caption text-fg-muted">{FINISH_NOTES[lamination]}.</p>}
 
-              <p className="mt-4 text-label font-semibold text-fg">Gia công thêm</p>
+              <p className="mt-3.5 text-caption font-semibold text-fg flex items-center gap-1.5">
+                <Sparkles className="size-3.5 text-fpt-orange" aria-hidden />
+                <span>Gia công thêm</span>
+              </p>
+
               <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {EXTRAS.map((finish) => {
-                  const needsLamination = finish === "spot-uv" && !lamination;
-                  const on = finishes.includes(finish);
+                {[
+                  { id: "foil" as QuoteFinish, label: "Ép kim", icon: Crown, desc: "Nhũ vàng/bạc sang trọng" },
+                  { id: "spot-uv" as QuoteFinish, label: "Phủ UV định hình", icon: Droplets, desc: "Bóng nổi chi tiết chính" },
+                  { id: "emboss" as QuoteFinish, label: "Dập nổi (Thúc nổi)", icon: Stamp, desc: "Khối nổi 3D xúc giác" },
+                ].map((item) => {
+                  const needsLamination = item.id === "spot-uv" && !lamination;
+                  const on = finishes.includes(item.id);
+                  const Icon = item.icon;
                   return (
                     <button
-                      key={finish}
+                      key={item.id}
                       type="button"
                       aria-pressed={on}
                       disabled={needsLamination}
-                      onClick={() => toggle(finish)}
-                      className={chip(on, needsLamination)}
+                      onClick={() => toggle(item.id)}
+                      className={cn(
+                        chip(on, needsLamination),
+                        "gap-1 cursor-pointer"
+                      )}
                     >
-                      <span className="flex w-full items-center justify-between gap-1">
-                        <span className="text-body-sm font-semibold text-fg truncate">{FINISH_LABELS[finish]}</span>
+                      <div className="flex w-full items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Icon className={cn("size-3.5 shrink-0", on ? "text-fpt-orange" : "text-fg-muted")} aria-hidden />
+                          <span className="text-body-sm font-semibold text-fg truncate">{item.label}</span>
+                        </div>
+                        {on && (
+                          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white">
+                            <Check className="size-2.5 stroke-[3]" />
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-fg-muted line-clamp-1">
+                        {needsLamination ? "Cần cán màng" : item.desc}
                       </span>
-                      <span className="text-caption text-fg-muted line-clamp-1">{needsLamination ? "Cần cán màng" : FINISH_NOTES[finish]}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
-          </SectionCard>
+          </section>
         </div>
       </div>
 
@@ -734,7 +915,14 @@ export function Step3PaperFinish({
 
       <StepActionBar
         back={
-          <button type="button" onClick={onBack} className={SECONDARY_PILL}>
+          <button
+            type="button"
+            onClick={() => {
+              flush();
+              onBack();
+            }}
+            className={SECONDARY_PILL}
+          >
             <ArrowLeft className="size-4" aria-hidden />
             Kích thước
           </button>
@@ -746,7 +934,15 @@ export function Step3PaperFinish({
           </span>
         }
         next={
-          <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
+          <button
+            type="button"
+            data-tour="studio-next"
+            onClick={() => {
+              flush();
+              onNext();
+            }}
+            className={PRIMARY_PILL}
+          >
             {continueTo(4)}
             <ArrowRight className="size-4" aria-hidden />
           </button>

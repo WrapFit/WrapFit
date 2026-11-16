@@ -32,6 +32,8 @@ interface QuoteCardProps {
   blocked: boolean;
   quantity: number;
   onQuantityChange(quantity: number): void;
+  showBreakdown?: boolean;
+  onToggleBreakdown?(): void;
 }
 
 /** Step 6: estimated price by quantity, the cheaper size when there is one, and the sample order. */
@@ -48,6 +50,8 @@ export function QuoteCard({
   blocked,
   quantity,
   onQuantityChange: setQuantity,
+  showBreakdown,
+  onToggleBreakdown,
 }: QuoteCardProps) {
   const toast = useToast();
   const [sampleRequested, setSampleRequested] = useState(false);
@@ -144,9 +148,19 @@ export function QuoteCard({
             </li>
           </ul>
           <p className="mt-3 text-caption leading-5 text-fg-muted">Chưa gồm VAT và vận chuyển.</p>
-          <a href="#quote-detail" className="mt-1 inline-flex min-h-8 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
-            Xem báo giá chi tiết
-          </a>
+          {onToggleBreakdown ? (
+            <button
+              type="button"
+              onClick={onToggleBreakdown}
+              className="mt-1 inline-flex min-h-8 items-center gap-1.5 text-xs font-semibold text-fpt-orange hover:text-fpt-orange-dark underline underline-offset-2 cursor-pointer transition-colors"
+            >
+              <span>{showBreakdown ? "Thu gọn bảng chi tiết ▴" : "Xem phân rã chi phí chi tiết ▾"}</span>
+            </button>
+          ) : (
+            <a href="#quote-detail" className="mt-1 inline-flex min-h-8 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
+              Xem báo giá chi tiết
+            </a>
+          )}
         </div>
 
         <div className="flex flex-col justify-center gap-2 lg:pl-6">

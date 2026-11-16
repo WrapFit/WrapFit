@@ -33,6 +33,8 @@ export interface BoxDimensions {
   window?: boolean;
   /** Cells of a divider insert (docs/23 S18): rows along W × columns along L, default 2 × 3. Cups of a cup carrier, default 1 × 2. */
   cells?: { rows: number; cols: number };
+  /** Place 350ml takeaway cups into cup carrier in 3D preview */
+  showCups?: boolean;
 }
 
 export type LineType = "cut" | "crease" | "bleed" | "safe-margin";

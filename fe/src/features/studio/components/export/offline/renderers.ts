@@ -721,6 +721,10 @@ function pathToPdf(d: string, map: (x: number, y: number) => [number, number]): 
 export interface PdfOptions {
   /** Home printing: the sheet centred on A4 or A3 at 1:1, with crop marks and a 50 mm check ruler. */
   homePrint?: boolean;
+  /** ICC Color Profile standard name to embed in technical slug */
+  iccProfile?: string;
+  /** Whether to output commercial pre-press printer marks (registration crosshairs, CMYK color bars) */
+  printerMarks?: boolean;
 }
 
 const enc = new TextEncoder();
@@ -1026,6 +1030,60 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     content.push(`${map(rx, ry).map(f).join(" ")} m ${map(rx + 50, ry).map(f).join(" ")} l S`);
     for (let mm = 0; mm <= 50; mm += 10) content.push(`${map(rx + mm, ry - (mm % 50 === 0 ? 2.5 : 1.5)).map(f).join(" ")} m ${map(rx + mm, ry).map(f).join(" ")} l S`);
     content.push(pathToPdf(labelPath(info, "50 mm — in đúng tỷ lệ 100% (không co giãn)", rx + 54, ry + 1, 3, false), map), "f Q");
+  } else if (options.printerMarks !== false) {
+    // Commercial Pre-Press: Registration Marks & CMYK Color Control Bars
+    content.push(`q 1 1 1 1 K 1 1 1 1 k ${f(0.25 * k)} w`);
+    const regOffset = 8;
+    const regR = 2.5;
+    const regCross = 4.5;
+    const regPoints: [number, number][] = [
+      [trim.left - regOffset, (trim.top + trim.bottom) / 2],
+      [trim.right + regOffset, (trim.top + trim.bottom) / 2],
+      [(trim.left + trim.right) / 2, trim.top - regOffset],
+      [(trim.left + trim.right) / 2, trim.bottom + regOffset],
+    ];
+    for (const [rx, ry] of regPoints) {
+      const [cx, cy] = map(rx, ry);
+      const r = regR * k;
+      const c = r * 0.5522847498;
+      content.push(
+        `${f(cx + r)} ${f(cy)} m ` +
+        `${f(cx + r)} ${f(cy + c)} ${f(cx + c)} ${f(cy + r)} ${f(cx)} ${f(cy + r)} c ` +
+        `${f(cx - c)} ${f(cy + r)} ${f(cx - r)} ${f(cy + c)} ${f(cx - r)} ${f(cy)} c ` +
+        `${f(cx - r)} ${f(cy - c)} ${f(cx - c)} ${f(cy - r)} ${f(cx)} ${f(cy - r)} c ` +
+        `${f(cx + c)} ${f(cy - r)} ${f(cx + r)} ${f(cy - c)} ${f(cx + r)} ${f(cy)} c S`
+      );
+      content.push(`${map(rx - regCross, ry).map(f).join(" ")} m ${map(rx + regCross, ry).map(f).join(" ")} l S`);
+      content.push(`${map(rx, ry - regCross).map(f).join(" ")} m ${map(rx, ry + regCross).map(f).join(" ")} l S`);
+    }
+
+    // Color Control Patches along top/bottom margin
+    const barY = trim.bottom + 6;
+    const patchW = 6;
+    const patchH = 3.5;
+    const patches: Cmyk[] = [
+      [100, 0, 0, 0],
+      [60, 0, 0, 0],
+      [0, 100, 0, 0],
+      [0, 60, 0, 0],
+      [0, 0, 100, 0],
+      [0, 0, 60, 0],
+      [0, 0, 0, 100],
+      [0, 0, 0, 50],
+      [100, 100, 0, 0],
+      [0, 100, 100, 0],
+      [50, 40, 40, 0],
+    ];
+    let startBx = trim.left;
+    patches.forEach((cmyk, idx) => {
+      const bx = startBx + idx * (patchW + 0.5);
+      const [px1, py1] = map(bx, barY);
+      const [px2, py2] = map(bx + patchW, barY + patchH);
+      content.push(`${ink(cmyk)} ${f(Math.min(px1, px2))} ${f(Math.min(py1, py2))} ${f(Math.abs(px2 - px1))} ${f(Math.abs(py2 - py1))} re f`);
+    });
+
+    const slug = `WrapFit Production • ${layout.title} • ICC: ${options.iccProfile || "FOGRA39 / ISO 12647-2 (ECI)"} • 300 DPI`;
+    content.push(pathToPdf(labelPath(info, slug, trim.left, trim.bottom + 3, 2.2, false), map), "f Q");
   }
 
   const contentId = add(stream("/Filter /FlateDecode", zlibSync(enc.encode(content.join("\n")), { level: 6 })));

@@ -223,7 +223,7 @@ export function Dialog({ title, description, icon, onClose, footer, size = "md",
         </div>
         <CloseButton onClose={onClose} disabled={busy} />
       </div>
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain hover-scroll-y px-5 py-5 sm:px-6">{children}</div>
       {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line bg-surface-sunken/40 px-5 py-3.5 sm:px-6">{footer}</div>}
     </ModalLayer>
   );
@@ -273,7 +273,7 @@ export function Drawer({ title, description, side = "right", onClose, footer, wi
         </div>
         <CloseButton onClose={onClose} disabled={busy} />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain hover-scroll-y px-5 py-5 sm:px-6">{children}</div>
       {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line bg-surface-raised px-5 py-4 sm:px-6">{footer}</div>}
     </ModalLayer>
   );
