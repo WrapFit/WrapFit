@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Box, Check, CheckCircle2, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Sparkles, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
 import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
 import { useToast } from "@/components/common/Toast";
 import { Switch } from "@/components/ui";
@@ -30,6 +30,7 @@ interface Step5Model3DWithEnvironmentsProps {
   occasion?: string | null;
   /** Name of the mockup files. */
   title: string;
+  onDimensionsChange?: (dims: BoxDimensions) => void;
   onBack: () => void;
   onNext: () => void;
   onOpenQrModal?: () => void;
@@ -50,24 +51,6 @@ const STRUCTURE_NAMES: Record<string, string> = {
   "belly-band": "Đai giấy",
 };
 
-/** Numbered part of the photo flow. */
-function FlowStep({ n, title, hint, children }: { n: number; title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={title} className="border-t border-line pt-4 first:border-t-0 first:pt-0">
-      <div className="flex items-start gap-2.5">
-        <span aria-hidden className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-caption font-semibold text-white">
-          {n}
-        </span>
-        <div className="min-w-0">
-          <h3 className="text-body-sm font-semibold text-fg">{title}</h3>
-          {hint && <p className="text-caption leading-5 text-fg-muted">{hint}</p>}
-        </div>
-      </div>
-      <div className="mt-3">{children}</div>
-    </section>
-  );
-}
-
 /**
  * Step 5: the gift (wishes and the QR code of the unboxing page), then product photos of the box on a real set: a
  * tabletop that takes its shadow and the props of the occasion around it, shot at the angle chosen on the stage and
@@ -82,6 +65,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   formulaVersion,
   occasion,
   title,
+  onDimensionsChange,
   onBack,
   onNext,
   onOpenQrModal,
@@ -94,6 +78,9 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const [isPalettePickerOpen, setIsPalettePickerOpen] = useState(false);
   const [props, setProps] = useState(true);
   const [isLidOpen, setIsLidOpen] = useState<boolean>(false);
+  const [showCups, setShowCups] = useState<boolean>(dimensions.showCups !== false);
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  const [showFaceLabels, setShowFaceLabels] = useState<boolean>(false);
   const [saving, setSaving] = useState<MockupFormat["id"] | "all" | null>(null);
   const capture = useRef<CaptureFn | null>(null);
   const film = useRef<FilmApi | null>(null);
@@ -102,7 +89,11 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const [clip, setClip] = useState<{ url: string; kind: "video" | "gif"; name: string; bytes: number } | null>(null);
   const [playClip, setPlayClip] = useState(false);
   const [canRecordVideo, setCanRecordVideo] = useState(true);
+  const [mediaTab, setMediaTab] = useState<"photos" | "video">("photos");
   useEffect(() => setCanRecordVideo(videoFormat() !== null), []);
+  useEffect(() => {
+    setShowCups(dimensions.showCups !== false);
+  }, [dimensions.showCups]);
   useEffect(() => () => {
     if (clip) URL.revokeObjectURL(clip.url);
   }, [clip]);
@@ -207,7 +198,8 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             <Box3DView
               dimensions={dimensions}
               foldProgress={1}
-              faceLabels="toggle"
+              cameraView={cameraView}
+              faceLabels={showFaceLabels}
               boxType={boxType as never}
               theme={activeMaterial}
               elements={elements}
@@ -219,30 +211,115 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               studioPalette={studioPalette}
               rotationY={scene === "christmas" ? -0.38 : undefined}
               interactiveOpenState={isLidOpen}
+              showCups={showCups}
               captureRef={capture}
               filmRef={film}
               showHud={false}
               showStatusBar={false}
+              viewControls={false}
+              enableMacroZoom={false}
               frameless
               minHeight={false}
-              chrome="bar"
-              barStart={
-                <span className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-fg">
-                  <Box className="size-4 shrink-0 text-fg-muted" aria-hidden />
-                  <span className="truncate">{look.name}</span>
-                </span>
-              }
-              barEnd={
-                <>
-                  <button type="button" onClick={() => setIsLidOpen((v) => !v)} aria-pressed={isLidOpen} className={stageBarButton(isLidOpen)}>
-                    <Gift className="size-3.5" aria-hidden />
-                    {lidLabel}
-                  </button>
-                  <span className="mx-0.5 h-4 w-px bg-line" aria-hidden />
-                </>
-              }
               className="h-full w-full"
             />
+
+            {/* Bottom HUD bar with backdrop name + interactive 3D Controls dock */}
+            <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white/95 via-white/85 to-transparent px-4 pb-3 pt-6 backdrop-blur-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-1.5 font-semibold text-xs text-fg">
+                  <Box className="size-4 shrink-0 text-fpt-orange" aria-hidden />
+                  <span className="truncate">{look.name}</span>
+                </div>
+
+                <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
+                  {boxType === "cup-carrier" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = !showCups;
+                          setShowCups(next);
+                          onDimensionsChange?.({ ...dimensions, showCups: next });
+                        }}
+                        aria-pressed={showCups}
+                        title={showCups ? "Bỏ ly 350ml ra khỏi khay" : "Bỏ ly 350ml vào khay"}
+                        className={cn(
+                          "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                          showCups
+                            ? "bg-fpt-orange text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                        )}
+                      >
+                        <Coffee className="size-3.5" aria-hidden />
+                        <span>{showCups ? "Bỏ ly ra" : "Đặt ly"}</span>
+                      </button>
+                      <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                    </>
+                  )}
+                  {boxType !== "pillow" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsLidOpen((prev) => !prev)}
+                        aria-pressed={isLidOpen}
+                        title={isLidOpen ? "Đóng nắp hộp" : "Mở nắp hộp"}
+                        className={cn(
+                          "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                          isLidOpen
+                            ? "bg-fpt-orange text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                        )}
+                      >
+                        <Gift className="size-3.5" aria-hidden />
+                        <span>{isLidOpen ? "Đóng nắp" : "Mở nắp"}</span>
+                      </button>
+                      <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                    </>
+                  )}
+                  {(
+                    [
+                      { view: "angle", label: "3/4" },
+                      { view: "front", label: "Trước" },
+                      { view: "side", label: "Bên" },
+                      { view: "top", label: "Trên" },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.view}
+                      type="button"
+                      onClick={() => setCameraView(item.view)}
+                      aria-pressed={cameraView === item.view}
+                      title={`Góc nhìn ${item.label.toLowerCase()}`}
+                      className={cn(
+                        "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors",
+                        cameraView === item.view
+                          ? "bg-fpt-orange text-white shadow-xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      )}
+                    >
+                      {item.view === "angle" && <Box className="size-3" aria-hidden />}
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                  <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => setShowFaceLabels((prev) => !prev)}
+                    aria-pressed={showFaceLabels}
+                    title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
+                    className={cn(
+                      "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                      showFaceLabels
+                        ? "bg-fpt-orange text-white shadow-xs"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                    )}
+                  >
+                    <Tag className="size-3" aria-hidden />
+                    <span>Nhãn mặt</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* Floating Studio Palette & Watermark Free Dock (Pacdora & pack.ly style) */}
             {scene === "modern_studio" ? (
@@ -326,224 +403,280 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                     </div>
                     <span className="hidden sm:inline text-stone-200">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
                   </button>
-
-                  {/* Watermark Free Badge */}
-                  <div
-                    className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-stone-900/90 px-3 py-1.5 text-xs font-semibold text-amber-400 shadow-lg backdrop-blur-md"
-                    title="Ảnh và video xuất ra 100% không dán watermark WrapFit"
-                  >
-                    <Sparkles className="size-3.5 text-amber-400" aria-hidden />
-                    <span>Watermark free</span>
-                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 flex items-center">
-                <div
-                  className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-stone-900/90 px-3 py-1.5 text-xs font-semibold text-amber-400 shadow-lg backdrop-blur-md"
-                  title="Ảnh và video xuất ra 100% không dán watermark WrapFit"
-                >
-                  <Sparkles className="size-3.5 text-amber-400" aria-hidden />
-                  <span>Watermark free</span>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
 
+        {/* Right column: 2 balanced, elegant cards following WrapFit 20 rules */}
         <div className="flex flex-col gap-4">
-          {/* The gift: what makes this step more than a photo booth. */}
-          <section aria-labelledby="step5-gift" className="rounded-sheet border border-orange-200 bg-orange-50 p-5">
-            <h2 id="step5-gift" className="flex items-center gap-2 font-landing-heading text-base font-bold text-fg">
-              <QrCode className="size-4 text-fpt-orange" aria-hidden />
-              Lời chúc &amp; mã QR mở hộp
-            </h2>
-            <p className="mt-1 text-body-sm text-fg-muted">Quét mã để xem lời chúc.</p>
-            {hasUnboxingQr && (
-              <p role="status" className="mt-3 flex items-center gap-2 rounded-control bg-surface-raised px-3 py-2 text-body-sm font-semibold text-fg">
-                <CheckCircle2 className="size-4 text-fpt-orange" aria-hidden />
-                Mã QR đã có trên hộp
-              </p>
-            )}
-            <button type="button" onClick={() => onOpenQrModal?.()} className={`${PRIMARY_PILL} mt-3`}>
-              <Gift className="size-4" aria-hidden />
-              {hasUnboxingQr ? "Sửa lời chúc" : "Viết lời chúc & tạo mã QR"}
-            </button>
+          {/* Card 1: Trải nghiệm mở hộp & Mã QR */}
+          <section aria-labelledby="step5-gift" className="rounded-2xl border border-orange-200/80 bg-orange-50/70 p-4 transition-all shadow-xs">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-fpt-orange text-white shadow-2xs shrink-0 mt-0.5">
+                  <QrCode className="size-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 id="step5-gift" className="font-landing-heading text-sm font-bold text-fg">
+                      Trải nghiệm mở hộp & Mã QR
+                    </h2>
+                    {hasUnboxingQr && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/80 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 shrink-0 whitespace-nowrap">
+                        <Check className="size-3" />
+                        Đã gắn mã
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-xs text-fg-muted leading-relaxed">
+                    Khách quét mã QR để mở trang xem lời chúc và mô hình hộp 3D mở hộp tương tác.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-orange-200/60 flex items-center justify-between gap-3">
+              <span className="text-xs text-stone-600 truncate">
+                {hasUnboxingQr ? "✓ Đã in mã QR trên mặt đáy hộp" : "Chưa tạo thiệp chúc online"}
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenQrModal?.()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-fpt-orange hover:bg-fpt-orange-dark text-white px-3.5 py-1.5 text-xs font-semibold shadow-xs transition-colors shrink-0 cursor-pointer"
+              >
+                <Gift className="size-3.5" aria-hidden />
+                <span>{hasUnboxingQr ? "Sửa lời chúc & mã QR" : "Tạo lời chúc & mã QR"}</span>
+              </button>
+            </div>
           </section>
 
-          <section aria-labelledby="step5-scenes" className="flex flex-col gap-4 rounded-sheet bg-surface-raised p-5">
-            <h2 id="step5-scenes" className="flex items-center gap-2 font-landing-heading text-base font-bold text-fg">
-              <ImageIcon className="size-4 text-fpt-orange" aria-hidden />
-              Ảnh sản phẩm
-            </h2>
-
-            <FlowStep n={1} title="Chọn bối cảnh">
-              <div role="radiogroup" aria-label="Bối cảnh" className="grid grid-cols-4 gap-2">
-                {SCENE_IDS.map((id) => {
-                  const item = BACKDROPS[id];
-                  const selected = scene === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      aria-label={`${item.name}: ${item.surface.name}${item.props ? `, ${item.props.toLowerCase()}` : ""}`}
-                      title={`${item.name} · ${item.surface.name}`}
-                      onClick={() => setScene(id)}
-                      className={cn(
-                        "flex flex-col overflow-hidden rounded-control border-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40 motion-reduce:transition-none",
-                        selected ? "border-fpt-orange-ink" : "border-transparent hover:border-line-strong"
-                      )}
-                    >
-                      {/* The backdrop above, the tabletop below, this very box standing where they meet. */}
-                      <span aria-hidden className="relative block aspect-square" style={{ background: item.css }}>
-                        <span className="absolute inset-x-0 bottom-0 h-[38%]" style={{ background: surfaceCss(item.surface) }} />
-                        <span className="absolute bottom-[22%] left-1/2 h-[50%] w-[44%] -translate-x-1/2 drop-shadow-[0_4px_5px_rgba(0,0,0,0.25)]">
-                          <FacePreview structure={boxType} dimensions={dimensions} formulaVersion={formulaVersion} elements={elements} paper={paper.swatch.outside} className="h-full w-full" />
-                        </span>
-                        {id === suggested && occasionLabel && (
-                          <span className="absolute left-0.5 top-0.5 rounded-full bg-white/90 px-1 text-label-sm font-semibold text-fg">Hợp {occasionLabel}</span>
-                        )}
-                      </span>
-                      <span className="line-clamp-2 min-h-[2lh] bg-surface-raised px-1 py-0.5 text-label-sm font-semibold leading-tight text-fg">{item.name}</span>
-                    </button>
-                  );
-                })}
+          {/* Card 2: Studio Bối Cảnh & Xuất Media */}
+          <section aria-labelledby="step5-scenes" className="flex flex-col gap-3.5 rounded-2xl border border-line bg-surface-raised p-4 shadow-xs">
+            {/* Header: Studio Bối Cảnh + Props Switch */}
+            <div className="flex items-center justify-between gap-2 border-b border-line/60 pb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-fpt-orange-light text-fpt-orange shrink-0">
+                  <ImageIcon className="size-4" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <h3 id="step5-scenes" className="font-landing-heading text-sm font-bold text-fg">
+                    Studio Bối Cảnh
+                  </h3>
+                  <p className="text-[11px] text-fg-muted truncate">
+                    {look.surface.name}{look.props ? ` · ${look.props}` : ""}
+                  </p>
+                </div>
               </div>
-              {scene === "modern_studio" && (
-                <div className="mt-3 rounded-control border border-line bg-surface-sunken p-3">
-                  <div className="flex items-center justify-between text-caption font-semibold text-fg">
-                    <span className="flex items-center gap-1.5">
-                      <Palette className="size-3.5 text-fpt-orange" />
-                      Bảng màu studio (5 chủ đề)
+
+              {hasProps && (
+                <div className="shrink-0 flex items-center gap-2 pl-2">
+                  <Switch
+                    checked={props}
+                    onChange={setProps}
+                    label="Đạo cụ"
+                    className="text-xs font-semibold text-fg"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Backdrops 4-grid */}
+            <div role="radiogroup" aria-label="Bối cảnh" className="grid grid-cols-4 gap-2">
+              {SCENE_IDS.map((id) => {
+                const item = BACKDROPS[id];
+                const selected = scene === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={`${item.name}: ${item.surface.name}${item.props ? `, ${item.props.toLowerCase()}` : ""}`}
+                    title={`${item.name} · ${item.surface.name}`}
+                    onClick={() => setScene(id)}
+                    className={cn(
+                      "flex flex-col overflow-hidden rounded-xl border-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange cursor-pointer",
+                      selected ? "border-fpt-orange ring-1 ring-fpt-orange/30 shadow-xs" : "border-line/70 hover:border-line-strong"
+                    )}
+                  >
+                    <span aria-hidden className="relative block aspect-square" style={{ background: item.css }}>
+                      <span className="absolute inset-x-0 bottom-0 h-[38%]" style={{ background: surfaceCss(item.surface) }} />
+                      <span className="absolute bottom-[22%] left-1/2 h-[50%] w-[44%] -translate-x-1/2 drop-shadow-[0_4px_5px_rgba(0,0,0,0.25)]">
+                        <FacePreview structure={boxType} dimensions={dimensions} formulaVersion={formulaVersion} elements={elements} paper={paper.swatch.outside} className="h-full w-full" />
+                      </span>
+                      {id === suggested && occasionLabel && (
+                        <span className="absolute left-1 top-1 rounded-full bg-black/60 backdrop-blur-xs text-white px-1.5 py-0.2 text-[9px] font-semibold">Gợi ý</span>
+                      )}
                     </span>
-                    <span className="text-fg-muted font-normal text-caption truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
+                    <span className="line-clamp-1 bg-surface-raised px-1.5 py-1 text-[11px] font-semibold text-fg text-center">{item.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Modern Studio 5-color palette strip */}
+            {scene === "modern_studio" && (
+              <div className="rounded-xl border border-line/80 bg-surface-sunken/40 p-2.5">
+                <div className="flex items-center justify-between text-xs font-semibold text-fg mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Palette className="size-3 text-fpt-orange" />
+                    Bảng màu nền
+                  </span>
+                  <span className="text-fg-muted font-normal text-[11px] truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {STUDIO_PALETTE_IDS.map((pId) => {
+                    const pal = STUDIO_PALETTES[pId];
+                    const isSel = studioPalette === pId;
+                    return (
+                      <button
+                        key={pId}
+                        type="button"
+                        onClick={() => setStudioPalette(pId)}
+                        title={`${pal.name} · ${pal.desc}`}
+                        className={cn(
+                          "flex flex-col items-center gap-1 rounded-lg border p-1 transition cursor-pointer",
+                          isSel ? "border-fpt-orange bg-fpt-orange-light/40 ring-1 ring-fpt-orange" : "border-line bg-surface-raised hover:border-line-strong"
+                        )}
+                      >
+                        <div className="flex h-3 w-full overflow-hidden rounded-xs border border-line/50">
+                          <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[0] }} />
+                          <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[1] }} />
+                          <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[2] }} />
+                        </div>
+                        <span className="text-[10px] font-medium text-fg truncate w-full text-center">
+                          {pal.name.split(" ")[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Section 2: Xuất Media (Segmented Tab: Ảnh chụp 3 khổ vs Video gập hộp) */}
+            <div className="pt-2 border-t border-line/60 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-fg uppercase tracking-wider">Xuất Media Thực Tế</span>
+                <span className="text-[11px] text-fg-muted">Mockup & Video 3D</span>
+              </div>
+
+              {/* Segmented Switch 2-column full width - icon Lucide chuẩn và text không bị vỡ */}
+              <div className="grid grid-cols-2 rounded-xl bg-surface-sunken p-1 border border-line/60 text-xs gap-1">
+                <button
+                  type="button"
+                  onClick={() => setMediaTab("photos")}
+                  className={cn(
+                    "inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap",
+                    mediaTab === "photos" ? "bg-white text-fg shadow-2xs" : "text-fg-muted hover:text-fg"
+                  )}
+                >
+                  <Camera className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span>Ảnh chụp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaTab("video")}
+                  className={cn(
+                    "inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap",
+                    mediaTab === "video" ? "bg-white text-fg shadow-2xs" : "text-fg-muted hover:text-fg"
+                  )}
+                >
+                  <Video className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span>Video gập hộp</span>
+                </button>
+              </div>
+
+              {mediaTab === "photos" ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {MOCKUP_FORMATS.map((format) => (
+                      <button
+                        key={format.id}
+                        type="button"
+                        onClick={() => downloadMockup(format)}
+                        disabled={busy}
+                        title={format.hint}
+                        className={cn(tile, "p-2.5")}
+                      >
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-fg">
+                          <Download className="size-3 text-fpt-orange" aria-hidden />
+                          {format.label}
+                        </span>
+                        <span className="text-[10px] tabular-nums text-fg-muted">{saving === format.id ? "Đang tạo…" : format.hint}</span>
+                      </button>
+                    ))}
                   </div>
-                  <div className="mt-2 grid grid-cols-5 gap-1.5">
-                    {STUDIO_PALETTE_IDS.map((pId) => {
-                      const pal = STUDIO_PALETTES[pId];
-                      const isSel = studioPalette === pId;
+                  <button
+                    type="button"
+                    onClick={() => void downloadAll()}
+                    disabled={busy}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-line bg-surface-sunken/40 hover:bg-surface-sunken py-2 text-xs font-semibold text-fg transition-colors cursor-pointer"
+                  >
+                    <Images className="size-3.5 text-fpt-orange" aria-hidden />
+                    {saving === "all" ? "Đang tạo bộ ảnh…" : `Tải trọn bộ cả ${MOCKUP_FORMATS.length} ảnh`}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["video", "gif"] as const).map((kind) => {
+                      const running = filming?.kind === kind;
+                      const disabled = busy || (kind === "video" && !canRecordVideo);
                       return (
                         <button
-                          key={pId}
+                          key={kind}
                           type="button"
-                          onClick={() => setStudioPalette(pId)}
-                          title={`${pal.name} · ${pal.desc}`}
-                          className={cn(
-                            "flex flex-col items-center gap-1 rounded-control border p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange",
-                            isSel ? "border-fpt-orange bg-fpt-orange-light ring-1 ring-fpt-orange" : "border-line bg-surface-raised hover:border-line-strong"
-                          )}
+                          onClick={() => makeClip(kind)}
+                          disabled={disabled}
+                          title={kind === "video" && !canRecordVideo ? "Trình duyệt này không ghi được video" : undefined}
+                          className={cn(tile, "p-2.5")}
                         >
-                          <div className="flex h-3.5 w-full overflow-hidden rounded-sm border border-line/60">
-                            <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[0] }} />
-                            <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[1] }} />
-                            <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[2] }} />
-                          </div>
-                          <span className="text-caption font-medium text-fg truncate w-full text-center">
-                            {pal.name.split(" ")[0]}
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-fg">
+                            {kind === "video" ? <Video className="size-3.5 text-fpt-orange" aria-hidden /> : <Film className="size-3.5 text-fpt-orange" aria-hidden />}
+                            {kind === "video" ? "Video gập hộp" : "Ảnh động GIF"}
+                          </span>
+                          <span className="text-[10px] tabular-nums text-fg-muted" aria-live="polite">
+                            {running
+                              ? `${kind === "video" ? "Đang quay" : "Đang tạo"} ${Math.round((filming?.done ?? 0) * 100)}%`
+                              : kind === "video"
+                                ? canRecordVideo ? `MP4 · ${CLIP_SECONDS}s` : "Không hỗ trợ"
+                                : "GIF · 400×400"}
                           </span>
                         </button>
                       );
                     })}
                   </div>
+
+                  {clip && (
+                    <div className="flex items-center gap-3 rounded-xl border border-line/80 bg-surface-sunken/40 p-2">
+                      <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-surface-raised border border-line/60">
+                        {clip.kind === "video" ? (
+                          <video src={clip.url} controls={!playClip} loop muted playsInline autoPlay={playClip} className="size-full object-cover" />
+                        ) : playClip ? (
+                          <img src={clip.url} alt="Hộp gập (ảnh GIF)" className="size-full object-cover" />
+                        ) : (
+                          <button type="button" onClick={() => setPlayClip(true)} className="size-full text-[11px] font-semibold text-fg">
+                            Xem GIF
+                          </button>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5 text-xs text-fg-muted">
+                        <p className="truncate font-bold text-fg">{clip.name}</p>
+                        <p className="text-[11px]">
+                          {CLIP_SECONDS} giây · {(clip.bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB
+                        </p>
+                        <a href={clip.url} download={clip.name} className="inline-block text-xs font-semibold text-fpt-orange hover:underline cursor-pointer">
+                          Tải lại clip ↗
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
-              <p className="mt-2 truncate text-caption text-fg-muted" title={look.props ?? undefined}>
-                {look.surface.name}
-                {look.props ? ` · ${look.props}` : ""}
-              </p>
-            </FlowStep>
-
-            <FlowStep n={2} title="Căn góc" hint="Xoay hộp để chọn góc chụp.">
-              <div className="flex flex-col gap-2">
-                <Switch
-                  checked={hasProps && props}
-                  onChange={setProps}
-                  disabled={!hasProps}
-                  label="Đạo cụ trang trí"
-                  className="rounded-control border border-line px-3 py-2"
-                />
-                <button type="button" onClick={() => setIsLidOpen((v) => !v)} aria-pressed={isLidOpen} className={cn(tile, "flex-row gap-2", isLidOpen && "border-fpt-orange-ink bg-fpt-orange-light")}>
-                  <Gift className="size-4" aria-hidden />
-                  <span className="text-body-sm font-semibold text-fg">{lidLabel}</span>
-                </button>
-              </div>
-            </FlowStep>
-
-            <FlowStep n={3} title="Tải ảnh">
-              <div className="grid grid-cols-3 gap-2">
-                {MOCKUP_FORMATS.map((format) => (
-                  <button key={format.id} type="button" onClick={() => downloadMockup(format)} disabled={busy} title={format.hint} className={tile}>
-                    <span className="inline-flex items-center gap-1 text-caption font-semibold text-fg">
-                      <Download className="size-3.5" aria-hidden />
-                      {format.label}
-                    </span>
-                    <span className="text-label-sm tabular-nums text-fg-muted">{saving === format.id ? "Đang tạo…" : format.hint}</span>
-                  </button>
-                ))}
-              </div>
-              <button type="button" onClick={() => void downloadAll()} disabled={busy} className={`${SECONDARY_PILL} mt-2 w-full`}>
-                <Images className="size-4" aria-hidden />
-                {saving === "all" ? "Đang tạo bộ ảnh…" : `Tải cả bộ ${MOCKUP_FORMATS.length} ảnh`}
-              </button>
-            </FlowStep>
-
-            <FlowStep n={4} title={`Video hộp gập · ${CLIP_SECONDS} giây`}>
-              <div className="grid grid-cols-2 gap-2">
-                {(["video", "gif"] as const).map((kind) => {
-                  const running = filming?.kind === kind;
-                  const disabled = busy || (kind === "video" && !canRecordVideo);
-                  return (
-                    <button
-                      key={kind}
-                      type="button"
-                      onClick={() => makeClip(kind)}
-                      disabled={disabled}
-                      title={kind === "video" && !canRecordVideo ? "Trình duyệt này không ghi được video" : undefined}
-                      className={tile}
-                    >
-                      <span className="inline-flex items-center gap-1 text-caption font-semibold text-fg">
-                        {kind === "video" ? <Film className="size-3.5" aria-hidden /> : <Sparkles className="size-3.5" aria-hidden />}
-                        {kind === "video" ? "Video" : "GIF động"}
-                      </span>
-                      <span className="text-label-sm tabular-nums text-fg-muted" aria-live="polite">
-                        {running
-                          ? `${kind === "video" ? "Đang quay" : "Đang tạo"} ${Math.round((filming?.done ?? 0) * 100)}%`
-                          : kind === "video"
-                            ? canRecordVideo ? "720×720" : "Không hỗ trợ"
-                            : "400×400"}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              {clip && (
-                <div className="mt-3 flex items-center gap-3">
-                  {/* Reduced motion: nothing plays by itself; the clip starts on request. */}
-                  <div className="size-20 shrink-0 overflow-hidden rounded-control bg-surface-sunken">
-                    {clip.kind === "video" ? (
-                      <video src={clip.url} controls={!playClip} loop muted playsInline autoPlay={playClip} className="size-full object-cover" />
-                    ) : playClip ? (
-                      <img src={clip.url} alt="Hộp gập (ảnh GIF)" className="size-full object-cover" />
-                    ) : (
-                      <button type="button" onClick={() => setPlayClip(true)} className="size-full text-caption font-semibold text-fg">
-                        Xem GIF
-                      </button>
-                    )}
-                  </div>
-                  <div className="min-w-0 space-y-1 text-caption text-fg-muted">
-                    <p className="truncate font-semibold text-fg">{clip.name}</p>
-                    <p>
-                      {CLIP_SECONDS} giây · {(clip.bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB
-                    </p>
-                    <a href={clip.url} download={clip.name} className="font-semibold text-fpt-orange-ink hover:underline">
-                      Tải lại
-                    </a>
-                  </div>
-                </div>
-              )}
-            </FlowStep>
+            </div>
           </section>
         </div>
       </div>

@@ -4,6 +4,7 @@ import * as THREE from "three";
 import {
   CUBIC_ARC_K,
   boxFrameOf,
+  cutSidesOf,
   CURRENT_FORMULA_VERSION,
   generateDielinePieces,
   matchesPanel,
@@ -31,6 +32,7 @@ import {
 import { elementImageKey, recoloredSrc } from "../../utils/svgRecolor";
 import { drawImageOnCanvas, drawTextOnCanvas } from "../canvas/elementVisuals";
 import { drawArt, elementArt } from "../library/elementArt";
+import { placedCarrierCups, STANDARD_350ML_Y_SEAT } from "./cupModel";
 
 /**
  * 3D model of a box built from its dieline (docs/12 Phase 8, H6): every printable panel is a sheet of paper folded on
@@ -75,6 +77,8 @@ export interface BoxModelOptions {
   decoration: string | null;
   /** Paper fibres on the printed side (bump and roughness maps of the viewer). */
   surface?: { bumpMap: THREE.Texture | null; roughnessMap: THREE.Texture | null; bumpScale: number };
+  /** Whether to place 350ml takeaway cups into the cup carrier in 3D (default: true for cup-carrier) */
+  showCups?: boolean;
   /** Called after a texture changed (image or font loaded): the caller renders a frame. */
   onChange?: () => void;
 }
@@ -102,6 +106,10 @@ export interface BoxModel {
   highlight(panelId: string | null): void;
   /** Size of the closed box, mm (x along L, y up, z along W; the pillow box lies with L front to back). */
   size: { x: number; y: number; z: number };
+  /** Dynamically adjusts physical visual paper thickness on panel cuts and rims (mm). */
+  setThickness?(thicknessMm: number): void;
+  /** Instantly shows or hides takeaway cups without rebuilding the 3D model. */
+  setCupsVisible?(visible: boolean): void;
   dispose(): void;
 }
 
@@ -410,6 +418,123 @@ function panelGeometry({ x, y, width, height }: Rect, outline?: Point2D[], holes
 }
 
 /**
+ * Visual rim band connecting front face (z = 0) and back face (z = -1) along cut edges of a panel.
+ * Crease lines (fold hinges) are excluded so hinges never crack or z-fight.
+ */
+function panelCutRimGeometry(
+  panel: PanelFace,
+  geometry: DielineGeometry,
+  openings?: DielineOpening[]
+): THREE.BufferGeometry | null {
+  const { x, y, width, height } = panel.bounds;
+  const segments: Array<{ from: [number, number]; to: [number, number] }> = [];
+
+  if (panel.outline && panel.outline.length >= 3) {
+    const pts = panel.outline;
+    for (let i = 0; i < pts.length; i++) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % pts.length];
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      const isCrease = geometry.segments.some((seg) => {
+        if (seg.type !== "crease") return false;
+        const dx = seg.end.x - seg.start.x;
+        const dy = seg.end.y - seg.start.y;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq < 1e-4) return false;
+        const t = Math.max(0, Math.min(1, ((mx - seg.start.x) * dx + (my - seg.start.y) * dy) / lenSq));
+        const projX = seg.start.x + t * dx;
+        const projY = seg.start.y + t * dy;
+        return Math.hypot(mx - projX, my - projY) < 1.0;
+      });
+      if (!isCrease) {
+        segments.push({ from: [p1.x, p1.y], to: [p2.x, p2.y] });
+      }
+    }
+  } else {
+    const cutSides = cutSidesOf(panel, geometry);
+    if (cutSides.has("top")) {
+      segments.push({ from: [x, y], to: [x + width, y] });
+    }
+    if (cutSides.has("right")) {
+      segments.push({ from: [x + width, y], to: [x + width, y + height] });
+    }
+    if (cutSides.has("bottom")) {
+      segments.push({ from: [x + width, y + height], to: [x, y + height] });
+    }
+    if (cutSides.has("left")) {
+      segments.push({ from: [x, y + height], to: [x, y] });
+    }
+  }
+
+  if (openings && openings.length > 0) {
+    for (const hole of openings) {
+      if (hole.kind === "cup") {
+        const cx = hole.x + hole.width / 2;
+        const cy = hole.y + hole.height / 2;
+        const rx = hole.width / 2;
+        const ry = hole.height / 2;
+        const STEPS = 20;
+        for (let i = 0; i < STEPS; i++) {
+          const a1 = (i / STEPS) * Math.PI * 2;
+          const a2 = ((i + 1) / STEPS) * Math.PI * 2;
+          segments.push({
+            from: [cx + Math.cos(a1) * rx, cy + Math.sin(a1) * ry],
+            to: [cx + Math.cos(a2) * rx, cy + Math.sin(a2) * ry],
+          });
+        }
+      } else {
+        const hx = hole.x;
+        const hy = hole.y;
+        const hw = hole.width;
+        const hh = hole.height;
+        segments.push(
+          { from: [hx, hy], to: [hx + hw, hy] },
+          { from: [hx + hw, hy], to: [hx + hw, hy + hh] },
+          { from: [hx + hw, hy + hh], to: [hx, hy + hh] },
+          { from: [hx, hy + hh], to: [hx, hy] }
+        );
+      }
+    }
+  }
+
+  if (segments.length === 0) return null;
+
+  const vertices: number[] = [];
+  const indices: number[] = [];
+
+  segments.forEach((seg, idx) => {
+    const [x1, y1] = seg.from;
+    const [x2, y2] = seg.to;
+    const base = idx * 4;
+    // z spans from 0 (front face) to 1 (unit depth along +Z into inside)
+    vertices.push(
+      x1, y1, 0,
+      x2, y2, 0,
+      x2, y2, 1,
+      x1, y1, 1
+    );
+    indices.push(
+      base, base + 1, base + 2,
+      base, base + 2, base + 3
+    );
+  });
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function visualThicknessOf(t: number): number {
+  const mm = t > 0 ? t : 0.38;
+  // Scaled so 0.20mm is ~0.7mm, 0.38mm is ~1.33mm, 0.80mm is ~2.8mm
+  // This makes the physical paper thickness clearly felt and visible on screen without breaking hinges
+  return Math.max(0.35, mm * 3.5);
+}
+
+/**
  * Progress of each panel: walls first, then the lid and bottom of a tuck-top box (open: lid swings back past upright).
  * Mailer: the walls rise, their inner layers roll over the rim, then the lid closes; open, the lid swings back.
  */
@@ -453,12 +578,20 @@ function foldedPiece(
   makePrinted: MakePrinted,
   insideOf: (panelId: string) => THREE.Material,
   edges: THREE.LineBasicMaterial,
-  disposables: { dispose(): void }[]
+  paperCore: THREE.Material,
+  initialThickness: number,
+  disposables: { dispose(): void }[],
+  initialElevation = 0
 ) {
   const group = new THREE.Group();
   const frame = boxFrameOf(geometry)!;
   // Rotation only: the shift to the ground is recomputed for each fold state.
   const rotation: Mat4 = [...frame.slice(0, 12), 0, 0, 0, 1];
+  const lastMatrices: Record<string, Mat4> = {};
+  let currentVisualThickness = visualThicknessOf(initialThickness);
+  let currentElevation = initialElevation;
+  let lastProgressOf: ((panel: PanelFace) => number) | null = null;
+
   const meshes = geometry.panels.map((panel) => {
     const shape = panelGeometry(panel.bounds, panel.outline, geometry.openings?.filter((o) => o.panelId === panel.id));
     const isCarrierBase = panel.id === "carrier_base";
@@ -475,24 +608,39 @@ function foldedPiece(
       (backMaterial as THREE.MeshStandardMaterial).polygonOffset = false;
     }
     const back = new THREE.Mesh(shape, backMaterial);
+
+    // Rim quad mesh along perimeter cut edges & inner cut holes
+    const rimGeo = panelCutRimGeometry(panel, geometry, geometry.openings?.filter((o) => o.panelId === panel.id));
+    const rim = rimGeo ? new THREE.Mesh(rimGeo, paperCore) : null;
+
     // Hairline on the panel edges: folds and cut edges read crisply, like a pressed crease.
     const outline = new THREE.EdgesGeometry(shape);
     const edge = new THREE.LineSegments(outline, edges);
     edge.raycast = () => {};
+
     for (const mesh of [front, back]) {
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.name = panel.id;
+    }
+    if (rim && rimGeo) {
+      rim.castShadow = true;
+      rim.receiveShadow = true;
+      rim.name = `${panel.id}_rim`;
+      rim.matrixAutoUpdate = false;
+      group.add(rim);
+      disposables.push(rimGeo);
     }
     for (const object of [front, back, edge]) {
       object.matrixAutoUpdate = false;
       group.add(object);
     }
     disposables.push(shape, printed, outline);
-    return { panel, front, back, edge };
+    return { panel, front, back, rim, edge };
   });
 
   const update = (progressOf: (panel: PanelFace) => number) => {
+    lastProgressOf = progressOf;
     const transforms = panelTransforms(geometry, progressOf);
     const placed = meshes.map(({ panel }) => multiply(rotation, transforms[panel.id]));
     const corners = meshes.flatMap(({ panel }, i) => {
@@ -507,22 +655,67 @@ function foldedPiece(
     const min = [0, 1, 2].map((i) => Math.min(...corners.map((p) => p[i])));
     const max = [0, 1, 2].map((i) => Math.max(...corners.map((p) => p[i])));
     // 0.6 mm elevation so every box rests cleanly on top of tables/podiums/mats, completely eliminating z-fighting and bottom clipping
-    const BOX_GROUND_CLEARANCE = 0.6;
+    const BOX_GROUND_CLEARANCE = 0.6 + currentElevation;
     const shift: Mat4 = [
       1, 0, 0, 0,
       0, 1, 0, 0,
       0, 0, 1, 0,
       -(min[0] + max[0]) / 2, -min[1] + BOX_GROUND_CLEARANCE, -(min[2] + max[2]) / 2, 1
     ];
-    meshes.forEach(({ front, back, edge }, i) => {
-      const matrix = toMatrix(multiply(shift, placed[i]));
-      for (const mesh of [front, back, edge]) {
-        mesh.matrix.copy(matrix);
-        mesh.matrixWorldNeedsUpdate = true;
+    meshes.forEach(({ front, back, rim, edge, panel }, i) => {
+      const mat = multiply(shift, placed[i]);
+      lastMatrices[panel.id] = mat;
+      const matrix = toMatrix(mat);
+
+      // Front face stays precisely at outer fold crease (z = 0)
+      front.matrix.copy(matrix);
+      front.matrixWorldNeedsUpdate = true;
+
+      // Edge outline
+      edge.matrix.copy(matrix);
+      edge.matrixWorldNeedsUpdate = true;
+
+      // Back face pushed inward into the interior of the box along local +Z
+      const backMatrix = matrix.clone();
+      backMatrix.elements[12] += backMatrix.elements[8] * currentVisualThickness;
+      backMatrix.elements[13] += backMatrix.elements[9] * currentVisualThickness;
+      backMatrix.elements[14] += backMatrix.elements[10] * currentVisualThickness;
+      back.matrix.copy(backMatrix);
+      back.matrixWorldNeedsUpdate = true;
+
+      // Rim quad band scaled along local Z by currentVisualThickness
+      if (rim) {
+        const rimMatrix = matrix.clone();
+        rimMatrix.elements[8] *= currentVisualThickness;
+        rimMatrix.elements[9] *= currentVisualThickness;
+        rimMatrix.elements[10] *= currentVisualThickness;
+        rim.matrix.copy(rimMatrix);
+        rim.matrixWorldNeedsUpdate = true;
       }
     });
   };
-  return { group, update };
+
+  const setThickness = (newThicknessMm: number) => {
+    currentVisualThickness = visualThicknessOf(newThicknessMm);
+    if (lastProgressOf) {
+      update(lastProgressOf);
+    }
+  };
+
+  const setGroundElevation = (newElevation: number) => {
+    currentElevation = newElevation;
+    if (lastProgressOf) {
+      update(lastProgressOf);
+    }
+  };
+
+  return {
+    group,
+    update,
+    setThickness,
+    setGroundElevation,
+    getPanelMatrix: (panelId: string) => lastMatrices[panelId] ?? null,
+  };
 }
 
 /**
@@ -686,7 +879,9 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     // Light bounces inside a paper box: the walls glow a little instead of turning grey in their own shadow.
     emissive: new THREE.Color(paper.inside),
     emissiveIntensity: 0.35,
-    polygonOffset: false,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
   });
   const flapPaper = new THREE.MeshStandardMaterial({ color: paper.outside, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.5 });
   const { edge: edgeColor, ...finish } = FINISH[options.theme];
@@ -797,7 +992,38 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   const loose = structure === "insert" ? pieces.find((piece) => !piece.geometry.orientation) : undefined;
   const dividers = loose ? placedDividers(loose.geometry, dimensions, textures, makePrinted, insideOf, edges, disposables) : null;
   if (dividers) group.add(dividers);
-  const folded = foldable.map((piece) => foldedPiece(piece.geometry, textures, makePrinted, insideOf, edges, disposables));
+
+  // 350ml takeaway cups inside cup-carrier holes
+  const showCups = options.showCups ?? (dimensions.showCups !== false);
+  const carrierCups = structure === "cup-carrier" ? placedCarrierCups(dimensions, disposables, showCups) : null;
+  const carrierElevation = structure === "cup-carrier" && showCups ? STANDARD_350ML_Y_SEAT : 0;
+  if (carrierCups) {
+    carrierCups.setVisible(showCups);
+    group.add(carrierCups.group);
+  }
+
+  const paperCore = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(edgeColor || "#C8BCA8"),
+    roughness: 0.92,
+    metalness: 0,
+    side: THREE.DoubleSide,
+    polygonOffset: false,
+  });
+  disposables.push(paperCore);
+
+  const folded = foldable.map((piece) =>
+    foldedPiece(
+      piece.geometry,
+      textures,
+      makePrinted,
+      insideOf,
+      edges,
+      paperCore,
+      dimensions.paperThickness,
+      disposables,
+      structure === "cup-carrier" ? carrierElevation : 0
+    )
+  );
   folded.forEach((piece) => group.add(piece.group));
   const sizes = foldable.map((piece) => {
     const frame = boxFrameOf(piece.geometry)!;
@@ -815,9 +1041,19 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     return { x: extent(0), y: extent(1), z: extent(2) };
   });
 
+  let lastProgress = 1;
+  let lastOpen = 0;
   const update = (progress: number, open: number) => {
+    lastProgress = progress;
+    lastOpen = open;
     const progressOf = stagedProgress(structure, progress, open);
     folded.forEach((piece) => piece.update(progressOf));
+    if (carrierCups && folded[0]) {
+      const baseMatrix = folded[0].getPanelMatrix("carrier_base");
+      if (baseMatrix) {
+        carrierCups.update(baseMatrix, progress);
+      }
+    }
     if (dividers) {
       // The partitions drop into the tray once its walls stand; "open" lifts them out.
       const settle = clamp01((progress - 0.7) / 0.3);
@@ -837,10 +1073,28 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   };
 
   const size = sizes.reduce((all, s) => ({ x: Math.max(all.x, s.x), y: Math.max(all.y, s.y), z: Math.max(all.z, s.z) }));
+  if (structure === "cup-carrier" && showCups) {
+    size.y += STANDARD_350ML_Y_SEAT;
+  }
   return {
     group,
     size,
     update,
+    setThickness(thicknessMm: number) {
+      folded.forEach((piece) => piece.setThickness?.(thicknessMm));
+      options.onChange?.();
+    },
+    setCupsVisible(visible: boolean) {
+      if (carrierCups) {
+        carrierCups.setVisible(visible);
+      }
+      if (structure === "cup-carrier") {
+        const newElevation = visible ? STANDARD_350ML_Y_SEAT : 0;
+        folded.forEach((piece) => piece.setGroundElevation?.(newElevation));
+        update(lastProgress, lastOpen);
+      }
+      options.onChange?.();
+    },
     highlight,
     dispose: () => {
       disposed = true;

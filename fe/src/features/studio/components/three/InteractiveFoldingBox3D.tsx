@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared";
-import { Box, Gift, Pause, Play, Tag, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, Coffee, Gift, Pause, Play, Tag, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, foldablePieces, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 import { stageBarButton } from "../studioUi";
 import { BACKDROPS, type Backdrop, type BoxEnvironment, type SceneId } from "./backdrops";
@@ -89,6 +89,9 @@ interface InteractiveFoldingBox3DProps {
   faceLabels?: boolean | "toggle";
   /** Studio 3D color palette preset (Sage, Monochrome, Rose, Terracotta, Midnight). */
   studioPalette?: StudioPaletteId;
+  /** Whether to place 350ml takeaway cups into the cup carrier in 3D */
+  showCups?: boolean;
+  onToggleCups?: (show: boolean) => void;
 }
 
 /** Fold progress from which the face labels show by themselves. */
@@ -248,6 +251,8 @@ interface StageApi {
   setSceneSet(id: SceneId | null, props: boolean): void;
   setStudioPalette(paletteId: StudioPaletteId): void;
   setModel(model: BoxModel, pop: boolean, dimensions: BoxDimensions): void;
+  setThickness(thicknessMm: number): void;
+  setCupsVisible(show: boolean): void;
   setPreview(dimensions: BoxDimensions | null): void;
   setGuides(on: boolean, active: DimensionAxis | null): void;
   setFaceLabels(on: boolean): void;
@@ -293,7 +298,24 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   sceneSet = false,
   sceneProps = true,
   studioPalette,
+  showCups,
+  onToggleCups,
 }) => {
+  const [internalShowCups, setInternalShowCups] = useState<boolean | null>(null);
+  const effectiveShowCups =
+    showCups !== undefined
+      ? showCups
+      : internalShowCups !== null
+      ? internalShowCups
+      : dimensions.showCups !== false;
+
+  useEffect(() => {
+    if (showCups !== undefined) {
+      setInternalShowCups(showCups);
+    } else if (dimensions.showCups !== undefined) {
+      setInternalShowCups(dimensions.showCups);
+    }
+  }, [showCups, dimensions.showCups]);
   const containerRef = useRef<HTMLDivElement>(null);
   const studioPaletteRef = useRef(studioPalette);
   studioPaletteRef.current = studioPalette;
@@ -440,11 +462,31 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     /** Stretches the built model to the size being dragged (no rebuild). */
     const applyPreview = () => {
       if (!model) return;
+      const cupsContainer = model.group.getObjectByName("carrier_cups_container") as THREE.Group | undefined;
       if (!builtDims || !previewDims) {
         model.group.scale.set(1, 1, 1);
+        if (cupsContainer) {
+          for (const slot of cupsContainer.children) {
+            slot.scale.set(1, 1, 1);
+          }
+        }
       } else {
         const ratio = (field: DimensionAxis) => (builtDims![field] > 0 ? previewDims![field] / builtDims![field] : 1);
-        model.group.scale.set(lengthOnX ? ratio("length") : ratio("width"), ratio("height"), lengthOnX ? ratio("width") : ratio("length"));
+        const sx = lengthOnX ? ratio("length") : ratio("width");
+        const sy = ratio("height");
+        const sz = lengthOnX ? ratio("width") : ratio("length");
+        model.group.scale.set(sx, sy, sz);
+
+        // Counter-scale the cups so standard 350ml cup dimensions remain strictly invariant
+        // in world space while the box/carrier stretches around them.
+        if (cupsContainer) {
+          const invX = sx > 0 ? 1 / sx : 1;
+          const invY = sy > 0 ? 1 / sy : 1;
+          const invZ = sz > 0 ? 1 / sz : 1;
+          for (const slot of cupsContainer.children) {
+            slot.scale.set(invX, invY, invZ);
+          }
+        }
       }
       boundsDirty = true;
       dirty = true;
@@ -820,6 +862,19 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         if (pop && !reducedMotion) popStart = performance.now();
         dirty = true;
       },
+      setThickness(t) {
+        if (model?.setThickness) {
+          model.setThickness(t);
+          dirty = true;
+        }
+      },
+      setCupsVisible(show) {
+        if (model?.setCupsVisible) {
+          model.setCupsVisible(show);
+          boundsDirty = true;
+          dirty = true;
+        }
+      },
       setTargets(p, o) {
         target = { progress: p, open: o };
         if (!model) {
@@ -999,11 +1054,16 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         roughnessMap: fibers.roughness,
         bumpScale: theme === "gold_foil" ? 0.02 : theme === "kraft" ? 0.068 : 0.048,
       },
+      showCups: effectiveShowCups,
       onChange: () => stageRef.current?.invalidate(),
     });
     stage.setModel(model, lastStructure.current !== null && lastStructure.current !== boxType, dimensions);
     lastStructure.current = boxType;
-  }, [dimensions, boxType, formulaVersion, theme, customLogoText, elements, backgroundPatternSvg]);
+  }, [dimensions, boxType, formulaVersion, theme, customLogoText, elements, backgroundPatternSvg, effectiveShowCups]);
+
+  useEffect(() => {
+    stageRef.current?.setCupsVisible(effectiveShowCups);
+  }, [effectiveShowCups]);
 
   useEffect(() => {
     stageRef.current?.setBackdrop(backdrop);
@@ -1017,12 +1077,25 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     }
   }, [studioPalette]);
   // Live size while a slider moves; cleared (null) when it equals the built one.
-  const live = liveDimensions && (liveDimensions.length !== dimensions.length || liveDimensions.width !== dimensions.width || liveDimensions.height !== dimensions.height) ? liveDimensions : null;
+  const live =
+    liveDimensions &&
+    (liveDimensions.length !== dimensions.length ||
+      liveDimensions.width !== dimensions.width ||
+      liveDimensions.height !== dimensions.height ||
+      liveDimensions.paperThickness !== dimensions.paperThickness)
+      ? liveDimensions
+      : null;
   useEffect(() => {
     stageRef.current?.setPreview(live);
     // The object changes every render; its three numbers are what matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live?.length, live?.width, live?.height]);
+
+  // Live thickness adjustment at 60fps without full rebuild
+  const liveThickness = liveDimensions?.paperThickness ?? dimensions.paperThickness;
+  useEffect(() => {
+    stageRef.current?.setThickness(liveThickness);
+  }, [liveThickness]);
   useEffect(() => {
     stageRef.current?.setGuides(Boolean(guides), guides?.active ?? null);
   }, [guides === null, guides?.active]);
@@ -1109,6 +1182,23 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           <Tag className="size-3.5" aria-hidden />
           <span className="hidden md:inline">Nhãn mặt</span>
           <span className="sr-only md:hidden">Nhãn mặt</span>
+        </button>
+      )}
+      {boxType === "cup-carrier" && (
+        <button
+          type="button"
+          onClick={() => {
+            const next = !effectiveShowCups;
+            setInternalShowCups(next);
+            onToggleCups?.(next);
+          }}
+          aria-pressed={effectiveShowCups}
+          className={button(effectiveShowCups)}
+          title={effectiveShowCups ? "Bỏ ly 350ml ra khỏi khay" : "Bỏ ly 350ml vào khay"}
+        >
+          <Coffee className="size-3.5" aria-hidden />
+          <span className="hidden md:inline">{effectiveShowCups ? "Ly 350ml" : "Thử ly 350ml"}</span>
+          <span className="sr-only md:hidden">Ly 350ml</span>
         </button>
       )}
       <button
