@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   ArrowLeftRight,
   ArrowRight,
+  Box,
+  ChevronDown,
   Link2,
   Minus,
   Paperclip,
@@ -14,6 +16,7 @@ import {
   Ruler,
   Gift,
   SlidersHorizontal,
+  Tag,
   Unlink2,
 } from "lucide-react";
 import {
@@ -207,6 +210,8 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const [basis, setBasis] = useState<Basis>("inner");
   const [locked, setLocked] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  const [showFaceLabels, setShowFaceLabels] = useState(true);
   const [active, setActive] = useState<DimensionAxis | null>(null);
 
   useEffect(() => {
@@ -285,16 +290,11 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const outerH = (draft.height + 2 * t).toFixed(1).replace(".", ",");
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-6 sm:px-6">
-      <StepHeader
-        title={studioStep(2).title}
-        subtitle="Nhập kích thước bên trong hộp."
-      />
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        {/* Left Column: Dimension Inputs & Presets */}
+    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-4 sm:px-6">
+      <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        {/* Left Column: Controls — natural flow without restrictive max-height */}
         <div className="flex flex-col gap-4">
-          {/* Card 1: Kích thước */}
+          {/* Card 1: Kích thước (with gift presets as inline pills) */}
           <SectionCard
             data-tour="s2-size"
             tone="accent"
@@ -315,6 +315,51 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             }
             bodyClassName="pt-3 sm:pt-3"
           >
+            {/* Priority 1: Gift preset quick-pick pills (horizontal scroll) */}
+            {!flat && boxType !== "cup-carrier" && (
+              <div data-tour="s2-presets" className="pb-3">
+                <div className="flex items-center gap-2 pb-2">
+                  <Gift className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span className="text-xs font-semibold text-fg-muted">Chọn nhanh theo món quà</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 hover-scrollbar">
+                  {GIFT_PRESETS.map((gp) => {
+                    const isMatch =
+                      gp.dims.length === draft.length &&
+                      gp.dims.width === draft.width &&
+                      gp.dims.height === draft.height;
+                    const presetFits = fitsLimits(gp.dims);
+                    return (
+                      <button
+                        key={gp.id}
+                        type="button"
+                        disabled={!presetFits}
+                        aria-pressed={isMatch}
+                        title={
+                          presetFits
+                            ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm`
+                            : "Ngoài giới hạn của cấu trúc hộp này"
+                        }
+                        onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType, window: draft.window }, true)}
+                        className={cn(
+                          "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+                          isMatch
+                            ? "border-fpt-orange bg-orange-50 text-fpt-orange-ink ring-1 ring-fpt-orange font-semibold"
+                            : "border-line bg-surface-sunken/50 text-fg hover:border-fpt-orange/50 hover:bg-orange-50/40",
+                          !presetFits && "cursor-not-allowed opacity-40",
+                        )}
+                      >
+                        {gp.name.split("·")[0].trim()}
+                        <span className="ml-1 text-fg-muted tabular-nums">
+                          {gp.dims.length}×{gp.dims.width}×{gp.dims.height}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Basis & quick actions */}
             <div className="flex items-center justify-between pb-3">
               <SegmentedSwitch
@@ -397,9 +442,13 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             </div>
           </SectionCard>
 
-          {/* The options of this structure, in one card: gift weight, window, cells, cups. */}
+          {/* Priority 2: Box options as collapsible accordion (collapsed by default) */}
           {(boxType === "tuck-top" || boxType === "lid-base" || boxType === "insert" || boxType === "cup-carrier") && (
-            <SectionCard icon={SlidersHorizontal} title="Tuỳ chọn hộp" hint="Riêng cho kiểu hộp này" bodyClassName="divide-y divide-line py-0 sm:py-0">
+            <AccordionCard
+              icon={SlidersHorizontal}
+              title="Tuỳ chọn hộp"
+              summary={boxOptionsSummary(draft, boxType)}
+            >
           {boxType === "tuck-top" && (
             <GiftWeightCard
               weight={draft.giftWeight}
@@ -434,55 +483,16 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               onChange={(cells) => changeCount(cupCarrierSizeForCups(draft, cells))}
             />
           )}
-            </SectionCard>
+            </AccordionCard>
           )}
 
-          {/* Món quà mẫu (boxes only: a tag, a card or a band has no gift inside) */}
-          {!flat && boxType !== "cup-carrier" && <SectionCard data-tour="s2-presets" icon={Gift} title="Món quà mẫu" hint="Bấm để tự điền kích thước">
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {GIFT_PRESETS.map((gp) => {
-                const isMatch =
-                  gp.dims.length === draft.length &&
-                  gp.dims.width === draft.width &&
-                  gp.dims.height === draft.height;
-                const presetFits = fitsLimits(gp.dims);
-                return (
-                  <button
-                    key={gp.id}
-                    type="button"
-                    disabled={!presetFits}
-                    aria-pressed={isMatch}
-                    title={
-                      presetFits
-                        ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm`
-                        : "Ngoài giới hạn của cấu trúc hộp này"
-                    }
-                    onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType, window: draft.window }, true)}
-                    className={cn(
-                      "rounded-xl border p-3 text-left transition-all",
-                      isMatch
-                        ? "border-fpt-orange bg-orange-50 ring-1 ring-fpt-orange"
-                        : "border-line bg-surface-sunken/50 hover:border-fpt-orange/50 hover:bg-orange-50/40",
-                      !presetFits && "cursor-not-allowed opacity-40",
-                    )}
-                  >
-                    <div className="font-bold text-xs text-slate-900 leading-snug truncate">
-                      {gp.name}
-                    </div>
-                    <div className="mt-1 text-caption text-fg-muted tabular-nums">
-                      {gp.dims.length} × {gp.dims.width} × {gp.dims.height} mm
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </SectionCard>}
+          {/* Gift presets grid removed — now inline pills in the dimension card above */}
         </div>
 
-        {/* Right Column: 3D Box Preview & Stats */}
-        <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
-          {/* 3D Box Card */}
-          <div className="relative rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+        {/* Right Column: 3D Box Preview — sticky to viewport */}
+        <div className="flex flex-col gap-0 lg:sticky lg:top-24 lg:self-start">
+          {/* 3D Box Card with integrated HUD stats */}
+          <div className="relative flex-1 rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
             {/* Top Left Badge */}
             <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm border border-slate-100 backdrop-blur-xs">
               <span aria-hidden className="size-2 rounded-full bg-fpt-orange" />
@@ -507,18 +517,19 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
             </button>
 
             {/* 3D Canvas */}
-            <div className="relative h-[440px] bg-landing-canvas sm:h-[500px]">
+            <div className="relative h-[480px] bg-landing-canvas sm:h-[520px] lg:h-[580px]">
               <div className="absolute inset-0">
                 <Box3DView
                   dimensions={committed.current}
                   liveDimensions={draft}
                   foldProgress={1}
-                  faceLabels
+                  faceLabels={showFaceLabels ? true : false}
                   boxType={boxType}
                   theme={activeMaterial as never}
                   elements={elements}
                   backgroundPatternSvg={backgroundPatternSvg}
                   formulaVersion={formulaVersion}
+                  cameraView={cameraView}
                   guides={
                     showGuides
                       ? {
@@ -533,7 +544,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   }
                   showHud={false}
                   showStatusBar={false}
-                  viewControls={true}
+                  viewControls={false}
                   enableMacroZoom={false}
                   frameless
                   minHeight={false}
@@ -542,28 +553,64 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               </div>
             </div>
 
-            {/* Bottom Caption */}
-            <div className="border-t border-slate-100 bg-white/80 px-4 py-2.5 text-center">
-              <p className="text-xs text-slate-400">
-                Kéo để xoay · cuộn để phóng to
-              </p>
+            {/* Bottom HUD bar with stats + interactive 3D Controls dock */}
+            <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white/95 via-white/85 to-transparent px-4 pb-3 pt-6 backdrop-blur-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <dl className="flex items-center gap-4 text-xs tabular-nums">
+                  <HudStat label="Thể tích" value={`${formatNumber(innerVolumeMl(draft))} ml`} />
+                  <span className="h-4 w-px bg-slate-200" aria-hidden />
+                  <HudStat label="Khổ phôi" value={fits.map((fit) => `${fit.width}×${fit.height}`).join(" + ") + " mm"} />
+                  <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden />
+                  <HudStat className="hidden sm:block" label="Hộp / tờ B1" value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"} />
+                </dl>
+                <div className="flex items-center gap-1.5">
+                  <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
+                    {(
+                      [
+                        { view: "angle", label: "3/4" },
+                        { view: "front", label: "Trước" },
+                        { view: "side", label: "Bên" },
+                        { view: "top", label: "Trên" },
+                      ] as const
+                    ).map((item) => (
+                      <button
+                        key={item.view}
+                        type="button"
+                        onClick={() => setCameraView(item.view)}
+                        aria-pressed={cameraView === item.view}
+                        title={`Góc nhìn ${item.label.toLowerCase()}`}
+                        className={cn(
+                          "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors",
+                          cameraView === item.view
+                            ? "bg-fpt-orange text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                        )}
+                      >
+                        {item.view === "angle" && <Box className="size-3" aria-hidden />}
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                    <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                    <button
+                      type="button"
+                      onClick={() => setShowFaceLabels((prev) => !prev)}
+                      aria-pressed={showFaceLabels}
+                      title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
+                      className={cn(
+                        "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                        showFaceLabels
+                          ? "bg-fpt-orange text-white shadow-xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      )}
+                    >
+                      <Tag className="size-3" aria-hidden />
+                      <span>Nhãn mặt</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Bottom 3 Stat Cards */}
-          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Stat
-              label="Thể tích"
-              value={`${formatNumber(innerVolumeMl(draft))} ml`}
-            />
-            <Stat
-              label="Khổ phôi"
-              value={fits.map((fit) => `${fit.width} × ${fit.height}`).join(" + ") + " mm"}
-            />
-            <Stat
-              label="Số hộp / tờ B1"
-              value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"}            />
-          </dl>
         </div>
       </div>
 
@@ -574,6 +621,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
         </p>
       )}
 
+      {/* Priority 3: Full-width sticky bottom action bar */}
       <StepActionBar
         back={
           onBack ? (
@@ -974,12 +1022,75 @@ function DimensionRow({
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+/** Compact HUD stat for the 3D viewport bottom bar. */
+function HudStat({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-2xs">
-      <dt className="text-xs text-slate-400">{label}</dt>
-      <dd className="mt-1 font-sans text-base font-bold text-slate-900">{value}</dd>
-      {hint && <dd className="mt-0.5 text-caption text-fg-muted">{hint}</dd>}
+    <div className={cn("min-w-0", className)}>
+      <dt className="text-[10px] text-slate-400 leading-none">{label}</dt>
+      <dd className="mt-0.5 font-sans text-xs font-bold text-slate-800 truncate">{value}</dd>
     </div>
   );
+}
+
+/** Collapsible accordion card — collapsed by default. Shows a one-line summary when closed. */
+function AccordionCard({
+  icon: Icon,
+  title,
+  summary,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  summary?: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="overflow-hidden rounded-sheet border border-line bg-surface-raised">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center gap-3 border-b border-line bg-surface-sunken/60 px-4 py-3 text-left sm:px-5"
+      >
+        <span
+          aria-hidden
+          className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-fpt-orange ring-1 ring-line"
+        >
+          <Icon className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate font-landing-heading text-body font-bold text-fg">{title}</h2>
+          {!open && summary && <p className="truncate text-caption text-fg-muted">{summary}</p>}
+        </div>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-fg-muted transition-transform",
+            open && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+      {open && <div className="divide-y divide-line p-4 sm:p-5">{children}</div>}
+    </section>
+  );
+}
+
+/** Summarise the current box options into a one-liner for the collapsed accordion header. */
+function boxOptionsSummary(dims: BoxDimensions, boxType: BoxStructureType): string {
+  const parts: string[] = [];
+  if (boxType === "tuck-top") {
+    parts.push(usesLockBottom(dims) ? "Đáy khóa" : "Đáy gài thường");
+  }
+  if ((boxType === "tuck-top" || boxType === "lid-base") && dims.window) {
+    parts.push("Có cửa sổ");
+  } else if (boxType === "tuck-top" || boxType === "lid-base") {
+    parts.push("Không cửa sổ");
+  }
+  if (boxType === "insert" && dims.cells) {
+    parts.push(`${dims.cells.rows}×${dims.cells.cols} ngăn`);
+  }
+  if (boxType === "cup-carrier" && dims.cells) {
+    parts.push(`${dims.cells.rows * dims.cells.cols} ly`);
+  }
+  return parts.join(" · ") || "Riêng cho kiểu hộp này";
 }

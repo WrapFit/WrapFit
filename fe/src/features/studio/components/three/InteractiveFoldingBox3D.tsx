@@ -530,7 +530,13 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       // The guides sit outside the box: frame them too.
       fit.radius = (sphere.radius / Math.max(scale, 0.5)) * (guidesOn ? 1.22 : 1);
       if (guidesOn) placeGuides(box);
-      fit.center.copy(sphere.center);
+      // Center the camera slightly above the geometric center so the 3D box sits visually lower,
+      // accounting for the bottom stats HUD bar and aligning horizontally with the left input card.
+      fit.center.set(
+        sphere.center.x,
+        sphere.center.y + (guidesOn ? sphere.radius * 0.16 : sphere.radius * 0.08),
+        sphere.center.z,
+      );
       // Floor shadows follow the footprint of the box.
       const footprint = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       blob.scale.set((box.max.x - box.min.x) * 1.7 + footprint * 0.2, (box.max.z - box.min.z) * 1.7 + footprint * 0.2, 1);

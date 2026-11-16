@@ -64,8 +64,10 @@ export function SectionCard({
  */
 export const stageBarButton = (on = false) =>
   cn(
-    "inline-flex h-8 min-w-8 items-center justify-center gap-1.5 rounded-md px-2.5 text-label-sm outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:opacity-40",
-    on ? "bg-surface-sunken text-fg" : "text-fg-muted hover:bg-surface-sunken/70 hover:text-fg",
+    "inline-flex h-7.5 min-w-7.5 items-center justify-center gap-1.5 rounded-full px-2.5 text-xs font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-focus/40 disabled:opacity-40",
+    on
+      ? "bg-fpt-orange text-white shadow-xs"
+      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
   );
 
 /** Eyebrow, big bold title and a muted line, as on pack.ly's tool pages. */
@@ -153,11 +155,20 @@ export const PRIMARY_PILL = buttonClass({ variant: "brand", size: "xl" });
 export const SECONDARY_PILL = buttonClass({ variant: "secondary", size: "xl", className: "ring-0 font-medium" });
 
 /** Bar at the bottom of a step: back on the left, the current spec, the next step on the right. */
-export function StepActionBar({ back, summary, next }: { back?: React.ReactNode; summary?: React.ReactNode; next?: React.ReactNode }) {
+export function StepActionBar({
+  back,
+  summary,
+  next,
+  className,
+}: {
+  back?: React.ReactNode;
+  summary?: React.ReactNode;
+  next?: React.ReactNode;
+  className?: string;
+}) {
   return (
-    // md:mr-20 leaves the corner to the folded Gói button (fixed, 56 px, 24 px from the edge): it never covers "next".
-    <div className="sticky bottom-24 z-30 mt-6 md:bottom-4 md:mr-20">
-      <div className="flex flex-col items-stretch gap-3 rounded-sheet bg-white/95 p-3 shadow-soft-16 ring-1 ring-landing-line/60 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+    <div className={cn("sticky bottom-3 z-30 mt-6 sm:mt-8", className)}>
+      <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 rounded-2xl border border-line bg-white/95 px-5 py-3 shadow-sm backdrop-blur-md sm:px-6">
         <div className="flex items-center gap-3">{back}</div>
         {summary && <div className="hidden min-w-0 text-right text-body-sm text-landing-muted md:block">{summary}</div>}
         {next && <div className="flex flex-wrap items-center justify-end gap-2">{next}</div>}

@@ -110,11 +110,9 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
   const shown = group === "all" ? cards : cards.filter((card) => groupOf(card.id) === group);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6">
-      <StepHeader title={studioStep(1).title} />
-
+    <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-4 sm:px-6">
       {/* The groups above both columns: the grid of boxes and the preview card start on the same line. */}
-          <div role="group" aria-label="Nhóm kiểu hộp" className="mt-5 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+      <div role="group" aria-label="Nhóm kiểu hộp" className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
             {(["all", ...GROUP_ORDER] as const).map((id) => {
               const count = id === "all" ? cards.length : cards.filter((card) => groupOf(card.id) === id).length;
               if (count === 0) return null;
