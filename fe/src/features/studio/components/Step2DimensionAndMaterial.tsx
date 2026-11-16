@@ -1026,7 +1026,7 @@ function DimensionRow({
 function HudStat({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
   return (
     <div className={cn("min-w-0", className)}>
-      <dt className="text-[10px] text-slate-400 leading-none">{label}</dt>
+      <dt className="text-caption text-slate-400 leading-none">{label}</dt>
       <dd className="mt-0.5 font-sans text-xs font-bold text-slate-800 truncate">{value}</dd>
     </div>
   );

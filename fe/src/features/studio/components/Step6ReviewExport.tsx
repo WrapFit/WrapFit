@@ -249,7 +249,7 @@ export function Step6ReviewExport({
                       <button
                         type="button"
                         onClick={() => setShowRulesModal(true)}
-                        className="text-[11px] font-medium text-emerald-700 hover:underline cursor-pointer"
+                        className="text-caption font-medium text-emerald-700 hover:underline cursor-pointer"
                       >
                         (11/11 tiêu chuẩn ↗)
                       </button>
@@ -283,7 +283,7 @@ export function Step6ReviewExport({
                       <p className={cn("font-bold text-sm", errors > 0 ? "text-red-950" : "text-amber-950")}>
                         {errors > 0 ? `FitCheck™: ${errors} lỗi cần sửa` : `FitCheck™: ${warnings} cảnh báo in`}
                       </p>
-                      <span className="text-[11px] font-semibold text-fpt-orange underline group-hover:text-fpt-orange-dark">
+                      <span className="text-caption font-semibold text-fpt-orange underline group-hover:text-fpt-orange-dark">
                         Bấm xem chi tiết ↗
                       </span>
                     </div>
@@ -295,7 +295,7 @@ export function Step6ReviewExport({
                         </p>
                       ))}
                       {report.violations.filter((v) => v.severity !== "info").length > 2 && (
-                        <p className="text-[11px] text-fg-muted font-medium">
+                        <p className="text-caption text-fg-muted font-medium">
                           + thêm {report.violations.filter((v) => v.severity !== "info").length - 2} điểm khác (bấm để xem)...
                         </p>
                       )}
@@ -382,7 +382,7 @@ export function Step6ReviewExport({
                       <div className="flex items-center justify-between gap-2 border-b border-black/5 pb-1.5">
                         <span className="font-bold text-sm text-fg">{rule.title}</span>
                         <span className={cn(
-                          "rounded px-2 py-0.5 text-[10px] font-bold uppercase",
+                          "rounded px-2 py-0.5 text-label-sm font-bold uppercase",
                           error ? "bg-red-200 text-red-800" : "bg-amber-200 text-amber-800"
                         )}>
                           {error ? "Lỗi chặn xuất file" : "Cảnh báo"}
@@ -394,7 +394,7 @@ export function Step6ReviewExport({
                           <div key={hit.id ?? idx} className="rounded-lg bg-white/95 p-2.5 border border-black/5">
                             <p className="font-medium text-fg leading-relaxed">• {hit.message}</p>
                             {hit.suggestion && (
-                              <p className="mt-1 text-[11px] text-amber-900 bg-amber-50/90 rounded p-1.5 border border-amber-200/80">
+                              <p className="mt-1 text-caption text-amber-900 bg-amber-50/90 rounded p-1.5 border border-amber-200/80">
                                 💡 <strong>Hướng khắc phục:</strong> {hit.suggestion}
                               </p>
                             )}
@@ -439,7 +439,7 @@ export function Step6ReviewExport({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
                         <span className="font-semibold text-fg text-body-sm">{rule.title}</span>
-                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded px-1.5 py-0.2">
+                        <span className="text-label-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded px-1.5 py-0.2">
                           Đạt chuẩn
                         </span>
                       </div>

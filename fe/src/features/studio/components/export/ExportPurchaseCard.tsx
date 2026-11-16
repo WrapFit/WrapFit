@@ -99,7 +99,7 @@ export function ExportPurchaseCard({
               <span className="font-medium text-fg">{specSummary.paperName}</span>
             </div>
             {specSummary.finishesText && (
-              <div className="mt-1.5 border-t border-line/60 pt-1.5 text-[11px] text-fg-muted">
+              <div className="mt-1.5 border-t border-line/60 pt-1.5 text-caption text-fg-muted">
                 Gia công: <span className="font-medium text-fg">{specSummary.finishesText}</span>
               </div>
             )}
