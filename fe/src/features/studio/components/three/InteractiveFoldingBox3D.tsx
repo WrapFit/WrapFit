@@ -8,7 +8,9 @@ import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared"
 import { Box, Gift, Pause, Play, Tag, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, foldablePieces, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 import { stageBarButton } from "../studioUi";
-import { BACKDROPS, type Backdrop, type BoxEnvironment } from "./backdrops";
+import { BACKDROPS, type Backdrop, type BoxEnvironment, type SceneId } from "./backdrops";
+import { createSceneSet, type SceneSet } from "./sceneSet";
+import { STUDIO_PALETTES, type StudioPaletteId } from "./studioPalettes";
 import { AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, type DimensionAxis, type DimensionGuides } from "./guides";
 import { filmPose, type FilmApi } from "../../utils/film";
 
@@ -66,17 +68,27 @@ interface InteractiveFoldingBox3DProps {
   barStart?: React.ReactNode;
   barEnd?: React.ReactNode;
   /**
-   * Filled with a function that renders a frame and returns the WebGL canvas (transparent background). Read it at
-   * once, in the same task: the drawing buffer is not kept (mockup images).
+   * Filled with a function that renders a frame. Without a size it returns the WebGL canvas (transparent background):
+   * read it at once, in the same task, the drawing buffer is not kept. With a size it renders the current shot at that
+   * size and aspect (the box refitted, the camera angle kept) and returns a copy (mockup images).
    */
-  captureRef?: React.MutableRefObject<(() => HTMLCanvasElement) | null>;
+  captureRef?: React.MutableRefObject<CaptureFn | null>;
+  /**
+   * Builds the photo set of the scene (step 5): a tabletop that takes the shadows and, with `sceneProps`, the props of
+   * the occasion around the box. Off: the box floats on the backdrop with its shadow only (every other page).
+   */
+  sceneSet?: boolean;
+  sceneProps?: boolean;
   /** Filled with the scripted clip of the stage (folding-box video and GIF, docs/23 S19). */
   filmRef?: React.MutableRefObject<FilmApi | null>;
   /**
    * Names of the faces (Nắp, Đáy, Mặt trước…) on the model, with a toggle in the dock: on by default once the box is
-   * folded to FACE_LABELS_FROM or more (studio).
+   * folded to FACE_LABELS_FROM or more (studio). "toggle": the toggle only, off until switched on, for the mockup
+   * views where names on the box would spoil the picture.
    */
-  faceLabels?: boolean;
+  faceLabels?: boolean | "toggle";
+  /** Studio 3D color palette preset (Sage, Monochrome, Rose, Terracotta, Midnight). */
+  studioPalette?: StudioPaletteId;
 }
 
 /** Fold progress from which the face labels show by themselves. */
@@ -230,7 +242,11 @@ const approach = (value: number, target: number, rate: number, dt: number) => {
   return Math.abs(target - next) < 1e-4 ? target : next;
 };
 
+export type CaptureFn = (size?: { width: number; height: number }) => HTMLCanvasElement;
+
 interface StageApi {
+  setSceneSet(id: SceneId | null, props: boolean): void;
+  setStudioPalette(paletteId: StudioPaletteId): void;
   setModel(model: BoxModel, pop: boolean, dimensions: BoxDimensions): void;
   setPreview(dimensions: BoxDimensions | null): void;
   setGuides(on: boolean, active: DimensionAxis | null): void;
@@ -274,15 +290,20 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   captureRef,
   filmRef,
   faceLabels = false,
+  sceneSet = false,
+  sceneProps = true,
+  studioPalette,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const studioPaletteRef = useRef(studioPalette);
+  studioPaletteRef.current = studioPalette;
   /** Outermost element of the stage: the canvas and every overlay on it. */
   const wrapperRef = useRef<HTMLDivElement>(null);
   /** Labels of the dimension guides, placed by the render loop. */
   const labelRefs = useRef<Partial<Record<DimensionAxis, HTMLDivElement | null>>>({});
   /** Face labels by panel id, placed by the render loop. */
   const faceLabelRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const [faceLabelMode, setFaceLabelMode] = useState<"auto" | "on" | "off">("auto");
+  const [faceLabelMode, setFaceLabelMode] = useState<"auto" | "on" | "off">(faceLabels === "toggle" ? "off" : "auto");
   const stageRef = useRef<StageApi | null>(null);
   const [open, setOpen] = useState(false);
   /** Preset the camera sits on; null once the user turned the box by hand. */
@@ -339,7 +360,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const hemi = new THREE.HemisphereLight(0xffffff, 0xd9d2c5, 0.35);
     const key = new THREE.DirectionalLight(0xffffff, 1.35);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(2048, 2048);
     key.shadow.radius = 9;
     key.shadow.bias = -0.0004;
     key.shadow.normalBias = 0.02;
@@ -347,15 +368,16 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     scene.add(hemi, key, key.target, rim);
 
     const groundGeometry = new THREE.PlaneGeometry(1, 1);
-    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.18 });
+    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.18, depthWrite: false });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
+    ground.renderOrder = -2;
     const blobTexture = contactShadowTexture();
     const blobMaterial = new THREE.MeshBasicMaterial({ map: blobTexture, transparent: true, depthWrite: false, opacity: 0.3 });
     const blob = new THREE.Mesh(groundGeometry, blobMaterial);
     blob.rotation.x = -Math.PI / 2;
-    blob.position.y = 0.05;
+    blob.position.y = 0.02;
     blob.renderOrder = -1;
     scene.add(ground, blob);
 
@@ -484,6 +506,20 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     let scale = 1;
     let popStart = -1;
     const fit = { radius: 100, center: new THREE.Vector3(), shownRadius: 0 };
+    /** Photo set of the scene (step 5), laid out around the folded box. */
+    let set: SceneSet | null = null;
+    let setProps = true;
+    let currentSceneSetId: SceneId | null = null;
+    const layoutSet = () => {
+      if (!set || !builtDims) return;
+      // Sized on the folded box, not on the sheet being folded: the props stay put while the clip folds it.
+      const radius = Math.hypot(builtDims.length, builtDims.width, builtDims.height) / 2;
+      set.layout(new THREE.Vector3(blob.position.x, 0, blob.position.z), Math.hypot(builtDims.length, builtDims.width) / 2, radius);
+      if (currentSceneSetId === "christmas") {
+        root.position.set(0, 0, radius * 0.28);
+        root.rotation.y = -0.38;
+      }
+    };
     const look = new THREE.Vector3();
     let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; toDistance: number; t: number; duration: number } | null = null;
     let visible = true;
@@ -507,14 +543,22 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       // The guides sit outside the box: frame them too.
       fit.radius = (sphere.radius / Math.max(scale, 0.5)) * (guidesOn ? 1.22 : 1);
       if (guidesOn) placeGuides(box);
-      fit.center.copy(sphere.center);
+      // Center the camera slightly above the geometric center so the 3D box sits visually lower,
+      // accounting for the bottom stats HUD bar and aligning horizontally with the left input card.
+      fit.center.set(
+        sphere.center.x,
+        sphere.center.y + (guidesOn ? sphere.radius * 0.16 : sphere.radius * 0.08),
+        sphere.center.z,
+      );
       // Floor shadows follow the footprint of the box.
       const footprint = Math.max(box.max.x - box.min.x, box.max.z - box.min.z);
       blob.scale.set((box.max.x - box.min.x) * 1.7 + footprint * 0.2, (box.max.z - box.min.z) * 1.7 + footprint * 0.2, 1);
       blob.position.x = (box.min.x + box.max.x) / 2;
       blob.position.z = (box.min.z + box.max.z) / 2;
       ground.scale.set(fit.radius * 12, fit.radius * 12, 1);
-      const d = fit.radius * 1.6;
+      if (set && progress > 0.95 && !filming) layoutSet();
+      // The props around the box need shadows too.
+      const d = fit.radius * (set ? 2.8 : 1.6);
       Object.assign(key.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: fit.radius * 12 });
       key.shadow.camera.updateProjectionMatrix();
       // From the upper right: the side and the front of the box take different shades.
@@ -712,6 +756,45 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     };
 
     const api: StageApi = {
+      setSceneSet(id, props) {
+        currentSceneSetId = id;
+        if (set) {
+          scene.remove(set.group);
+          set.dispose();
+          set = null;
+        }
+        if (id) {
+          set = createSceneSet(id, studioPaletteRef.current);
+          set.setProps(props);
+          scene.add(set.group);
+          layoutSet();
+        }
+        if (id === "christmas" && builtDims) {
+          const radius = Math.hypot(builtDims.length, builtDims.width, builtDims.height) / 2;
+          root.position.set(0, 0, radius * 0.28);
+          root.rotation.y = -0.38;
+        } else {
+          root.position.set(0, 0, 0);
+          root.rotation.set(0, 0, 0);
+        }
+        setProps = props;
+        // The tabletop takes the shadows itself; the shadow-only floor would darken them twice.
+        ground.visible = !set;
+        blob.visible = !set;
+        boundsDirty = true;
+        dirty = true;
+      },
+      setStudioPalette(paletteId) {
+        if (set?.setPalette) {
+          const pal = STUDIO_PALETTES[paletteId];
+          if (pal) {
+            set.setPalette(pal);
+            key.color.set(pal.lightingKey);
+            rim.color.set(pal.lightingRim);
+          }
+        }
+        dirty = true;
+      },
       setModel(next, pop, dims) {
         if (model) {
           root.remove(model.group);
@@ -788,9 +871,36 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     };
     stageRef.current = api;
     if (captureRef)
-      captureRef.current = () => {
+      captureRef.current = (size) => {
+        if (!size) {
+          renderer.render(scene, camera);
+          return renderer.domElement;
+        }
+        // The shot as it is on the stage (angle and zoom), rendered at the size and aspect of the image.
+        const ratio = renderer.getPixelRatio();
+        const stageSize = renderer.getSize(new THREE.Vector2());
+        const saved = { position: camera.position.clone(), aspect: camera.aspect };
+        const offset = camera.position.clone().sub(controls.target);
+        const zoom = offset.length() / framingDistance(fit.radius);
+        renderer.setPixelRatio(1);
+        renderer.setSize(size.width, size.height, false);
+        camera.aspect = size.width / size.height;
+        camera.updateProjectionMatrix();
+        camera.position.copy(controls.target).addScaledVector(offset.normalize(), framingDistance(fit.radius) * THREE.MathUtils.clamp(zoom, 0.7, 1.6) * 1.06);
+        camera.lookAt(controls.target);
         renderer.render(scene, camera);
-        return renderer.domElement;
+        const copy = document.createElement("canvas");
+        copy.width = size.width;
+        copy.height = size.height;
+        copy.getContext("2d")?.drawImage(renderer.domElement, 0, 0);
+        camera.position.copy(saved.position);
+        camera.aspect = saved.aspect;
+        camera.updateProjectionMatrix();
+        camera.lookAt(controls.target);
+        renderer.setPixelRatio(ratio);
+        renderer.setSize(stageSize.x, stageSize.y, false);
+        dirty = true;
+        return copy;
       };
     if (filmRef) {
       let saved: { position: THREE.Vector3; target: THREE.Vector3 } | null = null;
@@ -801,6 +911,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           if (!model) return false;
           filming = true;
           tween = null;
+          set?.setProps(false);
           saved = { position: camera.position.clone(), target: controls.target.clone() };
           radius = 0;
           return true;
@@ -821,6 +932,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         },
         end() {
           filming = false;
+          set?.setProps(setProps);
           model?.update(progress, openness);
           if (saved) {
             camera.position.copy(saved.position);
@@ -848,6 +960,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       wrapper.removeEventListener("wheel", onZoomWheel, { capture: true });
       controls.dispose();
       model?.dispose();
+      set?.dispose();
       unitCylinder.dispose();
       guideParts.forEach((part) => part.material.dispose());
       groundGeometry.dispose();
@@ -895,6 +1008,14 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   useEffect(() => {
     stageRef.current?.setBackdrop(backdrop);
   }, [backdrop]);
+  useEffect(() => {
+    stageRef.current?.setSceneSet(sceneSet && environment !== "transparent" ? environment : null, sceneProps);
+  }, [sceneSet, sceneProps, environment]);
+  useEffect(() => {
+    if (studioPalette) {
+      stageRef.current?.setStudioPalette(studioPalette);
+    }
+  }, [studioPalette]);
   // Live size while a slider moves; cleared (null) when it equals the built one.
   const live = liveDimensions && (liveDimensions.length !== dimensions.length || liveDimensions.width !== dimensions.width || liveDimensions.height !== dimensions.height) ? liveDimensions : null;
   useEffect(() => {
@@ -913,7 +1034,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         : [],
     [faceLabels, boxType, dimensions, formulaVersion]
   );
-  const faceLabelsShown = faceLabels && (faceLabelMode === "auto" ? foldProgress >= FACE_LABELS_FROM : faceLabelMode === "on");
+  const faceLabelsShown = Boolean(faceLabels) && (faceLabelMode === "auto" ? foldProgress >= FACE_LABELS_FROM : faceLabelMode === "on");
   useEffect(() => {
     stageRef.current?.setFaceLabels(faceLabelsShown);
   }, [faceLabelsShown, faces]);

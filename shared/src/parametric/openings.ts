@@ -42,6 +42,34 @@ export function cutOpening(writer: ReturnType<typeof segmentWriter>, id: string,
   curve(`${id}_corner_tl`, "cut", { x, y: y + r }, { x, y }, { x: x + r, y });
 }
 
+/** Control-point distance of a quarter circle drawn as one cubic Bézier (radius error under 0.03 %). */
+export const CUBIC_ARC_K = 0.5523;
+
+/**
+ * Like cutOpening, but the corners are cubic Béziers, so a hole whose radius is half its size is a true circle. The
+ * quadratic corners of cutOpening bulge about 6 % of the radius towards the corner: invisible on a 4 mm window corner,
+ * 2.5 mm on an 85 mm cup hole. Used by the structures added after formula version 3 shipped (cup carrier); the
+ * older ones keep cutOpening so their cut lines never move.
+ */
+export function cutRoundOpening(writer: ReturnType<typeof segmentWriter>, id: string, { x, y, width, height, radius }: DielineOpening) {
+  const { line, cubic } = writer;
+  const r = Math.min(radius, width / 2, height / 2);
+  const k = r * CUBIC_ARC_K;
+  const x1 = x + width;
+  const y1 = y + height;
+  const side = (n: string, a: { x: number; y: number }, b: { x: number; y: number }) => {
+    if (Math.hypot(b.x - a.x, b.y - a.y) > 0.01) line(`${id}_${n}`, "cut", a, b);
+  };
+  side("top", { x: x + r, y }, { x: x1 - r, y });
+  cubic(`${id}_corner_tr`, "cut", { x: x1 - r, y }, { x: x1 - r + k, y }, { x: x1, y: y + r - k }, { x: x1, y: y + r });
+  side("right", { x: x1, y: y + r }, { x: x1, y: y1 - r });
+  cubic(`${id}_corner_br`, "cut", { x: x1, y: y1 - r }, { x: x1, y: y1 - r + k }, { x: x1 - r + k, y: y1 }, { x: x1 - r, y: y1 });
+  side("bottom", { x: x1 - r, y: y1 }, { x: x + r, y: y1 });
+  cubic(`${id}_corner_bl`, "cut", { x: x + r, y: y1 }, { x: x + r - k, y: y1 }, { x, y: y1 - r + k }, { x, y: y1 - r });
+  side("left", { x, y: y1 - r }, { x, y: y + r });
+  cubic(`${id}_corner_tl`, "cut", { x, y: y + r }, { x, y: y + r - k }, { x: x + r - k, y }, { x: x + r, y });
+}
+
 /** Does a rectangle on the sheet overlap an opening? */
 export function overlapsOpening(rect: { x: number; y: number; width: number; height: number }, opening: DielineOpening): boolean {
   return rect.x < opening.x + opening.width && opening.x < rect.x + rect.width && rect.y < opening.y + opening.height && opening.y < rect.y + rect.height;

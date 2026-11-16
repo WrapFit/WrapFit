@@ -2,6 +2,7 @@
 
 import * as THREE from "three";
 import {
+  CUBIC_ARC_K,
   boxFrameOf,
   CURRENT_FORMULA_VERSION,
   generateDielinePieces,
@@ -365,15 +366,21 @@ function panelGeometry({ x, y, width, height }: Rect, outline?: Point2D[], holes
       const path = new THREE.Path();
       const x1 = hole.x + hole.width;
       const y1 = hole.y + hole.height;
+      // Cup holes are true circles (cubic corners, like their cut line); the older holes keep their quadratic corners.
+      const round = hole.kind === "cup";
+      const corner = (cx: number, cy: number, ex: number, ey: number, sx: number, sy: number) =>
+        round
+          ? path.bezierCurveTo(sx + (cx - sx) * CUBIC_ARC_K, sy + (cy - sy) * CUBIC_ARC_K, ex + (cx - ex) * CUBIC_ARC_K, ey + (cy - ey) * CUBIC_ARC_K, ex, ey)
+          : path.quadraticCurveTo(cx, cy, ex, ey);
       path.moveTo(hole.x + r, hole.y);
       path.lineTo(x1 - r, hole.y);
-      path.quadraticCurveTo(x1, hole.y, x1, hole.y + r);
+      corner(x1, hole.y, x1, hole.y + r, x1 - r, hole.y);
       path.lineTo(x1, y1 - r);
-      path.quadraticCurveTo(x1, y1, x1 - r, y1);
+      corner(x1, y1, x1 - r, y1, x1, y1 - r);
       path.lineTo(hole.x + r, y1);
-      path.quadraticCurveTo(hole.x, y1, hole.x, y1 - r);
+      corner(hole.x, y1, hole.x, y1 - r, hole.x + r, y1);
       path.lineTo(hole.x, hole.y + r);
-      path.quadraticCurveTo(hole.x, hole.y, hole.x + r, hole.y);
+      corner(hole.x, hole.y, hole.x + r, hole.y, hole.x, hole.y + r);
       shape.holes.push(path);
     }
     const geometry = new THREE.ShapeGeometry(shape, 6);
@@ -454,9 +461,20 @@ function foldedPiece(
   const rotation: Mat4 = [...frame.slice(0, 12), 0, 0, 0, 1];
   const meshes = geometry.panels.map((panel) => {
     const shape = panelGeometry(panel.bounds, panel.outline, geometry.openings?.filter((o) => o.panelId === panel.id));
+    const isCarrierBase = panel.id === "carrier_base";
+    const isBasePanel = isCarrierBase || panel.id.endsWith("_base") || panel.id.endsWith("_bottom");
     const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
+    if (isBasePanel) {
+      printed.polygonOffset = false;
+    }
     const front = new THREE.Mesh(shape, printed);
-    const back = new THREE.Mesh(shape, insideOf(panel.id));
+    // For cup-carrier base or open trays, the upper surface facing into the tray displays the paper inside texture/color,
+    // ensuring the bottom is completely visible, solid, and seamless from both above and below without reference errors.
+    const backMaterial = insideOf(panel.id);
+    if (isBasePanel && "polygonOffset" in backMaterial) {
+      (backMaterial as THREE.MeshStandardMaterial).polygonOffset = false;
+    }
+    const back = new THREE.Mesh(shape, backMaterial);
     // Hairline on the panel edges: folds and cut edges read crisply, like a pressed crease.
     const outline = new THREE.EdgesGeometry(shape);
     const edge = new THREE.LineSegments(outline, edges);
@@ -488,7 +506,14 @@ function foldedPiece(
     });
     const min = [0, 1, 2].map((i) => Math.min(...corners.map((p) => p[i])));
     const max = [0, 1, 2].map((i) => Math.max(...corners.map((p) => p[i])));
-    const shift: Mat4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -(min[0] + max[0]) / 2, -min[1], -(min[2] + max[2]) / 2, 1];
+    // 0.6 mm elevation so every box rests cleanly on top of tables/podiums/mats, completely eliminating z-fighting and bottom clipping
+    const BOX_GROUND_CLEARANCE = 0.6;
+    const shift: Mat4 = [
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      -(min[0] + max[0]) / 2, -min[1] + BOX_GROUND_CLEARANCE, -(min[2] + max[2]) / 2, 1
+    ];
     meshes.forEach(({ front, back, edge }, i) => {
       const matrix = toMatrix(multiply(shift, placed[i]));
       for (const mesh of [front, back, edge]) {
@@ -661,9 +686,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     // Light bounces inside a paper box: the walls glow a little instead of turning grey in their own shadow.
     emissive: new THREE.Color(paper.inside),
     emissiveIntensity: 0.35,
-    polygonOffset: true,
-    polygonOffsetFactor: 1,
-    polygonOffsetUnits: 1,
+    polygonOffset: false,
   });
   const flapPaper = new THREE.MeshStandardMaterial({ color: paper.outside, roughness: 0.9, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.5 });
   const { edge: edgeColor, ...finish } = FINISH[options.theme];

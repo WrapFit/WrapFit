@@ -2,7 +2,8 @@
  * Prepress rules of the print files (checklist of the print shop): one place for the export worker, the offline export
  * of the editor and FitCheck, so the numbers the user reads are the ones the files are made with.
  *
- * 1. Colour: artwork in CMYK (texts, logos, images, patterns); dielines are spot colours (CutContour / Crease).
+ * 1. Colour: artwork in CMYK (texts, logos, images, patterns), large dark areas in rich black; dielines are spot
+ *    colours (CutContour / Crease).
  * 2. Fonts: every text is drawn as vector outlines, no font is needed to open the file.
  * 3. Images: at least 300 DPI at their printed size, embedded in the file.
  * 4. Bleed 2–3 mm past the cut line; content at least 5 mm inside the cut line (3 mm from a fold).
@@ -58,13 +59,62 @@ export function hexToCmyk(hex: string): Cmyk {
   return rgbToCmyk(r, g, b);
 }
 
-/** A colour that would print as (almost) plain K: no C, M, Y and at least 95 % K. */
-const isNearBlack = ([c, m, y, k]: Cmyk) => k >= 95 && c + m + y <= 5;
+/**
+ * A dark neutral the eye reads as black (#000, #161616, warm #1C1917): at least 85 % K and little C, M, Y. On a large
+ * area K alone prints dark grey, so these print as rich black there.
+ */
+const isDarkNeutral = ([c, m, y, k]: Cmyk) => k >= 85 && Math.max(c, m, y) <= 25;
 
 /** Ink of a text colour: black becomes rich black on large texts only. */
 export function textCmyk(hex: string, fontSizePt: number): Cmyk {
   const cmyk = hexToCmyk(hex);
-  return fontSizePt >= RICH_BLACK_MIN_FONT_PT && isNearBlack(cmyk) ? [...RICH_BLACK] : cmyk;
+  return fontSizePt >= RICH_BLACK_MIN_FONT_PT && isDarkNeutral(cmyk) ? [...RICH_BLACK] : cmyk;
+}
+
+/** Vector fills from this size (bounding box, mm²) are large areas: 2 × 2 cm, about a 36 pt letter. */
+export const RICH_BLACK_MIN_AREA_MM2 = 400;
+
+/**
+ * Ink of a vector fill (library backgrounds, stickers, shapes) covering `areaMm2`: a near-black fill becomes rich
+ * black on a large area (a black carrier, a dark background), small ones stay as they are (one plate, no register).
+ */
+export function areaCmyk(hex: string, areaMm2: number): Cmyk {
+  const cmyk = hexToCmyk(hex);
+  return areaMm2 >= RICH_BLACK_MIN_AREA_MM2 && isDarkNeutral(cmyk) ? [...RICH_BLACK] : cmyk;
+}
+
+/**
+ * Area of the bounding box of absolute SVG path data (M L H V C Q Z), mm², control points included. 0 for anything
+ * else (relative or arc commands): such a fill keeps its plain ink.
+ */
+export function pathBoxArea(d: string): number {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let x = 0;
+  let y = 0;
+  for (const [, command, args] of d.matchAll(/([A-Za-z])([^A-Za-z]*)/g)) {
+    const n = (args.match(/[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi) ?? []).map(Number);
+    if (command === "Z") continue;
+    if (command === "H") n.forEach((v) => (x = v));
+    else if (command === "V") n.forEach((v) => (y = v));
+    else if ("MLCQ".includes(command)) {
+      for (let i = 0; i + 1 < n.length; i += 2) {
+        [x, y] = [n[i], n[i + 1]];
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+      continue;
+    } else return 0;
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  }
+  return maxX > minX && maxY > minY ? (maxX - minX) * (maxY - minY) : 0;
 }
 
 /**
@@ -104,6 +154,46 @@ export function rgbaToCmyk(
     cmyk[i * 4 + 3] = 255 - max;
   }
   return { cmyk, alpha: opaque ? null : alpha };
+}
+
+/** Fold marks of a home-printed sheet: a tick this far past the end of each crease, this long, mm. */
+export const FOLD_TICK_MM = { gap: 1.5, length: 5 };
+
+const inside = ([px, py]: [number, number], polygon: [number, number][]) => {
+  let hit = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+};
+
+/**
+ * Fold marks for a sheet printed at home: the fold lines themselves would print across the artwork (dashed lines on the
+ * finished box), so each crease that ends on the cut outline gets a short tick in the margin, in line with it, instead.
+ * Lines [x1, y1, x2, y2] in sheet mm.
+ */
+export function foldTicks(strokes: readonly { type: "cut" | "crease"; points: [number, number][]; closed: boolean }[]): [number, number, number, number][] {
+  const outlines = strokes.filter((s) => s.type === "cut" && s.closed && s.points.length >= 3).map((s) => s.points);
+  const outside = (p: [number, number]) => !outlines.some((polygon) => inside(p, polygon));
+  const ticks: [number, number, number, number][] = [];
+  for (const crease of strokes.filter((s) => s.type === "crease" && s.points.length >= 2)) {
+    const pts = crease.points;
+    for (const [end, before] of [
+      [pts[0], pts[1]],
+      [pts[pts.length - 1], pts[pts.length - 2]],
+    ] as const) {
+      const len = Math.hypot(end[0] - before[0], end[1] - before[1]);
+      if (len < 1e-6) continue;
+      const ux = (end[0] - before[0]) / len;
+      const uy = (end[1] - before[1]) / len;
+      const from: [number, number] = [end[0] + ux * FOLD_TICK_MM.gap, end[1] + uy * FOLD_TICK_MM.gap];
+      const to: [number, number] = [from[0] + ux * FOLD_TICK_MM.length, from[1] + uy * FOLD_TICK_MM.length];
+      if (outside(from) && outside(to)) ticks.push([from[0], from[1], to[0], to[1]]);
+    }
+  }
+  return ticks;
 }
 
 /** Pixels an image needs to print at PRINT_DPI over `mm`. */

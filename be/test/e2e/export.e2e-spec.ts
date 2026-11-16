@@ -128,9 +128,9 @@ describe('Print export (e2e)', () => {
   it('renders SVG and DXF too', async () => {
     const svg = await exportAs('SVG');
     const svgText = await (await fetch(svg.downloadUrl)).text();
-    // Fold lines are not printed: the print file has the cut contour and no crease layer.
+    // Fold lines dashed on their own layer (cutting plotters score them).
     expect(svgText).toContain('<g id="cut"');
-    expect(svgText).not.toContain('<g id="crease"');
+    expect(svgText).toContain('<g id="crease"');
     // The text is outlined: a filled path in the artwork layer, never a <text> with a font.
     expect(svgText).not.toContain('An khang thịnh vượng');
     expect(svgText).not.toContain('<text');

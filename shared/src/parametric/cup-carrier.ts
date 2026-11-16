@@ -25,7 +25,7 @@
  */
 
 import { BoxDimensions, DielineGeometry, DielineOpening, PanelFace, Point2D } from "../types/dieline";
-import { cutOpening } from "./openings";
+import { cutRoundOpening } from "./openings";
 import { segmentWriter } from "./segments";
 
 /** Fold of the shoulders from upright, degrees. */
@@ -66,6 +66,32 @@ export function cupCarrierSizesOf({ length, width, height, paperThickness: t, ce
     /** Diameter of each cup hole (0: too small to cut, the base stays whole). */
     cupDiameter: cupDiameter >= CARRIER_MIN_CUP_MM ? cupDiameter : 0,
   };
+}
+
+/** Shortest carrier that still has room for the hand hole, mm. */
+export const CUP_CARRIER_MIN_LENGTH_MM = 70;
+/** Board per cup along a row when the carrier has no usable size to go by: a Ø 90 mm rim + 5 mm, mm. */
+export const CARRIER_STANDARD_PITCH_MM = 95;
+
+/**
+ * Size of the carrier after its number of cups changes: every cup keeps the room it had (length per cup, depth per
+ * row), so the carrier grows or shrinks with the count instead of squeezing the holes. A carrier too small to cut any
+ * hole restarts from the standard cup. Only length and width change; the caller clamps them to the structure's limits.
+ */
+export function cupCarrierSizeForCups(dimensions: BoxDimensions, cups: { rows: number; cols: number }): BoxDimensions {
+  const old = cupCarrierSizesOf(dimensions);
+  const next = cupCarrierSizesOf({ ...dimensions, cells: cups });
+  const sized = (pitchL: number, pitchW: number): BoxDimensions => ({
+    ...dimensions,
+    cells: { rows: next.rows, cols: next.cols },
+    length: Math.max(CUP_CARRIER_MIN_LENGTH_MM, Math.round(next.cols * pitchL * 10) / 10),
+    width: Math.round(next.rows * pitchW * 10) / 10,
+  });
+  if (old.cupDiameter > 0) {
+    const kept = sized(dimensions.length / old.cols, dimensions.width / old.rows);
+    if (cupCarrierSizesOf(kept).cupDiameter > 0) return kept;
+  }
+  return sized(CARRIER_STANDARD_PITCH_MM, CARRIER_STANDARD_PITCH_MM);
 }
 
 export function generateCupCarrierDieline(dimensions: BoxDimensions): DielineGeometry {
@@ -156,7 +182,7 @@ export function generateCupCarrierDieline(dimensions: BoxDimensions): DielineGeo
   }
   // Hand holes first (front, back), then the cups.
   openings.forEach((opening, i) =>
-    cutOpening(writer, opening.kind === "cup" ? `cut_cup_${i - 2}` : `cut_hand_hole_${i ? "back" : "front"}`, opening),
+    cutRoundOpening(writer, opening.kind === "cup" ? `cut_cup_${i - 2}` : `cut_hand_hole_${i ? "back" : "front"}`, opening),
   );
 
   return {

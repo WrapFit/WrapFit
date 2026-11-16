@@ -11,6 +11,7 @@ import { CanvasElement } from "../types/project";
 import { DielineGeometry, PanelFace } from "../types/dieline";
 import { FitCheckReport, FitCheckViolation } from "../types/fitcheck";
 import type { DielinePiece } from "../parametric/registry";
+import { CUP_CARRIER_MIN_LENGTH_MM } from "../parametric/cup-carrier";
 import { ean13Digits, isEan13Valid, MIN_BARCODE_MM } from "../print/barcode";
 import {
   BLEED_BOX_MM,
@@ -716,8 +717,6 @@ export function autoFixElements(pieces: DielinePiece[], elements: CanvasElement[
 
 /** Shortest gable box: its handle needs room for a hand hole. */
 export const GABLE_MIN_LENGTH_MM = 60;
-/** Shortest cup carrier: its handle needs room for a hand hole. */
-export const CUP_CARRIER_MIN_LENGTH_MM = 70;
 
 /**
  * Size rules a box structure needs beyond the min / max of each dimension (the API answers 400 for them, the editor

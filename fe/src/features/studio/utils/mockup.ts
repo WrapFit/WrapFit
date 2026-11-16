@@ -32,6 +32,15 @@ export function renderMockup(frame: HTMLCanvasElement, backdrop: Backdrop, forma
 
   paintScene(ctx, backdrop, width, height);
 
+  // A frame rendered at the image's own size (the photo set: tabletop and props around the box) is the photo itself.
+  if (frame.width === width && frame.height === height) {
+    ctx.drawImage(frame, 0, 0);
+    paintSignature(ctx, backdrop, width, height);
+    return new Promise((resolve, reject) =>
+      canvas.toBlob((png) => (png ? resolve(png) : reject(new Error("PNG encoding failed"))), "image/png")
+    );
+  }
+
   // Only the box (and its shadow), cut out of the wide stage frame: each format then frames it at its own aspect.
   // Pasting the whole frame made the three sizes the same small landscape picture on more or less background.
   const box = opaqueBounds(frame);

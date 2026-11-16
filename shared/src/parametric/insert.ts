@@ -44,6 +44,22 @@ export function insertLayoutOf({ length: L, width: W, height: H, paperThickness:
   };
 }
 
+/**
+ * Size of the insert after its number of cells changes: every cell keeps its size, so the tray grows or shrinks with
+ * the count. Only length and width change; the caller clamps them to the structure's limits.
+ */
+export function insertSizeForCells(dimensions: BoxDimensions, cells: { rows: number; cols: number }): BoxDimensions {
+  const t = dimensions.paperThickness;
+  const old = insertLayoutOf(dimensions);
+  const next = insertLayoutOf({ ...dimensions, cells });
+  return {
+    ...dimensions,
+    cells: { rows: next.rows, cols: next.cols },
+    length: Math.round((next.cols * old.cellL + (next.cols - 1) * t) * 10) / 10,
+    width: Math.round((next.rows * old.cellW + (next.rows - 1) * t) * 10) / 10,
+  };
+}
+
 export function generateInsertDieline(dimensions: BoxDimensions): { tray: DielineGeometry; dividers: DielineGeometry | null } {
   const { length, width, height, paperThickness: t } = dimensions;
   const tray = generateTray({

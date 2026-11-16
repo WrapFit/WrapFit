@@ -35,9 +35,10 @@ import {
   Upload,
   Undo2,
   Redo2,
+  AlertTriangle,
 } from "lucide-react";
 import { buttonClass, hasSeenTour, markTourSeen, ProductTour, useTourContinuation } from "@/components/ui";
-import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
+import { skipStudioStepTours, STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
 import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
@@ -116,10 +117,10 @@ import { Step3PaperFinish } from "@/features/studio/components/Step3PaperFinish"
 import { Step5Model3DWithEnvironments } from "@/features/studio/components/Step5Model3DWithEnvironments";
 import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExport";
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
-import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
+import { continueTo, StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useStudioHeartbeat";
-import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
+import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, panelLabel, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
 import { createProject, errorMessage, inspectFont, restoreSnapshot, uploadFileToStorage } from "@/api";
@@ -205,6 +206,14 @@ const DOT_CLASS = {
   warn: "bg-vibrant-coral",
   muted: "bg-landing-muted",
 };
+
+/** Header FitCheck badge: orange when it passes, the state colours when it does not, grey while the box has no artwork. */
+const FIT_BADGE_CLASS = {
+  ok: "bg-orange-50 text-fpt-orange-ink border-orange-200/60 hover:bg-orange-100/80",
+  warning: "bg-warning-bg text-warning-fg border-transparent hover:brightness-95",
+  error: "bg-danger-bg text-danger-fg border-transparent hover:brightness-95",
+  empty: "bg-white text-landing-muted border-landing-line hover:bg-landing-canvas",
+} as const;
 
 /** Pixel size of an image file; null when the browser cannot tell (e.g. an SVG without a size). */
 async function imageSizeOf(file: File): Promise<{ width: number; height: number } | null> {
@@ -527,6 +536,13 @@ export function StudioWorkspace({
   // The score the server stored with the last save; while a change waits for its save, the score of the browser.
   const displayReport = sync.dirty || !sync.serverReport ? fitcheckReport : sync.serverReport;
   const scoreTone = scoreToneOf(displayReport.score);
+  const fitBadge = useMemo(() => {
+    const errors = displayReport.violations.filter((v) => v.severity === "error").length;
+    const warnings = displayReport.violations.filter((v) => v.severity === "warning").length;
+    const empty = displayReport.violations.some((v) => v.code === "EMPTY_DESIGN");
+    const tone: keyof typeof FIT_BADGE_CLASS = errors ? "error" : warnings ? "warning" : empty ? "empty" : "ok";
+    return { errors, warnings, tone };
+  }, [displayReport]);
   const flaggedElementIds = useMemo(
     () => new Set(fitcheckReport.violations.flatMap((v) => (v.elementId ? [v.elementId] : []))),
     [fitcheckReport]
@@ -1198,7 +1214,7 @@ export function StudioWorkspace({
 
   return (
     <div className={`${landingFontVariables} min-h-screen bg-landing-canvas flex flex-col font-landing-body select-none overflow-x-hidden`}>
-      {/* ================= 1. GLOBAL TOP STEPPER NAVBAR ================= */}
+      {/* Top bar: logo, the 6 steps, save state, FitCheck, help, save */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
           {/* Left: logo */}
@@ -1206,7 +1222,7 @@ export function StudioWorkspace({
             <LandingLogo size="sm" />
           </div>
 
-          {/* Center: 4-Step Segmented Breadcrumb Stepper */}
+          {/* The 6 steps */}
           <StudioStepper
             current={currentStep}
             onSelect={setCurrentStep}
@@ -1235,17 +1251,30 @@ export function StudioWorkspace({
               onClick={() => {
                 setCurrentStep(6);
               }}
-              title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
+              title={
+                fitBadge.tone === "empty"
+                  ? "Hộp chưa có hình in: FitCheck mới xét khuôn và kích thước"
+                  : `${fitBadge.errors} lỗi · ${fitBadge.warnings} cảnh báo · ${sync.dirty || !sync.serverReport ? "điểm tạm tính, chưa lưu" : "điểm máy chủ kiểm khi lưu"}`
+              }
               data-tour="studio-fitcheck"
-              aria-label={`FitCheck: ${displayReport.score}/100`}
-              className="hidden sm:flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-full whitespace-nowrap bg-orange-50 text-fpt-orange-ink border border-orange-200/60 text-sm font-semibold tabular-nums transition-colors hover:bg-orange-100/80"
+              aria-label={fitBadge.tone === "empty" ? "FitCheck: hộp chưa có hình in" : `FitCheck: ${displayReport.score}/100, ${fitBadge.errors} lỗi, ${fitBadge.warnings} cảnh báo`}
+              className={`hidden sm:flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-full whitespace-nowrap border text-sm font-semibold tabular-nums transition-colors ${FIT_BADGE_CLASS[fitBadge.tone]}`}
             >
-              <ShieldCheck className="w-4 h-4 text-fpt-orange" />
+              {fitBadge.tone === "error" || fitBadge.tone === "warning" ? <AlertTriangle className="w-4 h-4" aria-hidden /> : <ShieldCheck className="w-4 h-4" aria-hidden />}
               {/* Laptops and tablets: the score alone */}
               <span aria-hidden>
                 <span className="hidden xl:inline">FitCheck: </span>
-                {displayReport.score}
-                <span className="hidden xl:inline">/100</span>
+                {fitBadge.tone === "empty" ? (
+                  <span className="font-medium">
+                    <span className="hidden 2xl:inline">chưa có hình in</span>
+                    <span className="2xl:hidden">–</span>
+                  </span>
+                ) : (
+                  <>
+                    {displayReport.score}
+                    <span className="hidden xl:inline">/100</span>
+                  </>
+                )}
               </span>
             </button>
 
@@ -1260,7 +1289,7 @@ export function StudioWorkspace({
               className={buttonClass({ variant: "ghost", size: "sm", className: "hidden md:inline-flex" })}
             >
               <CircleHelp aria-hidden />
-              <span className="sr-only xl:not-sr-only">Hướng dẫn</span>
+              <span className="sr-only 2xl:not-sr-only">Hướng dẫn</span>
             </button>
 
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
@@ -1399,6 +1428,8 @@ export function StudioWorkspace({
             setIntroSeen(true);
             // A replayed intro that was finished goes on with the tour of the step that is open; skipped, it stops.
             if (completed && replay > 0) setChainedStep(currentStep);
+            // Skipped on the first visit: no step guide pops up right after (they stay one click away in "Hướng dẫn").
+            if (!completed && replay === 0) skipStudioStepTours();
           }}
         />
       ) : (
@@ -1412,7 +1443,7 @@ export function StudioWorkspace({
         />
       )}
 
-      {/* ================= 2. DYNAMIC STEP VIEW CONTENT ================= */}
+      {/* The open step */}
       {/* `inert`: a trashed project can be looked at, not edited */}
       <main className="flex-1 w-full flex flex-col" inert={readOnly || undefined}>
         {/* STEP 1: CHỌN MẪU HỘP (demo only) */}
@@ -1508,6 +1539,16 @@ export function StudioWorkspace({
                     selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
                     onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
                     box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
+                    onApplyKit={(kitElements: CanvasElement[]) =>
+                      // The previous whole-box design (ids "kit_", KIT_PREFIX of LibraryPanel) goes, the user's own pieces stay; its backgrounds go under them.
+                      setElements((prev) => {
+                        const kitHasBackground = kitElements.some((el) => el.type === "pattern");
+                        const own = prev.filter(
+                          (el) => !el.id.startsWith("kit_") && !(kitHasBackground && (isLibraryBackground(el) || el.role === "background"))
+                        );
+                        return orderElements([...kitElements.filter((el) => el.type === "pattern"), ...own, ...kitElements.filter((el) => el.type !== "pattern")]);
+                      })
+                    }
                     designElements={elements}
                   />
                 )}
@@ -1737,7 +1778,7 @@ export function StudioWorkspace({
                       onChange={setElements}
                       selectedId={selectedElement?.id ?? null}
                       onSelect={setSelectedElementId}
-                      faces={pieces.flatMap((piece) => piece.geometry.panels.map((panel) => ({ id: panel.id, name: pieces.length > 1 ? `${piece.name} · ${panel.name}` : panel.name })))}
+                      faces={pieces.flatMap((piece) => piece.geometry.panels.map((panel) => ({ id: panel.id, name: pieces.length > 1 ? `${piece.name} · ${panelLabel(panel.name)}` : panelLabel(panel.name) })))}
                       faceId={placementPanel.id}
                       onFaceChange={selectPanel}
                       readOnly={readOnly}
@@ -1842,9 +1883,8 @@ export function StudioWorkspace({
 
                 <div className="flex min-w-0 items-center gap-2">
                   <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
-                    <span>
-                      Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
-                    </span>
+                    <span className="hidden md:inline">{continueTo(5)}</span>
+                    <span className="md:hidden">Tiếp tục</span>
                     <ArrowRight className="size-4" aria-hidden />
                   </button>
                 </div>

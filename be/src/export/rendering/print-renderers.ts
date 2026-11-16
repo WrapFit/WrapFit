@@ -2,10 +2,13 @@
 // crease = dashed blue (4,4). In the PDF they are the spot colors `CutContour` and `Crease` (overprinted), each on its
 // own layer, so the print shop's RIP and the die maker find them by name and they never print on the box.
 // Prepress rules (`print/prepress.ts` of @wrapfit/shared): artwork in CMYK (images converted pixel by pixel, rich
-// black on photos and patterns), every text as vector outlines (no font in the files), images embedded at their full
+// black on photos, patterns and large dark vector fills), every text as vector outlines (no font in the files), images embedded at their full
 // resolution (up to 450 DPI), barcodes as vectors in K100 on white, a 3 mm BleedBox.
 // Texts use the text model of the editor (`layoutTextBox` of `@wrapfit/shared`) with the same font files.
 import {
+  areaCmyk,
+  foldTicks,
+  pathBoxArea,
   barcodeArt,
   BLEED_BOX_MM,
   effectiveDpi,
@@ -70,9 +73,10 @@ const MAX_EMBED_DPI = 450;
 /** Vector logos (SVG) are rasterised at this resolution for the PDF; the SVG export keeps them as vectors. */
 const VECTOR_DPI = 600;
 /** Layers of the PDF (Optional Content Groups) and the SVG, bottom to top. `Dimensions` is not printed. */
-// No crease layer in the print files: the dashed fold lines printed on the box (docs: business rule CP4). Creases stay
-// in the DXF for the die maker only.
-export const PRINT_LAYERS = ['Artwork', 'Finish', 'CutContour', 'Dimensions'] as const;
+// Crease is a spot colour on its own layer, overprinted like CutContour: the die maker sees where the creasing rules
+// go and the press never prints it. The home-print PDF has no fold lines across the artwork (they would end up as
+// dashed lines on the finished box): short fold ticks in the margin instead (`foldTicks`).
+export const PRINT_LAYERS = ['Artwork', 'Finish', 'Crease', 'CutContour', 'Dimensions'] as const;
 
 /** Fonts that are not texts of the design: the spec line and dimensions (`info`). */
 const EXTRA_FONT_FILES = {
@@ -430,6 +434,7 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), ima
         `<path fill="${COLORS.info}" d="${labelPath(marks.info.text, marks.info.x, marks.info.y, SPEC_LINE_FONT_MM, false)}"/>`,
     ),
     ...(finishSvg ? [layer('finish', 'Finish', '', finishSvg)] : []),
+    layer('crease', 'Crease', ` fill="none" stroke="${COLORS.crease}" stroke-width="${LINE_MM}" stroke-dasharray="${DASH_MM},${DASH_MM}"`, strokes('crease')),
     layer('cut', 'CutContour', ` fill="none" stroke="${COLORS.cut}" stroke-width="${LINE_MM}"`, strokes('cut')),
     layer(
       'dimensions',
@@ -782,9 +787,9 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
           for (const stop of shape.gradient.stops) gradient.stop(stop.offset, hexToCmyk(stop.color) as unknown as string); // PDFKit takes CMYK arrays; its typings say string
           if (shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(gradient, hexToCmyk(shape.stroke));
           else doc.fill(gradient);
-        } else if (shape.fill && shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(shape.cmyk ?? hexToCmyk(shape.fill), hexToCmyk(shape.stroke));
+        } else if (shape.fill && shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).fillAndStroke(shape.cmyk ?? areaCmyk(shape.fill, pathBoxArea(shape.d)), hexToCmyk(shape.stroke));
         else if (shape.stroke) doc.lineWidth(shape.strokeWidth ?? LINE_MM).stroke(hexToCmyk(shape.stroke));
-        else doc.fill(shape.cmyk ?? hexToCmyk(shape.fill ?? '#FFFFFF'));
+        else doc.fill(shape.cmyk ?? areaCmyk(shape.fill ?? '#FFFFFF', pathBoxArea(shape.d)));
       }
       for (const t of a.texts) if (t.d) doc.path(t.d).fill(hexToCmyk(t.color));
       },
@@ -902,7 +907,17 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     endLayer();
   }
 
-  // Only the cut line: the dashed crease lines are not part of the print file.
+  // Fold lines for the die maker: spot colour Crease, dashed, overprinted. Not on the home-print sheet (see foldTicks).
+  if (!isA4Print) {
+    beginLayer('Crease');
+    doc.save().lineWidth(LINE_MM).strokeColor(SPOT_COLORS.crease.name).dash(DASH_MM, { space: DASH_MM });
+    doc.addContent('/GsOverprint gs');
+    for (const stroke of layout.strokes.filter((s) => s.type === 'crease')) doc.path(stroke.d).stroke();
+    doc.undash();
+    doc.restore();
+    endLayer();
+  }
+
   beginLayer('CutContour');
   doc.save().lineWidth(LINE_MM).strokeColor(SPOT_COLORS.cut.name);
   doc.addContent('/GsOverprint gs');
@@ -937,6 +952,8 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
       doc.moveTo(x + dx * markGap, y).lineTo(x + dx * (markGap + markLen), y).stroke();
       doc.moveTo(x, y + dy * markGap).lineTo(x, y + dy * (markGap + markLen)).stroke();
     }
+    // Fold ticks in the margin, in line with each crease (the fold lines themselves stay off the artwork).
+    for (const [x1, y1, x2, y2] of foldTicks(layout.strokes)) doc.moveTo(x1, y1).lineTo(x2, y2).stroke();
     doc.restore();
 
     // 50 mm ruler to check the printer kept 100 % scale.
@@ -947,7 +964,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     doc.moveTo(rulerX, rulerY - 2).lineTo(rulerX, rulerY + 2).stroke();
     doc.moveTo(rulerX + 50, rulerY - 2).lineTo(rulerX + 50, rulerY + 2).stroke();
     doc.path(labelPath('<- Thước chuẩn 50 mm (In đúng 100% tỷ lệ thật) ->', rulerX, rulerY - 2, 2.8, false)).fill(CMYK_INFO);
-    doc.path(labelPath('Cắt nét đỏ | Cấn nếp gập nét xanh — WrapFit DIY Studio', rulerX, rulerY + 5, 2.8, false)).fill(CMYK_INFO);
+    doc.path(labelPath('Cắt theo nét đỏ | Gấp theo vạch ngắn ở mép giấy — WrapFit DIY Studio', rulerX, rulerY + 5, 2.8, false)).fill(CMYK_INFO);
     doc.restore();
   }
   doc.restore();

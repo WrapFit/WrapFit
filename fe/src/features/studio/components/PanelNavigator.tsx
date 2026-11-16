@@ -3,7 +3,7 @@
 import React from "react";
 
 import { DielineGeometry } from "@wrapfit/shared";
-import { formatMm } from "@/features/studio/utils/dieline";
+import { formatMm, panelLabel } from "@/features/studio/utils/dieline";
 import { cn } from "@/utils/helpers";
 
 interface PanelNavigatorProps {
@@ -32,9 +32,9 @@ export const PanelNavigator: React.FC<PanelNavigatorProps> = ({ dieline, activeP
         const isSelected = activePanelId === panel.id;
         return (
           <button key={panel.id} type="button" aria-pressed={isSelected} onClick={() => onSelectPanel(panel.id)} className={chip(isSelected)}>
-            <span>{panel.name}</span>
+            <span>{panelLabel(panel.name)}</span>
             <span className={cn("font-mono text-cad-spec-micro tabular-nums", isSelected ? "text-fg-inverse/70" : "text-fg-muted/80")}>
-              {formatMm(panel.bounds.width)}×{formatMm(panel.bounds.height)}
+              {formatMm(panel.bounds.width)} × {formatMm(panel.bounds.height)}
             </span>
           </button>
         );

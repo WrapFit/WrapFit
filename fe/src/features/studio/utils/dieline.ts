@@ -31,9 +31,20 @@ export function checkDesign(pieces: DielinePiece[], elements: CanvasElement[]): 
   return checkBox(pieces, elements);
 }
 
-/** A length for display: at most one decimal (formula version 3 adds the paper thickness, e.g. 120.42 → "120.4"). */
+/**
+ * A length for display: at most one decimal, Vietnamese decimal comma (formula version 3 adds the paper thickness,
+ * e.g. 120.42 → "120,4"). Display only: never feed it back into a number field.
+ */
 export function formatMm(value: number): string {
-  return String(Math.round(value * 10) / 10);
+  return String(Math.round(value * 10) / 10).replace(".", ",");
+}
+
+/**
+ * Name of a dieline panel for display. The formulas name panels "Mặt sau (Back)", and saved dielines keep those names,
+ * so the English gloss is dropped here rather than in the frozen formula versions: "Mặt sau (Back)" → "Mặt sau".
+ */
+export function panelLabel(name: string): string {
+  return name.replace(/\s*\([A-Za-z][A-Za-z ]*\)/g, "").trim() || name;
 }
 
 /** Piece that holds a panel, so the canvas shows the piece of the selected element. */

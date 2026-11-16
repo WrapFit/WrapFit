@@ -3,8 +3,9 @@
 import React from "react";
 import { ArrowRight, Box, Check, FileText, Grid3x3, Hand, Layers, Scissors } from "lucide-react";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
-import { CardTitle, MetricRow, PRIMARY_PILL, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
-import { BoxPreview } from "@/features/templates/components/BoxPreview";
+import { PRIMARY_PILL, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
+import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
+import { StructureArt } from "@/components/home/StructureArt";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
 import { BoxStructureType, caliperOf, type CanvasElement, CURRENT_FORMULA_VERSION, generateDielinePieces, UnsupportedStructureError } from "@wrapfit/shared";
 import type { BoxStructure } from "@/types/api";
@@ -40,6 +41,20 @@ function creaseCountOf(item: BoxStructureOption): number {
     throw error;
   }
 }
+
+/** Families of structures: one tap narrows twelve pictures to the few that fit. */
+type StructureGroup = "box" | "tray" | "flat";
+const GROUP_ORDER: StructureGroup[] = ["box", "tray", "flat"];
+const GROUP_LABELS: Record<StructureGroup, string> = { box: "Hộp", tray: "Khay", flat: "Thẻ, thiệp, đai" };
+const GROUP_OF: Partial<Record<string, StructureGroup>> = {
+  "cup-carrier": "tray",
+  insert: "tray",
+  "hang-tag": "flat",
+  "folded-card": "flat",
+  "belly-band": "flat",
+  "sticker-label": "flat",
+};
+const groupOf = (id: string): StructureGroup => GROUP_OF[id] ?? "box";
 
 const orderOf = (id: string) => {
   const index = BOX_STRUCTURES.findIndex((s) => s.id === id);
@@ -78,9 +93,12 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
 }) => {
   const cards = structureCards(structures);
   const current = cards.find((s) => s.id === selectedStructure) || cards[0];
-
-  const [view, setView] = React.useState<"3d" | "2d">("3d");
-  const [fold, setFold] = React.useState(100);
+  const [group, setGroup] = React.useState<StructureGroup | "all">("all");
+  // A tag, a card or a sticker sheet is a flat sheet: its 3D model is a thin plate off to one side, the dieline shows
+  // it better. Every new structure opens in the view that suits it.
+  const flatPick = groupOf(current.id) === "flat";
+  const [view, setView] = React.useState<"3d" | "2d">(flatPick ? "2d" : "3d");
+  React.useEffect(() => setView(flatPick ? "2d" : "3d"), [current.id, flatPick]);
   const pieces = React.useMemo(() => {
     try {
       return generateDielinePieces(current.id, current.defaultDims, CURRENT_FORMULA_VERSION);
@@ -89,41 +107,57 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
     }
   }, [current.id, current.defaultDims]);
   const dims = current.defaultDims;
+  const shown = group === "all" ? cards : cards.filter((card) => groupOf(card.id) === group);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-6 sm:px-6">
-      <StepHeader
-        title="Khởi đầu"
-        subtitle="Chọn cấu trúc hộp. Mỗi cấu trúc là một bộ công thức khuôn bế, dựng theo kích thước món quà ở bước sau."
-      />
+    <div className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-4 sm:px-6">
+      {/* The groups above both columns: the grid of boxes and the preview card start on the same line. */}
+      <div role="group" aria-label="Nhóm kiểu hộp" className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+            {(["all", ...GROUP_ORDER] as const).map((id) => {
+              const count = id === "all" ? cards.length : cards.filter((card) => groupOf(card.id) === id).length;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={group === id}
+                  onClick={() => setGroup(id)}
+                  className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors ${
+                    group === id ? "bg-landing-ink font-semibold text-white" : "bg-white font-medium text-landing-ink ring-1 ring-landing-line hover:ring-landing-ink/40"
+                  }`}
+                >
+                  {id === "all" ? "Tất cả" : GROUP_LABELS[id]}
+                  <span className={`text-xs tabular-nums ${group === id ? "text-white/70" : "text-landing-muted"}`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-        {/* Structures */}
-        <StudioCard as="aside" aria-label="Cấu trúc hộp" className="h-fit p-3">
-          <p className="px-2 pb-2 pt-1 text-xs font-medium text-landing-muted">{cards.length} cấu trúc</p>
-          <ul className="flex flex-col gap-2">
-            {cards.map((item) => {
+      <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* The structures, as pictures: a grid the eye can scan. */}
+        <div className="min-w-0">
+          <ul aria-label="Cấu trúc hộp" className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+            {shown.map((item) => {
               const isSelected = item.id === selectedStructure;
               return (
                 <li key={item.id}>
                   <button
                     type="button"
                     aria-pressed={isSelected}
-                    title={`${item.apiName} · ${item.badge}`}
                     onClick={() => onSelectStructure(item.id)}
-                    className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors ${
-                      isSelected ? "bg-orange-50 ring-2 ring-fpt-orange" : "hover:bg-landing-canvas"
+                    className={`group relative flex w-full flex-col overflow-hidden rounded-2xl bg-white text-left transition ${
+                      isSelected ? "ring-2 ring-fpt-orange" : "ring-1 ring-landing-line hover:ring-landing-ink/30"
                     }`}
                   >
-                    <span className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-landing-line/60">
-                      <BoxPreview structure={item.id} dimensions={item.defaultDims} className="h-full w-full" />
+                    <span className={`flex aspect-square items-center justify-center p-3 transition-colors ${isSelected ? "bg-orange-50" : "bg-landing-canvas group-hover:bg-landing-tile"}`}>
+                      <StructureArt structure={item.id} className="h-full w-full" />
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 block text-sm font-semibold leading-snug text-landing-ink">{item.apiName}</span>
+                    <span className="block px-3 py-2.5">
+                      <span className="block truncate text-sm font-semibold text-landing-ink">{item.apiName}</span>
                       <span className="block truncate text-xs text-landing-muted">{item.badge}</span>
                     </span>
                     {isSelected && (
-                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-fpt-orange text-white">
+                      <span className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-fpt-orange text-white">
                         <Check className="size-3.5" strokeWidth={3} aria-hidden />
                       </span>
                     )}
@@ -132,101 +166,81 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
               );
             })}
           </ul>
-        </StudioCard>
+        </div>
 
-        {/* Stage */}
-        <StudioCard aria-label={`Xem trước ${current.apiName}`} className="relative flex min-h-[560px] flex-col overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-            <ViewToggle<"3d" | "2d">
-              label="Chế độ xem"
-              value={view}
-              onChange={setView}
-              options={[
-                { value: "3d", label: "Hộp 3D", icon: Box },
-                { value: "2d", label: "Khuôn bế 2D", icon: Grid3x3 },
-              ]}
-            />
-          </div>
-
-          <div data-tour="s1-preview" className={`relative mx-4 flex-1 overflow-hidden rounded-squircle-md ${view === "3d" ? "bg-landing-canvas" : "bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] [background-size:14px_14px]"}`}>
+        {/* The chosen one: a turnable preview, four facts as icons, then go. */}
+        <StudioCard as="aside" aria-label={`Xem trước ${current.apiName}`} className="flex flex-col gap-4 p-4 lg:sticky lg:top-[88px] lg:self-start">
+          <div className="relative h-[280px] overflow-hidden rounded-squircle-md bg-landing-canvas" data-tour="s1-preview">
             {view === "3d" ? (
               <div className="absolute inset-0">
                 <Box3DView
                   dimensions={dims}
-                  foldProgress={fold / 100}
+                  foldProgress={1}
                   boxType={current.id}
                   theme="ivory"
                   elements={NO_ELEMENTS}
                   showHud={false}
                   showStatusBar={false}
                   enableMacroZoom={false}
-                  chrome="bar"
+                  viewControls={false}
                   frameless
                   minHeight={false}
                   className="h-full w-full"
                 />
               </div>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center p-8">
+              <div className="absolute inset-0 flex items-center justify-center bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] p-6 [background-size:14px_14px]">
                 <DielineSketch structure={current.id} dimensions={dims} label={`Khuôn bế ${current.apiName}`} className="h-full w-full" />
               </div>
             )}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-            {view === "3d" ? (
-              <label className="flex w-full items-center gap-3 text-sm text-landing-muted sm:w-auto">
-                <span className="shrink-0 font-medium text-landing-ink">Gấp hộp</span>
-                <input type="range" min={0} max={100} value={fold} onChange={(e) => setFold(Number(e.target.value))} aria-label="Mức gấp hộp" className="w-full accent-fpt-orange sm:w-64" />
-                <span className="w-10 font-mono text-xs">{fold}%</span>
-              </label>
-            ) : (
-              <span className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-landing-muted">
-                <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0.5 w-6 bg-dieline-cut" />
-                  Đường cắt
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <span aria-hidden className="h-0 w-6 border-t-2 border-dashed border-dieline-crease" />
-                  Đường gấp
-                </span>
-              </span>
-            )}
-            <span className="text-xs text-landing-muted">Kéo để xoay · kích thước mẫu, đổi ở bước 2</span>
-          </div>
-        </StudioCard>
-
-        {/* Specs */}
-        <div className="flex flex-col gap-4 lg:col-span-2 xl:col-span-1">
-          <StudioCard className="p-5">
-            <CardTitle>{current.apiName}</CardTitle>
-            <p className="mt-1.5 text-sm leading-6 text-landing-muted">{current.description}</p>
-            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-              <MetricRow icon={Scissors} label="Đường gấp trên khuôn" value={`${creaseCountOf(current)} nếp`} />
-              <MetricRow icon={Layers} label="Số mảnh phôi" value={pieces.length > 1 ? `${pieces.length} mảnh (${pieces.map((p) => p.name).join(" + ")})` : "1 mảnh liền"} />
-              <MetricRow icon={FileText} label="Giấy gợi ý" value={current.recommendedPaper} />
-              <MetricRow icon={Hand} label="Độ khó khi gấp" value={current.foldDifficulty} />
+            <div className="absolute left-2 top-2">
+              <ViewToggle<"3d" | "2d">
+                label="Chế độ xem"
+                value={view}
+                onChange={setView}
+                options={[
+                  { value: "3d", label: "3D", icon: Box },
+                  { value: "2d", label: "Khuôn", icon: Grid3x3 },
+                ]}
+              />
             </div>
-          </StudioCard>
+          </div>
+
+          <div>
+            <h2 className="font-landing-heading text-xl font-bold text-landing-ink">{current.apiName}</h2>
+            {current.description && <p className="mt-1 line-clamp-2 text-sm text-landing-muted">{current.description}</p>}
+          </div>
+
+          <ul className="grid grid-cols-2 gap-2 text-sm">
+            {[
+              { icon: Layers, text: pieces.length > 1 ? `${pieces.length} mảnh` : "1 mảnh liền", label: "Số mảnh phôi" },
+              { icon: Scissors, text: `${creaseCountOf(current)} nếp gấp`, label: "Nếp gấp trên khuôn" },
+              { icon: FileText, text: current.recommendedPaper.replace(" GSM", ""), label: "Giấy gợi ý" },
+              { icon: Hand, text: `Gấp ${current.foldDifficulty.toLowerCase()}`, label: "Độ khó khi gấp" },
+            ].map(({ icon: Icon, text, label }) => (
+              <li key={label} title={label} className="flex min-w-0 items-center gap-2 rounded-xl bg-landing-canvas px-2.5 py-2">
+                <Icon className="size-4 shrink-0 text-fpt-orange" strokeWidth={1.75} aria-hidden />
+                <span className="sr-only">{label}: </span>
+                <span className="truncate font-medium text-landing-ink">{text}</span>
+              </li>
+            ))}
+          </ul>
 
           {current.recommendedGifts.length > 0 && (
-            <StudioCard className="p-5">
-              <CardTitle>Hợp với</CardTitle>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {current.recommendedGifts.map((gift) => (
-                  <li key={gift} className="rounded-full bg-landing-canvas px-3 py-1.5 text-sm text-landing-ink">
-                    {gift}
-                  </li>
-                ))}
-              </ul>
-            </StudioCard>
+            <ul aria-label="Hợp với" className="flex flex-wrap gap-1.5">
+              {current.recommendedGifts.map((gift) => (
+                <li key={gift} className="rounded-full bg-landing-canvas px-2.5 py-1 text-xs text-landing-ink">
+                  {gift}
+                </li>
+              ))}
+            </ul>
           )}
 
-          <button type="button" data-tour="studio-next" onClick={onNext} className={`${PRIMARY_PILL} w-full`}>
-            Tiếp tục: kích thước
+          <button type="button" data-tour="studio-next" onClick={onNext} className={`${PRIMARY_PILL} self-start`}>
+            {continueTo(2)}
             <ArrowRight className="size-4" aria-hidden />
           </button>
-        </div>
+        </StudioCard>
       </div>
     </div>
   );

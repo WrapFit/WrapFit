@@ -68,7 +68,7 @@ export function QuoteCard({
       ...result.lines.filter((line) => line.group === group.group).map((line) => `  - ${line.label}: ${formatVnd(line.vnd)} (${line.detail})`),
     ]),
     `Tổng: ${formatVnd(result.total)} (${formatVnd(result.perBox)}/hộp) · sản xuất khoảng ${result.leadDays} ngày làm việc`,
-    "Giá hộp hoàn thiện, chưa gồm VAT, vận chuyển và lưu kho (thỏa thuận với xưởng). Đơn giá giả định cho bản demo.",
+    "Chưa gồm VAT, vận chuyển, lưu kho. Đơn giá giả định cho bản demo.",
   ].join("\n");
   const copy = async () => {
     try {
@@ -143,7 +143,7 @@ export function QuoteCard({
               Sản xuất khoảng {result.leadDays} ngày làm việc
             </li>
           </ul>
-          <p className="mt-3 text-caption leading-5 text-fg-muted">Giá hộp hoàn thiện tại xưởng đối tác, chưa gồm VAT và vận chuyển.</p>
+          <p className="mt-3 text-caption leading-5 text-fg-muted">Chưa gồm VAT và vận chuyển.</p>
           <a href="#quote-detail" className="mt-1 inline-flex min-h-8 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
             Xem báo giá chi tiết
           </a>
