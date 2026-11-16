@@ -7848,27 +7848,27 @@
     "semantic_hash": ""
   },
   "be/src/projects/application/ports/project.repository.port.ts": {
-    "mtime": 1791644572.777598,
-    "seen": 1794327103.3118768,
-    "ast_hash": "da164b118e202d5a6bcc4af2b05b1cba",
+    "mtime": 1794813262.3671956,
+    "seen": 1794813554.836101,
+    "ast_hash": "97a2ac57783e6059b033b4c24bfa9696",
     "semantic_hash": ""
   },
   "be/src/projects/application/ports/snapshot.repository.port.ts": {
-    "mtime": 1791788119.125409,
-    "seen": 1794327103.311878,
-    "ast_hash": "27709f9bbb0489575ee7abb133e42384",
+    "mtime": 1794813560.480894,
+    "seen": 1794813670.005462,
+    "ast_hash": "f1532b3b496568e780fa40608b4c4045",
     "semantic_hash": ""
   },
   "be/src/projects/application/projects.service.spec.ts": {
-    "mtime": 1793290925.6122875,
-    "seen": 1794327103.311879,
-    "ast_hash": "418f39f903c54e14a9470e9ccab3ed91",
+    "mtime": 1794813293.1372783,
+    "seen": 1794813554.8362956,
+    "ast_hash": "0f326f80f1f08f46622918c88418a638",
     "semantic_hash": ""
   },
   "be/src/projects/application/projects.service.ts": {
-    "mtime": 1794715430.2053025,
-    "seen": 1794775302.8205447,
-    "ast_hash": "2d00353e0300b1c47437e3447f54bb07",
+    "mtime": 1794813262.1736853,
+    "seen": 1794813554.8362985,
+    "ast_hash": "da839557fdc46551a1915de640a98080",
     "semantic_hash": ""
   },
   "be/src/projects/application/snapshots.service.spec.ts": {
@@ -7944,15 +7944,15 @@
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/prisma-project.repository.ts": {
-    "mtime": 1791644572.7826636,
-    "seen": 1794327103.3118918,
-    "ast_hash": "66b70efb07b67edbaac6d95a4850bd5f",
+    "mtime": 1794813410.868013,
+    "seen": 1794813554.8395126,
+    "ast_hash": "f1a7fe5ee24f4583fbf58072952f594f",
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/prisma-snapshot.repository.ts": {
-    "mtime": 1791788119.1393805,
-    "seen": 1794327103.3118927,
-    "ast_hash": "5ccf47a2479e7fe5658d3c2b8474e510",
+    "mtime": 1794813271.8801599,
+    "seen": 1794813554.8395143,
+    "ast_hash": "ec7d8342bfc6639f02e9e661f8b836d7",
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/project-file-refs.ts": {
@@ -8448,9 +8448,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/export.e2e-spec.ts": {
-    "mtime": 1794777100.056796,
-    "seen": 1794777222.7681527,
-    "ast_hash": "08ac8bdc1883af5ff4c17eb4f343f243",
+    "mtime": 1794813365.0049791,
+    "seen": 1794813554.8555813,
+    "ast_hash": "0f698fe9d068d68a56920b9dd31d5864",
     "semantic_hash": ""
   },
   "be/test/e2e/helpers/accounts.ts": {
@@ -8472,9 +8472,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/projects.e2e-spec.ts": {
-    "mtime": 1791788429.7258484,
-    "seen": 1794327103.3120027,
-    "ast_hash": "76cb2a1c572f0795287794b8864fc33f",
+    "mtime": 1794813417.9200683,
+    "seen": 1794813554.856389,
+    "ast_hash": "0a13970b278a82d7a1c9e4869af27fe0",
     "semantic_hash": ""
   },
   "be/test/e2e/public-showcase.e2e-spec.ts": {
@@ -14466,9 +14466,9 @@
     "semantic_hash": ""
   },
   "docs/25_BACKEND_AUDIT_FIX_PLAN.md": {
-    "mtime": 1794811909.6754937,
-    "seen": 1794811954.1574347,
-    "ast_hash": "5f9f29c38359daeca46e975b6e308852",
+    "mtime": 1794813633.9154387,
+    "seen": 1794813670.1482909,
+    "ast_hash": "67ef416a1b9c325dd2ca92be3d623a93",
     "semantic_hash": ""
   },
   "be/src/common/filters/all-exceptions.filter.spec.ts": {
@@ -14490,9 +14490,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/reviews.e2e-spec.ts": {
-    "mtime": 1794777065.391903,
-    "seen": 1794777222.7687414,
-    "ast_hash": "0cae155d13a4516dc25158906c0bbeac",
+    "mtime": 1794813365.1792884,
+    "seen": 1794813554.8565624,
+    "ast_hash": "c96dfc907df0dfb78760f4e42a462b8c",
     "semantic_hash": ""
   },
   "be/src/auth/auth-cookie.service.spec.ts": {
@@ -14517,6 +14517,18 @@
     "mtime": 1794811037.8333266,
     "seen": 1794811954.0046544,
     "ast_hash": "c6982b6f5f32d8e5a79221ab74ca7ebe",
+    "semantic_hash": ""
+  },
+  "be/src/projects/domain/project-content.spec.ts": {
+    "mtime": 1794813293.2112608,
+    "seen": 1794813554.8379054,
+    "ast_hash": "7a5f0060f44563d7b5ce73a1f35d6d8f",
+    "semantic_hash": ""
+  },
+  "be/src/projects/domain/project-content.ts": {
+    "mtime": 1794813249.9786332,
+    "seen": 1794813554.8379085,
+    "ast_hash": "047c77721b006be5a0f51f9eb845f913",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {

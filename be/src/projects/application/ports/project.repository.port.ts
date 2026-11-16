@@ -103,7 +103,8 @@ export interface IProjectRepository {
   /** Settings that do not touch the design (visibility, remix permission): the version stays the same. */
   update(projectId: string, changes: ProjectChanges): Promise<ProjectDetail>;
   /**
-   * Changes the design only if the project is still at `expectedVersion`, and increases the version.
+   * Saves the changes only if the project is still at `expectedVersion`. The version increases only when `changes`
+   * holds a canvas, dimensions or a material (pass only values that differ from the saved ones).
    * Returns `null` when another save got there first.
    */
   updateContent(projectId: string, changes: ProjectChanges, expectedVersion: number): Promise<ProjectDetail | null>;

@@ -6,7 +6,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { MAX_COMMENTS_PER_PROJECT } from '../../src/reviews/reviews.service';
 import { PrismaService } from '../../src/shared/prisma';
-import { signUp } from './helpers/accounts';
+import { signUp, uploadPng } from './helpers/accounts';
 
 /**
  * Design review links (docs/23 S23, audit findings 20 and 21): the three public endpoints a reviewer uses without an
@@ -97,6 +97,25 @@ describe('Design review links (e2e)', () => {
     expect(approved.body).toMatchObject({ approvedBy: 'Xưởng in Minh', approvedVersion: saved.body.version, current: true });
     const state = await as(owner).get(`/api/projects/${projectId}/review`).expect(200);
     expect(state.body.approval).toMatchObject({ approvedVersion: saved.body.version, current: true });
+  });
+
+  it('keeps the approval current after a new thumbnail or name, and drops it after a design change (Q3)', async () => {
+    const approvedVersion = (await as(owner).get(`/api/projects/${projectId}/review`).expect(200)).body.approval.approvedVersion;
+    const thumbnailUrl = await uploadPng(app, owner.cookie, 'THUMBNAIL', projectId);
+    const thumb = await as(owner)
+      .patch(`/api/projects/${projectId}`)
+      .send({ version: approvedVersion, thumbnailUrl, title: 'Hộp trà Tết 2027' })
+      .expect(200);
+    expect(thumb.body.version).toBe(approvedVersion);
+    expect((await as(owner).get(`/api/projects/${projectId}/review`).expect(200)).body.approval).toMatchObject({ current: true });
+    expect((await api().get(`/api/review/${token}`).expect(200)).body.approval).toMatchObject({ current: true });
+
+    await as(owner)
+      .patch(`/api/projects/${projectId}`)
+      .send({ version: approvedVersion, canvasState: { elements: [], backgroundPattern: 'tet', backgroundTheme: 'cyber_citron' } })
+      .expect(200);
+    const after = (await as(owner).get(`/api/projects/${projectId}/review`).expect(200)).body.approval;
+    expect(after).toMatchObject({ approvedVersion, current: false });
   });
 
   it('lets the owner answer when guests have filled their share of comments', async () => {

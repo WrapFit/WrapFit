@@ -333,6 +333,27 @@ describe('Print export (e2e)', () => {
       await exportOf({ fileType: 'SVG' }).expect(202);
     });
 
+    it('keeps the paid files unlocked after a rename: only a design change needs a new order (Q3)', async () => {
+      const paid = (await as(rae).get(`/api/projects/${design}`).expect(200)).body;
+      // What the studio autosave sends for a rename: the whole, unchanged design with the new title.
+      const renamed = await as(rae)
+        .patch(`/api/projects/${design}`)
+        .send({
+          version: paid.version,
+          title: 'Hộp quà Rae (bản in)',
+          dimensions: paid.dimensions,
+          materialSpec: paid.materialSpec,
+          canvasState: paid.canvasState,
+        })
+        .expect(200);
+      expect(renamed.body.version).toBe(paid.version);
+      await as(rae).patch(`/api/projects/${design}`).send({ version: paid.version, tags: ['in-thu'] }).expect(200);
+
+      expect((await as(rae).get(`/api/projects/${design}/exports/access`).expect(200)).body).toMatchObject({ unlocked: true });
+      const started = (await exportOf({ fileType: 'SVG' }).expect(202)).body;
+      expect(started).toMatchObject({ watermarked: false, charged: false });
+    });
+
     it('lets only the owner export or read the access: 404 for others', async () => {
       // docs/17 asked for 403; ProjectOwnerGuard answers 404 so other users cannot tell the project exists.
       await exportOf({ fileType: 'SVG' }, quinn).expect(404);

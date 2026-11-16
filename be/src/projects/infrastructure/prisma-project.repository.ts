@@ -134,12 +134,17 @@ export class PrismaProjectRepository implements IProjectRepository {
     changes: ProjectChanges,
     expectedVersion: number,
   ): Promise<ProjectDetail | null> {
-    // Compare-and-set on `version`: one statement, so two saves can never both win.
+    // Compare-and-set on `version` for every save: one statement, so two saves can never both win. Only a new design
+    // (canvas, dimensions, material) increases it (decision Q3): paid print files and print approvals keep their version.
+    const contentChanged = !!(changes.canvasState || changes.dimensions || changes.materialSpec);
+    const data = { ...this.toData(changes), ...(contentChanged && { version: { increment: 1 } }) };
+    const where = { id: projectId, version: expectedVersion };
+    // Nothing to write (a save equal to the stored design): Prisma would match no row, so only the version is checked.
+    if (Object.values(data).every((value) => value === undefined)) {
+      return (await this.prisma.packagingProject.count({ where })) ? this.findById(projectId) : null;
+    }
     const count = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.packagingProject.updateMany({
-        where: { id: projectId, version: expectedVersion },
-        data: { ...this.toData(changes), version: { increment: 1 } },
-      });
+      const result = await tx.packagingProject.updateMany({ where, data });
       if (result.count && changes.canvasState) await syncProjectFileRefs(tx, projectId);
       return result.count;
     });

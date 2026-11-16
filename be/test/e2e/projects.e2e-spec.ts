@@ -328,12 +328,18 @@ describe('Projects API (e2e)', () => {
 
     it('refuses a save based on an older version instead of overwriting the newer one (409)', async () => {
       const { version } = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      const textCanvas = (content: string) => ({
+        elements: [{ id: 't', type: 'text', panelId: 'front', x: 4, y: 4, width: 40, height: 10, rotation: 0, content }],
+      });
 
-      // Tab A saves first: the version moves on.
-      const saved = await as(carol).patch(`/api/projects/${projectId}`).send({ version, title: 'Tab A' }).expect(200);
+      // Tab A saves a new design first: the version moves on.
+      const saved = await as(carol)
+        .patch(`/api/projects/${projectId}`)
+        .send({ version, title: 'Tab A', canvasState: textCanvas('Tab A') })
+        .expect(200);
       expect(saved.body.version).toBe(version + 1);
 
-      // Tab B still holds the old version.
+      // Tab B still holds the old version: refused, even for a rename only.
       const stale = await as(carol).patch(`/api/projects/${projectId}`).send({ version, title: 'Tab B' }).expect(409);
       expect(stale.body).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: version + 1 });
       expect((await as(carol).get(`/api/projects/${projectId}`).expect(200)).body.title).toBe('Tab A');
@@ -341,6 +347,45 @@ describe('Projects API (e2e)', () => {
       // Sharing settings do not touch the design: they leave the version alone.
       await as(carol).patch(`/api/projects/${projectId}/visibility`).send({ allowFork: false }).expect(200);
       await as(carol).patch(`/api/projects/${projectId}`).send({ version: version + 1, title: 'Hộp đã sửa' }).expect(200);
+    });
+
+    it('increases the version only when the design changes, not for its name, tags or thumbnail (Q3)', async () => {
+      const current = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      const { version } = current;
+      const patch = (body: Record<string, unknown>) => as(carol).patch(`/api/projects/${projectId}`).send(body).expect(200);
+
+      // Metadata only: same version, saved.
+      const renamed = await patch({ version, title: 'Tên mới', tags: ['tet'] });
+      expect(renamed.body).toMatchObject({ title: 'Tên mới', tags: ['tet'], version });
+      const thumbnailUrl = await uploadPng(app, carol.cookie, 'THUMBNAIL', projectId);
+      expect((await patch({ version, thumbnailUrl })).body).toMatchObject({ thumbnailUrl, version });
+      expect((await patch({ version })).body.version).toBe(version);
+
+      // The editor's autosave sends the whole design with every save: a rename with an equal design keeps the version,
+      // even with the keys in another order.
+      const reversed = (value: Record<string, unknown>) => Object.fromEntries(Object.entries(value).reverse());
+      const autosave = {
+        version,
+        title: 'Tên từ studio',
+        dimensions: reversed(current.dimensions),
+        materialSpec: reversed(current.materialSpec),
+        canvasState: { ...current.canvasState, elements: current.canvasState.elements.map(reversed) },
+      };
+      expect((await patch(autosave)).body).toMatchObject({ title: 'Tên từ studio', version });
+
+      // A metadata-only save over a stale version is still refused.
+      const stale = await as(carol).patch(`/api/projects/${projectId}`).send({ version: version - 1, title: 'Cũ' }).expect(409);
+      expect(stale.body).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: version });
+
+      // A change of the canvas, the dimensions or the material: exactly one more.
+      const canvas = { elements: [{ ...current.canvasState.elements[0], content: 'Đổi chữ' }] };
+      expect((await patch({ ...autosave, canvasState: canvas })).body.version).toBe(version + 1);
+      const dimensions = { ...current.dimensions, height: current.dimensions.height + 5 };
+      expect((await patch({ version: version + 1, dimensions })).body.version).toBe(version + 2);
+      const materialSpec = { ...current.materialSpec, finish: current.materialSpec.finish === 'matte' ? 'glossy' : 'matte' };
+      expect((await patch({ version: version + 2, materialSpec })).body.version).toBe(version + 3);
+      const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: projectId } });
+      expect(stored.version).toBe(version + 3);
     });
 
     it('rejects null for fields that cannot be cleared (400, not 500)', async () => {
@@ -537,6 +582,10 @@ describe('Projects API (e2e)', () => {
         .patch(`/api/projects/${projectId}`)
         .send({ version: res.body.project.version, canvasState: text('stale') })
         .expect(409);
+
+      // Restoring the design the project already has keeps its version (paid print files, print approval).
+      const same = await as(carol).post(url(`/${res.body.backup.id}/restore`)).expect(200);
+      expect(same.body.project).toMatchObject({ canvasState: text('v2'), version: undo.body.project.version });
     });
 
     it('deletes a version', async () => {
@@ -547,8 +596,8 @@ describe('Projects API (e2e)', () => {
     });
 
     it('limits manual versions to 50; automatic ones (restore backups, exports) do not count', async () => {
-      // The restore test above left two automatic backups.
-      expect(await prisma.projectSnapshot.count({ where: { projectId, isAutomatic: true } })).toBe(2);
+      // The restore test above left three automatic backups (one per restore, the one that changed nothing included).
+      expect(await prisma.projectSnapshot.count({ where: { projectId, isAutomatic: true } })).toBe(3);
 
       const fill = (count: number, isAutomatic: boolean) =>
         prisma.projectSnapshot.createMany({
