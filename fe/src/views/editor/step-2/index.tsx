@@ -212,7 +212,7 @@ export default function Step2DimensionsPage() {
             {/* Chiều Dài (Length / X) */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-neutral-800">Chiều Dài (L) — X-Axis</span>
+                <span className="font-bold text-neutral-800">Chiều Dài (L)</span>
                 <span className="font-mono tabular-nums text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {length} mm
                 </span>
@@ -249,7 +249,7 @@ export default function Step2DimensionsPage() {
             {/* Chiều Rộng (Width / Y) */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-neutral-800">Chiều Rộng (W) — Y-Axis</span>
+                <span className="font-bold text-neutral-800">Chiều Rộng (W)</span>
                 <span className="font-mono tabular-nums text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {width} mm
                 </span>
@@ -286,7 +286,7 @@ export default function Step2DimensionsPage() {
             {/* Chiều Cao (Height / Z) */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-neutral-800">Chiều Cao (H) — Z-Axis</span>
+                <span className="font-bold text-neutral-800">Chiều Cao (H)</span>
                 <span className="font-mono tabular-nums text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                   {height} mm
                 </span>

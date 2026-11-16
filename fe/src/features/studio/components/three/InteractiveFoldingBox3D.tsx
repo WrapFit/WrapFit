@@ -10,6 +10,7 @@ import { buildBoxModel, foldablePieces, type BoxMaterialTheme, type BoxModel } f
 import { stageBarButton } from "../studioUi";
 import { BACKDROPS, type Backdrop, type BoxEnvironment, type SceneId } from "./backdrops";
 import { createSceneSet, type SceneSet } from "./sceneSet";
+import { STUDIO_PALETTES, type StudioPaletteId } from "./studioPalettes";
 import { AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, type DimensionAxis, type DimensionGuides } from "./guides";
 import { filmPose, type FilmApi } from "../../utils/film";
 
@@ -86,6 +87,8 @@ interface InteractiveFoldingBox3DProps {
    * views where names on the box would spoil the picture.
    */
   faceLabels?: boolean | "toggle";
+  /** Studio 3D color palette preset (Sage, Monochrome, Rose, Terracotta, Midnight). */
+  studioPalette?: StudioPaletteId;
 }
 
 /** Fold progress from which the face labels show by themselves. */
@@ -243,6 +246,7 @@ export type CaptureFn = (size?: { width: number; height: number }) => HTMLCanvas
 
 interface StageApi {
   setSceneSet(id: SceneId | null, props: boolean): void;
+  setStudioPalette(paletteId: StudioPaletteId): void;
   setModel(model: BoxModel, pop: boolean, dimensions: BoxDimensions): void;
   setPreview(dimensions: BoxDimensions | null): void;
   setGuides(on: boolean, active: DimensionAxis | null): void;
@@ -288,8 +292,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   faceLabels = false,
   sceneSet = false,
   sceneProps = true,
+  studioPalette,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const studioPaletteRef = useRef(studioPalette);
+  studioPaletteRef.current = studioPalette;
   /** Outermost element of the stage: the canvas and every overlay on it. */
   const wrapperRef = useRef<HTMLDivElement>(null);
   /** Labels of the dimension guides, placed by the render loop. */
@@ -361,15 +368,16 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     scene.add(hemi, key, key.target, rim);
 
     const groundGeometry = new THREE.PlaneGeometry(1, 1);
-    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.18 });
+    const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.18, depthWrite: false });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
+    ground.renderOrder = -2;
     const blobTexture = contactShadowTexture();
     const blobMaterial = new THREE.MeshBasicMaterial({ map: blobTexture, transparent: true, depthWrite: false, opacity: 0.3 });
     const blob = new THREE.Mesh(groundGeometry, blobMaterial);
     blob.rotation.x = -Math.PI / 2;
-    blob.position.y = 0.05;
+    blob.position.y = 0.02;
     blob.renderOrder = -1;
     scene.add(ground, blob);
 
@@ -501,11 +509,16 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     /** Photo set of the scene (step 5), laid out around the folded box. */
     let set: SceneSet | null = null;
     let setProps = true;
+    let currentSceneSetId: SceneId | null = null;
     const layoutSet = () => {
       if (!set || !builtDims) return;
       // Sized on the folded box, not on the sheet being folded: the props stay put while the clip folds it.
       const radius = Math.hypot(builtDims.length, builtDims.width, builtDims.height) / 2;
       set.layout(new THREE.Vector3(blob.position.x, 0, blob.position.z), Math.hypot(builtDims.length, builtDims.width) / 2, radius);
+      if (currentSceneSetId === "christmas") {
+        root.position.set(0, 0, radius * 0.28);
+        root.rotation.y = -0.38;
+      }
     };
     const look = new THREE.Vector3();
     let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; toDistance: number; t: number; duration: number } | null = null;
@@ -744,21 +757,42 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
 
     const api: StageApi = {
       setSceneSet(id, props) {
+        currentSceneSetId = id;
         if (set) {
           scene.remove(set.group);
           set.dispose();
           set = null;
         }
         if (id) {
-          set = createSceneSet(id);
+          set = createSceneSet(id, studioPaletteRef.current);
           set.setProps(props);
           scene.add(set.group);
           layoutSet();
         }
+        if (id === "christmas" && builtDims) {
+          const radius = Math.hypot(builtDims.length, builtDims.width, builtDims.height) / 2;
+          root.position.set(0, 0, radius * 0.28);
+          root.rotation.y = -0.38;
+        } else {
+          root.position.set(0, 0, 0);
+          root.rotation.set(0, 0, 0);
+        }
         setProps = props;
         // The tabletop takes the shadows itself; the shadow-only floor would darken them twice.
         ground.visible = !set;
+        blob.visible = !set;
         boundsDirty = true;
+        dirty = true;
+      },
+      setStudioPalette(paletteId) {
+        if (set?.setPalette) {
+          const pal = STUDIO_PALETTES[paletteId];
+          if (pal) {
+            set.setPalette(pal);
+            key.color.set(pal.lightingKey);
+            rim.color.set(pal.lightingRim);
+          }
+        }
         dirty = true;
       },
       setModel(next, pop, dims) {
@@ -977,6 +1011,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   useEffect(() => {
     stageRef.current?.setSceneSet(sceneSet && environment !== "transparent" ? environment : null, sceneProps);
   }, [sceneSet, sceneProps, environment]);
+  useEffect(() => {
+    if (studioPalette) {
+      stageRef.current?.setStudioPalette(studioPalette);
+    }
+  }, [studioPalette]);
   // Live size while a slider moves; cleared (null) when it equals the built one.
   const live = liveDimensions && (liveDimensions.length !== dimensions.length || liveDimensions.width !== dimensions.width || liveDimensions.height !== dimensions.height) ? liveDimensions : null;
   useEffect(() => {

@@ -49,7 +49,6 @@ import {
 import {
   PRIMARY_PILL,
   SECONDARY_PILL,
-  SectionCard,
   StepActionBar,
   StepHeader,
 } from "@/features/studio/components/studioUi";
@@ -294,26 +293,10 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
       <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         {/* Left Column: Controls — natural flow without restrictive max-height */}
         <div className="flex flex-col gap-4">
-          {/* Card 1: Kích thước (with gift presets as inline pills) */}
-          <SectionCard
+          {/* Card 1: Dimension Controls (without redundant 'Kích thước' header, with Unit selector next to Basis) */}
+          <section
             data-tour="s2-size"
-            tone="accent"
-            icon={Ruler}
-            title="Kích thước"
-            hint={sheetOnly ? "Ngang × cao" : "Dài × rộng × cao"}
-            action={
-              <SegmentedSwitch
-                label="Đơn vị"
-                value={unit}
-                options={[
-                  { value: "mm", label: "mm" },
-                  { value: "cm", label: "cm" },
-                  { value: "inch", label: "inch" },
-                ]}
-                onChange={setUnit}
-              />
-            }
-            bodyClassName="pt-3 sm:pt-3"
+            className="overflow-hidden rounded-sheet border border-line bg-surface-raised p-4 sm:p-5"
           >
             {/* Priority 1: Gift preset quick-pick pills (horizontal scroll) */}
             {!flat && boxType !== "cup-carrier" && (
@@ -360,17 +343,30 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               </div>
             )}
 
-            {/* Basis & quick actions */}
-            <div className="flex items-center justify-between pb-3">
-              <SegmentedSwitch
-                label="Đo theo"
-                value={basis}
-                options={[
-                  { value: "inner", label: "Lọt lòng" },
-                  { value: "outer", label: "Phủ bì" },
-                ]}
-                onChange={setBasis}
-              />
+            {/* Basis & Unit selectors + quick actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-5">
+                <SegmentedSwitch
+                  label="Đo theo"
+                  value={basis}
+                  options={[
+                    { value: "inner", label: "Lọt lòng" },
+                    { value: "outer", label: "Phủ bì" },
+                  ]}
+                  onChange={setBasis}
+                />
+
+                <SegmentedSwitch
+                  label="Đơn vị"
+                  value={unit}
+                  options={[
+                    { value: "mm", label: "mm" },
+                    { value: "cm", label: "cm" },
+                    { value: "inch", label: "inch" },
+                  ]}
+                  onChange={setUnit}
+                />
+              </div>
 
               <div className="flex items-center gap-1">
                 <button
@@ -440,7 +436,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 )}
               </span>
             </div>
-          </SectionCard>
+          </section>
 
           {/* Priority 2: Box options as collapsible accordion (collapsed by default) */}
           {(boxType === "tuck-top" || boxType === "lid-base" || boxType === "insert" || boxType === "cup-carrier") && (
@@ -627,7 +623,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
           onBack ? (
             <button type="button" onClick={onBack} className={SECONDARY_PILL}>
               <ArrowLeft className="size-4" aria-hidden />
-              Đổi cấu trúc
+              Đổi kiểu hộp
             </button>
           ) : undefined
         }
@@ -934,9 +930,11 @@ function DimensionRow({
             <label htmlFor={inputId} className="block text-sm font-bold text-slate-900 cursor-pointer">
               {label.name}
             </label>
-            <span className={cn("block text-xs mt-0.5", outOfRange ? "text-danger-fg" : "text-slate-400")}>
-              {outOfRange ? `Từ ${shown(range.min)} đến ${shown(range.max)} ${unitLabel}` : label.hint}
-            </span>
+            {outOfRange && (
+              <span className="block text-xs mt-0.5 text-danger-fg">
+                Từ {shown(range.min)} đến {shown(range.max)} {unitLabel}
+              </span>
+            )}
           </div>
         </div>
 

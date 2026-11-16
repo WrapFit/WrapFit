@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Box, CheckCircle2, Download, Film, Gift, Image as ImageIcon, Images, QrCode, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Box, Check, CheckCircle2, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Sparkles, X } from "lucide-react";
 import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
 import { useToast } from "@/components/common/Toast";
 import { Switch } from "@/components/ui";
@@ -9,6 +9,7 @@ import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, stageBarButton
 import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { BACKDROPS, SCENE_IDS, sceneForOccasion, surfaceCss, type SceneId } from "@/features/studio/components/three/backdrops";
+import { STUDIO_PALETTES, STUDIO_PALETTE_IDS, type StudioPaletteId } from "@/features/studio/components/three/studioPalettes";
 import { fileSlug, MOCKUP_FORMATS, renderMockup, saveBlob, type MockupFormat } from "@/features/studio/utils/mockup";
 import { CLIP_SECONDS, MAX_CLIP_BYTES, recordGif, recordVideo, videoFormat, type FilmApi } from "@/features/studio/utils/film";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
@@ -89,6 +90,8 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const toast = useToast();
   const suggested = sceneForOccasion(occasion);
   const [scene, setScene] = useState<SceneId>(suggested);
+  const [studioPalette, setStudioPalette] = useState<StudioPaletteId>("monochrome");
+  const [isPalettePickerOpen, setIsPalettePickerOpen] = useState(false);
   const [props, setProps] = useState(true);
   const [isLidOpen, setIsLidOpen] = useState<boolean>(false);
   const [saving, setSaving] = useState<MockupFormat["id"] | "all" | null>(null);
@@ -213,6 +216,8 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               environment={scene}
               sceneSet
               sceneProps={props}
+              studioPalette={studioPalette}
+              rotationY={scene === "christmas" ? -0.38 : undefined}
               interactiveOpenState={isLidOpen}
               captureRef={capture}
               filmRef={film}
@@ -238,6 +243,111 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               }
               className="h-full w-full"
             />
+
+            {/* Floating Studio Palette & Watermark Free Dock (Pacdora & pack.ly style) */}
+            {scene === "modern_studio" ? (
+              <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
+                {/* Expanded Palette Popover */}
+                {isPalettePickerOpen && (
+                  <div
+                    role="dialog"
+                    aria-label="Chọn bảng màu bối cảnh"
+                    className="flex flex-col gap-1.5 rounded-2xl border border-white/15 bg-stone-900/95 p-3 shadow-2xl backdrop-blur-md min-w-[260px] animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                        <Palette className="size-3.5 text-fpt-orange" />
+                        <span>Bảng màu bối cảnh</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsPalettePickerOpen(false)}
+                        className="rounded-full p-1 text-stone-400 hover:bg-white/10 hover:text-white"
+                        aria-label="Đóng"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-1 pt-1">
+                      {STUDIO_PALETTE_IDS.map((pId) => {
+                        const pal = STUDIO_PALETTES[pId];
+                        const isSelected = studioPalette === pId;
+                        return (
+                          <button
+                            key={pId}
+                            type="button"
+                            onClick={() => {
+                              setStudioPalette(pId);
+                              setIsPalettePickerOpen(false);
+                            }}
+                            className={cn(
+                              "flex items-center justify-between rounded-xl px-2.5 py-2 text-left transition-colors",
+                              isSelected ? "bg-white/15 ring-1 ring-fpt-orange" : "hover:bg-white/10"
+                            )}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              {/* Swatch bars: 3 color stripes [curtain, wall, table] */}
+                              <div className="flex h-5 w-11 overflow-hidden rounded-md border border-white/20 shadow-sm shrink-0">
+                                <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[0] }} />
+                                <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[1] }} />
+                                <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[2] }} />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-medium text-white truncate">{pal.name}</span>
+                                <span className="text-[10px] text-stone-400 line-clamp-1">{pal.desc}</span>
+                              </div>
+                            </div>
+                            {isSelected && <Check className="size-3.5 text-fpt-orange shrink-0 ml-2" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bottom Dock Pills */}
+                <div className="flex items-center gap-2">
+                  {/* Active Palette Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsPalettePickerOpen((v) => !v)}
+                    aria-label={`Bảng màu hiện tại: ${STUDIO_PALETTES[studioPalette].name}. Bấm để đổi màu.`}
+                    title={`Đổi bảng màu bối cảnh (Đang chọn: ${STUDIO_PALETTES[studioPalette].name})`}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border border-white/15 bg-stone-900/90 py-1.5 px-3 text-xs font-medium text-white shadow-lg backdrop-blur-md transition hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange",
+                      isPalettePickerOpen && "ring-2 ring-fpt-orange"
+                    )}
+                  >
+                    <div className="flex h-4 w-9 overflow-hidden rounded-sm border border-white/20 shadow-sm shrink-0">
+                      <span className="h-full w-1/3" style={{ backgroundColor: STUDIO_PALETTES[studioPalette].swatch[0] }} />
+                      <span className="h-full w-1/3" style={{ backgroundColor: STUDIO_PALETTES[studioPalette].swatch[1] }} />
+                      <span className="h-full w-1/3" style={{ backgroundColor: STUDIO_PALETTES[studioPalette].swatch[2] }} />
+                    </div>
+                    <span className="hidden sm:inline text-stone-200">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
+                  </button>
+
+                  {/* Watermark Free Badge */}
+                  <div
+                    className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-stone-900/90 px-3 py-1.5 text-xs font-semibold text-amber-400 shadow-lg backdrop-blur-md"
+                    title="Ảnh và video xuất ra 100% không dán watermark WrapFit"
+                  >
+                    <Sparkles className="size-3.5 text-amber-400" aria-hidden />
+                    <span>Watermark free</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-20 flex items-center">
+                <div
+                  className="flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-stone-900/90 px-3 py-1.5 text-xs font-semibold text-amber-400 shadow-lg backdrop-blur-md"
+                  title="Ảnh và video xuất ra 100% không dán watermark WrapFit"
+                >
+                  <Sparkles className="size-3.5 text-amber-400" aria-hidden />
+                  <span>Watermark free</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -301,6 +411,44 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                   );
                 })}
               </div>
+              {scene === "modern_studio" && (
+                <div className="mt-3 rounded-control border border-line bg-surface-sunken p-3">
+                  <div className="flex items-center justify-between text-caption font-semibold text-fg">
+                    <span className="flex items-center gap-1.5">
+                      <Palette className="size-3.5 text-fpt-orange" />
+                      Bảng màu studio (5 chủ đề)
+                    </span>
+                    <span className="text-fg-muted font-normal text-[11px] truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-5 gap-1.5">
+                    {STUDIO_PALETTE_IDS.map((pId) => {
+                      const pal = STUDIO_PALETTES[pId];
+                      const isSel = studioPalette === pId;
+                      return (
+                        <button
+                          key={pId}
+                          type="button"
+                          onClick={() => setStudioPalette(pId)}
+                          title={`${pal.name} · ${pal.desc}`}
+                          className={cn(
+                            "flex flex-col items-center gap-1 rounded-control border p-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fpt-orange",
+                            isSel ? "border-fpt-orange bg-fpt-orange-light ring-1 ring-fpt-orange" : "border-line bg-surface-raised hover:border-line-strong"
+                          )}
+                        >
+                          <div className="flex h-3.5 w-full overflow-hidden rounded-sm border border-line/60">
+                            <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[0] }} />
+                            <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[1] }} />
+                            <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[2] }} />
+                          </div>
+                          <span className="text-[10px] font-medium text-fg truncate w-full text-center">
+                            {pal.name.split(" ")[0]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <p className="mt-2 truncate text-caption text-fg-muted" title={look.props ?? undefined}>
                 {look.surface.name}
                 {look.props ? ` · ${look.props}` : ""}

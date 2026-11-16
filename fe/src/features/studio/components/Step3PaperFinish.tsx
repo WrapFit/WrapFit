@@ -286,7 +286,6 @@ function PaperCompareDialog({
     { label: "Cảm giác cao cấp", cell: (stock) => <Meter value={stock.ratings.premium} label="Cảm giác cao cấp" /> },
     { label: "Thân thiện môi trường", cell: (stock) => <Meter value={stock.ratings.eco} label="Thân thiện môi trường" /> },
     { label: "Độ dày", cell: (stock) => <span className="tabular-nums font-mono">{stock.spec.caliper.toFixed(2).replace(".", ",")} mm</span> },
-    { label: `Giá/hộp (${PRICE_QUANTITY} hộp)`, cell: (stock) => <span className="font-bold text-fpt-orange-ink tabular-nums">{formatVnd(prices[stock.theme])}</span> },
     {
       label: "Ưu điểm",
       cell: (stock) => (
@@ -318,7 +317,7 @@ function PaperCompareDialog({
   return (
     <Dialog
       title="So sánh chi tiết 4 loại giấy bao bì"
-      description={`Quy cách và đặc tính in ấn thực tế (Giá tính cho mẻ ${PRICE_QUANTITY} hộp)`}
+      description="Quy cách và đặc tính in ấn thực tế giữa các chất liệu"
       size="xl"
       onClose={onClose}
     >
@@ -554,13 +553,12 @@ export function Step3PaperFinish({
         </StudioCard>
 
         <div className="flex flex-col gap-4">
-          <SectionCard
-            aria-label="Giấy"
-            tone="accent"
-            icon={Layers}
-            title="Giấy"
-            hint={`Giá mỗi hộp khi in ${PRICE_QUANTITY} hộp`}
-            action={
+          <section
+            aria-label="Chất liệu giấy"
+            className="overflow-hidden rounded-sheet border border-line bg-surface-raised p-4 sm:p-5"
+          >
+            {/* Top action: So sánh các loại giấy */}
+            <div className="flex items-center justify-end pb-3">
               <button
                 type="button"
                 onClick={() => setShowCompare(true)}
@@ -569,8 +567,8 @@ export function Step3PaperFinish({
                 <span>So sánh các loại giấy</span>
                 <ExternalLink className="size-3.5" aria-hidden />
               </button>
-            }
-          >
+            </div>
+
             <div role="radiogroup" aria-label="Giấy" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {PAPER_STOCKS.map((stock) => {
                 const active = stock.theme === paper.theme;
@@ -606,22 +604,15 @@ export function Step3PaperFinish({
                           <Check className="size-2.5" strokeWidth={3} />
                         </span>
                       </div>
-                      <p className="mt-0.5 text-caption text-fg-muted line-clamp-1">
-                        {stock.description}
-                      </p>
-                      <div className="mt-2 flex items-center justify-between gap-1">
-                        <span className="text-body-sm font-semibold tabular-nums text-fg">
-                          {formatVnd(prices.byPaper[stock.theme])}
-                          <span className="text-caption font-normal text-fg-muted"> / hộp</span>
-                        </span>
-                        {isRecommended && (
+                      {isRecommended && (
+                        <div className="mt-1.5 flex items-center gap-1">
                           <Tooltip content={advice.reason} side="top">
                             <span className="cursor-help rounded-full bg-success-bg px-2 py-0.5 text-label-sm font-semibold text-success-fg shrink-0">
                               Đề xuất
                             </span>
                           </Tooltip>
-                        )}
-                      </div>
+                        </div>
+                      )}
                       {soft && (
                         <span className="mt-1.5 flex items-start gap-1 text-caption text-warning-fg">
                           <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
@@ -678,14 +669,14 @@ export function Step3PaperFinish({
                 </label>
               </div>
             </div>
-          </SectionCard>
+          </section>
 
           {/* Tùy chọn hoàn thiện (sổ ra sẵn cố định để khách hàng chọn) */}
           <SectionCard
             aria-labelledby="finish-title"
             icon={Sparkles}
             title={<span id="finish-title">Tùy chọn hoàn thiện</span>}
-            hint="Làm ở xưởng in, cộng vào giá mỗi hộp"
+            hint="Tùy chọn gia công sau in ấn"
           >
             <div>
               <p className="text-label font-semibold text-fg">Cán màng</p>
@@ -700,7 +691,7 @@ export function Step3PaperFinish({
                     className={chip(lamination === finish)}
                   >
                     <span className="text-body-sm font-semibold text-fg">{finish ? LAMINATION_SHORT[finish] : "Không cán"}</span>
-                    <span className="text-caption tabular-nums text-fg-muted">{finish ? `+${formatVnd(prices.extra(finish))}` : "Giấy để mộc"}</span>
+                    <span className="text-caption text-fg-muted">{finish ? "Cán phủ bảo vệ" : "Giấy để mộc"}</span>
                   </button>
                 ))}
               </div>
@@ -722,19 +713,12 @@ export function Step3PaperFinish({
                     >
                       <span className="flex w-full items-center justify-between gap-1">
                         <span className="text-body-sm font-semibold text-fg truncate">{FINISH_LABELS[finish]}</span>
-                        <span className="text-caption tabular-nums text-fg-muted shrink-0">+{formatVnd(prices.extra(finish))}</span>
                       </span>
                       <span className="text-caption text-fg-muted line-clamp-1">{needsLamination ? "Cần cán màng" : FINISH_NOTES[finish]}</span>
                     </button>
                   );
                 })}
               </div>
-              {finishes.some((f) => EXTRAS.includes(f)) && (
-                <p className="mt-2 flex items-start gap-2 text-caption leading-5 text-fg-muted">
-                  <Info className="mt-0.5 size-3.5 shrink-0 text-info" aria-hidden />
-                  In nhiều mẻ lớn, phí khuôn ép kim / bản phim UV sẽ được tối ưu.
-                </p>
-              )}
             </div>
           </SectionCard>
         </div>
@@ -756,15 +740,10 @@ export function Step3PaperFinish({
           </button>
         }
         summary={
-          <>
-            <span className="block text-xs">
-              {paper.name}
-              {finishes.length > 0 && ` · ${finishes.map((f) => FINISH_LABELS[f]).join(", ")}`}
-            </span>
-            <span className="tabular-nums text-landing-ink">
-              ≈ {formatVnd(prices.current)}/hộp khi in {PRICE_QUANTITY} hộp
-            </span>
-          </>
+          <span className="block text-xs font-semibold text-landing-ink">
+            {paper.name}
+            {finishes.length > 0 && ` · ${finishes.map((f) => FINISH_LABELS[f]).join(", ")}`}
+          </span>
         }
         next={
           <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
