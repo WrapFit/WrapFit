@@ -848,7 +848,7 @@ export interface SampleOrder {
   notes?: string | null;
   subtotalVnd?: number;
   shippingVnd?: number;
-  /** Promo discount applied by the server. */
+  /** Always 0 and null: vouchers were removed (docs/25 item 1); the API keeps the fields for a later voucher feature. */
   discountVnd?: number;
   promoCode?: string | null;
   totalVnd?: number;
@@ -884,8 +884,6 @@ export interface CreateSampleOrderRequest {
   notes?: string;
   quantity?: number;
   paperStock?: string;
-  /** Promo code; the server computes the discount (unknown code → 400 INVALID_PROMO). */
-  promoCode?: string;
 }
 
 /** Several designs in one order (one bill). The recipient fields are shared by every design. */

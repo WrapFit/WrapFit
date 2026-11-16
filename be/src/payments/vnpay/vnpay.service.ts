@@ -1,7 +1,8 @@
-import { HttpException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Payment, PaymentConfirmation, PaymentProvider, PaymentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../shared/prisma';
-import { PaymentsService, type PaymentView } from '../payments.service';
+import { ORDER_NOT_PAYABLE } from '../../orders';
+import { httpErrorCode, PAYMENT_EXPIRED, PaymentsService, type PaymentView } from '../payments.service';
 import { isVnpaySuccess, vnpayAmount, vnpayAmountOf } from './vnpay';
 import { VnpayGateway } from './vnpay.gateway';
 
@@ -61,10 +62,19 @@ export class VnpayService {
     if (payment.status === PaymentStatus.PAID) return { RspCode: '02', Message: 'Order already confirmed' };
 
     if (isVnpaySuccess(params)) {
-      await this.payments.confirmPaid(tx, payment.id, {
-        via: PaymentConfirmation.VNPAY_IPN,
-        providerTxnId: params.vnp_TransactionNo,
-      });
+      try {
+        await this.payments.confirmPaid(tx, payment.id, {
+          via: PaymentConfirmation.VNPAY_IPN,
+          providerTxnId: params.vnp_TransactionNo,
+        });
+      } catch (error) {
+        // The sample order was cancelled (or paid by another payment): nothing is written and nothing granted, the
+        // payment stays PENDING. Retrying cannot change that, so answer "already confirmed" (VNPay's code for an order
+        // that no longer waits for payment) to stop the retries. Sandbox only: no real money to refund.
+        if (httpErrorCode(error) !== ORDER_NOT_PAYABLE) throw error;
+        this.logger.warn(`vnpay.ipn success for an order that is not payable ref=${params.vnp_TxnRef} payment=${payment.id}`);
+        return { RspCode: '02', Message: 'Order already confirmed' };
+      }
     }
     // A failed payment is acknowledged without granting anything: the IPN was processed, and an error code would only
     // make VNPay retry it for nothing (the docs' PHP and C# samples do the same). The payment stays PENDING until it
@@ -102,9 +112,11 @@ export class VnpayService {
           }),
         );
       } catch (error) {
-        // Paid at the gateway but the payment had already expired here: nothing is granted, the customer is told it failed.
-        if (!(error instanceof HttpException) || error.getStatus() !== 409) throw error;
-        this.logger.warn(`vnpay.return success after expiry ref=${params.vnp_TxnRef} payment=${payment.id}`);
+        // Paid at the gateway but the payment had expired here (PAYMENT_EXPIRED), or its sample order was cancelled
+        // (ORDER_NOT_PAYABLE): nothing was written or granted, the customer is told it failed.
+        const code = httpErrorCode(error);
+        if (code !== PAYMENT_EXPIRED && code !== ORDER_NOT_PAYABLE) throw error;
+        this.logger.warn(`vnpay.return success but ${code} ref=${params.vnp_TxnRef} payment=${payment.id}`);
         result = 'failed';
       }
     }

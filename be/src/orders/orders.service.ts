@@ -2,11 +2,12 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { OrderStatus, Prisma, ProjectStatus, Role } from '@prisma/client';
-import { findSamplePromo, samplePromoDiscount, type SamplePromo } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
 import { AuthUser } from '../common';
 import { PrismaService } from '../shared/prisma';
@@ -24,6 +25,20 @@ export const sampleFeeVnd = (quantity: number) => SAMPLE_FIRST_BOX_VND + Math.ma
 
 const DEFAULT_PAPER_STOCK = 'Kraft 350g cán màng mờ';
 const ORDER_CODE_ATTEMPTS = 8;
+
+/**
+ * 409 for a payment whose sample order no longer waits for it (cancelled, or already paid by another payment). Thrown
+ * before anything is written, so a caller may catch it and keep using its transaction.
+ */
+export const ORDER_NOT_PAYABLE = 'ORDER_NOT_PAYABLE';
+const orderNotPayable = (status: OrderStatus | undefined) =>
+  new HttpException(
+    {
+      code: ORDER_NOT_PAYABLE,
+      message: status === OrderStatus.CANCELLED ? 'Đơn hàng đã bị hủy, không thể thanh toán' : 'Đơn hàng không còn chờ thanh toán',
+    },
+    HttpStatus.CONFLICT,
+  );
 
 const ORDER_INCLUDE = { items: { orderBy: { id: 'asc' } } } satisfies Prisma.OrderInclude;
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
@@ -56,7 +71,10 @@ export interface SampleOrderResponse {
   sampleFeeVnd: number;
   subtotalVnd: number;
   shippingVnd: number;
-  /** Promo discount computed by the server, 0 without a code. */
+  /**
+   * shortcut: vouchers were removed on 2026-11-16 (docs/25 item 1), so these are always 0 and null. The columns
+   * orders.discount_vnd and orders.promo_code and these fields stay for a later voucher feature, without a migration.
+   */
   discountVnd: number;
   promoCode: string | null;
   totalVnd: number;
@@ -85,7 +103,11 @@ export class OrdersService {
     return this.createSampleBundle(userId, { ...common, items: [{ projectId, quantity, paperStock }] });
   }
 
-  /** Several designs in one order: one bill, one payment. Each design is a line; the fee and the promo cover the bill. */
+  /**
+   * Several designs in one order: one bill, one payment. Each design is a line; the fee covers the bill. There is no
+   * voucher: every order is created PENDING_PAYMENT with a total of at least one first-box fee, and only a confirmed
+   * payment (PaymentsService.confirmPaid) or an admin by hand moves it to PAID.
+   */
   async createSampleBundle(userId: string, dto: CreateSampleBundleDto): Promise<SampleOrderResponse> {
     const phone = (dto.phone || dto.recipientPhone)?.trim();
     if (!phone) {
@@ -115,16 +137,8 @@ export class OrdersService {
       partner = chosen;
     }
 
+    // Every line has at least one box, so the total is never 0.
     const subtotal = lines.reduce((sum, line) => sum + line.fee, 0);
-    let promo: SamplePromo | null = null;
-    if (dto.promoCode?.trim()) {
-      promo = findSamplePromo(dto.promoCode);
-      if (!promo) throw new BadRequestException({ code: 'INVALID_PROMO', message: 'Mã ưu đãi không hợp lệ hoặc đã hết hạn' });
-    }
-    const discount = promo ? samplePromoDiscount(promo.code, subtotal) : 0;
-    const total = subtotal - discount;
-    // A free order (WORKSHOPTET on one box) has nothing to pay: it goes straight to the print shop.
-    const free = total === 0;
     const data = (orderCode: string): Prisma.OrderCreateInput => ({
       orderCode,
       user: { connect: { id: userId } },
@@ -135,10 +149,7 @@ export class OrdersService {
       notes: dto.notes?.trim() || null,
       subtotalVnd: subtotal,
       shippingVnd: 0,
-      discountVnd: discount,
-      promoCode: promo?.code ?? null,
-      totalVnd: total,
-      ...(free ? { status: OrderStatus.PAID, paidAt: new Date() } : {}),
+      totalVnd: subtotal,
       items: {
         create: lines.map(({ project, quantity, paperStock, fee }) => ({
           project: { connect: { id: project.id } },
@@ -152,7 +163,7 @@ export class OrdersService {
           lineTotalVnd: fee,
         })),
       },
-      history: { create: { toStatus: free ? OrderStatus.PAID : OrderStatus.PENDING_PAYMENT, changedById: userId } },
+      history: { create: { toStatus: OrderStatus.PENDING_PAYMENT, changedById: userId } },
     });
 
     // WF-<year>-<6 digits>: short enough to read over the phone. The unique index on order_code catches a taken code
@@ -227,6 +238,19 @@ export class OrdersService {
     note?: string,
   ): Promise<SampleOrderResponse> {
     return this.prisma.$transaction((tx) => this.transitionIn(tx, id, from, to, { changedById, note }));
+  }
+
+  /**
+   * Locks the order row inside a payment's transaction and throws 409 ORDER_NOT_PAYABLE unless it is still
+   * PENDING_PAYMENT. Called before the payment is written. The lock holds until that transaction ends: a cancel that
+   * arrives meanwhile waits on the row and then matches nothing (its update requires PENDING_PAYMENT), and a cancel that
+   * committed first is seen here.
+   */
+  async lockPayable(id: string, tx: Prisma.TransactionClient): Promise<void> {
+    const rows = await tx.$queryRaw<{ status: OrderStatus }[]>`
+      SELECT status FROM orders WHERE id = ${id}::uuid FOR UPDATE`;
+    const status = rows[0]?.status;
+    if (status !== OrderStatus.PENDING_PAYMENT) throw orderNotPayable(status);
   }
 
   /**

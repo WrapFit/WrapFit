@@ -109,11 +109,19 @@ export interface PaymentHistoryPage {
   nextBefore: string | null;
 }
 
+export const PAYMENT_EXPIRED = 'PAYMENT_EXPIRED';
 const paymentExpired = () =>
   new HttpException(
-    { code: 'PAYMENT_EXPIRED', message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
+    { code: PAYMENT_EXPIRED, message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
     HttpStatus.CONFLICT,
   );
+
+/** The `code` in the body of an HttpException (PAYMENT_EXPIRED, ORDER_NOT_PAYABLE...), undefined for anything else. */
+export function httpErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) return undefined;
+  const body = error.getResponse();
+  return typeof body === 'object' && body !== null && 'code' in body ? String(body.code) : undefined;
+}
 
 /**
  * VietQR payments (docs/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
@@ -278,7 +286,9 @@ export class PaymentsService {
    * admin. Locks the payment row, so a webhook and a simulate click arriving together grant once: the second waits,
    * sees PAID and returns it untouched. Runs inside the caller's transaction (the caller may have locked the row
    * already; locking again is a no-op). Throws 404 for an unknown id, 409 PAYMENT_EXPIRED for a payment that is no
-   * longer PENDING or is past its expiry, unless `allowExpired`.
+   * longer PENDING or is past its expiry, unless `allowExpired`, and 409 ORDER_NOT_PAYABLE for a sample order payment
+   * whose order is no longer PENDING_PAYMENT (cancelled, or paid by another payment). Both 409s are thrown before
+   * anything is written, so a caller that catches them can still use its transaction.
    */
   async confirmPaid(tx: Prisma.TransactionClient, paymentId: string, options: ConfirmPaidOptions): Promise<Payment> {
     const locked = await tx.$queryRaw<{ id: string }[]>`
@@ -290,6 +300,11 @@ export class PaymentsService {
     const now = new Date();
     const open = current.status === PaymentStatus.PENDING || (options.allowExpired && current.status === PaymentStatus.EXPIRED);
     if (!open || (!options.allowExpired && current.expiresAt <= now)) throw paymentExpired();
+    // Lock and check the order before the payment is written: a cancelled order must not leave a PAID payment that
+    // granted nothing. The lock (payment row, then order row) also makes a concurrent cancel wait for this transaction.
+    if (current.purpose === PaymentPurpose.SAMPLE_ORDER) {
+      await this.orders.lockPayable((current.metadata as { orderId: string }).orderId, tx);
+    }
 
     const paid = await tx.payment.update({
       where: { id: paymentId },

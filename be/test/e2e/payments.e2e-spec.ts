@@ -8,6 +8,7 @@ import { middleware } from '../../src/app.middleware';
 import { crc16 } from '../../src/payments';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { cancelOrder, placeSampleOrder } from './helpers/orders';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -191,6 +192,21 @@ describe('Payments API (e2e)', () => {
     expect(history.map((h) => h.toStatus)).toEqual(['PENDING_PAYMENT', 'PAID']);
 
     await as(buyer).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'SAMPLE_ORDER', orderId: order.id }).expect(409);
+  });
+
+  it('refuses to simulate-confirm the payment of a cancelled order: 409 ORDER_NOT_PAYABLE, nothing written', async () => {
+    const order = await placeSampleOrder(app, buyer.cookie);
+    const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+    await cancelOrder(prisma, order.id);
+
+    const res = await confirm(buyer, payment.id).expect(409);
+    expect(res.body).toMatchObject({ code: 'ORDER_NOT_PAYABLE' });
+    expect(await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).toMatchObject({
+      status: 'PENDING',
+      paidAt: null,
+      confirmedVia: null,
+    });
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: 'CANCELLED', paymentId: null });
   });
 
   it('expires a payment after 15 minutes: no QR, no confirmation', async () => {

@@ -1,6 +1,5 @@
 /** Sample print orders of the offline demo: placed from the cart, paid through the checkout, moved by the admin. */
 
-import { findSamplePromo, samplePromoDiscount } from "@wrapfit/shared";
 import { DEMO_PRINT_SHOPS } from "@/features/dashboard/demoData";
 import type { OrderStatus, SampleOrder } from "@/types/api";
 import { badRequest, conflict, currentUser, MockHttpError, notFound, type Handler } from "../http";
@@ -54,9 +53,9 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
   if (!recipientName) errors.push("Cần tên người nhận.");
   if (!phone) errors.push("Cần số điện thoại người nhận.");
   if (!shippingAddress) errors.push("Cần địa chỉ giao hàng.");
+  // Vouchers were removed (docs/25 item 1): like the API's ValidationPipe, a body that still sends a code gets 400.
+  if ("promoCode" in body) errors.push("property promoCode should not exist");
   if (errors.length) throw badRequest(errors);
-  const promoCode = typeof body.promoCode === "string" && body.promoCode.trim() ? body.promoCode.trim().toUpperCase() : null;
-  if (promoCode && !findSamplePromo(promoCode)) throw new MockHttpError(400, "Mã giảm giá không hợp lệ.", { code: "INVALID_PROMO" });
 
   const items = lines.map((line) => {
     const project = ownProject(line.projectId);
@@ -65,7 +64,6 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
     return { projectId: project.id, projectTitle: project.title, projectVersion: project.version, quantity, lineTotalVnd: sampleFeeVnd(quantity), project };
   });
   const subtotalVnd = items.reduce((sum, item) => sum + item.lineTotalVnd, 0);
-  const discountVnd = samplePromoDiscount(promoCode, subtotalVnd);
   const shop = DEMO_PRINT_SHOPS.find((s) => s.id === body.printShopId) ?? DEMO_PRINT_SHOPS[0];
   const first = items[0].project;
   const now = nowIso();
@@ -90,9 +88,9 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
     notes: typeof body.notes === "string" ? body.notes : null,
     subtotalVnd,
     shippingVnd: 0,
-    discountVnd,
-    promoCode,
-    totalVnd: subtotalVnd - discountVnd,
+    discountVnd: 0,
+    promoCode: null,
+    totalVnd: subtotalVnd,
     sampleFeeVnd: subtotalVnd,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     items: items.map(({ project, ...item }) => item),
@@ -107,12 +105,6 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
     createdAt: now,
     updatedAt: now,
   };
-  // A promo that covers the whole fee leaves nothing to pay: the order is paid at once, like the API.
-  if (order.totalVnd === 0) {
-    order.status = "paid";
-    order.orderStatus = "PAID";
-    order.paidAt = now;
-  }
   db().orders.push(order);
   save();
   return order;

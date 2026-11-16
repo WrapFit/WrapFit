@@ -4,7 +4,7 @@ import type { CreditsService, PlanService } from '../billing';
 import type { ConfigService } from '../common';
 import type { OrdersService } from '../orders';
 import type { PrismaService } from '../shared/prisma';
-import { newPaymentReference, PaymentsService } from './payments.service';
+import { httpErrorCode, newPaymentReference, PaymentsService } from './payments.service';
 import { SAMPLE_ACCOUNT } from './vietqr';
 import type { VnpayGateway } from './vnpay/vnpay.gateway';
 
@@ -207,6 +207,64 @@ describe('PaymentsService', () => {
 
     const missing = confirmFixture(pendingXu, []);
     await expect(missing.service.confirmPaid(missing.tx, 'p3', { via: 'ADMIN' })).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  describe('confirmPaid of a sample order (docs/25 item 2)', () => {
+    const pendingOrder = { ...pendingXu, purpose: 'SAMPLE_ORDER', provider: 'VIETQR', amountVnd: 49_000, metadata: { orderId: 'o1' } };
+    const orderFixture = (lockPayable: jest.Mock) => {
+      const fixture = confirmFixture(pendingOrder);
+      const orders = { lockPayable, markPaid: jest.fn().mockResolvedValue({}) };
+      const service = new PaymentsService(
+        { $transaction: (run: (db: unknown) => unknown) => run(fixture.tx) } as unknown as PrismaService,
+        fixture.credits as unknown as CreditsService,
+        { sync: jest.fn().mockResolvedValue('FREE') } as unknown as PlanService,
+        orders as unknown as OrdersService,
+        { get: (key: string) => key === 'payments.simulation' } as unknown as ConfigService,
+        noVnpay,
+      );
+      return { ...fixture, orders, service };
+    };
+
+    it('locks and checks the order before writing the payment, then marks it paid', async () => {
+      const { tx, rawTx, orders, service } = orderFixture(jest.fn().mockResolvedValue(undefined));
+
+      await expect(service.confirmPaid(tx, 'p3', { via: 'SEPAY_WEBHOOK' })).resolves.toMatchObject({ status: 'PAID' });
+
+      expect(orders.lockPayable).toHaveBeenCalledWith('o1', tx);
+      expect(orders.lockPayable.mock.invocationCallOrder[0]).toBeLessThan(rawTx.payment.update.mock.invocationCallOrder[0]);
+      expect(orders.markPaid).toHaveBeenCalledWith('o1', 'p3', tx);
+    });
+
+    it('throws ORDER_NOT_PAYABLE for a cancelled order before anything is written', async () => {
+      const refusal = new HttpException({ code: 'ORDER_NOT_PAYABLE' }, 409);
+      const { tx, rawTx, orders, credits, service } = orderFixture(jest.fn().mockRejectedValue(refusal));
+
+      await expect(service.confirmPaid(tx, 'p3', { via: 'ADMIN', allowExpired: true })).rejects.toBe(refusal);
+
+      expect(rawTx.payment.update).not.toHaveBeenCalled();
+      expect(orders.markPaid).not.toHaveBeenCalled();
+      expect(credits.grant).not.toHaveBeenCalled();
+    });
+
+    it('simulate-confirm answers the same 409 ORDER_NOT_PAYABLE and leaves the payment PENDING', async () => {
+      const refusal = new HttpException({ code: 'ORDER_NOT_PAYABLE' }, 409);
+      const { rawTx, service } = orderFixture(jest.fn().mockRejectedValue(refusal));
+
+      await expect(service.simulateConfirm('p3', 'u1')).rejects.toBe(refusal);
+      expect(rawTx.payment.update).not.toHaveBeenCalled();
+    });
+
+    it('does not look at an order for other purposes', async () => {
+      const { tx, service } = confirmFixture(pendingXu);
+      // OrdersService is an empty object here: calling it would throw.
+      await expect(service.confirmPaid(tx, 'p3', { via: 'SIMULATION' })).resolves.toMatchObject({ status: 'PAID' });
+    });
+  });
+
+  it('httpErrorCode reads the code of an HttpException body only', () => {
+    expect(httpErrorCode(new HttpException({ code: 'PAYMENT_EXPIRED' }, 409))).toBe('PAYMENT_EXPIRED');
+    expect(httpErrorCode(new HttpException('plain', 409))).toBeUndefined();
+    expect(httpErrorCode(new Error('x'))).toBeUndefined();
   });
 
   it.each([

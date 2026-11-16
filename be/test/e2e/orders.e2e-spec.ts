@@ -148,6 +148,32 @@ describe('Orders API (e2e)', () => {
     await as(owner).post('/api/orders/sample').send({ ...order(projectId), phone: undefined }).expect(400);
   });
 
+  it('has no vouchers: a body with a promo code gets 400 and creates nothing, and no order is ever free or PAID at once', async () => {
+    const before = await prisma.order.count({ where: { userId: owner.id } });
+    const single = { ...order(projectId), quantity: 1 };
+    const bundle = { ...single, projectId: undefined, quantity: undefined, paperStock: undefined, items: [{ projectId, quantity: 1 }] };
+    for (const promoCode of ['WORKSHOPTET', 'WRAPFIT10', 'workshoptet', '']) {
+      const one = await as(owner).post('/api/orders/sample').send({ ...single, promoCode }).expect(400);
+      expect(one.body.message).toEqual(expect.arrayContaining(['property promoCode should not exist']));
+      const many = await as(owner).post('/api/orders/sample/bundle').send({ ...bundle, promoCode }).expect(400);
+      expect(many.body.message).toEqual(expect.arrayContaining(['property promoCode should not exist']));
+    }
+    expect(await prisma.order.count({ where: { userId: owner.id } })).toBe(before);
+
+    // The cheapest order there is (one box) still costs the first-box fee and waits for its payment.
+    const cheapest = (await as(owner).post('/api/orders/sample').send(single).expect(201)).body;
+    expect(cheapest).toMatchObject({
+      orderStatus: 'PENDING_PAYMENT',
+      subtotalVnd: 49_000,
+      discountVnd: 0,
+      promoCode: null,
+      totalVnd: 49_000,
+      paidAt: null,
+      paymentId: null,
+    });
+    await prisma.order.delete({ where: { id: cheapest.id } });
+  });
+
   it('lets only ADMIN and PRINT_SHOP change the status', async () => {
     await as(owner).patch(`/api/orders/${orderId}/status`).send({ status: 'PAID' }).expect(403);
     await as(owner).get('/api/orders').expect(403);

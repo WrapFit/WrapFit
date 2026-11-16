@@ -1,4 +1,4 @@
-import { HttpException, Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import {
   BankTxStatus,
   BankTxUnmatchedReason,
@@ -9,7 +9,8 @@ import {
 } from '@prisma/client';
 import { ConfigService } from '../../common';
 import { PrismaService } from '../../shared/prisma';
-import { PaymentsService } from '../payments.service';
+import { ORDER_NOT_PAYABLE } from '../../orders';
+import { httpErrorCode, PAYMENT_EXPIRED, PaymentsService } from '../payments.service';
 import {
   authorizationMatches,
   extractReferences,
@@ -156,9 +157,14 @@ export class SepayWebhookService implements OnModuleInit {
         providerTxnId: externalId,
       });
     } catch (error) {
-      // Expired in the milliseconds between our check and confirmPaid's own: confirmPaid throws before writing.
-      if (error instanceof HttpException && error.getStatus() === 409) {
-        return unmatched(BankTxUnmatchedReason.EXPIRED, payment.id, payment.reference);
+      // Only the two refusals confirmPaid throws before writing anything are stored for the admin; the transaction is
+      // still clean then. Any other error (a 409 from a later step included) propagates and rolls everything back.
+      const code = httpErrorCode(error);
+      // Expired in the milliseconds between our check and confirmPaid's own.
+      if (code === PAYMENT_EXPIRED) return unmatched(BankTxUnmatchedReason.EXPIRED, payment.id, payment.reference);
+      // The sample order was cancelled (or paid by another payment): the money arrived for nothing, refund it.
+      if (code === ORDER_NOT_PAYABLE) {
+        return unmatched(BankTxUnmatchedReason.ORDER_NOT_PAYABLE, payment.id, payment.reference);
       }
       throw error;
     }

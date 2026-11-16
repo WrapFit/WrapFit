@@ -7,6 +7,9 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { cancelOrder, placeSampleOrder } from './helpers/orders';
+
+const KEY = process.env.SEPAY_WEBHOOK_API_KEY!;
 
 /**
  * Admin reconciliation of bank transfers (docs/21 §3.5) against a real PostgreSQL: the list and its filter, assigning
@@ -217,6 +220,108 @@ describe('Admin bank transactions (e2e)', () => {
       expect((await prisma.bankTransaction.findUniqueOrThrow({ where: { id: tx.id } })).status).toBe('UNMATCHED');
       expect((await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).status).toBe('EXPIRED');
       expect(await lots(payment.id)).toHaveLength(0);
+    });
+
+    it('a webhook paying the payment while an admin assigns a second transfer to it: the second stays UNMATCHED', async () => {
+      const payment = (await pay(buyer, { purpose: 'XU_500' })) as { id: string; reference: string; amountVnd: number };
+      const surplus = await unmatched(payment.amountVnd, { reason: 'NO_REFERENCE' });
+      const webhookId = run + 700_000 + ++nextId;
+      usedIds.push(String(webhookId));
+
+      /** Requests waiting on a payment row lock (the webhook, assign and confirmPaid all lock with this statement). */
+      const waiting = async () =>
+        Number(
+          (
+            await prisma.$queryRaw<{ n: bigint }[]>`
+              SELECT count(*) AS n FROM pg_stat_activity
+              WHERE datname = current_database() AND wait_event_type = 'Lock'
+                AND query LIKE '%SELECT id FROM payments WHERE id = $1::uuid FOR UPDATE'`
+          )[0].n,
+        );
+      const until = async (n: number) => {
+        for (let i = 0; i < 200 && (await waiting()) < n; i++) await new Promise((r) => setTimeout(r, 25));
+        expect(await waiting()).toBe(n);
+      };
+
+      // Hold the payment row, so the webhook and then the admin queue behind it in a known order. Postgres hands a row
+      // lock to its waiters first come, first served: the webhook pays, then the admin reads the payment.
+      let release!: () => void;
+      const gate = new Promise<void>((resolveGate) => (release = resolveGate));
+      let held!: () => void;
+      const holding = new Promise<void>((resolveHeld) => (held = resolveHeld));
+      const holder = prisma.$transaction(
+        async (tx) => {
+          await tx.$queryRaw`SELECT id FROM payments WHERE id = ${payment.id}::uuid FOR UPDATE NOWAIT`;
+          held();
+          await gate;
+        },
+        { timeout: 30_000 },
+      );
+      await holding;
+
+      const webhook = api()
+        .post('/api/webhooks/sepay')
+        .set('Authorization', `Apikey ${KEY}`)
+        .send({
+          id: webhookId,
+          gateway: 'Vietcombank',
+          transactionDate: '2026-11-16 10:00:00',
+          accountNumber: '0123456789',
+          code: null,
+          content: payment.reference,
+          transferType: 'in',
+          transferAmount: payment.amountVnd,
+          accumulated: 1_000_000,
+          subAccount: null,
+          referenceCode: `FT${webhookId}`,
+          description: payment.reference,
+        })
+        .then((res) => res);
+      let assign: Promise<request.Response>;
+      try {
+        await until(1);
+        assign = resolve(admin, surplus.id, { action: 'assign', paymentReference: payment.reference }).then((res) => res);
+        await until(2);
+      } finally {
+        release();
+        await holder;
+      }
+
+      const [paidByWebhook, assigned] = await Promise.all([webhook, assign]);
+      expect(paidByWebhook.status).toBe(200);
+      expect(assigned.status).toBe(409);
+      expect(assigned.body).toMatchObject({ code: 'PAYMENT_ALREADY_PAID' });
+
+      expect(await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).toMatchObject({
+        status: 'PAID',
+        confirmedVia: 'SEPAY_WEBHOOK',
+      });
+      expect(await prisma.bankTransaction.findUniqueOrThrow({ where: { externalId: String(webhookId) } })).toMatchObject({
+        status: 'MATCHED',
+        paymentId: payment.id,
+      });
+      expect(await prisma.bankTransaction.findUniqueOrThrow({ where: { id: surplus.id } })).toMatchObject({
+        status: 'UNMATCHED',
+        resolvedBy: null,
+      });
+      expect(await lots(payment.id)).toHaveLength(1);
+    });
+
+    it('answers 409 ORDER_NOT_PAYABLE for the payment of a cancelled sample order and leaves the transfer UNMATCHED', async () => {
+      const order = await placeSampleOrder(app, buyer.cookie);
+      const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+      await prisma.payment.update({ where: { id: payment.id }, data: { expiresAt: new Date(Date.now() - 60_000), status: 'EXPIRED' } });
+      await cancelOrder(prisma, order.id);
+      const tx = await unmatched(payment.amountVnd, { reason: 'ORDER_NOT_PAYABLE', extractedReference: payment.reference });
+
+      const res = await resolve(admin, tx.id, { action: 'assign', paymentReference: payment.reference }).expect(409);
+      expect(res.body).toMatchObject({ code: 'ORDER_NOT_PAYABLE' });
+      expect(await prisma.bankTransaction.findUniqueOrThrow({ where: { id: tx.id } })).toMatchObject({ status: 'UNMATCHED', resolvedBy: null });
+      expect(await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).toMatchObject({ status: 'EXPIRED', paidAt: null });
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: 'CANCELLED', paymentId: null });
+
+      // The admin can still ignore it with a note once the money is refunded.
+      await resolve(admin, tx.id, { action: 'ignore', note: 'đã hoàn tiền cho khách' }).expect(200);
     });
 
     it('answers 409 the second time and grants once, also when two admins assign at once', async () => {

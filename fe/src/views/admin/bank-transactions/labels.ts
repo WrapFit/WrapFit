@@ -8,6 +8,7 @@ export const REASON_LABELS: Record<BankTxUnmatchedReason, string> = {
   AMOUNT_MISMATCH: 'Sai số tiền',
   EXPIRED: 'Thanh toán đã hết hạn',
   ALREADY_PAID: 'Thanh toán đã được trả',
+  ORDER_NOT_PAYABLE: 'Đơn in đã hủy, cần hoàn tiền',
 };
 
 export const REASON_TONES: Record<BankTxUnmatchedReason, Tone> = {
@@ -16,6 +17,7 @@ export const REASON_TONES: Record<BankTxUnmatchedReason, Tone> = {
   AMOUNT_MISMATCH: 'warning',
   EXPIRED: 'warning',
   ALREADY_PAID: 'info',
+  ORDER_NOT_PAYABLE: 'warning',
 };
 
 export const STATUS_LABELS: Record<BankTxStatus, string> = {

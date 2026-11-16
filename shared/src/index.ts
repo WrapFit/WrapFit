@@ -52,6 +52,5 @@ export * from "./billing/plans";
 export * from "./billing/prices";
 export * from "./billing/entitlements";
 export * from "./billing/xu";
-export * from "./billing/promo";
 export * from "./billing/ai-image-models";
 export * from "./billing/terms";

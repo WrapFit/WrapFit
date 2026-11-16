@@ -8,7 +8,7 @@
  */
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Building2, CalendarClock, Coins, Landmark, Receipt, Tag } from 'lucide-react';
+import { ArrowRight, Building2, CalendarClock, Coins, Landmark, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { getBillingDetails, getBillingSummary, listMyPayments, saveBillingDetails } from '@/api/payments';
@@ -20,7 +20,6 @@ import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
 import { CheckoutDialog } from '@/features/payments';
 import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
-import { findSamplePromo } from '@wrapfit/shared';
 import { queryKeys } from '@/hooks/data';
 import type { BillingDetails, PaymentHistoryEntry, PaymentPurpose } from '@/types/api';
 import { cn } from '@/utils/helpers';
@@ -239,7 +238,6 @@ function BillingScreen() {
         </div>
 
         <div className="flex flex-col gap-6 xl:col-span-4">
-          <PromoPanel />
           <BillingDetailsPanel />
         </div>
       </div>
@@ -264,38 +262,6 @@ function BillingScreen() {
       )}
       {buying && <CheckoutDialog purpose={buying} onClose={() => setBuying(null)} />}
     </WorkspaceShell>
-  );
-}
-
-/** Promo codes are for sample-print orders: the server applies them when the order is placed from the cart. */
-function PromoPanel() {
-  const [code, setCode] = useState('');
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
-  const check = () => {
-    if (!code.trim()) return;
-    const promo = findSamplePromo(code);
-    setResult(promo ? { ok: true, text: `${promo.label}. Nhập mã này ở giỏ in mẫu khi đặt đơn.` } : { ok: false, text: 'Mã không hợp lệ hoặc đã hết hạn.' });
-  };
-  return (
-    <Panel>
-      <PanelTitle>Mã ưu đãi</PanelTitle>
-      <div className="mt-3 flex gap-2">
-        <label htmlFor="billing-promo" className="sr-only">
-          Mã ưu đãi
-        </label>
-        <input id="billing-promo" value={code} onChange={(event) => setCode(event.target.value)} placeholder="WRAPFIT10" className={cn(WORKSPACE_INPUT, 'font-mono uppercase')} />
-        <button type="button" onClick={check} className={cn(outlineButton, 'shrink-0 whitespace-nowrap')}>
-          <Tag className="size-4" aria-hidden /> Kiểm tra
-        </button>
-      </div>
-      {result && <p className={cn('mt-2 text-xs', result.ok ? 'text-fpt-orange-ink' : 'text-danger-fg')}>{result.text}</p>}
-      {result?.ok && (
-        <Link href="/cart" className="mt-1 inline-block text-xs font-medium text-fpt-orange-ink hover:underline">
-          Mở giỏ in mẫu
-        </Link>
-      )}
-      <p className="mt-2 text-xs text-library-sub">Mã ưu đãi áp dụng cho đơn in mẫu.</p>
-    </Panel>
   );
 }
 

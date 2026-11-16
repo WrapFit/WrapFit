@@ -167,11 +167,19 @@ export class BankTransactionsService {
       if (bankTx.status !== BankTxStatus.UNMATCHED) throw notUnmatched(bankTx.status);
 
       // A VNPay payment is never paid by a bank transfer (docs/21 §6).
-      const payment = await tx.payment.findFirst({
+      const found = await tx.payment.findFirst({
         where: { reference, provider: PaymentProvider.VIETQR },
+        select: { id: true },
+      });
+      if (!found) throw new NotFoundException('Không tìm thấy thanh toán với mã này');
+      // Lock the payment before reading its status, as the webhook does: a webhook paying it meanwhile commits first
+      // and is seen here as PAID, instead of confirmPaid returning it untouched and this transfer being RESOLVED for
+      // nothing.
+      await tx.$queryRaw`SELECT id FROM payments WHERE id = ${found.id}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUniqueOrThrow({
+        where: { id: found.id },
         select: { id: true, amountVnd: true, status: true },
       });
-      if (!payment) throw new NotFoundException('Không tìm thấy thanh toán với mã này');
       if (payment.status === PaymentStatus.PAID) {
         throw new ConflictException({ code: 'PAYMENT_ALREADY_PAID', message: 'Thanh toán này đã được trả' });
       }
@@ -182,7 +190,9 @@ export class BankTransactionsService {
         });
       }
 
-      // confirmPaid locks the payment and answers 409 for one that cannot be paid any more (CANCELLED).
+      // confirmPaid answers 409 PAYMENT_EXPIRED for a payment that cannot be paid any more (CANCELLED) and 409
+      // ORDER_NOT_PAYABLE for a sample order that was cancelled or paid otherwise. Either rolls this back: the transfer
+      // stays UNMATCHED and the admin sees the error.
       await this.payments.confirmPaid(tx, payment.id, {
         via: PaymentConfirmation.ADMIN,
         providerTxnId: bankTx.externalId,

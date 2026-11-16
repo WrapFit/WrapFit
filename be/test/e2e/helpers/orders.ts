@@ -1,3 +1,5 @@
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
 import { PrismaService } from '../../../src/shared/prisma';
 
 /**
@@ -37,4 +39,38 @@ export const createPaidOrder = async (prisma: PrismaService, userId: string, pro
     select: { id: true },
   });
   return order.id;
+};
+
+/**
+ * A new project of the user and a one-box sample order of it, placed through the API: PENDING_PAYMENT, 49.000đ.
+ * Returns the order as the API answers it.
+ */
+export const placeSampleOrder = async (
+  app: INestApplication,
+  cookie: string,
+): Promise<{ id: string; orderStatus: string; totalVnd: number }> => {
+  const server = app.getHttpServer();
+  const projectId = (
+    await request(server)
+      .post('/api/projects')
+      .set('Cookie', cookie)
+      .send({ templateId: 'tuck-top', title: 'Hộp mẫu e2e', dimensions: { length: 80, width: 80, height: 95 } })
+      .expect(201)
+  ).body.id as string;
+  return (
+    await request(server)
+      .post('/api/orders/sample')
+      .set('Cookie', cookie)
+      .send({ projectId, recipientName: 'Nguyễn Mai Anh', phone: '0901234567', shippingAddress: '12 Lý Tự Trọng, Q.1' })
+      .expect(201)
+  ).body;
+};
+
+/** Cancels an order the way an admin's PATCH does (PENDING_PAYMENT -> CANCELLED), without needing an admin account. */
+export const cancelOrder = async (prisma: PrismaService, orderId: string): Promise<void> => {
+  const { count } = await prisma.order.updateMany({
+    where: { id: orderId, status: 'PENDING_PAYMENT' },
+    data: { status: 'CANCELLED', cancelledAt: new Date() },
+  });
+  if (count !== 1) throw new Error(`order ${orderId} was not waiting for payment`);
 };

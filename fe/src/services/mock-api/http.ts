@@ -18,7 +18,7 @@ export class MockHttpError extends Error {
   constructor(
     readonly status: number,
     message: string | string[],
-    /** `code` may be one the web types do not list yet (ORDER_PAYMENT_REQUIRED, INVALID_PROMO), as on the API. */
+    /** `code` may be one the web types do not list yet (ORDER_PAYMENT_REQUIRED), as on the API. */
     readonly extra: Omit<Partial<ApiErrorBody>, "code"> & { code?: ApiErrorCode | (string & {}) } = {},
   ) {
     super([message].flat()[0]);

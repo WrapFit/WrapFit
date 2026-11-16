@@ -138,9 +138,32 @@ describe('SepayWebhookService.handle', () => {
     });
 
     it('EXPIRED when the payment lapses between the check and confirmPaid', async () => {
-      const { service, confirmPaid } = setup([payment()]);
-      confirmPaid.mockRejectedValueOnce(new ConflictException());
+      const { service, confirmPaid, updated } = setup([payment()]);
+      confirmPaid.mockRejectedValueOnce(new ConflictException({ code: 'PAYMENT_EXPIRED' }));
       await expect(service.handle(body())).resolves.toEqual({ result: 'UNMATCHED', reason: 'EXPIRED', paymentId: 'pay-1' });
+      expect(updated.mock.calls.every(([arg]) => arg.data.status === undefined)).toBe(true);
+    });
+
+    it('ORDER_NOT_PAYABLE when the sample order was cancelled: stored for a refund, never MATCHED', async () => {
+      const { service, confirmPaid, updated } = setup([payment()]);
+      confirmPaid.mockRejectedValueOnce(new ConflictException({ code: 'ORDER_NOT_PAYABLE' }));
+      await expect(service.handle(body())).resolves.toEqual({
+        result: 'UNMATCHED',
+        reason: 'ORDER_NOT_PAYABLE',
+        paymentId: 'pay-1',
+      });
+      expect(updated).toHaveBeenCalledWith({
+        where: { externalId: '1001' },
+        data: expect.objectContaining({ unmatchedReason: 'ORDER_NOT_PAYABLE', paymentId: 'pay-1' }),
+      });
+      expect(updated.mock.calls.every(([arg]) => arg.data.status === undefined)).toBe(true);
+    });
+
+    it('lets any other 409 out, so a refusal after a write rolls back instead of being swallowed', async () => {
+      const { service, confirmPaid } = setup([payment()]);
+      const late = new ConflictException('Đơn hàng vừa được cập nhật, hãy tải lại');
+      confirmPaid.mockRejectedValueOnce(late);
+      await expect(service.handle(body())).rejects.toBe(late);
     });
 
     it('lets an unexpected error out so the transaction rolls back and SePay retries', async () => {
