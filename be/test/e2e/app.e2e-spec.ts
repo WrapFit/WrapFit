@@ -8,6 +8,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { setupSwagger } from '../../src/swagger';
 import { uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Needs a running PostgreSQL with the migrations applied (see README: "Chạy test").
@@ -60,7 +61,7 @@ describe('API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

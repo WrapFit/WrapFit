@@ -400,10 +400,10 @@ export class StorageService implements IProjectFiles {
    * Prepares the deletion of a user and returns the keys of the objects to delete afterwards: their uploads and the
    * generated files of their projects. Uploads that projects of other users still show (remixes) are handed over to
    * the oldest of those projects and its owner, file and quota included: they survive the deletion and go with the
-   * last project that shows them.
+   * last project that shows them. Runs in the transaction that deletes the user (`db`).
    */
-  async releaseUserFiles(userId: string): Promise<string[]> {
-    await this.prisma.$executeRaw`
+  async releaseUserFiles(userId: string, db: Db = this.prisma): Promise<string[]> {
+    await db.$executeRaw`
       UPDATE stored_files f SET user_id = heir.user_id, project_id = heir.project_id
       FROM (
         SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id, p.user_id
@@ -414,11 +414,61 @@ export class StorageService implements IProjectFiles {
       WHERE heir.stored_file_id = f.id
         AND (f.user_id = ${userId}::uuid
              OR f.project_id IN (SELECT id FROM packaging_projects WHERE user_id = ${userId}::uuid))`;
-    const rows = await this.prisma.$queryRaw<{ key: string }[]>`
+    const rows = await db.$queryRaw<{ key: string }[]>`
       SELECT f.key FROM stored_files f
       LEFT JOIN packaging_projects owner ON owner.id = f.project_id
       WHERE f.user_id = ${userId}::uuid OR owner.user_id = ${userId}::uuid`;
     return rows.map((row) => row.key);
+  }
+
+  /**
+   * Prepares the anonymization of a user (UsersService.remove), inside its transaction. The projects in `kept` stay
+   * with every file they show; the projects in `dropped` are deleted by the caller right after. Uploads that projects
+   * of other users show (remixes) are handed over as in releaseUserFiles, and files of a dropped project that a kept
+   * project shows move to that project. Returns what goes: `keys` to delete from the bucket after the commit, and
+   * `unattachedIds`, the rows with no project to delete once the dropped projects are gone (rows of dropped projects
+   * go with them). Files of the shared library (LibraryAsset) always stay.
+   */
+  async releaseFilesForAnonymization(
+    db: Db,
+    userId: string,
+    kept: string[],
+    dropped: string[],
+  ): Promise<{ keys: string[]; unattachedIds: string[] }> {
+    await db.$executeRaw`
+      UPDATE stored_files f SET user_id = heir.user_id, project_id = heir.project_id
+      FROM (
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id, p.user_id
+        FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
+        WHERE p.user_id <> ${userId}::uuid
+        ORDER BY r.stored_file_id, p.created_at, p.id
+      ) heir
+      WHERE heir.stored_file_id = f.id
+        AND (f.user_id = ${userId}::uuid OR f.project_id = ANY(${dropped}::uuid[]))
+        AND (f.project_id IS NULL OR f.project_id <> ALL(${kept}::uuid[]))
+        AND NOT EXISTS (SELECT 1 FROM project_file_refs k WHERE k.stored_file_id = f.id AND k.project_id = ANY(${kept}::uuid[]))
+        AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)`;
+    // Whatever of a dropped project another project still shows is now shown by a kept one: it moves there.
+    await db.$executeRaw`
+      UPDATE stored_files f SET project_id = heir.project_id
+      FROM (
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id
+        FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
+        WHERE r.project_id = ANY(${kept}::uuid[])
+        ORDER BY r.stored_file_id, p.created_at, p.id
+      ) heir
+      WHERE heir.stored_file_id = f.id AND f.project_id = ANY(${dropped}::uuid[])`;
+    const rows = await db.$queryRaw<{ id: string; key: string; project_id: string | null }[]>`
+      SELECT f.id, f.key, f.project_id FROM stored_files f
+      WHERE (f.project_id = ANY(${dropped}::uuid[])
+             OR (f.user_id = ${userId}::uuid AND f.project_id IS NULL
+                 AND NOT EXISTS (SELECT 1 FROM project_file_refs r
+                                 WHERE r.stored_file_id = f.id AND r.project_id <> ALL(${dropped}::uuid[]))))
+        AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)`;
+    return {
+      keys: rows.map((row) => row.key),
+      unattachedIds: rows.filter((row) => row.project_id === null).map((row) => row.id),
+    };
   }
 
   listProjectFiles(projectIds: string[]): Promise<ProjectFile[]> {

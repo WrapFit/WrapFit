@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -115,6 +116,20 @@ const paymentExpired = () =>
     { code: PAYMENT_EXPIRED, message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
     HttpStatus.CONFLICT,
   );
+
+/**
+ * docs/25 item 6: a VietQR payment is a real bank transfer (or stands for one: it grants xu, Pro, a printed sample
+ * order), so only a demo account (`users.is_demo`) may simulate it, by the button or by a mock bank transfer. Demo
+ * accounts pay through VNPay sandbox, and simulating that stays open to them as the fallback when VNPay is down.
+ */
+export function assertMaySimulate(provider: PaymentProvider, isDemo: boolean): void {
+  if (provider === PaymentProvider.VIETQR && !isDemo) {
+    throw new ForbiddenException({
+      code: 'SIMULATION_DEMO_ONLY',
+      message: 'Chỉ tài khoản demo được giả lập thanh toán chuyển khoản VietQR',
+    });
+  }
+}
 
 /** The `code` in the body of an HttpException (PAYMENT_EXPIRED, ORDER_NOT_PAYABLE...), undefined for anything else. */
 export function httpErrorCode(error: unknown): string | undefined {
@@ -267,15 +282,18 @@ export class PaymentsService {
 
   /**
    * Marks a payment paid without a transfer (PAYMENT_SIMULATION only, 404 otherwise, as if the route did not exist).
-   * Only the owner may do it; `confirmPaid` does the rest.
+   * Only the owner may do it, and a VietQR payment only a demo account (`assertMaySimulate`); `confirmPaid` does the
+   * rest.
    */
   async simulateConfirm(id: string, userId: string): Promise<PaymentView> {
     if (!this.simulation) throw new NotFoundException();
 
     const payment = await this.prisma.$transaction(async (tx) => {
-      const owned = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM payments WHERE id = ${id}::uuid AND user_id = ${userId}::uuid FOR UPDATE`;
-      if (owned.length === 0) throw new NotFoundException('Thanh toán không tồn tại');
+      const [owned] = await tx.$queryRaw<{ provider: PaymentProvider; is_demo: boolean }[]>`
+        SELECT p.provider, u.is_demo FROM payments p JOIN users u ON u.id = p.user_id
+        WHERE p.id = ${id}::uuid AND p.user_id = ${userId}::uuid FOR UPDATE OF p`;
+      if (!owned) throw new NotFoundException('Thanh toán không tồn tại');
+      assertMaySimulate(owned.provider, owned.is_demo);
       return this.confirmPaid(tx, id, { via: PaymentConfirmation.SIMULATION });
     });
     return this.toView(payment);

@@ -9,6 +9,7 @@ import { signParams, vnpayDate } from '../../src/payments/vnpay/vnpay';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { cancelOrder, placeSampleOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 const SECRET = process.env.VNPAY_HASH_SECRET!;
 const TMN_CODE = process.env.VNPAY_TMN_CODE!;
@@ -81,7 +82,7 @@ describe('VNPay (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 

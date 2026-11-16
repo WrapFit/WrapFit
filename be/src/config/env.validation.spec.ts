@@ -36,6 +36,18 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...both, VNPAY_RETURN_URL: 'not a url' })).toThrow(/VNPAY_RETURN_URL/);
   });
 
+  it('refuses PAYMENT_SIMULATION=true in production with a real VietQR account (docs/25 item 6)', () => {
+    const bank = { VIETQR_BANK_BIN: '970436', VIETQR_ACCOUNT_NO: '0123456789', VIETQR_ACCOUNT_NAME: 'CONG TY WRAPFIT' };
+    const production = { ...valid, NODE_ENV: 'production' };
+    expect(() => validateEnv({ ...production, ...bank, PAYMENT_SIMULATION: 'true' })).toThrow(
+      /PAYMENT_SIMULATION=true is refused in production/,
+    );
+    // Real money without simulation, a demo with the sample account, or simulation outside production: allowed.
+    expect(validateEnv({ ...production, ...bank, PAYMENT_SIMULATION: 'false' }).PAYMENT_SIMULATION).toBe('false');
+    expect(validateEnv({ ...production, PAYMENT_SIMULATION: 'true' }).PAYMENT_SIMULATION).toBe('true');
+    expect(validateEnv({ ...valid, ...bank, PAYMENT_SIMULATION: 'true' }).PAYMENT_SIMULATION).toBe('true');
+  });
+
   it('rejects short JWT secrets', () => {
     expect(() => validateEnv({ ...valid, JWT_ACCESS_SECRET: 'short' })).toThrow(/JWT_ACCESS_SECRET/);
   });

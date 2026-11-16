@@ -10,6 +10,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { createPaidOrder } from './helpers/orders';
 import { WorkerModule } from '../../src/worker';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Print export (IT3-11): API enqueues in Redis, a real worker context renders and uploads to SeaweedFS.
@@ -92,7 +93,7 @@ describe('Print export (e2e)', () => {
 
   afterAll(async () => {
     await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await worker.close(); // waits for the BullMQ worker's blocking connection: several seconds
     await app.close();
   }, 30_000);

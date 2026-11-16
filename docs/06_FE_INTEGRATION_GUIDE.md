@@ -533,7 +533,7 @@ Toàn bộ 56 route HTTP của backend và mục tài liệu tương ứng. Rout
 | Auth | `GET /api/auth/google` · `/google/callback` | Public (điều hướng trình duyệt) | 3.5 |
 | Auth | `POST /api/auth/verify-email` · `/verify-email/resend` · `/password/forgot` · `/password/reset` | Public | 3 |
 | Người dùng | `GET` · `PATCH /api/users/me`, `PATCH /api/users/me/brand-kit` | Đăng nhập | 12 |
-| Quản trị | `GET /api/users?page=&limit=` · `GET /api/users/:id` · `PATCH /api/users/:id { role?, isActive? }` · `DELETE /api/users/:id` | ADMIN | 16 |
+| Quản trị | `GET /api/users?page=&limit=` · `GET /api/users/:id` · `PATCH /api/users/:id { role?, isActive? }` · `DELETE /api/users/:id` → `200 { id, result: "DELETED" \| "ANONYMIZED" }` (có thanh toán / đơn / xu đã mua thì ẩn danh hóa, docs/25 mục 3) | ADMIN | 16 |
 | Dự án | `POST` · `GET /api/projects`, `GET` · `PATCH` · `DELETE /api/projects/:id` | Đăng nhập / chủ dự án | 5 |
 | Dự án | `PATCH /api/projects/:id/status` · `/visibility`, `POST /api/projects/:id/duplicate` | Chủ dự án | 5.4, 8 |
 | Phiên bản | `GET` · `POST /api/projects/:id/snapshots`, `POST .../:snapshotId/restore`, `DELETE .../:snapshotId` | Chủ dự án | 6 |

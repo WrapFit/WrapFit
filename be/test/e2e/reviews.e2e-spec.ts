@@ -7,6 +7,7 @@ import { middleware } from '../../src/app.middleware';
 import { MAX_COMMENTS_PER_PROJECT } from '../../src/reviews/reviews.service';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp, uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Design review links (docs/23 S23, audit findings 20 and 21): the three public endpoints a reviewer uses without an
@@ -55,7 +56,7 @@ describe('Design review links (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 

@@ -13,6 +13,7 @@ import { FitCheckBackfillTask } from '../../src/projects/presentation/fitcheck-b
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp, uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Projects CRUD (IT3-03), lifecycle, duplicate, snapshots and trash purge (IT3-04). Needs the migrated and seeded database (box templates).
@@ -62,7 +63,7 @@ describe('Projects API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

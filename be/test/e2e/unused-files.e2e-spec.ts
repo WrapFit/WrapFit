@@ -6,6 +6,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Uploads a user no longer uses stop counting against the quota: a replaced or removed avatar / brand kit logo goes
@@ -90,7 +91,7 @@ describe('Unused files (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

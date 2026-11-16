@@ -8,6 +8,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { cancelOrder, placeSampleOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 const KEY = process.env.SEPAY_WEBHOOK_API_KEY!;
 
@@ -85,7 +86,7 @@ describe('Admin bank transactions (e2e)', () => {
 
   afterAll(async () => {
     await prisma.bankTransaction.deleteMany({ where: { externalId: { in: usedIds } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 

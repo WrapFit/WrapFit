@@ -8,6 +8,7 @@ import { AiImageReconcileTask } from '../../src/ai/image/ai-image-reconcile.task
 import { XuWalletService } from '../../src/billing';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /** AI pattern endpoint (IT3-09, paid with xu since docs/19 S3) with AI disabled (see e2e-env.ts): procedural answers. */
 describe('AI pattern (e2e)', () => {
@@ -28,7 +29,7 @@ describe('AI pattern (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

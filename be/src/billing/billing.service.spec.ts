@@ -27,7 +27,8 @@ describe('BillingService.me', () => {
   it.each([true, false])('reports isDemo=%s of the account next to the plan summary', async (isDemo) => {
     const { service, prisma } = build(isDemo);
     const summary = await service.me('user-1');
-    expect(summary).toMatchObject({ tier: 'FREE', isDemo, paymentSimulation: true, exportCredits: { balance: 5 } });
+    // Simulation is on (config): only a demo account is offered the button (docs/25 item 6).
+    expect(summary).toMatchObject({ tier: 'FREE', isDemo, paymentSimulation: isDemo, exportCredits: { balance: 5 } });
     expect(prisma.user.findUniqueOrThrow).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       select: { subscriptionTier: true, isDemo: true },

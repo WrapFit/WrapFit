@@ -8,6 +8,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { WorkerModule } from '../../src/worker';
 import { signUp } from './helpers/accounts';
 import { createPaidOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Analytics dashboard (docs/17 S7): product events recorded by the API, the worker and the studio, and the summary
@@ -67,7 +68,7 @@ describe('Analytics (e2e)', () => {
 
   afterAll(async () => {
     await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await worker.close(); // waits for the BullMQ worker's blocking connection: several seconds
     await app.close();
   }, 30_000);

@@ -127,6 +127,10 @@ export function ConfirmDeleteDialog({ user, onClose }: ConfirmDeleteDialogProps)
           <p className="text-sm">
             Ảnh đang được dùng trong bản remix của người khác được giữ lại cho bản remix đó.
           </p>
+          <p className="text-sm">
+            Nếu tài khoản đã có thanh toán, đơn in hoặc xu đã mua, tài khoản được <strong className="font-semibold text-library-ink">ẩn danh hoá</strong> thay
+            vì xoá: thanh toán, đơn in và thiết kế của đơn chưa huỷ được giữ; tên, email và thông tin cá nhân bị xoá, không đăng nhập lại được.
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5">

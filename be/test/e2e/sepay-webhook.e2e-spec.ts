@@ -8,6 +8,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { cancelOrder, placeSampleOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 const KEY = process.env.SEPAY_WEBHOOK_API_KEY!;
 
@@ -81,7 +82,7 @@ describe('SePay webhook (e2e)', () => {
 
   afterAll(async () => {
     await prisma.bankTransaction.deleteMany({ where: { externalId: { in: usedIds } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 
@@ -173,11 +174,13 @@ describe('SePay webhook (e2e)', () => {
   it('grants once when the webhook and the simulate button arrive together', async () => {
     const payment = await pay(buyer, { purpose: 'XU_500' });
     const body = transfer(payment.reference, payment.amountVnd);
+    // Only a demo account may simulate a VietQR payment (docs/25 item 6): flagged after paying, as an admin would.
+    await prisma.user.update({ where: { id: buyer.id }, data: { isDemo: true } });
 
     const [webhook, simulated] = await Promise.all([
       send(body),
       as(buyer).post(`/api/payments/${payment.id}/simulate-confirm`),
-    ]);
+    ]).finally(() => prisma.user.update({ where: { id: buyer.id }, data: { isDemo: false } }));
     expect(webhook.status).toBe(200);
     expect(simulated.status).toBe(200);
 

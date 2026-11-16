@@ -7,6 +7,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { createPaidOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Sample print orders stored in PostgreSQL (docs/17, S4): they survive an API restart, only their owner reads them,
@@ -76,7 +77,7 @@ describe('Orders API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

@@ -273,6 +273,8 @@ const deleteUser: Handler = ({ params }) => {
   db().users = db().users.filter((u) => u.id !== params.id);
   db().projects = db().projects.filter((p) => p.ownerId !== params.id);
   save();
+  // The mock has no payments to keep: always a hard delete (the API may answer ANONYMIZED, docs/25 item 3).
+  return { id: params.id, result: "DELETED" };
 };
 
 const health: Handler = () => {

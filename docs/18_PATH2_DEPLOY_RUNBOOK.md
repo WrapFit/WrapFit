@@ -65,7 +65,7 @@ SMTP, Google) giữ nguyên; danh sách đầy đủ ở `be/README.md`, mục "
 | `AI_MODEL_PREMIUM` | `claude-opus-5-5` | Chỉ gói khác Free mới dùng được (`quality: 'premium'`) |
 | `AI_MONTHLY_BUDGET_USD` | đề xuất `5` | Cầu chì: vượt ngân sách tháng (giờ VN) thì hoa văn sinh bằng thuật toán, không gọi Claude. Trống = không giới hạn |
 | `ANTHROPIC_API_KEY` | khóa của tài khoản Anthropic | Trống = chỉ hoa văn thuật toán (miễn phí), demo vẫn chạy |
-| `PAYMENT_SIMULATION` | `true` | Bật nút "Giả lập đã thanh toán" (docs/17 M6). **Đặt lại `false` sau CP4** trước khi bán thật |
+| `PAYMENT_SIMULATION` | `true` | Bật nút "Giả lập đã thanh toán" (docs/17 M6), **chỉ cho tài khoản demo** (`is_demo`, docs/25 mục 6). Backend không khởi động nếu `true` cùng `VIETQR_*` thật. **Đặt lại `false` sau CP4** trước khi bán thật |
 | `VIETQR_BANK_BIN`, `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME` | trống, hoặc tài khoản thật (Q1) | Đặt cả ba hoặc để trống cả ba. Trống = tài khoản mẫu, giao diện ghi "Mô phỏng" |
 | `SEED_DEMO_EMAIL` | `demo@wrapfit.vn` (mặc định) | Tài khoản demo, xem 3.2 |
 | `SEED_DEMO_PASSWORD` | mật khẩu riêng, chỉ người demo biết | Trống = không tạo tài khoản demo. Không ghi vào slide, tài liệu, chat |
@@ -247,7 +247,7 @@ S8 không đọc được hóa đơn (không đăng nhập tài khoản nào). S
 | Vercel hoặc rewrite `/api` lỗi | `/api/health` trên Vercel trả 404 / 502 | Chuyển sang `https://<APP_DOMAIN>` (VPS phục vụ cả frontend), cùng tài khoản và dữ liệu |
 | Backend VPS chết | Mọi trang báo "Máy chủ…" | `docker compose ... ps`, `logs backend`; khởi động lại `docker compose ... up -d`. Dự phòng cuối: video quay sẵn kịch bản §5 |
 | Worker chết, file in không ra | ExportDialog đứng ở "Đang dựng file" quá 30 s | `/api/health` báo `worker` khác `up`: `docker compose ... restart worker`. Lượt đã trừ được hoàn tự động khi job thất bại (docs/16 §5.3) |
-| Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend` |
+| Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend`. Nút chỉ hiện với tài khoản demo (`is_demo`); tài khoản thường gọi route nhận 403 `SIMULATION_DEMO_ONLY` |
 | Sandbox VNPay lỗi lúc demo | Cổng VNPay không mở / không quay về | Đặt `PAYMENT_SIMULATION=true`: CheckoutDialog của tài khoản demo vẫn có nút "Giả lập đã thanh toán" (IPN và nút giả lập đến cùng lúc vẫn chỉ cấp quyền lợi một lần) |
 | Webhook SePay không tới | Chuyển khoản xong thanh toán vẫn `PENDING` | Xem *Tích hợp Webhooks → Nhật ký* trên SePay (401 = sai `SEPAY_WEBHOOK_API_KEY`); giao dịch tới nhưng không khớp nằm ở `/admin/bank-transactions` để gán tay |
 | Tài khoản demo hết lượt sau buổi tập | Khung "Bạn đã hết lượt xuất" | Đúng là bước 6 của §6 (mua 1 lượt qua VietQR giả lập). Muốn nạp lại: khởi động lại backend (seed nạp đủ `SEED_DEMO_CREDITS`) hoặc admin cấp lượt |

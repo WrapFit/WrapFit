@@ -4,6 +4,7 @@ import type { BillingDetails, BillingDetailsDto } from './dto/billing-details.dt
 import { ENTITLEMENTS, type Entitlements } from '@wrapfit/shared';
 import { ConfigService } from '../common';
 import { PrismaService } from '../shared/prisma';
+import { userAnonymized } from '../users/user-removal';
 import { CreditsService, type CreditLotView } from './credits.service';
 import { GRANT_LIMITS, type GrantCreditsDto } from './dto/grant-credits.dto';
 import { PlanService } from './plan.service';
@@ -23,7 +24,7 @@ export interface BillingSummary {
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
   } | null;
-  /** PAYMENT_SIMULATION: the checkout shows "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). */
+  /** PAYMENT_SIMULATION and a demo account: the checkout shows "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). */
   paymentSimulation: boolean;
   /** Demo account (users.is_demo): the wallet shows VNPay sandbox instead of VietQR (docs/21 S5). */
   isDemo: boolean;
@@ -78,7 +79,8 @@ export class BillingService {
       exportCredits: { balance, lots },
       xu,
       subscription,
-      paymentSimulation: this.config.get('payments.simulation'),
+      // Only a demo account may simulate a payment (docs/25 item 6): the checkout hides the button from the others.
+      paymentSimulation: this.config.get('payments.simulation') && user.isDemo,
       isDemo: user.isDemo,
     };
   }
@@ -89,8 +91,9 @@ export class BillingService {
     if (dto.quantity > GRANT_LIMITS[kind]) {
       throw new BadRequestException(`quantity must not be greater than ${GRANT_LIMITS[kind]} for ${kind}`);
     }
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { anonymizedAt: true } });
     if (!user) throw new NotFoundException('User not found');
+    if (user.anonymizedAt) throw userAnonymized();
 
     const expiresAt = dto.expiresInDays ? new Date(Date.now() + dto.expiresInDays * DAY_MS) : null;
     const lot = await this.credits.grant(userId, {

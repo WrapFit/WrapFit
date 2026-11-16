@@ -104,8 +104,19 @@ export interface SafeUser {
   brandKit: BrandKit | null;
   referralCode: string | null;
   isActive: boolean;
+  /**
+   * Set when an admin deleted an account that had payments, orders or purchased credits: the row stays for them,
+   * scrubbed (email `deleted-<id>@deleted.invalid`, no name), inactive for good. Optional: offline demo data has none.
+   */
+  anonymizedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** `DELETE /users/:id` (admin): DELETED = gone with its projects and files, ANONYMIZED = kept for its payments. */
+export interface DeleteUserResponse {
+  id: string;
+  result: "DELETED" | "ANONYMIZED";
 }
 
 export interface RegisterRequest {

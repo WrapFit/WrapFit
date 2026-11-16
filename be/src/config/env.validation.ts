@@ -231,7 +231,9 @@ export class EnvironmentVariables {
 
   /**
    * `true` = `POST /payments/:id/simulate-confirm` marks a payment paid without a bank transfer, and the checkout shows
-   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken.
+   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken. A VietQR payment (real
+   * bank transfer) can only be simulated by a demo account (`users.is_demo`); the server refuses to start in
+   * production with `true` and a real VIETQR_* account (docs/25 item 6).
    */
   @IsIn(['true', 'false'])
   PAYMENT_SIMULATION: string = 'false';
@@ -368,6 +370,16 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
   if (vietqr.some((key) => validated[key]) && !vietqr.every((key) => validated[key])) {
     throw new Error(
       'Invalid environment variables:\n - VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME must be set together (or all left empty)',
+    );
+  }
+  // docs/25 item 6: with a real bank account on the QR codes, simulation would let anyone mark real transfers paid.
+  if (
+    validated.NODE_ENV === NodeEnv.Production &&
+    validated.PAYMENT_SIMULATION === 'true' &&
+    vietqr.every((key) => validated[key])
+  ) {
+    throw new Error(
+      'Invalid environment variables:\n - PAYMENT_SIMULATION=true is refused in production while VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME name a real account: set PAYMENT_SIMULATION=false (demo accounts pay through VNPay sandbox)',
     );
   }
   if (!validated.VNPAY_TMN_CODE !== !validated.VNPAY_HASH_SECRET) {

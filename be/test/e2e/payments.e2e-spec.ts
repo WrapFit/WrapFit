@@ -9,6 +9,7 @@ import { crc16 } from '../../src/payments';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { cancelOrder, placeSampleOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -39,6 +40,17 @@ describe('Payments API (e2e)', () => {
     // Every payment needs the current terms accepted (CreatePaymentDto.termsVersion).
     (await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, ...body }).expect(201)).body;
   const confirm = (user: Account, id: string) => as(user).post(`/api/payments/${id}/simulate-confirm`);
+  const setDemo = (user: Account, isDemo: boolean) => prisma.user.update({ where: { id: user.id }, data: { isDemo } });
+  /**
+   * A VietQR payment its account may simulate: only a demo account may (docs/25 item 6), and a demo account pays
+   * through VNPay, so the payment is made as a real account and the account is flagged demo afterwards.
+   */
+  const payToSimulate = async (user: Account, body: Record<string, unknown>) => {
+    await setDemo(user, false);
+    const payment = await pay(user, body);
+    await setDemo(user, true);
+    return payment;
+  };
   const newProject = async (user: Account) =>
     (
       await as(user)
@@ -71,7 +83,7 @@ describe('Payments API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 
@@ -116,7 +128,7 @@ describe('Payments API (e2e)', () => {
 
   it('grants an export pack once, even when confirmed twice at the same time', async () => {
     const user = await register('pack');
-    const payment = await pay(user, { purpose: 'EXPORT_5' });
+    const payment = await payToSimulate(user, { purpose: 'EXPORT_5' });
     expect(payment.amountVnd).toBe(79_000);
 
     const [first, second] = await Promise.all([confirm(user, payment.id), confirm(user, payment.id)]);
@@ -151,7 +163,7 @@ describe('Payments API (e2e)', () => {
 
   it('starts 30 days of Pro, and a second Pro payment extends the same period', async () => {
     const user = await register('pro');
-    const first = await pay(user, { purpose: 'PRO_MONTH' });
+    const first = await payToSimulate(user, { purpose: 'PRO_MONTH' });
     expect(first.amountVnd).toBe(99_000);
     await confirm(user, first.id).expect(200);
 
@@ -160,7 +172,7 @@ describe('Payments API (e2e)', () => {
     expect(sub.currentPeriodEnd.getTime() - sub.currentPeriodStart.getTime()).toBe(30 * DAY_MS);
     expect((await as(user).get('/api/billing/me').expect(200)).body.tier).toBe('STARTER');
 
-    const second = await pay(user, { purpose: 'PRO_MONTH' });
+    const second = await payToSimulate(user, { purpose: 'PRO_MONTH' });
     await confirm(user, second.id).expect(200);
     const subs = await prisma.subscription.findMany({ where: { userId: user.id } });
     expect(subs).toHaveLength(1);
@@ -181,7 +193,7 @@ describe('Payments API (e2e)', () => {
     await as(stranger).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, purpose: 'SAMPLE_ORDER', orderId: order.id }).expect(404);
     const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
     expect(payment).toMatchObject({ amountVnd: 49_000, orderId: order.id, credits: null });
-    expect((await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id })).id).toBe(payment.id);
+    expect((await payToSimulate(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id })).id).toBe(payment.id);
 
     await confirm(buyer, payment.id).expect(200);
     await confirm(buyer, payment.id).expect(200);
@@ -196,7 +208,7 @@ describe('Payments API (e2e)', () => {
 
   it('refuses to simulate-confirm the payment of a cancelled order: 409 ORDER_NOT_PAYABLE, nothing written', async () => {
     const order = await placeSampleOrder(app, buyer.cookie);
-    const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+    const payment = await payToSimulate(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
     await cancelOrder(prisma, order.id);
 
     const res = await confirm(buyer, payment.id).expect(409);
@@ -210,7 +222,7 @@ describe('Payments API (e2e)', () => {
   });
 
   it('expires a payment after 15 minutes: no QR, no confirmation', async () => {
-    const payment = await pay(buyer, { purpose: 'EXPORT_1' });
+    const payment = await payToSimulate(buyer, { purpose: 'EXPORT_1' });
     await prisma.payment.update({ where: { id: payment.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
 
     const res = await confirm(buyer, payment.id).expect(409);
@@ -228,9 +240,29 @@ describe('Payments API (e2e)', () => {
       as(user).post(`/api/projects/${projectId}/exports`).send({ fileType: 'SVG', useCredit });
 
     expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
-    const payment = await pay(user, { purpose: 'EXPORT_1' });
+    const payment = await payToSimulate(user, { purpose: 'EXPORT_1' });
     await confirm(user, payment.id).expect(200);
     expect((await exportSvg(true).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
+  });
+
+  it('lets only a demo account simulate a VietQR payment, by the button or by a mock bank transfer (docs/25 item 6)', async () => {
+    const real = await register('real');
+    const payment = await pay(real, { purpose: 'XU_500' });
+    expect(payment.provider).toBe('VIETQR');
+
+    expect((await confirm(real, payment.id).expect(403)).body).toMatchObject({ code: 'SIMULATION_DEMO_ONLY' });
+    const mock = await as(real).post(`/api/payments/${payment.id}/simulate-transfer`).send({ scenario: 'exact' }).expect(403);
+    expect(mock.body).toMatchObject({ code: 'SIMULATION_DEMO_ONLY' });
+    expect(await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).toMatchObject({ status: 'PENDING', paidAt: null });
+    await expect(prisma.creditLot.count({ where: { paymentId: payment.id } })).resolves.toBe(0);
+    await expect(prisma.bankTransaction.count({ where: { extractedReference: payment.reference } })).resolves.toBe(0);
+    // The checkout does not offer the button to a real account.
+    expect((await as(real).get('/api/billing/me').expect(200)).body.paymentSimulation).toBe(false);
+
+    // The same payment once the account is a demo one: allowed.
+    await setDemo(real, true);
+    expect((await confirm(real, payment.id).expect(200)).body).toMatchObject({ status: 'PAID', confirmedVia: 'SIMULATION' });
+    expect((await as(real).get('/api/billing/me').expect(200)).body.paymentSimulation).toBe(true);
   });
 
   it('pages the history by (createdAt, id): two payments of the same millisecond both appear across a page boundary', async () => {

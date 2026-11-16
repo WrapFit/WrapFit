@@ -181,7 +181,8 @@ services:
       FAL_KEY: ${FAL_KEY:-}
       AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
       USD_VND_RATE: ${USD_VND_RATE:-26000}
-      # VietQR payments: true only for the CP4 demo ("simulate paid" button); empty VIETQR_* = sample account
+      # VietQR payments: true only for the CP4 demo ("simulate paid" button, demo accounts only, docs/25 item 6);
+      # empty VIETQR_* = sample account. Refused at startup together with a real VIETQR_* account.
       PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
       VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}

@@ -38,7 +38,9 @@ export function AccountDetailDrawer({
   const [granting, setGranting] = useState(false);
   const role = draft ?? user.role;
   const dirty = role !== user.role;
-  const frozen = isSelf || busy;
+  const anonymized = Boolean(user.anonymizedAt);
+  // An anonymized account cannot be changed any more (the API answers 409 USER_ANONYMIZED).
+  const frozen = isSelf || busy || anonymized;
 
   const saveRole = () => {
     if (dirty) onChangeRole(user, role);
@@ -99,15 +101,22 @@ export function AccountDetailDrawer({
           <div className="flex justify-between items-center gap-4">
             <dt className={LABEL}>Trạng thái</dt>
             <dd>
-              <ActiveBadge active={user.isActive} />
+              <ActiveBadge active={user.isActive} anonymized={anonymized} />
             </dd>
           </div>
-          <div className="flex justify-between items-center gap-4">
-            <dt className={LABEL}>Email</dt>
-            <dd>
-              <EmailBadge verifiedAt={user.emailVerifiedAt} />
-            </dd>
-          </div>
+          {user.anonymizedAt ? (
+            <div className="flex justify-between items-center gap-4">
+              <dt className={LABEL}>Ẩn danh lúc</dt>
+              <dd className={VALUE}>{formatDateTime(user.anonymizedAt)}</dd>
+            </div>
+          ) : (
+            <div className="flex justify-between items-center gap-4">
+              <dt className={LABEL}>Email</dt>
+              <dd>
+                <EmailBadge verifiedAt={user.emailVerifiedAt} />
+              </dd>
+            </div>
+          )}
           {user.emailVerifiedAt && (
             <div className="flex justify-between items-center gap-4">
               <dt className={LABEL}>Xác minh lúc</dt>
@@ -159,7 +168,13 @@ export function AccountDetailDrawer({
               title={isSelf ? SELF_EDIT_HINT : undefined}
             />
           </div>
-          <DemoFlagToggle user={user} disabled={busy} />
+          {anonymized && (
+            <p className="flex items-center gap-2 p-3 rounded-xl bg-library-panel/60 font-medium text-sm text-library-sub">
+              <Icon name="info" className="size-4" />
+              Tài khoản đã xoá và ẩn danh: giữ thanh toán, đơn in và xu; không đăng nhập hay mở khoá lại được.
+            </p>
+          )}
+          <DemoFlagToggle user={user} disabled={busy || anonymized} />
           <div className="flex flex-col gap-2" title={isSelf ? SELF_EDIT_HINT : undefined}>
             <button
               type="button"
@@ -188,7 +203,7 @@ export function AccountDetailDrawer({
                 <span className="font-medium text-sm text-danger-fg">Xoá tài khoản</span>
               </span>
               <span className="font-mono text-cad-spec-micro text-library-sub font-medium text-right">
-                Mất cả dự án và tệp
+                Có thanh toán thì ẩn danh
               </span>
             </button>
           </div>

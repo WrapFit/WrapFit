@@ -106,16 +106,27 @@ export function useUpdateAccount() {
   });
 }
 
-/** `DELETE /users/:id`: the account, its projects and its files are gone for good. */
+/**
+ * `DELETE /users/:id`: the account, its projects and its files are gone for good, or, when it has payments, orders
+ * or purchased credits, it stays anonymized (the list refetches it with its new state).
+ */
 export function useDeleteAccount() {
   const queryClient = useQueryClient();
   const toast = useToast();
   return useMutation({
     mutationKey: DELETE_KEY,
     mutationFn: (user: SafeUser) => deleteUser(user.id),
-    onSuccess: (_, user) => {
-      removeFromLists(queryClient, user.id);
+    onSuccess: ({ result }, user) => {
       queryClient.removeQueries({ queryKey: queryKeys.admin.user(user.id) });
+      if (result === "ANONYMIZED") {
+        toast.show({
+          tone: "success",
+          title: "Đã ẩn danh tài khoản",
+          description: `${user.email} có thanh toán hoặc đơn in: các bản ghi đó được giữ, thông tin cá nhân và dự án không cần cho đơn đã bị xoá.`,
+        });
+        return;
+      }
+      removeFromLists(queryClient, user.id);
       toast.show({
         tone: "success",
         title: "Đã xoá tài khoản",

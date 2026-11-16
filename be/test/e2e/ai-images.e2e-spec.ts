@@ -9,6 +9,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { WorkerModule } from '../../src/worker';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * AI images paid with xu (docs/19 S2): the API debits and queues, a real worker context runs the fake provider
@@ -57,7 +58,7 @@ describe('AI images (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await worker.close();
     await app.close();
   }, 30_000);

@@ -7,6 +7,7 @@ import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task
 import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * File uploads (IT3-08) against a real S3-compatible server: the local SeaweedFS of docker-compose.yml
@@ -59,7 +60,7 @@ describe('Storage (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 
@@ -323,7 +324,8 @@ describe('Storage (e2e)', () => {
       .send({ canvasState: { elements: [{ ...image, content: shared }, { ...image, id: 'img-2', content: inProject }] } })
       .expect(400);
 
-    await as(admin).delete(`/api/users/${miaId}`).expect(204);
+    // No payment, order or purchased credit: a hard delete (docs/25 item 3), answered 200 with its result.
+    expect((await as(admin).delete(`/api/users/${miaId}`).expect(200)).body).toEqual({ id: miaId, result: 'DELETED' });
 
     expect((await fetch(avatar)).status).toBe(404);
     expect((await fetch(inProject)).status).toBe(404);

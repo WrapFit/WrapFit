@@ -6,6 +6,7 @@ import { middleware } from '../../src/app.middleware';
 import { CreditsService, PlanService, XuWalletService } from '../../src/billing';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Billing core (docs/17 S1): the export credit ledger against a real PostgreSQL (row locks), `GET /billing/me` and the
@@ -42,7 +43,7 @@ describe('Billing core (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 

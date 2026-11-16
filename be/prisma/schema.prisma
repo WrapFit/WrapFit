@@ -112,6 +112,9 @@ model User {
   // Tăng mỗi lần đăng xuất mọi thiết bị (đặt lại mật khẩu, logout-all, khóa tài khoản…). Access / refresh token mang
   // số này (claim `sv`): token mang số cũ bị từ chối ngay, không chờ hết hạn.
   sessionVersion   Int              @default(0) @map("session_version")
+  // Admin xóa tài khoản có lịch sử tiền (docs/25 mục 3): dòng ở lại cho payment, đơn, lô xu; mọi thông tin nhận diện bị
+  // xóa, email thành deleted-<id>@deleted.invalid. Không đăng nhập, khôi phục mật khẩu hay mở khóa lại được.
+  anonymizedAt     DateTime?        @map("anonymized_at") @db.Timestamptz(3)
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -701,7 +704,8 @@ model Payment {
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict (docs/25 mục 3): xóa user có payment phải đi đường ẩn danh hóa, không cascade mất tiền.
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   creditLots       CreditLot[]
   subscriptions    Subscription[]
   orders           Order[]
@@ -733,7 +737,7 @@ model BankTransaction {
   createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
 
   payment  Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  resolver User?    @relation("BankTransactionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  resolver User?    @relation("BankTransactionResolver", fields: [resolvedBy], references: [id], onDelete: Restrict) // Admin đã đối soát: ẩn danh hóa, không xóa
 
   @@index([status, createdAt]) // Hàng đợi đối soát
   @@index([paymentId])
@@ -756,7 +760,8 @@ model CreditLot {
   note      String?
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict: đường xóa cứng tự xóa lô ADMIN / PLAN_ALLOWANCE trước; user có lô PURCHASE thì được ẩn danh hóa.
+  user    User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   payment Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   debits  CreditDebit[]
 
@@ -820,7 +825,7 @@ model Subscription {
   createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict) // Chỉ tạo khi có payment
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
@@ -863,7 +868,7 @@ model Order {
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Restrict) // docs/25 mục 3
   payment Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   items   OrderItem[]
   history OrderStatusHistory[]

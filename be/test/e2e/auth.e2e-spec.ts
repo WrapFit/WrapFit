@@ -12,6 +12,7 @@ import { AuthService } from '../../src/auth/auth.service';
 import { ACCOUNT_EXISTS_WINDOW_MS, MAIL_QUEUE } from '../../src/mail/mail.constants';
 import { PrismaService } from '../../src/shared/prisma';
 import { accessCookie, TEST_PASSWORD } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Email verification, password reset and the Google link rule (docs/10_DB_HARDENING_DESIGN.md). Instead of reading a
@@ -57,7 +58,7 @@ describe('Account emails (e2e)', () => {
   afterAll(async () => {
     const tokens = await prisma.authToken.findMany({ where: { user: { email: { endsWith: '@e2e.test' } } } });
     await Promise.all(tokens.map((token) => mailQueue.remove(token.id)));
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

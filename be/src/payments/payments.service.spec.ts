@@ -4,7 +4,7 @@ import type { CreditsService, PlanService } from '../billing';
 import type { ConfigService } from '../common';
 import type { OrdersService } from '../orders';
 import type { PrismaService } from '../shared/prisma';
-import { httpErrorCode, newPaymentReference, PaymentsService } from './payments.service';
+import { assertMaySimulate, httpErrorCode, newPaymentReference, PaymentsService } from './payments.service';
 import { SAMPLE_ACCOUNT } from './vietqr';
 import type { VnpayGateway } from './vnpay/vnpay.gateway';
 
@@ -38,6 +38,29 @@ describe('PaymentsService', () => {
 
     await expect(service.simulateConfirm('id', 'user')).rejects.toBeInstanceOf(NotFoundException);
     expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('refuses to simulate a VietQR payment of a real account: 403 SIMULATION_DEMO_ONLY, nothing confirmed (docs/25 item 6)', async () => {
+    const payment = { findUniqueOrThrow: jest.fn(), update: jest.fn() };
+    const tx = { $queryRaw: jest.fn().mockResolvedValue([{ provider: 'VIETQR', is_demo: false }]), payment };
+    const service = serviceWith(
+      { 'payments.simulation': true, 'payments.vietqr': null },
+      { $transaction: (run: (db: typeof tx) => unknown) => run(tx) } as unknown as PrismaService,
+    );
+
+    const error = await service.simulateConfirm('p1', 'u1').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(HttpException);
+    expect((error as HttpException).getStatus()).toBe(403);
+    expect((error as HttpException).getResponse()).toMatchObject({ code: 'SIMULATION_DEMO_ONLY' });
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(payment.update).not.toHaveBeenCalled();
+  });
+
+  it('lets a demo account simulate any payment, and anyone a VNPay one', () => {
+    expect(() => assertMaySimulate('VIETQR', true)).not.toThrow();
+    expect(() => assertMaySimulate('VNPAY', true)).not.toThrow();
+    expect(() => assertMaySimulate('VNPAY', false)).not.toThrow();
+    expect(() => assertMaySimulate('VIETQR', false)).toThrow(HttpException);
   });
 
   it('answers 503 VNPAY_NOT_CONFIGURED to a demo account when VNPay is missing and simulation is off, creating nothing', async () => {
@@ -98,7 +121,8 @@ describe('PaymentsService', () => {
       updatedAt: new Date(),
     };
     const tx = {
-      $queryRaw: jest.fn().mockResolvedValue([{ id: 'p2' }]),
+      // The owner row of simulateConfirm (a demo account may simulate VietQR), then the lock row of confirmPaid.
+      $queryRaw: jest.fn().mockResolvedValue([{ id: 'p2', provider: 'VIETQR', is_demo: true }]),
       payment: {
         findUniqueOrThrow: jest.fn().mockResolvedValue(pending),
         update: jest.fn(({ data }) => Promise.resolve({ ...pending, ...data })),
