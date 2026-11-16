@@ -1,3 +1,4 @@
+import { configuration } from './configuration';
 import { validateEnv } from './env.validation';
 
 describe('validateEnv', () => {
@@ -76,12 +77,10 @@ describe('validateEnv', () => {
     );
   });
 
-  it('allows Cloudinary to be disabled, but not half configured', () => {
-    expect(validateEnv(valid).CLOUDINARY_CLOUD_NAME).toBe('');
-    expect(validateEnv(valid).CLOUDINARY_FOLDER).toBe('wrapfit');
-    expect(() => validateEnv({ ...valid, CLOUDINARY_CLOUD_NAME: 'wrapfit', CLOUDINARY_API_KEY: 'key' })).toThrow(
-      /CLOUDINARY_API_SECRET/,
-    );
+  it('ignores variables it does not know, such as those of a removed service left in an old .env (docs/25 item 9)', () => {
+    const leftover = { OLD_CDN_CLOUD_NAME: 'wrapfit', OLD_CDN_API_KEY: 'only-half-set' };
+    expect(validateEnv({ ...valid, ...leftover }).PORT).toBe(validateEnv(valid).PORT);
+    expect(JSON.stringify(configuration({ ...valid, ...leftover }))).not.toContain('only-half-set');
   });
 
   it('uses haiku for fast AI and keeps AI_MODEL as an alias of AI_MODEL_FAST', () => {

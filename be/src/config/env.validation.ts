@@ -149,24 +149,6 @@ export class EnvironmentVariables {
   @IsString()
   STORAGE_BACKUP_BUCKET: string = '';
 
-  /**
-   * Cloudinary account of the public image CDN (avatars, logos, AI textures, thumbnails). Set the three together or
-   * leave them all empty (Cloudinary disabled). Dashboard → Settings → API Keys.
-   */
-  @IsString()
-  CLOUDINARY_CLOUD_NAME: string = '';
-
-  @IsString()
-  CLOUDINARY_API_KEY: string = '';
-
-  @IsString()
-  CLOUDINARY_API_SECRET: string = '';
-
-  /** Root folder of this environment's assets, e.g. `wrapfit` in production and `wrapfit-dev` on a laptop. */
-  @IsString()
-  @IsNotEmpty()
-  CLOUDINARY_FOLDER: string = 'wrapfit';
-
   /** Claude API key for the AI pattern generator. Empty = built-in procedural patterns only (free). */
   @IsString()
   ANTHROPIC_API_KEY: string = '';
@@ -359,12 +341,6 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     if (missing.length) {
       throw new Error(`Invalid environment variables:\n - STORAGE_BUCKET is set, so ${missing.join(', ')} must be set too`);
     }
-  }
-  const cloudinary = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'] as const;
-  if (cloudinary.some((key) => validated[key]) && !cloudinary.every((key) => validated[key])) {
-    throw new Error(
-      'Invalid environment variables:\n - CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set together (or all left empty)',
-    );
   }
   const vietqr = ['VIETQR_BANK_BIN', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'] as const;
   if (vietqr.some((key) => validated[key]) && !vietqr.every((key) => validated[key])) {

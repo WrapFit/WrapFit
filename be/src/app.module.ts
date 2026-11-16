@@ -37,7 +37,6 @@ import { OrdersModule } from './orders';
 import { PaymentsModule } from './payments';
 import { PrismaModule } from './shared/prisma';
 import { RedisModule } from './shared/redis';
-import { CloudinaryModule } from './shared/cloudinary';
 
 @Module({
   imports: [
@@ -55,7 +54,6 @@ import { CloudinaryModule } from './shared/cloudinary';
     RedisModule,
     StorageModule,
     StorageMaintenanceModule,
-    CloudinaryModule,
     queueRootModule('producer'), // BullMQ (Redis): jobs are processed by src/worker.ts
     AuthModule,
     UsersModule,

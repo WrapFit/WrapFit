@@ -559,7 +559,6 @@ export class StorageService implements IProjectFiles {
           AND NOT EXISTS (SELECT 1 FROM users u WHERE u.avatar_key = f.key OR u.brand_kit ->> 'logoKey' = f.key)
           AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.thumbnail_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM project_snapshots s WHERE s.preview_key = f.key)
-          AND NOT EXISTS (SELECT 1 FROM social_mockups m WHERE m.render_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)
           -- "Ảnh AI của tôi" keeps an AI image 30 days even when no design shows it (docs/19 D9).
           AND NOT EXISTS (SELECT 1 FROM ai_image_outputs o WHERE o.stored_file_id = f.id AND o.keep_until > ${now})

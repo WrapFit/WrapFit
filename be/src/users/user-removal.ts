@@ -57,7 +57,7 @@ export async function hardDeleteUser(tx: Prisma.TransactionClient, storage: Stor
  *
  * Deleted: every other design with its files, as a hard delete does (uploads shown by remixes of other users are
  * handed over to them), uploads no kept design shows (avatar, logo, AI images, fonts), collections, likes (counts
- * corrected), social mockups, refresh and email tokens, the print shop membership, the user's own notifications.
+ * corrected), refresh and email tokens, the print shop membership, the user's own notifications.
  *
  * Scrubbed: the user row (email, names, shop, avatar, brand kit, billing details, password, Google id, referral
  * code), the author name of the user's comments on kept designs, the user id of analytics events, the actor of the
@@ -128,7 +128,6 @@ export async function anonymizeUser(
   await tx.designComment.updateMany({ where: { authorUserId: userId }, data: { authorName: ANONYMIZED_NAME } });
 
   await tx.projectCollection.deleteMany({ where: { userId } });
-  await tx.socialMockup.deleteMany({ where: { userId } });
   await tx.refreshToken.deleteMany({ where: { userId } });
   await tx.authToken.deleteMany({ where: { userId } });
   await tx.printShopMember.deleteMany({ where: { userId } });

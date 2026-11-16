@@ -6528,9 +6528,9 @@
     "semantic_hash": ""
   },
   "be/package.json": {
-    "mtime": 1794829125.7213516,
-    "seen": 1794829970.1457186,
-    "ast_hash": "e66a92f6fe2fa39056d442428b7c6a68",
+    "mtime": 1794851044.0804462,
+    "seen": 1794851577.1636147,
+    "ast_hash": "d5e180ca6b2dfc1b032e763a7107d742",
     "semantic_hash": ""
   },
   "be/prisma/scripts/backfill-product-events.ts": {
@@ -6840,9 +6840,9 @@
     "semantic_hash": ""
   },
   "be/src/app.module.ts": {
-    "mtime": 1794830872.4890559,
-    "seen": 1794832123.8204205,
-    "ast_hash": "a3abad8b9c0fcca322e56393bf4289b0",
+    "mtime": 1794850801.8572786,
+    "seen": 1794851577.1684813,
+    "ast_hash": "5005485abc8a112ca167cbc3137185dd",
     "semantic_hash": ""
   },
   "be/src/app.ts": {
@@ -7422,21 +7422,21 @@
     "semantic_hash": ""
   },
   "be/src/config/env.validation.spec.ts": {
-    "mtime": 1794815140.747508,
-    "seen": 1794815450.32384,
-    "ast_hash": "dacd3293cf6d0d528da523ec01c225c2",
+    "mtime": 1794851030.164105,
+    "seen": 1794851577.1799207,
+    "ast_hash": "12328a3e92fa3ba5d6aa9a8794e095a5",
     "semantic_hash": ""
   },
   "be/src/config/env.validation.ts": {
-    "mtime": 1794814584.4306388,
-    "seen": 1794815450.3238418,
-    "ast_hash": "bc6e250dc815cb8e340d1eec8fc66803",
+    "mtime": 1794850801.8582785,
+    "seen": 1794851577.179922,
+    "ast_hash": "734624b23ab810776c39f64338e9b853",
     "semantic_hash": ""
   },
   "be/src/config/envs/default.ts": {
-    "mtime": 1794715430.1962688,
-    "seen": 1794775302.8134928,
-    "ast_hash": "828eebd57a964e27d23cfdfd392edafb",
+    "mtime": 1794850801.8582785,
+    "seen": 1794851577.1799238,
+    "ast_hash": "a6928df141715b2a3b90aecb60263898",
     "semantic_hash": ""
   },
   "be/src/config/envs/development.ts": {
@@ -8087,30 +8087,6 @@
     "ast_hash": "e8004f1990f4cdc371fefabad244a795",
     "semantic_hash": ""
   },
-  "be/src/shared/cloudinary/cloudinary.module.ts": {
-    "mtime": 1793175697.7979434,
-    "seen": 1794327103.3119166,
-    "ast_hash": "10f65f915d865bf12d14441bc1c80f13",
-    "semantic_hash": ""
-  },
-  "be/src/shared/cloudinary/cloudinary.service.spec.ts": {
-    "mtime": 1793175698.0750506,
-    "seen": 1794327103.3119175,
-    "ast_hash": "0aaf7349dd6d96a150e44b9b23fc05c8",
-    "semantic_hash": ""
-  },
-  "be/src/shared/cloudinary/cloudinary.service.ts": {
-    "mtime": 1793175697.6246023,
-    "seen": 1794327103.311918,
-    "ast_hash": "73bb2e21dc9f8ecd18cd9d395a69dfec",
-    "semantic_hash": ""
-  },
-  "be/src/shared/cloudinary/index.ts": {
-    "mtime": 1793175697.936816,
-    "seen": 1794327103.3119195,
-    "ast_hash": "c7b0f58b06048a4e21610dfeeb3ae6b2",
-    "semantic_hash": ""
-  },
   "be/src/shared/prisma/index.ts": {
     "mtime": 1791644572.7887745,
     "seen": 1794327103.3119202,
@@ -8160,9 +8136,9 @@
     "semantic_hash": ""
   },
   "be/src/storage-check.ts": {
-    "mtime": 1793425092.9412658,
-    "seen": 1794327103.3119273,
-    "ast_hash": "6149c6277bbeb7ec09519f94200328d7",
+    "mtime": 1794851023.4811442,
+    "seen": 1794851577.1969495,
+    "ast_hash": "1b93c64e36db5547c567b56bb5d8e9d6",
     "semantic_hash": ""
   },
   "be/src/storage/asset-keys.spec.ts": {
@@ -8220,15 +8196,15 @@
     "semantic_hash": ""
   },
   "be/src/storage/storage.service.spec.ts": {
-    "mtime": 1794776896.0973656,
-    "seen": 1794777222.7648218,
-    "ast_hash": "a3a46fce6aade8095f11763657b7bc4b",
+    "mtime": 1794851384.137686,
+    "seen": 1794851577.1979558,
+    "ast_hash": "250c33a56dc505de276cb723c493c7a5",
     "semantic_hash": ""
   },
   "be/src/storage/storage.service.ts": {
-    "mtime": 1794814473.490599,
-    "seen": 1794815450.343812,
-    "ast_hash": "0bbc7bc89700ed578aaebee5fd0e283f",
+    "mtime": 1794851111.661307,
+    "seen": 1794851577.197957,
+    "ast_hash": "84e1b768e1593fdcd17d5f02d2b263b5",
     "semantic_hash": ""
   },
   "be/src/swagger.ts": {
@@ -8532,9 +8508,9 @@
     "semantic_hash": ""
   },
   "docker-compose.yml": {
-    "mtime": 1794829744.5925636,
-    "seen": 1794829970.1873667,
-    "ast_hash": "b7c0a2eb1a88ee206075b242041661c3",
+    "mtime": 1794851088.8015957,
+    "seen": 1794851577.2035887,
+    "ast_hash": "dd06d4ac2e2c7147b0e9387199080e7e",
     "semantic_hash": ""
   },
   "docker/seaweedfs/s3.json": {
@@ -12138,9 +12114,9 @@
     "semantic_hash": ""
   },
   "be/README.md": {
-    "mtime": 1794829744.591564,
-    "seen": 1794829970.4324322,
-    "ast_hash": "73afe11a3bde641893d164398176d132",
+    "mtime": 1794851098.3668056,
+    "seen": 1794851577.296598,
+    "ast_hash": "77f7645a72948e9275616df2e39f059b",
     "semantic_hash": ""
   },
   "docs/00_PROJECT_OVERVIEW.md": {
@@ -12156,9 +12132,9 @@
     "semantic_hash": ""
   },
   "docs/02_DATABASE_DESIGN.md": {
-    "mtime": 1791662259.4625823,
-    "seen": 1794327103.3126032,
-    "ast_hash": "6c642a28e799a252470416c4052c654a",
+    "mtime": 1794851182.6879864,
+    "seen": 1794851577.2967954,
+    "ast_hash": "da40b6ce09d1a7499742ebc9b6ada8d5",
     "semantic_hash": ""
   },
   "docs/03_API_DESIGN.md": {
@@ -12240,9 +12216,9 @@
     "semantic_hash": ""
   },
   "docs/16_PRICING_ENTITLEMENTS_SPEC.md": {
-    "mtime": 1793458487.4877272,
-    "seen": 1794327103.3126166,
-    "ast_hash": "7e7ceef4466e627411ffff3d57043036",
+    "mtime": 1794851176.2926803,
+    "seen": 1794851577.2979972,
+    "ast_hash": "0ebda224cb3ba9af84cc51d33c013ee1",
     "semantic_hash": ""
   },
   "docs/17_PATH2_MVP_PLAN.md": {
@@ -12252,9 +12228,9 @@
     "semantic_hash": ""
   },
   "docs/18_PATH2_DEPLOY_RUNBOOK.md": {
-    "mtime": 1794829753.9883196,
-    "seen": 1794829970.434405,
-    "ast_hash": "33ba09d77d2a427ea6a779c357d67751",
+    "mtime": 1794851176.289955,
+    "seen": 1794851577.29809,
+    "ast_hash": "028d66d5bc2138f153f7f4ac4bfbef33",
     "semantic_hash": ""
   },
   "docs/19_XU_WRAP_SPEC.md": {
@@ -12276,9 +12252,9 @@
     "semantic_hash": ""
   },
   "docs/wrapfit_architecture_security_blueprint.md": {
-    "mtime": 1792748281.925277,
-    "seen": 1794327103.3126218,
-    "ast_hash": "5eb70e88fe62e292db25bb00f23a2678",
+    "mtime": 1794851176.289955,
+    "seen": 1794851577.2986305,
+    "ast_hash": "904bf90984c34fb6de31ff3e89799784",
     "semantic_hash": ""
   },
   "fe/.agents/skills/ai-packaging-copilot/SKILL.md": {
@@ -14448,9 +14424,9 @@
     "semantic_hash": ""
   },
   "docs/25_BACKEND_AUDIT_FIX_PLAN.md": {
-    "mtime": 1794832014.0109248,
-    "seen": 1794832123.923566,
-    "ast_hash": "08844999489326d83568e8115deb89d2",
+    "mtime": 1794851503.3062685,
+    "seen": 1794851577.2986271,
+    "ast_hash": "1b22eb0311e5d9f191a09f445296f23b",
     "semantic_hash": ""
   },
   "be/src/common/filters/all-exceptions.filter.spec.ts": {
@@ -14514,9 +14490,9 @@
     "semantic_hash": ""
   },
   "be/src/users/user-removal.ts": {
-    "mtime": 1794830872.4910579,
-    "seen": 1794832123.852101,
-    "ast_hash": "64e8fda238fef6cc7a715380ceb407a5",
+    "mtime": 1794851111.6598027,
+    "seen": 1794851577.1998472,
+    "ast_hash": "d54efa8159ac3a179813fec0abda7db6",
     "semantic_hash": ""
   },
   "be/src/users/users.service.spec.ts": {
@@ -14675,6 +14651,12 @@
     "ast_hash": "3bc3579e7f2ab65449c2c8589b68cf9f",
     "semantic_hash": ""
   },
+  "docs/26_PROMO_VIDEO_HIGGSFIELD.md": {
+    "mtime": 1794851029.1187077,
+    "seen": 1794851577.2986288,
+    "ast_hash": "4524f9bcb2fee7c7f6424313edc4333c",
+    "semantic_hash": ""
+  },
   "NasaFilm/movie-theater-be/package-lock.json": {
     "mtime": 1794324103.999122,
     "seen": 1794327103.3129838,
@@ -14694,9 +14676,9 @@
     "semantic_hash": ""
   },
   "package-lock.json": {
-    "mtime": 1794831256.392685,
-    "seen": 1794832123.9447756,
-    "ast_hash": "1c7cb265c832dc1cbc5da3a18cb28a24",
+    "mtime": 1794851044.3299096,
+    "seen": 1794851577.339349,
+    "ast_hash": "7db675faf103522d54638b6ab8cd2194",
     "semantic_hash": ""
   }
 }

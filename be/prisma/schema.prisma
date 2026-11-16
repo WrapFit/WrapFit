@@ -125,7 +125,6 @@ model User {
   projects                 PackagingProject[]
   productEvents            ProductEvent[]
   collections              ProjectCollection[]
-  mockups                  SocialMockup[]
   projectLikes             ProjectLike[]
   storedFiles              StoredFile[]
   aiGenerations            AiGeneration[]
@@ -282,7 +281,6 @@ model PackagingProject {
   exportJobs     ExportJob[]
   productEvents  ProductEvent[]
   unboxingConfig UnboxingExperience?
-  socialMockups  SocialMockup[]
   snapshots      ProjectSnapshot[]
   likes          ProjectLike[]
   files          StoredFile[]
@@ -349,22 +347,6 @@ model UnboxingExperience {
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("unboxing_experiences")
-}
-
-model SocialMockup {
-  id         String   @id @default(uuid(7)) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  projectId  String   @map("project_id") @db.Uuid
-  presetName String   @map("preset_name")
-  renderKey  String   @map("render_key") // Key trên bucket của ảnh render
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([projectId])
-  @@index([userId])
-  @@map("social_mockups")
 }
 
 model ExportJob {

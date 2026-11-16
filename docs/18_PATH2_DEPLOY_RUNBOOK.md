@@ -226,7 +226,6 @@ trang giá công khai của nhà cung cấp, kiểm lại trước khi đưa và
 | fal.ai | Ảnh AI cho mặt hộp, phóng to, xóa nền, vector hóa (Xu Wrap, docs/19) | Trả theo ảnh / MP, nạp trước; cầu chì `AI_MONTHLY_BUDGET_USD` tính cả ảnh | Không | Theo lượt dùng; mỗi ảnh $0.01–0.15 (docs/19 §3), giá bán ≥ 2,5 lần chi phí |
 | Anthropic Claude API | AI sinh hoa văn (`claude-haiku-5-5`), viết lại mô tả ảnh AI | Trả theo token, cầu chì `AI_MONTHLY_BUDGET_USD` | Không | ≤ `AI_MONTHLY_BUDGET_USD` USD. Ước tính một lượt Haiku 13–34đ (S3, chưa có token thật) |
 | Email SMTP (Resend theo docs/10) | email xác minh, đặt lại mật khẩu | Free | 3.000 email / tháng, 100 email / ngày | _điền_ |
-| Cloudinary | CDN ảnh công khai (đã kết nối, chưa dùng) | Free (dùng chung tài khoản) | 25 credit / tháng | 0đ |
 | Tên miền `wrapfit.vn` | `APP_DOMAIN`, email gửi đi | Nhà đăng ký: IT điền | Không | _điền_ (theo năm / 12) |
 | GitHub (repo, Actions CI + deploy) | CI, deploy | Free | Repo công khai: Actions không giới hạn phút; repo riêng: 2.000 phút / tháng | 0đ |
 | Let's Encrypt (qua Caddy), Google OAuth | HTTPS, đăng nhập Google | Free | Không giới hạn đáng kể | 0đ |

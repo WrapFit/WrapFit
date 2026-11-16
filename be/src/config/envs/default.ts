@@ -60,13 +60,6 @@ export const config = (env: EnvironmentVariables) => ({
     pexelsKey: env.PEXELS_API_KEY,
     enabled: env.PEXELS_API_KEY !== '',
   },
-  /** Public image CDN (shared/cloudinary). `cloudName` empty = disabled. */
-  cloudinary: {
-    cloudName: env.CLOUDINARY_CLOUD_NAME,
-    apiKey: env.CLOUDINARY_API_KEY,
-    apiSecret: env.CLOUDINARY_API_SECRET,
-    folder: env.CLOUDINARY_FOLDER,
-  },
   /**
    * `anthropicApiKey` empty = built-in procedural patterns only (and AI image prompts sent as typed). `monthlyBudgetUsd`
    * null = no cost fuse.

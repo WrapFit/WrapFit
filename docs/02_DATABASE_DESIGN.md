@@ -27,7 +27,6 @@ erDiagram
     User ||--o{ PackagingProject : "sở hữu"
     User ||--o{ ProjectCollection : "tạo"
     User ||--o{ ProjectLike : "thả tim"
-    User ||--o{ SocialMockup : "render"
     User |o--o{ User : "giới thiệu (referral)"
     ProjectCollection |o--o{ PackagingProject : "chứa"
     BoxTemplate ||--o{ PackagingProject : "làm mẫu cho"
@@ -36,7 +35,6 @@ erDiagram
     PackagingProject ||--o{ ProjectSnapshot : "lưu phiên bản"
     PackagingProject ||--o{ ProjectLike : "được thả tim"
     PackagingProject ||--o| UnboxingExperience : "mở hộp 3D qua QR"
-    PackagingProject ||--o{ SocialMockup : "ảnh mockup"
     PackagingProject ||--o{ ExportJob : "xuất file in"
     User ||--o{ StoredFile : "tải lên"
     User ||--o{ AiGeneration : "gọi AI"
@@ -168,14 +166,6 @@ erDiagram
         text gift_note "QR: key cố định projects/<id>/unboxing/qr-<slug>.png"
     }
 
-    SocialMockup {
-        uuid id PK
-        uuid user_id FK
-        uuid project_id FK
-        string preset_name
-        string render_key
-    }
-
     StoredFile {
         uuid id PK
         uuid user_id FK
@@ -219,7 +209,7 @@ erDiagram
 6. **`project_snapshots`**: Các mốc phiên bản thiết kế để khôi phục (UC-07).
 7. **`project_likes`**: Lượt thả tim dự án công khai (mỗi người 1 lần / dự án).
 8. **`unboxing_experiences`**: Cấu hình trải nghiệm mở hộp 3D qua mã QR.
-9. **`social_mockups`**: Ảnh mockup đã render để đăng mạng xã hội.
+9. ~~**`social_mockups`**~~: đã xóa (docs/25 mục 9, migration `20261117000100_drop_social_mockups`): chưa code nào ghi vào bảng này.
 10. **`export_jobs`**: Job xuất file in bất đồng bộ (hàng đợi BullMQ); link tải là pre-signed URL sinh lúc yêu cầu.
 11. **`design_templates`** (thêm ở IT3-07): Mẫu thiết kế "WrapFit Curated" của Thư viện mẫu — cấu trúc hộp + kích thước + chất liệu + canvas dựng sẵn, gắn dịp lễ / ngành hàng, đếm số lần "Dùng mẫu này". Seed 6 mẫu khi khởi động. Mẫu cộng đồng không nằm ở bảng này mà là các `packaging_projects` `PUBLIC` (có thêm cột `occasion`, `industry` để lọc).
 12. **`stored_files`** (thêm ở IT3-08): Mỗi file người dùng tải lên S3 / R2 qua pre-signed URL — dùng để tính hạn mức lưu trữ theo gói và xóa file khỏi bucket khi dự án bị xóa vĩnh viễn.

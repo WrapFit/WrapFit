@@ -144,7 +144,7 @@ describe('StorageService', () => {
 
       await expect(service.dropUnusedUploads(now)).resolves.toBe(1);
       const [sql, ...values] = queryRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
-      for (const place of ['project_file_refs', 'avatar_key', 'logoKey', 'thumbnail_key', 'preview_key', 'render_key']) {
+      for (const place of ['project_file_refs', 'avatar_key', 'logoKey', 'thumbnail_key', 'preview_key']) {
         expect(sql.join('?')).toContain(place);
       }
       expect(values[0]).toEqual(new Date('2026-10-11T10:00:00Z')); // made more than 24 hours ago

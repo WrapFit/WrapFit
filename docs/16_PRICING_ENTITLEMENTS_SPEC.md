@@ -1017,7 +1017,7 @@ Phase 3: `/api/workspaces`, `/api/workspaces/:id/members`, `/api/workspaces/:id/
 | `be/src/billing/` | `BillingModule` (API): `billing.controller.ts`, `webhooks.controller.ts`, `admin-billing.controller.ts`; `subscriptions.service.ts`, `checkout.service.ts`, `payments.service.ts`, `invoices.service.ts`, `coupons.service.ts`; `gateways/` (port `PAYMENT_GATEWAYS`, adapter `vietqr`, `momo`, `card`); `tasks/` (Mục 10) | Không import module tính năng nào. Báo thay đổi gói qua sự kiện `plan.changed` (`be/src/common/events/billing.events.ts`). |
 | `be/src/billing/core/` | `BillingCoreModule` (không controller, không cron): `EntitlementsService`, `CreditsService`, `syncPlan()` | Được `ExportModule`, `ExportWorkerModule`, `AiModule`, `StorageModule`, `ProjectsModule`, `CollectionsModule`, `UnboxingModule`, `UsersModule`, `AuthModule` import qua `../billing`. |
 | `be/src/affiliate/` | `AffiliateModule`: đăng ký đối tác, ghi nhận giới thiệu, hoa hồng | Nghe `payment.succeeded`, `payment.refunded`. |
-| `be/src/mockups/` | `MockupsModule` (bảng `social_mockups` đã có) | |
+| `be/src/mockups/` | `MockupsModule` (bảng `social_mockups` cũ đã xóa ở docs/25 mục 9: làm tính năng này thì tạo bảng mới) | |
 
 `EntitlementsService.for(ownerId)`: đọc `users.subscription_tier` + `entitlement_overrides` còn hạn → `resolveEntitlements()`; cache trong bộ nhớ 30 giây theo `userId`, xóa cache khi nhận `plan.changed`. Hàm tiện ích: `assertFeature(ownerId, key)`, `assertLimit(ownerId, key, used)`.
 
