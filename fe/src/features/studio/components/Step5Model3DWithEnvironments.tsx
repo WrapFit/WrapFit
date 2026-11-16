@@ -295,7 +295,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                               </div>
                               <div className="flex flex-col min-w-0">
                                 <span className="text-xs font-medium text-white truncate">{pal.name}</span>
-                                <span className="text-[10px] text-stone-400 line-clamp-1">{pal.desc}</span>
+                                <span className="text-caption text-stone-400 line-clamp-1">{pal.desc}</span>
                               </div>
                             </div>
                             {isSelected && <Check className="size-3.5 text-fpt-orange shrink-0 ml-2" />}
@@ -418,7 +418,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                       <Palette className="size-3.5 text-fpt-orange" />
                       Bảng màu studio (5 chủ đề)
                     </span>
-                    <span className="text-fg-muted font-normal text-[11px] truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
+                    <span className="text-fg-muted font-normal text-caption truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
                   </div>
                   <div className="mt-2 grid grid-cols-5 gap-1.5">
                     {STUDIO_PALETTE_IDS.map((pId) => {
@@ -440,7 +440,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                             <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[1] }} />
                             <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[2] }} />
                           </div>
-                          <span className="text-[10px] font-medium text-fg truncate w-full text-center">
+                          <span className="text-caption font-medium text-fg truncate w-full text-center">
                             {pal.name.split(" ")[0]}
                           </span>
                         </button>
