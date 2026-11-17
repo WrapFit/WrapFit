@@ -42,8 +42,6 @@ export const CARRIER_MIN_CUP_MM = 30;
 export const CARRIER_STANDARD_CUP_HOLE_MM = 80;
 /** Minimum pitch between cup centers so 88-90mm cups do not collide, mm. */
 export const CARRIER_MIN_CUP_PITCH_MM = 95;
-/** Standard pitch per cup providing comfortable 10mm clearance between cups, mm. */
-export const CARRIER_STANDARD_PITCH_MM = 100;
 export const DEFAULT_CUPS = { rows: 1, cols: 2 };
 export const MAX_CUPS = { rows: 2, cols: 4 };
 
@@ -81,23 +79,29 @@ export function cupCarrierSizesOf({ length, width, height, paperThickness: t, ce
 
 /** Shortest carrier that still has room for the hand hole, mm. */
 export const CUP_CARRIER_MIN_LENGTH_MM = 70;
+/** Board per cup along a row when the carrier has no usable size to go by: a Ø 90 mm rim + 5 mm, mm. */
+export const CARRIER_STANDARD_PITCH_MM = 95;
 
 /**
- * Size of the carrier after its number of cups changes: each cup gets its standard comfortable pitch
- * (100 mm: 90 mm cup rim + 10 mm clearance) so cups never collide nor fall through.
+ * Size of the carrier after its number of cups changes: every cup keeps the room it had (length per cup, depth per
+ * row), so the carrier grows or shrinks with the count instead of squeezing the holes. A carrier too small to cut any
+ * hole restarts from the standard cup. Only length and width change; the caller clamps them to the structure's limits.
  */
 export function cupCarrierSizeForCups(dimensions: BoxDimensions, cups: { rows: number; cols: number }): BoxDimensions {
-  const rows = Math.min(MAX_CUPS.rows, Math.max(1, Math.round(cups.rows)));
-  const cols = Math.min(MAX_CUPS.cols, Math.max(1, Math.round(cups.cols)));
-  const pitch = CARRIER_STANDARD_PITCH_MM;
-  const standardHeight = rows > 1 ? 60 : 55;
-  return {
+  const old = cupCarrierSizesOf(dimensions);
+  const next = cupCarrierSizesOf({ ...dimensions, cells: cups });
+  const sized = (pitchL: number, pitchW: number): BoxDimensions => ({
     ...dimensions,
-    cells: { rows, cols },
-    length: Math.max(CUP_CARRIER_MIN_LENGTH_MM, Math.round((cols * pitch + 5) * 10) / 10),
-    width: Math.round((rows * pitch + 5) * 10) / 10,
-    height: dimensions.height && dimensions.height >= 45 && dimensions.height <= 80 ? dimensions.height : standardHeight,
-  };
+    cells: { rows: next.rows, cols: next.cols },
+    length: Math.max(CUP_CARRIER_MIN_LENGTH_MM, Math.round(next.cols * pitchL * 10) / 10),
+    width: Math.round(next.rows * pitchW * 10) / 10,
+    height: dimensions.height,
+  });
+  if (old.cupDiameter > 0) {
+    const kept = sized(dimensions.length / old.cols, dimensions.width / old.rows);
+    if (cupCarrierSizesOf(kept).cupDiameter > 0) return kept;
+  }
+  return sized(CARRIER_STANDARD_PITCH_MM, CARRIER_STANDARD_PITCH_MM);
 }
 
 export function generateCupCarrierDieline(dimensions: BoxDimensions): DielineGeometry {

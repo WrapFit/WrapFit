@@ -129,7 +129,7 @@ export function ImpositionCanvas2D({
             <CopyCheck className="size-3.5 text-emerald-400" />
             <span>Số con:</span>
             <strong className="text-white font-bold">{totalUps} con/tờ</strong>
-            <span className="text-[11px] text-slate-400">({imposition.cols}×{imposition.rows})</span>
+            <span className="text-caption text-slate-400">({imposition.cols}×{imposition.rows})</span>
           </div>
 
           <div className="rounded-md bg-slate-800/90 border border-slate-700 px-2.5 py-1 flex items-center gap-1.5 text-slate-200">
@@ -138,7 +138,7 @@ export function ImpositionCanvas2D({
             <strong className={cn("font-bold", paperEfficiencyPercent >= 75 ? "text-emerald-400" : "text-amber-400")}>
               {paperEfficiencyPercent}%
             </strong>
-            <span className="text-[11px] text-slate-400">(Hao hụt: {wastePercent}%)</span>
+            <span className="text-caption text-slate-400">(Hao hụt: {wastePercent}%)</span>
           </div>
         </div>
       </div>

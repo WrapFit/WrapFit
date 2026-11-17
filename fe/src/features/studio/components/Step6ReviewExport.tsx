@@ -271,7 +271,7 @@ export function Step6ReviewExport({
                   <span className="font-landing-heading text-2xl font-bold text-emerald-700 tabular-nums leading-none">
                     {report.score}<span className="text-xs font-normal text-emerald-600">/100</span>
                   </span>
-                  <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider mt-1">Xuất sắc</span>
+                  <span className="text-caption font-medium text-emerald-600 uppercase tracking-wider mt-1">Xuất sắc</span>
                 </div>
               </div>
 
@@ -314,7 +314,7 @@ export function Step6ReviewExport({
                   <span className="font-landing-heading text-2xl font-bold text-emerald-700 tabular-nums leading-none">
                     {report.score}<span className="text-xs font-normal text-emerald-600">/100</span>
                   </span>
-                  <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider mt-1">Xuất sắc</span>
+                  <span className="text-caption font-medium text-emerald-600 uppercase tracking-wider mt-1">Xuất sắc</span>
                 </div>
               </div>
 
@@ -389,7 +389,7 @@ export function Step6ReviewExport({
                     {report.score}<span className="text-xs font-normal text-slate-400">/100</span>
                   </span>
                   <span className={cn(
-                    "text-[10px] font-medium uppercase tracking-wider mt-1",
+                    "text-caption font-medium uppercase tracking-wider mt-1",
                     errors > 0 ? "text-red-600" : "text-amber-600"
                   )}>
                     {errors > 0 ? "Cần sửa" : "Cần lưu ý"}

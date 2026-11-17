@@ -63,7 +63,7 @@ export function DesignRail({ active, onSelect, fitcheckIssues }: DesignRailProps
             >
               <Icon className="size-5" strokeWidth={1.9} aria-hidden />
               {item.id === "fitcheck" && fitcheckIssues > 0 && (
-                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-danger-solid font-sans font-bold tabular-nums text-[10px] text-white">
+                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-danger-solid font-sans font-bold tabular-nums text-caption text-white">
                   {Math.min(9, fitcheckIssues)}
                 </span>
               )}

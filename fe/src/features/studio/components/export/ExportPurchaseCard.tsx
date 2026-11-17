@@ -42,7 +42,7 @@ interface ExportPurchaseCardProps {
 /** Saving is free at any step; only the print file is sold, and the terms apply before any payment. */
 function TermsNote() {
   return (
-    <p className="mt-2.5 border-t border-line/60 pt-2 text-[11px] text-fg-muted leading-relaxed">
+    <p className="mt-2.5 border-t border-line/60 pt-2 text-caption text-fg-muted leading-relaxed">
       Lưu miễn phí. Đọc{" "}
       <Link href={PAYMENT_TERMS_PATH} target="_blank" rel="noopener" className="font-semibold text-fpt-orange hover:underline">
         điều khoản thanh toán
@@ -102,12 +102,12 @@ export function ExportPurchaseCard({
                   Gói File Xuất Xưởng
                 </h4>
                 {unlocked ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-caption font-semibold text-emerald-700 whitespace-nowrap">
                     <CheckCircle2 className="size-3" />
                     Đã thanh toán
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-caption font-medium text-slate-600 whitespace-nowrap">
                     <Lock className="size-3" />
                     Cần đặt in
                   </span>

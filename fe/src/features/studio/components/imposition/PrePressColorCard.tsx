@@ -76,14 +76,14 @@ export function PrePressColorCard({
             <h4 className="text-xs font-bold text-fg uppercase tracking-wider truncate">
               Profile Màu ICC
             </h4>
-            <p className="text-[11px] text-fg-muted truncate">
+            <p className="text-caption text-fg-muted truncate">
               Chuẩn quản trị CMYK ISO 12647 quốc tế
             </p>
           </div>
         </div>
 
         {isRecommended && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 whitespace-nowrap shrink-0">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-caption font-semibold text-emerald-700 whitespace-nowrap shrink-0">
             <CheckCircle2 className="size-3 text-emerald-600" />
             Khớp chuẩn giấy
           </span>
@@ -100,7 +100,7 @@ export function PrePressColorCard({
             <button
               type="button"
               onClick={() => onIccProfileChange(recommendedProfile.id)}
-              className="text-[11px] font-semibold text-fpt-orange hover:underline inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
+              className="text-caption font-semibold text-fpt-orange hover:underline inline-flex items-center gap-1 cursor-pointer whitespace-nowrap"
             >
               <FileCheck className="size-3" />
               Đổi sang {recommendedProfile.name}
@@ -122,12 +122,12 @@ export function PrePressColorCard({
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-fg truncate">{currentProfile.name}</span>
                 {isRecommended && (
-                  <span className="rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.2 shrink-0 whitespace-nowrap">
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 text-caption font-semibold px-2 py-0.2 shrink-0 whitespace-nowrap">
                     Khuyên dùng
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-fg-muted truncate mt-0.5">
+              <p className="text-caption text-fg-muted truncate mt-0.5">
                 {currentProfile.standard} • TAC ≤ {currentProfile.tac}% • {currentProfile.description}
               </p>
             </div>
@@ -160,17 +160,17 @@ export function PrePressColorCard({
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-xs">{p.name}</span>
                         {matchesPaper && (
-                          <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold px-1.5 py-0.2 whitespace-nowrap">
+                          <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-caption font-semibold px-1.5 py-0.2 whitespace-nowrap">
                             Khớp giấy này
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-fg-muted font-normal">
+                      <div className="mt-1 flex items-center gap-2 text-caption text-fg-muted font-normal">
                         <span>{p.standard}</span>
                         <span>•</span>
                         <span className="font-sans font-semibold tabular-nums text-fpt-orange-ink">TAC ≤ {p.tac}%</span>
                       </div>
-                      <p className="mt-0.5 text-[11px] text-fg-muted line-clamp-1 font-normal">
+                      <p className="mt-0.5 text-caption text-fg-muted line-clamp-1 font-normal">
                         {p.description} ({p.gamutNote})
                       </p>
                     </div>
@@ -186,7 +186,7 @@ export function PrePressColorCard({
 
         {/* Technical Profile Details Badge - Chỉ hiện khi đóng dropdown để không bao giờ bị rối hay che khuất */}
         {!isOpen && (
-          <div className="rounded-xl border border-line/80 bg-surface-sunken/40 p-2.5 text-[11px]">
+          <div className="rounded-xl border border-line/80 bg-surface-sunken/40 p-2.5 text-caption">
             <div className="flex items-center justify-between text-fg font-semibold">
               <span>Tiêu chuẩn: {currentProfile.standard}</span>
               <span className="text-fpt-orange-ink font-sans font-bold tabular-nums">Tổng lượng mực TAC: ≤ {currentProfile.tac}%</span>
@@ -204,13 +204,13 @@ export function PrePressColorCard({
           <div className="flex items-center gap-1.5 min-w-0">
             <Layers className="size-3.5 text-fpt-orange shrink-0" />
             <span className="truncate">Dấu in kỹ thuật</span>
-            <span className="text-[11px] font-normal text-fg-muted">(Printer Marks)</span>
+            <span className="text-caption font-normal text-fg-muted">(Printer Marks)</span>
           </div>
           {onViewImposition && (
             <button
               type="button"
               onClick={onViewImposition}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-fpt-orange hover:text-fpt-orange-dark hover:underline cursor-pointer whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1 text-caption font-semibold text-fpt-orange hover:text-fpt-orange-dark hover:underline cursor-pointer whitespace-nowrap shrink-0"
               title="Chuyển sang chế độ xem bình bản tờ in để thấy các dấu kỹ thuật này"
             >
               <Eye className="size-3" />
@@ -218,7 +218,7 @@ export function PrePressColorCard({
             </button>
           )}
         </div>
-        <p className="text-[11px] text-fg-muted leading-relaxed mb-2.5">
+        <p className="text-caption text-fg-muted leading-relaxed mb-2.5">
           Tự động xuất vào file PDF để xưởng in canh kẽm, đo tram mực và định vị dao bế.
         </p>
 
@@ -234,7 +234,7 @@ export function PrePressColorCard({
             />
             <div className="min-w-0">
               <span className="text-fg font-semibold text-xs block truncate">Dấu chữ thập canh kẽm</span>
-              <span className="text-[10px] text-fg-muted block truncate">Khớp 4 màu CMYK</span>
+              <span className="text-caption text-fg-muted block truncate">Khớp 4 màu CMYK</span>
             </div>
           </label>
 
@@ -249,7 +249,7 @@ export function PrePressColorCard({
             />
             <div className="min-w-0">
               <span className="text-fg font-semibold text-xs block truncate">Thước thang màu CMYK</span>
-              <span className="text-[10px] text-fg-muted block truncate">Đo tram quang phổ</span>
+              <span className="text-caption text-fg-muted block truncate">Đo tram quang phổ</span>
             </div>
           </label>
 
@@ -264,7 +264,7 @@ export function PrePressColorCard({
             />
             <div className="min-w-0">
               <span className="text-fg font-semibold text-xs block truncate">Dấu xén & nếp cấn gập</span>
-              <span className="text-[10px] text-fg-muted block truncate">Định vị dao xén phôi</span>
+              <span className="text-caption text-fg-muted block truncate">Định vị dao xén phôi</span>
             </div>
           </label>
 
@@ -279,7 +279,7 @@ export function PrePressColorCard({
             />
             <div className="min-w-0">
               <span className="text-fg font-semibold text-xs block truncate">Nhãn thông số kỹ thuật</span>
-              <span className="text-[10px] text-fg-muted block truncate">Tên job, khổ in, ngày</span>
+              <span className="text-caption text-fg-muted block truncate">Tên job, khổ in, ngày</span>
             </div>
           </label>
         </div>

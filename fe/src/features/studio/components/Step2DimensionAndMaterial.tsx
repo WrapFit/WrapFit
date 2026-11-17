@@ -877,7 +877,7 @@ function GiftWeightCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="text-xs font-semibold text-fg">Kiểu đáy hộp</h4>
-          <p className="text-[11px] text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {lock ? "Đáy khóa tự động (FEFCO 0215) chịu quà nặng an toàn" : "Đáy gài tiêu chuẩn (cho quà nhẹ < 500g)"}
           </p>
         </div>
@@ -904,7 +904,7 @@ function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number };
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="text-xs font-semibold text-fg">Số ngăn chia vách</h4>
-          <p className="text-[11px] text-fg-muted">{cells.rows * cells.cols} ô · vách in tờ rời</p>
+          <p className="text-caption text-fg-muted">{cells.rows * cells.cols} ô · vách in tờ rời</p>
         </div>
         <div className="flex items-center gap-3">
           <SegmentedSwitch label="Hàng" value={String(cells.rows)} options={options(MAX_CELLS.rows)} onChange={(v) => onChange({ ...cells, rows: Number(v) })} />
@@ -922,7 +922,7 @@ function WindowCard({ on, where, onChange }: { on: boolean; where: string; onCha
       <div className="flex items-center justify-between gap-3">
         <div>
           <h4 className="text-xs font-semibold text-fg">Cửa sổ bóng kính PET</h4>
-          <p className="text-[11px] text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {on ? `Khoét ô ở ${where}, dán màng PET trong suốt` : `Khoét ô ở ${where} để thấy quà (+900đ)`}
           </p>
         </div>
@@ -960,7 +960,7 @@ function CupsCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h4 className="text-xs font-semibold text-fg">Số ngăn & Kích thước lỗ ly</h4>
-          <p className="text-[11px] text-fg-muted">
+          <p className="text-caption text-fg-muted">
             {cups.rows * cups.cols} ly · Lỗ cắt chuẩn Ø {Math.round(diameter)} mm (ôm khít ly 350ml – 500ml)
           </p>
         </div>

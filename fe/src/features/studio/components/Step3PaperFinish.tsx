@@ -743,7 +743,7 @@ export function Step3PaperFinish({
 
                 {/* Quick Presets */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[11px] font-medium text-fg-muted">Định lượng phổ biến:</span>
+                  <span className="text-caption font-medium text-fg-muted">Định lượng phổ biến:</span>
                   {[
                     { label: "250 GSM (0,35mm)", val: 0.35 },
                     { label: "300 GSM (0,42mm)", val: 0.42 },
@@ -760,7 +760,7 @@ export function Step3PaperFinish({
                           change({ ...draft, paperThickness: nextVal }, true);
                         }}
                         className={cn(
-                          "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-all",
+                          "rounded-md border px-2 py-0.5 text-caption font-medium transition-all",
                           isClose
                             ? "border-fpt-orange bg-fpt-orange-light font-semibold text-fpt-orange-ink shadow-2xs"
                             : "border-line bg-surface-raised text-fg-muted hover:border-fg-muted hover:text-fg"
@@ -797,7 +797,7 @@ export function Step3PaperFinish({
                         : "Bìa bồi carton cứng (≥ 500 GSM)"}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-fg-muted">
+                  <p className="mt-0.5 text-caption text-fg-muted">
                     {t <= 0.32
                       ? "Mềm mại, dễ uốn gập, phù hợp cho quà nhẹ."
                       : t <= 0.45
@@ -818,7 +818,7 @@ export function Step3PaperFinish({
                   <span>Cán màng</span>
                 </p>
                 {lamination && (
-                  <span className="text-[11px] text-fpt-orange-ink font-semibold bg-fpt-orange-light px-2 py-0.5 rounded-full">
+                  <span className="text-label-sm text-fpt-orange-ink font-semibold bg-fpt-orange-light px-2 py-0.5 rounded-full">
                     {LAMINATION_SHORT[lamination]}
                   </span>
                 )}
@@ -849,7 +849,7 @@ export function Step3PaperFinish({
                         <Icon className={cn("size-3.5 shrink-0", isSel ? "text-fpt-orange" : "text-fg-muted")} aria-hidden />
                         <span className="text-body-sm font-semibold text-fg">{item.label}</span>
                       </div>
-                      <span className="text-[11px] text-fg-muted line-clamp-1">{item.desc}</span>
+                      <span className="text-caption text-fg-muted line-clamp-1">{item.desc}</span>
                     </button>
                   );
                 })}
@@ -893,7 +893,7 @@ export function Step3PaperFinish({
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-fg-muted line-clamp-1">
+                      <span className="text-caption text-fg-muted line-clamp-1">
                         {needsLamination ? "Cần cán màng" : item.desc}
                       </span>
                     </button>

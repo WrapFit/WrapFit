@@ -424,7 +424,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                       Trải nghiệm mở hộp & Mã QR
                     </h2>
                     {hasUnboxingQr && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/80 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 shrink-0 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/80 text-emerald-800 text-caption font-semibold px-2 py-0.5 shrink-0 whitespace-nowrap">
                         <Check className="size-3" />
                         Đã gắn mã
                       </span>
@@ -464,7 +464,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                   <h3 id="step5-scenes" className="font-landing-heading text-sm font-bold text-fg">
                     Studio Bối Cảnh
                   </h3>
-                  <p className="text-[11px] text-fg-muted truncate">
+                  <p className="text-caption text-fg-muted truncate">
                     {look.surface.name}{look.props ? ` · ${look.props}` : ""}
                   </p>
                 </div>
@@ -507,10 +507,10 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                         <FacePreview structure={boxType} dimensions={dimensions} formulaVersion={formulaVersion} elements={elements} paper={paper.swatch.outside} className="h-full w-full" />
                       </span>
                       {id === suggested && occasionLabel && (
-                        <span className="absolute left-1 top-1 rounded-full bg-black/60 backdrop-blur-xs text-white px-1.5 py-0.2 text-[9px] font-semibold">Gợi ý</span>
+                        <span className="absolute left-1 top-1 rounded-full bg-black/60 backdrop-blur-xs text-white px-1.5 py-0.2 text-caption font-semibold">Gợi ý</span>
                       )}
                     </span>
-                    <span className="line-clamp-1 bg-surface-raised px-1.5 py-1 text-[11px] font-semibold text-fg text-center">{item.name}</span>
+                    <span className="line-clamp-1 bg-surface-raised px-1.5 py-1 text-caption font-semibold text-fg text-center">{item.name}</span>
                   </button>
                 );
               })}
@@ -524,7 +524,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                     <Palette className="size-3 text-fpt-orange" />
                     Bảng màu nền
                   </span>
-                  <span className="text-fg-muted font-normal text-[11px] truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
+                  <span className="text-fg-muted font-normal text-caption truncate max-w-[140px]">{STUDIO_PALETTES[studioPalette].name.split(" ")[0]}</span>
                 </div>
                 <div className="grid grid-cols-5 gap-1.5">
                   {STUDIO_PALETTE_IDS.map((pId) => {
@@ -546,7 +546,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                           <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[1] }} />
                           <span className="h-full w-1/3" style={{ backgroundColor: pal.swatch[2] }} />
                         </div>
-                        <span className="text-[10px] font-medium text-fg truncate w-full text-center">
+                        <span className="text-caption font-medium text-fg truncate w-full text-center">
                           {pal.name.split(" ")[0]}
                         </span>
                       </button>
@@ -560,7 +560,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             <div className="pt-2 border-t border-line/60 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-bold text-fg uppercase tracking-wider">Xuất Media Thực Tế</span>
-                <span className="text-[11px] text-fg-muted">Mockup & Video 3D</span>
+                <span className="text-caption text-fg-muted">Mockup & Video 3D</span>
               </div>
 
               {/* Segmented Switch 2-column full width - icon Lucide chuẩn và text không bị vỡ */}
@@ -605,7 +605,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                           <Download className="size-3 text-fpt-orange" aria-hidden />
                           {format.label}
                         </span>
-                        <span className="text-[10px] tabular-nums text-fg-muted">{saving === format.id ? "Đang tạo…" : format.hint}</span>
+                        <span className="text-caption tabular-nums text-fg-muted">{saving === format.id ? "Đang tạo…" : format.hint}</span>
                       </button>
                     ))}
                   </div>
@@ -638,7 +638,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                             {kind === "video" ? <Video className="size-3.5 text-fpt-orange" aria-hidden /> : <Film className="size-3.5 text-fpt-orange" aria-hidden />}
                             {kind === "video" ? "Video gập hộp" : "Ảnh động GIF"}
                           </span>
-                          <span className="text-[10px] tabular-nums text-fg-muted" aria-live="polite">
+                          <span className="text-caption tabular-nums text-fg-muted" aria-live="polite">
                             {running
                               ? `${kind === "video" ? "Đang quay" : "Đang tạo"} ${Math.round((filming?.done ?? 0) * 100)}%`
                               : kind === "video"
@@ -658,14 +658,14 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                         ) : playClip ? (
                           <img src={clip.url} alt="Hộp gập (ảnh GIF)" className="size-full object-cover" />
                         ) : (
-                          <button type="button" onClick={() => setPlayClip(true)} className="size-full text-[11px] font-semibold text-fg">
+                          <button type="button" onClick={() => setPlayClip(true)} className="size-full text-caption font-semibold text-fg">
                             Xem GIF
                           </button>
                         )}
                       </div>
                       <div className="min-w-0 flex-1 space-y-0.5 text-xs text-fg-muted">
                         <p className="truncate font-bold text-fg">{clip.name}</p>
-                        <p className="text-[11px]">
+                        <p className="text-caption">
                           {CLIP_SECONDS} giây · {(clip.bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB
                         </p>
                         <a href={clip.url} download={clip.name} className="inline-block text-xs font-semibold text-fpt-orange hover:underline cursor-pointer">
