@@ -7,17 +7,21 @@ import {
   ArrowLeftRight,
   ArrowRight,
   Box,
+  CheckCircle,
   ChevronDown,
   Link2,
+  Maximize2,
   Minus,
   Paperclip,
   Plus,
   RotateCcw,
   Ruler,
   Gift,
+  Coffee,
   SlidersHorizontal,
   Tag,
   Unlink2,
+  Wand2,
 } from "lucide-react";
 import {
   BoxDimensions,
@@ -27,6 +31,7 @@ import {
   DEFAULT_CELLS,
   DEFAULT_CUPS,
   MAX_CUPS,
+  CUP_CARRIER_MIN_LENGTH_MM,
   cupCarrierSizeForCups,
   cupCarrierSizesOf,
   insertSizeForCells,
@@ -84,6 +89,13 @@ type Unit = keyof typeof UNITS;
 /** Inner size (what the gift needs, stored) or outer size (what the shelf or courier sees). */
 type Basis = "inner" | "outer";
 
+const CUP_CARRIER_PRESETS = [
+  { id: "1-cup", name: "Khay 1 ly (1×1)", rows: 1, cols: 1, length: 105, width: 105, height: 55 },
+  { id: "2-cups", name: "Khay 2 ly (1×2) · Chuẩn", rows: 1, cols: 2, length: 205, width: 105, height: 55 },
+  { id: "4-cups", name: "Khay 4 ly (2×2)", rows: 2, cols: 2, length: 205, width: 205, height: 60 },
+  { id: "6-cups", name: "Khay 6 ly (2×3)", rows: 2, cols: 3, length: 305, width: 205, height: 60 },
+];
+
 const AXIS_LABEL: Record<DimensionAxis, { name: string; hint: string }> = {
   length: { name: "Dài", hint: "Mặt trước" },
   width: { name: "Rộng", hint: "Trước ra sau" },
@@ -103,7 +115,7 @@ function axisLabelOf(structure: BoxStructureType, axis: DimensionAxis): { name: 
     return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
   }
   if (structure === "cup-carrier") {
-    const hints = { length: "Số ly × (miệng ly + 5 mm)", width: "Miệng ly + 5 mm mỗi hàng", height: "Thành khay" };
+    const hints = { length: "Số ly × 100 mm + 5 mm lề", width: "Số hàng × 100 mm + 5 mm lề", height: "Thành khay (chuẩn 55–60 mm)" };
     return { name: AXIS_LABEL[axis].name, hint: hints[axis] };
   }
   if (structure === "insert") {
@@ -125,6 +137,7 @@ const sameSize = (a: BoxDimensions, b: BoxDimensions) =>
   a.giftWeight === b.giftWeight &&
   a.bottomType === b.bottomType &&
   a.window === b.window &&
+  a.showCups === b.showCups &&
   a.cells?.rows === b.cells?.rows &&
   a.cells?.cols === b.cells?.cols;
 
@@ -169,7 +182,14 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const boxType = structure as BoxStructureType;
   const sheetOnly = SHEET_ONLY_STRUCTURES.includes(boxType);
   const flat = (FLAT_STRUCTURES as readonly string[]).includes(boxType);
-  const range = (field: DimensionAxis) => limits?.[field] ?? DEFAULT_RANGES[field];
+  const range = (field: DimensionAxis) => {
+    if (boxType === "cup-carrier") {
+      if (field === "height") return { min: 45, max: 80 };
+      if (field === "length") return { min: 70, max: 400 };
+      if (field === "width") return { min: 70, max: 300 };
+    }
+    return limits?.[field] ?? DEFAULT_RANGES[field];
+  };
 
   // --- Draft and commit: the panel and the 3D preview follow every move; the studio gets the size after a short pause.
   const [draft, setDraft] = useState(dimensions);
@@ -185,6 +205,15 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
       setDraft(dimensions);
     }
   }, [dimensions]);
+
+  // Auto-correct cup carrier height if switching from a taller box or old state (ensure wall is just slightly higher than the cup)
+  useEffect(() => {
+    if (boxType === "cup-carrier" && (draft.height > 80 || draft.height < 45)) {
+      const rows = draft.cells?.rows ?? DEFAULT_CUPS.rows;
+      const targetH = rows > 1 ? 60 : 55;
+      change({ ...draft, height: targetH }, true);
+    }
+  }, [boxType]);
 
   const commit = (next: BoxDimensions) => {
     if (pending.current) window.clearTimeout(pending.current.timer);
@@ -211,7 +240,9 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const [showGuides, setShowGuides] = useState(true);
   const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
   const [showFaceLabels, setShowFaceLabels] = useState(true);
+  const [openLid, setOpenLid] = useState(false);
   const [active, setActive] = useState<DimensionAxis | null>(null);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
   useEffect(() => {
     try {
@@ -290,7 +321,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
 
   return (
     <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-4 sm:px-6">
-      <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         {/* Left Column: Controls — natural flow without restrictive max-height */}
         <div className="flex flex-col gap-4">
           {/* Card 1: Dimension Controls (without redundant 'Kích thước' header, with Unit selector next to Basis) */}
@@ -335,6 +366,55 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                         {gp.name.split("·")[0].trim()}
                         <span className="ml-1 text-fg-muted tabular-nums">
                           {gp.dims.length}×{gp.dims.width}×{gp.dims.height}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Priority 1 for Cup Carrier: Presets by cup count (standard 350ml-500ml) */}
+            {boxType === "cup-carrier" && (
+              <div data-tour="s2-cup-presets" className="pb-3 border-b border-line/60 mb-3">
+                <div className="flex items-center gap-1.5 pb-2">
+                  <Coffee className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span className="text-xs font-semibold text-fg">Chọn nhanh theo số ly (chuẩn ly 350ml – 500ml)</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 hover-scrollbar">
+                  {CUP_CARRIER_PRESETS.map((cp) => {
+                    const isMatch =
+                      (draft.cells?.rows ?? DEFAULT_CUPS.rows) === cp.rows &&
+                      (draft.cells?.cols ?? DEFAULT_CUPS.cols) === cp.cols &&
+                      Math.abs(draft.length - cp.length) <= 5 &&
+                      Math.abs(draft.width - cp.width) <= 5;
+                    return (
+                      <button
+                        key={cp.id}
+                        type="button"
+                        aria-pressed={isMatch}
+                        onClick={() =>
+                          change(
+                            {
+                              ...draft,
+                              cells: { rows: cp.rows, cols: cp.cols },
+                              length: cp.length,
+                              width: cp.width,
+                              height: cp.height,
+                            },
+                            true
+                          )
+                        }
+                        className={cn(
+                          "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+                          isMatch
+                            ? "border-fpt-orange bg-orange-50 text-fpt-orange-ink ring-1 ring-fpt-orange font-semibold shadow-2xs"
+                            : "border-line bg-surface-sunken/50 text-fg hover:border-fpt-orange/50 hover:bg-orange-50/40"
+                        )}
+                      >
+                        {cp.name}
+                        <span className="ml-1 text-fg-muted tabular-nums">
+                          ({cp.length}×{cp.width} mm)
                         </span>
                       </button>
                     );
@@ -419,76 +499,136 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               ))}
             </div>
 
-            {/* Bottom note: Phủ bì & paper thickness */}
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-orange-50/70 px-3.5 py-2.5 text-xs text-fg-muted">
-              <Paperclip className="size-4 shrink-0 text-fpt-orange" aria-hidden />
-              <span>
-                {flat ? (
-                  <>Giấy dày {t.toFixed(2).replace(".", ",")} mm</>
-                ) : (
-                  <>
-                    Phủ bì:{" "}
-                    <strong className="font-semibold text-fg">
-                      {outerL} × {outerW} × {outerH} mm
-                    </strong>{" "}
-                    · giấy dày {t.toFixed(2).replace(".", ",")} mm
-                  </>
-                )}
-              </span>
+            {/* Consolidated Footer: Outer dimensions + Cup carrier fit status */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3 text-xs text-fg-muted">
+              <div className="flex items-center gap-1.5">
+                <Paperclip className="size-3.5 text-fpt-orange shrink-0" />
+                <span>
+                  {flat ? (
+                    <>Giấy dày {t.toFixed(2).replace(".", ",")} mm</>
+                  ) : (
+                    <>
+                      Phủ bì: <strong className="font-semibold text-fg">{outerL} × {outerW} × {outerH} mm</strong>
+                      <span className="mx-1 text-slate-300">•</span>
+                      giấy dày {t.toFixed(2).replace(".", ",")} mm
+                    </>
+                  )}
+                </span>
+              </div>
+
+              {boxType === "cup-carrier" && (() => {
+                const rows = draft.cells?.rows ?? DEFAULT_CUPS.rows;
+                const cols = draft.cells?.cols ?? DEFAULT_CUPS.cols;
+                const pitchL = draft.length > 0 && cols > 0 ? draft.length / cols : 100;
+                const pitchW = draft.width > 0 && rows > 0 ? draft.width / rows : 100;
+                const minPitch = Math.min(pitchL, pitchW);
+                const isTight = minPitch < 92;
+                const isTooTall = draft.height > 75;
+                const isTooShort = draft.height < 45;
+                const isMisaligned = isTight || isTooTall || isTooShort || Math.abs(pitchL - 100) > 12 || Math.abs(pitchW - 100) > 12;
+
+                const autoFitCups = () => {
+                  const fitL = Math.max(CUP_CARRIER_MIN_LENGTH_MM, cols * 100 + 5);
+                  const fitW = rows * 100 + 5;
+                  const fitH = rows > 1 ? 60 : 55;
+                  change({ ...draft, length: fitL, width: fitW, height: fitH }, true);
+                };
+
+                return (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-orange-50/70 border border-fpt-orange/20 px-3 py-2 w-full mt-2">
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className={cn("size-2 rounded-full shrink-0", isMisaligned ? "bg-amber-500 animate-pulse" : "bg-emerald-500")} />
+                      <span className={cn("font-medium", isMisaligned ? "text-amber-800" : "text-emerald-800")}>
+                        {isTight
+                          ? `Khay chật (${Math.round(minPitch)} mm) — dễ cấn ly`
+                          : isTooTall
+                            ? `Thành cao (${draft.height} mm) — nên 55–60 mm`
+                            : isTooShort
+                              ? `Thành thấp (${draft.height} mm)`
+                              : `Chuẩn khít ly (${Math.round(minPitch)} mm/ly)`}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={autoFitCups}
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-xs font-semibold transition-all shadow-2xs cursor-pointer",
+                        isMisaligned
+                          ? "bg-fpt-orange text-white hover:bg-fpt-orange/90 ring-1 ring-fpt-orange/40"
+                          : "bg-white border border-fpt-orange/30 text-fpt-orange-ink hover:bg-orange-50",
+                      )}
+                      title="Căn chỉnh kích thước chuẩn ôm khít ly"
+                    >
+                      <span>Tự sửa khít ly</span>
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
+
+            {/* Advanced Structure Options (integrated into the same card without nesting) */}
+            {(boxType === "tuck-top" || boxType === "lid-base" || boxType === "insert" || boxType === "cup-carrier") && (
+              <div className="mt-3.5 border-t border-line/60 pt-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedOptions((prev) => !prev)}
+                  className="flex w-full items-center justify-between py-1 text-xs font-semibold text-fg hover:text-fpt-orange transition-colors"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <SlidersHorizontal className="size-3.5 text-fpt-orange" />
+                    <span>Tuỳ chọn hộp</span>
+                    <span className="font-normal text-fg-muted">· {boxOptionsSummary(draft, boxType)}</span>
+                  </span>
+                  <ChevronDown className={cn("size-3.5 text-fg-muted transition-transform", showAdvancedOptions && "rotate-180")} />
+                </button>
+
+                {showAdvancedOptions && (
+                  <div className="mt-1 divide-y divide-line/40">
+                    {boxType === "tuck-top" && (
+                      <GiftWeightCard
+                        weight={draft.giftWeight}
+                        bottomType={draft.bottomType}
+                        onWeight={(giftWeight, now) => change({ ...draft, giftWeight }, now)}
+                        onBottom={(bottomType) => change({ ...draft, bottomType }, true)}
+                      />
+                    )}
+
+                    {(boxType === "tuck-top" || boxType === "lid-base") && (
+                      <WindowCard
+                        on={!!draft.window}
+                        where={boxType === "tuck-top" ? "mặt trước" : "mặt nắp"}
+                        onChange={(window) => change({ ...draft, window: window || undefined }, true)}
+                      />
+                    )}
+
+                    {boxType === "insert" && (
+                      <CellsCard
+                        cells={draft.cells ?? DEFAULT_CELLS}
+                        onChange={(cells: { rows: number; cols: number }) => changeCount(insertSizeForCells(draft, cells))}
+                      />
+                    )}
+
+                    {boxType === "cup-carrier" && (
+                      <CupsCard
+                        cups={draft.cells ?? DEFAULT_CUPS}
+                        diameter={cupCarrierSizesOf(draft).cupDiameter}
+                        showCups={draft.showCups !== false}
+                        onToggleCups={(show: boolean) => change({ ...draft, showCups: show }, true)}
+                        onChange={(cells: { rows: number; cols: number }) => changeCount(cupCarrierSizeForCups(draft, cells))}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
-
-          {/* Priority 2: Box options as collapsible accordion (collapsed by default) */}
-          {(boxType === "tuck-top" || boxType === "lid-base" || boxType === "insert" || boxType === "cup-carrier") && (
-            <AccordionCard
-              icon={SlidersHorizontal}
-              title="Tuỳ chọn hộp"
-              summary={boxOptionsSummary(draft, boxType)}
-            >
-          {boxType === "tuck-top" && (
-            <GiftWeightCard
-              weight={draft.giftWeight}
-              bottomType={draft.bottomType}
-              onWeight={(giftWeight, now) => change({ ...draft, giftWeight }, now)}
-              onBottom={(bottomType) => change({ ...draft, bottomType }, true)}
-            />
-          )}
-
-          {/* Card: display window (tuck-top front, lid & base lid; docs/23 S17) */}
-          {(boxType === "tuck-top" || boxType === "lid-base") && (
-            <WindowCard
-              on={!!draft.window}
-              where={boxType === "tuck-top" ? "mặt trước" : "mặt nắp"}
-              onChange={(window) => change({ ...draft, window: window || undefined }, true)}
-            />
-          )}
-
-          {/* Card: cells of a divider insert (docs/23 S18) */}
-          {boxType === "insert" && (
-            <CellsCard
-              cells={draft.cells ?? DEFAULT_CELLS}
-              onChange={(cells) => changeCount(insertSizeForCells(draft, cells))}
-            />
-          )}
-
-          {/* Card: cups of a cup carrier */}
-          {boxType === "cup-carrier" && (
-            <CupsCard
-              cups={draft.cells ?? DEFAULT_CUPS}
-              diameter={cupCarrierSizesOf(draft).cupDiameter}
-              onChange={(cells) => changeCount(cupCarrierSizeForCups(draft, cells))}
-            />
-          )}
-            </AccordionCard>
-          )}
-
-          {/* Gift presets grid removed — now inline pills in the dimension card above */}
         </div>
 
-        {/* Right Column: 3D Box Preview — sticky to viewport */}
-        <div className="flex flex-col gap-0 lg:sticky lg:top-24 lg:self-start">
-          {/* 3D Box Card with integrated HUD stats */}
-          <div className="relative flex-1 rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+        {/* Right Column: 3D Box Preview — sticky with stable, fixed viewport */}
+        <div className="sticky top-4 flex w-full flex-col gap-0">
+          {/* 3D Box Card with integrated HUD stats and fixed stable viewport */}
+          <div className="relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs h-[540px] sm:h-[580px] lg:h-[calc(100dvh-200px)] min-h-[480px] max-h-[760px]">
             {/* Top Left Badge */}
             <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm border border-slate-100 backdrop-blur-xs">
               <span aria-hidden className="size-2 rounded-full bg-fpt-orange" />
@@ -497,32 +637,53 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 : `${draft.length} × ${draft.width} × ${draft.height} mm · ${boxType === "belly-band" ? "phủ bì hộp" : "lọt lòng"}`}
             </span>
 
-            {/* Top Right Guide Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setShowGuides((prev) => !prev)}
-              className={cn(
-                "absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all shadow-sm",
-                showGuides
-                  ? "bg-fg text-fg-inverse hover:bg-fg/90"
-                  : "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100",
+            {/* Top Right Guide & Cup Toggle Buttons */}
+            <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+              {boxType === "cup-carrier" && (
+                <button
+                  type="button"
+                  onClick={() => change({ ...draft, showCups: !(draft.showCups !== false) }, true)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm",
+                    draft.showCups !== false
+                      ? "bg-fpt-orange text-white shadow-xs hover:bg-fpt-orange/90"
+                      : "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100",
+                  )}
+                  title={draft.showCups !== false ? "Bỏ ly 350ml ra khỏi khay" : "Bỏ ly 350ml vào khay"}
+                >
+                  <Coffee className="size-3.5" aria-hidden />
+                  <span>{draft.showCups !== false ? "Ly 350ml" : "Thử ly 350ml"}</span>
+                </button>
               )}
-            >
-              <Ruler className="size-3.5" aria-hidden />
-              <span>Đường kích thước</span>
-            </button>
 
-            {/* 3D Canvas */}
-            <div className="relative h-[480px] bg-landing-canvas sm:h-[520px] lg:h-[580px]">
+              <button
+                type="button"
+                onClick={() => setShowGuides((prev) => !prev)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all shadow-sm",
+                  showGuides
+                    ? "bg-fg text-fg-inverse hover:bg-fg/90"
+                    : "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100",
+                )}
+              >
+                <Ruler className="size-3.5" aria-hidden />
+                <span>Đường kích thước</span>
+              </button>
+            </div>
+
+            {/* 3D Canvas — flex-1 so it matches left column height perfectly */}
+            <div className="relative min-h-[480px] flex-1 bg-landing-canvas sm:min-h-[520px]">
               <div className="absolute inset-0">
                 <Box3DView
                   dimensions={committed.current}
                   liveDimensions={draft}
                   foldProgress={1}
+                  interactiveOpenState={openLid}
                   faceLabels={showFaceLabels ? true : false}
                   boxType={boxType}
                   theme={activeMaterial as never}
                   elements={elements}
+                  showCups={draft.showCups !== false}
                   backgroundPatternSvg={backgroundPatternSvg}
                   formulaVersion={formulaVersion}
                   cameraView={cameraView}
@@ -561,6 +722,26 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 </dl>
                 <div className="flex items-center gap-1.5">
                   <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
+                    {boxType !== "pillow" && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setOpenLid((prev) => !prev)}
+                          aria-pressed={openLid}
+                          title={openLid ? "Đóng nắp hộp" : "Mở nắp hộp"}
+                          className={cn(
+                            "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                            openLid
+                              ? "bg-fpt-orange text-white shadow-xs"
+                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                          )}
+                        >
+                          <Gift className="size-3.5" aria-hidden />
+                          <span>{openLid ? "Đóng nắp" : "Mở nắp"}</span>
+                        </button>
+                        <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                      </>
+                    )}
                     {(
                       [
                         { view: "angle", label: "3/4" },
@@ -611,10 +792,33 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
       </div>
 
       {errors.length > 0 && (
-        <p role="alert" className="mt-4 flex items-start gap-2 rounded-2xl bg-danger-bg p-4 text-sm text-danger-fg">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          {errors.join(" ")}
-        </p>
+        <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-danger-bg p-3.5 text-sm text-danger-fg">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <span>{errors.join(" ")}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (boxType === "cup-carrier") {
+                const rows = draft.cells?.rows ?? DEFAULT_CUPS.rows;
+                const cols = draft.cells?.cols ?? DEFAULT_CUPS.cols;
+                change({
+                  ...draft,
+                  length: Math.max(CUP_CARRIER_MIN_LENGTH_MM, cols * 100 + 5),
+                  width: rows * 100 + 5,
+                  height: rows > 1 ? 60 : 55,
+                }, true);
+              } else {
+                resetToInitial();
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-danger-fg shadow-2xs hover:bg-slate-50 transition-colors cursor-pointer shrink-0"
+          >
+            <Wand2 className="size-3.5 text-danger-fg" />
+            <span>Tự sửa lỗi kích thước</span>
+          </button>
+        </div>
       )}
 
       {/* Priority 3: Full-width sticky bottom action bar */}
@@ -666,71 +870,28 @@ function GiftWeightCard({
   onWeight(weight: number | undefined, now: boolean): void;
   onBottom(bottomType: "tuck" | "lock" | undefined): void;
 }) {
-  const heavy = weight !== undefined && weight > LOCK_BOTTOM_MIN_WEIGHT_G;
   const lock = usesLockBottom({ giftWeight: weight, bottomType });
-  const read = (value: string) => {
-    const grams = Number(value.replace(",", "."));
-    return value.trim() === "" || !Number.isFinite(grams) || grams <= 0 ? undefined : Math.min(20_000, Math.round(grams));
-  };
-  const [text, setText] = useState(weight === undefined ? "" : String(weight));
-  // Follow a weight set elsewhere (undo, a saved project), not the one being typed.
-  useEffect(() => {
-    setText((current) => (read(current) === weight ? current : weight === undefined ? "" : String(weight)));
-  }, [weight]);
 
   return (
-    <div data-tour="s2-weight" className="py-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        <Field
-          label="Khối lượng quà (g)"
-          hint={`Trên ${LOCK_BOTTOM_MIN_WEIGHT_G} g: dùng đáy khóa.`}
-          className="sm:w-56"
-        >
-          {(control) => (
-            <Input
-              {...control}
-              type="text"
-              inputMode="decimal"
-              placeholder="Ví dụ 350"
-              value={text}
-              trailing="g"
-              className="tabular-nums"
-              onChange={(event) => {
-                setText(event.target.value);
-                onWeight(read(event.target.value), false);
-              }}
-              onBlur={() => onWeight(read(text), true)}
-            />
-          )}
-        </Field>
-        <div className="flex min-w-0 flex-1 flex-col gap-2" aria-live="polite">
-          <Badge tone={lock ? "warning" : "neutral"} className="w-fit">
-            {lock ? "Đáy khóa FEFCO 0215" : "Đáy gài thường"}
-          </Badge>
+    <div data-tour="s2-weight" className="pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-semibold text-fg">Kiểu đáy hộp</h4>
           <p className="text-caption text-fg-muted">
-            {lock
-              ? heavy && bottomType !== "lock"
-                ? `Quà ${weight} g: đáy tự khóa, không sụt.`
-                : "Đáy tự khóa, chịu quà nặng."
-              : heavy
-                ? `Quà ${weight} g: đáy khóa chắc hơn.`
-                : "Đủ cho quà nhẹ."}
+            {lock ? "Đáy khóa tự động (FEFCO 0215) chịu quà nặng an toàn" : "Đáy gài tiêu chuẩn (cho quà nhẹ < 500g)"}
           </p>
         </div>
-      </div>
-      {(heavy || bottomType) && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {lock ? (
-            <Button variant="secondary" size="sm" onClick={() => onBottom("tuck")}>
-              Dùng đáy gài thường
-            </Button>
-          ) : (
-            <Button variant="secondary" size="sm" onClick={() => onBottom(heavy ? undefined : "lock")}>
-              Dùng đáy khóa FEFCO 0215
-            </Button>
-          )}
+        <div className="flex items-center gap-2">
+          <SegmentedSwitch
+            value={lock ? "lock" : "tuck"}
+            options={[
+              { value: "tuck", label: "Đáy gài thường" },
+              { value: "lock", label: "Đáy khóa chịu lực" },
+            ]}
+            onChange={(v) => onBottom(v as "tuck" | "lock")}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -739,14 +900,40 @@ function GiftWeightCard({
 function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number }; onChange(cells: { rows: number; cols: number }): void }) {
   const options = (max: number) => Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
   return (
-    <div data-tour="s2-cells" className="py-4">
-      <h3 className="text-body-sm font-semibold text-fg">Số ngăn</h3>
-      <p className="mt-1 text-caption text-fg-muted">
-        {cells.rows * cells.cols} ô · vách in tờ riêng
-      </p>
-      <div className="mt-3 flex flex-wrap gap-4">
-        <SegmentedSwitch label="Hàng" value={String(cells.rows)} options={options(MAX_CELLS.rows)} onChange={(v) => onChange({ ...cells, rows: Number(v) })} />
-        <SegmentedSwitch label="Cột" value={String(cells.cols)} options={options(MAX_CELLS.cols)} onChange={(v) => onChange({ ...cells, cols: Number(v) })} />
+    <div data-tour="s2-cells" className="pt-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-semibold text-fg">Số ngăn chia vách</h4>
+          <p className="text-caption text-fg-muted">{cells.rows * cells.cols} ô · vách in tờ rời</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <SegmentedSwitch label="Hàng" value={String(cells.rows)} options={options(MAX_CELLS.rows)} onChange={(v) => onChange({ ...cells, rows: Number(v) })} />
+          <SegmentedSwitch label="Cột" value={String(cells.cols)} options={options(MAX_CELLS.cols)} onChange={(v) => onChange({ ...cells, cols: Number(v) })} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** "Cửa sổ trưng bày": a cut-out backed by a PET film shows the gift (shared/src/parametric/openings.ts). */
+function WindowCard({ on, where, onChange }: { on: boolean; where: string; onChange(on: boolean): void }) {
+  return (
+    <div data-tour="s2-window" className="pt-3 border-t border-line/40">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-semibold text-fg">Cửa sổ bóng kính PET</h4>
+          <p className="text-caption text-fg-muted">
+            {on ? `Khoét ô ở ${where}, dán màng PET trong suốt` : `Khoét ô ở ${where} để thấy quà (+900đ)`}
+          </p>
+        </div>
+        <SegmentedSwitch
+          value={on ? "on" : "off"}
+          options={[
+            { value: "off", label: "Không" },
+            { value: "on", label: "Có cửa sổ" },
+          ]}
+          onChange={(value) => onChange(value === "on")}
+        />
       </div>
     </div>
   );
@@ -756,52 +943,49 @@ function CellsCard({ cells, onChange }: { cells: { rows: number; cols: number };
 function CupsCard({
   cups,
   diameter,
+  showCups = true,
+  onToggleCups,
   onChange,
 }: {
   cups: { rows: number; cols: number };
   diameter: number;
+  showCups?: boolean;
+  onToggleCups?(show: boolean): void;
   onChange(cups: { rows: number; cols: number }): void;
 }) {
   const options = (max: number) => Array.from({ length: max }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }));
-  return (
-    <div data-tour="s2-cups" className="py-4">
-      <h3 className="text-body-sm font-semibold text-fg">Số ly</h3>
-      <p className="mt-1 text-caption text-fg-muted">
-        {diameter > 0
-          ? `${cups.rows * cups.cols} ly · lỗ Ø ${Math.round(diameter)} mm`
-          : "Khay quá nhỏ: tăng kích thước hoặc chọn lại số ly."}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-4">
-        <SegmentedSwitch label="Hàng" value={String(cups.rows)} options={options(MAX_CUPS.rows)} onChange={(v) => onChange({ ...cups, rows: Number(v) })} />
-        <SegmentedSwitch label="Ly mỗi hàng" value={String(cups.cols)} options={options(MAX_CUPS.cols)} onChange={(v) => onChange({ ...cups, cols: Number(v) })} />
-      </div>
-    </div>
-  );
-}
 
-/** "Cửa sổ trưng bày": a cut-out backed by a PET film shows the gift (shared/src/parametric/openings.ts). */
-function WindowCard({ on, where, onChange }: { on: boolean; where: string; onChange(on: boolean): void }) {
   return (
-    <div data-tour="s2-window" className="py-4">
-      <div className="flex flex-col gap-3">
-        <div className="min-w-0">
-          <h3 className="text-body-sm font-semibold text-fg">Cửa sổ trưng bày</h3>
-          <p className="mt-1 text-caption text-fg-muted">
-            {on
-              ? `Ô khoét ở ${where}, dán màng PET. Hình in trong ô bị cắt bỏ.`
-              : `Khoét ô ở ${where} để thấy quà · +900đ/hộp`}
+    <div data-tour="s2-cups" className="pt-3 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 className="text-xs font-semibold text-fg">Số ngăn & Kích thước lỗ ly</h4>
+          <p className="text-caption text-fg-muted">
+            {cups.rows * cups.cols} ly · Lỗ cắt chuẩn Ø {Math.round(diameter)} mm (ôm khít ly 350ml – 500ml)
           </p>
         </div>
-        <SegmentedSwitch
-          label="Cửa sổ"
-          value={on ? "on" : "off"}
-          options={[
-            { value: "off", label: "Không" },
-            { value: "on", label: "Có cửa sổ" },
-          ]}
-          onChange={(value) => onChange(value === "on")}
-        />
+        <div className="flex items-center gap-3">
+          <SegmentedSwitch label="Hàng" value={String(cups.rows)} options={options(MAX_CUPS.rows)} onChange={(v) => onChange({ ...cups, rows: Number(v) })} />
+          <SegmentedSwitch label="Ly / hàng" value={String(cups.cols)} options={options(MAX_CUPS.cols)} onChange={(v) => onChange({ ...cups, cols: Number(v) })} />
+        </div>
       </div>
+
+      {onToggleCups && (
+        <div className="flex items-center justify-between border-t border-line/40 pt-2.5 text-xs">
+          <div className="flex items-center gap-1.5 text-fg">
+            <Coffee className="size-3.5 text-fpt-orange" />
+            <span className="font-medium">Mô phỏng ly 350ml trong khay 3D</span>
+          </div>
+          <SegmentedSwitch
+            value={showCups ? "on" : "off"}
+            options={[
+              { value: "on", label: "Có ly 350ml" },
+              { value: "off", label: "Ẩn ly" },
+            ]}
+            onChange={(v) => onToggleCups(v === "on")}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1030,48 +1214,7 @@ function HudStat({ label, value, className }: { label: string; value: React.Reac
   );
 }
 
-/** Collapsible accordion card — collapsed by default. Shows a one-line summary when closed. */
-function AccordionCard({
-  icon: Icon,
-  title,
-  summary,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  summary?: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="overflow-hidden rounded-sheet border border-line bg-surface-raised">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center gap-3 border-b border-line bg-surface-sunken/60 px-4 py-3 text-left sm:px-5"
-      >
-        <span
-          aria-hidden
-          className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-fpt-orange ring-1 ring-line"
-        >
-          <Icon className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate font-landing-heading text-body font-bold text-fg">{title}</h2>
-          {!open && summary && <p className="truncate text-caption text-fg-muted">{summary}</p>}
-        </div>
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-fg-muted transition-transform",
-            open && "rotate-180",
-          )}
-          aria-hidden
-        />
-      </button>
-      {open && <div className="divide-y divide-line p-4 sm:p-5">{children}</div>}
-    </section>
-  );
-}
+
 
 /** Summarise the current box options into a one-liner for the collapsed accordion header. */
 function boxOptionsSummary(dims: BoxDimensions, boxType: BoxStructureType): string {

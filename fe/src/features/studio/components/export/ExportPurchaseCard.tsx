@@ -42,16 +42,15 @@ interface ExportPurchaseCardProps {
 /** Saving is free at any step; only the print file is sold, and the terms apply before any payment. */
 function TermsNote() {
   return (
-    <p className="mt-3 border-t border-line pt-3 text-caption text-fg-muted">
-      Lưu dự án miễn phí ở mọi bước; chỉ file in cần thanh toán. Trước khi trả tiền, bạn đọc và đồng ý{" "}
-      <Link href={PAYMENT_TERMS_PATH} target="_blank" rel="noopener" className="font-semibold text-accent underline underline-offset-2">
+    <p className="mt-2.5 border-t border-line/60 pt-2 text-caption text-fg-muted leading-relaxed">
+      Lưu miễn phí. Đọc{" "}
+      <Link href={PAYMENT_TERMS_PATH} target="_blank" rel="noopener" className="font-semibold text-fpt-orange hover:underline">
         điều khoản thanh toán
       </Link>{" "}
-      và{" "}
-      <Link href="/legal/terms#studio" target="_blank" rel="noopener" className="font-semibold text-accent underline underline-offset-2">
-        điều khoản sử dụng
-      </Link>
-      .
+      &{" "}
+      <Link href="/legal/terms#studio" target="_blank" rel="noopener" className="font-semibold text-fpt-orange hover:underline">
+        sử dụng
+      </Link>.
     </p>
   );
 }
@@ -82,85 +81,129 @@ export function ExportPurchaseCard({
   const blockedTitle = blocked ? "Sửa các lỗi FitCheck trước khi thanh toán và xuất file" : undefined;
 
   return (
-    <StudioCard data-tour="s6-export" className={cn("p-5 flex flex-col justify-between", className)} aria-labelledby="export-card-title">
-      <div>
-        <CardTitle id="export-card-title" action={unlocked ? <span className="text-caption font-semibold text-success-fg">Đã thanh toán</span> : <Lock className="size-4 text-fg-muted" aria-hidden />}>
-          File in
-        </CardTitle>
+    <StudioCard
+      data-tour="s6-export"
+      className={cn(
+        "p-5 rounded-2xl border border-line/70 bg-surface-raised shadow-xs",
+        className
+      )}
+      aria-labelledby="export-card-title"
+    >
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        {/* Left side: Package info & Specs */}
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-orange-50 text-fpt-orange shrink-0">
+              <Download className="size-4" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 id="export-card-title" className="text-sm font-bold text-fg uppercase tracking-wider">
+                  Gói File Xuất Xưởng
+                </h4>
+                {unlocked ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-caption font-semibold text-emerald-700 whitespace-nowrap">
+                    <CheckCircle2 className="size-3" />
+                    Đã thanh toán
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-caption font-medium text-slate-600 whitespace-nowrap">
+                    <Lock className="size-3" />
+                    Cần đặt in
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-fg-muted mt-0.5">
+                Vector PDF CMYK 300 DPI (lớp CutContour, Crease, Artwork) · DXF dao bế · SVG
+              </p>
+            </div>
+          </div>
 
-        {specSummary && (
-          <div className="mt-3 rounded-xl border border-line bg-surface-sunken/60 p-3 text-xs">
-            <p className="font-bold text-sm text-fg">{specSummary.structureName}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-fg-muted">
+          {specSummary && (
+            <div className="self-start inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line/60 bg-surface-sunken/40 px-3.5 py-1.5 text-xs">
+              <span className="font-bold text-fg">{specSummary.structureName}</span>
+              <span className="text-line-strong">•</span>
               <span className="font-semibold text-fpt-orange-ink tabular-nums">
                 {specSummary.dimensions.length} × {specSummary.dimensions.width} × {specSummary.dimensions.height} mm
               </span>
-              <span className="text-slate-300">•</span>
-              <span className="font-medium text-fg">{specSummary.paperName}</span>
+              <span className="text-line-strong">•</span>
+              <span className="text-fg-muted">{specSummary.paperName}</span>
+              {specSummary.finishesText && (
+                <>
+                  <span className="text-line-strong">•</span>
+                  <span className="text-fg-muted font-medium">Gia công: {specSummary.finishesText}</span>
+                </>
+              )}
             </div>
-            {specSummary.finishesText && (
-              <div className="mt-1.5 border-t border-line/60 pt-1.5 text-caption text-fg-muted">
-                Gia công: <span className="font-medium text-fg">{specSummary.finishesText}</span>
-              </div>
+          )}
+
+          <div className="text-xs text-fg-muted leading-relaxed">
+            {!projectId && !signedIn ? (
+              <p>Bản dùng thử chưa xuất được file in. Đăng nhập để lưu dự án và tải trọn bộ file chuẩn xưởng in.</p>
+            ) : !projectId ? (
+              <p>Lưu thiết kế thành dự án để thanh toán và xuất file in kỹ thuật cao.</p>
+            ) : access.isPending ? (
+              <p role="status">Đang kiểm tra thanh toán…</p>
+            ) : unlocked ? (
+              <p className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" aria-hidden />
+                Đã thanh toán: Sẵn sàng tải trọn bộ file in CMYK và dao bế.
+              </p>
+            ) : (
+              <p>File in nét chuẩn 300 DPI, mở sau khi bạn thanh toán đơn in ở giỏ hàng.</p>
             )}
           </div>
-        )}
-
-        <div className="mt-3">
-          {!projectId && !signedIn ? (
-            <p className="text-body-sm text-fg-muted">
-              Bản dùng thử không xuất được file in. Đăng nhập, lưu dự án rồi thanh toán đơn in để tải gói file in (.ai · PDF CMYK · SVG · DXF).
-            </p>
-          ) : !projectId ? (
-            <p className="text-body-sm text-fg-muted">
-              Lưu thiết kế thành dự án để thanh toán đơn in. Thanh toán xong, nút Xuất file in hiện ra ở đây.
-            </p>
-          ) : access.isPending ? (
-            <p className="text-body-sm text-fg-muted" role="status">
-              Đang kiểm tra thanh toán của bản thiết kế này…
-            </p>
-          ) : unlocked ? (
-            <p className="flex items-start gap-2 text-body-sm text-fg-muted">
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
-              Đơn in của bản thiết kế này đã thanh toán: xuất mọi định dạng file in.
-            </p>
-          ) : (
-            <p className="text-body-sm text-fg-muted">
-              File in sạch, không watermark, mở sau khi bạn thanh toán đơn in của bản thiết kế này ở giỏ. Sửa thiết kế sau khi trả thì cần đơn mới.
-            </p>
-          )}
         </div>
-      </div>
 
-      <div className="mt-4">
-        {!projectId && !signedIn ? (
-          <Link href={ROUTES.login} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
-            <LogIn className="size-4" aria-hidden />
-            Đăng nhập để thanh toán
-          </Link>
-        ) : !projectId ? (
-          <button type="button" onClick={onSaveProject} disabled={saving || !onSaveProject} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
-            <Save className="size-4" aria-hidden />
-            {saving ? "Đang lưu…" : "Lưu dự án để thanh toán"}
-          </button>
-        ) : unlocked ? (
-          <button type="button" onClick={onExport} disabled={blocked} title={blockedTitle} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
-            <Download className="size-4" aria-hidden />
-            Xuất file in
-          </button>
-        ) : blocked ? (
-          <button type="button" disabled title={blockedTitle} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
-            <CreditCard className="size-4" aria-hidden />
-            Thanh toán
-          </button>
-        ) : (
-          <Link href={cartWith(projectId)} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
-            <CreditCard className="size-4" aria-hidden />
-            Thanh toán
-          </Link>
-        )}
+        {/* Right side: Action CTA Button & Terms Note */}
+        <div className="shrink-0 flex flex-col items-stretch lg:items-end sm:min-w-[260px] border-t lg:border-t-0 lg:border-l border-line/60 pt-3 lg:pt-0 lg:pl-5">
+          <div className="w-full">
+            {!projectId && !signedIn ? (
+              <Link href={ROUTES.login} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
+                <LogIn className="size-4" aria-hidden />
+                Đăng nhập để thanh toán
+              </Link>
+            ) : !projectId ? (
+              <button
+                type="button"
+                onClick={onSaveProject}
+                disabled={saving || !onSaveProject}
+                className={buttonClass({ variant: "brand", size: "lg", block: true })}
+              >
+                <Save className="size-4" aria-hidden />
+                {saving ? "Đang lưu…" : "Lưu dự án để thanh toán"}
+              </button>
+            ) : unlocked ? (
+              <button
+                type="button"
+                onClick={onExport}
+                disabled={blocked}
+                title={blockedTitle}
+                className={buttonClass({ variant: "brand", size: "lg", block: true })}
+              >
+                <Download className="size-4" aria-hidden />
+                Xuất file in ngay
+              </button>
+            ) : blocked ? (
+              <button
+                type="button"
+                disabled
+                title={blockedTitle}
+                className={buttonClass({ variant: "brand", size: "lg", block: true })}
+              >
+                <CreditCard className="size-4" aria-hidden />
+                Thanh toán
+              </button>
+            ) : (
+              <Link href={cartWith(projectId)} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
+                <CreditCard className="size-4" aria-hidden />
+                Thanh toán
+              </Link>
+            )}
+          </div>
 
-        <TermsNote />
+          <TermsNote />
+        </div>
       </div>
     </StudioCard>
   );

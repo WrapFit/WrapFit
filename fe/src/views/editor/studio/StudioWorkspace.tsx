@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { useCtrlWheelZoom } from "@/hooks/dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,6 +24,8 @@ import {
   LogIn,
   X,
   Box,
+  Gift,
+  Tag,
   LayoutPanelTop,
   PackageOpen,
   PenTool,
@@ -123,6 +125,7 @@ import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useSt
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, panelLabel, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
+import { clearDemoAssets, restoreDemoAssets, syncDemoAssets } from "@/features/studio/utils/demoDraftAssets";
 import { createProject, errorMessage, inspectFont, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { asFontFile, FONT_ACCEPT, inspectFontFile, MAX_FONT_BYTES, registerCustomFont } from "@/features/studio/utils/customFonts";
 import { useToast } from "@/components/common/Toast";
@@ -188,6 +191,47 @@ const scoreToneOf = (score: number) =>
 
 /** Design of the offline demo (`/editor/demo`). */
 const DEMO_ELEMENTS: CanvasElement[] = [];
+
+/** What the demo starts from: a template of the hub, or the draft this browser kept. */
+type DemoSource = Pick<TemplateDetail, "title" | "occasion" | "dimensions" | "materialSpec" | "canvasState"> & {
+  structure: Pick<TemplateDetail["structure"], "id">;
+};
+type DemoDraft = DemoSource & { step: StudioStep };
+const DEMO_DRAFT_KEY = "wrapfit:studio-demo-draft";
+
+function loadDemoDraft(): DemoDraft | null {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DEMO_DRAFT_KEY) ?? "null") as DemoDraft | null;
+    if (!draft?.structure?.id || !BOX_STRUCTURES.some((s) => s.id === draft.structure.id) || !draft.dimensions) return null;
+    const step = Number(draft.step);
+    return { ...draft, step: (step >= 1 && step <= 6 ? step : 1) as StudioStep };
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoDraft(draft: DemoDraft) {
+  try {
+    localStorage.setItem(DEMO_DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage full or blocked: the demo still works, only without the draft.
+  }
+  // Uploaded images and fonts are blob: URLs of this tab: their files go to IndexedDB, under the URL the draft keeps.
+  const urls = [
+    ...(draft.canvasState?.elements ?? []).map((el) => el.content),
+    ...(draft.canvasState?.customFonts ?? []).map((f) => f.url),
+  ];
+  void syncDemoAssets(urls).catch(() => undefined);
+}
+
+function clearDemoDraft() {
+  try {
+    localStorage.removeItem(DEMO_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+  void clearDemoAssets().catch(() => undefined);
+}
 
 const SYNC_LABELS: Record<SyncState, { label: string; tone: "ok" | "busy" | "warn" | "muted" }> = {
   demo: { label: "Bản dùng thử · không lưu", tone: "muted" },
@@ -284,10 +328,16 @@ export function StudioWorkspace({
 
   // Query parameter overrides for demo mode (home page, structure pages, template hub or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
+  // The demo keeps its design in this browser so a reload does not start over; a link that names a starting point
+  // (template, structure, size) opens that one instead.
+  const [demoDraft] = useState<DemoDraft | null>(() =>
+    isDemo && !demoTemplate && !paramStructure && !searchParams.get("l") && !searchParams.get("length") ? loadDemoDraft() : null
+  );
+  const demoSource: DemoSource | null = demoDraft ?? demoTemplate;
   const initialStructure =
     isDemo && paramStructure && BOX_STRUCTURES.some((s) => s.id === paramStructure)
       ? paramStructure
-      : (project?.template.id ?? demoTemplate?.structure.id ?? "tuck-top");
+      : (project?.template.id ?? demoSource?.structure.id ?? "tuck-top");
 
   const paramL = Number(searchParams.get("l") || searchParams.get("length"));
   const paramW = Number(searchParams.get("w") || searchParams.get("width"));
@@ -303,9 +353,30 @@ export function StudioWorkspace({
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
     if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
+    if (demoDraft) return demoDraft.step;
     if (hasParamDims || paramStructure || demoTemplate) return 4;
     return 1;
   });
+
+  // The step is kept in the address (?step=), so a reload opens the step the user was on.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("step") === String(currentStep)) return;
+    url.searchParams.set("step", String(currentStep));
+    window.history.replaceState(window.history.state, "", url);
+  }, [currentStep]);
+
+  const [isStepChanging, startStepTransition] = useTransition();
+
+  const navigateToStep = useCallback((targetStep: StudioStep) => {
+    if (targetStep === currentStep) return;
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    startStepTransition(() => {
+      setCurrentStep(targetStep);
+    });
+  }, [currentStep]);
 
   // Going to another step while the intro is open leaves the intro (counted as skipped); that step's own tour starts
   // if it was not seen. The first value, from the address or the project, is not a change.
@@ -320,30 +391,30 @@ export function StudioWorkspace({
   }, [currentStep, introSeen]);
 
   // Project Core State: a saved project fills it once, on mount
-  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoTemplate?.title ?? "Bao bì quà tặng sang trọng");
+  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoSource?.title ?? "Bao bì quà tặng sang trọng");
   const [boxType, setBoxType] = useState<BoxStructureType>(initialStructure);
   const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(() => {
     if (project) return materialThemeOf(project.canvasState?.materialTheme, project.materialSpec);
     if (isDemo && paramPaper && ["ivory", "kraft", "black_matte", "white_gloss", "metallics"].includes(paramPaper)) {
       return paramPaper;
     }
-    if (demoTemplate) return materialThemeOf(demoTemplate.canvasState?.materialTheme, demoTemplate.materialSpec);
+    if (demoSource) return materialThemeOf(demoSource.canvasState?.materialTheme, demoSource.materialSpec);
     return "ivory";
   });
   // The design before the last palette change; offered back while that change is still the last edit.
   const [paletteUndo, setPaletteUndo] = useState<{ paletteId: string | null; elements: CanvasElement[]; applied: CanvasElement[] } | null>(null);
   // Occasion of the design (template, quick start): the scenes of step 5 suggest the one that suits it.
-  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoTemplate?.occasion ?? null);
+  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoSource?.occasion ?? null);
   // Finishes of the print shop (lamination, foil, spot UV): priced in steps 3 and 6, stored with the canvas.
-  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoTemplate?.canvasState?.finishes));
+  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoSource?.canvasState?.finishes));
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
-    project?.canvasState?.backgroundPattern ?? demoTemplate?.canvasState?.backgroundPattern ?? null
+    project?.canvasState?.backgroundPattern ?? demoSource?.canvasState?.backgroundPattern ?? null
   );
 
   // Image 2 Inspired Palette & Typography states
   // Palette of the design (a library palette); choosing one recolours the printed artwork. Null until one is chosen.
   const [paletteId, setPaletteId] = useState<string | null>(() => {
-    const canvas = project?.canvasState ?? demoTemplate?.canvasState;
+    const canvas = project?.canvasState ?? demoSource?.canvasState;
     if (canvas?.backgroundTheme && artPaletteOf(canvas.backgroundTheme)) return canvas.backgroundTheme;
     for (const el of canvas?.elements ?? []) {
       const ref = parseLibraryArt(el.content);
@@ -364,7 +435,7 @@ export function StudioWorkspace({
         paperThickness: 0.38, // 300 GSM
       };
     }
-    if (demoTemplate) return { ...demoTemplate.dimensions };
+    if (demoSource) return { ...demoSource.dimensions };
     return {
       length: 120,
       width: 80,
@@ -389,6 +460,8 @@ export function StudioWorkspace({
   const [editSide, setEditSide] = useState<PrintSide>("outside");
   const [foldProgress, setFoldProgress] = useState<number>(1);
   const [lidOpen, setLidOpen] = useState<boolean>(false);
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  const [showFaceLabels, setShowFaceLabels] = useState<boolean>(true);
   const [textComposerOpen, setTextComposerOpen] = useState<boolean>(false);
 
   // Ctrl/⌘ + wheel (or trackpad pinch) over the stage zooms the dieline, never the browser page. In 3D the box's own
@@ -405,7 +478,7 @@ export function StudioWorkspace({
 
   // Artwork Canvas Elements
   const [elements, setElements] = useState<CanvasElement[]>(() => {
-    const saved = project ? (project.canvasState?.elements ?? []) : (demoTemplate?.canvasState?.elements ?? DEMO_ELEMENTS);
+    const saved = project ? (project.canvasState?.elements ?? []) : (demoSource?.canvasState?.elements ?? DEMO_ELEMENTS);
     return refitBackgrounds(orderElements(saved), dielinePiecesOf(boxType, dimensions, project?.formulaVersion));
   });
   // Finishes the quote prices: those chosen in step 3 and those of the elements; a second pass for the inside.
@@ -427,7 +500,7 @@ export function StudioWorkspace({
   /** Copied layer (Ctrl+C), pasted with Ctrl+V on the face that receives new elements. */
   const clipboard = useRef<CanvasElement | null>(null);
   // Fonts uploaded for this design (docs/23 S13), saved with the canvas.
-  const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoTemplate)?.canvasState?.customFonts ?? []);
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoSource)?.canvasState?.customFonts ?? []);
 
   // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
   const history = useRef({ past: [] as CanvasElement[][], future: [] as CanvasElement[][], current: elements, at: 0, travelling: false });
@@ -526,6 +599,47 @@ export function StudioWorkspace({
     }),
     [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId, customFonts]
   );
+  // Demo draft restored: its uploaded images and fonts come back from IndexedDB with new blob: URLs of this tab.
+  // Until then the draft is not written again, so the stored files are not dropped.
+  const [demoAssetsReady, setDemoAssetsReady] = useState(!demoDraft);
+  useEffect(() => {
+    if (!demoDraft) return;
+    let cancelled = false;
+    const canvas = demoDraft.canvasState;
+    const urls = [...(canvas?.elements ?? []).map((el) => el.content), ...(canvas?.customFonts ?? []).map((f) => f.url)];
+    restoreDemoAssets(urls)
+      .catch(() => new Map<string, string>())
+      .then((restored) => {
+        if (cancelled) return;
+        const remap = (url: string) => (url.startsWith("blob:") ? (restored.get(url) ?? "") : url);
+        setElements((prev) => prev.map((el) => ({ ...el, content: remap(el.content) })).filter((el) => el.content !== ""));
+        setCustomFonts((prev) => prev.map((f) => ({ ...f, url: remap(f.url) })).filter((f) => f.url !== ""));
+        history.current.past = [];
+        setDemoAssetsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [demoDraft]);
+
+  // Demo: keep the design (and its step) in this browser, a moment after the last change.
+  useEffect(() => {
+    if (!isDemo || !demoAssetsReady) return;
+    const timer = window.setTimeout(
+      () =>
+        saveDemoDraft({
+          title: payload.title,
+          occasion: occasion as DemoDraft["occasion"],
+          dimensions: payload.dimensions,
+          materialSpec: payload.materialSpec,
+          canvasState: payload.canvasState as DemoDraft["canvasState"],
+          structure: { id: boxType },
+          step: currentStep,
+        }),
+      400
+    );
+    return () => window.clearTimeout(timer);
+  }, [isDemo, demoAssetsReady, payload, occasion, boxType, currentStep]);
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
   const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
   // 422 of the last export, shown in the FitCheck tab while the design is the one the server checked.
@@ -1160,6 +1274,7 @@ export function StudioWorkspace({
         title: "Đã lưu thành dự án",
         description: local.length ? `${local.length} ảnh tải lên ở bản dùng thử chưa lưu được: hãy tải lại trong dự án.` : "Thiết kế giờ tự lưu lên cloud.",
       });
+      clearDemoDraft();
       router.replace(`${ROUTES.editor(created.id)}?step=${currentStep}`);
     } catch (err) {
       toast.error(err, "Chưa lưu được dự án");
@@ -1225,7 +1340,7 @@ export function StudioWorkspace({
           {/* The 6 steps */}
           <StudioStepper
             current={currentStep}
-            onSelect={setCurrentStep}
+            onSelect={navigateToStep}
             locked={isDemo ? {} : { 1: "Cấu trúc hộp cố định sau khi tạo dự án. Tạo dự án mới để đổi kiểu hộp." }}
           />
 
@@ -1249,7 +1364,7 @@ export function StudioWorkspace({
             <button
               type="button"
               onClick={() => {
-                setCurrentStep(6);
+                navigateToStep(6);
               }}
               title={
                 fitBadge.tone === "empty"
@@ -1264,17 +1379,9 @@ export function StudioWorkspace({
               {/* Laptops and tablets: the score alone */}
               <span aria-hidden>
                 <span className="hidden xl:inline">FitCheck: </span>
-                {fitBadge.tone === "empty" ? (
-                  <span className="font-medium">
-                    <span className="hidden 2xl:inline">chưa có hình in</span>
-                    <span className="2xl:hidden">–</span>
-                  </span>
-                ) : (
-                  <>
-                    {displayReport.score}
-                    <span className="hidden xl:inline">/100</span>
-                  </>
-                )}
+                <span className="font-bold">{displayReport.score}</span>
+                <span className="hidden xl:inline font-normal opacity-70">/100</span>
+                {fitBadge.tone === "empty" && <span className="hidden 2xl:inline text-xs font-normal opacity-80"> (khuôn chuẩn)</span>}
               </span>
             </button>
 
@@ -1445,7 +1552,8 @@ export function StudioWorkspace({
 
       {/* The open step */}
       {/* `inert`: a trashed project can be looked at, not edited */}
-      <main className="flex-1 w-full flex flex-col" inert={readOnly || undefined}>
+      <main className={cn("flex-1 w-full flex flex-col transition-opacity duration-200", isStepChanging && "opacity-85")} inert={readOnly || undefined}>
+        <div key={currentStep} className="w-full flex-1 flex flex-col animate-in fade-in duration-200 ease-out fill-mode-both">
         {/* STEP 1: CHỌN MẪU HỘP (demo only) */}
         {currentStep === 1 && (
           <Step1BoxTemplatePicker
@@ -1453,8 +1561,17 @@ export function StudioWorkspace({
             onSelectStructure={(t) => {
               setBoxType(t);
               setPieceIndex(0);
+              if (t === "cup-carrier") {
+                setDimensions((prev) => ({
+                  ...prev,
+                  cells: prev.cells ?? { rows: 1, cols: 2 },
+                  length: prev.length >= 100 && prev.length <= 400 ? prev.length : 205,
+                  width: prev.width >= 100 && prev.width <= 300 ? prev.width : 105,
+                  height: prev.height >= 45 && prev.height <= 80 ? prev.height : 55,
+                }));
+              }
             }}
-            onNext={() => setCurrentStep(2)}
+            onNext={() => navigateToStep(2)}
           />
         )}
 
@@ -1469,8 +1586,8 @@ export function StudioWorkspace({
             limits={limits}
             structure={boxType}
             formulaVersion={project?.formulaVersion}
-            onBack={isDemo ? () => setCurrentStep(1) : undefined}
-            onNext={() => setCurrentStep(3)}
+            onBack={isDemo ? () => navigateToStep(1) : undefined}
+            onNext={() => navigateToStep(3)}
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
           />
@@ -1491,8 +1608,8 @@ export function StudioWorkspace({
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
             formulaVersion={project?.formulaVersion}
-            onBack={() => setCurrentStep(2)}
-            onNext={() => setCurrentStep(4)}
+            onBack={() => navigateToStep(2)}
+            onNext={() => navigateToStep(4)}
           />
         )}
 
@@ -1882,7 +1999,7 @@ export function StudioWorkspace({
                 </div>
 
                 <div className="flex min-w-0 items-center gap-2">
-                  <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
+                  <button type="button" data-tour="studio-next" onClick={() => navigateToStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
                     <span className="hidden md:inline">{continueTo(5)}</span>
                     <span className="md:hidden">Tiếp tục</span>
                     <ArrowRight className="size-4" aria-hidden />
@@ -1964,22 +2081,104 @@ export function StudioWorkspace({
                     side={editSide}
                   />
                 ) : (
-                  <Box3DView
-                    dimensions={dimensions}
-                    foldProgress={foldProgress}
-                    faceLabels
-                    boxType={boxType}
-                    theme={activeMaterial}
-                    elements={elements}
-                    formulaVersion={project?.formulaVersion}
-                    backgroundPatternSvg={backgroundPatternSvg}
-                    environment="transparent"
-                    interactiveOpenState={lidOpen}
-                    showHud={false}
-                    showStatusBar={false}
-                    frameless
-                    minHeight={false}
-                  />
+                  <div className="relative h-full w-full">
+                    <Box3DView
+                      dimensions={dimensions}
+                      foldProgress={foldProgress}
+                      faceLabels={showFaceLabels}
+                      showCups={dimensions.showCups !== false}
+                      boxType={boxType}
+                      theme={activeMaterial}
+                      elements={elements}
+                      formulaVersion={project?.formulaVersion}
+                      backgroundPatternSvg={backgroundPatternSvg}
+                      environment="transparent"
+                      interactiveOpenState={lidOpen}
+                      cameraView={cameraView}
+                      showHud={false}
+                      showStatusBar={false}
+                      frameless
+                      minHeight={false}
+                      className="h-full w-full"
+                    />
+
+                    {/* Floating 3D Controls Dock identical to Step 2 & Step 3 */}
+                    <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-20 flex justify-center px-4">
+                      <div
+                        role="toolbar"
+                        aria-label="Góc nhìn hộp 3D"
+                        className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md"
+                      >
+                        {boxType !== "pillow" && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFoldProgress(1);
+                                setLidOpen((open) => !open);
+                              }}
+                              aria-pressed={lidOpen}
+                              title={lidOpen ? "Đóng nắp hộp" : "Mở nắp hộp"}
+                              className={cn(
+                                "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                                lidOpen
+                                  ? "bg-fpt-orange text-white shadow-xs"
+                                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                              )}
+                            >
+                              <Gift className="size-3.5" aria-hidden />
+                              <span>{lidOpen ? "Đóng nắp" : "Mở nắp"}</span>
+                            </button>
+                            <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                          </>
+                        )}
+
+                        {(
+                          [
+                            { view: "angle", label: "3/4" },
+                            { view: "front", label: "Trước" },
+                            { view: "side", label: "Bên" },
+                            { view: "top", label: "Trên" },
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.view}
+                            type="button"
+                            onClick={() => setCameraView(item.view)}
+                            aria-pressed={cameraView === item.view}
+                            title={`Góc nhìn ${item.label.toLowerCase()}`}
+                            className={cn(
+                              "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                              cameraView === item.view
+                                ? "bg-fpt-orange text-white shadow-xs"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                            )}
+                          >
+                            {item.view === "angle" && <Box className="size-3" aria-hidden />}
+                            <span>{item.label}</span>
+                          </button>
+                        ))}
+
+                        <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+
+                        <button
+                          type="button"
+                          onClick={() => setShowFaceLabels((prev) => !prev)}
+                          aria-pressed={showFaceLabels}
+                          title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
+                          className={cn(
+                            "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                            showFaceLabels
+                              ? "bg-fpt-orange text-white shadow-xs"
+                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                          )}
+                        >
+                          <Tag className="size-3" aria-hidden />
+                          <span>Nhãn mặt</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -2068,20 +2267,6 @@ export function StudioWorkspace({
                       >
                         <Box className="size-4" aria-hidden />
                       </button>
-                      {boxType !== "pillow" && (
-                        <button
-                          type="button"
-                          aria-pressed={lidOpen}
-                          onClick={() => {
-                            setFoldProgress(1);
-                            setLidOpen((open) => !open);
-                          }}
-                          className={lightToolButton(lidOpen, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}
-                        >
-                          <PackageOpen className="size-4" aria-hidden />
-                          {lidOpen ? "Đóng nắp" : "Mở nắp"}
-                        </button>
-                      )}
                     </div>
                   </>
                 )}
@@ -2102,8 +2287,9 @@ export function StudioWorkspace({
             formulaVersion={project?.formulaVersion}
             occasion={occasion}
             title={projectTitle}
-            onBack={() => setCurrentStep(4)}
-            onNext={() => setCurrentStep(6)}
+            onDimensionsChange={setDimensions}
+            onBack={() => navigateToStep(4)}
+            onNext={() => navigateToStep(6)}
             onOpenQrModal={() => openDialog("unboxing")}
             hasUnboxingQr={elements.some(isUnboxingQr)}
           />
@@ -2124,7 +2310,7 @@ export function StudioWorkspace({
             pieces={pieces}
             report={blockingReport ?? displayReport}
             blocked={!!blockingReport}
-            onBack={() => setCurrentStep(5)}
+            onBack={() => navigateToStep(5)}
             onAutoFix={handleAutoFix}
             onExport={() => openDialog("export")}
             signedIn={authStatus === "authenticated"}
@@ -2133,11 +2319,12 @@ export function StudioWorkspace({
             title={projectTitle}
             projectId={project?.id ?? null}
             onDesign={() => {
-              setCurrentStep(4);
+              navigateToStep(4);
               setRailPanel("elements");
             }}
           />
         )}
+        </div>
       </main>
 
       {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}

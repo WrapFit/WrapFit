@@ -1,8 +1,9 @@
 "use client";
 
 import { BLEED_MM, FINISH_LABELS, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, Gift, Grid3x3, Palette, ShieldCheck, Wand2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Check, CopyCheck, CreditCard, Download, Grid3x3, LogIn, PackageOpen, Palette, Plus, Save, ShieldCheck, Wand2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
@@ -10,12 +11,22 @@ import { PRIMARY_PILL, SECONDARY_PILL, SectionCard, StepActionBar, StepHeader, S
 import { studioStep } from "@/features/studio/components/StudioStepper";
 import { ReviewPanel } from "@/features/studio/components/review/ReviewPanel";
 import { Dialog } from "@/components/ui";
+import { ROUTES } from "@/constants";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
 import { ExportPurchaseCard } from "./export/ExportPurchaseCard";
 import { QuoteBreakdown } from "./QuoteBreakdown";
 import { QuoteCard } from "./QuoteCard";
+import { ImpositionCanvas2D } from "./imposition/ImpositionCanvas2D";
+import { PrePressColorCard } from "./imposition/PrePressColorCard";
+import {
+  type PressSheetId,
+  type IccProfileId,
+  type PrinterMarksConfig,
+  DEFAULT_PRINTER_MARKS,
+  ICC_PROFILES,
+} from "../types/imposition";
 
 
 
@@ -88,13 +99,21 @@ export function Step6ReviewExport({
   onSaveProject,
   saving,
 }: Step6ReviewExportProps) {
-  const [view, setView] = useState<"2d" | "3d">("2d");
+  const [view, setView] = useState<"2d" | "imposition" | "3d">("2d");
+  const [selectedSheetId, setSelectedSheetId] = useState<PressSheetId>("B1");
+  const [selectedIccProfile, setSelectedIccProfile] = useState<IccProfileId>(() => {
+    if (activeMaterial === "kraft") return "FOGRA47";
+    return "FOGRA39";
+  });
+  const [marksConfig, setMarksConfig] = useState<PrinterMarksConfig>(DEFAULT_PRINTER_MARKS);
+
   const [pieceIndex, setPieceIndex] = useState(0);
   const [fold, setFold] = useState(100);
   const [open, setOpen] = useState(false);
   /** Boxes of the quote: the card and the breakdown below follow the same number. */
   const [quantity, setQuantity] = useState(50);
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   /** Default scale of the dieline in Step 6 is fixed at 111% (1.11) on initial open */
   const [scale, setScale] = useState<number>(1.11);
   const paper = paperStockOf(activeMaterial);
@@ -116,148 +135,207 @@ export function Step6ReviewExport({
 
   return (
     <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-4 sm:px-6">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_400px] lg:items-stretch">
         {/* Stage */}
-        <StudioCard className="flex flex-col overflow-hidden h-full">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-            <ViewToggle<"2d" | "3d">
-              label="Chế độ xem"
-              value={view}
-              onChange={setView}
-              options={[
-                { value: "2d", label: "Khuôn bế 1:1", icon: Grid3x3 },
-                { value: "3d", label: "Hộp 3D", icon: Box },
-              ]}
-            />
-            {view === "2d" && pieces.length > 1 && (
-              <ViewToggle<string>
-                label="Mảnh phôi"
-                value={String(pieceIndex)}
-                onChange={(value) => setPieceIndex(Number(value))}
-                options={pieces.map((p, index) => ({ value: String(index), label: p.name }))}
+        <div className="flex flex-col h-full min-h-[520px]">
+          <StudioCard className="flex flex-col overflow-hidden h-full shadow-xs border border-line/60">
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 shrink-0">
+              <ViewToggle<"2d" | "imposition" | "3d">
+                label="Chế độ xem"
+                value={view}
+                onChange={setView}
+                options={[
+                  { value: "2d", label: "Khuôn bế 1:1", icon: Grid3x3 },
+                  { value: "imposition", label: "Dàn trang in (Imposition)", icon: CopyCheck },
+                  { value: "3d", label: "Hộp 3D", icon: Box },
+                ]}
               />
-            )}
-          </div>
-
-          {/* A definite height: the dieline fits inside it instead of growing with the width and sinking to the bottom. */}
-          <div className="relative mx-4 h-[560px] overflow-hidden rounded-squircle-md bg-landing-canvas lg:h-[calc(100dvh-240px)] lg:min-h-[440px]">
-            {view === "2d" && piece ? (
-              // Read-only: no onElementsChange, nothing moves here.
-              <div className="absolute inset-0 flex">
-                <DielineCanvas2D
-                  dieline={piece.geometry}
-                  scale={scale}
-                  onScaleChange={setScale}
-                  elements={elements}
-                  backgroundPatternSvg={backgroundPatternSvg}
-                  activePanelId="all"
-                  showRulers
-                  className="!min-h-0 h-full w-full !rounded-squircle-md"
+              {view === "2d" && pieces.length > 1 && (
+                <ViewToggle<string>
+                  label="Mảnh phôi"
+                  value={String(pieceIndex)}
+                  onChange={(value) => setPieceIndex(Number(value))}
+                  options={pieces.map((p, index) => ({ value: String(index), label: p.name }))}
                 />
-              </div>
-            ) : (
-              <div className="absolute inset-0">
-                <Box3DView
-                  dimensions={dimensions}
-                  foldProgress={fold / 100}
-                  faceLabels
-                  boxType={boxType}
-                  theme={activeMaterial}
-                  elements={elements}
-                  backgroundPatternSvg={backgroundPatternSvg}
-                  formulaVersion={formulaVersion}
-                  interactiveOpenState={open}
-                  showHud={false}
-                  showStatusBar={false}
-                  frameless
-                  minHeight={false}
-                  className="h-full w-full"
-                />
-              </div>
-            )}
-          </div>
-
-          {view === "3d" && (
-            <div className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm text-landing-muted">
-              <label className="flex w-full items-center gap-3 sm:w-auto">
-                <span className="shrink-0 font-medium text-landing-ink">Gấp hộp</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={fold}
-                  onChange={(e) => {
-                    setFold(Number(e.target.value));
-                    if (Number(e.target.value) < 90) setOpen(false);
-                  }}
-                  aria-label="Mức gấp hộp"
-                  className="w-full accent-fpt-orange sm:w-64"
-                />
-                <span className="w-10 font-mono text-xs">{fold}%</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen((value) => !value);
-                  setFold(100);
-                }}
-                aria-pressed={open}
-                className={cn("inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors", open ? "bg-stone-900 text-white" : "bg-fpt-orange text-white hover:bg-fpt-orange-dark shadow-xs")}
-              >
-                <Gift className="size-4" aria-hidden />
-                {open ? "Đóng nắp" : "Mở nắp"}
-              </button>
+              )}
             </div>
-          )}
-        </StudioCard>
+
+            {/* Canvas fills the entire card body with flex-1, leaving zero white space */}
+            <div className={cn("relative mx-4 flex-1 overflow-hidden rounded-squircle-md bg-landing-canvas", view === "3d" ? "mb-0" : "mb-4")}>
+              {view === "2d" && piece ? (
+                // Read-only: no onElementsChange, nothing moves here.
+                <div className="absolute inset-0 flex">
+                  <DielineCanvas2D
+                    dieline={piece.geometry}
+                    scale={scale}
+                    onScaleChange={setScale}
+                    elements={elements}
+                    backgroundPatternSvg={backgroundPatternSvg}
+                    activePanelId="all"
+                    showRulers
+                    className="!min-h-0 h-full w-full !rounded-squircle-md"
+                  />
+                </div>
+              ) : view === "imposition" && piece ? (
+                <div className="absolute inset-0 flex">
+                  <ImpositionCanvas2D
+                    piece={piece}
+                    allPieces={pieces}
+                    projectTitle={title}
+                    selectedSheetId={selectedSheetId}
+                    onSheetChange={setSelectedSheetId}
+                    selectedIccProfile={selectedIccProfile}
+                    paperName={paper.name}
+                    marksConfig={marksConfig}
+                    onMarksConfigChange={setMarksConfig}
+                    className="!min-h-0 h-full w-full !rounded-squircle-md"
+                  />
+                </div>
+              ) : (
+                <div className="absolute inset-0">
+                  <Box3DView
+                    dimensions={dimensions}
+                    foldProgress={fold / 100}
+                    faceLabels
+                    boxType={boxType}
+                    theme={activeMaterial}
+                    elements={elements}
+                    backgroundPatternSvg={backgroundPatternSvg}
+                    formulaVersion={formulaVersion}
+                    showCups={dimensions.showCups !== false}
+                    interactiveOpenState={open}
+                    showHud={false}
+                    showStatusBar={false}
+                    frameless
+                    minHeight={false}
+                    className="h-full w-full"
+                  />
+                </div>
+              )}
+            </div>
+
+            {view === "3d" && (
+              <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 p-4 border-t border-line/60 text-sm text-landing-muted">
+                <label className="flex w-full items-center gap-3 sm:w-auto">
+                  <span className="shrink-0 font-medium text-landing-ink">Gấp hộp</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={fold}
+                    onChange={(e) => {
+                      setFold(Number(e.target.value));
+                      if (Number(e.target.value) < 90) setOpen(false);
+                    }}
+                    aria-label="Mức gấp hộp"
+                    className="w-full accent-fpt-orange sm:w-64"
+                  />
+                  <span className="w-10 font-sans text-xs font-semibold tabular-nums text-fg">{fold}%</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen((value) => !value);
+                    setFold(100);
+                  }}
+                  aria-pressed={open}
+                  className={cn("inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors", open ? "bg-stone-900 text-white" : "bg-fpt-orange text-white hover:bg-fpt-orange-dark shadow-xs")}
+                >
+                  <PackageOpen className="size-4" aria-hidden />
+                  {open ? "Đóng nắp" : "Mở nắp"}
+                </button>
+              </div>
+            )}
+          </StudioCard>
+        </div>
 
         {/* Right Column: Unified FitCheck Status & Export File In */}
         <div className="flex flex-col gap-4 h-full">
           {/* FitCheck Status Card */}
           {empty ? (
-            <StudioCard data-tour="s6-status" className="border border-line bg-surface-raised p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-orange-100 text-fpt-orange shrink-0">
-                    <Palette className="size-3.5" aria-hidden />
+            <StudioCard data-tour="s6-status" className="border border-emerald-200 bg-emerald-50/70 p-4 rounded-2xl shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs shrink-0 mt-0.5">
+                    <Check className="size-4 stroke-[3]" aria-hidden />
                   </span>
-                  <div>
-                    <p className="font-bold text-sm text-fg">Hộp chưa có hình in</p>
-                    <p className="text-xs text-fg-muted">Hộp trơn vẫn đặt in được chuẩn khuôn bế.</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm text-emerald-950">FitCheck™: Khuôn bế đạt chuẩn in</p>
+                    <p className="text-xs text-emerald-700/90 leading-relaxed mt-0.5">
+                      Hộp trơn không in · Tỷ lệ khuôn 1:1 sẵn sàng sản xuất dao bế.
+                    </p>
                   </div>
                 </div>
+
+                <div className="flex flex-col items-end shrink-0 pl-2">
+                  <span className="font-landing-heading text-2xl font-bold text-emerald-700 tabular-nums leading-none">
+                    {report.score}<span className="text-xs font-normal text-emerald-600">/100</span>
+                  </span>
+                  <span className="text-caption font-medium text-emerald-600 uppercase tracking-wider mt-1">Xuất sắc</span>
+                </div>
+              </div>
+
+              {/* Dedicated action bar for adding graphics & viewing standards */}
+              <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRulesModal(true)}
+                  className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline underline-offset-2 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
+                >
+                  <span>11/11 tiêu chí đạt chuẩn</span>
+                  <span>↗</span>
+                </button>
                 <button
                   type="button"
                   onClick={onDesign}
-                  className="rounded-lg bg-orange-50 px-3 py-1.5 text-xs font-semibold text-fpt-orange-ink hover:bg-orange-100 transition-colors shrink-0"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-300 hover:bg-emerald-100/70 transition-all shadow-2xs cursor-pointer whitespace-nowrap"
                 >
-                  Thêm hình →
+                  <Plus className="size-3.5 text-emerald-700" />
+                  <span>Thêm hình in</span>
                 </button>
               </div>
             </StudioCard>
           ) : passed && !warnings ? (
-            /* Giữ nguyên thiết kế đạt chuẩn hiện tại theo yêu cầu người dùng */
-            <StudioCard data-tour="s6-status" className="border border-emerald-200 bg-emerald-50/70 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs shrink-0">
+            <StudioCard data-tour="s6-status" className="border border-emerald-200 bg-emerald-50/70 p-4 rounded-2xl shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xs shrink-0 mt-0.5">
                     <Check className="size-4 stroke-[3]" aria-hidden />
                   </span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm text-emerald-950">FitCheck™: Đạt chuẩn in</p>
-                      <button
-                        type="button"
-                        onClick={() => setShowRulesModal(true)}
-                        className="text-caption font-medium text-emerald-700 hover:underline cursor-pointer"
-                      >
-                        (11/11 tiêu chuẩn ↗)
-                      </button>
-                    </div>
-                    <p className="text-xs text-emerald-700">Đạt mọi yêu cầu kỹ thuật cho gia công bế và in ấn.</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm text-emerald-950">FitCheck™: Đạt chuẩn in 100%</p>
+                    <p className="text-xs text-emerald-700/90 leading-relaxed mt-0.5">
+                      Đạt mọi yêu cầu kỹ thuật cho gia công bế và in ấn.
+                    </p>
                   </div>
                 </div>
-                <span className="font-landing-heading text-2xl font-bold text-emerald-700 tabular-nums">100<span className="text-xs font-normal text-emerald-600">/100</span></span>
+
+                <div className="flex flex-col items-end shrink-0 pl-2">
+                  <span className="font-landing-heading text-2xl font-bold text-emerald-700 tabular-nums leading-none">
+                    {report.score}<span className="text-xs font-normal text-emerald-600">/100</span>
+                  </span>
+                  <span className="text-caption font-medium text-emerald-600 uppercase tracking-wider mt-1">Xuất sắc</span>
+                </div>
+              </div>
+
+              {/* Dedicated action bar for editing graphics & viewing standards */}
+              <div className="mt-3 pt-2.5 border-t border-emerald-200/60 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRulesModal(true)}
+                  className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline underline-offset-2 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
+                >
+                  <span>11/11 tiêu chí đạt chuẩn</span>
+                  <span>↗</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onDesign}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-800 border border-emerald-300 hover:bg-emerald-100/70 transition-all shadow-2xs cursor-pointer whitespace-nowrap"
+                >
+                  <Palette className="size-3.5 text-emerald-700" />
+                  <span>Sửa hình in</span>
+                </button>
               </div>
             </StudioCard>
           ) : (
@@ -271,19 +349,19 @@ export function Step6ReviewExport({
               )}
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
+                <div className="flex items-start gap-2.5 min-w-0">
                   <span className={cn(
                     "flex size-7 items-center justify-center rounded-full text-white shadow-2xs shrink-0 mt-0.5",
                     errors > 0 ? "bg-red-500" : "bg-amber-500"
                   )}>
                     <AlertTriangle className="size-3.5" aria-hidden />
                   </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <p className={cn("font-bold text-sm", errors > 0 ? "text-red-950" : "text-amber-950")}>
                         {errors > 0 ? `FitCheck™: ${errors} lỗi cần sửa` : `FitCheck™: ${warnings} cảnh báo in`}
                       </p>
-                      <span className="text-caption font-semibold text-fpt-orange underline group-hover:text-fpt-orange-dark">
+                      <span className="text-xs font-semibold text-fpt-orange underline group-hover:text-fpt-orange-dark whitespace-nowrap">
                         Bấm xem chi tiết ↗
                       </span>
                     </div>
@@ -302,31 +380,35 @@ export function Step6ReviewExport({
                     </div>
                   </div>
                 </div>
-                <span className={cn(
-                  "font-landing-heading text-2xl font-bold tabular-nums shrink-0",
-                  errors > 0 ? "text-red-700" : "text-amber-700"
-                )}>
-                  {report.score}<span className="text-xs font-normal text-slate-400">/100</span>
-                </span>
+
+                <div className="flex flex-col items-end shrink-0 pl-2">
+                  <span className={cn(
+                    "font-landing-heading text-2xl font-bold tabular-nums leading-none",
+                    errors > 0 ? "text-red-700" : "text-amber-700"
+                  )}>
+                    {report.score}<span className="text-xs font-normal text-slate-400">/100</span>
+                  </span>
+                  <span className={cn(
+                    "text-caption font-medium uppercase tracking-wider mt-1",
+                    errors > 0 ? "text-red-600" : "text-amber-600"
+                  )}>
+                    {errors > 0 ? "Cần sửa" : "Cần lưu ý"}
+                  </span>
+                </div>
               </div>
             </button>
           )}
 
-          {/* Card File in & Thanh toán - Cân bằng chiều cao với file thiết kế bên trái */}
-          <ExportPurchaseCard
-            projectId={projectId}
-            blocked={!passed}
-            onExport={onExport}
-            signedIn={signedIn}
-            onSaveProject={onSaveProject}
-            saving={saving}
-            className="flex-1"
-            specSummary={{
-              structureName,
-              dimensions,
-              paperName: paper.name,
-              finishesText: finishes.length ? finishes.map((f) => FINISH_LABELS[f] ?? f).join(", ") : undefined,
-            }}
+          {/* Thiết lập chế bản xưởng & Quản trị màu ICC */}
+          <PrePressColorCard
+            activeMaterial={activeMaterial}
+            selectedIccProfile={selectedIccProfile}
+            onIccProfileChange={setSelectedIccProfile}
+            marksConfig={marksConfig}
+            onMarksConfigChange={setMarksConfig}
+            selectedSheetId={selectedSheetId}
+            onSheetChange={setSelectedSheetId}
+            onViewImposition={() => setView("imposition")}
           />
 
           {/* Comments and the print approval of customers / print shops (docs/23 S23); saved projects only. */}
@@ -346,7 +428,7 @@ export function Step6ReviewExport({
           size="lg"
           onClose={() => setShowRulesModal(false)}
         >
-          <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+          <div className="space-y-4 pr-1">
             {/* Phân vùng 1: Các lỗi & cảnh báo cần khắc phục (nếu có) */}
             {failingRules.length > 0 && (
               <div className="space-y-2">
@@ -453,8 +535,8 @@ export function Step6ReviewExport({
         </Dialog>
       )}
 
-      {/* The print quote as one wide row under the dieline, then its detail. */}
-      <div className="mt-4">
+      {/* Báo giá in & Gói file xuất xưởng đặt cùng hàng/khu vực bên dưới khuôn bế để cân đối hoàn hảo */}
+      <div className="mt-5 space-y-4">
         <QuoteCard
           structure={boxType}
           pieces={pieces}
@@ -468,17 +550,37 @@ export function Step6ReviewExport({
           blocked={!passed}
           quantity={quantity}
           onQuantityChange={setQuantity}
+          showBreakdown={showBreakdown}
+          onToggleBreakdown={() => setShowBreakdown((prev) => !prev)}
         />
-      </div>
 
-      <div className="mt-4">
-        <QuoteBreakdown
-          structure={boxType}
-          pieces={pieces}
-          material={activeMaterial}
-          finishes={finishes}
-          insidePrint={insidePrint}
-          quantity={quantity}
+        {showBreakdown && (
+          <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+            <QuoteBreakdown
+              structure={boxType}
+              pieces={pieces}
+              material={activeMaterial}
+              finishes={finishes}
+              insidePrint={insidePrint}
+              quantity={quantity}
+            />
+          </div>
+        )}
+
+        {/* Card Gói File Xuất Xưởng & Thanh Toán - Đặt ngay bên dưới Báo giá in */}
+        <ExportPurchaseCard
+          projectId={projectId}
+          blocked={!passed}
+          onExport={onExport}
+          signedIn={signedIn}
+          onSaveProject={onSaveProject}
+          saving={saving}
+          specSummary={{
+            structureName,
+            dimensions,
+            paperName: `${paper.name} • ${ICC_PROFILES.find((p) => p.id === selectedIccProfile)?.name ?? selectedIccProfile}`,
+            finishesText: finishes.length ? finishes.map((f) => FINISH_LABELS[f] ?? f).join(", ") : undefined,
+          }}
         />
       </div>
 
@@ -490,10 +592,52 @@ export function Step6ReviewExport({
           </button>
         }
         summary={
-          <>
-            <span className="block text-xs">Gói file in (sau khi thanh toán)</span>
-            <span className="text-landing-ink">.ai · PDF CMYK · JPG đối chiếu · SVG · DXF</span>
-          </>
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-0.5 font-sans text-xs font-semibold tabular-nums",
+                passed && !warnings
+                  ? "bg-emerald-100 text-emerald-800"
+                  : errors > 0
+                    ? "bg-red-100 text-red-800"
+                    : "bg-amber-100 text-amber-800"
+              )}
+            >
+              FitCheck {report.score}/100
+            </span>
+            <div className="text-left font-sans">
+              <span className="block text-xs text-fg-muted">Gói file in xuất xưởng</span>
+              <span className="font-semibold text-fg">PDF CMYK 300 DPI · DXF dao bế · SVG</span>
+            </div>
+          </div>
+        }
+        next={
+          !projectId && !signedIn ? (
+            <Link href={ROUTES.login} className={PRIMARY_PILL}>
+              <LogIn className="size-4" aria-hidden />
+              <span>Đăng nhập đặt in</span>
+            </Link>
+          ) : !projectId ? (
+            <button
+              type="button"
+              onClick={onSaveProject}
+              disabled={saving || !onSaveProject}
+              className={PRIMARY_PILL}
+            >
+              <Save className="size-4" aria-hidden />
+              <span>{saving ? "Đang lưu…" : "Lưu dự án & Đặt in"}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onExport}
+              disabled={!passed}
+              className={PRIMARY_PILL}
+            >
+              <Download className="size-4" aria-hidden />
+              <span>Xuất file in ngay</span>
+            </button>
+          )
         }
       />
     </div>

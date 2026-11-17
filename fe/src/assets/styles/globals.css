@@ -486,3 +486,32 @@ input[type="password"]::-ms-clear {
 .hover-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.7);
 }
+
+/* Vertical scrollbar shown only on hover/focus */
+.hover-scroll-y {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s ease;
+}
+.hover-scroll-y:hover,
+.hover-scroll-y:focus-within {
+  scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+}
+.hover-scroll-y::-webkit-scrollbar {
+  width: 6px;
+}
+.hover-scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hover-scroll-y::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+.hover-scroll-y:hover::-webkit-scrollbar-thumb,
+.hover-scroll-y:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6) !important;
+}
+.hover-scroll-y::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8) !important;
+}

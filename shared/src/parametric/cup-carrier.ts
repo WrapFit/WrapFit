@@ -38,6 +38,10 @@ export const CARRIER_HAND_HOLE = { height: 24, top: 12 };
 export const CARRIER_CUP_MARGIN_MM = 5;
 /** Smallest cup hole worth cutting, mm. */
 export const CARRIER_MIN_CUP_MM = 30;
+/** Standard cup hole diameter for 350ml - 500ml takeaway coffee paper cups (rim Ø88-90mm), mm. */
+export const CARRIER_STANDARD_CUP_HOLE_MM = 80;
+/** Minimum pitch between cup centers so 88-90mm cups do not collide, mm. */
+export const CARRIER_MIN_CUP_PITCH_MM = 95;
 export const DEFAULT_CUPS = { rows: 1, cols: 2 };
 export const MAX_CUPS = { rows: 2, cols: 4 };
 
@@ -52,7 +56,12 @@ export function cupCarrierSizesOf({ length, width, height, paperThickness: t, ce
   const rise = shoulder * Math.cos(angle);
   const rows = Math.min(MAX_CUPS.rows, Math.max(1, Math.round(cells?.rows ?? DEFAULT_CUPS.rows)));
   const cols = Math.min(MAX_CUPS.cols, Math.max(1, Math.round(cells?.cols ?? DEFAULT_CUPS.cols)));
-  const cupDiameter = Math.max(0, Math.min(L / cols, W / rows) - 2 * CARRIER_CUP_MARGIN_MM);
+  const cellPitch = Math.min(L / cols, W / rows);
+  const maxHoleInCell = Math.max(0, cellPitch - 2 * CARRIER_CUP_MARGIN_MM);
+  // A takeaway coffee cup catches securely on an 80 mm hole.
+  // The hole must not balloon beyond 80 mm (otherwise cups fall through).
+  // When a tray is wider, the extra material provides clean space between cups.
+  const cupDiameter = Math.min(CARRIER_STANDARD_CUP_HOLE_MM, maxHoleInCell);
   return {
     L,
     W,
@@ -86,6 +95,7 @@ export function cupCarrierSizeForCups(dimensions: BoxDimensions, cups: { rows: n
     cells: { rows: next.rows, cols: next.cols },
     length: Math.max(CUP_CARRIER_MIN_LENGTH_MM, Math.round(next.cols * pitchL * 10) / 10),
     width: Math.round(next.rows * pitchW * 10) / 10,
+    height: dimensions.height,
   });
   if (old.cupDiameter > 0) {
     const kept = sized(dimensions.length / old.cols, dimensions.width / old.rows);

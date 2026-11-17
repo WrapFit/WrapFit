@@ -1,7 +1,7 @@
 "use client";
 
 import { stageBarButton } from "@/features/studio/components/studioUi";
-import React, { useEffect, useId, useMemo, useState, useRef } from "react";
+import React, { useEffect, useId, useMemo, useState, useRef, useCallback } from "react";
 import {
   BLEED_BOX_MM,
   canMoveLayer,
@@ -31,7 +31,7 @@ import {
   type LayerMove,
   type PrintSide,
 } from "@wrapfit/shared";
-import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Info } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, RotateCw, Trash2, Type, Move, Sparkles, Info, Hand } from "lucide-react";
 import { layoutBoxText, useBoxFonts } from "./boxText";
 import { ArtShapes, elementArt } from "../library/elementArt";
 import { FramedImage, TextVisual, useImageSizes } from "./elementVisuals";
@@ -117,6 +117,10 @@ interface DielineCanvas2DProps {
   dieline: DielineGeometry;
   scale?: number;
   onScaleChange?: (scale: number) => void;
+  pan?: { x: number; y: number };
+  onPanChange?: (pan: { x: number; y: number }) => void;
+  isPanMode?: boolean;
+  onPanModeChange?: (isPanMode: boolean) => void;
   elements?: CanvasElement[];
   onElementsChange?: (elements: CanvasElement[]) => void;
   selectedElementId?: string | null;
@@ -167,7 +171,15 @@ type DragState =
     }
   | { mode: "rotate"; elementId: string; center: { x: number; y: number }; startRotation: number; startAngle: number }
   | { mode: "marquee"; start: { x: number; y: number }; current: { x: number; y: number } }
-  | { mode: "guide"; guideId: number };
+  | { mode: "guide"; guideId: number }
+  | {
+      mode: "pan";
+      pointerId: number;
+      startClient: { x: number; y: number };
+      startPan: { x: number; y: number };
+      hasMoved: boolean;
+      button: number;
+    };
 
 /** The 8 resize handles, clockwise from the top-left corner. */
 const HANDLES: { key: string; handle: Handle; cursor: string }[] = [
@@ -186,8 +198,12 @@ const round1 = (value: number) => Math.round(value * 10) / 10;
 
 export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   dieline,
-  scale = 1.0,
+  scale: controlledScale,
   onScaleChange,
+  pan: controlledPan,
+  onPanChange,
+  isPanMode: controlledPanMode,
+  onPanModeChange,
   elements = [],
   onElementsChange,
   selectedElementId,
@@ -209,7 +225,63 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   const isStage = variant === "stage";
   const [showLayers, setShowLayers] = useState<DielineLayers>(DEFAULT_DIELINE_LAYERS);
 
+  // Controlled or uncontrolled pan state
+  const [internalPan, setInternalPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const pan = controlledPan ?? internalPan;
+  const setPan = useCallback((next: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
+    if (typeof next === "function") {
+      setInternalPan((prev) => {
+        const current = controlledPan ?? prev;
+        const computed = next(current);
+        onPanChange?.(computed);
+        return computed;
+      });
+    } else {
+      setInternalPan(next);
+      onPanChange?.(next);
+    }
+  }, [controlledPan, onPanChange]);
+
+  // Controlled or uncontrolled scale state
+  const [internalScale, setInternalScale] = useState<number>(1.0);
+  const scale = controlledScale ?? internalScale;
+  const setScale = useCallback((next: number | ((prev: number) => number)) => {
+    if (typeof next === "function") {
+      setInternalScale((prev) => {
+        const current = controlledScale ?? prev;
+        const computed = next(current);
+        onScaleChange?.(computed);
+        return computed;
+      });
+    } else {
+      setInternalScale(next);
+      onScaleChange?.(next);
+    }
+  }, [controlledScale, onScaleChange]);
+
+  // Hand tool / Pan mode
+  const [internalPanMode, setInternalPanMode] = useState<boolean>(false);
+  const isPanMode = controlledPanMode ?? internalPanMode;
+  const setIsPanMode = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    const val = typeof next === "function" ? next(isPanMode) : next;
+    setInternalPanMode(val);
+    onPanModeChange?.(val);
+  }, [isPanMode, onPanModeChange]);
+
+  const [isSpacePressed, setIsSpacePressed] = useState<boolean>(false);
+  const [isInteracting, setIsInteracting] = useState<boolean>(false);
+
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  const panRef = useRef(pan);
+  panRef.current = pan;
+  const onScaleChangeRef = useRef(onScaleChange);
+  onScaleChangeRef.current = onScaleChange;
+  const onPanChangeRef = useRef(onPanChange);
+  onPanChangeRef.current = onPanChange;
+
   const uid = useId().replace(/:/g, "");
   const [hoveredPanelId, setHoveredPanelId] = useState<string | null>(null);
   const sheet = useMemo(() => sheetPath(dieline), [dieline]);
@@ -236,6 +308,45 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   const padding = 20; // 20 mm around the sheet: the 14 mm rulers and the bleed fit, the dieline gets the rest
   const viewBoxW = totalW + 2 * padding;
   const viewBoxH = totalH + 2 * padding;
+
+  // Keyboard shortcut listeners (Space for Hand pan, H for Pan toggle, V for Select, Ctrl+0 for reset)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const tag = activeEl?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || (activeEl as HTMLElement)?.isContentEditable) {
+        return;
+      }
+
+      if (e.code === "Space" && !e.repeat) {
+        e.preventDefault();
+        setIsSpacePressed(true);
+      }
+      if (e.key === "h" || e.key === "H") {
+        setIsPanMode((prev: boolean) => !prev);
+      }
+      if (e.key === "v" || e.key === "V" || e.key === "Escape") {
+        setIsPanMode(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === "0" || e.key === "Numpad0")) {
+        e.preventDefault();
+        handleResetZoom();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setIsSpacePressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [setIsPanMode]);
 
   const selectedEl = elements.find((e) => e.id === selectedElementId && !isBackground(e));
   // Every selected layer: a click selects one layer (or its group), Shift + click adds / removes, a drag on the empty
@@ -297,6 +408,23 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     };
   };
 
+  // Start dragging the canvas to pan (with mouse, middle button, spacebar, or hand tool)
+  const startPan = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    try {
+      (e.target as HTMLElement | SVGElement).setPointerCapture?.(e.pointerId);
+    } catch {}
+    setDragState({
+      mode: "pan",
+      pointerId: e.pointerId,
+      startClient: { x: e.clientX, y: e.clientY },
+      startPan: { ...panRef.current },
+      hasMoved: false,
+      button: e.button,
+    });
+    setIsInteracting(true);
+  };
+
   // Pointer down on a layer or one of its handles: select, then move, resize or turn it.
   const handleElementPointerDown = (
     e: React.PointerEvent,
@@ -307,6 +435,10 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     e.stopPropagation();
     e.preventDefault();
     if (e.button === 2) return; // the context menu handles right-clicks
+    if (e.button === 1 || isPanMode || isSpacePressed) {
+      startPan(e);
+      return;
+    }
     const pt = getSvgCoordinates(e.clientX, e.clientY);
 
     if (mode === "move") {
@@ -380,7 +512,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   };
 
   // Pointer move over the sheet: the crosshair, then the current drag.
-  const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+  const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement> | PointerEvent) => {
     const pt = getSvgCoordinates(e.clientX, e.clientY);
     const mmX = Math.round(pt.x - padding);
     const mmY = Math.round(pt.y - padding);
@@ -389,6 +521,20 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     const onSheet = mmX >= 0 && mmY >= 0 && mmX <= viewBoxW - 2 * padding && mmY <= viewBoxH - 2 * padding;
     setCursorMm(onSheet ? { x: mmX, y: mmY } : null);
     if (!dragState) return;
+
+    if (dragState.mode === "pan") {
+      const dx = e.clientX - dragState.startClient.x;
+      const dy = e.clientY - dragState.startClient.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        dragState.hasMoved = true;
+      }
+      const nextPan = {
+        x: Math.round(dragState.startPan.x + dx),
+        y: Math.round(dragState.startPan.y + dy),
+      };
+      setPan(nextPan);
+      return;
+    }
 
     if (dragState.mode === "marquee") {
       setDragState({ ...dragState, current: pt });
@@ -466,8 +612,19 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   };
 
   // Pointer up: ends the drag; a marquee selects what it touches; a guide dropped off the sheet is removed.
-  const handleSvgPointerUp = () => {
+  const handleSvgPointerUp = (e?: React.PointerEvent<SVGSVGElement> | PointerEvent) => {
     if (!dragState) return;
+    if (dragState.mode === "pan") {
+      try {
+        (e?.target as HTMLElement | SVGElement)?.releasePointerCapture?.(dragState.pointerId);
+      } catch {}
+      if (!dragState.hasMoved && !isPanMode && !isSpacePressed && dragState.button === 0) {
+        if (selection.length) select([], null);
+      }
+      setDragState(null);
+      setIsInteracting(false);
+      return;
+    }
     if (dragState.mode === "marquee") {
       const [x1, x2] = [Math.min(dragState.start.x, dragState.current.x), Math.max(dragState.start.x, dragState.current.x)];
       const [y1, y2] = [Math.min(dragState.start.y, dragState.current.y), Math.max(dragState.start.y, dragState.current.y)];
@@ -495,14 +652,50 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     }
     setSnapHits([]);
     setDragState(null);
+    setIsInteracting(false);
   };
 
-  // Pointer down on the empty sheet: starts a selection rectangle.
+  // Pointer down on the empty sheet: starts panning or marquee selection.
   const handleSvgPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (e.button !== 0 || !onSelectElement || !onElementsChange) return;
-    const pt = getSvgCoordinates(e.clientX, e.clientY);
-    setDragState({ mode: "marquee", start: pt, current: pt });
+    if (e.button === 2) return;
+    if (e.button === 1 || isPanMode || isSpacePressed || !e.shiftKey) {
+      startPan(e);
+      return;
+    }
+    if (e.button === 0 && e.shiftKey && onSelectElement && onElementsChange) {
+      const pt = getSvgCoordinates(e.clientX, e.clientY);
+      setDragState({ mode: "marquee", start: pt, current: pt });
+    }
   };
+
+  // Pointer down on the outer stage viewport: drags canvas to pan
+  const handleViewportPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button === 2) return;
+    if ((e.target as HTMLElement).closest("[role='menu'], [role='toolbar'], button, input, select, textarea")) {
+      return;
+    }
+    startPan(e);
+  };
+
+  // Window-level drag safety listener so mouse drag never gets dropped outside canvas bounds
+  useEffect(() => {
+    if (!dragState) return;
+
+    const onPointerMove = (e: PointerEvent) => {
+      handleSvgPointerMove(e);
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      handleSvgPointerUp(e);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, [dragState]);
 
   // Pointer down on a ruler: a new guide, dragged into place (drop it back on the ruler to remove it).
   const startGuide = (e: React.PointerEvent, axis: "x" | "y") => {
@@ -525,27 +718,91 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   // Zoom handlers
   const handleZoom = (delta: number) => {
-    
-    if (onScaleChange) {
-      const next = Math.min(2.5, Math.max(0.4, Number((scale + delta).toFixed(2))));
-      onScaleChange(next);
-    }
+    const currentScale = scaleRef.current;
+    const next = Math.min(3.0, Math.max(0.3, Number((currentScale + delta).toFixed(2))));
+    if (next === currentScale) return;
+    const currentPan = panRef.current;
+    const scaleRatio = next / currentScale;
+    const nextPan = {
+      x: Math.round(currentPan.x * scaleRatio),
+      y: Math.round(currentPan.y * scaleRatio),
+    };
+    setScale(next);
+    setPan(nextPan);
   };
-
-  // Ctrl/⌘ + wheel zooms the card. The stage variant is zoomed by the page, which owns that listener.
-  const rootRef = useRef<HTMLDivElement>(null);
-  const scaleRef = useRef(scale);
-  scaleRef.current = scale;
-  useCtrlWheelZoom(
-    rootRef,
-    (factor) => onScaleChange?.(Math.min(2.5, Math.max(0.4, Number((scaleRef.current * factor).toFixed(3))))),
-    !isStage && !!onScaleChange
-  );
 
   const handleResetZoom = () => {
-    
-    if (onScaleChange) onScaleChange(1.0);
+    setScale(1.0);
+    setPan({ x: 0, y: 0 });
   };
+
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Native non-passive Wheel listener on the viewport: smooth focal-point zoom at mouse cursor & wheel pan
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect = el.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      // Screen cursor position relative to viewport center
+      const Sx = cursorX - centerX;
+      const Sy = cursorY - centerY;
+
+      if (e.shiftKey) {
+        // Shift + Wheel = horizontal pan
+        const delta = e.deltaY || e.deltaX;
+        setPan((prev: { x: number; y: number }) => ({ ...prev, x: Math.round(prev.x - delta) }));
+        return;
+      }
+
+      if (e.altKey) {
+        // Alt + Wheel = vertical pan
+        setPan((prev: { x: number; y: number }) => ({ ...prev, y: Math.round(prev.y - e.deltaY) }));
+        return;
+      }
+
+      // Wheel Zoom towards mouse cursor:
+      const deltaY = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const clampedDelta = Math.max(-250, Math.min(250, deltaY));
+      const factor = Math.exp(-clampedDelta * 0.0018);
+
+      const currentScale = scaleRef.current;
+      const nextScale = Math.min(3.0, Math.max(0.3, Number((currentScale * factor).toFixed(3))));
+
+      if (nextScale === currentScale) return;
+
+      const currentPan = panRef.current;
+      const scaleRatio = nextScale / currentScale;
+      const nextPan = {
+        x: Math.round(currentPan.x + (Sx - currentPan.x) * (1 - scaleRatio)),
+        y: Math.round(currentPan.y + (Sy - currentPan.y) * (1 - scaleRatio)),
+      };
+
+      setIsInteracting(true);
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setIsInteracting(false), 120);
+
+      setScale(nextScale);
+      setPan(nextPan);
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [setPan, setScale]);
 
   // Rotate Element
   const handleRotate = (angleDelta: number) => {
@@ -696,6 +953,15 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
               <span className="mx-0.5 h-4 w-px bg-line" aria-hidden />
             </>
           )}
+          <button
+            type="button"
+            onClick={() => setIsPanMode(!isPanMode)}
+            className={stageBarButton(isPanMode)}
+            aria-label="Công cụ kéo di chuyển (Hand Tool)"
+            title={isPanMode ? "Chuyển sang công cụ chọn (V)" : "Công cụ kéo di chuyển (H / Giữ phím Space)"}
+          >
+            <Hand className="size-3.5" aria-hidden />
+          </button>
           <button type="button" onClick={() => handleZoom(-0.15)} className={stageBarButton()} aria-label="Thu nhỏ" title="Thu nhỏ">
             <ZoomOut className="size-3.5" aria-hidden />
           </button>
@@ -705,14 +971,26 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <button type="button" onClick={() => handleZoom(0.15)} className={stageBarButton()} aria-label="Phóng to" title="Phóng to">
             <ZoomIn className="size-3.5" aria-hidden />
           </button>
-          <button type="button" onClick={handleResetZoom} className={stageBarButton()} aria-label="Về 100%" title="Về 100%">
+          <button type="button" onClick={handleResetZoom} className={stageBarButton(scale === 1 && pan.x === 0 && pan.y === 0)} aria-label="Về 100%" title="Về 100% & căn giữa">
             <Maximize2 className="size-3.5" aria-hidden />
           </button>
         </div>
       </div>
       )}
 
-      <div className={`relative flex min-h-0 flex-1 items-center justify-center ${isStage ? "" : "overflow-hidden bg-mist-150 p-2"}`}>
+      <div
+        ref={viewportRef}
+        onPointerDown={handleViewportPointerDown}
+        className={`relative flex min-h-0 flex-1 items-center justify-center touch-none select-none ${
+          isStage ? "" : "overflow-hidden bg-mist-150 p-2"
+        } ${
+          dragState?.mode === "pan"
+            ? "cursor-grabbing"
+            : isPanMode || isSpacePressed
+            ? "cursor-grab"
+            : ""
+        }`}
+      >
       {/* Cutting mat: fine dot grid with a soft light in the middle (the stage shows the page's own backdrop) */}
       {!isStage && (
         <>
@@ -927,19 +1205,29 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
       {/* SVG Canvas Container */}
       <div
-        className="w-full h-full flex items-center justify-center transition-transform duration-200 ease-out select-none"
-        style={{ transform: `scale(${scale})` }}
+        className={`w-full h-full flex items-center justify-center select-none ${
+          isInteracting ? "transition-none" : "transition-transform duration-200 ease-out"
+        }`}
+        style={{
+          transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})`,
+          transformOrigin: "center center",
+        }}
       >
         <svg
           ref={svgRef}
           viewBox={`0 0 ${viewBoxW} ${viewBoxH}`}
           className={`relative w-full h-full max-h-[94%] ${
-            dragState ? "cursor-grabbing" : "cursor-default"
+            dragState?.mode === "pan"
+              ? "cursor-grabbing"
+              : isPanMode || isSpacePressed
+              ? "cursor-grab"
+              : dragState
+              ? "cursor-grabbing"
+              : "cursor-default"
           }`}
           onPointerDown={handleSvgPointerDown}
           onPointerMove={handleSvgPointerMove}
           onPointerUp={handleSvgPointerUp}
-          onPointerLeave={handleSvgPointerUp}
         >
           {/* Pattern Definitions */}
           <defs>

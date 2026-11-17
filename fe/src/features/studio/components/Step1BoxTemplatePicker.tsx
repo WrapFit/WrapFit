@@ -153,8 +153,8 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                       <StructureArt structure={item.id} className="h-full w-full" />
                     </span>
                     <span className="block px-3 py-2.5">
-                      <span className="block truncate text-sm font-semibold text-landing-ink">{item.apiName}</span>
-                      <span className="block truncate text-xs text-landing-muted">{item.badge}</span>
+                      <span className="block truncate text-sm font-semibold text-fg">{item.apiName}</span>
+                      <span className="block truncate text-caption text-fg-muted">{item.subtitle}</span>
                     </span>
                     {isSelected && (
                       <span className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-fpt-orange text-white">
@@ -170,7 +170,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
 
         {/* The chosen one: a turnable preview, four facts as icons, then go. */}
         <StudioCard as="aside" aria-label={`Xem trước ${current.apiName}`} className="flex flex-col gap-4 p-4 lg:sticky lg:top-[88px] lg:self-start">
-          <div className="relative h-[280px] overflow-hidden rounded-squircle-md bg-landing-canvas" data-tour="s1-preview">
+          <div className="relative h-[280px] overflow-hidden rounded-xl bg-surface-sunken" data-tour="s1-preview">
             {view === "3d" ? (
               <div className="absolute inset-0">
                 <Box3DView
@@ -183,17 +183,18 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
                   showStatusBar={false}
                   enableMacroZoom={false}
                   viewControls={false}
+                  showCups={false}
                   frameless
                   minHeight={false}
                   className="h-full w-full"
                 />
               </div>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-mist-150 bg-[radial-gradient(#D5DCCF_1px,transparent_1px)] p-6 [background-size:14px_14px]">
+              <div className="absolute inset-0 flex items-center justify-center bg-surface-sunken bg-[radial-gradient(#CBD5E1_1px,transparent_1px)] p-6 [background-size:14px_14px]">
                 <DielineSketch structure={current.id} dimensions={dims} label={`Khuôn bế ${current.apiName}`} className="h-full w-full" />
               </div>
             )}
-            <div className="absolute left-2 top-2">
+            <div className="absolute left-2.5 top-2.5 z-10">
               <ViewToggle<"3d" | "2d">
                 label="Chế độ xem"
                 value={view}
@@ -207,8 +208,8 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
           </div>
 
           <div>
-            <h2 className="font-landing-heading text-xl font-bold text-landing-ink">{current.apiName}</h2>
-            {current.description && <p className="mt-1 line-clamp-2 text-sm text-landing-muted">{current.description}</p>}
+            <h2 className="font-landing-heading text-title font-bold text-fg">{current.apiName}</h2>
+            {current.description && <p className="mt-1 line-clamp-2 text-body-sm text-fg-muted">{current.description}</p>}
           </div>
 
           <ul className="grid grid-cols-2 gap-2 text-sm">
@@ -218,10 +219,10 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
               { icon: FileText, text: current.recommendedPaper.replace(" GSM", ""), label: "Giấy gợi ý" },
               { icon: Hand, text: `Gấp ${current.foldDifficulty.toLowerCase()}`, label: "Độ khó khi gấp" },
             ].map(({ icon: Icon, text, label }) => (
-              <li key={label} title={label} className="flex min-w-0 items-center gap-2 rounded-xl bg-landing-canvas px-2.5 py-2">
+              <li key={label} title={label} className="flex min-w-0 items-center gap-2 rounded-lg bg-surface-sunken px-2.5 py-2">
                 <Icon className="size-4 shrink-0 text-fpt-orange" strokeWidth={1.75} aria-hidden />
                 <span className="sr-only">{label}: </span>
-                <span className="truncate font-medium text-landing-ink">{text}</span>
+                <span className="truncate text-xs font-semibold text-fg">{text}</span>
               </li>
             ))}
           </ul>
@@ -229,7 +230,7 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
           {current.recommendedGifts.length > 0 && (
             <ul aria-label="Hợp với" className="flex flex-wrap gap-1.5">
               {current.recommendedGifts.map((gift) => (
-                <li key={gift} className="rounded-full bg-landing-canvas px-2.5 py-1 text-xs text-landing-ink">
+                <li key={gift} className="rounded-full bg-surface-sunken px-2.5 py-1 text-caption font-medium text-fg-muted">
                   {gift}
                 </li>
               ))}
