@@ -10,7 +10,6 @@ import { SESSION_EXPIRED_EVENT } from "@/services/api";
 import type { SafeUser } from "@/types/api";
 
 import { OFFLINE_DEMO } from "@/config";
-import { DEMO_USER } from "@/features/dashboard/demoData";
 import { setMockSession } from "@/services/mock-api/store";
 import { PageLoader } from "@/components/common/StatusViews";
 import { ADMIN_HOME, isAdminAllowedPage, isRealAdmin } from "./roles";
@@ -57,7 +56,7 @@ export function useAuth(): AuthContextValue {
   return auth;
 }
 
-/** Who is signed in, from `GET /auth/me`. In Demo Mode defaults to DEMO_USER. */
+/** Who is signed in, from `GET /auth/me`. No session means a guest. */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -111,12 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [queryClient, setUser, toast]);
 
   const value = useMemo<AuthContextValue>(() => {
-    const isExplicitlyLoggedOut = typeof window !== "undefined" && window.sessionStorage?.getItem("wrapfit_demo_logged_out") === "1";
-    let user: SafeUser | null = me.data ?? null;
-    // The demo build has its own API: who is signed in comes from it, never from a stand-in account.
-    if (!user && !isExplicitlyLoggedOut && !OFFLINE_DEMO) {
-      user = DEMO_USER;
-    }
+    // Who is signed in comes only from the API (`GET /auth/me`): a visitor without a session is a guest, never a
+    // stand-in demo account.
+    const user: SafeUser | null = me.data ?? null;
 
     let status: AuthStatus = user ? "authenticated" : "anonymous";
     // A refetch without data puts the query back to "pending" (React Query v5): once it has failed, keep showing the

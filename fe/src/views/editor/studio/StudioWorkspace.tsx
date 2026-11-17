@@ -224,6 +224,14 @@ function saveDemoDraft(draft: DemoDraft) {
   void syncDemoAssets(urls).catch(() => undefined);
 }
 
+function readStoredDemoDraft(): string | null {
+  try {
+    return localStorage.getItem(DEMO_DRAFT_KEY);
+  } catch {
+    return null;
+  }
+}
+
 function clearDemoDraft() {
   try {
     localStorage.removeItem(DEMO_DRAFT_KEY);
@@ -331,7 +339,8 @@ export function StudioWorkspace({
   // The demo keeps its design in this browser so a reload does not start over; a link that names a starting point
   // (template, structure, size) opens that one instead.
   const [demoDraft] = useState<DemoDraft | null>(() =>
-    isDemo && !demoTemplate && !paramStructure && !searchParams.get("l") && !searchParams.get("length") ? loadDemoDraft() : null
+    // `?new=1` ("Thiết kế hộp mới") always starts over at step 1.
+    isDemo && !searchParams.get("new") && !demoTemplate && !paramStructure && !searchParams.get("l") && !searchParams.get("length") ? loadDemoDraft() : null
   );
   const demoSource: DemoSource | null = demoDraft ?? demoTemplate;
   const initialStructure =
@@ -1234,39 +1243,44 @@ export function StudioWorkspace({
   const queryClient = useQueryClient();
   const { status: authStatus } = useAuth();
   const [savingProject, setSavingProject] = useState(false);
+  /** POST /projects with the demo design; images uploaded in the demo (blob: URLs) go to WrapFit storage first. */
+  const createProjectFromDemo = async () => {
+    // The API refuses blob: URLs; only the uploads that fail are left out.
+    const uploaded = new Map<string, string | null>();
+    for (const url of new Set(elements.filter((el) => el.content.startsWith("blob:")).map((el) => el.content))) {
+      try {
+        const blob = await (await fetch(url)).blob();
+        const purpose = VECTOR_TYPES.includes(blob.type) ? "LOGO" : "IMAGE";
+        uploaded.set(url, (await uploadFileToStorage(blob, purpose)).fileUrl);
+      } catch {
+        uploaded.set(url, null);
+      }
+    }
+    const local = [...uploaded.values()].filter((v) => v === null);
+    const savedElements = elements
+      .map((el) => (uploaded.has(el.content) ? { ...el, content: uploaded.get(el.content) ?? "" } : el))
+      .filter((el) => el.content !== "");
+    const created = await createProject({
+      templateId: boxType,
+      title: payload.title,
+      dimensions,
+      materialSpec: payload.materialSpec,
+      canvasState: { ...payload.canvasState, elements: savedElements },
+      occasion: (occasion as never) ?? undefined,
+    });
+    queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    return { created, local };
+  };
   const saveAsProject = async () => {
     if (invalidReason) {
       toast.show({ tone: "error", title: "Chưa lưu được dự án", description: invalidReason });
       return;
     }
     setSavingProject(true);
+    demoSavedRef.current = true;
     try {
-      // Images uploaded in the demo live only in this tab (blob: URLs) and the API refuses them: the user is signed in
-      // now, so they go to WrapFit storage first. Only the ones that fail are left out.
-      const uploaded = new Map<string, string | null>();
-      for (const url of new Set(elements.filter((el) => el.content.startsWith("blob:")).map((el) => el.content))) {
-        try {
-          const blob = await (await fetch(url)).blob();
-          const purpose = VECTOR_TYPES.includes(blob.type) ? "LOGO" : "IMAGE";
-          uploaded.set(url, (await uploadFileToStorage(blob, purpose)).fileUrl);
-        } catch {
-          uploaded.set(url, null);
-        }
-      }
-      const local = [...uploaded.values()].filter((v) => v === null);
-      const savedElements = elements
-        .map((el) => (uploaded.has(el.content) ? { ...el, content: uploaded.get(el.content) ?? "" } : el))
-        .filter((el) => el.content !== "");
-      const created = await createProject({
-        templateId: boxType,
-        title: payload.title,
-        dimensions,
-        materialSpec: payload.materialSpec,
-        canvasState: { ...payload.canvasState, elements: savedElements },
-        occasion: (occasion as never) ?? undefined,
-      });
-      queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+      const { created, local } = await createProjectFromDemo();
       toast.show({
         tone: "success",
         title: "Đã lưu thành dự án",
@@ -1275,10 +1289,43 @@ export function StudioWorkspace({
       clearDemoDraft();
       router.replace(`${ROUTES.editor(created.id)}?step=${currentStep}`);
     } catch (err) {
+      demoSavedRef.current = false;
       toast.error(err, "Chưa lưu được dự án");
       setSavingProject(false);
     }
   };
+
+  // Leaving the demo studio mid-design while signed in keeps the work as a project ("Dự án của tôi"), so the next
+  // "Thiết kế hộp mới" starts again from step 1. A guest keeps the draft in this browser only.
+  const demoSavedRef = useRef(false);
+  const demoTouchedRef = useRef(false);
+  useEffect(() => {
+    if (isDemo && (currentStep > 1 || elements.length > 0)) demoTouchedRef.current = true;
+  }, [isDemo, currentStep, elements.length]);
+  const leaveDemoRef = useRef<() => void>(() => undefined);
+  leaveDemoRef.current = () => {
+    if (!isDemo || demoSavedRef.current || !demoTouchedRef.current || authStatus !== "authenticated" || invalidReason) return;
+    demoSavedRef.current = true;
+    const storedDraft = readStoredDemoDraft();
+    void createProjectFromDemo()
+      .then(() => {
+        // A new design opened meanwhile has written its own draft: leave that one alone.
+        if (readStoredDemoDraft() === storedDraft) clearDemoDraft();
+        toast.show({ tone: "success", title: "Đã lưu bản nháp", description: "Thiết kế dang dở nằm trong Dự án của tôi." });
+      })
+      .catch(() => undefined); // the local draft stays as a fallback
+  };
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // Deferred: React's dev double-mount runs this cleanup and remounts at once; only a real unmount saves.
+      window.setTimeout(() => {
+        if (!mountedRef.current) leaveDemoRef.current();
+      }, 0);
+    };
+  }, []);
 
   // A saved project autosaves; this button saves now, at any step, whatever FitCheck says (only the print file is sold).
   const saveNow = async () => {
