@@ -159,6 +159,21 @@ export function panelPrintBox(panel: PanelFace, geometry: DielineGeometry): Box 
   };
 }
 
+/**
+ * Where an element is cut, in face coordinates. A background stays on its face (+ bleed); anything else (images, logos,
+ * text, shapes) may run over the neighbouring faces of the same piece, so a creative print across faces shows on every
+ * face it covers (FitCheck still warns about the fold it crosses). Cut at the sheet plus the bleed.
+ */
+export function elementClipBox(element: Pick<CanvasElement, "role" | "type">, panel: PanelFace, geometry: DielineGeometry): Box {
+  if (isBackground(element)) return panelPrintBox(panel, geometry);
+  return {
+    x: -panel.bounds.x - BLEED_BOX_MM,
+    y: -panel.bounds.y - BLEED_BOX_MM,
+    width: geometry.totalBoundingBox.width + 2 * BLEED_BOX_MM,
+    height: geometry.totalBoundingBox.height + 2 * BLEED_BOX_MM,
+  };
+}
+
 /** Does this face, with its bleed, cover a glue area? Ink there stops the glue, so it gets no background. */
 export function panelTouchesGlue(panel: PanelFace, geometry: DielineGeometry): boolean {
   const box = panelPrintBox(panel, geometry);

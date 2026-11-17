@@ -79,6 +79,7 @@ import {
   sideOf,
   type CustomFont,
   type PrintSide,
+  customPaletteId,
 } from "@wrapfit/shared";
 import { copyId, LayersPanel } from "@/features/studio/components/layers/LayersPanel";
 import {
@@ -106,6 +107,7 @@ import { PanelNavigator } from "@/features/studio/components/PanelNavigator";
 import {
   BoxBackgroundPicker,
   ColorPaletteSelector,
+  CustomBackgroundPicker,
   paletteColors,
 } from "@/features/studio/components/ColorPaletteSelector";
 import {
@@ -702,13 +704,13 @@ export function StudioWorkspace({
     return designs.find((d) => d !== "bg-solid") ?? designs[0] ?? null;
   }, [elements]);
   const applyBoxBackground = useCallback(
-    (design: string | null) => {
-      const palette = paletteId ?? DEFAULT_BACKGROUND_PALETTE;
-      if (!paletteId && design) setPaletteId(palette);
+    (design: string | null, customPalette?: string) => {
+      const palette = customPalette ?? paletteId ?? DEFAULT_BACKGROUND_PALETTE;
+      if (!customPalette && !paletteId && design) setPaletteId(palette);
       setElements((prev) => {
         const kept = prev.filter((el) => !isLibraryBackground(el));
         if (!design) return kept;
-        const fills = boxBackgrounds(pieces, { design, palette }, mainPanelOf(boxType) ?? undefined).map((el) => ({ ...el, id: `fill_${el.id}` }));
+        const fills = boxBackgrounds(pieces, { design, palette }, customPalette ? undefined : (mainPanelOf(boxType) ?? undefined)).map((el) => ({ ...el, id: `fill_${el.id}` }));
         return [...fills, ...kept];
       });
     },
@@ -1893,7 +1895,11 @@ export function StudioWorkspace({
                           : null
                       }
                     />
-                    <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={applyBoxBackground} />
+                    <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={(design) => applyBoxBackground(design)} />
+                    <CustomBackgroundPicker
+                      disabled={readOnly}
+                      onApply={(design, colors) => applyBoxBackground(design, customPaletteId(colors[0], colors[1]))}
+                    />
                     <section aria-label="Nền của mặt đang chọn" className="space-y-2 rounded-panel bg-surface-sunken p-3">
                       <h3 className="text-label font-semibold text-fg">Nền mặt {placementPanel?.name ?? ""}</h3>
                       <p className="text-caption leading-5 text-fg-muted">

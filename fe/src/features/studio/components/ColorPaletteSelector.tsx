@@ -177,3 +177,129 @@ export function BoxBackgroundPicker({ selectedDesign, paletteId, onSelect }: Box
     </section>
   );
 }
+
+const SOLID_SWATCHES = [
+  "#000000", "#555555", "#737373", "#A6A6A6", "#D9D9D9", "#FFFFFF",
+  "#FF3131", "#FF66C4", "#CB6CE6", "#8C52FF", "#5E17EB", "#0097B2",
+  "#0CC0DF", "#38B6FF", "#004AAD", "#00BF63", "#7ED957", "#FFDE59",
+  "#FFBD59", "#FF914D", "#F26522", "#B91C1C", "#1A362B", "#E8D8C8",
+];
+const GRADIENT_SWATCHES: [string, string][] = [
+  ["#000000", "#737373"], ["#FF3131", "#FF914D"], ["#FF66C4", "#FFDE59"], ["#8C52FF", "#5CE1E6"],
+  ["#5E17EB", "#FF66C4"], ["#004AAD", "#5DE0E6"], ["#00BF63", "#FFDE59"], ["#F26522", "#FDE68A"],
+  ["#1A362B", "#D4AF37"], ["#B91C1C", "#7F1D1D"], ["#FBCFE8", "#EDE9FE"], ["#FFFFFF", "#E8D8C8"],
+];
+const HEX = /^#?[0-9a-fA-F]{6}$/;
+const normHex = (value: string) => `#${value.replace("#", "").toUpperCase()}`;
+
+interface CustomBackgroundPickerProps {
+  disabled?: boolean;
+  /** Paints the whole box: `bg-solid` with one colour, `bg-gradient` with two. */
+  onApply: (design: "bg-solid" | "bg-gradient", colors: [string] | [string, string]) => void;
+}
+
+/** One colour or a two-colour gradient of the user's choice, over every face of the box. */
+export function CustomBackgroundPicker({ disabled, onApply }: CustomBackgroundPickerProps) {
+  const [mode, setMode] = React.useState<"solid" | "gradient">("solid");
+  const [solid, setSolid] = React.useState("#F26522");
+  const [from, setFrom] = React.useState("#8C52FF");
+  const [to, setTo] = React.useState("#5CE1E6");
+  const apply = () => (mode === "solid" ? onApply("bg-solid", [solid]) : onApply("bg-gradient", [from, to]));
+
+  const colorField = (label: string, value: string, onChange: (v: string) => void) => (
+    <label className="flex items-center gap-2 rounded-control border border-line bg-surface px-2 py-1.5">
+      <input
+        type="color"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(normHex(e.target.value))}
+        className="size-8 shrink-0 cursor-pointer rounded-full border border-line bg-transparent p-0"
+      />
+      <span className="sr-only">{label}</span>
+      <input
+        type="text"
+        defaultValue={value}
+        key={value}
+        maxLength={7}
+        onBlur={(e) => (HEX.test(e.target.value) ? onChange(normHex(e.target.value)) : (e.target.value = value))}
+        onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+        className="min-w-0 flex-1 bg-transparent font-mono text-label uppercase text-fg outline-none"
+      />
+    </label>
+  );
+
+  return (
+    <section aria-labelledby="custom-bg-title" className="space-y-3">
+      <h3 id="custom-bg-title" className="font-landing-heading text-title font-bold text-fg">
+        Màu nền tự chọn
+      </h3>
+      <div role="tablist" aria-label="Kiểu màu nền" className="grid grid-cols-2 border-b border-line">
+        {(["solid", "gradient"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="tab"
+            aria-selected={mode === m}
+            onClick={() => setMode(m)}
+            className={cn(
+              "-mb-px border-b-2 py-2 text-label font-semibold",
+              mode === m ? "border-accent text-fg" : "border-transparent text-fg-muted hover:text-fg",
+            )}
+          >
+            {m === "solid" ? "Màu đồng nhất" : "Màu gradient"}
+          </button>
+        ))}
+      </div>
+
+      {mode === "solid" ? (
+        <>
+          {colorField("Màu nền", solid, setSolid)}
+          <div className="grid grid-cols-6 gap-2">
+            {SOLID_SWATCHES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                title={c}
+                aria-label={`Màu ${c}`}
+                aria-pressed={solid === c}
+                onClick={() => setSolid(c)}
+                className={cn("aspect-square rounded-full border", solid === c ? "ring-2 ring-accent ring-offset-1" : "border-line")}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div
+            aria-hidden
+            className="h-10 rounded-control border border-line"
+            style={{ background: `linear-gradient(180deg, ${from}, ${to})` }}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            {colorField("Màu trên", from, setFrom)}
+            {colorField("Màu dưới", to, setTo)}
+          </div>
+          <div className="grid grid-cols-6 gap-2">
+            {GRADIENT_SWATCHES.map(([a, b]) => (
+              <button
+                key={a + b}
+                type="button"
+                aria-label={`Chuyển màu ${a} sang ${b}`}
+                onClick={() => {
+                  setFrom(a);
+                  setTo(b);
+                }}
+                className={cn("aspect-square rounded-full border", from === a && to === b ? "ring-2 ring-accent ring-offset-1" : "border-line")}
+                style={{ background: `linear-gradient(180deg, ${a}, ${b})` }}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      <Button type="button" size="sm" className="w-full" disabled={disabled} onClick={apply}>
+        Áp màu này cho cả hộp
+      </Button>
+    </section>
+  );
+}

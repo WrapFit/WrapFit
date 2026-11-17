@@ -115,6 +115,11 @@ export class BoxDimensionsDto {
   @IsOptional()
   @IsBoolean()
   window?: boolean;
+
+  @ApiPropertyOptional({ description: 'Cup carrier: show the 350 ml cups in the 3D preview (display only)', example: true })
+  @IsOptional()
+  @IsBoolean()
+  showCups?: boolean;
 }
 
 export class MaterialSpecDto implements MaterialSpecification {
