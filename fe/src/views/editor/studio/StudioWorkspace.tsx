@@ -125,6 +125,7 @@ import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useSt
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, panelLabel, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
+import { clearDemoAssets, restoreDemoAssets, syncDemoAssets } from "@/features/studio/utils/demoDraftAssets";
 import { createProject, errorMessage, inspectFont, restoreSnapshot, uploadFileToStorage } from "@/api";
 import { asFontFile, FONT_ACCEPT, inspectFontFile, MAX_FONT_BYTES, registerCustomFont } from "@/features/studio/utils/customFonts";
 import { useToast } from "@/components/common/Toast";
@@ -190,6 +191,47 @@ const scoreToneOf = (score: number) =>
 
 /** Design of the offline demo (`/editor/demo`). */
 const DEMO_ELEMENTS: CanvasElement[] = [];
+
+/** What the demo starts from: a template of the hub, or the draft this browser kept. */
+type DemoSource = Pick<TemplateDetail, "title" | "occasion" | "dimensions" | "materialSpec" | "canvasState"> & {
+  structure: Pick<TemplateDetail["structure"], "id">;
+};
+type DemoDraft = DemoSource & { step: StudioStep };
+const DEMO_DRAFT_KEY = "wrapfit:studio-demo-draft";
+
+function loadDemoDraft(): DemoDraft | null {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DEMO_DRAFT_KEY) ?? "null") as DemoDraft | null;
+    if (!draft?.structure?.id || !BOX_STRUCTURES.some((s) => s.id === draft.structure.id) || !draft.dimensions) return null;
+    const step = Number(draft.step);
+    return { ...draft, step: (step >= 1 && step <= 6 ? step : 1) as StudioStep };
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoDraft(draft: DemoDraft) {
+  try {
+    localStorage.setItem(DEMO_DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage full or blocked: the demo still works, only without the draft.
+  }
+  // Uploaded images and fonts are blob: URLs of this tab: their files go to IndexedDB, under the URL the draft keeps.
+  const urls = [
+    ...(draft.canvasState?.elements ?? []).map((el) => el.content),
+    ...(draft.canvasState?.customFonts ?? []).map((f) => f.url),
+  ];
+  void syncDemoAssets(urls).catch(() => undefined);
+}
+
+function clearDemoDraft() {
+  try {
+    localStorage.removeItem(DEMO_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+  void clearDemoAssets().catch(() => undefined);
+}
 
 const SYNC_LABELS: Record<SyncState, { label: string; tone: "ok" | "busy" | "warn" | "muted" }> = {
   demo: { label: "Bản dùng thử · không lưu", tone: "muted" },
@@ -286,10 +328,16 @@ export function StudioWorkspace({
 
   // Query parameter overrides for demo mode (home page, structure pages, template hub or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
+  // The demo keeps its design in this browser so a reload does not start over; a link that names a starting point
+  // (template, structure, size) opens that one instead.
+  const [demoDraft] = useState<DemoDraft | null>(() =>
+    isDemo && !demoTemplate && !paramStructure && !searchParams.get("l") && !searchParams.get("length") ? loadDemoDraft() : null
+  );
+  const demoSource: DemoSource | null = demoDraft ?? demoTemplate;
   const initialStructure =
     isDemo && paramStructure && BOX_STRUCTURES.some((s) => s.id === paramStructure)
       ? paramStructure
-      : (project?.template.id ?? demoTemplate?.structure.id ?? "tuck-top");
+      : (project?.template.id ?? demoSource?.structure.id ?? "tuck-top");
 
   const paramL = Number(searchParams.get("l") || searchParams.get("length"));
   const paramW = Number(searchParams.get("w") || searchParams.get("width"));
@@ -305,9 +353,18 @@ export function StudioWorkspace({
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
     if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
+    if (demoDraft) return demoDraft.step;
     if (hasParamDims || paramStructure || demoTemplate) return 4;
     return 1;
   });
+
+  // The step is kept in the address (?step=), so a reload opens the step the user was on.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("step") === String(currentStep)) return;
+    url.searchParams.set("step", String(currentStep));
+    window.history.replaceState(window.history.state, "", url);
+  }, [currentStep]);
 
   const [isStepChanging, startStepTransition] = useTransition();
 
@@ -334,30 +391,30 @@ export function StudioWorkspace({
   }, [currentStep, introSeen]);
 
   // Project Core State: a saved project fills it once, on mount
-  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoTemplate?.title ?? "Bao bì quà tặng sang trọng");
+  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoSource?.title ?? "Bao bì quà tặng sang trọng");
   const [boxType, setBoxType] = useState<BoxStructureType>(initialStructure);
   const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(() => {
     if (project) return materialThemeOf(project.canvasState?.materialTheme, project.materialSpec);
     if (isDemo && paramPaper && ["ivory", "kraft", "black_matte", "white_gloss", "metallics"].includes(paramPaper)) {
       return paramPaper;
     }
-    if (demoTemplate) return materialThemeOf(demoTemplate.canvasState?.materialTheme, demoTemplate.materialSpec);
+    if (demoSource) return materialThemeOf(demoSource.canvasState?.materialTheme, demoSource.materialSpec);
     return "ivory";
   });
   // The design before the last palette change; offered back while that change is still the last edit.
   const [paletteUndo, setPaletteUndo] = useState<{ paletteId: string | null; elements: CanvasElement[]; applied: CanvasElement[] } | null>(null);
   // Occasion of the design (template, quick start): the scenes of step 5 suggest the one that suits it.
-  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoTemplate?.occasion ?? null);
+  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoSource?.occasion ?? null);
   // Finishes of the print shop (lamination, foil, spot UV): priced in steps 3 and 6, stored with the canvas.
-  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoTemplate?.canvasState?.finishes));
+  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoSource?.canvasState?.finishes));
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
-    project?.canvasState?.backgroundPattern ?? demoTemplate?.canvasState?.backgroundPattern ?? null
+    project?.canvasState?.backgroundPattern ?? demoSource?.canvasState?.backgroundPattern ?? null
   );
 
   // Image 2 Inspired Palette & Typography states
   // Palette of the design (a library palette); choosing one recolours the printed artwork. Null until one is chosen.
   const [paletteId, setPaletteId] = useState<string | null>(() => {
-    const canvas = project?.canvasState ?? demoTemplate?.canvasState;
+    const canvas = project?.canvasState ?? demoSource?.canvasState;
     if (canvas?.backgroundTheme && artPaletteOf(canvas.backgroundTheme)) return canvas.backgroundTheme;
     for (const el of canvas?.elements ?? []) {
       const ref = parseLibraryArt(el.content);
@@ -378,7 +435,7 @@ export function StudioWorkspace({
         paperThickness: 0.38, // 300 GSM
       };
     }
-    if (demoTemplate) return { ...demoTemplate.dimensions };
+    if (demoSource) return { ...demoSource.dimensions };
     return {
       length: 120,
       width: 80,
@@ -421,7 +478,7 @@ export function StudioWorkspace({
 
   // Artwork Canvas Elements
   const [elements, setElements] = useState<CanvasElement[]>(() => {
-    const saved = project ? (project.canvasState?.elements ?? []) : (demoTemplate?.canvasState?.elements ?? DEMO_ELEMENTS);
+    const saved = project ? (project.canvasState?.elements ?? []) : (demoSource?.canvasState?.elements ?? DEMO_ELEMENTS);
     return refitBackgrounds(orderElements(saved), dielinePiecesOf(boxType, dimensions, project?.formulaVersion));
   });
   // Finishes the quote prices: those chosen in step 3 and those of the elements; a second pass for the inside.
@@ -443,7 +500,7 @@ export function StudioWorkspace({
   /** Copied layer (Ctrl+C), pasted with Ctrl+V on the face that receives new elements. */
   const clipboard = useRef<CanvasElement | null>(null);
   // Fonts uploaded for this design (docs/23 S13), saved with the canvas.
-  const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoTemplate)?.canvasState?.customFonts ?? []);
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoSource)?.canvasState?.customFonts ?? []);
 
   // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
   const history = useRef({ past: [] as CanvasElement[][], future: [] as CanvasElement[][], current: elements, at: 0, travelling: false });
@@ -542,6 +599,47 @@ export function StudioWorkspace({
     }),
     [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId, customFonts]
   );
+  // Demo draft restored: its uploaded images and fonts come back from IndexedDB with new blob: URLs of this tab.
+  // Until then the draft is not written again, so the stored files are not dropped.
+  const [demoAssetsReady, setDemoAssetsReady] = useState(!demoDraft);
+  useEffect(() => {
+    if (!demoDraft) return;
+    let cancelled = false;
+    const canvas = demoDraft.canvasState;
+    const urls = [...(canvas?.elements ?? []).map((el) => el.content), ...(canvas?.customFonts ?? []).map((f) => f.url)];
+    restoreDemoAssets(urls)
+      .catch(() => new Map<string, string>())
+      .then((restored) => {
+        if (cancelled) return;
+        const remap = (url: string) => (url.startsWith("blob:") ? (restored.get(url) ?? "") : url);
+        setElements((prev) => prev.map((el) => ({ ...el, content: remap(el.content) })).filter((el) => el.content !== ""));
+        setCustomFonts((prev) => prev.map((f) => ({ ...f, url: remap(f.url) })).filter((f) => f.url !== ""));
+        history.current.past = [];
+        setDemoAssetsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [demoDraft]);
+
+  // Demo: keep the design (and its step) in this browser, a moment after the last change.
+  useEffect(() => {
+    if (!isDemo || !demoAssetsReady) return;
+    const timer = window.setTimeout(
+      () =>
+        saveDemoDraft({
+          title: payload.title,
+          occasion: occasion as DemoDraft["occasion"],
+          dimensions: payload.dimensions,
+          materialSpec: payload.materialSpec,
+          canvasState: payload.canvasState as DemoDraft["canvasState"],
+          structure: { id: boxType },
+          step: currentStep,
+        }),
+      400
+    );
+    return () => window.clearTimeout(timer);
+  }, [isDemo, demoAssetsReady, payload, occasion, boxType, currentStep]);
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
   const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
   // 422 of the last export, shown in the FitCheck tab while the design is the one the server checked.
@@ -1176,6 +1274,7 @@ export function StudioWorkspace({
         title: "Đã lưu thành dự án",
         description: local.length ? `${local.length} ảnh tải lên ở bản dùng thử chưa lưu được: hãy tải lại trong dự án.` : "Thiết kế giờ tự lưu lên cloud.",
       });
+      clearDemoDraft();
       router.replace(`${ROUTES.editor(created.id)}?step=${currentStep}`);
     } catch (err) {
       toast.error(err, "Chưa lưu được dự án");
