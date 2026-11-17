@@ -209,7 +209,6 @@ export const Step1BoxTemplatePicker: React.FC<Step1BoxTemplatePickerProps> = ({
 
           <div>
             <h2 className="font-landing-heading text-title font-bold text-fg">{current.apiName}</h2>
-            {current.description && <p className="mt-1 line-clamp-2 text-body-sm text-fg-muted">{current.description}</p>}
           </div>
 
           <ul className="grid grid-cols-2 gap-2 text-sm">

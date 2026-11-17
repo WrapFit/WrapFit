@@ -108,7 +108,7 @@ export function QuoteCard({
                 {value}
               </button>
             ))}
-            <label className="flex h-9 items-center gap-1.5 rounded-full bg-surface-sunken px-3 text-label-sm text-fg-muted">
+            <label className="flex h-9 items-center gap-1 rounded-full bg-surface-sunken px-2.5 text-label-sm text-fg-muted">
               <span>Khác</span>
               <input
                 type="number"
@@ -116,15 +116,14 @@ export function QuoteCard({
                 max={100000}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Math.min(100000, Number(e.target.value) || 1)))}
-                className="w-16 bg-transparent text-fg tabular-nums outline-none"
+                className="w-12 bg-transparent text-sm text-fg tabular-nums outline-none"
                 aria-label="Số lượng hộp khác"
               />
             </label>
           </div>
           {saving && (
-            <p className="mt-3 rounded-control bg-success-bg px-3 py-2 text-body-sm text-success-fg">
-              Bớt {saving.deltaMm} mm {AXIS_LABELS[saving.axis]} thì được {saving.perSheet} hộp mỗi tờ, còn {formatVnd(saving.perBox)}/hộp
-              (rẻ hơn {Math.round(saving.saving * 100)}%) nếu món quà vẫn vừa.
+            <p className="mt-3 w-fit max-w-full rounded-control bg-success-bg px-2.5 py-1.5 text-caption font-medium text-success-fg">
+              Bớt {saving.deltaMm} mm {AXIS_LABELS[saving.axis]}: rẻ hơn {Math.round(saving.saving * 100)}%, còn {formatVnd(saving.perBox)}/hộp
             </p>
           )}
         </div>

@@ -49,7 +49,6 @@ export function SectionCard({
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="truncate font-landing-heading text-body font-bold text-fg">{title}</h2>
-          {hint && <p className="truncate text-caption text-fg-muted">{hint}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </header>
@@ -77,7 +76,6 @@ export function StepHeader({ step, title, subtitle, actions }: { step?: string; 
       <div className="min-w-0">
         {step && <p className="text-label font-semibold text-success-fg">{step}</p>}
         <h1 className="mt-1 font-landing-heading text-heading-lg text-fg">{title}</h1>
-        {subtitle && <p className="mt-1.5 max-w-2xl text-body text-fg-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>

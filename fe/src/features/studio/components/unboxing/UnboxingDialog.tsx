@@ -127,7 +127,6 @@ export function UnboxingDialog({ projectId, onClose, box, onPlaceOnBox }: Unboxi
         });
         setConfig(saved);
         setEditing(false);
-        toast.show({ tone: "success", title: loaded ? "Đã cập nhật trang mở hộp" : "Đã tạo mã QR mở hộp" });
       } catch (err) {
         if (box && unreachable(err)) await saveOffline();
         else throw err;

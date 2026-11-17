@@ -80,7 +80,6 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
     setSaving("community");
     try {
       await patch({ occasion: occasion || null, industry: industry || null });
-      toast.show({ tone: "success", title: "Đã lưu chủ đề cho thư viện cộng đồng" });
     } catch (err) {
       toast.error(err, "Chưa lưu được chủ đề");
     } finally {

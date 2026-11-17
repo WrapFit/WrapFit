@@ -115,7 +115,6 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
         content: fileUrl,
         dpi,
       });
-      toast.show({ tone: "success", title: "Đã phủ hoa văn", description: `${result.themeName} · ${panelLabel(panel.name)}` });
     } catch (err) {
       toast.error(err, "Chưa thêm được hoa văn");
     } finally {
