@@ -23,8 +23,16 @@ const payment = (over: Partial<PaymentRow> = {}): PaymentRow => ({
   ...over,
 });
 
-/** The service over a fake transaction holding one bank transaction row and the payments the lookup can see. */
-function setup({ row = bankTx() as BankTxRow | null, payments = [payment()], ignoreCount = 1 } = {}) {
+/**
+ * The service over a fake transaction holding one bank transaction row and the payments the lookup can see.
+ * `afterLock` is the payment status read once its row is locked (what a webhook that committed meanwhile left).
+ */
+function setup({
+  row = bankTx() as BankTxRow | null,
+  payments = [payment()],
+  ignoreCount = 1,
+  afterLock = undefined as PaymentStatus | undefined,
+} = {}) {
   const update = jest.fn().mockResolvedValue({});
   const tx = {
     $queryRaw: jest.fn().mockResolvedValue(row ? [{ id: row.id }] : []),
@@ -33,6 +41,10 @@ function setup({ row = bankTx() as BankTxRow | null, payments = [payment()], ign
       findFirst: jest.fn(async ({ where }: { where: { provider: PaymentProvider } }) =>
         payments.find((p) => p.provider === where.provider) ?? null,
       ),
+      findUniqueOrThrow: jest.fn(async ({ where }: { where: { id: string } }) => {
+        const found = payments.find((p) => p.id === where.id)!;
+        return { ...found, status: afterLock ?? found.status };
+      }),
     },
   };
   const view = { id: 'tx-1', status: BankTxStatus.RESOLVED };
@@ -136,6 +148,34 @@ describe('BankTransactionsService.resolve assign', () => {
     const { service, tx } = setup();
     await service.resolve('tx-1', { action: 'assign', paymentReference: 'WFAB23CD' }, 'admin-1');
     expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.bankTransaction.findUniqueOrThrow.mock.invocationCallOrder[0]);
+  });
+
+  it('locks the payment row before reading its status (docs/25 item 5)', async () => {
+    const { service, tx } = setup();
+    await service.resolve('tx-1', { action: 'assign', paymentReference: 'WFAB23CD' }, 'admin-1');
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(2);
+    const [, paymentLock] = tx.$queryRaw.mock.invocationCallOrder;
+    expect(paymentLock).toBeGreaterThan(tx.payment.findFirst.mock.invocationCallOrder[0]);
+    expect(paymentLock).toBeLessThan(tx.payment.findUniqueOrThrow.mock.invocationCallOrder[0]);
+    expect(tx.$queryRaw.mock.calls[1][0].join('')).toContain('FROM payments');
+  });
+
+  it('refuses with 409 when a webhook paid the payment while the admin waited on its lock', async () => {
+    const { service, confirmPaid, update } = setup({ payments: [payment({ status: PaymentStatus.PENDING })], afterLock: PaymentStatus.PAID });
+    await expect(
+      service.resolve('tx-1', { action: 'assign', paymentReference: 'WFAB23CD' }, 'admin-1'),
+    ).rejects.toMatchObject({ response: { code: 'PAYMENT_ALREADY_PAID' } });
+    expect(confirmPaid).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('lets ORDER_NOT_PAYABLE out and leaves the transfer UNMATCHED when the sample order was cancelled', async () => {
+    const { service, confirmPaid, update } = setup();
+    confirmPaid.mockRejectedValueOnce(new ConflictException({ code: 'ORDER_NOT_PAYABLE' }));
+    await expect(
+      service.resolve('tx-1', { action: 'assign', paymentReference: 'WFAB23CD' }, 'admin-1'),
+    ).rejects.toMatchObject({ response: { code: 'ORDER_NOT_PAYABLE' } });
+    expect(update).not.toHaveBeenCalled();
   });
 });
 

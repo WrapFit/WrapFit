@@ -67,7 +67,17 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     backup: NewSnapshot,
     fitCheck: FitCheckReport | null,
   ): Promise<{ project: ProjectDetail; backup: SnapshotSummary }> {
+    const canvasState = json(toStoredCanvas(snapshot.canvasState));
+    const dimensions = json(snapshot.dimensions);
     const [backupRow, projectRow] = await this.prisma.$transaction(async (tx) => {
+      // Restoring the design the project already has (e.g. the snapshot of the last export) keeps its version, so
+      // print files paid for and a print approval stay valid (decision Q3). Row locked: no save slips in between.
+      // jsonb equality ignores key order.
+      const [current] = await tx.$queryRaw<{ same: boolean }[]>`
+        SELECT canvas_state = ${JSON.stringify(canvasState)}::jsonb
+          AND dimensions = ${JSON.stringify(dimensions)}::jsonb
+          AND (${snapshot.formulaVersion}::int IS NULL OR formula_version = ${snapshot.formulaVersion}::int) AS same
+        FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
       const backupRow = await tx.projectSnapshot.create({
         data: { ...this.toData(projectId, backup), isAutomatic: true },
         select: snapshotSummarySelect,
@@ -75,13 +85,14 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
       const projectRow = await tx.packagingProject.update({
         where: { id: projectId },
         data: {
-          canvasState: json(toStoredCanvas(snapshot.canvasState)),
-          dimensions: json(snapshot.dimensions),
+          canvasState,
+          dimensions,
           // Restoring the backup of a formula upgrade undoes it; older snapshots keep the current formulas.
           ...(snapshot.formulaVersion !== null && { formulaVersion: snapshot.formulaVersion }),
           fitcheckState: nullableJson(fitCheck),
           fitcheckScore: fitCheck?.score ?? null,
-          version: { increment: 1 }, // an editor still showing the old design must reload, not save over it
+          // An editor still showing the old design must reload, not save over it.
+          ...(!current?.same && { version: { increment: 1 } }),
         },
         select: detailSelect,
       });

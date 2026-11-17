@@ -21,7 +21,6 @@ import {
   pixelsFor,
   rgbaToCmyk,
   textCmyk,
-  fitWatermark,
   FINISH_SPOTS,
   applyFilters,
   flipMatrix,
@@ -33,9 +32,6 @@ import {
   type ImageDraw,
   fontPackagePath,
   underlineOf,
-  WATERMARK_COLOR,
-  WATERMARK_TEXT,
-  watermarkPlacement,
   type Cmyk,
   pdfBlendName,
   shadowLayers,
@@ -47,6 +43,7 @@ import {
   type PrintFontId,
   type TextFace,
 } from '@wrapfit/shared';
+import { Logger } from '@nestjs/common';
 import { create as createFont, openSync } from 'fontkit';
 import PDFDocument from 'pdfkit';
 import QRCode from 'qrcode';
@@ -81,10 +78,9 @@ const VECTOR_DPI = 600;
 // dashed lines on the finished box): short fold ticks in the margin instead (`foldTicks`).
 export const PRINT_LAYERS = ['Artwork', 'Finish', 'Crease', 'CutContour', 'Dimensions'] as const;
 
-/** Fonts that are not texts of the design: the spec line and dimensions (`info`) and the free-export watermark. */
+/** Fonts that are not texts of the design: the spec line and dimensions (`info`). */
 const EXTRA_FONT_FILES = {
   info: require.resolve('@expo-google-fonts/be-vietnam-pro/400Regular/BeVietnamPro_400Regular.ttf'),
-  watermark: require.resolve('@expo-google-fonts/inter/400Regular/Inter_400Regular.ttf'),
 };
 type FontKey = PrintFontId | keyof typeof EXTRA_FONT_FILES;
 const fonts = new Map<string, OutlineFont>();
@@ -92,7 +88,7 @@ const fonts = new Map<string, OutlineFont>();
 const fontOf = (id: FontKey, face: TextFace = 'bold'): OutlineFont => {
   const key = `${id}:${face}`;
   if (!fonts.has(key)) {
-    const file = id === 'info' || id === 'watermark' ? EXTRA_FONT_FILES[id] : require.resolve(fontPackagePath(id, face));
+    const file = id === 'info' ? EXTRA_FONT_FILES[id] : require.resolve(fontPackagePath(id, face));
     fonts.set(key, openSync(file));
   }
   return fonts.get(key)!;
@@ -144,33 +140,16 @@ function labelPath(text: string, x: number, y: number, sizeMm: number, centred: 
   return outlineText(fontOf(font), text, left, y, sizeMm);
 }
 
-/**
- * Outlines of the watermark of the free A4 PDF (docs/16 §5.4), already turned and placed on the sheet (mm), so the
- * path coordinates are sheet coordinates. Null when the layout has nowhere to put it.
- */
-export function watermarkOutline(layout: PrintLayout) {
-  const placement = watermarkPlacement(layout.pieces);
-  if (!placement) return null;
-  const font = fontOf('watermark');
-  const fit = fitWatermark(placement, (sizeMm) => outlineAdvanceMm(font, WATERMARK_TEXT, sizeMm));
-  const { origin, rotation } = fit;
-  // outlineText writes every point as "x y": turn each pair around the start of the baseline (-90: x' = y, y' = -x).
-  const d = outlineText(font, WATERMARK_TEXT, 0, 0, fit.sizeMm).replace(/(-?[\d.]+) (-?[\d.]+)/g, (_, px: string, py: string) => {
-    const [x, y] = rotation === -90 ? [Number(py), -Number(px)] : [Number(px), Number(py)];
-    return `${n(origin.x + x)} ${n(origin.y + y)}`;
-  });
-  return { d, placement, sizeMm: fit.sizeMm };
-}
-
 /** Uploaded fonts of a render (docs/23 S13), opened once from the files the worker loaded with the images. */
-const uploadedFonts = new WeakMap<Artwork, Map<string, OutlineFont | null>>();
-function uploadedFont(artwork: Artwork, url: string | null | undefined): OutlineFont | null {
+type UploadedFont = ReturnType<typeof createFont>;
+const uploadedFonts = new WeakMap<Artwork, Map<string, UploadedFont | null>>();
+function uploadedFont(artwork: Artwork, url: string | null | undefined): UploadedFont | null {
   if (!url) return null;
   let fonts = uploadedFonts.get(artwork);
   if (!fonts) uploadedFonts.set(artwork, (fonts = new Map()));
   if (!fonts.has(url)) {
     const file = artwork.get(url);
-    let font: OutlineFont | null = null;
+    let font: UploadedFont | null = null;
     try {
       font = file ? createFont(file.body) : null;
     } catch {
@@ -181,15 +160,47 @@ function uploadedFont(artwork: Artwork, url: string | null | undefined): Outline
   return fonts.get(url) ?? null;
 }
 
+/** Characters of the lines the font has no glyph for (spaces aside); every one of them when its cmap is unreadable. */
+function undrawable(font: UploadedFont, lines: { text: string }[]): string[] {
+  const chars = [...new Set(lines.flatMap((line) => Array.from(line.text)))].filter((char) => !/\s/.test(char));
+  try {
+    return chars.filter((char) => !font.hasGlyphForCodePoint(char.codePointAt(0)!));
+  } catch {
+    return chars;
+  }
+}
+
+const rendererLog = new Logger('PrintRenderers');
+/** Texts already reported for a render: the PDF and the SVG of one print package lay out the same texts. */
+const reportedFallbacks = new WeakMap<Artwork, Set<string>>();
+
 /** Every text element as outlines (one path per element, underlines included) with its print ink. */
 function textOutlines(layout: PrintLayout, artwork: Artwork = new Map()) {
-  const measureAny: MeasureText = (text, font, fontSizeMm, face, fontUrl) => {
-    const custom = uploadedFont(artwork, fontUrl);
-    return custom ? outlineAdvanceMm(custom, text, fontSizeMm) : measure(text, font, fontSizeMm, face);
-  };
+  // `withUploaded: false` measures and draws with the built-in print font, as when the font file cannot be opened.
+  const textBox = (t: PrintLayout['texts'][number], withUploaded: boolean) =>
+    layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t.style }, (text, font, fontSizeMm, face, fontUrl) => {
+      const custom = withUploaded ? uploadedFont(artwork, fontUrl) : null;
+      return custom ? outlineAdvanceMm(custom, text, fontSizeMm) : measure(text, font, fontSizeMm, face);
+    });
   return layout.texts.map((t) => {
-    const box = layoutTextBox({ content: t.content, width: t.width, height: t.height, style: t.style }, measureAny);
-    const font = uploadedFont(artwork, box.fontUrl) ?? fontOf(box.font, box.face);
+    let box = textBox(t, true);
+    let custom = uploadedFont(artwork, box.fontUrl);
+    // A letter the uploaded font cannot draw would print as an empty box: the whole element falls back instead.
+    const missing = custom ? undrawable(custom, box.lines) : [];
+    if (missing.length) {
+      const reported = reportedFallbacks.get(artwork) ?? new Set<string>();
+      reportedFallbacks.set(artwork, reported);
+      const key = `${box.fontUrl}\n${t.content}`;
+      if (!reported.has(key)) {
+        reported.add(key);
+        rendererLog.warn(
+          `Uploaded font ${box.fontUrl} cannot draw "${missing.slice(0, 20).join(' ')}" of the text "${t.content.slice(0, 40)}": printed with the built-in font ${box.font}`,
+        );
+      }
+      box = textBox(t, false);
+      custom = null;
+    }
+    const font = custom ?? fontOf(box.font, box.face);
     const lines = box.lines.filter((line) => line.text);
     const glyphs = lines.map((line) =>
       box.curve
@@ -301,11 +312,13 @@ export async function svgImages(layout: PrintLayout, artwork: Artwork): Promise<
     const source = await sourceSize(file);
     if (!source || source.vector) continue;
     try {
-      const draw = imageDraw(image, source);
+      const { draw, width: printedWidth } = printedOf(image, source);
+      const region = cropRegion(draw);
       let pipeline = sharp(file.body).autoOrient();
-      if (isCropped(image)) {
-        pipeline = pipeline.extract({ left: Math.round(draw.sx), top: Math.round(draw.sy), width: Math.max(1, Math.round(draw.sw)), height: Math.max(1, Math.round(draw.sh)) });
-      }
+      if (isCropped(image)) pipeline = pipeline.extract(region);
+      // Downsampled like the PDF before the raw pixels are taken: a 48 MP photo is ~190 MB of RGBA otherwise.
+      const target = embedWidth(region.width, printedWidth);
+      if (target < region.width) pipeline = pipeline.resize({ width: target });
       const { data, info } = await pipeline.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       applyFilters(data, 4, image.filters ?? undefined);
       const png = await sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } }).png().toBuffer();
@@ -480,6 +493,17 @@ const printedOf = (image: PrintLayout['images'][number], source: { width: number
   return { draw, sourceWidth: draw.sw, width: draw.dw };
 };
 
+/** Source pixels of the image that are printed (the crop), rounded to whole pixels. */
+const cropRegion = (draw: ImageDraw) => ({
+  left: Math.round(draw.sx),
+  top: Math.round(draw.sy),
+  width: Math.max(1, Math.round(draw.sw)),
+  height: Math.max(1, Math.round(draw.sh)),
+});
+
+/** Width in pixels a raster is embedded at: MAX_EMBED_DPI at its printed width (mm), never more than it has. */
+const embedWidth = (sourceWidth: number, printedWidthMm: number) => Math.min(sourceWidth, pixelsFor(printedWidthMm, MAX_EMBED_DPI));
+
 /** Resolution of each image of the layout at its printed size (the print package lists them). */
 export async function imageResolutions(layout: PrintLayout, artwork: Artwork) {
   const result: { url: string; dpi: number | null; vector: boolean }[] = [];
@@ -506,7 +530,7 @@ export async function prepareImage(
   const source = await sourceSize(file);
   if (!source) return null;
   const { draw, sourceWidth, width: printedWidth } = printedOf(image, source);
-  const region = { left: Math.round(draw.sx), top: Math.round(draw.sy), width: Math.max(1, Math.round(draw.sw)), height: Math.max(1, Math.round(draw.sh)) };
+  const region = cropRegion(draw);
   try {
     let pipeline;
     if (source.vector) {
@@ -520,7 +544,7 @@ export async function prepareImage(
         pipeline = pipeline.extract({ left: Math.round(region.left * k), top: Math.round(region.top * k), width: Math.max(1, Math.round(region.width * k)), height: Math.max(1, Math.round(region.height * k)) });
       }
     } else {
-      const target = Math.min(region.width, pixelsFor(printedWidth, MAX_EMBED_DPI));
+      const target = embedWidth(region.width, printedWidth);
       pipeline = sharp(file.body).autoOrient();
       if (isCropped(image)) pipeline = pipeline.extract(region);
       if (target < region.width) pipeline = pipeline.resize({ width: target });
@@ -557,8 +581,6 @@ type RawPage = {
 export interface PdfRenderOptions {
   withCropMarks?: boolean;
   paperSize?: 'A4' | 'A3';
-  /** Free A4 export without an export credit: draws the WrapFit watermark on a glue flap (docs/16 §5.4). */
-  watermarked?: boolean;
 }
 
 /**
@@ -850,14 +872,6 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
         drawShadow,
       );
     }
-  }
-  const watermark = options?.watermarked ? watermarkOutline(layout) : null;
-  if (watermark) {
-    // ActualText: the outlines read as the sentence when the PDF is searched or its text copied.
-    const actualText = `FEFF${Buffer.from(WATERMARK_TEXT, 'utf16le').swap16().toString('hex').toUpperCase()}`;
-    doc.addContent(`/Span <</ActualText <${actualText}>>> BDC`);
-    doc.path(watermark.d).fill(hexToCmyk(WATERMARK_COLOR));
-    doc.addContent('EMC');
   }
   // Spec line in the margin: printed with the artwork so the print shop and the customer can read the box size.
   const spec = dimensionMarks(layout).info;

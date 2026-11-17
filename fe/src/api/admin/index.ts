@@ -1,7 +1,7 @@
 /** Administration (`be/src/users`, `be/src/base`): role ADMIN only, others get 403. */
 
 import { request } from "@/services/api";
-import type { AdminUpdateUserRequest, HealthDetails, PageQuery, Paginated, SafeUser } from "@/types/api";
+import type { AdminUpdateUserRequest, DeleteUserResponse, HealthDetails, PageQuery, Paginated, SafeUser } from "@/types/api";
 import { DEMO_HEALTH, DEMO_USERS } from "@/features/dashboard/demoData";
 
 export async function listUsers(query: PageQuery = {}): Promise<Paginated<SafeUser>> {
@@ -47,12 +47,16 @@ export async function updateUser(id: string, data: AdminUpdateUserRequest): Prom
   }
 }
 
-/** Also deletes the user's projects and files. */
-export async function deleteUser(id: string): Promise<void> {
+/**
+ * Also deletes the user's projects and files. An account with payments, orders or purchased credits is anonymized
+ * instead (result ANONYMIZED): those records stay, with the designs its orders print.
+ */
+export async function deleteUser(id: string): Promise<DeleteUserResponse> {
   try {
-    await request(`/users/${id}`, { method: "DELETE" });
+    return await request(`/users/${id}`, { method: "DELETE" });
   } catch (error) {
     console.warn("[Admin API] Offline fallback deleteUser:", error);
+    return { id, result: "DELETED" };
   }
 }
 
@@ -66,7 +70,8 @@ export async function getHealthDetails(): Promise<HealthDetails> {
 }
 
 export interface GrantCreditsRequest {
-  kind?: "EXPORT" | "XU";
+  /** Only xu: export credits are no longer granted (docs/25 item 7). */
+  kind?: "XU";
   quantity: number;
   expiresInDays?: number;
   note?: string;

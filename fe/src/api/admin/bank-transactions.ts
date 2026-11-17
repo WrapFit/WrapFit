@@ -9,7 +9,7 @@ import { request } from "@/services/api";
 export const BANK_TX_KEY = ["admin", "bank-transactions"] as const;
 
 export type BankTxStatus = "MATCHED" | "UNMATCHED" | "RESOLVED" | "IGNORED";
-export type BankTxUnmatchedReason = "NO_REFERENCE" | "NOT_FOUND" | "AMOUNT_MISMATCH" | "EXPIRED" | "ALREADY_PAID";
+export type BankTxUnmatchedReason = "NO_REFERENCE" | "NOT_FOUND" | "AMOUNT_MISMATCH" | "EXPIRED" | "ALREADY_PAID" | "ORDER_NOT_PAYABLE";
 
 /** The payment a transfer is linked to, or the one an admin is about to assign it to. */
 export interface BankTxPayment {

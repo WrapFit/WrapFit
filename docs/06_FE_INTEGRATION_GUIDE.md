@@ -376,6 +376,27 @@ DELETE /api/public/projects/:slug/like        → { "liked": false, "likesCount"
   `<meta name="robots" content="noindex">`. `allowFork: false` → fork trả `403`.
 - Đưa lên Thư viện cộng đồng: `PUBLIC` + gắn `occasion` / `industry` (qua `PATCH /api/projects/:id`); chỉ thiết kế có
   `fitcheckScore ≥ 90` mới xuất hiện ở phân khu cộng đồng.
+- Remix của người khác tạo thông báo cho tác giả (mục 8.1); tự remix thiết kế của mình thì không.
+
+### 8.1. Thông báo (chuông ở header, docs/25 S8)
+
+```http
+GET  /api/notifications?before=&limit=     → { items: Notification[], nextBefore: string | null }   (mới nhất trước, limit ≤ 50, mặc định 20)
+GET  /api/notifications/unread-count       → { count }
+POST /api/notifications/:id/read           → 204 (gọi lại không đổi gì; 404 nếu không phải của tôi)
+POST /api/notifications/read-all           → { updated }
+```
+
+- `Notification`: `{ id, type: "PROJECT_REMIXED" | "EXPORT_COMPLETED", createdAt, readAt, project { id, title }, count,
+  actorName, export { jobId, fileType } | null }`. `project` là thiết kế **của tôi** (bản gốc bị remix, hoặc thiết kế vừa
+  xuất file), không bao giờ là bản sao của người remix.
+- Remix: `actorName` là họ tên (không có thì tên shop) của người remix gần nhất, `null` khi không có tên hoặc tài khoản đã
+  xóa / ẩn danh hóa (FE ghi "Một người dùng WrapFit"). Các lượt remix chưa đọc của cùng thiết kế gộp vào một dòng:
+  `count` tăng, dòng lên đầu.
+- Chỉ dòng của chính người đăng nhập. Giới hạn: mức chung (100 request/phút/IP).
+- FE (`features/notifications`): hỏi `unread-count` lúc tải, khi tab focus lại và mỗi 60 giây; lắng nghe
+  `notifications.changed` trên WebSocket (bên dưới) để hỏi lại ngay. Không có socket vẫn đúng.
+- Backend xóa thông báo đã đọc sau 30 ngày và giữ tối đa 200 dòng mới nhất mỗi người.
 
 ## 9. Thư viện mẫu
 
@@ -523,7 +544,7 @@ npm --workspace=fe run dev                      # FE: http://localhost:3000
 
 ## 16. Danh mục đầy đủ endpoint (đối chiếu với code)
 
-Toàn bộ 56 route HTTP của backend và mục tài liệu tương ứng. Route nào chưa có ở đây thì chưa tồn tại ở backend.
+Toàn bộ 60 route HTTP của backend và mục tài liệu tương ứng. Route nào chưa có ở đây thì chưa tồn tại ở backend.
 
 | Nhóm | Route | Quyền | Mục |
 |---|---|---|---|
@@ -533,12 +554,13 @@ Toàn bộ 56 route HTTP của backend và mục tài liệu tương ứng. Rout
 | Auth | `GET /api/auth/google` · `/google/callback` | Public (điều hướng trình duyệt) | 3.5 |
 | Auth | `POST /api/auth/verify-email` · `/verify-email/resend` · `/password/forgot` · `/password/reset` | Public | 3 |
 | Người dùng | `GET` · `PATCH /api/users/me`, `PATCH /api/users/me/brand-kit` | Đăng nhập | 12 |
-| Quản trị | `GET /api/users?page=&limit=` · `GET /api/users/:id` · `PATCH /api/users/:id { role?, isActive? }` · `DELETE /api/users/:id` | ADMIN | 16 |
+| Quản trị | `GET /api/users?page=&limit=` · `GET /api/users/:id` · `PATCH /api/users/:id { role?, isActive? }` · `DELETE /api/users/:id` → `200 { id, result: "DELETED" \| "ANONYMIZED" }` (có thanh toán / đơn / xu đã mua thì ẩn danh hóa, docs/25 mục 3) | ADMIN | 16 |
 | Dự án | `POST` · `GET /api/projects`, `GET` · `PATCH` · `DELETE /api/projects/:id` | Đăng nhập / chủ dự án | 5 |
 | Dự án | `PATCH /api/projects/:id/status` · `/visibility`, `POST /api/projects/:id/duplicate` | Chủ dự án | 5.4, 8 |
 | Phiên bản | `GET` · `POST /api/projects/:id/snapshots`, `POST .../:snapshotId/restore`, `DELETE .../:snapshotId` | Chủ dự án | 6 |
 | Xuất in | `POST` · `GET /api/projects/:id/exports`, `GET /api/exports/:jobId` | Chủ dự án | 7 |
 | Công khai | `GET /api/public/projects/:slug`, `POST .../fork`, `POST` · `DELETE .../like` | Public / đăng nhập | 8 |
+| Thông báo | `GET /api/notifications`, `GET /api/notifications/unread-count`, `POST /api/notifications/:id/read`, `POST /api/notifications/read-all` | Đăng nhập (chỉ của mình) | 8.1 |
 | Mẫu | `GET /api/templates/structures` · `/hub` · `/:id` | Public | 9 |
 | Lưu trữ | `POST /api/storage/presigned-upload`, `GET /api/storage/usage` → `{ tier, usedBytes, quotaBytes, fileCount }` | Đăng nhập | 4 |
 | AI | `POST /api/ai/pattern`, `GET /api/ai/usage` | Đăng nhập | 11 |
@@ -553,6 +575,7 @@ tài khoản (`isActive: false`) thu hồi mọi phiên của người đó, có
 nào chạy. Dùng cho trang trạng thái / giám sát, không cần gọi từ giao diện người dùng.
 
 **WebSocket** (`socket.io-client`): `io(`${API_ORIGIN}/events`, { path: '/api/socket.io', withCredentials: true })`,
-xác thực bằng cookie `wf_access` (hết hạn thì refresh rồi kết nối lại). Hiện mới có `emit('ping')` → sự kiện `pong`
-`{ timestamp }`. **Backend chưa đẩy sự kiện nghiệp vụ nào** (xuất file xong, có người remix...): trạng thái xuất file
-in vẫn lấy bằng polling (mục 7). Khi backend thêm sự kiện, danh sách sẽ được bổ sung ở đây.
+xác thực bằng cookie `wf_access` (hết hạn thì refresh rồi kết nối lại). Có `emit('ping')` → sự kiện `pong`
+`{ timestamp }`. Server đẩy `notifications.changed` (payload `{}`) khi hộp thư của tôi có dòng mới (remix, file in xong
+ở worker qua Redis): hỏi lại `GET /api/notifications/unread-count` (mục 8.1). Trạng thái xuất file in vẫn lấy bằng
+polling (mục 7). Qua proxy `/api/*` của Next.js dev, dùng thêm `addTrailingSlash: false` (server nhận cả hai dạng).

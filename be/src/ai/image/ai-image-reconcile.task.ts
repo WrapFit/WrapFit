@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../shared/prisma';
+import { AiPatternService } from '../ai-pattern.service';
 import { AiImageRefunds } from './ai-image-refunds';
 import {
   AI_IMAGE_QUEUE,
@@ -18,6 +19,7 @@ const RECONCILE_BATCH = 100;
  * Every 5 minutes (API process), fails and refunds the AI image jobs BullMQ will never finish: a worker that died in
  * the middle of a job (out of memory, restart) never reaches the refund of AiImageProcessor. Same rules as
  * ExportReconcileTask; running it on several instances is harmless (AiImageRefunds touches unfinished jobs only).
+ * Also refunds the AI pattern debits whose request died before storing its result (AiPatternService.refundOrphanedDebits).
  */
 @Injectable()
 export class AiImageReconcileTask {
@@ -27,6 +29,7 @@ export class AiImageReconcileTask {
     private readonly prisma: PrismaService,
     @InjectQueue(AI_IMAGE_QUEUE) private readonly queue: Queue<AiImageJobData>,
     private readonly refunds: AiImageRefunds,
+    private readonly patterns: AiPatternService,
   ) {}
 
   @Interval('ai-image-reconcile', 5 * 60 * 1000)
@@ -36,6 +39,12 @@ export class AiImageReconcileTask {
       if (count > 0) this.logger.warn(`Failed and refunded ${count} stuck AI image job(s)`);
     } catch (error) {
       this.logger.error('AI image reconcile failed', error instanceof Error ? error.stack : String(error));
+    }
+    try {
+      const count = await this.patterns.refundOrphanedDebits();
+      if (count > 0) this.logger.warn(`Refunded ${count} AI pattern debit(s) left without a result`);
+    } catch (error) {
+      this.logger.error('AI pattern refund of orphaned debits failed', error instanceof Error ? error.stack : String(error));
     }
   }
 

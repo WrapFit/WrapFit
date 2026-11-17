@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, CreditCard, Factory, LifeBuoy, Minus, PackagePlus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from "lucide-react";
+import { CheckCircle2, CreditCard, Factory, LifeBuoy, Minus, PackagePlus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { listProjects } from "@/api/projects";
@@ -14,7 +14,6 @@ import { RequireAuth } from "@/features/auth";
 import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
 import { MAX_QUANTITY, PAPER_STOCKS, sampleFee, useSampleCart } from "@/features/site/cart";
-import { findSamplePromo, samplePromoDiscount } from "@wrapfit/shared";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
@@ -44,9 +43,6 @@ function CartScreen() {
   const projects = useQuery({ queryKey: queryKeys.projects.list(PROJECTS_QUERY), queryFn: () => listProjects(PROJECTS_QUERY) });
   const shops = useQuery({ queryKey: queryKeys.printShops.all, queryFn: listPrintShops, staleTime: 10 * 60_000 });
   const [shopId, setShopId] = useState<string>("");
-  const [promo, setPromo] = useState("");
-  const [applied, setApplied] = useState<string | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
   const [form, setForm] = useState({ recipientName: "", phone: "", shippingAddress: "", notes: "" });
   const [formError, setFormError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<SampleOrder[] | null>(null);
@@ -68,8 +64,6 @@ function CartScreen() {
   const lines = cart.items.map((item) => ({ item, project: byId.get(item.projectId) }));
   const known = lines.filter((line) => line.project);
   const subtotal = known.reduce((sum, { item }) => sum + sampleFee(item.quantity), 0);
-  // The server applies the code to each order (one per project); the cart shows the same sum.
-  const discount = applied ? known.reduce((sum, { item }) => sum + samplePromoDiscount(applied, sampleFee(item.quantity)), 0) : 0;
   const suggestions = (projects.data?.items ?? []).filter((project) => !cart.items.some((item) => item.projectId === project.id)).slice(0, 3);
   const activeShops = (shops.data ?? []).filter((shop) => (shop.status ?? shop.state ?? "active") === "active");
 
@@ -82,31 +76,18 @@ function CartScreen() {
         recipientName: form.recipientName.trim(),
         phone: form.phone.trim(),
         shippingAddress: form.shippingAddress.trim(),
-        promoCode: applied ?? undefined,
         notes: form.notes.trim() || undefined,
       });
       return [bill];
     },
     onSuccess: (orders) => {
       setPlaced(orders);
-      // One order (the usual sample): its VietQR checkout opens right away, unless a promo made it free.
+      // One order (the usual sample): its VietQR checkout opens right away.
       if (orders.length === 1 && orders[0].status === "pending_payment") setPaying(orders[0]);
       cart.clear();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
   });
-
-  const applyPromo = () => {
-    const code = promo.trim().toUpperCase();
-    if (!code) return;
-    if (!findSamplePromo(code)) {
-      setApplied(null);
-      setPromoError("Mã không hợp lệ hoặc đã hết hạn.");
-      return;
-    }
-    setApplied(code);
-    setPromoError(null);
-  };
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -280,36 +261,16 @@ function CartScreen() {
                 <dt className="text-landing-muted">{known.length} thiết kế · {known.reduce((sum, { item }) => sum + item.quantity, 0)} hộp</dt>
                 <dd className="font-semibold">{formatVnd(subtotal)}</dd>
               </div>
-              {applied && (
-                <div className="flex justify-between text-fpt-orange-ink">
-                  <dt>{findSamplePromo(applied)?.label}</dt>
-                  <dd className="font-semibold">−{formatVnd(discount)}</dd>
-                </div>
-              )}
               <div className="flex justify-between">
                 <dt className="text-landing-muted">Giao hàng</dt>
                 <dd className="text-landing-muted">Xưởng báo khi xác nhận</dd>
               </div>
               <div className="flex justify-between border-t border-landing-line/60 pt-3 text-base">
                 <dt className="font-semibold">Tạm tính</dt>
-                <dd className="font-landing-heading text-xl font-bold">{formatVnd(Math.max(0, subtotal - discount))}</dd>
+                <dd className="font-landing-heading text-xl font-bold">{formatVnd(subtotal)}</dd>
               </div>
             </dl>
             <p className="text-xs text-landing-muted">49.000đ hộp đầu, 25.000đ mỗi hộp thêm của cùng thiết kế.</p>
-
-            <div>
-              <label htmlFor="promo" className="flex items-center gap-1.5 text-sm font-medium">
-                <Tag className="size-4" aria-hidden /> Mã ưu đãi
-              </label>
-              <div className="mt-1 flex gap-2">
-                <input id="promo" value={promo} onChange={(event) => setPromo(event.target.value)} placeholder="WORKSHOPTET" className="h-10 min-w-0 flex-1 rounded-full bg-landing-canvas px-4 font-mono text-sm uppercase outline-none ring-1 ring-landing-line focus-visible:ring-fpt-orange" />
-                <button type="button" onClick={applyPromo} className="h-10 rounded-full bg-landing-ink px-4 text-sm font-semibold text-white">
-                  Áp dụng
-                </button>
-              </div>
-              {promoError && <p className="mt-1 text-xs font-medium text-danger-fg">{promoError}</p>}
-              {applied && <p className="mt-1 text-xs text-landing-muted">Số tiền giảm được trừ ngay vào khoản thanh toán.</p>}
-            </div>
           </Card>
 
           <Card className="flex flex-col gap-3 p-5 sm:p-6">
@@ -353,7 +314,7 @@ function CartScreen() {
               </p>
             )}
             <button type="submit" disabled={!known.length || order.isPending} className={cn(PRIMARY_CTA, "h-12 w-full disabled:opacity-50")}>
-              {order.isPending ? "Đang gửi đơn…" : `Đặt in mẫu · ${formatVnd(Math.max(0, subtotal - discount))}`}
+              {order.isPending ? "Đang gửi đơn…" : `Đặt in mẫu · ${formatVnd(subtotal)}`}
             </button>
             <div className="flex flex-col gap-1.5 text-xs text-landing-muted">
               <p className="flex items-center gap-1.5">

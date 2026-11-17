@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { ExecutionContext } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
+import { readCookie } from '../constants/cookies.constants';
 
 export interface PerSessionThrottle {
   /** Name of the session cookie the route acts on (e.g. `wf_refresh`). */
@@ -14,8 +15,7 @@ export interface PerSessionThrottle {
 }
 
 function cookieOf(req: Request, cookie: string): string | undefined {
-  const value: unknown = req.cookies?.[cookie];
-  return typeof value === 'string' && value ? value : undefined;
+  return readCookie(req.cookies as Record<string, unknown> | undefined, cookie);
 }
 
 /** Throttler key: a hash of the session cookie (never the token itself), or the IP when the cookie is missing. */

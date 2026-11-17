@@ -1,6 +1,8 @@
 # WRAPFIT PLATFORM — BẢN PHÂN TÍCH KIẾN TRÚC & GIẢI PHÁP AN TOÀN DỮ LIỆU
 > **Dự án**: WrapFit Platform (Packaging Personalization & Intelligence Platform)  
 > **Tài liệu tham khảo**: Mã nguồn `minhduyhodev/NasaFilm` & Báo cáo phản biện 3 lỗ hổng hệ thống.
+>
+> **Cập nhật 2026-11-16 (docs/25 mục 9, Q6):** không dùng Cloudinary. Mọi file lưu trên R2 qua `StorageService` (bucket công khai và bucket riêng tư), ảnh của trang web nằm trong `fe/public`. Phần "Hybrid Cloudinary" bên dưới chỉ còn là đề xuất cũ: không cấu hình `CLOUDINARY_*`.
 
 ---
 
@@ -53,10 +55,7 @@ GOOGLE_CALLBACK_URL="https://wrapfit.vn/api/auth/google/callback"
 # ==============================================================================
 # 3. STORAGE HYBRID: CLOUDINARY (PUBLIC) & S3-COMPATIBLE (PRIVATE FILES & BACKUP)
 # ==============================================================================
-# Cloudinary (Ảnh public, logo, texture, tối ưu f_auto/q_auto)
-CLOUDINARY_CLOUD_NAME="wrapfit-cloud"
-CLOUDINARY_API_KEY="123456789012345"
-CLOUDINARY_API_SECRET="abcdefghijklmnopqrstuvwxyz12"
+# (Đã bỏ Cloudinary, docs/25 mục 9: ảnh công khai cũng nằm trên R2, xem STORAGE_* trong .env.example)
 
 # Cloudflare R2 / AWS S3 (File in vector riêng tư, link tải 15 phút, DB Backups)
 S3_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"

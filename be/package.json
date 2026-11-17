@@ -22,13 +22,14 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:upgrade-formulas": "ts-node prisma/scripts/upgrade-formulas.ts",
     "db:backfill-events": "ts-node prisma/scripts/backfill-product-events.ts",
+    "db:convert-export-credits": "ts-node prisma/scripts/convert-export-credits.ts",
     "db:studio": "prisma studio",
     "mail:test": "ts-node src/mail-test.ts",
     "storage:check": "ts-node src/storage-check.ts"
@@ -67,7 +68,6 @@
     "cache-manager": "^7.2.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
-    "cloudinary": "^2.11.0",
     "cookie": "^1.1.1",
     "cookie-parser": "^1.4.7",
     "fflate": "^0.8.3",
@@ -125,12 +125,21 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.ts$": "ts-jest"
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "isolatedModules": true
+          }
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "maxWorkers": 4,
+    "workerIdleMemoryLimit": "512MB"
   }
 }

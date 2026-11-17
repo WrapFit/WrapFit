@@ -6,6 +6,8 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { createPaidOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Sample print orders stored in PostgreSQL (docs/17, S4): they survive an API restart, only their owner reads them,
@@ -75,7 +77,7 @@ describe('Orders API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 
@@ -89,7 +91,7 @@ describe('Orders API (e2e)', () => {
   it('stores the order, waiting for payment, and keeps it after the API restarts', async () => {
     const created = await as(owner).post('/api/orders/sample').send(order(projectId)).expect(201);
     expect(created.body).toMatchObject({
-      orderCode: expect.stringMatching(/^WF-\d{4}-\d{4}$/),
+      orderCode: expect.stringMatching(/^WF-\d{4}-\d{6}$/),
       userId: owner.id,
       projectId,
       projectTitle: 'Hộp nến 80×80×95',
@@ -126,10 +128,51 @@ describe('Orders API (e2e)', () => {
     expect((await as(stranger).get('/api/orders/my-orders').expect(200)).body).toEqual([]);
   });
 
+  it('still reads an order with a code of the former 4 digits, and the database refuses other shapes', async () => {
+    const oldId = await createPaidOrder(prisma, owner.id, projectId, run);
+    try {
+      const old = await as(owner).get(`/api/orders/${oldId}`).expect(200);
+      expect(old.body.orderCode).toMatch(/^WF-\d{4}-\d{4}$/);
+      const row = await prisma.order.findUniqueOrThrow({ where: { id: oldId }, select: { orderCode: true } });
+      for (const code of ['WF-2026-12345', 'WF-2026-1234567', 'WF-26-123456']) {
+        await expect(prisma.order.update({ where: { id: oldId }, data: { orderCode: code } })).rejects.toThrow(/chk_orders_order_code/);
+      }
+      await prisma.order.update({ where: { id: oldId }, data: { orderCode: row.orderCode.replace(/-(\d{4})$/, '-00$1') } });
+    } finally {
+      await prisma.order.delete({ where: { id: oldId } });
+    }
+  });
+
   it("refuses an order on someone else's project, and a shop that does not take orders", async () => {
     await as(stranger).post('/api/orders/sample').send(order(projectId)).expect(404);
     await as(owner).post('/api/orders/sample').send({ ...order(projectId), printShopId: 'ps-ct-04' }).expect(400);
     await as(owner).post('/api/orders/sample').send({ ...order(projectId), phone: undefined }).expect(400);
+  });
+
+  it('has no vouchers: a body with a promo code gets 400 and creates nothing, and no order is ever free or PAID at once', async () => {
+    const before = await prisma.order.count({ where: { userId: owner.id } });
+    const single = { ...order(projectId), quantity: 1 };
+    const bundle = { ...single, projectId: undefined, quantity: undefined, paperStock: undefined, items: [{ projectId, quantity: 1 }] };
+    for (const promoCode of ['WORKSHOPTET', 'WRAPFIT10', 'workshoptet', '']) {
+      const one = await as(owner).post('/api/orders/sample').send({ ...single, promoCode }).expect(400);
+      expect(one.body.message).toEqual(expect.arrayContaining(['property promoCode should not exist']));
+      const many = await as(owner).post('/api/orders/sample/bundle').send({ ...bundle, promoCode }).expect(400);
+      expect(many.body.message).toEqual(expect.arrayContaining(['property promoCode should not exist']));
+    }
+    expect(await prisma.order.count({ where: { userId: owner.id } })).toBe(before);
+
+    // The cheapest order there is (one box) still costs the first-box fee and waits for its payment.
+    const cheapest = (await as(owner).post('/api/orders/sample').send(single).expect(201)).body;
+    expect(cheapest).toMatchObject({
+      orderStatus: 'PENDING_PAYMENT',
+      subtotalVnd: 49_000,
+      discountVnd: 0,
+      promoCode: null,
+      totalVnd: 49_000,
+      paidAt: null,
+      paymentId: null,
+    });
+    await prisma.order.delete({ where: { id: cheapest.id } });
   });
 
   it('lets only ADMIN and PRINT_SHOP change the status', async () => {

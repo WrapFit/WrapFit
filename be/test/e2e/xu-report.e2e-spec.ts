@@ -6,6 +6,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Admin xu report (docs/19 S5) against a real PostgreSQL. The rows are dated in February 2001 (Vietnam time), a month
@@ -122,9 +123,7 @@ describe('Xu report (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({
-      where: { email: { endsWith: `-${run}@e2e.test` } },
-    });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 

@@ -6,7 +6,7 @@ import type {
   BillingSummary,
   Payment,
   PaymentHistoryPage,
-  PaymentPurpose,
+  SalePurpose,
   VnpayReturnResult,
   XuHistoryPage,
   XuHistoryType,
@@ -23,7 +23,7 @@ export function getBillingSummary(): Promise<BillingSummary> {
  * the payment terms the user read and accepted (the server refuses any other version).
  */
 /** `xu`: the number of xu of a custom top-up (purpose XU_CUSTOM); the server refuses it with any other purpose. */
-export function createPayment(purpose: PaymentPurpose, orderId: string | undefined, termsVersion: string, xu?: number): Promise<Payment> {
+export function createPayment(purpose: SalePurpose, orderId: string | undefined, termsVersion: string, xu?: number): Promise<Payment> {
   return request("/payments", {
     method: "POST",
     json: { purpose, termsVersion, ...(orderId ? { orderId } : {}), ...(purpose === "XU_CUSTOM" && xu !== undefined ? { xu } : {}) },

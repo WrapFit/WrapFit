@@ -1,4 +1,4 @@
-import { ENTITLEMENTS, EXPORT_PACKS, exportLotExpiresAt, requiredPlanFor, resolvePlan } from '@wrapfit/shared';
+import { ENTITLEMENTS, EXPORT_PACK_IDS, exportLotExpiresAt, isExportPackId, requiredPlanFor, resolvePlan } from '@wrapfit/shared';
 
 describe('resolvePlan (shared/src/billing/plans.ts)', () => {
   const now = new Date('2026-10-30T00:00:00Z');
@@ -27,12 +27,10 @@ describe('resolvePlan (shared/src/billing/plans.ts)', () => {
 });
 
 describe('prices and entitlements (shared/src/billing)', () => {
-  it('sells the Path 2 export packs', () => {
-    expect(Object.values(EXPORT_PACKS).map((p) => [p.credits, p.priceVnd])).toEqual([
-      [1, 19_000],
-      [5, 79_000],
-      [15, 199_000],
-    ]);
+  it('keeps the ids of the export packs no longer sold, for old payments', () => {
+    expect(EXPORT_PACK_IDS).toEqual(['EXPORT_1', 'EXPORT_5', 'EXPORT_15']);
+    expect(isExportPackId('EXPORT_5')).toBe(true);
+    expect(isExportPackId('XU_500')).toBe(false);
   });
 
   it('keeps a purchased lot 12 calendar months', () => {

@@ -8,8 +8,17 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.ts$": "ts-jest"
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "isolatedModules": true
+        }
+      }
+    ]
   },
+  "maxWorkers": 1,
+  "workerIdleMemoryLimit": "1GB",
   "setupFiles": [
     "<rootDir>/e2e-env.ts"
   ]

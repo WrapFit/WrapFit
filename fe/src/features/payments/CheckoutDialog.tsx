@@ -17,18 +17,15 @@ import { Alert, Badge, Button, Dialog, LoadingState, Spinner } from "@/component
 import { formatVnd } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
-import type { Payment, PaymentPurpose } from "@/types/api";
-import { EXPORT_PACKS, PAYMENT_TERMS_VERSION, PRO_MONTH, XU_PACKS, customXuPriceVnd, isExportPackId, isXuPackId } from "@wrapfit/shared";
+import type { Payment, SalePurpose } from "@/types/api";
+import { PAYMENT_TERMS_VERSION, PRO_MONTH, XU_PACKS, customXuPriceVnd, isXuPackId } from "@wrapfit/shared";
 import { PaymentTermsGate } from "./PaymentTermsGate";
 import { savePendingVnpay } from "./vnpaySession";
 
 /** The server is asked for the payment status every 3 seconds while it waits for the money. */
 const POLL_MS = 3000;
 
-const TITLES: Record<PaymentPurpose, string> = {
-  EXPORT_1: "Mua 1 lượt xuất",
-  EXPORT_5: "Mua 5 lượt xuất",
-  EXPORT_15: "Mua 15 lượt xuất",
+const TITLES: Record<SalePurpose, string> = {
   PRO_MONTH: "Nâng lên Pro 30 ngày",
   SAMPLE_ORDER: "Thanh toán đơn in mẫu",
   XU_500: "Nạp 500 xu Wrap",
@@ -38,9 +35,8 @@ const TITLES: Record<PaymentPurpose, string> = {
 };
 
 /** Price shown before the payment exists; a sample order is priced by the server. */
-function knownPriceOf(purpose: PaymentPurpose, xu?: number): number | null {
+function knownPriceOf(purpose: SalePurpose, xu?: number): number | null {
   if (purpose === "XU_CUSTOM") return xu !== undefined ? customXuPriceVnd(xu) : null;
-  if (isExportPackId(purpose)) return EXPORT_PACKS[purpose].priceVnd;
   if (isXuPackId(purpose)) return XU_PACKS[purpose].priceVnd;
   if (purpose === "PRO_MONTH") return PRO_MONTH.priceVnd;
   return null;
@@ -53,7 +49,8 @@ function successText(payment: Payment): string {
   if (payment.purpose === "PRO_MONTH") return "Gói Pro đã bật: xuất file in sạch không giới hạn trong 30 ngày.";
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
   if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
-  return `Đã cộng ${payment.credits ?? 0} lượt xuất vào tài khoản, dùng trong 12 tháng.`;
+  // An export pack bought before the packs stopped (docs/25 item 7): the server turned it into xu.
+  return "Thanh toán đã ghi nhận: số tiền được đổi sang xu Wrap trong ví, dùng trong 12 tháng.";
 }
 
 /** mm:ss left until `expiresAt`, ticking every second while `active`. */
@@ -73,7 +70,7 @@ const mmss = (ms: number) => {
 };
 
 export interface CheckoutDialogProps {
-  purpose: PaymentPurpose;
+  purpose: SalePurpose;
   /** Number of xu of a custom top-up (purpose XU_CUSTOM). */
   xu?: number;
   /** The sample order to pay (purpose SAMPLE_ORDER). */

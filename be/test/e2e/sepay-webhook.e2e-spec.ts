@@ -7,6 +7,8 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { cancelOrder, placeSampleOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 const KEY = process.env.SEPAY_WEBHOOK_API_KEY!;
 
@@ -24,6 +26,7 @@ describe('SePay webhook (e2e)', () => {
   const usedIds: string[] = [];
   type Account = { id: string; cookie: string };
   let buyer: Account;
+  let admin: Account;
 
   const api = () => request(app.getHttpServer());
   const as = (user: Account) => ({
@@ -67,6 +70,8 @@ describe('SePay webhook (e2e)', () => {
     await app.init();
     prisma = app.get(PrismaService);
     buyer = await signUp(app, `sepay-buyer-${run}@e2e.test`);
+    admin = await signUp(app, `sepay-admin-${run}@e2e.test`);
+    await prisma.user.update({ where: { id: admin.id }, data: { role: 'ADMIN' } });
   });
 
   beforeEach(() => {
@@ -77,7 +82,7 @@ describe('SePay webhook (e2e)', () => {
 
   afterAll(async () => {
     await prisma.bankTransaction.deleteMany({ where: { externalId: { in: usedIds } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 
@@ -110,11 +115,11 @@ describe('SePay webhook (e2e)', () => {
     expect((await bankTx(body.id))!.transactionAt.toISOString()).toBe('2026-11-10T14:30:00.000Z');
   });
 
-  it('grants export credits and Pro through the webhook too, matching a lower-case reference', async () => {
-    const pack = await pay(buyer, { purpose: 'EXPORT_5' });
+  it('grants xu and Pro through the webhook too, matching a lower-case reference', async () => {
+    const pack = await pay(buyer, { purpose: 'XU_1050' });
     await send(transfer(pack.reference.toLowerCase(), pack.amountVnd)).expect(200);
     expect(await status(pack.id)).toBe('PAID');
-    expect(await prisma.creditLot.count({ where: { userId: buyer.id, paymentId: pack.id, quantity: 5 } })).toBe(1);
+    expect(await prisma.creditLot.count({ where: { userId: buyer.id, paymentId: pack.id, kind: 'XU', quantity: 1_050 } })).toBe(1);
 
     const pro = await pay(buyer, { purpose: 'PRO_MONTH' });
     await send(transfer(`WF ${pro.reference.slice(2, 5)} ${pro.reference.slice(5)}`, pro.amountVnd)).expect(200);
@@ -169,11 +174,13 @@ describe('SePay webhook (e2e)', () => {
   it('grants once when the webhook and the simulate button arrive together', async () => {
     const payment = await pay(buyer, { purpose: 'XU_500' });
     const body = transfer(payment.reference, payment.amountVnd);
+    // Only a demo account may simulate a VietQR payment (docs/25 item 6): flagged after paying, as an admin would.
+    await prisma.user.update({ where: { id: buyer.id }, data: { isDemo: true } });
 
     const [webhook, simulated] = await Promise.all([
       send(body),
       as(buyer).post(`/api/payments/${payment.id}/simulate-confirm`),
-    ]);
+    ]).finally(() => prisma.user.update({ where: { id: buyer.id }, data: { isDemo: false } }));
     expect(webhook.status).toBe(200);
     expect(simulated.status).toBe(200);
 
@@ -223,6 +230,68 @@ describe('SePay webhook (e2e)', () => {
       await unmatched(body, 'EXPIRED', payment.id);
       expect(await status(payment.id)).toBe('PENDING');
       expect(await prisma.creditLot.count({ where: { paymentId: payment.id } })).toBe(0);
+    });
+
+    it('EXPIRED still wins for a sample order whose payment lapsed, cancelled or not', async () => {
+      for (const cancel of [false, true]) {
+        const order = await placeSampleOrder(app, buyer.cookie);
+        const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+        await prisma.payment.update({ where: { id: payment.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+        if (cancel) await cancelOrder(prisma, order.id);
+        const body = transfer(payment.reference, payment.amountVnd);
+
+        await send(body).expect(200);
+        await unmatched(body, 'EXPIRED', payment.id);
+        expect(await status(payment.id)).toBe('PENDING');
+      }
+    });
+
+    it('ORDER_NOT_PAYABLE: money for a cancelled sample order leaves the payment PENDING and the order cancelled', async () => {
+      const order = await placeSampleOrder(app, buyer.cookie);
+      const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+      await cancelOrder(prisma, order.id);
+      const body = transfer(`CT ${payment.reference} in mau`, payment.amountVnd);
+
+      await send(body).expect(200, { success: true });
+
+      await unmatched(body, 'ORDER_NOT_PAYABLE', payment.id);
+      expect((await bankTx(body.id))!.extractedReference).toBe(payment.reference);
+      expect(await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).toMatchObject({
+        status: 'PENDING',
+        paidAt: null,
+        confirmedVia: null,
+        providerTxnId: null,
+      });
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: 'CANCELLED', paymentId: null });
+    });
+
+    it('a cancel racing the webhook never leaves a PAID payment without its order', async () => {
+      for (let round = 0; round < 6; round++) {
+        const order = await placeSampleOrder(app, buyer.cookie);
+        const payment = await pay(buyer, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+        const body = transfer(payment.reference, payment.amountVnd);
+
+        const [webhook] = await Promise.all([
+          send(body),
+          api().patch(`/api/orders/${order.id}/status`).set('Cookie', admin.cookie).send({ status: 'CANCELLED' }),
+        ]);
+        expect(webhook.status).toBe(200);
+
+        const paid = await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } });
+        const placed = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+        const stored = (await bankTx(body.id))!;
+        if (paid.status === 'PAID') {
+          // The webhook won: the order was paid by it (an admin may still cancel a paid order afterwards, by hand).
+          expect(stored).toMatchObject({ status: 'MATCHED', paymentId: payment.id });
+          expect(placed.paymentId).toBe(payment.id);
+          expect(placed.paidAt).not.toBeNull();
+        } else {
+          // The cancel won: nothing was paid, the money is waiting for a refund.
+          expect(paid.status).toBe('PENDING');
+          expect(stored).toMatchObject({ status: 'UNMATCHED', unmatchedReason: 'ORDER_NOT_PAYABLE', paymentId: payment.id });
+          expect(placed).toMatchObject({ status: 'CANCELLED', paymentId: null, paidAt: null });
+        }
+      }
     });
 
     it('ALREADY_PAID: a second transfer for a payment that is paid', async () => {

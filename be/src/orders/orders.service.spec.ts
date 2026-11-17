@@ -3,7 +3,7 @@ import { OrderStatus, Prisma, Role } from '@prisma/client';
 import type { PrismaService } from '../shared/prisma';
 import { PrintShopsService } from '../print-shops';
 import { canTransition, roleMaySet } from './order-status';
-import { OrdersService } from './orders.service';
+import { OrdersService, newOrderCode } from './orders.service';
 
 const PROJECT = {
   id: 'proj-123',
@@ -89,7 +89,7 @@ describe('OrdersService', () => {
     it('stores the order with its item, first history row and price, waiting for payment', async () => {
       const order = await service.createSampleOrder('user-1', { ...base, phone: '0912345678' });
 
-      expect(order.orderCode).toMatch(/^WF-\d{4}-\d{4}$/);
+      expect(order.orderCode).toMatch(/^WF-\d{4}-\d{6}$/);
       expect(order).toMatchObject({
         recipientName: 'Chị Linh',
         phone: '0912345678',
@@ -179,7 +179,7 @@ describe('OrdersService', () => {
 
       const order = await service.createSampleOrder('user-1', { ...base, phone: '0912345678' });
       expect(prisma.order.create).toHaveBeenCalledTimes(2);
-      expect(order.orderCode).toMatch(/^WF-\d{4}-\d{4}$/);
+      expect(order.orderCode).toMatch(/^WF-\d{4}-\d{6}$/);
     });
   });
 
@@ -297,5 +297,13 @@ describe('order lifecycle', () => {
     expect(roleMaySet('PRINT_SHOP', 'CANCELLED')).toBe(false);
     expect(roleMaySet('ADMIN', 'CANCELLED')).toBe(true);
     expect(roleMaySet('MAKER', 'IN_PRODUCTION')).toBe(false);
+  });
+});
+
+describe('newOrderCode', () => {
+  it('is WF-<year in Vietnam>-<6 digits>, zero-padded', () => {
+    // 2026-12-31 18:00 UTC is already 2027 in Vietnam (UTC+7).
+    for (let i = 0; i < 200; i++) expect(newOrderCode(new Date('2026-12-31T18:00:00Z'))).toMatch(/^WF-2027-\d{6}$/);
+    expect(newOrderCode(new Date('2026-06-01T00:00:00Z'))).toMatch(/^WF-2026-\d{6}$/);
   });
 });

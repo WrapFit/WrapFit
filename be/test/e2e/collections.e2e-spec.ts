@@ -5,6 +5,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /** Collections CRUD (IT3-05). Users use the `@e2e.test` domain and are removed afterwards. */
 describe('Collections API (e2e)', () => {
@@ -48,7 +49,7 @@ describe('Collections API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

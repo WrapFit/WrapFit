@@ -273,6 +273,36 @@ describe('ProjectsService', () => {
       expect(repo.updateContent.mock.lastCall![1]).not.toHaveProperty('fitCheck');
     });
 
+    it('drops the design fields equal to the saved ones, so a rename from the editor is metadata only (Q3)', async () => {
+      // The editor sends the whole design with every save; key order of the client differs from the stored JSON.
+      repo.findById.mockResolvedValueOnce(project({ canvasState: { elements: [text(1.5)] } as never }));
+      await service.update('project-1', userId, {
+        version: 4,
+        title: 'Hộp mới',
+        canvasState: { elements: [{ ...text(1.5), content: 'Tết', id: 't' }] } as never,
+        dimensions: { height: 60, width: 80, length: 120, paperThickness: 0.4 },
+        materialSpec: { finish: 'matte', caliper: 0.4, gsm: 300, type: 'kraft' } as never,
+      });
+      const changes = repo.updateContent.mock.lastCall![1];
+      expect(changes).toMatchObject({ title: 'Hộp mới' });
+      expect(changes.canvasState).toBeUndefined();
+      expect(changes.dimensions).toBeUndefined();
+      expect(changes.materialSpec).toBeUndefined();
+      expect(changes).not.toHaveProperty('fitCheck');
+    });
+
+    it('keeps a design field whose value differs, with the FitCheck of the new design', async () => {
+      await service.update('project-1', userId, {
+        title: 'Gift box',
+        canvasState: { elements: [text(1.5)] },
+        dimensions: { length: 120, width: 80, height: 60 },
+      });
+      const changes = repo.updateContent.mock.lastCall![1];
+      expect(changes.canvasState).toEqual({ elements: [text(1.5)] });
+      expect(changes.dimensions).toBeUndefined(); // completed with the caliper: equal to the saved dimensions
+      expect(changes.fitCheck).toMatchObject({ score: 90 });
+    });
+
     it('allows removing the project from its collection without an ownership lookup', async () => {
       await service.update('project-1', userId, { collectionId: null });
       expect(repo.isCollectionOwnedBy).not.toHaveBeenCalled();

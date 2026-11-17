@@ -3,19 +3,16 @@ import { Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PRINT_DPI, type BoxDimensions, type CanvasElement } from '@wrapfit/shared';
 import { Job } from 'bullmq';
-import { ConfigService, runWithRequestId } from '../common';
+import { ConfigService, EXPORT_COMPLETED, ExportCompletedEvent, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
-import { ExportCreditRefunds } from './export-credits';
 import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
 import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
 import { fontUrlsOf } from '@wrapfit/shared';
 import { buildPrintLayout, PrintLayout } from './rendering/print-layout';
 import { Artwork, imageResolutions, renderDxf, renderPdf, renderSvg, svgImages } from './rendering/print-renderers';
-
-export const EXPORT_COMPLETED = 'export.completed';
 
 /**
  * Images embedded in one print file, in total. The SVG export holds them twice more as base64 text (about 1.33 x
@@ -37,7 +34,6 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     private readonly storage: StorageService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService,
-    private readonly refunds: ExportCreditRefunds,
   ) {
     super();
   }
@@ -60,10 +56,6 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
             where: { id: exportJobId, status: UNFINISHED_EXPORT },
             data: { status: 'FAILED', errorLog: message.slice(0, 2000) },
           });
-          // docs/16 §5.3: the credit paid for this design comes back when nothing was delivered with it.
-          await this.refunds.refundFailed(exportJobId).catch((refundError: Error) =>
-            this.logger.error(`Could not refund the credit of export ${exportJobId}: ${refundError.message}`),
-          );
         }
         throw error; // lets BullMQ schedule the next attempt
       }
@@ -109,7 +101,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       job.fileType === 'PDF_CMYK'
         ? await renderPdf(layout, artwork)
         : job.fileType === 'PDF_A4_PRINT'
-          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4', watermarked: job.watermarked })
+          ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
           : job.fileType === 'PRINT_PACKAGE'
             ? await renderPrintPackage(layout, artwork, titleSlug(project.title))
             : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork, await svgImages(layout, artwork)) : renderDxf(layout));
@@ -155,7 +147,9 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       });
       await pruneAutomaticSnapshots(tx, project.id);
     });
-    this.events.emit(EXPORT_COMPLETED, { exportJobId, projectId: project.id, userId: project.userId });
+    // After the commit: NotificationsCoreModule (registered in this worker) stores "your file is ready" for the owner.
+    const completed: ExportCompletedEvent = { exportJobId, projectId: project.id, userId: project.userId, fileType: job.fileType };
+    this.events.emit(EXPORT_COMPLETED, completed);
     this.logger.log(
       `Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed in ${Date.now() - startedAt} ms`,
     );
@@ -170,7 +164,6 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
   private async loadArtwork(layout: PrintLayout): Promise<Artwork> {
     const artwork: Artwork = new Map();
     let total = 0;
-    // The inside sheet (docs/23 S5) prints its own images too.
     // The inside sheet (docs/23 S5) prints its own images too; uploaded fonts (S13) are loaded like images.
     const fonts = fontUrlsOf([...layout.texts, ...(layout.inside?.texts ?? [])].map((t) => ({ type: 'text' as const, style: t.style })));
     for (const url of [...[...layout.images, ...(layout.inside?.images ?? [])].map((image) => image.url), ...fonts]) {

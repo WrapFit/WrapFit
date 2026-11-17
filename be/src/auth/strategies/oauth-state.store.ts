@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes, timingSafeEqual } from 'crypto';
 import type { Request } from 'express';
+import { readCookie } from '../../common';
 import { OAUTH_STATE_COOKIE, safeRedirectPath } from '../auth.constants';
 import { AuthCookieService } from '../auth-cookie.service';
 
@@ -11,7 +12,7 @@ export interface SavedOAuthState {
 
 /** Reads the state cookie written by `OAuthStateStore.store` (also used by the callback to find `redirect`). */
 export function readOAuthState(req: Request): SavedOAuthState | null {
-  const raw = req.cookies?.[OAUTH_STATE_COOKIE];
+  const raw = readCookie(req.cookies, OAUTH_STATE_COOKIE);
   if (typeof raw !== 'string') return null;
   try {
     const parsed = JSON.parse(raw) as Partial<SavedOAuthState>;

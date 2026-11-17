@@ -3,8 +3,12 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
+import { AiPatternService } from '../../src/ai/ai-pattern.service';
+import { AiImageReconcileTask } from '../../src/ai/image/ai-image-reconcile.task';
+import { XuWalletService } from '../../src/billing';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /** AI pattern endpoint (IT3-09, paid with xu since docs/19 S3) with AI disabled (see e2e-env.ts): procedural answers. */
 describe('AI pattern (e2e)', () => {
@@ -25,7 +29,7 @@ describe('AI pattern (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 
@@ -67,6 +71,35 @@ describe('AI pattern (e2e)', () => {
   it('validates the request', async () => {
     await api().post('/api/ai/pattern').set('Cookie', cookie).send({ theme: '   ' }).expect(400);
     await api().post('/api/ai/pattern').set('Cookie', cookie).send({ theme: 'x', preferredColors: ['red'] }).expect(400);
+  });
+
+  it('refunds an AI_PATTERN debit left without a result after 10 minutes, once, and never a completed one', async () => {
+    const { id: userId } = await signUp(app, `orphan-${Date.now()}@e2e.test`);
+    const xu = app.get(XuWalletService);
+    const spend = () => prisma.$transaction((tx) => xu.spend(userId, { quantity: 1, reason: 'AI_PATTERN' }, tx));
+    const balance = async () => (await xu.wallet(userId)).balance;
+    // orphan: the process died after the debit; done: its generation is stored; young: a call still running.
+    const orphan = await spend();
+    const done = await spend();
+    const young = await spend();
+    await prisma.creditDebit.updateMany({
+      where: { operationId: { in: [orphan.operationId, done.operationId] } },
+      data: { createdAt: new Date(Date.now() - 11 * 60_000) },
+    });
+    await prisma.aiGeneration.create({
+      data: { userId, theme: 'Tết', model: 'claude-haiku-5-5', inputTokens: 1, outputTokens: 1, credits: 1, debitOperationId: done.operationId },
+    });
+    expect(await balance()).toBe(47);
+
+    await app.get(AiPatternService).refundOrphanedDebits();
+    expect(await balance()).toBe(48);
+    // The scheduled task runs it again (every 5 minutes, maybe on several instances): nothing more comes back.
+    await app.get(AiImageReconcileTask).run();
+    expect(await balance()).toBe(48);
+
+    const refunded = await prisma.creditDebit.findMany({ where: { userId, refundedAt: { not: null } }, select: { operationId: true } });
+    expect(refunded.map((d) => d.operationId)).toEqual([orphan.operationId]);
+    expect([done.operationId, young.operationId]).not.toContain(refunded[0].operationId);
   });
 
   // Before the burst test: every POST counts against the 5 per minute.

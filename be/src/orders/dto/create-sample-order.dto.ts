@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
+/**
+ * There is no voucher field: vouchers were removed (docs/25 item 1). A body that still sends `promoCode` gets 400 from
+ * the global ValidationPipe (forbidNonWhitelisted), so a client never believes a code was applied.
+ */
 export class CreateSampleOrderDto {
   @ApiProperty({ description: 'ID dự án hộp cần in mẫu thử' })
   @IsUUID(7)
@@ -42,12 +46,6 @@ export class CreateSampleOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
-
-  @ApiPropertyOptional({ description: 'Mã ưu đãi (WORKSHOPTET, WRAPFIT10): server tính số tiền giảm; mã sai → 400' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(32)
-  promoCode?: string;
 
   @ApiPropertyOptional({ description: 'ID xưởng in đối tác được chọn' })
   @IsOptional()

@@ -151,7 +151,6 @@ services:
       # Optional: the CP4 demo account (5 export credits, the candle jar project with its logo); empty password = none
       SEED_DEMO_EMAIL: ${SEED_DEMO_EMAIL:-}
       SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
-      SEED_DEMO_CREDITS: ${SEED_DEMO_CREDITS:-}
       # Object storage: defaults to the local SeaweedFS above; set these to Cloudflare R2 in production
       STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-http://seaweedfs:8333}
       STORAGE_PUBLIC_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:-http://localhost:8333}
@@ -163,11 +162,6 @@ services:
       STORAGE_PUBLIC_URL: ${STORAGE_PUBLIC_URL:-http://localhost:8333/wrapfit}
       STORAGE_FORCE_PATH_STYLE: ${STORAGE_FORCE_PATH_STYLE:-true}
       STORAGE_BACKUP_BUCKET: ${STORAGE_BACKUP_BUCKET:-}
-      # Optional: Cloudinary public image CDN (all three empty = disabled)
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
-      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-wrapfit}
       # Optional: AI pattern generator (empty key = procedural patterns only)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # AI_MODEL is the old name of AI_MODEL_FAST (still read when AI_MODEL_FAST is unset)
@@ -181,7 +175,8 @@ services:
       FAL_KEY: ${FAL_KEY:-}
       AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
       USD_VND_RATE: ${USD_VND_RATE:-26000}
-      # VietQR payments: true only for the CP4 demo ("simulate paid" button); empty VIETQR_* = sample account
+      # VietQR payments: true only for the CP4 demo ("simulate paid" button, demo accounts only, docs/25 item 6);
+      # empty VIETQR_* = sample account. Refused at startup together with a real VIETQR_* account.
       PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
       VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}

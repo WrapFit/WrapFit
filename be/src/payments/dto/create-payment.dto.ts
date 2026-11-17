@@ -4,7 +4,10 @@ import { PAYMENT_TERMS_VERSION, XU_CUSTOM } from '@wrapfit/shared';
 import { Equals, IsEnum, IsInt, IsUUID, Max, Min, ValidateIf } from 'class-validator';
 
 export class CreatePaymentDto {
-  @ApiProperty({ enum: PaymentPurpose, description: 'Gói lượt xuất, gói xu, Pro 30 ngày hoặc đơn in mẫu' })
+  @ApiProperty({
+    enum: PaymentPurpose,
+    description: 'Gói xu, Pro 30 ngày hoặc đơn in mẫu. EXPORT_1/5/15 đã ngừng bán: 400 EXPORT_PACK_DISCONTINUED',
+  })
   @IsEnum(PaymentPurpose)
   purpose!: PaymentPurpose;
 

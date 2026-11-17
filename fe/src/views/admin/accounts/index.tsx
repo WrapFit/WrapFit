@@ -246,7 +246,7 @@ function AdminAccountsScreen() {
 
         <p className="text-sm leading-[1.6] text-library-muted">
           Vai trò: {[ROLE_LABELS.ADMIN, ROLE_LABELS.PRINT_SHOP, ROLE_LABELS.PRO_ARTISAN, ROLE_LABELS.MAKER].join(" · ")}. Khoá tài khoản sẽ đăng xuất mọi phiên của người
-          đó; xoá tài khoản xoá luôn dự án và tệp của họ.
+          đó; xoá tài khoản xoá luôn dự án và tệp của họ, trừ tài khoản đã có thanh toán hoặc đơn in: tài khoản đó được ẩn danh hoá.
         </p>
       </div>
 

@@ -91,7 +91,8 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
   const [draft, setDraft] = useState<Role | null>(null);
   const name = displayName(user);
   const dirty = draft !== null && draft !== user.role;
-  const frozen = isSelf || busy;
+  // An anonymized account cannot be changed any more (the API answers 409 USER_ANONYMIZED).
+  const frozen = isSelf || busy || Boolean(user.anonymizedAt);
 
   const saveRole = () => {
     if (draft && dirty) onChangeRole(user, draft);
@@ -171,8 +172,8 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
       </td>
       <td className="py-4 px-3">
         <div className="flex flex-col items-start gap-1.5">
-          <ActiveBadge active={user.isActive} />
-          <EmailBadge verifiedAt={user.emailVerifiedAt} />
+          <ActiveBadge active={user.isActive} anonymized={Boolean(user.anonymizedAt)} />
+          {!user.anonymizedAt && <EmailBadge verifiedAt={user.emailVerifiedAt} />}
         </div>
       </td>
       <td className="py-4 px-3">
@@ -229,7 +230,19 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
   );
 }
 
-export function ActiveBadge({ active }: { active: boolean }) {
+/** `anonymized`: deleted by an admin but kept for its payments and orders (docs/25 item 3). */
+export function ActiveBadge({ active, anonymized = false }: { active: boolean; anonymized?: boolean }) {
+  if (anonymized) {
+    return (
+      <span
+        title="Tài khoản đã xoá: thanh toán và đơn in được giữ, thông tin cá nhân đã xoá"
+        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-library-line text-library-sub font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap"
+      >
+        <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-library-muted" />
+        Đã ẩn danh
+      </span>
+    );
+  }
   return active ? (
     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-fpt-orange-light/50 text-fpt-orange-ink font-mono text-cad-spec-micro font-semibold uppercase whitespace-nowrap">
       <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-fpt-orange" />

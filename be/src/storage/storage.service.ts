@@ -143,14 +143,12 @@ export class StorageService implements IProjectFiles {
     if (dto.projectId) await this.assertEditableProject(dto.projectId, userId);
 
     const key = `users/${userId}/${dto.purpose.toLowerCase()}/${randomUUID()}.${extension}`;
-    // Check and reserve the space in one transaction, serialized per user: parallel requests cannot all pass the check.
-    const file = await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(4801, hashtext(${userId}))`;
-      await this.assertQuota(tx, userId, dto.size);
-      return tx.storedFile.create({
-        data: { userId, projectId: dto.projectId, key, purpose: dto.purpose, contentType: dto.contentType, size: dto.size },
-        select: { id: true },
-      });
+    const file = await this.reserveUpload(userId, {
+      key,
+      projectId: dto.projectId,
+      purpose: dto.purpose,
+      contentType: dto.contentType,
+      size: dto.size,
     });
 
     const disposition = DOWNLOAD_ONLY_TYPES.has(dto.contentType) ? 'attachment' : undefined;
@@ -178,6 +176,37 @@ export class StorageService implements IProjectFiles {
       fileUrl: assetUrl(key)!,
       expiresIn: UPLOAD_URL_TTL_SECONDS,
     };
+  }
+
+  /**
+   * Checks that `size` more bytes fit in the user's quota (403 otherwise) and records the file as a pending upload,
+   * in one transaction serialized per user. The lock ends with the transaction, but the pending row it wrote counts in
+   * the usage the next request reads (for PENDING_UPLOAD_RESERVE_MS), so parallel requests cannot all pass the check
+   * even when the bytes are written after the lock is released. The row is confirmed by `putGeneratedFile` (same key)
+   * or by StorageMaintenanceTask; one whose bytes never arrive is dropped by the maintenance task.
+   */
+  async reserveUpload(
+    userId: string,
+    file: { key: string; purpose: FilePurpose; contentType: string; size: number; projectId?: string },
+  ): Promise<{ id: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(4801, hashtext(${userId}))`;
+      await this.assertQuota(userId, file.size, tx);
+      return tx.storedFile.create({ data: { userId, ...file }, select: { id: true } });
+    });
+  }
+
+  /**
+   * 403 when `size` more bytes would not fit in the user's quota. Without the lock of `reserveUpload` this is only an
+   * early answer (e.g. before downloading a stock photo); the space is held by `reserveUpload`.
+   */
+  async assertQuota(userId: string, size: number, db: Db = this.prisma): Promise<void> {
+    const { usedBytes, quotaBytes } = await this.usage(userId, db);
+    if (usedBytes + size > quotaBytes) {
+      throw new ForbiddenException(
+        `Storage quota exceeded: ${Math.ceil(usedBytes / 1024 / 1024)} MB of ${quotaBytes / 1024 / 1024} MB used`,
+      );
+    }
   }
 
   /**
@@ -282,14 +311,17 @@ export class StorageService implements IProjectFiles {
   async inspectFont(userId: string, url: string): Promise<{ url: string; family: string }> {
     const key = await this.resolveUpload(url, userId, ['FONT']);
     const file = await this.getObject(key);
-    let font: ReturnType<typeof createFont>;
+    let missing: string[];
+    let family: string;
     try {
-      font = createFont(file.body);
+      const font = createFont(file.body);
+      if (typeof font?.hasGlyphForCodePoint !== 'function') throw fontUnreadable();
+      // fontkit reads the tables when they are first used: a broken `cmap` or `name` table throws here, not above.
+      missing = missingVietnamese(font);
+      family = cleanFamilyName(font.familyName);
     } catch {
       throw fontUnreadable();
     }
-    if (typeof font?.hasGlyphForCodePoint !== 'function') throw fontUnreadable();
-    const missing = missingVietnamese(font);
     if (missing.length) {
       throw new UnprocessableEntityException({
         code: 'FONT_NO_VIETNAMESE',
@@ -297,7 +329,7 @@ export class StorageService implements IProjectFiles {
         missing,
       });
     }
-    return { url, family: cleanFamilyName(font.familyName) };
+    return { url, family };
   }
 
   /** Downloads a file from the bucket (print exports embed the user's images). */
@@ -350,12 +382,15 @@ export class StorageService implements IProjectFiles {
     // project that shows it, instead of staying in the bucket with no project at all. Its owner and quota stay.
     // A remix that starts showing a file after this statement makes the deletion of the projects fail on the foreign
     // key instead of deleting a file it shows (the next run retries).
+    // The heir subquery reads only the refs of files these projects own (stored_files_project_id_idx, then
+    // project_file_refs_stored_file_id_idx), not the whole project_file_refs table.
     await this.prisma.$executeRaw`
       UPDATE stored_files f SET project_id = heir.project_id
       FROM (
         SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id
         FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
-        WHERE r.project_id <> ALL(${projectIds}::uuid[])
+        WHERE r.stored_file_id IN (SELECT id FROM stored_files WHERE project_id = ANY(${projectIds}::uuid[]))
+          AND r.project_id <> ALL(${projectIds}::uuid[])
         ORDER BY r.stored_file_id, p.created_at, p.id
       ) heir
       WHERE heir.stored_file_id = f.id AND f.project_id = ANY(${projectIds}::uuid[])`;
@@ -365,10 +400,10 @@ export class StorageService implements IProjectFiles {
    * Prepares the deletion of a user and returns the keys of the objects to delete afterwards: their uploads and the
    * generated files of their projects. Uploads that projects of other users still show (remixes) are handed over to
    * the oldest of those projects and its owner, file and quota included: they survive the deletion and go with the
-   * last project that shows them.
+   * last project that shows them. Runs in the transaction that deletes the user (`db`).
    */
-  async releaseUserFiles(userId: string): Promise<string[]> {
-    await this.prisma.$executeRaw`
+  async releaseUserFiles(userId: string, db: Db = this.prisma): Promise<string[]> {
+    await db.$executeRaw`
       UPDATE stored_files f SET user_id = heir.user_id, project_id = heir.project_id
       FROM (
         SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id, p.user_id
@@ -379,11 +414,61 @@ export class StorageService implements IProjectFiles {
       WHERE heir.stored_file_id = f.id
         AND (f.user_id = ${userId}::uuid
              OR f.project_id IN (SELECT id FROM packaging_projects WHERE user_id = ${userId}::uuid))`;
-    const rows = await this.prisma.$queryRaw<{ key: string }[]>`
+    const rows = await db.$queryRaw<{ key: string }[]>`
       SELECT f.key FROM stored_files f
       LEFT JOIN packaging_projects owner ON owner.id = f.project_id
       WHERE f.user_id = ${userId}::uuid OR owner.user_id = ${userId}::uuid`;
     return rows.map((row) => row.key);
+  }
+
+  /**
+   * Prepares the anonymization of a user (UsersService.remove), inside its transaction. The projects in `kept` stay
+   * with every file they show; the projects in `dropped` are deleted by the caller right after. Uploads that projects
+   * of other users show (remixes) are handed over as in releaseUserFiles, and files of a dropped project that a kept
+   * project shows move to that project. Returns what goes: `keys` to delete from the bucket after the commit, and
+   * `unattachedIds`, the rows with no project to delete once the dropped projects are gone (rows of dropped projects
+   * go with them). Files of the shared library (LibraryAsset) always stay.
+   */
+  async releaseFilesForAnonymization(
+    db: Db,
+    userId: string,
+    kept: string[],
+    dropped: string[],
+  ): Promise<{ keys: string[]; unattachedIds: string[] }> {
+    await db.$executeRaw`
+      UPDATE stored_files f SET user_id = heir.user_id, project_id = heir.project_id
+      FROM (
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id, p.user_id
+        FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
+        WHERE p.user_id <> ${userId}::uuid
+        ORDER BY r.stored_file_id, p.created_at, p.id
+      ) heir
+      WHERE heir.stored_file_id = f.id
+        AND (f.user_id = ${userId}::uuid OR f.project_id = ANY(${dropped}::uuid[]))
+        AND (f.project_id IS NULL OR f.project_id <> ALL(${kept}::uuid[]))
+        AND NOT EXISTS (SELECT 1 FROM project_file_refs k WHERE k.stored_file_id = f.id AND k.project_id = ANY(${kept}::uuid[]))
+        AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)`;
+    // Whatever of a dropped project another project still shows is now shown by a kept one: it moves there.
+    await db.$executeRaw`
+      UPDATE stored_files f SET project_id = heir.project_id
+      FROM (
+        SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id
+        FROM project_file_refs r JOIN packaging_projects p ON p.id = r.project_id
+        WHERE r.project_id = ANY(${kept}::uuid[])
+        ORDER BY r.stored_file_id, p.created_at, p.id
+      ) heir
+      WHERE heir.stored_file_id = f.id AND f.project_id = ANY(${dropped}::uuid[])`;
+    const rows = await db.$queryRaw<{ id: string; key: string; project_id: string | null }[]>`
+      SELECT f.id, f.key, f.project_id FROM stored_files f
+      WHERE (f.project_id = ANY(${dropped}::uuid[])
+             OR (f.user_id = ${userId}::uuid AND f.project_id IS NULL
+                 AND NOT EXISTS (SELECT 1 FROM project_file_refs r
+                                 WHERE r.stored_file_id = f.id AND r.project_id <> ALL(${dropped}::uuid[]))))
+        AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)`;
+    return {
+      keys: rows.map((row) => row.key),
+      unattachedIds: rows.filter((row) => row.project_id === null).map((row) => row.id),
+    };
   }
 
   listProjectFiles(projectIds: string[]): Promise<ProjectFile[]> {
@@ -474,7 +559,6 @@ export class StorageService implements IProjectFiles {
           AND NOT EXISTS (SELECT 1 FROM users u WHERE u.avatar_key = f.key OR u.brand_kit ->> 'logoKey' = f.key)
           AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.thumbnail_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM project_snapshots s WHERE s.preview_key = f.key)
-          AND NOT EXISTS (SELECT 1 FROM social_mockups m WHERE m.render_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)
           -- "Ảnh AI của tôi" keeps an AI image 30 days even when no design shows it (docs/19 D9).
           AND NOT EXISTS (SELECT 1 FROM ai_image_outputs o WHERE o.stored_file_id = f.id AND o.keep_until > ${now})
@@ -567,15 +651,6 @@ export class StorageService implements IProjectFiles {
     if (project?.userId !== userId) throw new NotFoundException('Project not found');
     if (project.status === 'DELETED') {
       throw new ConflictException('Restore the project from the trash before uploading files to it');
-    }
-  }
-
-  private async assertQuota(db: Db, userId: string, size: number): Promise<void> {
-    const { usedBytes, quotaBytes } = await this.usage(userId, db);
-    if (usedBytes + size > quotaBytes) {
-      throw new ForbiddenException(
-        `Storage quota exceeded: ${Math.ceil(usedBytes / 1024 / 1024)} MB of ${quotaBytes / 1024 / 1024} MB used`,
-      );
     }
   }
 }

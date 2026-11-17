@@ -9,8 +9,10 @@ import { AiImageWorkerModule } from './ai';
 import { BillingCoreModule } from './billing';
 import { ExportWorkerModule } from './export';
 import { MailWorkerModule } from './mail';
+import { NotificationsCoreModule } from './notifications';
 import { StorageModule } from './storage';
 import { PrismaModule } from './shared/prisma';
+import { RedisModule } from './shared/redis';
 
 /**
  * Worker process (docs 07, section 1.3): runs the BullMQ processors only, no HTTP port. Same image as the API,
@@ -22,12 +24,14 @@ import { PrismaModule } from './shared/prisma';
     CommonModule,
     EventEmitterModule.forRoot(),
     PrismaModule,
+    RedisModule, // publishes notification pushes to the API process (NotificationsService)
     StorageModule,
     queueRootModule('worker'),
-    BillingCoreModule, // refunds the export credit or the xu of a failed job (docs/16 section 5.3, docs/19)
+    BillingCoreModule, // refunds the xu of a failed AI job (docs/19)
     ExportWorkerModule,
     MailWorkerModule,
     AiImageWorkerModule,
+    NotificationsCoreModule, // stores "your print file is ready" when export.completed fires in this process
   ],
 })
 export class WorkerModule {}

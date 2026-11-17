@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Bell, ChevronDown, Coins, Menu, Shield, User, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Coins, Menu, Shield, User, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
@@ -8,6 +8,7 @@ import { ViewTransition } from '@/components/common/ViewTransition';
 import { landingFontVariables } from '@/assets/fonts/landing';
 import { ROUTES } from '@/constants';
 import { ADMIN_HOME, homeForRole, isRealAdmin, useAuth } from '@/features/auth';
+import { NotificationBell } from '@/features/notifications';
 import { useBoxStructures } from '@/features/templates/hooks';
 import { useHydrated } from '@/hooks/dom';
 import { cn } from '@/utils/helpers';
@@ -147,11 +148,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
               <ArrowRight className="size-4" aria-hidden />
             </Link>
           )}
-          {user && (
-            <Link href="/notifications" className={cn(ICON_BUTTON, 'hidden sm:inline-flex')} aria-label="Thông báo" title="Thông báo">
-              <Bell className="size-[18px]" strokeWidth={1.75} aria-hidden />
-            </Link>
-          )}
+          {user && <NotificationBell buttonClassName={ICON_BUTTON} />}
           {user ? (
             <UserAvatarDropdown size="md" align="right" labelClassName="hidden" />
           ) : status === 'loading' ? (

@@ -22,6 +22,7 @@ import { AnalyticsModule } from './analytics';
 import { ExportModule } from './export';
 import { CollectionsModule } from './collections';
 import { EventsModule } from './events';
+import { NotificationsModule } from './notifications';
 import { BaseModule } from './base';
 import { ProjectsModule } from './projects';
 import { PublicShowcaseModule } from './public-showcase';
@@ -36,7 +37,6 @@ import { OrdersModule } from './orders';
 import { PaymentsModule } from './payments';
 import { PrismaModule } from './shared/prisma';
 import { RedisModule } from './shared/redis';
-import { CloudinaryModule } from './shared/cloudinary';
 
 @Module({
   imports: [
@@ -49,12 +49,11 @@ import { CloudinaryModule } from './shared/cloudinary';
       ],
     }),
     ScheduleModule.forRoot(), // @Cron / @Interval tasks: TrashPurgeTask, ExportReconcileTask, StorageMaintenanceTask
-    EventEmitterModule.forRoot(), // internal events, e.g. project.forked
+    EventEmitterModule.forRoot(), // internal events, e.g. project.forked (NotificationsModule stores the notification)
     PrismaModule,
     RedisModule,
     StorageModule,
     StorageMaintenanceModule,
-    CloudinaryModule,
     queueRootModule('producer'), // BullMQ (Redis): jobs are processed by src/worker.ts
     AuthModule,
     UsersModule,
@@ -70,6 +69,7 @@ import { CloudinaryModule } from './shared/cloudinary';
     UnboxingModule,
     ExportModule,
     EventsModule,
+    NotificationsModule,
     PrintShopsModule,
     OrdersModule,
     PaymentsModule,

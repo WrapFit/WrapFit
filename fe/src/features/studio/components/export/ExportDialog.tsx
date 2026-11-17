@@ -107,7 +107,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
     enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
   });
 
-  // Watermark label and credit count; the server decides again on every request.
+  // Whether this version is unlocked (a paid print order holds it); the server decides again on every request.
   const accessKey = [...queryKeys.projects.exports(projectId), "access"] as const;
   const access = useQuery({
     queryKey: accessKey,

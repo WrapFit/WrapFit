@@ -8,6 +8,7 @@ import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { setupSwagger } from '../../src/swagger';
 import { uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Needs a running PostgreSQL with the migrations applied (see README: "Chạy test").
@@ -60,7 +61,7 @@ describe('API (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 
@@ -205,8 +206,79 @@ describe('API (e2e)', () => {
       const res = await api().post('/api/auth/logout').set('Cookie', cookies({ wf_refresh: refresh })).expect(204);
       expect(isCleared(res, 'wf_access')).toBe(true);
       expect(isCleared(res, 'wf_refresh')).toBe(true);
+      // Every cookie of the site, but not the storage where the frontend keeps unsaved drafts.
+      expect(res.headers['clear-site-data']).toBe('"cookies"');
+      // Outside production (no https on localhost) the cookies keep their plain names.
+      expect(setCookie(res, '__Secure-wf_access')).toBeUndefined();
 
       await api().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: refresh })).expect(401);
+    });
+  });
+
+  describe('auth cookies in production (`Secure`, `__Secure-` names)', () => {
+    let secureApp: INestApplication | undefined;
+    const secureApi = () => request(secureApp!.getHttpServer());
+
+    beforeAll(async () => {
+      const previous = process.env.COOKIE_SECURE;
+      process.env.COOKIE_SECURE = 'true';
+      try {
+        // A fresh module registry re-reads the environment: ConfigModule.forRoot runs when app.module is imported.
+        await jest.isolateModulesAsync(async () => {
+          const { AppModule: IsolatedAppModule } = await import('../../src/app.module');
+          const { middleware: isolatedMiddleware } = await import('../../src/app.middleware');
+          const { Test: IsolatedTest } = await import('@nestjs/testing');
+          const moduleRef = await IsolatedTest.createTestingModule({ imports: [IsolatedAppModule] }).compile();
+          secureApp = moduleRef.createNestApplication();
+          isolatedMiddleware(secureApp);
+          await secureApp.init();
+        });
+      } finally {
+        process.env.COOKIE_SECURE = previous;
+      }
+    });
+
+    afterAll(async () => {
+      await secureApp?.close();
+    });
+
+    /** Logs in on the production app (its own login rate limit, so the main app's budget stays untouched). */
+    const secureLogin = async () => {
+      const res = await secureApi().post('/api/auth/login').send(alice).expect(200);
+      return { access: cookieValue(res, '__Secure-wf_access')!, refresh: cookieValue(res, '__Secure-wf_refresh')! };
+    };
+
+    it('sets the session under `__Secure-` names, with Secure, and drops cookies of the plain names', async () => {
+      const res = await secureApi().post('/api/auth/login').send(alice).expect(200);
+      expect(setCookie(res, '__Secure-wf_access')).toMatch(/; Path=\/api; .*HttpOnly; Secure; SameSite=Lax/);
+      expect(setCookie(res, '__Secure-wf_refresh')).toMatch(/; Path=\/api\/auth; .*HttpOnly; Secure; SameSite=Lax/);
+      expect(isCleared(res, 'wf_access')).toBe(true);
+      expect(isCleared(res, 'wf_refresh')).toBe(true);
+
+      const access = cookieValue(res, '__Secure-wf_access');
+      await secureApi().get('/api/users/me').set('Cookie', cookies({ '__Secure-wf_access': access })).expect(200);
+    });
+
+    it('still accepts a session opened before the prefix (plain names), for one release', async () => {
+      // The tokens do not depend on the cookie name: sent under the plain names, they are a session of the former release.
+      const { access, refresh } = await secureLogin();
+      const me = await secureApi().get('/api/users/me').set('Cookie', cookies({ wf_access: access })).expect(200);
+      expect(me.body.email).toBe(alice.email);
+
+      const rotated = await secureApi().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: refresh })).expect(200);
+      expect(cookieValue(rotated, '__Secure-wf_refresh')).toEqual(expect.any(String));
+      expect(isCleared(rotated, 'wf_refresh')).toBe(true);
+    });
+
+    it('logs out a session of either name: clears both names and sends Clear-Site-Data', async () => {
+      const { refresh } = await secureLogin();
+      const res = await secureApi().post('/api/auth/logout').set('Cookie', cookies({ wf_refresh: refresh })).expect(204);
+      for (const name of ['__Secure-wf_access', '__Secure-wf_refresh', 'wf_access', 'wf_refresh']) {
+        expect(isCleared(res, name)).toBe(true);
+      }
+      expect(setCookie(res, '__Secure-wf_access')).toMatch(/; Secure/);
+      expect(res.headers['clear-site-data']).toBe('"cookies"');
+      await secureApi().post('/api/auth/refresh').set('Cookie', cookies({ wf_refresh: refresh })).expect(401);
     });
   });
 
@@ -338,6 +410,15 @@ describe('API (e2e)', () => {
       const socket = connect({ extraHeaders: { cookie: 'wf_access=invalid' } });
       const error = await new Promise<Error>((resolve) => socket.once('connect_error', resolve));
       expect(error.message).toBe('Unauthorized');
+      socket.close();
+    });
+
+    it('accepts a WebSocket handshake carrying the `__Secure-` access cookie (production name)', async () => {
+      const socket: Socket = connect({ extraHeaders: { cookie: cookies({ '__Secure-wf_access': bobAccess }) } });
+      await new Promise<void>((resolve, reject) => {
+        socket.once('connect', resolve);
+        socket.once('connect_error', reject);
+      });
       socket.close();
     });
 

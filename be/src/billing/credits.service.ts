@@ -15,7 +15,10 @@ export interface CreditLotView {
   createdAt: Date;
 }
 
-/** Which ledger: export credits (the default) or xu (docs/19). `now` decides which lots have expired. */
+/**
+ * Which ledger: export credits (the default; no longer sold or spent, docs/25 item 7, read only by the one-time
+ * conversion and PlanService) or xu (docs/19). `now` decides which lots have expired.
+ */
 export interface LedgerScope {
   kind?: CreditKind;
   now?: Date;

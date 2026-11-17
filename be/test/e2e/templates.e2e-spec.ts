@@ -6,6 +6,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Template hub (IT3-07). Needs the seeded database (box templates + curated designs).
@@ -49,7 +50,7 @@ describe('Template hub (e2e)', () => {
   afterAll(async () => {
     await prisma.designTemplate.update({ where: { id: TET_CANDLE }, data: { usesCount: usesBefore } });
     await prisma.designTemplate.deleteMany({ where: { tags: { has: tag } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

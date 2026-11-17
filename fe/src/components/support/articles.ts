@@ -20,7 +20,7 @@ export interface ArticleCategory {
   articles: Article[];
 }
 
-const { FREE, PAY_PER_EXPORT, STARTER, PRO_BUSINESS } = PLANS;
+const { FREE, STARTER, PRO_BUSINESS } = PLANS;
 
 export const CATEGORIES: ArticleCategory[] = [
   {
@@ -190,7 +190,7 @@ export const CATEGORIES: ArticleCategory[] = [
         id: "han-muc-goi",
         title: "Hạn mức của từng gói",
         body: [
-          `${FREE.name}: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.xuPerPeriod} xu Wrap mỗi tháng cho ảnh và hoa văn AI; file in cần mua lượt xuất. ${PAY_PER_EXPORT.name}: ${formatQuota(PAY_PER_EXPORT.storageBytes)} và ${PAY_PER_EXPORT.xuPerPeriod} xu. ${STARTER.name}: ${formatQuota(STARTER.storageBytes)} và ${STARTER.xuPerPeriod.toLocaleString("vi-VN")} xu. ${PRO_BUSINESS.name}: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.xuPerPeriod.toLocaleString("vi-VN")} xu.`,
+          `${FREE.name}: ${formatQuota(FREE.storageBytes)} lưu trữ và ${FREE.xuPerPeriod} xu Wrap mỗi tháng cho ảnh và hoa văn AI; file in mở khi bạn thanh toán đơn in mẫu. ${STARTER.name}: ${formatQuota(STARTER.storageBytes)} và ${STARTER.xuPerPeriod.toLocaleString("vi-VN")} xu. ${PRO_BUSINESS.name}: ${formatQuota(PRO_BUSINESS.storageBytes)} và ${PRO_BUSINESS.xuPerPeriod.toLocaleString("vi-VN")} xu.`,
           "Mức đã dùng hiện trên trang Tổng quan của bạn.",
         ],
         action: { label: "Xem bảng giá", href: "/pricing" },

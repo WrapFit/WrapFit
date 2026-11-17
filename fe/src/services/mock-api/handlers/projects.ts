@@ -5,6 +5,7 @@ import { DEMO_BOX_STRUCTURES, getDemoPublicProject, getDemoTemplateDetail } from
 import type { Collection, ProjectDetail, ProjectSummary, PublicProject } from "@/types/api";
 import { badRequest, conflict, currentUser, MockHttpError, notFound, paginate, type Handler } from "../http";
 import { db, getSessionUserId, newId, nowIso, save, type MockProject, type MockSnapshot } from "../store";
+import { notifyRemix } from "./notifications";
 
 const structureName = (id: string) => DEMO_BOX_STRUCTURES.find((s) => s.id === id)?.name ?? id;
 
@@ -387,6 +388,8 @@ const fork: Handler = ({ params }) => {
     },
     source.template.id,
   );
+  const original = db().projects.find((p) => p.slug === source.slug);
+  if (original) notifyRemix(original, user.id, user.fullName?.trim() || null);
   save();
   return detail(project);
 };

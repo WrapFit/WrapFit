@@ -12,7 +12,15 @@ import {
 import { Role } from '@prisma/client';
 import { parse as parseCookies } from 'cookie';
 import { Namespace, Socket } from 'socket.io';
-import { ACCESS_COOKIE, AuthUser, ConfigService, JwtPayload, SESSIONS_REVOKED, SessionsRevokedEvent } from '../common';
+import {
+  ACCESS_COOKIE,
+  AuthUser,
+  ConfigService,
+  JwtPayload,
+  readCookie,
+  SESSIONS_REVOKED,
+  SessionsRevokedEvent,
+} from '../common';
 import { PrismaService } from '../shared/prisma';
 
 /**
@@ -24,8 +32,12 @@ import { PrismaService } from '../shared/prisma';
  * Every socket joins the room `user:<id>` (and `admins` for admins). The token is checked once, at the handshake: a
  * socket is closed when its access token expires (the client reconnects with the refreshed cookie) and when the
  * sessions of its user are revoked (SESSIONS_REVOKED).
+ *
+ * Server -> client events: `notifications.changed` (empty payload) when the user's inbox got a new notification, sent by
+ * NotificationsPushBridge; the client refetches the unread count. Socket.IO state is per API process (no Redis adapter).
  */
-@WebSocketGateway({ namespace: 'events', path: '/api/socket.io' })
+// addTrailingSlash: false also accepts `/api/socket.io?EIO=…`: the Next.js dev proxy strips the slash before the query.
+@WebSocketGateway({ namespace: 'events', path: '/api/socket.io', addTrailingSlash: false })
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
 
@@ -91,11 +103,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.in(`user:${userId}`).disconnectSockets(true);
   }
 
-  /** Sends an event to every connected client. */
-  emitToAll(event: string, payload: unknown): void {
-    this.server.emit(event, payload);
-  }
-
   /** Sends an event to all sockets of one user (any device). */
   emitToUser(userId: string, event: string, payload: unknown): void {
     this.server.to(`user:${userId}`).emit(event, payload);
@@ -109,6 +116,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (typeof header === 'string' && header.startsWith('Bearer ')) return header.slice(7);
 
     const cookieHeader = socket.handshake.headers.cookie;
-    return cookieHeader ? parseCookies(cookieHeader)[ACCESS_COOKIE] : undefined;
+    return cookieHeader ? readCookie(parseCookies(cookieHeader), ACCESS_COOKIE) : undefined;
   }
 }

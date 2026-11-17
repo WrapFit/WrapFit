@@ -34,7 +34,8 @@ export interface ISnapshotRepository {
   delete(projectId: string, snapshotId: string): Promise<boolean>;
   /**
    * In one transaction: saves `backup` (the current state, automatic), then copies the snapshot into the project
-   * (with its formula version when it has one) and the FitCheck of the restored design.
+   * (with its formula version when it has one) and the FitCheck of the restored design. The project's `version`
+   * increases unless the snapshot is the design it already has.
    */
   restore(
     projectId: string,

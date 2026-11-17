@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * `/checkout/step-3?plan=&pack=`: what the upgrade changes, from the current quotas of the account (`GET /auth/me`,
- * `GET /storage/usage`) to the ones of the chosen plan, then the VietQR checkout of the pack or of Pro (docs/17 S5).
+ * `/checkout/step-3?plan=`: what the upgrade changes, from the current quotas of the account (`GET /auth/me`,
+ * `GET /storage/usage`) to the ones of the chosen plan, then the VietQR checkout of Pro (docs/17 S5).
  */
 
 import { ArrowRight, Clock, QrCode } from 'lucide-react';
@@ -26,7 +26,7 @@ export default function CheckoutStep3Page() {
 function Review() {
   const { user } = useAuth();
   const storage = useStorageUsage();
-  const { tier, pack, query } = useCheckoutParams();
+  const { tier, query } = useCheckoutParams();
   const current = PLANS[user?.subscriptionTier ?? 'FREE'];
   const next = PLANS[tier];
   const [paying, setPaying] = useState(false);
@@ -39,7 +39,7 @@ function Review() {
   ];
 
   return (
-    <CheckoutShell step={3} tier={tier} pack={pack} query={query()}>
+    <CheckoutShell step={3} tier={tier} query={query()}>
       <section aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <span className="flex size-14 items-center justify-center rounded-2xl bg-fpt-orange text-white">
           <Clock className="size-6" aria-hidden />
@@ -103,7 +103,7 @@ function Review() {
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-fpt-orange px-6 text-base font-semibold text-white transition-colors hover:bg-action-hover"
             >
               <QrCode className="size-4" aria-hidden />
-              Thanh toán {formatVnd(priceOf(tier, pack))}
+              Thanh toán {formatVnd(priceOf(tier))}
             </button>
           )}
           <Link href={`/checkout/step-2${query()}`} className="inline-flex h-12 items-center justify-center rounded-full px-6 text-base font-medium text-landing-ink ring-1 ring-landing-line hover:bg-mist-100">
@@ -113,7 +113,7 @@ function Review() {
       </section>
       {paying && (
         <CheckoutDialog
-          purpose={tier === 'PAY_PER_EXPORT' ? pack : 'PRO_MONTH'}
+          purpose="PRO_MONTH"
           onPaid={() => setPaid(true)}
           onClose={() => setPaying(false)}
         />

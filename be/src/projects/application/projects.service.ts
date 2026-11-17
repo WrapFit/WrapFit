@@ -14,6 +14,7 @@ import {
   findDimensionViolations,
   readDimensionLimits,
 } from '../domain/project.policy';
+import { sameJson } from '../domain/project-content';
 import { fitCheckOf } from '../domain/project-fitcheck';
 import { changeStatus, duplicateTitle, purgeCutoff } from '../domain/project-lifecycle';
 import {
@@ -123,6 +124,11 @@ export class ProjectsService {
   /**
    * Saves the design. The write only succeeds if nobody saved in between (compare-and-set on `version`), so an older
    * tab cannot overwrite a newer save and the stored FitCheck always matches the stored canvas and dimensions.
+   * Only a change of the design increases `version`; a save of the name, tags or thumbnail returns the same version.
+   * shortcut: a metadata-only save no longer moves `version`, so a second editor tab still at that version saves its
+   * older title over a rename made in the first tab without a 409 (the design itself is still protected). A separate
+   * save counter for the compare-and-set would close it; not worth a schema and client change while titles are the
+   * only metadata the editor sends with every save.
    */
   async update(projectId: string, userId: string, dto: UpdateProjectDto): Promise<ProjectDetail> {
     const project = await this.findOne(projectId);
@@ -155,6 +161,7 @@ export class ProjectsService {
       changes.dimensions = this.completeDimensions(dto.dimensions, dto.materialSpec ?? project.materialSpec);
       this.assertDimensionsFit(project.template.id, changes.dimensions, template?.formulaSchema);
     }
+    dropUnchangedContent(changes, project);
     // The FitCheck score on the dashboard and in the template hub always matches the saved design.
     if (changes.canvasState || changes.dimensions) {
       changes.fitCheck = fitCheckOf(
@@ -357,6 +364,21 @@ function assertOwnFileContents(
   current: { elements?: { type: string; content: string }[] } | undefined,
 ): void {
   if (disallowedFileContents(canvas, current).length) throw fileUrlNotAllowed();
+}
+
+/**
+ * Decision Q3 (docs/25 S3): only a different canvas, dimensions or material gives the project a new `version`, which
+ * paid print files and a client's print approval are tied to. The editor sends all three with every save (a rename
+ * too), so a field is a change only when its value differs from the saved one; an equal field is dropped and not
+ * written again. Comparing with the project read before the write is safe: every content write increases `version`
+ * and the write is a compare-and-set on it, so the content of a given version never changes.
+ */
+function dropUnchangedContent(changes: ProjectChanges, saved: ProjectDetail): void {
+  if (changes.canvasState && sameJson(toStoredCanvas(changes.canvasState), toStoredCanvas(saved.canvasState))) {
+    changes.canvasState = undefined;
+  }
+  if (changes.dimensions && sameJson(changes.dimensions, saved.dimensions)) changes.dimensions = undefined;
+  if (changes.materialSpec && sameJson(changes.materialSpec, saved.materialSpec)) changes.materialSpec = undefined;
 }
 
 /** 409 with a stable code: the editor reloads the project (or offers to) instead of overwriting the newer save. */

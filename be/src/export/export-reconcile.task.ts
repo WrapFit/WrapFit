@@ -3,7 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../shared/prisma';
-import { ExportCreditRefunds } from './export-credits';
 import {
   EXPORT_QUEUE,
   ExportJobData,
@@ -28,7 +27,6 @@ export class ExportReconcileTask {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue(EXPORT_QUEUE) private readonly queue: Queue<ExportJobData>,
-    private readonly refunds: ExportCreditRefunds,
   ) {}
 
   @Interval('export-reconcile', 5 * 60 * 1000)
@@ -65,11 +63,7 @@ export class ExportReconcileTask {
         where: { id, status: UNFINISHED_EXPORT },
         data: { status: 'FAILED', errorLog: WORKER_LOST_ERROR },
       });
-      if (count) {
-        this.logger.warn(`Export ${id} was never finished by the worker (${reason ?? 'no reason'})`);
-        // docs/16 §5.3, like the last attempt in the worker; a refund error must not stop the other rows.
-        await this.refunds.refundFailed(id).catch((error: Error) => this.logger.error(`Could not refund export ${id}: ${error.message}`));
-      }
+      if (count) this.logger.warn(`Export ${id} was never finished by the worker (${reason ?? 'no reason'})`);
       failed += count;
     }
     return failed;

@@ -8,6 +8,8 @@ import { middleware } from '../../src/app.middleware';
 import { signParams, vnpayDate } from '../../src/payments/vnpay/vnpay';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { cancelOrder, placeSampleOrder } from './helpers/orders';
+import { deleteUsers } from './helpers/cleanup';
 
 const SECRET = process.env.VNPAY_HASH_SECRET!;
 const TMN_CODE = process.env.VNPAY_TMN_CODE!;
@@ -80,7 +82,7 @@ describe('VNPay (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await app.close();
   });
 
@@ -196,8 +198,23 @@ describe('VNPay (e2e)', () => {
     expect(await lots(payment.id)).toHaveLength(0);
   });
 
+  it('grants nothing for a success on a cancelled sample order: the IPN gets 02, the return page says failed', async () => {
+    const order = await placeSampleOrder(app, demo.cookie);
+    const payment = await pay(demo, { purpose: 'SAMPLE_ORDER', orderId: order.id });
+    expect(payment.provider).toBe('VNPAY');
+    await cancelOrder(prisma, order.id);
+
+    expect((await ipn(vnpayQuery(payment)).expect(200)).body).toEqual({ RspCode: '02', Message: 'Order already confirmed' });
+    expect(await row(payment.id)).toMatchObject({ status: 'PENDING', confirmedVia: null, paidAt: null });
+
+    const back = (await comeBack(demo, vnpayQuery(payment)).expect(200)).body;
+    expect(back).toMatchObject({ result: 'failed', payment: { id: payment.id, status: 'PENDING' } });
+    expect(await row(payment.id)).toMatchObject({ status: 'PENDING', confirmedVia: null });
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: 'CANCELLED', paymentId: null });
+  });
+
   it('confirms from the return page for its owner, and the IPN that follows gets 02', async () => {
-    const payment = await pay(demo, { purpose: 'EXPORT_5' });
+    const payment = await pay(demo, { purpose: 'XU_1050' });
     const query = vnpayQuery(payment);
 
     const back = (await comeBack(demo, query).expect(200)).body;

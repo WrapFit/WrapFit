@@ -5,8 +5,13 @@ import { PrismaService } from '../shared/prisma';
 import { toClientCanvas } from '../storage';
 import type { ApproveDto, CreateCommentDto, GuestCommentDto } from './dto/review.dto';
 
-/** A review link holds at most this many comments (a guest cannot flood a design). */
+/**
+ * A design holds at most this many comments through its review link (a guest cannot flood it), and as many of the
+ * owner's own comments (counted apart: reviewers never use up the owner's room to answer).
+ */
 export const MAX_COMMENTS_PER_PROJECT = 500;
+/** Both shares: every comment a design can hold is shown. */
+const MAX_COMMENTS_SHOWN = 2 * MAX_COMMENTS_PER_PROJECT;
 /** Review tokens: 24 URL-safe characters (144 random bits). */
 const TOKEN = /^[A-Za-z0-9_-]{24}$/;
 
@@ -70,7 +75,7 @@ export class ReviewsService {
     const [project, review, comments] = await Promise.all([
       this.prisma.packagingProject.findUniqueOrThrow({ where: { id: projectId }, select: { version: true } }),
       this.prisma.projectReview.findUnique({ where: { projectId } }),
-      this.prisma.designComment.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' }, take: MAX_COMMENTS_PER_PROJECT }),
+      this.prisma.designComment.findMany({ where: { projectId }, orderBy: { createdAt: 'asc' }, take: MAX_COMMENTS_SHOWN }),
     ]);
     return { token: review?.token ?? null, approval: approvalOf(review, project.version), comments: comments.map(toComment) };
   }
@@ -90,7 +95,7 @@ export class ReviewsService {
 
   async addOwnerComment(projectId: string, userId: string, dto: CreateCommentDto): Promise<CommentView> {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { shopName: true, fullName: true } });
-    await this.assertRoom(projectId);
+    await this.assertRoom(projectId, true);
     const comment = await this.prisma.designComment.create({
       data: { projectId, authorUserId: userId, authorName: user.shopName || user.fullName || 'Chủ thiết kế', ...this.place(dto) },
     });
@@ -113,7 +118,7 @@ export class ReviewsService {
   /** What the review page shows: the design as saved, the comments and the approval. 404 for an unknown or closed link. */
   async publicView(token: string) {
     const { project, review } = await this.byToken(token);
-    const comments = await this.prisma.designComment.findMany({ where: { projectId: project.id }, orderBy: { createdAt: 'asc' }, take: MAX_COMMENTS_PER_PROJECT });
+    const comments = await this.prisma.designComment.findMany({ where: { projectId: project.id }, orderBy: { createdAt: 'asc' }, take: MAX_COMMENTS_SHOWN });
     return {
       title: project.title,
       structure: project.templateId,
@@ -129,7 +134,7 @@ export class ReviewsService {
 
   async addGuestComment(token: string, dto: GuestCommentDto): Promise<CommentView> {
     const { project } = await this.byToken(token);
-    await this.assertRoom(project.id);
+    await this.assertRoom(project.id, false);
     const comment = await this.prisma.designComment.create({ data: { projectId: project.id, authorName: dto.authorName, ...this.place(dto) } });
     return toComment(comment);
   }
@@ -154,8 +159,15 @@ export class ReviewsService {
     return { body: dto.body, panelId: dto.panelId ?? null, x: pinned ? dto.x! : null, y: pinned ? dto.y! : null };
   }
 
-  private async assertRoom(projectId: string) {
-    if ((await this.prisma.designComment.count({ where: { projectId } })) >= MAX_COMMENTS_PER_PROJECT) {
+  /**
+   * Comments through the link and the owner's own comments are capped apart, so reviewers who fill their share never
+   * stop the owner from answering them.
+   * shortcut: count, then write (no lock): requests at the same moment can each pass the check and go a few rows over
+   * the cap. Fine for a bound against flooding; take an advisory lock per project if the cap must be exact.
+   */
+  private async assertRoom(projectId: string, byOwner: boolean) {
+    const where = { projectId, authorUserId: byOwner ? { not: null } : null };
+    if ((await this.prisma.designComment.count({ where })) >= MAX_COMMENTS_PER_PROJECT) {
       throw new BadRequestException({ code: 'TOO_MANY_COMMENTS', message: 'Thiết kế đã có quá nhiều góp ý, hãy xóa bớt góp ý đã xử lý' });
     }
   }

@@ -2,13 +2,13 @@
 
 /**
  * `/dashboard/billing`: plan, quotas, payment and history, in the pacdora.com workspace style. The plan comes from
- * `GET /auth/me` (subscriptionTier), export credits and the Pro period from `GET /billing/me`, the quotas from
- * `GET /storage/usage` and `GET /ai/usage`, the sample-print orders from `GET /orders/my-orders`. Pro and export packs
- * are paid here with the VietQR checkout (docs/17 S5); cancelling still goes to the billing team.
+ * `GET /auth/me` (subscriptionTier), the Pro period from `GET /billing/me`, the quotas from `GET /storage/usage` and
+ * `GET /ai/usage`, the sample-print orders from `GET /orders/my-orders`. Pro is paid here with the VietQR checkout
+ * (docs/17 S5; export packs are no longer sold, docs/25 item 7); cancelling still goes to the billing team.
  */
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Building2, CalendarClock, Coins, Landmark, Receipt, Tag } from 'lucide-react';
+import { ArrowRight, Building2, CalendarClock, Coins, Landmark, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { getBillingDetails, getBillingSummary, listMyPayments, saveBillingDetails } from '@/api/payments';
@@ -19,10 +19,9 @@ import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
 import { CheckoutDialog } from '@/features/payments';
-import { PLANS, PRO_PERIOD_DAYS, SINGLE_EXPORT_PRICE, formatQuota, formatVnd } from '@/features/pricing';
-import { findSamplePromo } from '@wrapfit/shared';
+import { PLANS, PRO_PERIOD_DAYS, formatQuota, formatVnd } from '@/features/pricing';
 import { queryKeys } from '@/hooks/data';
-import type { BillingDetails, PaymentHistoryEntry, PaymentPurpose } from '@/types/api';
+import type { BillingDetails, PaymentHistoryEntry, PaymentPurpose, SalePurpose } from '@/types/api';
 import { cn } from '@/utils/helpers';
 
 export default function BillingPage() {
@@ -33,6 +32,7 @@ export default function BillingPage() {
   );
 }
 
+/** Payment history: export packs are no longer sold but old payments still show what was bought. */
 const PURPOSE_LABELS: Record<PaymentPurpose, string> = {
   EXPORT_1: '1 lượt xuất',
   EXPORT_5: '5 lượt xuất',
@@ -75,9 +75,8 @@ function BillingScreen() {
   const payments = history.data?.pages.flatMap((page) => page.entries) ?? [];
   const [cancelOpen, setCancelOpen] = useState(false);
   const billing = useQuery({ queryKey: queryKeys.billing, queryFn: getBillingSummary });
-  const [buying, setBuying] = useState<PaymentPurpose | null>(null);
+  const [buying, setBuying] = useState<SalePurpose | null>(null);
   const proEnd = billing.data?.subscription?.currentPeriodEnd;
-  const nextLotEnd = billing.data?.exportCredits.lots.find((lot) => lot.remaining > 0)?.expiresAt;
 
   const storagePercent = storage.data ? usagePercent(storage.data.usedBytes, storage.data.quotaBytes) : 0;
   const xu = ai.data?.xu;
@@ -103,9 +102,9 @@ function BillingScreen() {
                 <p className="text-2xl font-medium text-library-ink">{TIER_LABELS[tier]}</p>
                 <p className="mt-1 text-sm text-library-sub">
                   {tier === 'FREE'
-                    ? `Thiết kế, FitCheck™ và xem 3D miễn phí. File in sạch từ ${formatVnd(SINGLE_EXPORT_PRICE)}/lượt.`
-                    : plan.isPerExport
-                      ? `Mở khoá file in sạch theo từng bản thiết kế.`
+                    ? 'Thiết kế, FitCheck™ và xem 3D miễn phí. File in mở khi bạn thanh toán đơn in mẫu.'
+                    : tier === 'PAY_PER_EXPORT'
+                      ? 'Gói lượt xuất đã ngừng bán: lượt còn lại được đổi sang xu Wrap. File in mở khi bạn thanh toán đơn in mẫu.'
                       : plan.contactOnly
                         ? 'Gói theo hợp đồng với WrapFit.'
                         : `${formatVnd(plan.price.monthly)} / ${PRO_PERIOD_DAYS} ngày xuất file không giới hạn.`}
@@ -123,11 +122,6 @@ function BillingScreen() {
                     <ArrowRight className="size-4" aria-hidden />
                   </button>
                 )}
-                {tier !== 'STARTER' && !plan.contactOnly && (
-                  <button type="button" onClick={() => setBuying('EXPORT_5')} className={outlineButton}>
-                    Mua 5 lượt xuất
-                  </button>
-                )}
                 {paid && (
                   <button type="button" onClick={() => setCancelOpen(true)} className={outlineButton}>
                     Huỷ gói
@@ -135,12 +129,6 @@ function BillingScreen() {
                 )}
               </div>
             </div>
-            {billing.data && (tier !== 'STARTER' || billing.data.exportCredits.balance > 0) && (
-              <p className="mt-4 text-sm text-library-sub">
-                Lượt xuất còn lại: <span className="font-medium tabular-nums text-library-ink">{billing.data.exportCredits.balance}</span>
-                {nextLotEnd && ` · lô gần hết hạn nhất dùng tới ${new Date(nextLotEnd).toLocaleDateString('vi-VN')}`}
-              </p>
-            )}
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <div className="mb-1.5 flex justify-between text-sm">
@@ -173,9 +161,9 @@ function BillingScreen() {
               <CalendarClock className="mt-0.5 size-5 shrink-0 text-library-sub" aria-hidden />
               <p className="text-sm leading-relaxed text-library-sub">
                 {tier === 'FREE'
-                  ? 'Gói Free không có phí định kỳ. Bạn chỉ trả khi xuất file in hoặc nâng cấp.'
-                  : plan.isPerExport
-                    ? 'Không có phí định kỳ: mỗi lần xuất file in được tính riêng.'
+                  ? 'Gói Free không có phí định kỳ. Bạn chỉ trả khi đặt in mẫu hoặc nâng cấp.'
+                  : tier === 'PAY_PER_EXPORT'
+                    ? 'Không có phí định kỳ.'
                     : proEnd
                       ? `Hạn dùng Pro đến ${new Date(proEnd).toLocaleDateString('vi-VN')} (không tự gia hạn, nạp nối tiếp khi cần).`
                       : 'Gói theo thỏa thuận với WrapFit: không có kỳ thanh toán tự động.'}
@@ -209,7 +197,7 @@ function BillingScreen() {
               ) : history.isLoading ? (
                 <div className="h-24 animate-pulse rounded-xl bg-library-panel" />
               ) : !payments.length ? (
-                <WorkspaceEmpty icon={Receipt} title="Chưa có khoản thanh toán nào" description="Gói cước, lượt xuất, xu Wrap và phí in mẫu sẽ hiện ở đây sau lần thanh toán đầu tiên." />
+                <WorkspaceEmpty icon={Receipt} title="Chưa có khoản thanh toán nào" description="Gói cước, xu Wrap và phí in mẫu sẽ hiện ở đây sau lần thanh toán đầu tiên." />
               ) : (
                 <>
                   <DataTable<PaymentHistoryEntry>
@@ -239,7 +227,6 @@ function BillingScreen() {
         </div>
 
         <div className="flex flex-col gap-6 xl:col-span-4">
-          <PromoPanel />
           <BillingDetailsPanel />
         </div>
       </div>
@@ -264,38 +251,6 @@ function BillingScreen() {
       )}
       {buying && <CheckoutDialog purpose={buying} onClose={() => setBuying(null)} />}
     </WorkspaceShell>
-  );
-}
-
-/** Promo codes are for sample-print orders: the server applies them when the order is placed from the cart. */
-function PromoPanel() {
-  const [code, setCode] = useState('');
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
-  const check = () => {
-    if (!code.trim()) return;
-    const promo = findSamplePromo(code);
-    setResult(promo ? { ok: true, text: `${promo.label}. Nhập mã này ở giỏ in mẫu khi đặt đơn.` } : { ok: false, text: 'Mã không hợp lệ hoặc đã hết hạn.' });
-  };
-  return (
-    <Panel>
-      <PanelTitle>Mã ưu đãi</PanelTitle>
-      <div className="mt-3 flex gap-2">
-        <label htmlFor="billing-promo" className="sr-only">
-          Mã ưu đãi
-        </label>
-        <input id="billing-promo" value={code} onChange={(event) => setCode(event.target.value)} placeholder="WRAPFIT10" className={cn(WORKSPACE_INPUT, 'font-mono uppercase')} />
-        <button type="button" onClick={check} className={cn(outlineButton, 'shrink-0 whitespace-nowrap')}>
-          <Tag className="size-4" aria-hidden /> Kiểm tra
-        </button>
-      </div>
-      {result && <p className={cn('mt-2 text-xs', result.ok ? 'text-fpt-orange-ink' : 'text-danger-fg')}>{result.text}</p>}
-      {result?.ok && (
-        <Link href="/cart" className="mt-1 inline-block text-xs font-medium text-fpt-orange-ink hover:underline">
-          Mở giỏ in mẫu
-        </Link>
-      )}
-      <p className="mt-2 text-xs text-library-sub">Mã ưu đãi áp dụng cho đơn in mẫu.</p>
-    </Panel>
   );
 }
 
