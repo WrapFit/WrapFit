@@ -198,7 +198,7 @@ export default function Step3StudioPage() {
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            <div className="absolute right-0 top-full mt-2 w-48 py-1 rounded-2xl glass-dock-dark shadow-dock border border-white/10 hidden group-hover:block text-xs z-50">
+            <div className="absolute right-0 top-full mt-2 w-48 origin-top-right animate-pop-in motion-reduce:animate-none py-1 rounded-2xl glass-dock-dark shadow-dock border border-white/10 hidden group-hover:block text-xs z-50">
               <a className="px-3.5 py-2 hover:bg-white/10 flex items-center justify-between text-stone-200" href="#" data-st-on="click:0">
                 <span>DXF Bản Dao Bế (CAD)</span>
                 <span className="text-cad-spec-micro font-mono text-stone-400">1:1</span>

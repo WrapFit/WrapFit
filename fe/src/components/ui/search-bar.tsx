@@ -179,7 +179,7 @@ export function SearchBar({
 
       {listOpen && (
         <div
-          className="absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-panel border border-line bg-surface-raised p-1.5 shadow-popover animate-pop-in"
+          className="absolute inset-x-0 top-full z-40 mt-2 origin-top animate-pop-in motion-reduce:animate-none overflow-hidden rounded-panel border border-line bg-surface-raised p-1.5 shadow-popover animate-pop-in"
           onMouseDown={() => window.clearTimeout(blurTimer.current)}
         >
           {showingHistory && (

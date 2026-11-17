@@ -329,7 +329,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                   <div
                     role="dialog"
                     aria-label="Chọn bảng màu bối cảnh"
-                    className="flex flex-col gap-1.5 rounded-2xl border border-white/15 bg-stone-900/95 p-3 shadow-2xl backdrop-blur-md min-w-[260px] animate-in fade-in zoom-in-95 duration-150"
+                    className="flex flex-col gap-1.5 rounded-2xl border border-white/15 bg-stone-900/95 p-3 shadow-2xl backdrop-blur-md min-w-[260px] origin-top animate-pop-in motion-reduce:animate-none"
                   >
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
@@ -430,9 +430,6 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-fg-muted leading-relaxed">
-                    Khách quét mã QR để mở trang xem lời chúc và mô hình hộp 3D mở hộp tương tác.
-                  </p>
                 </div>
               </div>
             </div>

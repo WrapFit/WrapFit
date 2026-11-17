@@ -739,7 +739,6 @@ export function StudioWorkspace({
           content: url,
         };
         setElements((prev) => [...prev.filter((el) => !isUnboxingQr(el)), qr]);
-        toast.show({ tone: "success", title: "Đã đặt mã QR lên hộp", description: `${panel.name.replace(/\s*\(.*\)$/, "")}, ${size} × ${size} mm, in đen K100.` });
         return;
       }
       toast.show({ tone: "error", title: "Chưa đặt được mã QR", description: "Hộp không có mặt nào đủ chỗ cho mã QR 15 mm." });
@@ -999,7 +998,6 @@ export function StudioWorkspace({
         await registerCustomFont(font);
         setCustomFonts((list) => [...list.filter((item) => item.url !== font.url), font]);
         applyCustomFont(font);
-        toast.show({ tone: "success", title: "Đã thêm phông", description: `${font.family} có đủ dấu tiếng Việt và sẽ được nhúng vào file in.` });
       } catch (err) {
         toast.error(err, "Chưa thêm được phông");
       } finally {
