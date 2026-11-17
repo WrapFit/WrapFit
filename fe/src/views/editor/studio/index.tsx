@@ -61,7 +61,10 @@ function EditorRouteHandler() {
  * `getTemplate` falls back to the templates built into the app, so this works with no API at all.
  */
 function DemoEditor() {
-  const templateId = useSearchParams().get("template");
+  const searchParams = useSearchParams();
+  const templateId = searchParams.get("template");
+  // A new link into the demo (e.g. "Thiết kế hộp mới" clicked from inside the studio) mounts a fresh studio.
+  const newKey = searchParams.get("new");
   const template = useQuery({
     queryKey: queryKeys.templates.detail(templateId ?? ""),
     queryFn: () => getTemplate(templateId!),
@@ -69,7 +72,7 @@ function DemoEditor() {
     staleTime: 5 * 60_000,
   });
   if (templateId && template.isLoading) return <StudioSkeleton label="Đang mở mẫu…" />;
-  return <StudioWorkspace project={null} structures={FALLBACK_STRUCTURES} demoTemplate={template.data ?? null} />;
+  return <StudioWorkspace key={newKey ?? "draft"} project={null} structures={FALLBACK_STRUCTURES} demoTemplate={template.data ?? null} />;
 }
 
 /** 404 for another user's project too; 400 for an id that is not a UUID. */

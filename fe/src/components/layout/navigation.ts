@@ -20,7 +20,7 @@ export interface NavGroup {
 }
 
 export const STUDIO_LINKS: NavLink[] = [
-  { label: "Thiết kế hộp mới", href: ROUTES.editorDemo, description: "Mở Studio 2D & 3D, không cần đăng nhập; đăng nhập để lưu dự án" },
+  { label: "Thiết kế hộp mới", href: `${ROUTES.editorDemo}?new=1`, description: "Mở Studio 2D & 3D, không cần đăng nhập; đăng nhập để lưu dự án" },
   { label: "Dự án của tôi", href: ROUTES.projects, description: "Mở lại các thiết kế đã lưu" },
   { label: "Mở hộp bằng mã QR", href: ROUTES.unboxCode, description: "Nhập mã in kèm món quà để mở hộp 3D" },
 ];
