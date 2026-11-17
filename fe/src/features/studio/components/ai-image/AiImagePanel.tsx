@@ -170,7 +170,6 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
     const placed = onPlace(output);
     if (!placed) return;
     setLowDpi(placed.dpi < UPSCALE_HINT_DPI ? { outputId: output.id, dpi: placed.dpi } : null);
-    toast.show({ tone: "success", title: "Đã đặt ảnh AI", description: panel ? panelLabel(panel.name) : undefined });
   };
 
   const pose: MascotPose = busy ? "delivery" : lowDpi ? "measuring" : status === "COMPLETED" ? "celebration" : "presenting";

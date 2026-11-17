@@ -225,7 +225,7 @@ const appTheme: ThemeExtend = {
       "100%": { opacity: "1" },
     },
     "pop-in": {
-      "0%": { opacity: "0", transform: "scale(0.96)" },
+      "0%": { opacity: "0", transform: "translateY(-6px) scale(0.97)" },
       "100%": { opacity: "1", transform: "scale(1)" },
     },
   },
@@ -236,7 +236,8 @@ const appTheme: ThemeExtend = {
     "fade-in": "fade-in 200ms ease-out both",
     /** Old name used by StudioDialog. */
     fadeIn: "fade-in 200ms ease-out both",
-    "pop-in": "pop-in 160ms ease-out both",
+    /** Menus and dropdowns: a short drop with a soft settle (ease-out-expo). */
+    "pop-in": "pop-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both",
   },
 };
 

@@ -579,7 +579,15 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const measure = () => {
       if (!model) return;
       root.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(model.group);
+      // Visible parts only: hidden cups of a cup carrier must not stretch the frame or the height guide.
+      const box = new THREE.Box3();
+      const part = new THREE.Box3();
+      model.group.traverseVisible((object) => {
+        const geometry = (object as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+        if (!geometry) return;
+        if (!geometry.boundingBox) geometry.computeBoundingBox();
+        box.union(part.copy(geometry.boundingBox!).applyMatrix4(object.matrixWorld));
+      });
       if (box.isEmpty()) return;
       const sphere = box.getBoundingSphere(new THREE.Sphere());
       // The guides sit outside the box: frame them too.

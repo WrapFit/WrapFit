@@ -27,12 +27,12 @@ import {
   Feather,
   Gift,
   Info,
-  Layers,
+  PaintRoller,
   Lock,
   PackageOpen,
   Shield,
   SlidersHorizontal,
-  Sparkles,
+  Gem,
   Stamp,
   Sun,
   Tag,
@@ -56,14 +56,6 @@ const LAMINATION_SHORT: Partial<Record<QuoteFinish, string>> = {
   "matte-lamination": "Mờ",
   "gloss-lamination": "Bóng",
   "soft-touch-lamination": "Nhung",
-};
-const FINISH_NOTES: Record<QuoteFinish, string> = {
-  "matte-lamination": "Mịn, không bóng, chống trầy",
-  "gloss-lamination": "Bóng, màu đậm hơn",
-  "soft-touch-lamination": "Êm như nhung, sang tay",
-  foil: "Ánh kim trên chữ, logo",
-  "spot-uv": "Bóng nổi từng chi tiết",
-  emboss: "Nổi hoặc chìm trên giấy, không mực",
 };
 
 interface Step3PaperFinishProps {
@@ -325,7 +317,6 @@ function PaperCompareDialog({
   return (
     <Dialog
       title="So sánh chi tiết 4 loại giấy bao bì"
-      description="Quy cách và đặc tính in ấn thực tế giữa các chất liệu"
       size="xl"
       onClose={onClose}
     >
@@ -743,7 +734,6 @@ export function Step3PaperFinish({
 
                 {/* Quick Presets */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-caption font-medium text-fg-muted">Định lượng phổ biến:</span>
                   {[
                     { label: "250 GSM (0,35mm)", val: 0.35 },
                     { label: "300 GSM (0,42mm)", val: 0.42 },
@@ -797,15 +787,6 @@ export function Step3PaperFinish({
                         : "Bìa bồi carton cứng (≥ 500 GSM)"}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-caption text-fg-muted">
-                    {t <= 0.32
-                      ? "Mềm mại, dễ uốn gập, phù hợp cho quà nhẹ."
-                      : t <= 0.45
-                      ? "Đứng form cứng cáp, nếp gấp sắc nét chuẩn hộp bán lẻ."
-                      : t <= 0.65
-                      ? "Thành hộp dày dặn, đầm tay, chống móp méo khi vận chuyển."
-                      : "Kết cấu siêu cứng chắc, bảo vệ tối đa cho quà nặng cao cấp."}
-                  </p>
                 </div>
               </div>
             </div>
@@ -814,7 +795,7 @@ export function Step3PaperFinish({
             <div className="mt-3.5 border-t border-line/60 pt-3">
               <div className="flex items-center justify-between">
                 <p className="text-caption font-semibold text-fg flex items-center gap-1.5">
-                  <Layers className="size-3.5 text-fpt-orange" aria-hidden />
+                  <PaintRoller className="size-3.5 text-fpt-orange" aria-hidden />
                   <span>Cán màng</span>
                 </p>
                 {lamination && (
@@ -854,10 +835,9 @@ export function Step3PaperFinish({
                   );
                 })}
               </div>
-              {lamination && <p className="mt-1.5 text-caption text-fg-muted">{FINISH_NOTES[lamination]}.</p>}
 
               <p className="mt-3.5 text-caption font-semibold text-fg flex items-center gap-1.5">
-                <Sparkles className="size-3.5 text-fpt-orange" aria-hidden />
+                <Gem className="size-3.5 text-fpt-orange" aria-hidden />
                 <span>Gia công thêm</span>
               </p>
 

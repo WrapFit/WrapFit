@@ -117,7 +117,7 @@ export function XuBalancePill({ className }: XuBalancePillProps) {
           <div
             role="dialog"
             aria-label="Chi tiết ví xu Wrap"
-            className="absolute right-0 top-full mt-2 w-[340px] rounded-sheet border border-landing-line/80 bg-white p-4 shadow-popover z-50 animate-in fade-in-50 zoom-in-95 duration-150"
+            className="absolute right-0 top-full mt-2 w-[340px] rounded-sheet border border-landing-line/80 bg-white p-4 shadow-popover z-50 origin-top animate-pop-in motion-reduce:animate-none"
           >
             {/* Header info */}
             <div className="flex items-center justify-between border-b border-landing-line/60 pb-3">

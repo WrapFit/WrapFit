@@ -1,7 +1,7 @@
 "use client";
 
 import { BLEED_MM, FINISH_LABELS, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, CopyCheck, CreditCard, Download, Grid3x3, LogIn, PackageOpen, Palette, Plus, Save, ShieldCheck, Wand2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Box, Check, CreditCard, Download, Grid3x3, LogIn, PackageOpen, Palette, Plus, Save, ShieldCheck, Wand2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
@@ -18,15 +18,8 @@ import { cn } from "@/utils/helpers";
 import { ExportPurchaseCard } from "./export/ExportPurchaseCard";
 import { QuoteBreakdown } from "./QuoteBreakdown";
 import { QuoteCard } from "./QuoteCard";
-import { ImpositionCanvas2D } from "./imposition/ImpositionCanvas2D";
 import { PrePressColorCard } from "./imposition/PrePressColorCard";
-import {
-  type PressSheetId,
-  type IccProfileId,
-  type PrinterMarksConfig,
-  DEFAULT_PRINTER_MARKS,
-  ICC_PROFILES,
-} from "../types/imposition";
+import { type IccProfileId, ICC_PROFILES } from "../types/imposition";
 
 
 
@@ -99,13 +92,11 @@ export function Step6ReviewExport({
   onSaveProject,
   saving,
 }: Step6ReviewExportProps) {
-  const [view, setView] = useState<"2d" | "imposition" | "3d">("2d");
-  const [selectedSheetId, setSelectedSheetId] = useState<PressSheetId>("B1");
+  const [view, setView] = useState<"2d" | "3d">("2d");
   const [selectedIccProfile, setSelectedIccProfile] = useState<IccProfileId>(() => {
     if (activeMaterial === "kraft") return "FOGRA47";
     return "FOGRA39";
   });
-  const [marksConfig, setMarksConfig] = useState<PrinterMarksConfig>(DEFAULT_PRINTER_MARKS);
 
   const [pieceIndex, setPieceIndex] = useState(0);
   const [fold, setFold] = useState(100);
@@ -140,13 +131,12 @@ export function Step6ReviewExport({
         <div className="flex flex-col h-full min-h-[520px]">
           <StudioCard className="flex flex-col overflow-hidden h-full shadow-xs border border-line/60">
             <div className="flex flex-wrap items-center justify-between gap-3 p-4 shrink-0">
-              <ViewToggle<"2d" | "imposition" | "3d">
+              <ViewToggle<"2d" | "3d">
                 label="Chế độ xem"
                 value={view}
                 onChange={setView}
                 options={[
                   { value: "2d", label: "Khuôn bế 1:1", icon: Grid3x3 },
-                  { value: "imposition", label: "Dàn trang in (Imposition)", icon: CopyCheck },
                   { value: "3d", label: "Hộp 3D", icon: Box },
                 ]}
               />
@@ -173,21 +163,6 @@ export function Step6ReviewExport({
                     backgroundPatternSvg={backgroundPatternSvg}
                     activePanelId="all"
                     showRulers
-                    className="!min-h-0 h-full w-full !rounded-squircle-md"
-                  />
-                </div>
-              ) : view === "imposition" && piece ? (
-                <div className="absolute inset-0 flex">
-                  <ImpositionCanvas2D
-                    piece={piece}
-                    allPieces={pieces}
-                    projectTitle={title}
-                    selectedSheetId={selectedSheetId}
-                    onSheetChange={setSelectedSheetId}
-                    selectedIccProfile={selectedIccProfile}
-                    paperName={paper.name}
-                    marksConfig={marksConfig}
-                    onMarksConfigChange={setMarksConfig}
                     className="!min-h-0 h-full w-full !rounded-squircle-md"
                   />
                 </div>
@@ -365,19 +340,6 @@ export function Step6ReviewExport({
                         Bấm xem chi tiết ↗
                       </span>
                     </div>
-                    {/* Danh sách lỗi súc tích, ngắn gọn */}
-                    <div className="mt-1 space-y-0.5 text-xs text-slate-700">
-                      {report.violations.filter((v) => v.severity !== "info").slice(0, 2).map((v, i) => (
-                        <p key={v.id ?? i} className="truncate">
-                          • <strong className="text-fg">{v.title}:</strong> {v.message}
-                        </p>
-                      ))}
-                      {report.violations.filter((v) => v.severity !== "info").length > 2 && (
-                        <p className="text-caption text-fg-muted font-medium">
-                          + thêm {report.violations.filter((v) => v.severity !== "info").length - 2} điểm khác (bấm để xem)...
-                        </p>
-                      )}
-                    </div>
                   </div>
                 </div>
 
@@ -404,11 +366,6 @@ export function Step6ReviewExport({
             activeMaterial={activeMaterial}
             selectedIccProfile={selectedIccProfile}
             onIccProfileChange={setSelectedIccProfile}
-            marksConfig={marksConfig}
-            onMarksConfigChange={setMarksConfig}
-            selectedSheetId={selectedSheetId}
-            onSheetChange={setSelectedSheetId}
-            onViewImposition={() => setView("imposition")}
           />
 
           {/* Comments and the print approval of customers / print shops (docs/23 S23); saved projects only. */}
@@ -424,7 +381,6 @@ export function Step6ReviewExport({
       {showRulesModal && (
         <Dialog
           title="Báo cáo kiểm định sản xuất (FitCheck™)"
-          description="Đánh giá chi tiết 11 tiêu chuẩn kỹ thuật in ấn và gia công khuôn bế."
           size="lg"
           onClose={() => setShowRulesModal(false)}
         >
@@ -525,7 +481,6 @@ export function Step6ReviewExport({
                           Đạt chuẩn
                         </span>
                       </div>
-                      <p className="mt-0.5 text-caption text-fg-muted">{rule.detail}</p>
                     </div>
                   </div>
                 ))}
@@ -555,7 +510,7 @@ export function Step6ReviewExport({
         />
 
         {showBreakdown && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="animate-pop-in motion-reduce:animate-none">
             <QuoteBreakdown
               structure={boxType}
               pieces={pieces}

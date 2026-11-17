@@ -105,6 +105,7 @@ export const WORKSPACE_NAV: NavGroup[] = [
 
 interface WorkspaceShellProps {
   title: string;
+  /** Not rendered: page headers show the title only (kept so existing callers still compile). */
   description?: React.ReactNode;
   /** Buttons at the right of the title. */
   actions?: React.ReactNode;
@@ -200,7 +201,6 @@ interface ShellLayoutProps extends WorkspaceShellProps {
 /** Layout shared by the workspace and the admin console. */
 export function ShellLayout({
   title,
-  description,
   actions,
   children,
   nav,
@@ -243,7 +243,6 @@ export function ShellLayout({
         >
           {title}
         </h1>
-        {description && <div className={cn("mt-1.5 max-w-2xl text-base leading-[1.6]", consoleLayout ? "text-fg-muted" : "text-library-sub")}>{description}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
