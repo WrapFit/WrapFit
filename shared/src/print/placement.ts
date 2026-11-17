@@ -6,7 +6,7 @@
  * layers the user arranged print the same way (docs/23 D3). Hidden elements and elements of the other side of the
  * sheet are left out. `clip` is the printable box of the element's face on the sheet (face + bleed, D5).
  */
-import { orderElements, panelPrintBox, sideOf, type Box } from "../canvas/elements";
+import { elementClipBox, orderElements, sideOf, type Box } from "../canvas/elements";
 import { cleanColorMap, type ColorSwap } from "./svg-colors";
 import { matchesPanel } from "../fitcheck/validator";
 import { elementVectorArt } from "../library/shapes";
@@ -105,7 +105,7 @@ export function placeElements(
     const piece = pieces.find((p) => p.geometry.panels.some((panel) => matchesPanel(panel, element.panelId)));
     const panel = piece?.geometry.panels.find((p) => matchesPanel(p, element.panelId));
     if (!piece || !panel) return;
-    const face = panelPrintBox(panel, piece.geometry);
+    const face = elementClipBox(element, panel, piece.geometry);
     const base: PlacedBase = {
       order,
       x: piece.x + panel.bounds.x + element.x,

@@ -333,6 +333,7 @@ export class ProjectsService {
       ...(dto.giftWeight !== undefined && { giftWeight: dto.giftWeight }),
       ...(dto.bottomType !== undefined && { bottomType: dto.bottomType }),
       ...(dto.window && { window: true }),
+      ...(dto.showCups !== undefined && { showCups: dto.showCups }),
       ...(dto.cells && { cells: { rows: dto.cells.rows, cols: dto.cells.cols } }),
     };
   }

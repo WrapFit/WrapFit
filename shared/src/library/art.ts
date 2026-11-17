@@ -81,7 +81,30 @@ export const ART_PALETTES: ArtPalette[] = [
   { id: "nau-ca-phe", name: "Nâu cà phê", base: "#EADBC8", ink: "#3B2416", accent: "#8B5A3C", deep: "#5C3A24" },
 ];
 
-const PALETTES = new Map(ART_PALETTES.map((p) => [p.id, p]));
+const PRESET_PALETTES = new Map(ART_PALETTES.map((p) => [p.id, p]));
+
+/**
+ * A colour the user picked instead of a preset palette: `x-RRGGBB` (one colour) or `x-RRGGBB-RRGGBB` (two colours, the
+ * ends of a gradient). Base = first colour, deep = second, ink = black or white for contrast.
+ */
+const CUSTOM_PALETTE = /^x-([0-9A-F]{6})(?:-([0-9A-F]{6}))?$/;
+export function customPaletteId(first: string, second?: string): string {
+  const hex = (c: string) => c.replace("#", "").toUpperCase();
+  return second ? `x-${hex(first)}-${hex(second)}` : `x-${hex(first)}`;
+}
+function customPalette(id: string): ArtPalette | null {
+  const match = CUSTOM_PALETTE.exec(id);
+  if (!match) return null;
+  const base = `#${match[1]}`;
+  const deep = match[2] ? `#${match[2]}` : base;
+  const ch = (i: number) => parseInt(match[1].slice(i, i + 2), 16) / 255;
+  const light = 0.2126 * ch(0) + 0.7152 * ch(2) + 0.0722 * ch(4) > 0.55;
+  return { id, name: "Màu tự chọn", base, ink: light ? "#111827" : "#FFFFFF", accent: deep, deep };
+}
+const PALETTES = {
+  has: (id: string) => PRESET_PALETTES.has(id) || CUSTOM_PALETTE.test(id),
+  get: (id: string) => PRESET_PALETTES.get(id) ?? customPalette(id) ?? undefined,
+};
 
 // ---------------------------------------------------------------- geometry helpers
 
@@ -867,6 +890,21 @@ const DESIGNS: ArtDesign[] = [
     aspect: 1,
     lines: [],
     draw: (w, h, p) => ({ width: w, height: h, shapes: [{ d: rect(0, 0, w, h), fill: p.base }], texts: [] }),
+  },
+  {
+    // Gradient from the base to the deep colour, top to bottom, as thin bands (print files keep flat vector fills).
+    id: "bg-gradient",
+    name: "Nền chuyển màu",
+    kind: "background",
+    aspect: 1,
+    lines: [],
+    draw: (w, h, p) => {
+      const bands = 64;
+      const step = h / bands;
+      const shapes: ArtShape[] = [{ d: rect(0, 0, w, h), fill: p.base }];
+      for (let i = 1; i < bands; i++) shapes.push({ d: rect(0, step * i, w, h - step * i + 0.01), fill: mixHex(p.base, p.deep, i / (bands - 1)) });
+      return { width: w, height: h, shapes, texts: [] };
+    },
   },
   {
     id: "bg-dots",

@@ -7,6 +7,7 @@ import {
   cutSidesOf,
   CURRENT_FORMULA_VERSION,
   generateDielinePieces,
+  isBackground,
   matchesPanel,
   multiply,
   FINISH_SPOTS,
@@ -284,7 +285,9 @@ function panelTexture(
   options: BoxModelOptions,
   images: Map<string, HTMLImageElement | null>,
   /** The inside is seen from inside the box: its elements are drawn mirrored on the back of the panel (docs/23 S5). */
-  side: PrintSide = "outside"
+  side: PrintSide = "outside",
+  /** Faces of the same piece: their images, text and shapes may run over this one (backgrounds stay on their face). */
+  piecePanels: PanelFace[] = [panel]
 ): PanelTexture {
   const scale = Math.min(8, Math.max(2, 2048 / Math.max(region.width, region.height)));
   const canvas = document.createElement("canvas");
@@ -295,7 +298,13 @@ function panelTexture(
   texture.anisotropy = 4;
   const paper = PAPER[options.theme];
   // One side of the sheet, visible layers only, in paint order (docs/23 D3).
-  const elements = orderElements(options.elements).filter((el) => matchesPanel(panel, el.panelId) && !el.hidden && sideOf(el) === side);
+  const elements = orderElements(options.elements).flatMap((el) => {
+    if (el.hidden || sideOf(el) !== side) return [];
+    if (matchesPanel(panel, el.panelId)) return [{ el, dx: 0, dy: 0 }];
+    if (isBackground(el)) return [];
+    const owner = piecePanels.find((p) => matchesPanel(p, el.panelId));
+    return owner ? [{ el, dx: owner.bounds.x - panel.bounds.x, dy: owner.bounds.y - panel.bounds.y }] : [];
+  });
 
   const redraw = () => {
     const ctx = canvas.getContext("2d");
@@ -312,8 +321,9 @@ function panelTexture(
     }
     ctx.translate(panel.bounds.x - region.x, panel.bounds.y - region.y);
 
-    for (const el of elements) {
+    for (const { el, dx, dy } of elements) {
       ctx.save();
+      ctx.translate(dx, dy);
       if (typeof el.style?.opacity === "number") ctx.globalAlpha = Math.min(1, Math.max(0, el.style.opacity));
       const blend = blendOf(el.style);
       if (blend) ctx.globalCompositeOperation = blend;
@@ -924,7 +934,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
         structure === "pillow"
           ? { x: panel.bounds.x, y: pillowShapeOf(dimensions).endDepth, width: panel.bounds.width, height: pillowShapeOf(dimensions).bodyLength }
           : panel.bounds;
-      const texture = panelTexture(panel, region, options, images);
+      const texture = panelTexture(panel, region, options, images, "outside", piece.geometry.panels);
       textures.set(panel.id, texture);
       disposables.push(texture.texture);
     }
@@ -975,7 +985,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   if (printsInside(options.elements)) {
     for (const piece of pieces) {
       for (const panel of piece.geometry.panels) {
-        const texture = panelTexture(panel, panel.bounds, options, images, "inside");
+        const texture = panelTexture(panel, panel.bounds, options, images, "inside", piece.geometry.panels);
         textures.set(`inside:${panel.id}`, texture);
         const material = inside.clone() as THREE.MeshStandardMaterial;
         material.color = new THREE.Color("#FFFFFF");

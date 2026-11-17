@@ -23,6 +23,7 @@ import {
   moveLayer,
   newElementId,
   orderElements,
+  elementClipBox,
   panelPrintBox,
   safeMarginsOf,
   SAFE_MARGIN_CUT_MM,
@@ -1557,10 +1558,17 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
           <defs>
             {dieline.panels.map((panel) => {
               const box = panelPrintBox(panel, dieline);
+              // Images, text and shapes may run over the neighbouring faces (creative prints): cut at the sheet + bleed.
+              const sheet = elementClipBox({ type: "image" }, panel, dieline);
               return (
-                <clipPath key={panel.id} id={`${uid}-face-${panel.id}`}>
-                  <rect x={panel.bounds.x + box.x + padding} y={panel.bounds.y + box.y + padding} width={box.width} height={box.height} />
-                </clipPath>
+                <React.Fragment key={panel.id}>
+                  <clipPath id={`${uid}-face-${panel.id}`}>
+                    <rect x={panel.bounds.x + box.x + padding} y={panel.bounds.y + box.y + padding} width={box.width} height={box.height} />
+                  </clipPath>
+                  <clipPath id={`${uid}-sheet-${panel.id}`}>
+                    <rect x={panel.bounds.x + sheet.x + padding} y={panel.bounds.y + sheet.y + padding} width={sheet.width} height={sheet.height} />
+                  </clipPath>
+                </React.Fragment>
               );
             })}
           </defs>
@@ -1644,7 +1652,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 )}
 
                 {/* Content: cut to the printable box of its face; drop shadow and blend mode (docs/23 S22) */}
-                <g clipPath={`url(#${uid}-face-${targetPanel.id})`} style={blend ? { mixBlendMode: blend } : undefined}>
+                <g clipPath={`url(#${uid}-${background ? "face" : "sheet"}-${targetPanel.id})`} style={blend ? { mixBlendMode: blend } : undefined}>
                   {shadow && (
                     <defs>
                       <filter id={`${uid}-shadow-${el.id}`} x="-60%" y="-60%" width="220%" height="220%" colorInterpolationFilters="sRGB">
