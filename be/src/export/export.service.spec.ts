@@ -19,11 +19,13 @@ describe('ExportService.request gating', () => {
   let orders: { projectVersion: number; status: string; paidAt: Date | null }[];
   let queue: { add: jest.Mock };
   let tx: Record<string, unknown>;
+  let prisma: { packagingProject: { findUniqueOrThrow: jest.Mock; update: jest.Mock } } & Record<string, unknown>;
   let service: ExportService;
 
   const project = {
     userId: 'u-1',
     status: 'ACTIVE',
+    title: 'Hộp nến',
     templateId: 'tuck-top',
     formulaVersion: 3,
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
@@ -47,7 +49,11 @@ describe('ExportService.request gating', () => {
         unlocks.find((u) => u.projectVersion === where.projectVersion && !u.refundedAt && u.expiresAt > now()) ?? null,
       );
     tx = {
-      $queryRaw: jest.fn(() => Promise.resolve([{ version }])),
+      // The project row, read once and locked (SELECT ... FOR UPDATE).
+      $queryRaw: jest.fn(() => Promise.resolve([{ ...project, version }])),
+      // syncProjectFileRefs
+      $executeRaw: jest.fn().mockResolvedValue(0),
+      packagingProject: { update: jest.fn() },
       orderItem: { findFirst: jest.fn(findPaidItem) },
       exportUnlock: {
         findFirst: jest.fn(findUnlock),
@@ -70,7 +76,7 @@ describe('ExportService.request gating', () => {
     };
     tx.creditLot = { findMany: jest.fn(noCreditRead), aggregate: jest.fn(noCreditRead) };
     tx.creditDebit = { createMany: jest.fn(noCreditRead) };
-    const prisma = {
+    prisma = {
       creditLot: { findMany: jest.fn(noCreditRead), aggregate: jest.fn(noCreditRead) },
       packagingProject: {
         findUniqueOrThrow: jest.fn(() => Promise.resolve({ ...project, version })),
@@ -131,6 +137,26 @@ describe('ExportService.request gating', () => {
     expect(unlocks).toEqual([]);
     // The project row is locked first, so an edit cannot slip in between the check and the job.
     expect((tx.$queryRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('FOR UPDATE');
+  });
+
+  it('reads the project once, locked, and checks, unlocks and freezes that same version in the job (docs/30 item 1)', async () => {
+    version = 7;
+    payOrder(7);
+    await service.request('p-1', 'SVG');
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect((tx.$queryRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('FOR UPDATE');
+    expect(prisma.packagingProject.findUniqueOrThrow).not.toHaveBeenCalled();
+    // FitCheck is saved in the same transaction, for the row read above.
+    expect((tx.packagingProject as { update: jest.Mock }).update).toHaveBeenCalledTimes(1);
+    expect(prisma.packagingProject.update).not.toHaveBeenCalled();
+    expect((tx.orderItem as { findFirst: jest.Mock }).findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ projectVersion: 7 }) }),
+    );
+    const { userId: _userId, status: _status, ...design } = project;
+    expect(jobs).toEqual([expect.objectContaining({ projectVersion: 7, design })]);
+    // The refs are recomputed in that transaction: the files of the frozen design stay alive until the job ends.
+    expect((tx.$executeRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('export_jobs');
   });
 
   it('after an edit (new version) the design needs a new paid order', async () => {

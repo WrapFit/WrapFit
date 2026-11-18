@@ -3,6 +3,7 @@ export * from './application/projects.service';
 export * from './domain/project-fitcheck';
 export * from './domain/project.policy';
 export * from './domain/project.types';
+export * from './infrastructure/project-file-refs';
 export * from './infrastructure/snapshot-retention';
 export * from './presentation/project-owner.guard';
 export * from './projects.module';

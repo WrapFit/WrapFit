@@ -350,16 +350,21 @@ model UnboxingExperience {
 }
 
 model ExportJob {
-  id          String         @id @default(uuid(7)) @db.Uuid
-  projectId   String         @map("project_id") @db.Uuid
-  fileType    ExportFileType @map("file_type")
-  status      ExportStatus   @default(PENDING)
-  storageKey  String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
-  errorLog    String?        @map("error_log")
-  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt DateTime?      @map("completed_at") @db.Timestamptz(3)
-  watermarked Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
-  unlockId    String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
+  id             String         @id @default(uuid(7)) @db.Uuid
+  projectId      String         @map("project_id") @db.Uuid
+  fileType       ExportFileType @map("file_type")
+  status         ExportStatus   @default(PENDING)
+  storageKey     String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
+  errorLog       String?        @map("error_log")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt    DateTime?      @map("completed_at") @db.Timestamptz(3)
+  watermarked    Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
+  unlockId       String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
+  // Phiên bản và bản thiết kế chốt lúc request (docs/30 mục 1): worker render từ `design`, không đọc dự án hiện tại.
+  // `design` = { title, templateId, formulaVersion, dimensions, canvasState } (canvas dạng lưu trữ, chứa key).
+  // NULL ở các job tạo trước migration 20261118000200.
+  projectVersion Int?           @map("project_version")
+  design         Json?
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   unlock  ExportUnlock?    @relation(fields: [unlockId], references: [id], onDelete: SetNull)

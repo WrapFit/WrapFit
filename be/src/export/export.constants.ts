@@ -1,4 +1,5 @@
 import type { ExportStatus } from '@prisma/client';
+import type { BoxDimensions, CanvasState } from '@wrapfit/shared';
 import type { JobsOptions } from 'bullmq';
 
 export const EXPORT_QUEUE = 'export';
@@ -9,6 +10,18 @@ export interface ExportJobData {
   exportJobId: string;
   /** Id of the HTTP request that queued the job, so worker logs can be matched with it. */
   requestId?: string;
+}
+
+/**
+ * Design an export job renders (`export_jobs.design`), frozen by ExportService.request with the project row locked: the
+ * version FitCheck and the unlock were checked for (docs/30 item 1). The canvas is in stored form (upload keys).
+ */
+export interface ExportDesign {
+  title: string;
+  templateId: string;
+  formulaVersion: number;
+  dimensions: BoxDimensions;
+  canvasState: CanvasState;
 }
 
 /** 3 attempts with exponential backoff (2 s, 4 s); finished jobs are trimmed from Redis, the DB keeps the history. */

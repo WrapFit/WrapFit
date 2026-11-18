@@ -1,13 +1,13 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PRINT_DPI, type BoxDimensions, type CanvasElement } from '@wrapfit/shared';
+import { PRINT_DPI, type BoxDimensions, type CanvasState } from '@wrapfit/shared';
 import { Job } from 'bullmq';
 import { ConfigService, EXPORT_COMPLETED, ExportCompletedEvent, runWithRequestId } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
-import { EXPORT_QUEUE, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
+import { EXPORT_QUEUE, ExportDesign, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
 import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
 import { fontUrlsOf } from '@wrapfit/shared';
@@ -24,6 +24,8 @@ export const MAX_ARTWORK_BYTES = 40 * 1024 * 1024;
  * Renders print files in the worker process (src/worker.ts). BullMQ retries a failed job 3 times; the ExportJob
  * row is marked FAILED only after the last attempt. Concurrency is set by EXPORT_CONCURRENCY.
  * A worker that dies mid-job (out of memory) never reaches the catch below: ExportReconcileTask fails those rows.
+ * BullMQ may hand a job out again (a render that blocks the event loop past the lock looks stalled), so both status
+ * changes are conditional: a finished job is not rendered again, and only one run records the completion.
  */
 @Processor(EXPORT_QUEUE)
 export class ExportProcessor extends WorkerHost implements OnApplicationBootstrap {
@@ -42,7 +44,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     this.worker.concurrency = this.config.get('export.concurrency');
   }
 
-  process(job: Job<ExportJobData>): Promise<{ storageKey: string }> {
+  process(job: Job<ExportJobData>): Promise<{ storageKey: string | null }> {
     const { exportJobId, requestId } = job.data;
     return runWithRequestId(requestId ?? `job:${exportJobId}`, async () => {
       try {
@@ -62,36 +64,28 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     });
   }
 
-  private async render(exportJobId: string): Promise<{ storageKey: string }> {
+  private async render(exportJobId: string): Promise<{ storageKey: string | null }> {
     const startedAt = Date.now();
-    const job = await this.prisma.exportJob.update({
-      where: { id: exportJobId },
+    const { count } = await this.prisma.exportJob.updateMany({
+      where: { id: exportJobId, status: UNFINISHED_EXPORT },
       data: { status: 'PROCESSING', errorLog: null },
-      select: {
-        fileType: true,
-        watermarked: true,
-        project: {
-          select: {
-            id: true,
-            userId: true,
-            title: true,
-            templateId: true,
-            formulaVersion: true,
-            dimensions: true,
-            canvasState: true,
-          },
-        },
-      },
+    });
+    if (!count) return this.alreadyFinished(exportJobId);
+
+    const job = await this.prisma.exportJob.findUniqueOrThrow({
+      where: { id: exportJobId },
+      select: { fileType: true, watermarked: true, design: true, project: { select: { id: true, userId: true } } },
     });
     const { project } = job;
-    const dimensions = project.dimensions as unknown as BoxDimensions;
+    // The design frozen by the request (docs/30 item 1), on every attempt: never the project as it is now.
+    const design = (job.design as unknown as ExportDesign | null) ?? (await this.currentDesign(project.id, exportJobId));
     // Stored keys of uploads -> URLs: the layout and the artwork loader work on URLs.
-    const canvasState = toClientCanvas(project.canvasState as { elements?: CanvasElement[] });
+    const canvasState = toClientCanvas(design.canvasState);
     const layout = buildPrintLayout({
-      title: project.title,
-      structure: project.templateId,
-      formulaVersion: project.formulaVersion,
-      dimensions,
+      title: design.title,
+      structure: design.templateId,
+      formulaVersion: design.formulaVersion,
+      dimensions: design.dimensions,
       elements: canvasState.elements ?? [],
     });
 
@@ -103,7 +97,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
         : job.fileType === 'PDF_A4_PRINT'
           ? await renderPdf(layout, artwork, { withCropMarks: true, paperSize: 'A4' })
           : job.fileType === 'PRINT_PACKAGE'
-            ? await renderPrintPackage(layout, artwork, titleSlug(project.title))
+            ? await renderPrintPackage(layout, artwork, titleSlug(design.title))
             : Buffer.from(job.fileType === 'SVG' ? renderSvg(layout, artwork, await svgImages(layout, artwork)) : renderDxf(layout));
 
     // Private bucket: the file is only handed out through the 15-minute links of ExportService.
@@ -119,12 +113,15 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     if (!stored) throw new Error('File storage is not configured');
 
     const completedAt = new Date();
-    await this.prisma.$transaction(async (tx) => {
-      await tx.exportJob.update({
-        where: { id: exportJobId },
+    const recorded = await this.prisma.$transaction(async (tx) => {
+      // Only the run that moves the job out of PROCESSING records it: a second run of the same job (handed out again
+      // by BullMQ) writes the same file under the same key and nothing else.
+      const { count: completed } = await tx.exportJob.updateMany({
+        where: { id: exportJobId, status: 'PROCESSING' },
         data: { status: 'COMPLETED', storageKey, completedAt },
       });
-      // Analytics dashboard (docs/17 S7), in the same transaction: a retried job never counts twice.
+      if (!completed) return false;
+      // Analytics dashboard (docs/17 S7), in the transaction that completes the job: counted once.
       await tx.productEvent.create({
         data: {
           type: 'EXPORT_COMPLETED',
@@ -134,19 +131,25 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
           createdAt: completedAt,
         },
       });
-      // UC-07: every print export leaves a version the user can come back to (stored canvas, keys included).
+      // UC-07: every print export leaves a version the user can come back to: the exported design (keys included).
       await tx.projectSnapshot.create({
         data: {
           projectId: project.id,
           name: `Bản xuất in ${job.fileType} ${completedAt.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
-          canvasState: project.canvasState as object,
-          dimensions: project.dimensions as object,
-          formulaVersion: project.formulaVersion,
+          canvasState: design.canvasState as object,
+          dimensions: design.dimensions as object,
+          formulaVersion: design.formulaVersion,
           isAutomatic: true,
         },
       });
+      // Also recomputes the file refs: the files of this job's design now count through the new snapshot only.
       await pruneAutomaticSnapshots(tx, project.id);
+      return true;
     });
+    if (!recorded) {
+      this.logger.warn(`Export ${exportJobId} was finished by another run meanwhile: not recorded twice`);
+      return { storageKey };
+    }
     // After the commit: NotificationsCoreModule (registered in this worker) stores "your file is ready" for the owner.
     const completed: ExportCompletedEvent = { exportJobId, projectId: project.id, userId: project.userId, fileType: job.fileType };
     this.events.emit(EXPORT_COMPLETED, completed);
@@ -154,6 +157,31 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       `Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed in ${Date.now() - startedAt} ms`,
     );
     return { storageKey };
+  }
+
+  /** A job handed out again after it ended: a COMPLETED one keeps its file, a FAILED one (ExportReconcileTask) stays failed. */
+  private async alreadyFinished(exportJobId: string): Promise<{ storageKey: string | null }> {
+    const row = await this.prisma.exportJob.findUnique({ where: { id: exportJobId }, select: { status: true, storageKey: true } });
+    if (row?.status === 'COMPLETED') {
+      this.logger.log(`Export ${exportJobId} is already completed: not rendered again`);
+      return { storageKey: row.storageKey };
+    }
+    this.logger.warn(`Export ${exportJobId} is ${row?.status ?? 'gone'}: not rendered`);
+    return { storageKey: null };
+  }
+
+  /** Jobs queued before migration 20261118000200 have no frozen design: they render the project as it is now. */
+  private async currentDesign(projectId: string, exportJobId: string): Promise<ExportDesign> {
+    this.logger.warn(`Export ${exportJobId} has no frozen design (queued before docs/30 item 1): rendering the current project`);
+    const project = await this.prisma.packagingProject.findUniqueOrThrow({
+      where: { id: projectId },
+      select: { title: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
+    });
+    return {
+      ...project,
+      dimensions: project.dimensions as unknown as BoxDimensions,
+      canvasState: project.canvasState as unknown as CanvasState,
+    };
   }
 
   /**

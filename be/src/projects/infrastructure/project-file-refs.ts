@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client';
 
 /**
- * Recomputes which uploads a project shows: every file reference of its canvas and of all its snapshots (canvases
- * store upload keys, see storage/asset-keys.ts). Call it in the transaction that changed the canvas or the snapshots,
- * so the refs always match what is stored. One statement; keys without a stored_files row are ignored.
+ * Recomputes which uploads a project shows: every file reference of its canvas, of all its snapshots and of the design
+ * of its unfinished exports (canvases store upload keys, see storage/asset-keys.ts). Call it in the transaction that
+ * changed one of them, so the refs always match what is stored. One statement; keys without a stored_files row are
+ * ignored.
  *
  * The file sources must stay the same as `fileReferences()` in storage/asset-keys.ts: `content` of the file elements
  * (logo, image, pattern), `style.fontUrl` of any element, and `url` of each `customFonts` entry. A source missing here
@@ -15,6 +16,10 @@ export async function syncProjectFileRefs(tx: Prisma.TransactionClient, projectI
       SELECT p.canvas_state AS canvas FROM packaging_projects p WHERE p.id = ${projectId}::uuid
       UNION ALL
       SELECT s.canvas_state FROM project_snapshots s WHERE s.project_id = ${projectId}::uuid
+      UNION ALL
+      -- The design an unfinished export renders (docs/30 item 1): its files must outlive a save that drops them.
+      SELECT j.design -> 'canvasState' FROM export_jobs j
+      WHERE j.project_id = ${projectId}::uuid AND j.status IN ('PENDING', 'PROCESSING') AND j.design IS NOT NULL
     ),
     shown AS (
       SELECT f.id

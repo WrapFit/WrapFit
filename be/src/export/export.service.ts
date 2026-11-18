@@ -8,7 +8,6 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ExportFileType, Prisma } from '@prisma/client';
-import type { BoxDimensions, CanvasElement } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
 import { ProductEventsService } from '../analytics';
 import { orderPaymentRequired } from '../billing';
@@ -19,12 +18,13 @@ import {
   DOWNLOAD_URL_TTL_SECONDS,
   EXPORT_JOB_OPTIONS,
   EXPORT_QUEUE,
+  ExportDesign,
   ExportJobData,
   FILE_FORMATS,
   titleSlug,
   RENDER_JOB,
 } from './export.constants';
-import { checkProject } from '../projects';
+import { checkProject, syncProjectFileRefs } from '../projects';
 
 const jobSelect = {
   id: true,
@@ -44,6 +44,13 @@ type JobRow = Prisma.ExportJobGetPayload<{ select: typeof jobSelect }>;
 /** What unlocked an export request: a paid print order (null), or an unlock bought before the print cart (its id). */
 interface ExportGrant {
   unlockId: string | null;
+}
+
+/** The project row read once, locked, by `request`. */
+interface LockedProject extends ExportDesign {
+  userId: string;
+  status: string;
+  version: number;
 }
 
 /** Download name of an export: "Hộp nến Tết" + PDF_CMYK -> "hop-nen-tet-pdf-cmyk.pdf". */
@@ -79,29 +86,58 @@ export class ExportService {
   async request(projectId: string, fileType: ExportFileType) {
     if (!this.storage.enabled) throw new ServiceUnavailableException('File storage is not configured');
 
-    const project = await this.prisma.packagingProject.findUniqueOrThrow({
-      where: { id: projectId },
-      select: { userId: true, status: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
-    });
-    if (project.status === 'DELETED') {
-      throw new ConflictException('Restore the project from the trash before exporting it');
-    }
+    // One transaction with the project row locked (docs/30 item 1): FitCheck, the unlock and the job all see the same
+    // version, and the job keeps that design, so the worker prints what was checked and paid for even if the user
+    // edits the project before it runs. ProjectOwnerGuard already made sure the caller is the owner.
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const [project] = await tx.$queryRaw<LockedProject[]>`
+        SELECT user_id AS "userId", status::text AS status, version, title, template_id AS "templateId",
+               formula_version AS "formulaVersion", dimensions, canvas_state AS "canvasState"
+        FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
+      if (!project) throw new NotFoundException('Project not found');
+      if (project.status === 'DELETED') {
+        throw new ConflictException('Restore the project from the trash before exporting it');
+      }
 
-    // FitCheck again on the server: the client's result is never trusted for production files.
-    const fitCheck = checkProject(
-      project.templateId,
-      project.dimensions as unknown as BoxDimensions,
-      (project.canvasState as { elements?: CanvasElement[] }).elements ?? [],
-      project.formulaVersion,
-    );
-    await this.prisma.packagingProject.update({
-      where: { id: projectId },
-      data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject, fitcheckScore: fitCheck.score },
+      // FitCheck again on the server: the client's result is never trusted for production files.
+      const fitCheck = checkProject(project.templateId, project.dimensions, project.canvasState.elements ?? [], project.formulaVersion);
+      await tx.packagingProject.update({
+        where: { id: projectId },
+        data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject, fitcheckScore: fitCheck.score },
+      });
+      // Returned, not thrown: the FitCheck result saved above must be committed.
+      if (!fitCheck.isValidForProduction) return { kind: 'blocked' as const, userId: project.userId, fitCheck };
+      const grant = await this.grant(tx, projectId, project.version);
+      if (!grant) return { kind: 'unpaid' as const };
+
+      const design: ExportDesign = {
+        title: project.title,
+        templateId: project.templateId,
+        formulaVersion: project.formulaVersion,
+        dimensions: project.dimensions,
+        canvasState: project.canvasState,
+      };
+      const job = await tx.exportJob.create({
+        data: {
+          projectId,
+          fileType,
+          unlockId: grant.unlockId,
+          projectVersion: project.version,
+          design: design as unknown as Prisma.InputJsonObject,
+        },
+        select: jobSelect,
+      });
+      // The files of this design stay alive until the job ends, even if the next save drops them.
+      await syncProjectFileRefs(tx, projectId);
+      return { kind: 'queued' as const, job, fitCheck };
     });
-    if (!fitCheck.isValidForProduction) {
+
+    if (outcome.kind === 'unpaid') throw orderPaymentRequired();
+    const { fitCheck } = outcome;
+    if (outcome.kind === 'blocked') {
       // Analytics dashboard (decision M9): errors that would have reached the printer.
       await this.events.record('EXPORT_BLOCKED_FITCHECK', {
-        userId: project.userId,
+        userId: outcome.userId,
         projectId,
         payload: { errors: fitCheck.violations.filter((v) => v.severity === 'error').length, fileType },
       });
@@ -110,12 +146,7 @@ export class ExportService {
         fitCheck,
       });
     }
-
-    // ProjectOwnerGuard already made sure the caller is the owner.
-    const job = await this.prisma.$transaction(async (tx) => {
-      const grant = await this.grant(tx, projectId);
-      return tx.exportJob.create({ data: { projectId, fileType, unlockId: grant.unlockId }, select: jobSelect });
-    });
+    const { job } = outcome;
 
     try {
       await withTimeout(
@@ -139,22 +170,19 @@ export class ExportService {
   }
 
   /**
-   * Whether the print file of this version may be exported. The print file is sold through the print cart: a paid order
+   * What unlocks the print file of this version, or null. The print file is sold through the print cart: a paid order
    * (not cancelled) holding this exact version unlocks it; Pro does not skip the cart and no export credit is read. An
-   * unlock bought with an export credit before this flow still counts until it expires. Runs in the transaction
-   * that creates the job, with the project row locked, so an edit cannot slip in between the check and the job.
+   * unlock bought with an export credit before this flow still counts until it expires. Runs in the transaction that
+   * creates the job, with the project row locked by `request` (`version` is the locked row's).
    */
-  private async grant(tx: Prisma.TransactionClient, projectId: string): Promise<ExportGrant> {
-    const [row] = await tx.$queryRaw<{ version: number }[]>`
-      SELECT version FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
-    if (await this.paidOrderHolds(tx, projectId, row.version)) return { unlockId: null };
+  private async grant(tx: Prisma.TransactionClient, projectId: string, version: number): Promise<ExportGrant | null> {
+    if (await this.paidOrderHolds(tx, projectId, version)) return { unlockId: null };
     const unlock = await tx.exportUnlock.findFirst({
-      where: validUnlock(projectId, row.version, new Date()),
+      where: validUnlock(projectId, version, new Date()),
       orderBy: { expiresAt: 'desc' },
       select: { id: true },
     });
-    if (unlock) return { unlockId: unlock.id };
-    throw orderPaymentRequired();
+    return unlock ? { unlockId: unlock.id } : null;
   }
 
   /** A paid print order (not cancelled) holds this version of the design. */

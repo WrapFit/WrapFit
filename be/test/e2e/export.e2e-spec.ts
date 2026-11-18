@@ -1,12 +1,18 @@
+import { getQueueToken } from '@nestjs/bullmq';
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ThrottlerStorage } from '@nestjs/throttler';
+import type { Queue } from 'bullmq';
 import QRCode from 'qrcode';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { CreditsService } from '../../src/billing';
+import { EXPORT_QUEUE, type ExportDesign } from '../../src/export/export.constants';
+import { buildPrintLayout } from '../../src/export/rendering/print-layout';
+import { renderDxf } from '../../src/export/rendering/print-renderers';
 import { PrismaService } from '../../src/shared/prisma';
+import { StorageService } from '../../src/storage';
 import { signUp } from './helpers/accounts';
 import { createPaidOrder } from './helpers/orders';
 import { WorkerModule } from '../../src/worker';
@@ -391,6 +397,90 @@ describe('Print export (e2e)', () => {
       await as(quinn).get(`/api/projects/${design}/exports/access`).expect(404);
       await api().post(`/api/projects/${design}/exports`).send({ fileType: 'SVG' }).expect(401);
       await exportOf({ fileType: 'SVG', useCredit: 'yes' }).expect(400);
+    });
+  });
+
+  // docs/30 item 1: the job keeps the design checked and paid for; the worker never reads the project as it is now.
+  describe('an export prints the version it was requested for', () => {
+    let sam: { id: string; cookie: string };
+    const dimsA = { length: 120, width: 80, height: 60 };
+    const dimsB = { length: 150, width: 100, height: 70 };
+    const text = (content: string) => ({ id: 't', type: 'text', panelId: 'panel_front', x: 10, y: 10, width: 60, height: 10, rotation: 0, content });
+    const create = async (elements: object[]) => {
+      const id = (
+        await as(sam).post('/api/projects').send({ templateId: 'tuck-top', title: 'Hộp A', dimensions: dimsA, canvasState: { elements } }).expect(201)
+      ).body.id as string;
+      await payOrderFor(sam.id, id);
+      return id;
+    };
+    // While the queue is paused the worker takes nothing: the user edits the design between the request and the render.
+    const whilePaused = async <T>(steps: () => Promise<T>): Promise<T> => {
+      const queue = app.get<Queue>(getQueueToken(EXPORT_QUEUE));
+      await queue.pause();
+      try {
+        return await steps();
+      } finally {
+        await queue.resume();
+      }
+    };
+
+    beforeAll(async () => {
+      sam = await register('sam');
+    });
+
+    it('renders the dimensions and the canvas of the request, not an edit saved before the worker ran', async () => {
+      const id = await create([text('Bản A')]);
+      const versionA = (await prisma.packagingProject.findUniqueOrThrow({ where: { id } })).version;
+      const jobId = await whilePaused(async () => {
+        const started = await as(sam).post(`/api/projects/${id}/exports`).send({ fileType: 'DXF' }).expect(202);
+        await as(sam).patch(`/api/projects/${id}`).send({ dimensions: dimsB, canvasState: { elements: [text('Bản B')] } }).expect(200);
+        return started.body.jobId as string;
+      });
+      const done = await waitFor(jobId, sam);
+      expect(done.status).toBe('COMPLETED');
+
+      const row = await prisma.exportJob.findUniqueOrThrow({ where: { id: jobId } });
+      const design = row.design as unknown as ExportDesign;
+      expect(row.projectVersion).toBe(versionA);
+      expect(design.dimensions).toMatchObject(dimsA);
+      const current = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+      expect(current.version).toBeGreaterThan(versionA);
+      expect(current.dimensions).toMatchObject(dimsB);
+
+      const dxfOf = (dimensions: unknown) =>
+        renderDxf(buildPrintLayout({ title: 'Hộp A', structure: 'tuck-top', formulaVersion: design.formulaVersion, dimensions: dimensions as never, elements: [] }));
+      const file = await (await fetch(done.downloadUrl)).text();
+      expect(file).toBe(dxfOf(design.dimensions));
+      expect(file).not.toBe(dxfOf(current.dimensions));
+
+      // The automatic snapshot of the export is the exported design too.
+      const snapshot = await prisma.projectSnapshot.findFirstOrThrow({ where: { projectId: id, isAutomatic: true }, orderBy: { createdAt: 'desc' } });
+      expect(snapshot.dimensions).toMatchObject(dimsA);
+      expect(snapshot.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Bản A' })] });
+    });
+
+    it('keeps an image of the requested version through the maintenance run, though the next save dropped it', async () => {
+      const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 120 });
+      const ticket = (
+        await as(sam).post('/api/storage/presigned-upload').send({ purpose: 'IMAGE', contentType: 'image/png', size: png.length }).expect(200)
+      ).body;
+      expect((await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: new Uint8Array(png) })).status).toBe(200);
+      const image = { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0, content: ticket.fileUrl, dpi: 300 };
+      const id = await create([image]);
+
+      const jobId = await whilePaused(async () => {
+        const started = await as(sam).post(`/api/projects/${id}/exports`).send({ fileType: 'SVG' }).expect(202);
+        await as(sam).patch(`/api/projects/${id}`).send({ canvasState: { elements: [text('Không còn ảnh')] } }).expect(200);
+        // Uploaded more than a day ago: only the pending job still shows the image.
+        const dayAgo = new Date(Date.now() - 25 * 60 * 60 * 1000);
+        await prisma.storedFile.updateMany({ where: { userId: sam.id, purpose: 'IMAGE' }, data: { createdAt: dayAgo, confirmedAt: dayAgo } });
+        await app.get(StorageService).dropUnusedUploads();
+        expect((await fetch(ticket.fileUrl)).status).toBe(200);
+        return started.body.jobId as string;
+      });
+      const done = await waitFor(jobId, sam);
+      expect(done).toMatchObject({ status: 'COMPLETED', error: null });
+      expect(await (await fetch(done.downloadUrl)).text()).toContain(`href="data:image/png;base64,${png.toString('base64')}"`);
     });
   });
 
