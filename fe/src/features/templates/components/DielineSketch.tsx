@@ -3,6 +3,7 @@
 import { CURRENT_FORMULA_VERSION, generateDielinePieces, type BoxDimensions, type BoxStructureType } from "@wrapfit/shared";
 import React, { useId, useMemo } from "react";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
+import { useHydrated } from "@/hooks/dom";
 
 interface DielineSketchProps {
   structure: BoxStructureType;
@@ -42,13 +43,21 @@ export function DielineSketch({ structure, dimensions, className = "", label, pa
     }
   }, [structure, length, width, height, paperThickness]);
 
+  // Drawn in the browser only: Node and the browser differ in the last digit of the trigonometry (pillow, gable…), so a
+  // server-rendered sketch never matches on hydration. Until then an empty box of the same shape holds the layout.
+  const hydrated = useHydrated();
+
   if (!layout) return null;
   const pad = Math.max(layout.viewWidth, layout.viewHeight) * 0.04;
   const filled = paper !== "none";
+  const r = (n: number) => Math.round(n * 100) / 100;
+  if (!hydrated) {
+    return <svg viewBox={`0 0 ${r(layout.viewWidth + pad * 2)} ${r(layout.viewHeight + pad * 2)}`} className={className} aria-hidden />;
+  }
 
   return (
     <svg
-      viewBox={`${-pad} ${-pad} ${layout.viewWidth + pad * 2} ${layout.viewHeight + pad * 2}`}
+      viewBox={`${r(-pad)} ${r(-pad)} ${r(layout.viewWidth + pad * 2)} ${r(layout.viewHeight + pad * 2)}`}
       className={className}
       role={label ? "img" : undefined}
       aria-label={label}
@@ -64,7 +73,7 @@ export function DielineSketch({ structure, dimensions, className = "", label, pa
         </pattern>
       </defs>
       {layout.placed.map(({ piece, at, sheet }) => (
-        <g key={piece.name} transform={`translate(${at} ${(layout.viewHeight - piece.geometry.totalBoundingBox.height) / 2})`}>
+        <g key={piece.name} transform={`translate(${r(at)} ${r((layout.viewHeight - piece.geometry.totalBoundingBox.height) / 2)})`}>
           {filled && <path data-preview="" d={sheet} fill={paper} filter={`url(#${uid}-lift)`} />}
           {filled &&
             piece.geometry.glueAreas?.map((area, index) => (
