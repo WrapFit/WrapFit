@@ -10,6 +10,7 @@ import { middleware } from '../../src/app.middleware';
 import { CreditsService } from '../../src/billing';
 import { QUEUE_ADD_TIMEOUT_MS } from '../../src/common';
 import { EXPORT_QUEUE, type ExportDesign } from '../../src/export/export.constants';
+import { failExport } from '../../src/export/export-failure';
 import { ExportReconcileTask } from '../../src/export/export-reconcile.task';
 import { ExportService } from '../../src/export/export.service';
 import { buildPrintLayout } from '../../src/export/rendering/print-layout';
@@ -17,6 +18,7 @@ import { renderDxf } from '../../src/export/rendering/print-renderers';
 import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { signUp } from './helpers/accounts';
+import { holdTransaction, untilLockWaiters } from './helpers/locks';
 import { createPaidOrder } from './helpers/orders';
 import { WorkerModule } from '../../src/worker';
 import { deleteUsers } from './helpers/cleanup';
@@ -506,6 +508,29 @@ describe('Print export (e2e)', () => {
       expect(await notifications()).toBe(1);
     }, 30_000);
 
+    // Review round 3: a connection that drops after the command was written may leave the job in Redis.
+    it('a queue error after the job was sent (connection closed) answers 202 and the job still renders', async () => {
+      const id = await create([text('Mất kết nối')]);
+      const queue = (app.get(ExportService) as unknown as { queue: Queue }).queue;
+      const add = queue.add.bind(queue);
+      const dropped = jest.spyOn(queue, 'add').mockImplementationOnce(async (...args: Parameters<Queue['add']>) => {
+        await add(...args); // Redis has the job; the answer is lost with the connection
+        throw new Error('Connection is closed.');
+      });
+      await queue.pause();
+      let started: request.Response;
+      try {
+        started = await as(sam).post(`/api/projects/${id}/exports`).send({ fileType: 'DXF' });
+      } finally {
+        await queue.resume();
+        dropped.mockRestore();
+      }
+      expect(started.status).toBe(202);
+      expect(started.body).toMatchObject({ jobId: expect.any(String), status: 'PENDING' });
+      const done = await waitFor(started.body.jobId, sam);
+      expect(done).toMatchObject({ id: started.body.jobId, status: 'COMPLETED' });
+    });
+
     it('keeps an image of the requested version through the maintenance run, though the next save dropped it', async () => {
       const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 120 });
       const ticket = (
@@ -558,6 +583,48 @@ describe('Print export (e2e)', () => {
     } finally {
       await queue.resume();
     }
+  });
+
+  // Review round 3: two failed jobs of one project recompute its refs one after the other (project row locked first).
+  it('two jobs failing at once both release an image only their designs kept', async () => {
+    const una = await register('una');
+    const image = await uploadPngTo(una);
+    const element = { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0, content: image.url, dpi: 300 };
+    const id = (
+      await as(una).post('/api/projects').send({ templateId: 'tuck-top', title: 'Hai job lỗi', dimensions: { length: 120, width: 80, height: 60 }, canvasState: { elements: [element] } }).expect(201)
+    ).body.id as string;
+    await payOrderFor(una.id, id);
+    const queue = app.get<Queue>(getQueueToken(EXPORT_QUEUE));
+    await queue.pause();
+    const jobIds: string[] = [];
+    try {
+      for (const fileType of ['SVG', 'PDF_CMYK']) {
+        jobIds.push((await as(una).post(`/api/projects/${id}/exports`).send({ fileType }).expect(202)).body.jobId);
+      }
+      for (const jobId of jobIds) await queue.remove(jobId);
+    } finally {
+      await queue.resume();
+    }
+    await as(una).patch(`/api/projects/${id}`).send({ canvasState: { elements: [] } }).expect(200);
+    const imageRefs = () => prisma.projectFileRef.count({ where: { projectId: id, storedFile: { key: image.key } } });
+    expect(await imageRefs()).toBe(1);
+
+    // A stale ref the next recompute deletes, held by another transaction: each recompute stops on it, so both
+    // failures overlap (before the fix, each then saw the other job still unfinished and kept the image).
+    const stale = await uploadPngTo(una);
+    const staleFile = await prisma.storedFile.findUniqueOrThrow({ where: { key: stale.key } });
+    await prisma.projectFileRef.create({ data: { projectId: id, storedFileId: staleFile.id } });
+    const holder = holdTransaction(prisma, (tx) =>
+      tx.$queryRaw`SELECT 1 FROM project_file_refs WHERE project_id = ${id}::uuid AND stored_file_id = ${staleFile.id}::uuid FOR UPDATE`,
+    );
+    await holder.started;
+    const failing = Promise.all(jobIds.map((jobId) => failExport(prisma, jobId, 'e2e')));
+    await untilLockWaiters(prisma, 2);
+    holder.release();
+    await holder.done;
+    expect(await failing).toEqual([true, true]);
+
+    expect(await imageRefs()).toBe(0);
   });
 
   it('deletes the exported files with the project', async () => {

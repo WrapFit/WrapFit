@@ -9,7 +9,7 @@ import type {
   SnapshotContent,
 } from '../application/ports/snapshot.repository.port';
 import type { ProjectDetail, SnapshotSummary } from '../domain/project.types';
-import { syncProjectFileRefs } from './project-file-refs';
+import { lockProjectForRefs, syncProjectFileRefs } from './project-file-refs';
 import { pruneAutomaticSnapshots } from './snapshot-retention';
 import { detailSelect, json, nullableJson, snapshotSummarySelect, toDetail, toSnapshotSummary } from './project.select';
 
@@ -45,6 +45,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
    */
   async create(projectId: string, snapshot: NewSnapshot): Promise<SnapshotSummary> {
     const row = await this.prisma.$transaction(async (tx) => {
+      await lockProjectForRefs(tx, projectId); // the project row before the snapshot row (project-file-refs.ts)
       const created = await tx.projectSnapshot.create({
         data: this.toData(projectId, snapshot),
         select: snapshotSummarySelect,
@@ -65,6 +66,8 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
 
   async delete(projectId: string, snapshotId: string): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
+      // The project row before the snapshot row: a restore holds the first and prunes snapshots (project-file-refs.ts).
+      await lockProjectForRefs(tx, projectId);
       const { count } = await tx.projectSnapshot.deleteMany({ where: { id: snapshotId, projectId } });
       if (count) await syncProjectFileRefs(tx, projectId); // the images only this version showed are released
       return count > 0;

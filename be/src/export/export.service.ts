@@ -11,7 +11,7 @@ import { ExportFileType, Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { ProductEventsService } from '../analytics';
 import { orderPaymentRequired } from '../billing';
-import { currentRequestId, QUEUE_ADD_TIMEOUT_MS, TimeoutError, withTimeout } from '../common';
+import { currentRequestId, neverSentToRedis, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { StorageService } from '../storage';
 import {
@@ -160,15 +160,16 @@ export class ExportService {
         'export queue',
       );
     } catch (error) {
-      if (error instanceof TimeoutError) {
-        // No answer is not a refusal: queue.add goes on and Redis may already have the job, which a worker will run.
-        // The job stays PENDING and the client follows it; one that never reached the queue is failed by
-        // ExportReconcileTask after STUCK_EXPORT_AFTER_MS.
-        this.logger.warn(`Export ${job.id}: no answer from the queue within ${QUEUE_ADD_TIMEOUT_MS} ms, left PENDING`);
+      if (!neverSentToRedis(error)) {
+        // Outcome unknown: no answer within QUEUE_ADD_TIMEOUT_MS (queue.add goes on), or a connection lost after the
+        // command was written. Redis may have the job, which a worker will run: the job stays PENDING and the client
+        // follows it. One that never reached the queue is failed by ExportReconcileTask after STUCK_EXPORT_AFTER_MS.
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Export ${job.id}: queue outcome unknown (${reason}), left PENDING`);
         return { jobId: job.id, status: job.status, fitCheck };
       }
-      // A refusal: the producer connection does not hold commands while Redis is down, so the job was not queued.
-      // Only a PENDING row is failed, never one a worker already took.
+      // Refused before anything was sent (Redis down, offline queue off): the job is not queued. Only a PENDING row
+      // is failed, never one a worker already took.
       this.logger.error('Could not queue the export', error instanceof Error ? error.stack : String(error));
       if (await failExport(this.prisma, job.id, 'The export queue is unavailable', ['PENDING'])) {
         throw new ServiceUnavailableException('The export queue is unavailable, try again in a moment');

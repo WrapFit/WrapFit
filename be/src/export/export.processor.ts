@@ -6,7 +6,7 @@ import { Job } from 'bullmq';
 import { ConfigService, EXPORT_COMPLETED, ExportCompletedEvent, runWithRequestId } from '../common';
 import { NotificationsService } from '../notifications';
 import { PrismaService } from '../shared/prisma';
-import { pruneAutomaticSnapshots } from '../projects';
+import { lockProjectForRefs, pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
 import { failExport } from './export-failure';
 import { EXPORT_QUEUE, ExportDesign, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
@@ -114,6 +114,8 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     const completedAt = new Date();
     const completed: ExportCompletedEvent = { exportJobId, projectId: project.id, userId: project.userId, fileType: job.fileType };
     const recorded = await this.prisma.$transaction(async (tx) => {
+      // The project row before the job row, as failExport does (project-file-refs.ts).
+      await lockProjectForRefs(tx, project.id);
       // Only the run that moves the job out of PROCESSING records it: a second run of the same job (handed out again
       // by BullMQ) writes the same file under the same key and nothing else.
       const { count: finished } = await tx.exportJob.updateMany({

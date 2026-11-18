@@ -66,7 +66,7 @@ describe('ExportService.request gating', () => {
       },
       exportJob: {
         // failExport, when the queue refuses the job.
-        updateManyAndReturn: jest.fn().mockResolvedValue([{ projectId: 'p-1' }]),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         create: jest.fn(({ data }) => {
           const job = { id: `job-${jobs.length + 1}`, status: 'PENDING', ...data };
           jobs.push(job);
@@ -88,7 +88,10 @@ describe('ExportService.request gating', () => {
       exportUnlock: { findFirst: jest.fn(findUnlock) },
       orderItem: { findFirst: jest.fn(findPaidItem) },
       // The status read after a refused queue found the job taken.
-      exportJob: { findUniqueOrThrow: jest.fn().mockResolvedValue({ status: 'PROCESSING' }) },
+      exportJob: {
+        findUnique: jest.fn().mockResolvedValue({ projectId: 'p-1' }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ status: 'PROCESSING' }),
+      },
       // Interactive transaction; when the callback throws, what it wrote is rolled back like PostgreSQL would.
       $transaction: jest.fn(async (fn: (client: unknown) => unknown) => {
         const [savedUnlocks, savedJobs] = [[...unlocks], [...jobs]];
@@ -160,7 +163,8 @@ describe('ExportService.request gating', () => {
     const { userId: _userId, status: _status, ...design } = project;
     expect(jobs).toEqual([expect.objectContaining({ projectVersion: 7, design })]);
     // The refs are recomputed in that transaction: the files of the frozen design stay alive until the job ends.
-    expect((tx.$executeRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('export_jobs');
+    const sql = (tx.$executeRaw as jest.Mock).mock.calls.map(([strings]) => (strings as string[]).join('?'));
+    expect(sql.some((text) => text.includes('WITH canvases') && text.includes('export_jobs'))).toBe(true);
   });
 
   it('after an edit (new version) the design needs a new paid order', async () => {
@@ -191,7 +195,7 @@ describe('ExportService.request gating', () => {
   });
 
   describe('queueing (docs/30 item 6, review round 2)', () => {
-    const exportJob = () => tx.exportJob as { updateManyAndReturn: jest.Mock };
+    const exportJob = () => tx.exportJob as { updateMany: jest.Mock };
     beforeEach(() => {
       payOrder(1);
       jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
@@ -201,23 +205,30 @@ describe('ExportService.request gating', () => {
     it('a queue that does not answer in time leaves the job PENDING and answers it: Redis may already have it', async () => {
       queue.add.mockRejectedValue(new TimeoutError('export queue timed out after 3000 ms'));
       await expect(service.request('p-1', 'SVG')).resolves.toEqual({ jobId: 'job-1', status: 'PENDING', fitCheck: expect.any(Object) });
-      expect(exportJob().updateManyAndReturn).not.toHaveBeenCalled();
+      expect(exportJob().updateMany).not.toHaveBeenCalled();
     });
 
     it('a queue that refuses fails the PENDING job (refs recomputed) and answers 503', async () => {
       queue.add.mockRejectedValue(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
       await expect(service.request('p-1', 'SVG')).rejects.toThrow('The export queue is unavailable');
-      expect(exportJob().updateManyAndReturn).toHaveBeenCalledWith({
+      expect(exportJob().updateMany).toHaveBeenCalledWith({
         where: { id: 'job-1', status: { in: ['PENDING'] } },
         data: { status: 'FAILED', errorLog: 'The export queue is unavailable' },
-        select: { projectId: true },
       });
       expect((tx.$executeRaw as jest.Mock).mock.calls.at(-1)[0].join('?')).toContain('project_file_refs');
     });
 
+    it('a connection lost after the command was written leaves the job PENDING too: Redis may have it', async () => {
+      for (const lost of [new Error('Connection is closed.'), new Error('Reached the max retries per request limit (which is 1).')]) {
+        queue.add.mockRejectedValueOnce(lost);
+        await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ status: 'PENDING' });
+      }
+      expect(exportJob().updateMany).not.toHaveBeenCalled();
+    });
+
     it('never fails a job a worker already took: answers it with its current status', async () => {
-      queue.add.mockRejectedValue(new Error('Connection is closed.'));
-      exportJob().updateManyAndReturn.mockResolvedValueOnce([]);
+      queue.add.mockRejectedValue(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
+      exportJob().updateMany.mockResolvedValueOnce({ count: 0 });
       await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ jobId: 'job-1', status: 'PROCESSING' });
     });
   });
