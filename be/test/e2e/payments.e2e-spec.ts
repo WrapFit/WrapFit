@@ -5,6 +5,7 @@ import { ThrottlerStorage } from '@nestjs/throttler';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
+import { PlanService } from '../../src/billing';
 import { crc16, newPaymentReference } from '../../src/payments';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
@@ -233,6 +234,45 @@ describe('Payments API (e2e)', () => {
     expect(subs).toHaveLength(1);
     expect(subs[0].currentPeriodEnd.getTime() - sub.currentPeriodStart.getTime()).toBe(60 * DAY_MS);
     expect(subs[0].paymentId).toBe(second.id);
+  });
+
+  // docs/30 item 3: each confirmation only locks its own payment; the subscription is now read under a per-user lock.
+  describe('two Pro payments confirmed at the same time', () => {
+    const confirmBoth = async (user: Account) => {
+      const [a, b] = [await payToSimulate(user, { purpose: 'PRO_MONTH' }), await payToSimulate(user, { purpose: 'PRO_MONTH' })];
+      // A slow plan sync (run before the subscription is read) makes both confirmations read it before either commits.
+      const plans = app.get(PlanService);
+      const sync = plans.sync.bind(plans);
+      const slow = jest.spyOn(plans, 'sync').mockImplementation(async (...args) => {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        return sync(...args);
+      });
+      const answers = await Promise.all([confirm(user, a.id), confirm(user, b.id)]).finally(() => slow.mockRestore());
+      expect(answers.map((res) => res.status)).toEqual([200, 200]);
+      const payments = await prisma.payment.findMany({ where: { id: { in: [a.id, b.id] } }, select: { status: true } });
+      expect(payments.map((payment) => payment.status)).toEqual(['PAID', 'PAID']);
+      const subs = await prisma.subscription.findMany({ where: { userId: user.id } });
+      expect(subs).toHaveLength(1);
+      expect(subs[0].status).toBe('ACTIVE');
+      return subs[0];
+    };
+
+    it('a Pro member gets both periods: end + 60 days', async () => {
+      const user = await register('pro-race');
+      const first = await payToSimulate(user, { purpose: 'PRO_MONTH' });
+      await confirm(user, first.id).expect(200);
+      const before = await prisma.subscription.findFirstOrThrow({ where: { userId: user.id, status: 'ACTIVE' } });
+
+      const after = await confirmBoth(user);
+      expect(after.id).toBe(before.id);
+      expect(after.currentPeriodEnd.getTime() - before.currentPeriodEnd.getTime()).toBe(60 * DAY_MS);
+    });
+
+    it('without Pro, both payments go through and start one 60-day period', async () => {
+      const user = await register('pro-race-new');
+      const sub = await confirmBoth(user);
+      expect(sub.currentPeriodEnd.getTime() - sub.currentPeriodStart.getTime()).toBe(60 * DAY_MS);
+    });
   });
 
   it('pays a sample order: one QR per order, the order becomes PAID with the payment linked', async () => {

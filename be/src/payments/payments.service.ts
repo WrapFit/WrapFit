@@ -29,7 +29,7 @@ import {
 } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
 import { CreditsService, PlanService, xuForExportCredits } from '../billing';
-import { ConfigService, encodePageCursor, olderThan } from '../common';
+import { ADVISORY_LOCK, ConfigService, encodePageCursor, lockForTransaction, olderThan } from '../common';
 import { OrdersService } from '../orders';
 import { PrismaService } from '../shared/prisma';
 import type { CreatePaymentDto } from './dto/create-payment.dto';
@@ -427,6 +427,12 @@ export class PaymentsService {
         tx,
       );
     } else if ('periodDays' in metadata) {
+      // One Pro payment of a user at a time (docs/30 item 3). Each transaction only locks its own payment, so two
+      // payments confirmed at once read the same period end and both wrote end + 30 days, or both created a
+      // subscription and the second failed on subscriptions_user_id_active_key. The second now waits here and reads
+      // what the first committed. Not a lock on the users row: UsersService.remove holds it while it waits for the
+      // payment locks, which would deadlock with this transaction.
+      await lockForTransaction(tx, ADVISORY_LOCK.SUBSCRIPTION, payment.userId);
       // Ends a Pro period that is over first, so a renewal after it starts from now, not from the old end.
       await this.plans.sync(payment.userId, tx, now);
       const active = await tx.subscription.findFirst({

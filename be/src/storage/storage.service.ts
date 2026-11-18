@@ -23,7 +23,7 @@ import {
 import { randomUUID } from 'crypto';
 import { create as createFont } from 'fontkit';
 import { cleanFamilyName, missingVietnamese } from '@wrapfit/shared';
-import { ConfigService } from '../common';
+import { ADVISORY_LOCK, ConfigService, lockForTransaction } from '../common';
 import { PrismaService } from '../shared/prisma';
 import type { IProjectFiles, ProjectFile, UploadPurpose } from '../projects';
 import { assetUrl, configureAssetBase, PRIVATE_KEY_PREFIX, uploadKeyOf } from './asset-keys';
@@ -190,7 +190,7 @@ export class StorageService implements IProjectFiles {
     file: { key: string; purpose: FilePurpose; contentType: string; size: number; projectId?: string },
   ): Promise<{ id: string }> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(4801, hashtext(${userId}))`;
+      await lockForTransaction(tx, ADVISORY_LOCK.STORAGE_QUOTA, userId);
       await this.assertQuota(userId, file.size, tx);
       return tx.storedFile.create({ data: { userId, ...file }, select: { id: true } });
     });

@@ -233,6 +233,32 @@ describe('PaymentsService', () => {
     await expect(missing.service.confirmPaid(missing.tx, 'p3', { via: 'ADMIN' })).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('confirmPaid of a Pro payment takes the per-user lock before it reads the subscription (docs/30 item 3)', async () => {
+    const pendingPro = { ...pendingXu, purpose: 'PRO_MONTH', amountVnd: 99_000, metadata: { periodDays: 30 } };
+    const { tx, rawTx, service } = confirmFixture(pendingPro);
+    const calls: string[] = [];
+    Object.assign(rawTx, {
+      $executeRaw: jest.fn((sql: TemplateStringsArray, ...values: unknown[]) => {
+        calls.push(`lock ${sql.join('?')} ${values.join(',')}`);
+        return Promise.resolve(1);
+      }),
+      subscription: {
+        findFirst: jest.fn(() => {
+          calls.push('findFirst');
+          return Promise.resolve(null);
+        }),
+        create: jest.fn(() => {
+          calls.push('create');
+          return Promise.resolve({});
+        }),
+      },
+    });
+
+    await service.confirmPaid(tx, 'p3', { via: 'SEPAY_WEBHOOK' });
+
+    expect(calls).toEqual([expect.stringMatching(/^lock SELECT pg_advisory_xact_lock\(\?::int, hashtext\(\?\)\) 4802,u1$/), 'findFirst', 'create']);
+  });
+
   describe('confirmPaid of a sample order (docs/25 item 2)', () => {
     const pendingOrder = { ...pendingXu, purpose: 'SAMPLE_ORDER', provider: 'VIETQR', amountVnd: 49_000, metadata: { orderId: 'o1' } };
     const orderFixture = (lockPayable: jest.Mock) => {
