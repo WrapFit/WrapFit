@@ -241,11 +241,19 @@ export class StorageService implements IProjectFiles {
       size: file.body.length,
       confirmedAt: new Date(), // written by the server itself: it exists
     };
-    await this.prisma.storedFile.upsert({
-      where: { key: file.key },
-      create: { key: file.key, ...record },
-      update: record,
-    });
+    try {
+      await this.prisma.storedFile.upsert({
+        where: { key: file.key },
+        create: { key: file.key, ...record },
+        update: record,
+      });
+    } catch (error) {
+      // The project (or the user) was deleted between the upload and the row (docs/30 review round 4): nothing will
+      // ever list this object, so it goes now. deleteObjects records a failed delete in orphaned_objects for a retry.
+      // Any other error keeps the object: a row may already point at it (a QR code stored again).
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') await this.deleteObjects([file.key]);
+      throw error;
+    }
     return true;
   }
 

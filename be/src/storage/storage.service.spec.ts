@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { BadRequestException, ForbiddenException, HttpStatus, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import type { ConfigService } from '../common';
@@ -236,6 +237,31 @@ describe('StorageService', () => {
           data: expect.objectContaining({ lastError: 'AccessDenied' }),
         }),
       );
+    });
+  });
+
+  describe('putGeneratedFile when the row cannot be written (docs/30 review round 4)', () => {
+    const qr = { userId: 'u-1', projectId: 'p-1', key: 'projects/p-1/unboxing/qr-x.png', purpose: 'QR_CODE' as const, contentType: 'image/png', body: Buffer.from('qr') };
+    const commands = (send: jest.SpyInstance) => send.mock.calls.map(([command]) => command.constructor.name);
+
+    it('deletes the uploaded object when its project (or user) is gone: P2003', async () => {
+      const service = build();
+      const send = mockS3(service, async () => ({}));
+      const gone = new Prisma.PrismaClientKnownRequestError('Foreign key constraint violated on the constraint: `stored_files_project_id_fkey`', {
+        code: 'P2003',
+        clientVersion: 'test',
+      });
+      prisma.storedFile.upsert = jest.fn().mockRejectedValue(gone);
+      await expect(service.putGeneratedFile(qr)).rejects.toBe(gone);
+      expect(commands(send)).toEqual(['PutObjectCommand', 'DeleteObjectsCommand']);
+    });
+
+    it('keeps the object on any other error: a row may already point at it', async () => {
+      const service = build();
+      const send = mockS3(service, async () => ({}));
+      prisma.storedFile.upsert = jest.fn().mockRejectedValue(new Error('connection reset'));
+      await expect(service.putGeneratedFile(qr)).rejects.toThrow('connection reset');
+      expect(commands(send)).toEqual(['PutObjectCommand']);
     });
   });
 

@@ -971,6 +971,63 @@ describe('Projects API (e2e)', () => {
       expect((await fetch(image)).status).toBe(200);
     });
 
+    // Review round 4: a generated file whose project is deleted between its upload and its row.
+    it('a QR code stored while its project is deleted leaves no object behind', async () => {
+      const project = await trashedProject('Xoá giữa lúc lưu QR');
+      const storage = app.get(StorageService);
+      const client = (storage as unknown as { client: { send: (command: unknown) => Promise<unknown> } }).client;
+      const send = client.send.bind(client);
+      // The object is in the bucket; the project goes before the row is written.
+      const between = jest.spyOn(client, 'send').mockImplementationOnce(async (command: unknown) => {
+        const output = await send(command);
+        await prisma.packagingProject.delete({ where: { id: project.id } });
+        return output;
+      });
+      const key = `projects/${project.id}/unboxing/qr-gone-${run}.png`;
+      try {
+        await expect(
+          storage.putGeneratedFile({ userId: carol.id, projectId: project.id, key, purpose: 'QR_CODE', contentType: 'image/png', body: Buffer.from('qr') }),
+        ).rejects.toThrow();
+      } finally {
+        between.mockRestore();
+      }
+      expect(await prisma.storedFile.findUnique({ where: { key } })).toBeNull();
+      await expect(storage.getObject(key)).rejects.toThrow();
+    });
+
+    it('the purge starts again when the remix it hands a file to is deleted meanwhile', async () => {
+      const source = (await as(carol).post('/api/projects').send(newProject({ title: 'Gốc, remix đang bị xoá' })).expect(201)).body.id as string;
+      const image = await uploadPng(app, carol.cookie, 'IMAGE', source);
+      const element = { id: 'img', type: 'image', panelId: 'front', x: 1, y: 1, width: 5, height: 5, rotation: 0, content: image };
+      await as(carol).patch(`/api/projects/${source}`).send({ canvasState: { elements: [element] } }).expect(200);
+      const remix = (await as(carol).post(`/api/projects/${source}/duplicate`).expect(201)).body.id as string;
+      const key = image.slice(image.indexOf('users/'));
+      for (const id of [source, remix]) await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+      // Only the source is due for the purge; the remix is deleted by hand at the same time.
+      await prisma.packagingProject.update({ where: { id: source }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });
+      await prisma.projectSnapshot.create({ data: { projectId: remix, name: 'Mốc', canvasState: { elements: [] }, dimensions: {} } });
+
+      // Holding a snapshot row pauses the manual deletion after it locked the remix.
+      const pause = hold((tx) => tx.$queryRaw`SELECT id FROM project_snapshots WHERE project_id = ${remix}::uuid FOR UPDATE`);
+      await pause.started;
+      const deleting = as(carol).delete(`/api/projects/${remix}`).then((res) => res);
+      await untilWaiting(1);
+      // The purge hands the image to the remix and waits for its lock.
+      const purging = app.get(ProjectsService).purgeExpiredTrash().then(
+        (count) => ({ count }),
+        (error: unknown) => ({ error }),
+      );
+      await untilWaiting(2);
+      pause.release();
+      await pause.done;
+
+      expect((await deleting).status).toBe(204);
+      expect(await purging).toEqual({ count: expect.any(Number) });
+      expect(await prisma.packagingProject.findUnique({ where: { id: source } })).toBeNull();
+      expect(await prisma.storedFile.findUnique({ where: { key } })).toBeNull();
+      expect((await fetch(image)).status).toBe(404);
+    });
+
     it('the trash purge leaves a project a checkout is writing an order for', async () => {
       const project = await trashedProject('Dọn thùng rác giữa lúc đặt đơn');
       await prisma.packagingProject.update({ where: { id: project.id }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });

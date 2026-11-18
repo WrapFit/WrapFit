@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { FitCheckReport } from '@wrapfit/shared';
 import { noOrderHoldsDesign, ORDER_STATUSES_HOLDING_DESIGN } from '../../orders/order-status';
@@ -22,8 +22,25 @@ import { detailSelect, json, nullableJson, summarySelect, toDetail, toSummary } 
 /** A purge batch (up to PURGE_BATCH projects and their cascades) runs in one transaction. */
 const PURGE_TRANSACTION_TIMEOUT_MS = 60_000;
 
+/** Transactions a permanent deletion may take when a project receiving its shared files changes meanwhile. */
+const DELETE_ATTEMPTS = 3;
+
+/**
+ * A deletion hands the shared files to another project without locking it. When that project is deleted at the same
+ * moment (by hand, or by the other path), the hand-over fails on stored_files_project_id_fkey and the transaction rolls
+ * back; two deletions handing files to each other's project may also deadlock. A new transaction reads the projects
+ * and their heirs again (docs/30 review round 4).
+ */
+function heirChangedMeanwhile(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  const sqlState = (error.meta as { code?: string } | undefined)?.code;
+  return sqlState === '40P01' || error.message.includes('stored_files_project_id_fkey');
+}
+
 @Injectable()
 export class PrismaProjectRepository implements IProjectRepository {
+  private readonly logger = new Logger(PrismaProjectRepository.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -169,6 +186,10 @@ export class PrismaProjectRepository implements IProjectRepository {
   }
 
   async delete(projectId: string): Promise<PermanentDeletion> {
+    return this.retryingHeirChange(() => this.deleteOnce(projectId));
+  }
+
+  private deleteOnce(projectId: string): Promise<PermanentDeletion> {
     return this.prisma.$transaction(async (tx) => {
       // Lock first (docs/30 item 4). The lock waits for a checkout writing an order line of this project (its foreign
       // key check holds the row) and for a restore from another tab. The statements below start after it, so they see
@@ -203,6 +224,10 @@ export class PrismaProjectRepository implements IProjectRepository {
 
   async deleteTrashed(projectIds: string[], cutoff: Date): Promise<{ deleted: string[]; keys: string[] }> {
     if (!projectIds.length) return { deleted: [], keys: [] };
+    return this.retryingHeirChange(() => this.deleteTrashedOnce(projectIds, cutoff));
+  }
+
+  private deleteTrashedOnce(projectIds: string[], cutoff: Date): Promise<{ deleted: string[]; keys: string[] }> {
     return this.prisma.$transaction(
       async (tx) => {
         // Lock first, as `delete` does, but skip the rows another transaction holds (a checkout writing an order, a
@@ -226,6 +251,18 @@ export class PrismaProjectRepository implements IProjectRepository {
       },
       { timeout: PURGE_TRANSACTION_TIMEOUT_MS },
     );
+  }
+
+  /** Runs a deleting transaction again, DELETE_ATTEMPTS times at most in all, when `heirChangedMeanwhile`. */
+  private async retryingHeirChange<T>(transaction: () => Promise<T>): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await transaction();
+      } catch (error) {
+        if (attempt >= DELETE_ATTEMPTS || !heirChangedMeanwhile(error)) throw error;
+        this.logger.warn(`Permanent deletion tried again (${attempt + 1}/${DELETE_ATTEMPTS}): a project receiving shared files changed meanwhile`);
+      }
+    }
   }
 
   /**
