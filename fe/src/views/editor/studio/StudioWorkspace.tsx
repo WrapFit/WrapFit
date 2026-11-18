@@ -128,7 +128,16 @@ import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, panelLabel, pi
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
 import { clearDemoAssets, restoreDemoAssets, syncDemoAssets } from "@/features/studio/utils/demoDraftAssets";
-import { createProject, errorMessage, inspectFont, restoreSnapshot, uploadFileToStorage } from "@/api";
+import {
+  createProject,
+  errorMessage,
+  inspectFont,
+  restoreSnapshot,
+  saveProjectUnboxing,
+  updateProject,
+  uploadFileToStorage,
+} from "@/api";
+import { loadOfflineUnboxing, storeOfflineUnboxing } from "@/features/showcase/offlineGift";
 import { asFontFile, FONT_ACCEPT, inspectFontFile, MAX_FONT_BYTES, registerCustomFont } from "@/features/studio/utils/customFonts";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
@@ -1286,7 +1295,37 @@ export function StudioWorkspace({
     });
     queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
     void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    await carryDemoUnboxing(created);
     return { created, local };
+  };
+  /**
+   * The greeting and QR code made in the demo live in this browser only (offline link with the gift inside): they move
+   * to the new project's unboxing page, and a QR code already placed on the box gets the link of that page.
+   */
+  const carryDemoUnboxing = async (created: ProjectDetail) => {
+    const gift = loadOfflineUnboxing("demo");
+    if (!gift) return;
+    try {
+      const saved = await saveProjectUnboxing(created.id, {
+        recipientName: gift.recipientName,
+        giftNote: gift.giftNote,
+        particleEffect: gift.particleEffect,
+        audioTrackUrl: gift.audioTrackUrl,
+      });
+      queryClient.setQueryData([...queryKeys.projects.unboxing(created.id), "api"], saved);
+      storeOfflineUnboxing("demo", null);
+      const qrOnBox = created.canvasState.elements?.some(isUnboxingQr);
+      if (qrOnBox) {
+        const canvasState = {
+          ...created.canvasState,
+          elements: created.canvasState.elements.map((el) => (isUnboxingQr(el) ? { ...el, content: saved.unboxUrl } : el)),
+        };
+        const updated = await updateProject(created.id, { version: created.version, canvasState });
+        queryClient.setQueryData(queryKeys.projects.detail(created.id), updated);
+      }
+    } catch {
+      // The offline link keeps working; the greeting can be made again in step 5.
+    }
   };
   const saveAsProject = async () => {
     if (invalidReason) {

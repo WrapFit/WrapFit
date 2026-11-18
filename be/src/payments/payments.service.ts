@@ -125,12 +125,13 @@ const paymentExpired = () =>
   );
 
 /**
- * docs/25 item 6: a VietQR payment is a real bank transfer (or stands for one: it grants xu, Pro, a printed sample
- * order), so only a demo account (`users.is_demo`) may simulate it, by the button or by a mock bank transfer. Demo
- * accounts pay through VNPay sandbox, and simulating that stays open to them as the fallback when VNPay is down.
+ * docs/25 item 6: a VietQR payment to the real bank account of WrapFit is a real transfer (or stands for one: it grants
+ * xu, Pro, a printed sample order), so only a demo account (`users.is_demo`) may simulate it, by the button or by a mock
+ * bank transfer. Without a real account (no VIETQR_*: the QR names the sample account "WRAPFIT MO PHONG"), no money
+ * can arrive at all, so every account may simulate: registered, demo or seeded. VNPay sandbox stays open to all.
  */
-export function assertMaySimulate(provider: PaymentProvider, isDemo: boolean): void {
-  if (provider === PaymentProvider.VIETQR && !isDemo) {
+export function assertMaySimulate(provider: PaymentProvider, isDemo: boolean, sampleAccount = false): void {
+  if (provider === PaymentProvider.VIETQR && !isDemo && !sampleAccount) {
     throw new ForbiddenException({
       code: 'SIMULATION_DEMO_ONLY',
       message: 'Chỉ tài khoản demo được giả lập thanh toán chuyển khoản VietQR',
@@ -174,6 +175,11 @@ export class PaymentsService {
 
   get simulationEnabled(): boolean {
     return this.simulation;
+  }
+
+  /** No VIETQR_* account: QR codes name the sample account, so a VietQR payment can never carry real money. */
+  get usesSampleAccount(): boolean {
+    return this.sampleAccount;
   }
 
   /** `ip` is the customer's address (`req.ip`, which honours TRUST_PROXY): VNPay wants it in the pay URL. */
@@ -308,7 +314,7 @@ export class PaymentsService {
         SELECT p.provider, u.is_demo FROM payments p JOIN users u ON u.id = p.user_id
         WHERE p.id = ${id}::uuid AND p.user_id = ${userId}::uuid FOR UPDATE OF p`;
       if (!owned) throw new NotFoundException('Thanh toán không tồn tại');
-      assertMaySimulate(owned.provider, owned.is_demo);
+      assertMaySimulate(owned.provider, owned.is_demo, this.sampleAccount);
       return this.confirmPaid(tx, id, { via: PaymentConfirmation.SIMULATION });
     });
     return this.toView(payment);

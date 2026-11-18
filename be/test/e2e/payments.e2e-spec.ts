@@ -339,24 +339,18 @@ describe('Payments API (e2e)', () => {
     expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
   });
 
-  it('lets only a demo account simulate a VietQR payment, by the button or by a mock bank transfer (docs/25 item 6)', async () => {
+  // With a real VIETQR_* account only demo accounts may simulate (unit test of assertMaySimulate, docs/25 item 6).
+  it('lets any account simulate a VietQR payment to the sample account, by the button or by a mock bank transfer', async () => {
     const real = await register('real');
+    expect((await as(real).get('/api/billing/me').expect(200)).body.paymentSimulation).toBe(true);
+
     const payment = await pay(real, { purpose: 'XU_500' });
     expect(payment.provider).toBe('VIETQR');
-
-    expect((await confirm(real, payment.id).expect(403)).body).toMatchObject({ code: 'SIMULATION_DEMO_ONLY' });
-    const mock = await as(real).post(`/api/payments/${payment.id}/simulate-transfer`).send({ scenario: 'exact' }).expect(403);
-    expect(mock.body).toMatchObject({ code: 'SIMULATION_DEMO_ONLY' });
-    expect(await prisma.payment.findUniqueOrThrow({ where: { id: payment.id } })).toMatchObject({ status: 'PENDING', paidAt: null });
-    await expect(prisma.creditLot.count({ where: { paymentId: payment.id } })).resolves.toBe(0);
-    await expect(prisma.bankTransaction.count({ where: { extractedReference: payment.reference } })).resolves.toBe(0);
-    // The checkout does not offer the button to a real account.
-    expect((await as(real).get('/api/billing/me').expect(200)).body.paymentSimulation).toBe(false);
-
-    // The same payment once the account is a demo one: allowed.
-    await setDemo(real, true);
     expect((await confirm(real, payment.id).expect(200)).body).toMatchObject({ status: 'PAID', confirmedVia: 'SIMULATION' });
-    expect((await as(real).get('/api/billing/me').expect(200)).body.paymentSimulation).toBe(true);
+
+    const second = await pay(real, { purpose: 'XU_500' });
+    await as(real).post(`/api/payments/${second.id}/simulate-transfer`).send({ scenario: 'exact' }).expect(200);
+    await expect(prisma.bankTransaction.count({ where: { extractedReference: second.reference } })).resolves.toBe(1);
   });
 
   it('pages the history by (createdAt, id): two payments of the same millisecond both appear across a page boundary', async () => {

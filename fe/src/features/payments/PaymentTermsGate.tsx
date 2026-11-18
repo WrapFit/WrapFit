@@ -52,33 +52,41 @@ export function PaymentTermsGate({ itemLabel, amountVnd, accepted, onAcceptedCha
         {amountVnd !== null && <span className="shrink-0 font-landing-heading text-title font-bold tabular-nums text-fg">{formatVnd(amountVnd)}</span>}
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-body-sm font-medium text-fg">
-          <ShieldAlert className="size-4 shrink-0 text-warning-fg" aria-hidden />
-          Điều khoản về rủi ro mất tiền
-        </p>
-        <span className={cn("inline-flex items-center gap-1 text-caption font-semibold", readToEnd ? "text-success-fg" : "text-fg-muted")}>
-          {readToEnd ? <CheckCircle2 className="size-3.5" aria-hidden /> : null}
-          {readToEnd ? "Đã đọc hết" : `Đã đọc ${Math.round(progress * 100)}%`}
-        </span>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-body-sm font-semibold text-fg">
+            <ShieldAlert className="size-4 shrink-0 text-warning-fg" aria-hidden />
+            Điều khoản về rủi ro mất tiền
+          </p>
+          <span className={cn("inline-flex items-center gap-1 text-caption font-semibold tabular-nums", readToEnd ? "text-success-fg" : "text-fg-muted")}>
+            {readToEnd ? <CheckCircle2 className="size-3.5" aria-hidden /> : null}
+            {readToEnd ? "Đã đọc hết" : `Đã đọc ${Math.round(progress * 100)}%`}
+          </span>
+        </div>
+        <div aria-hidden className="h-1 overflow-hidden rounded-full bg-line/60">
+          <div
+            className={cn("h-full rounded-full transition-[width] duration-150", readToEnd ? "bg-success-fg" : "bg-action")}
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
+        </div>
       </div>
 
-      <div className="overflow-hidden rounded-panel bg-surface-sunken">
-        <div aria-hidden className="h-0.5 bg-line/60">
-          <div className="h-full bg-action transition-[width] duration-150" style={{ width: `${Math.round(progress * 100)}%` }} />
-        </div>
+      <div className="relative">
         <div
           ref={listRef}
           onScroll={check}
           tabIndex={0}
           role="region"
           aria-label="Điều khoản thanh toán"
-          className="max-h-[min(34vh,300px)] overflow-y-auto overscroll-contain px-4 py-3 outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-focus/40"
+          className="max-h-[min(34vh,300px)] overflow-y-auto overscroll-contain pr-1 outline-none focus-visible:rounded-md focus-visible:ring-[3px] focus-visible:ring-focus/40"
         >
-          <ol className="flex flex-col divide-y divide-line/70">
+          <ol className="flex flex-col gap-3">
             {PAYMENT_TERMS_CLAUSES.map((clause, index) => (
-              <li key={clause.id} className="flex gap-3 py-2.5 first:pt-0.5">
-                <span aria-hidden className="mt-px w-4 shrink-0 text-right text-caption font-semibold tabular-nums text-fg-muted">
+              <li key={clause.id} className="flex gap-3">
+                <span
+                  aria-hidden
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-[11px] font-semibold tabular-nums text-fg-muted"
+                >
                   {index + 1}
                 </span>
                 <span className="min-w-0">
@@ -88,7 +96,7 @@ export function PaymentTermsGate({ itemLabel, amountVnd, accepted, onAcceptedCha
               </li>
             ))}
           </ol>
-          <p className="mt-2 border-t border-line/70 pt-2.5 text-caption text-fg-muted">
+          <p className="mt-3 pl-8 text-caption text-fg-muted">
             Bản đầy đủ:{" "}
             <Link href={PAYMENT_TERMS_PATH} target="_blank" rel="noopener" className="font-semibold text-accent underline underline-offset-2">
               Chính sách thanh toán & hồ sơ pháp lý
@@ -100,9 +108,17 @@ export function PaymentTermsGate({ itemLabel, amountVnd, accepted, onAcceptedCha
             · bản {PAYMENT_TERMS_VERSION.split("-").reverse().join("/")}
           </p>
         </div>
+        {/* Fades the last lines while there is more to read, so the list reads as scrollable without a frame. */}
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white to-transparent transition-opacity",
+            readToEnd ? "opacity-0" : "opacity-100"
+          )}
+        />
       </div>
 
-      <div className={cn("rounded-panel px-3 py-1 transition-colors", accepted ? "bg-accent-bg" : readToEnd ? "bg-surface-sunken" : "bg-transparent")}>
+      <div className="border-t border-line pt-3">
         <Checkbox
           checked={accepted}
           disabled={!readToEnd}

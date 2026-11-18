@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, CreditCard, ExternalLink, FlaskConical, QrCode, RotateCw, TimerOff } from "lucide-react";
+import { Check, Copy, CreditCard, ExternalLink, FlaskConical, QrCode, RotateCw, TimerOff, TriangleAlert } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createPayment, getBillingSummary, getPayment, simulatePayment, simulateTransfer, type MockTransferScenario } from "@/api";
@@ -11,7 +11,7 @@ const MOCK_TRANSFERS: { scenario: MockTransferScenario; label: string }[] = [
   { scenario: "underpaid", label: "Chuyển thiếu 10.000đ" },
   { scenario: "no_reference", label: "Quên ghi mã" },
 ];
-import { GoiMascot } from "@/components/common/GoiMascot";
+import { cn } from "@/utils/helpers";
 import { useToast } from "@/components/common/Toast";
 import { Alert, Badge, Button, Dialog, LoadingState, Spinner } from "@/components/ui";
 import { PRO_SUMMARY, formatVnd } from "@/features/pricing";
@@ -227,38 +227,38 @@ export function CheckoutDialog({ purpose, xu, orderId, doneLabel = "Tiếp tục
     billing.data?.paymentSimulation ||
     (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"));
   const simulateAlert = showSimulate ? (
-    <Alert
-      tone="info"
-      icon={FlaskConical}
-      title="Chế độ thử nghiệm"
-      action={
+    <section aria-labelledby="simulate-title" className="rounded-panel border border-dashed border-line-strong px-4 py-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p id="simulate-title" className="flex items-center gap-1.5 text-label-sm font-semibold text-fg">
+            <FlaskConical className="size-3.5 text-fg-muted" aria-hidden />
+            Môi trường thử nghiệm
+          </p>
+          <p className="mt-0.5 text-caption text-fg-muted">Xác nhận thanh toán ngay, không cần chuyển tiền thật.</p>
+        </div>
         <Button size="sm" variant="dark" loading={simulate.isPending} disabled={busy} loadingLabel="Đang xác nhận…" onClick={() => simulate.mutate()}>
           Giả lập đã thanh toán
         </Button>
-      }
-    >
-      Môi trường thử nghiệm: bấm nút để xác nhận thanh toán thành công ngay lập tức mà không cần chuyển tiền thật.
+      </div>
       {provider === "VIETQR" && pending && (
-        <span className="mt-3 block">
-          <span className="block text-body-sm text-fg-muted">Hoặc giả lập ngân hàng báo tiền về (hiện ở trang admin đối soát):</span>
-          <span className="mt-2 flex flex-wrap gap-2">
-            {MOCK_TRANSFERS.map((item) => (
-              <Button
-                key={item.scenario}
-                size="sm"
-                variant="secondary"
-                disabled={busy}
-                loading={transfer.isPending && transfer.variables === item.scenario}
-                loadingLabel="Đang gửi…"
-                onClick={() => transfer.mutate(item.scenario)}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </span>
-        </span>
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+          <span className="text-caption text-fg-muted">Giả lập ngân hàng báo tiền về:</span>
+          {MOCK_TRANSFERS.map((item) => (
+            <Button
+              key={item.scenario}
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              loading={transfer.isPending && transfer.variables === item.scenario}
+              loadingLabel="Đang gửi…"
+              onClick={() => transfer.mutate(item.scenario)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </div>
       )}
-    </Alert>
+    </section>
   ) : null;
 
   const footer = !termsAccepted ? (
@@ -316,19 +316,24 @@ export function CheckoutDialog({ purpose, xu, orderId, doneLabel = "Tiếp tục
           {errorMessage(create.error)}
         </Alert>
       ) : paid && payment ? (
-        <div className="flex flex-col items-center gap-3 py-2 text-center" role="status">
-          <GoiMascot pose="celebration" size={120} interactive={false} />
-          <p ref={successHeading} tabIndex={-1} className="font-landing-heading text-heading-sm text-fg outline-none">
+        <div className="flex flex-col items-center py-2 text-center" role="status">
+          <span className="flex size-12 items-center justify-center rounded-full bg-success-bg text-success-fg">
+            <Check className="size-6" strokeWidth={2.5} aria-hidden />
+          </span>
+          <p ref={successHeading} tabIndex={-1} className="mt-4 font-landing-heading text-heading-sm text-fg outline-none">
             Thanh toán thành công
           </p>
-          <p className="max-w-sm text-body-sm text-fg-muted">{successText(payment)}</p>
-          <dl className="grid w-full max-w-xs grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-panel bg-surface-sunken p-3.5 text-left text-body-sm">
-            <dt className="text-fg-muted">Số tiền</dt>
-            <dd className="text-right font-semibold tabular-nums text-fg">{formatVnd(payment.amountVnd)}</dd>
-            <dt className="text-fg-muted">Mã</dt>
-            <dd className="text-right font-mono text-fg">{payment.reference}</dd>
-            <dt className="text-fg-muted">Cách trả</dt>
-            <dd className="text-right text-fg">{providerLabel(payment)}</dd>
+          <p className="mt-1.5 max-w-sm text-body-sm text-fg-muted">{successText(payment)}</p>
+          <dl className="mt-6 w-full max-w-sm divide-y divide-line border-y border-line text-body-sm">
+            <ReceiptRow label="Số tiền">
+              <span className="font-semibold tabular-nums text-fg">{formatVnd(payment.amountVnd)}</span>
+            </ReceiptRow>
+            <ReceiptRow label="Mã thanh toán">
+              <span className="font-mono tracking-wide text-fg">{payment.reference}</span>
+            </ReceiptRow>
+            <ReceiptRow label="Phương thức">
+              <span className="text-fg">{providerLabel(payment)}</span>
+            </ReceiptRow>
           </dl>
         </div>
       ) : payment && !pending ? (
@@ -349,55 +354,60 @@ export function CheckoutDialog({ purpose, xu, orderId, doneLabel = "Tiếp tục
         </Alert>
       ) : payment?.provider === "VNPAY" ? (
         <>
-          <section aria-labelledby="vnpay-title" className="flex flex-col gap-4 rounded-panel border border-line bg-surface-raised p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-control bg-accent-bg text-accent-fg [&_svg]:size-5">
-                <CreditCard aria-hidden />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 id="vnpay-title" className="text-body font-semibold text-fg">
-                    Thanh toán qua VNPay (sandbox)
-                  </h3>
-                  <Badge size="sm" tone="warning">
-                    Thử nghiệm
-                  </Badge>
-                </div>
-                <p className="mt-0.5 text-body-sm text-fg-muted">Tài khoản demo trả qua cổng thử nghiệm của VNPay, không trừ tiền thật.</p>
-              </div>
+          <section aria-label="Tóm tắt thanh toán" className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-line pb-5">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-caption font-medium text-fg-muted">
+                Số tiền thanh toán
+                <Badge size="sm" tone="warning">
+                  Sandbox
+                </Badge>
+              </p>
+              <p className="mt-1 font-landing-heading text-[2rem] font-bold leading-none tabular-nums tracking-tight text-fg">{formatVnd(payment.amountVnd)}</p>
             </div>
-
-            <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-body-sm">
-              <dt className="text-fg-muted">Số tiền</dt>
-              <dd className="font-landing-heading text-heading-sm tabular-nums text-fg">{formatVnd(payment.amountVnd)}</dd>
-              <dt className="text-fg-muted">Mã đơn</dt>
-              <dd className="font-mono font-semibold tracking-wider text-accent-fg">{payment.reference}</dd>
-              <dt className="text-fg-muted">Còn hiệu lực</dt>
-              <dd role="timer" aria-label={`Còn hiệu lực ${mmss(left)}`} className="font-mono font-semibold tabular-nums text-fg">
-                {mmss(left)}
-              </dd>
+            <dl className="flex gap-6 text-right">
+              <div>
+                <dt className="text-caption text-fg-muted">Mã đơn</dt>
+                <dd className="mt-1 font-mono text-body-sm font-semibold tracking-wider text-fg">{payment.reference}</dd>
+              </div>
+              <div>
+                <dt className="text-caption text-fg-muted">Hết hạn sau</dt>
+                <dd role="timer" aria-label={`Còn hiệu lực ${mmss(left)}`} className="mt-1 font-mono text-body-sm font-semibold tabular-nums text-fg">
+                  {mmss(left)}
+                </dd>
+              </div>
             </dl>
-
-            {payUrl ? (
-              <Button variant="primary" shape="rounded" size="lg" block trailingIcon={<ExternalLink aria-hidden />} onClick={openVnpay}>
-                Mở cổng VNPay
-              </Button>
-            ) : (
-              <Alert tone="warning" title="Chưa mở được cổng VNPay">
-                {showSimulate
-                  ? "Máy chủ chưa cấu hình VNPay sandbox. Dùng nút giả lập bên dưới để hoàn tất thanh toán thử."
-                  : "Cổng VNPay không có liên kết cho phiên này. Đóng hộp thoại rồi tạo thanh toán mới."}
-              </Alert>
-            )}
           </section>
 
-          <Alert tone="info" icon={CreditCard} title="Thẻ thử của VNPay sandbox">
-            Ngân hàng <strong>{VNPAY_TEST_CARD.bank}</strong>, số thẻ <span className="font-mono tabular-nums">{VNPAY_TEST_CARD.number}</span>, tên{" "}
-            <span className="font-mono">{VNPAY_TEST_CARD.holder}</span>, ngày phát hành <span className="font-mono">{VNPAY_TEST_CARD.issued}</span>, mã OTP{" "}
-            <span className="font-mono">{VNPAY_TEST_CARD.otp}</span>.
-          </Alert>
+          {payUrl ? (
+            <Button variant="primary" shape="rounded" size="lg" block trailingIcon={<ExternalLink aria-hidden />} onClick={openVnpay}>
+              Mở cổng VNPay
+            </Button>
+          ) : (
+            <p className="flex gap-2.5 text-body-sm text-fg-muted">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning-fg" aria-hidden />
+              <span>
+                <span className="font-semibold text-fg">Cổng VNPay chưa sẵn sàng.</span>{" "}
+                {showSimulate
+                  ? "Máy chủ chưa cấu hình VNPay sandbox; dùng phần thử nghiệm bên dưới để hoàn tất."
+                  : "Phiên này không có liên kết thanh toán. Đóng hộp thoại rồi tạo thanh toán mới."}
+              </span>
+            </p>
+          )}
 
-          <WaitingNote>Sau khi thanh toán, VNPay đưa bạn quay lại WrapFit. Trang tự cập nhật.</WaitingNote>
+          <section aria-labelledby="vnpay-card-title" className="overflow-hidden rounded-panel border border-line">
+            <p id="vnpay-card-title" className="flex items-center gap-2 border-b border-line bg-surface-sunken px-4 py-2.5 text-label-sm font-semibold text-fg">
+              <CreditCard className="size-4 text-fg-muted" aria-hidden />
+              Thẻ thử của VNPay sandbox
+            </p>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3.5 text-body-sm sm:grid-cols-[1fr_2fr]">
+              <CardField label="Ngân hàng" value={VNPAY_TEST_CARD.bank} />
+              <CardField label="Số thẻ" value={VNPAY_TEST_CARD.number} mono onCopy={() => void copy("số thẻ", VNPAY_TEST_CARD.number)} />
+              <CardField label="Chủ thẻ" value={VNPAY_TEST_CARD.holder} mono />
+              <CardField label="Ngày phát hành · OTP" value={`${VNPAY_TEST_CARD.issued} · ${VNPAY_TEST_CARD.otp}`} mono />
+            </dl>
+          </section>
+
+          <WaitingNote>Sau khi thanh toán, VNPay đưa bạn quay lại WrapFit và trang tự cập nhật.</WaitingNote>
           {simulateAlert}
         </>
       ) : payment?.vietqr ? (
@@ -477,13 +487,34 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
   );
 }
 
-/** Status line while the server waits for the money: Gói on his delivery run, announced politely to screen readers. */
+/** Status line while the server waits for the money, announced politely to screen readers. */
 function WaitingNote({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 rounded-panel bg-surface-sunken px-3.5 py-2.5" role="status">
-      <GoiMascot pose="delivery" size={44} interactive={false} />
-      <p className="min-w-0 flex-1 text-body-sm text-fg-muted">{children}</p>
+    <div className="flex items-center gap-2.5 text-caption text-fg-muted" role="status">
       <Spinner size="sm" />
+      <p className="min-w-0 flex-1">{children}</p>
+    </div>
+  );
+}
+
+function ReceiptRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2.5">
+      <dt className="text-fg-muted">{label}</dt>
+      <dd className="text-right">{children}</dd>
+    </div>
+  );
+}
+
+/** One field of the VNPay test card; the long card number can be copied. */
+function CardField({ label, value, mono, onCopy }: { label: string; value: string; mono?: boolean; onCopy?(): void }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-caption text-fg-muted">{label}</dt>
+      <dd className="mt-0.5 flex items-center gap-1">
+        <span className={cn("truncate text-fg", mono && "font-mono tabular-nums")}>{value}</span>
+        {onCopy && <CopyButton label={label.toLowerCase()} onCopy={onCopy} />}
+      </dd>
     </div>
   );
 }
