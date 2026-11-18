@@ -3,7 +3,9 @@
  * with a free procedural pattern.
  */
 
-import { request } from "@/services/api";
+import { OFFLINE_DEMO } from "@/config";
+import { DEMO_AI_USAGE } from "@/features/dashboard/demoData";
+import { ApiError, request } from "@/services/api";
 import type {
   AiImageCatalog,
   AiImageGalleryPage,
@@ -25,8 +27,14 @@ export function generateAiPattern(data: GeneratePatternRequest): Promise<AiPatte
 }
 
 /** Whether AI patterns run, their price in xu and my xu wallet. */
-export function getAiUsage(): Promise<AiUsage> {
-  return request("/ai/usage");
+/** Like `getStorageUsage`: a guest of the demo or a build without a backend sees the Free plan's wallet. */
+export async function getAiUsage(): Promise<AiUsage> {
+  try {
+    return await request("/ai/usage");
+  } catch (error) {
+    if (OFFLINE_DEMO || (error instanceof ApiError && error.status === 401)) return DEMO_AI_USAGE;
+    throw error;
+  }
 }
 
 /** AI image models on offer, their price in xu per image, and the price of the image tools. */
