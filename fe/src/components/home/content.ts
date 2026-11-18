@@ -45,12 +45,7 @@ export interface IndustryTile {
 
 /** Bento under the hero: the first tile is the big one. */
 export const INDUSTRY_TILES: IndustryTile[] = [
-  {
-    title: "Mỹ phẩm & chăm sóc cá nhân",
-    description: "Hộp vừa khít từng chai serum, lọ kem.",
-    image: PHOTOS.cosmetics.src,
-    href: byIndustry("COSMETICS"),
-  },
+  { title: "Mỹ phẩm & chăm sóc cá nhân", image: PHOTOS.cosmetics.src, href: byIndustry("COSMETICS") },
   { title: "Nến thơm", image: PHOTOS.candle.src, href: byIndustry("CANDLES") },
   { title: "Bánh ngọt & socola", image: PHOTOS.chocolate.src, href: byIndustry("BAKERY") },
   { title: "Trang sức", image: PHOTOS.jewelry.src, href: byIndustry("JEWELRY") },
@@ -59,7 +54,7 @@ export const INDUSTRY_TILES: IndustryTile[] = [
 
 export const STRUCTURES_SECTION = {
   title: "Cấu trúc hộp chuẩn xưởng sản xuất",
-  subtitle: "4 cấu trúc dựng theo kích thước món quà đến từng milimét, sẵn sàng cho xưởng cắt bế.",
+  subtitle: "Cấu trúc dựng theo kích thước món quà đến từng milimét, sẵn sàng cho xưởng cắt bế.",
   href: ROUTES.templates,
 };
 

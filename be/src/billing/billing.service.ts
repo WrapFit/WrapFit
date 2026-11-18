@@ -23,7 +23,7 @@ export interface BillingSummary {
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
   } | null;
-  /** PAYMENT_SIMULATION and a demo account: the checkout shows "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). */
+  /** PAYMENT_SIMULATION and (a demo account or the sample VietQR account): the checkout shows "Giả lập đã thanh toán". */
   paymentSimulation: boolean;
   /** Demo account (users.is_demo): the wallet shows VNPay sandbox instead of VietQR (docs/21 S5). */
   isDemo: boolean;
@@ -75,8 +75,9 @@ export class BillingService {
       entitlements: ENTITLEMENTS[tier],
       xu,
       subscription,
-      // Only a demo account may simulate a payment (docs/25 item 6): the checkout hides the button from the others.
-      paymentSimulation: this.config.get('payments.simulation') && user.isDemo,
+      // With a real VietQR account only a demo account may simulate a payment (docs/25 item 6); with the sample account
+      // no money can arrive, so every account is offered the button (assertMaySimulate).
+      paymentSimulation: Boolean(this.config.get('payments.simulation')) && (user.isDemo || this.config.get('payments.vietqr') === null),
       isDemo: user.isDemo,
     };
   }
