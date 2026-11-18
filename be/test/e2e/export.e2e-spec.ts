@@ -8,7 +8,10 @@ import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { CreditsService } from '../../src/billing';
+import { QUEUE_ADD_TIMEOUT_MS } from '../../src/common';
 import { EXPORT_QUEUE, type ExportDesign } from '../../src/export/export.constants';
+import { ExportReconcileTask } from '../../src/export/export-reconcile.task';
+import { ExportService } from '../../src/export/export.service';
 import { buildPrintLayout } from '../../src/export/rendering/print-layout';
 import { renderDxf } from '../../src/export/rendering/print-renderers';
 import { PrismaService } from '../../src/shared/prisma';
@@ -50,6 +53,16 @@ describe('Print export (e2e)', () => {
   const orderIds: string[] = [];
   const payOrderFor = async (userId: string, project: string) => {
     orderIds.push(await createPaidOrder(prisma, userId, project, run));
+  };
+
+  /** A real PNG uploaded like the browser does: its public URL and its storage key. */
+  const uploadPngTo = async (user: { cookie: string }) => {
+    const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 120 });
+    const ticket = (
+      await as(user).post('/api/storage/presigned-upload').send({ purpose: 'IMAGE', contentType: 'image/png', size: png.length }).expect(200)
+    ).body as { uploadUrl: string; headers: Record<string, string>; fileUrl: string };
+    expect((await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: new Uint8Array(png) })).status).toBe(200);
+    return { url: ticket.fileUrl, key: ticket.fileUrl.slice(ticket.fileUrl.indexOf('users/')), png };
   };
 
   const waitFor = async (jobId: string, user = pia) => {
@@ -459,6 +472,40 @@ describe('Print export (e2e)', () => {
       expect(snapshot.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Bản A' })] });
     });
 
+    // docs/30 item 6, review round 2: the request stops waiting after 3 s, but queue.add goes on and Redis has the job.
+    it('a job Redis took while the request timed out: 202, then the same job renders one file and one notification', async () => {
+      const id = await create([text('Hàng đợi chậm')]);
+      // The instance ExportService adds to (another module registers the same queue under its own instance).
+      const queue = (app.get(ExportService) as unknown as { queue: Queue }).queue;
+      const add = queue.add.bind(queue);
+      const slow = jest.spyOn(queue, 'add').mockImplementationOnce(async (...args: Parameters<Queue['add']>) => {
+        const job = await add(...args); // in Redis now; only the answer is late
+        await new Promise((resolve) => setTimeout(resolve, QUEUE_ADD_TIMEOUT_MS + 500));
+        return job;
+      });
+      // The worker starts after the timeout: the queue is paused until the request has answered.
+      await queue.pause();
+      let started: request.Response;
+      try {
+        started = await as(sam).post(`/api/projects/${id}/exports`).send({ fileType: 'DXF' });
+      } finally {
+        await queue.resume();
+        slow.mockRestore();
+      }
+      expect(started.status).toBe(202);
+      expect(started.body).toMatchObject({ jobId: expect.any(String), status: 'PENDING' });
+      const { jobId } = started.body as { jobId: string };
+
+      const done = await waitFor(jobId, sam);
+      expect(done).toMatchObject({ id: jobId, status: 'COMPLETED', error: null });
+      expect((await fetch(done.downloadUrl)).status).toBe(200);
+      expect(await prisma.exportJob.count({ where: { projectId: id } })).toBe(1);
+      const notifications = () =>
+        prisma.notification.count({ where: { userId: sam.id, type: 'EXPORT_COMPLETED', payload: { path: ['exportJobId'], equals: jobId } } });
+      for (let i = 0; i < 20 && (await notifications()) === 0; i++) await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(await notifications()).toBe(1);
+    }, 30_000);
+
     it('keeps an image of the requested version through the maintenance run, though the next save dropped it', async () => {
       const png = await QRCode.toBuffer('wrapfit', { type: 'png', width: 120 });
       const ticket = (
@@ -482,6 +529,35 @@ describe('Print export (e2e)', () => {
       expect(done).toMatchObject({ status: 'COMPLETED', error: null });
       expect(await (await fetch(done.downloadUrl)).text()).toContain(`href="data:image/png;base64,${png.toString('base64')}"`);
     });
+  });
+
+  // docs/30 review round 2: a failed job stops keeping alive the files only its frozen design used.
+  it('a job lost by the queue is failed by the reconcile task, and the image only it kept is released', async () => {
+    const tom = await register('tom');
+    const image = await uploadPngTo(tom);
+    const element = { id: 'img', type: 'image', panelId: 'panel_front', x: 10, y: 10, width: 30, height: 30, rotation: 0, content: image.url, dpi: 300 };
+    const id = (
+      await as(tom).post('/api/projects').send({ templateId: 'tuck-top', title: 'Hộp mất job', dimensions: { length: 120, width: 80, height: 60 }, canvasState: { elements: [element] } }).expect(201)
+    ).body.id as string;
+    await payOrderFor(tom.id, id);
+    const queue = app.get<Queue>(getQueueToken(EXPORT_QUEUE));
+    await queue.pause();
+    try {
+      const { jobId } = (await as(tom).post(`/api/projects/${id}/exports`).send({ fileType: 'SVG' }).expect(202)).body as { jobId: string };
+      await as(tom).patch(`/api/projects/${id}`).send({ canvasState: { elements: [] } }).expect(200);
+      const refs = () => prisma.projectFileRef.count({ where: { projectId: id, storedFile: { key: image.key } } });
+      expect(await refs()).toBe(1); // only the pending job's design still shows the image
+
+      // The job never reached Redis (or Redis lost it), and it is older than STUCK_EXPORT_AFTER_MS.
+      await queue.remove(jobId);
+      await prisma.exportJob.update({ where: { id: jobId }, data: { createdAt: new Date(Date.now() - 11 * 60 * 1000) } });
+      await app.get(ExportReconcileTask).reconcile();
+
+      expect(await prisma.exportJob.findUniqueOrThrow({ where: { id: jobId } })).toMatchObject({ status: 'FAILED' });
+      expect(await refs()).toBe(0);
+    } finally {
+      await queue.resume();
+    }
   });
 
   it('deletes the exported files with the project', async () => {

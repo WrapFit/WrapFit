@@ -4,9 +4,9 @@ import { EXPORT_COMPLETED, ExportCompletedEvent, PROJECT_FORKED, ProjectForkedEv
 import { NotificationsService } from './notifications.service';
 
 /**
- * Turns internal events into stored notifications, in the process that emits them: PROJECT_FORKED in the API,
- * EXPORT_COMPLETED in the worker. A failure is logged and never reaches the request or the job that emitted the event
- * (the remix and the export have already been committed).
+ * Turns internal events into notifications, in the process that emits them: PROJECT_FORKED in the API stores one,
+ * EXPORT_COMPLETED in the worker only pushes the one the worker stored with the job (docs/30 item 6). A failure is
+ * logged and never reaches the request or the job that emitted the event (both are already committed).
  */
 @Injectable()
 export class NotificationsListener {
@@ -21,7 +21,7 @@ export class NotificationsListener {
 
   @OnEvent(EXPORT_COMPLETED, { async: true })
   async onExportCompleted(event: ExportCompletedEvent): Promise<void> {
-    await this.notifications.notifyExportCompleted(event).catch((error) => this.fail('export', event.exportJobId, error));
+    await this.notifications.push(event.userId).catch((error) => this.fail('export', event.exportJobId, error));
   }
 
   private fail(kind: string, id: string, error: unknown): void {

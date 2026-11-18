@@ -10,6 +10,7 @@ import {
   UNFINISHED_EXPORT,
   WORKER_LOST_ERROR,
 } from './export.constants';
+import { failExport } from './export-failure';
 
 /** Exports checked per run; the rest wait for the next run. */
 const RECONCILE_BATCH = 100;
@@ -59,12 +60,10 @@ export class ExportReconcileTask {
       if (state !== 'failed' && state !== 'unknown') continue;
 
       const reason = state === 'failed' ? (await this.queue.getJob(id))?.failedReason : 'job missing from the queue';
-      const { count } = await this.prisma.exportJob.updateMany({
-        where: { id, status: UNFINISHED_EXPORT },
-        data: { status: 'FAILED', errorLog: WORKER_LOST_ERROR },
-      });
-      if (count) this.logger.warn(`Export ${id} was never finished by the worker (${reason ?? 'no reason'})`);
-      failed += count;
+      if (await failExport(this.prisma, id, WORKER_LOST_ERROR)) {
+        this.logger.warn(`Export ${id} was never finished by the worker (${reason ?? 'no reason'})`);
+        failed++;
+      }
     }
     return failed;
   }

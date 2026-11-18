@@ -86,9 +86,13 @@ export class NotificationsService {
     await this.push(event.sourceOwnerId);
   }
 
-  /** "Your print file is ready", for the owner of the exported design: one row per finished export job. */
-  async notifyExportCompleted(event: ExportCompletedEvent): Promise<void> {
-    await this.prisma.notification.create({
+  /**
+   * "Your print file is ready", for the owner of the exported design: one row per finished export job. Written by the
+   * worker in the transaction that completes the job (docs/30 item 6), so a worker that stops right after the commit
+   * cannot lose it and a job run twice cannot add a second one. The live push follows the commit (`push`).
+   */
+  async recordExportCompleted(tx: Prisma.TransactionClient, event: ExportCompletedEvent): Promise<void> {
+    await tx.notification.create({
       data: {
         userId: event.userId,
         type: 'EXPORT_COMPLETED',
@@ -96,7 +100,6 @@ export class NotificationsService {
         payload: { exportJobId: event.exportJobId, fileType: event.fileType },
       },
     });
-    await this.push(event.userId);
   }
 
   async list(userId: string, limit: number, before?: string): Promise<NotificationPage> {
@@ -137,7 +140,8 @@ export class NotificationsService {
   }
 
   /** Never throws: Redis down only means the browser learns at its next poll. */
-  private async push(userId: string): Promise<void> {
+  /** Tells the user's open browsers that the inbox changed. Best effort: a Redis error is logged, never thrown. */
+  async push(userId: string): Promise<void> {
     try {
       await this.redis.publish(NOTIFICATIONS_CHANNEL, userId);
     } catch (error) {

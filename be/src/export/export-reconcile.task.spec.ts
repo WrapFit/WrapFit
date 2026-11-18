@@ -10,7 +10,7 @@ describe('ExportReconcileTask', () => {
     'queued-job': 'waiting', // the worker is down or busy: it will still run
     'running-job': 'active',
   };
-  let prisma: { exportJob: { findMany: jest.Mock; updateMany: jest.Mock } };
+  let prisma: { exportJob: { findMany: jest.Mock; updateManyAndReturn: jest.Mock }; $transaction: jest.Mock; $executeRaw: jest.Mock };
   let queue: { getJobState: jest.Mock; getJob: jest.Mock };
   let task: ExportReconcileTask;
 
@@ -18,8 +18,10 @@ describe('ExportReconcileTask', () => {
     prisma = {
       exportJob: {
         findMany: jest.fn().mockResolvedValue(Object.keys(states).map((id) => ({ id }))),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        updateManyAndReturn: jest.fn().mockResolvedValue([{ projectId: 'p-1' }]),
       },
+      $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+      $executeRaw: jest.fn().mockResolvedValue(0),
     };
     queue = {
       getJobState: jest.fn(async (id: string) => states[id]),
@@ -43,11 +45,15 @@ describe('ExportReconcileTask', () => {
         },
       }),
     );
-    expect(prisma.exportJob.updateMany.mock.calls.map(([args]) => args.where.id)).toEqual(['stalled-job', 'lost-job']);
-    expect(prisma.exportJob.updateMany).toHaveBeenCalledWith({
+    expect(prisma.exportJob.updateManyAndReturn.mock.calls.map(([args]) => args.where.id)).toEqual(['stalled-job', 'lost-job']);
+    expect(prisma.exportJob.updateManyAndReturn).toHaveBeenCalledWith({
       where: { id: 'stalled-job', status: { in: ['PENDING', 'PROCESSING'] } },
       data: { status: 'FAILED', errorLog: WORKER_LOST_ERROR },
+      select: { projectId: true },
     });
+    // Each failed job releases the files only its design kept alive (refs recomputed in the same transaction).
+    const sql = prisma.$executeRaw.mock.calls.map(([strings]) => (strings as string[]).join('?'));
+    expect(sql.filter((text) => text.includes('project_file_refs'))).toHaveLength(2);
   });
 
   it('never throws out of the scheduled run', async () => {

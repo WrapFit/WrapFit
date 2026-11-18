@@ -3,6 +3,7 @@ import type { ProductEventsService } from '../analytics';
 import type { PrismaService } from '../shared/prisma';
 import type { StorageService } from '../storage';
 import type { ExportJobData } from './export.constants';
+import { TimeoutError } from '../common';
 import { ExportService } from './export.service';
 
 /**
@@ -64,6 +65,8 @@ describe('ExportService.request gating', () => {
         }),
       },
       exportJob: {
+        // failExport, when the queue refuses the job.
+        updateManyAndReturn: jest.fn().mockResolvedValue([{ projectId: 'p-1' }]),
         create: jest.fn(({ data }) => {
           const job = { id: `job-${jobs.length + 1}`, status: 'PENDING', ...data };
           jobs.push(job);
@@ -84,7 +87,8 @@ describe('ExportService.request gating', () => {
       },
       exportUnlock: { findFirst: jest.fn(findUnlock) },
       orderItem: { findFirst: jest.fn(findPaidItem) },
-      exportJob: { update: jest.fn() },
+      // The status read after a refused queue found the job taken.
+      exportJob: { findUniqueOrThrow: jest.fn().mockResolvedValue({ status: 'PROCESSING' }) },
       // Interactive transaction; when the callback throws, what it wrote is rolled back like PostgreSQL would.
       $transaction: jest.fn(async (fn: (client: unknown) => unknown) => {
         const [savedUnlocks, savedJobs] = [[...unlocks], [...jobs]];
@@ -186,11 +190,36 @@ describe('ExportService.request gating', () => {
     expect(jobs[0].watermarked).toBeUndefined();
   });
 
-  it('marks the job failed when it cannot be queued', async () => {
-    payOrder(1);
-    queue.add.mockRejectedValue(new Error('redis down'));
-    jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
-    await expect(service.request('p-1', 'SVG')).rejects.toThrow('The export queue is unavailable');
+  describe('queueing (docs/30 item 6, review round 2)', () => {
+    const exportJob = () => tx.exportJob as { updateManyAndReturn: jest.Mock };
+    beforeEach(() => {
+      payOrder(1);
+      jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
+      jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
+    });
+
+    it('a queue that does not answer in time leaves the job PENDING and answers it: Redis may already have it', async () => {
+      queue.add.mockRejectedValue(new TimeoutError('export queue timed out after 3000 ms'));
+      await expect(service.request('p-1', 'SVG')).resolves.toEqual({ jobId: 'job-1', status: 'PENDING', fitCheck: expect.any(Object) });
+      expect(exportJob().updateManyAndReturn).not.toHaveBeenCalled();
+    });
+
+    it('a queue that refuses fails the PENDING job (refs recomputed) and answers 503', async () => {
+      queue.add.mockRejectedValue(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
+      await expect(service.request('p-1', 'SVG')).rejects.toThrow('The export queue is unavailable');
+      expect(exportJob().updateManyAndReturn).toHaveBeenCalledWith({
+        where: { id: 'job-1', status: { in: ['PENDING'] } },
+        data: { status: 'FAILED', errorLog: 'The export queue is unavailable' },
+        select: { projectId: true },
+      });
+      expect((tx.$executeRaw as jest.Mock).mock.calls.at(-1)[0].join('?')).toContain('project_file_refs');
+    });
+
+    it('never fails a job a worker already took: answers it with its current status', async () => {
+      queue.add.mockRejectedValue(new Error('Connection is closed.'));
+      exportJob().updateManyAndReturn.mockResolvedValueOnce([]);
+      await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ jobId: 'job-1', status: 'PROCESSING' });
+    });
   });
 
   it('access: unlocked once a paid order holds this version or an old unlock is valid, locked again after an edit', async () => {

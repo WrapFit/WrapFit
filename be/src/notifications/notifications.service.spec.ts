@@ -59,23 +59,25 @@ describe('NotificationsService', () => {
     });
   });
 
-  it('stores one notification per finished export for its owner', async () => {
+  it('stores one notification per finished export for its owner, in the transaction it is given', async () => {
     const { service, prisma, redis } = build();
-    await service.notifyExportCompleted({ exportJobId: 'job-1', projectId: 'p-1', userId: author, fileType: 'PDF_CMYK' });
-    expect(prisma.notification.create).toHaveBeenCalledWith({
+    const tx = { notification: { create: jest.fn() } };
+    await service.recordExportCompleted(tx as never, { exportJobId: 'job-1', projectId: 'p-1', userId: author, fileType: 'PDF_CMYK' });
+    expect(tx.notification.create).toHaveBeenCalledWith({
       data: { userId: author, type: 'EXPORT_COMPLETED', projectId: 'p-1', payload: { exportJobId: 'job-1', fileType: 'PDF_CMYK' } },
     });
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+    // The push follows the commit: the export.completed listener sends it.
+    expect(redis.publish).not.toHaveBeenCalled();
+    await new NotificationsListener(service).onExportCompleted({ exportJobId: 'job-1', projectId: 'p-1', userId: author, fileType: 'PDF_CMYK' });
     expect(redis.publish).toHaveBeenCalledWith(NOTIFICATIONS_CHANNEL, author);
   });
 
-  it('keeps the stored row and does not throw when Redis cannot publish', async () => {
-    const { service, prisma, redis } = build();
+  it('does not throw when Redis cannot publish', async () => {
+    const { service, redis } = build();
     redis.publish.mockRejectedValue(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
     jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
-    await expect(
-      service.notifyExportCompleted({ exportJobId: 'job-1', projectId: 'p-1', userId: author, fileType: 'SVG' }),
-    ).resolves.toBeUndefined();
-    expect(prisma.notification.create).toHaveBeenCalledTimes(1);
+    await expect(service.push(author)).resolves.toBeUndefined();
   });
 
   describe('list', () => {
@@ -168,9 +170,11 @@ describe('NotificationsService', () => {
   });
 
   it('never lets a failed notification reach the request or the export job that emitted the event', async () => {
-    const { service, prisma } = build();
+    const { service, prisma, redis } = build();
     prisma.notification.create.mockRejectedValue(new Error('database down'));
+    redis.publish.mockRejectedValue(new Error('redis down'));
     const listener = new NotificationsListener(service);
+    jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
     jest.spyOn(listener['logger'], 'error').mockImplementation(() => undefined);
     await expect(
       listener.onExportCompleted({ exportJobId: 'job-1', projectId: 'p-1', userId: author, fileType: 'SVG' }),

@@ -4,9 +4,11 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PRINT_DPI, type BoxDimensions, type CanvasState } from '@wrapfit/shared';
 import { Job } from 'bullmq';
 import { ConfigService, EXPORT_COMPLETED, ExportCompletedEvent, runWithRequestId } from '../common';
+import { NotificationsService } from '../notifications';
 import { PrismaService } from '../shared/prisma';
 import { pruneAutomaticSnapshots } from '../projects';
 import { PRIVATE_KEY_PREFIX, StorageService, toClientCanvas } from '../storage';
+import { failExport } from './export-failure';
 import { EXPORT_QUEUE, ExportDesign, ExportJobData, FILE_FORMATS, titleSlug, UNFINISHED_EXPORT } from './export.constants';
 import { libraryFile } from './rendering/library-files';
 import { renderPrintPackage } from './rendering/print-package';
@@ -36,6 +38,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     private readonly storage: StorageService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {
     super();
   }
@@ -53,12 +56,8 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
         const message = error instanceof Error ? error.message : String(error);
         const lastAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
         this.logger.warn(`Export ${exportJobId} attempt ${job.attemptsMade + 1} failed: ${message}`);
-        if (lastAttempt) {
-          await this.prisma.exportJob.updateMany({
-            where: { id: exportJobId, status: UNFINISHED_EXPORT },
-            data: { status: 'FAILED', errorLog: message.slice(0, 2000) },
-          });
-        }
+        // Only an unfinished row: a job completed meanwhile (stalled, then re-run) is never turned into FAILED.
+        if (lastAttempt) await failExport(this.prisma, exportJobId, message);
         throw error; // lets BullMQ schedule the next attempt
       }
     });
@@ -113,14 +112,15 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
     if (!stored) throw new Error('File storage is not configured');
 
     const completedAt = new Date();
+    const completed: ExportCompletedEvent = { exportJobId, projectId: project.id, userId: project.userId, fileType: job.fileType };
     const recorded = await this.prisma.$transaction(async (tx) => {
       // Only the run that moves the job out of PROCESSING records it: a second run of the same job (handed out again
       // by BullMQ) writes the same file under the same key and nothing else.
-      const { count: completed } = await tx.exportJob.updateMany({
+      const { count: finished } = await tx.exportJob.updateMany({
         where: { id: exportJobId, status: 'PROCESSING' },
         data: { status: 'COMPLETED', storageKey, completedAt },
       });
-      if (!completed) return false;
+      if (!finished) return false;
       // Analytics dashboard (docs/17 S7), in the transaction that completes the job: counted once.
       await tx.productEvent.create({
         data: {
@@ -131,6 +131,8 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
           createdAt: completedAt,
         },
       });
+      // "Your print file is ready", with the job: never lost if the worker stops after the commit, never doubled.
+      await this.notifications.recordExportCompleted(tx, completed);
       // UC-07: every print export leaves a version the user can come back to: the exported design (keys included).
       await tx.projectSnapshot.create({
         data: {
@@ -150,8 +152,8 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       this.logger.warn(`Export ${exportJobId} was finished by another run meanwhile: not recorded twice`);
       return { storageKey };
     }
-    // After the commit: NotificationsCoreModule (registered in this worker) stores "your file is ready" for the owner.
-    const completed: ExportCompletedEvent = { exportJobId, projectId: project.id, userId: project.userId, fileType: job.fileType };
+    // After the commit: the listener of NotificationsCoreModule (registered in this worker) pushes the new notification
+    // to the owner's open browsers. Losing this push loses nothing: the row is stored and the frontend also polls.
     this.events.emit(EXPORT_COMPLETED, completed);
     this.logger.log(
       `Export ${exportJobId} (${job.fileType}, ${body.length} bytes) completed in ${Date.now() - startedAt} ms`,
