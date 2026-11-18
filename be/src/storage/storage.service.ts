@@ -376,7 +376,12 @@ export class StorageService implements IProjectFiles {
     };
   }
 
-  async detachSharedFiles(projectIds: string[]): Promise<void> {
+  /**
+   * Moves the files of these projects that other projects still show to the oldest of those projects. Runs in the
+   * transaction that deletes them (`db`), after their rows are locked: `projectIds` must be exactly the projects that
+   * go, so a project skipped by the purge can still receive a file (docs/30 review round 3).
+   */
+  async detachSharedFiles(projectIds: string[], db: Db = this.prisma): Promise<void> {
     if (!projectIds.length) return;
     // The file moves to the oldest other project that shows it (a copy or a remix): it is then deleted with the last
     // project that shows it, instead of staying in the bucket with no project at all. Its owner and quota stay.
@@ -384,7 +389,7 @@ export class StorageService implements IProjectFiles {
     // key instead of deleting a file it shows (the next run retries).
     // The heir subquery reads only the refs of files these projects own (stored_files_project_id_idx, then
     // project_file_refs_stored_file_id_idx), not the whole project_file_refs table.
-    await this.prisma.$executeRaw`
+    await db.$executeRaw`
       UPDATE stored_files f SET project_id = heir.project_id
       FROM (
         SELECT DISTINCT ON (r.stored_file_id) r.stored_file_id, r.project_id
@@ -471,9 +476,13 @@ export class StorageService implements IProjectFiles {
     };
   }
 
-  listProjectFiles(projectIds: string[]): Promise<ProjectFile[]> {
+  /**
+   * Files of these projects, read in the transaction that deletes them (`db`) after their rows are locked: a file
+   * written for one of them meanwhile (a QR code) has committed by then and is listed, so its object goes too.
+   */
+  listProjectFiles(projectIds: string[], db: Db = this.prisma): Promise<ProjectFile[]> {
     if (!projectIds.length) return Promise.resolve([]);
-    return this.prisma.storedFile.findMany({
+    return db.storedFile.findMany({
       where: { projectId: { in: projectIds } },
       select: { projectId: true, key: true },
     }) as Promise<ProjectFile[]>;

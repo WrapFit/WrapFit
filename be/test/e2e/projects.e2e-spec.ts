@@ -18,6 +18,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
+import { holdTransaction, untilLockWaiters } from './helpers/locks';
 import { createPaidOrder, sampleOrderData } from './helpers/orders';
 
 /**
@@ -850,34 +851,8 @@ describe('Projects API (e2e)', () => {
 
   // docs/30 item 4, review round 2: a checkout or a restore that commits while the deletion waits for the project row.
   describe('permanent deletion racing a checkout or a restore', () => {
-    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-    /** Holds a transaction open after `work`, until `release`: a checkout (or a second tab) between its write and its commit. */
-    const hold = <T>(work: (tx: Prisma.TransactionClient) => Promise<T>) => {
-      let release!: () => void;
-      const gate = new Promise<void>((resolve) => (release = resolve));
-      let written!: () => void;
-      const started = new Promise<void>((resolve) => (written = resolve));
-      const done = prisma.$transaction(
-        async (tx): Promise<T> => {
-          const result = await work(tx);
-          written();
-          await gate;
-          return result;
-        },
-        { timeout: 30_000 },
-      );
-      return { started, release, done };
-    };
-    /** Resolves once `count` sessions wait for a row lock (a statement blocked by another transaction). */
-    const untilWaiting = async (count: number) => {
-      for (let i = 0; i < 200; i++) {
-        const [{ n }] = await prisma.$queryRaw<{ n: number }[]>`
-          SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'`;
-        if (n >= count) return;
-        await sleep(25);
-      }
-      throw new Error(`fewer than ${count} sessions wait for a lock`);
-    };
+    const hold = <T>(work: (tx: Prisma.TransactionClient) => Promise<T>) => holdTransaction(prisma, work);
+    const untilWaiting = (count: number) => untilLockWaiters(prisma, count);
     const trashedProject = async (title: string) => {
       const id = (await as(carol).post('/api/projects').send(newProject({ title })).expect(201)).body.id as string;
       // Read by the checkout while the project was still active (orders.service.ts reads it without a lock).
@@ -944,6 +919,56 @@ describe('Projects API (e2e)', () => {
 
       expect((await deleting).status).toBe(409);
       expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).toMatchObject({ status: 'ACTIVE' });
+    });
+
+    // Review round 3: the files a deletion removes are listed after the lock, in the transaction that deletes.
+    it('a file written to the project while the deletion waits is deleted from the bucket too', async () => {
+      const project = await trashedProject('QR ghi giữa lúc xoá');
+      const other = (await as(carol).post('/api/projects').send(newProject({ title: 'Dự án khác' })).expect(201)).body.id as string;
+      const storage = app.get(StorageService);
+      const key = `projects/${project.id}/unboxing/qr-e2e-${run}.png`;
+      await storage.putGeneratedFile({ userId: carol.id, projectId: other, key, purpose: 'QR_CODE', contentType: 'image/png', body: Buffer.from('qr') });
+      // The QR code of the project is being stored: its row (holding the project row) commits after the deletion began.
+      const qr = hold((tx) => tx.storedFile.update({ where: { key }, data: { projectId: project.id } }));
+      await qr.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      qr.release();
+      await qr.done;
+
+      expect((await deleting).status).toBe(204);
+      expect(await prisma.storedFile.findUnique({ where: { key } })).toBeNull();
+      await expect(storage.getObject(key)).rejects.toThrow();
+    });
+
+    it('the purge hands a file over to a remix it skips because the remix is locked, and still deletes the source', async () => {
+      const source = (await as(carol).post('/api/projects').send(newProject({ title: 'Bản gốc có ảnh' })).expect(201)).body.id as string;
+      const image = await uploadPng(app, carol.cookie, 'IMAGE', source);
+      const element = { id: 'img', type: 'image', panelId: 'front', x: 1, y: 1, width: 5, height: 5, rotation: 0, content: image };
+      await as(carol).patch(`/api/projects/${source}`).send({ canvasState: { elements: [element] } }).expect(200);
+      const remix = (await as(carol).post(`/api/projects/${source}/duplicate`).expect(201)).body.id as string;
+      const key = image.slice(image.indexOf('users/'));
+      expect(await prisma.storedFile.findUniqueOrThrow({ where: { key } })).toMatchObject({ projectId: source });
+      const expired = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+      for (const id of [source, remix]) {
+        await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+        await prisma.packagingProject.update({ where: { id }, data: { deletedAt: expired } });
+      }
+
+      // Another transaction holds the remix (a checkout writing an order of it): this run skips it.
+      const busy = hold((tx) => tx.$queryRaw`SELECT 1 FROM packaging_projects WHERE id = ${remix}::uuid FOR KEY SHARE`);
+      await busy.started;
+      try {
+        await app.get(ProjectsService).purgeExpiredTrash();
+      } finally {
+        busy.release();
+        await busy.done;
+      }
+
+      expect(await prisma.packagingProject.findUnique({ where: { id: source } })).toBeNull();
+      expect(await prisma.packagingProject.findUnique({ where: { id: remix } })).not.toBeNull();
+      expect(await prisma.storedFile.findUniqueOrThrow({ where: { key } })).toMatchObject({ projectId: remix });
+      expect((await fetch(image)).status).toBe(200);
     });
 
     it('the trash purge leaves a project a checkout is writing an order for', async () => {

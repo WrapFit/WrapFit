@@ -11,14 +11,9 @@ export interface ProjectFile {
 /** Files of projects in object storage (implemented by StorageService). */
 export interface IProjectFiles {
   /**
-   * Moves the uploaded files of these projects that other projects still show (project_file_refs) to the oldest of
-   * those projects: a duplicate or a remix copies the canvas with its images, so those files must outlive the deleted
-   * source. Call before listProjectFiles.
+   * Removes objects from the bucket. Never throws. A permanent deletion passes the keys the repository listed in its
+   * transaction (shared files handed over to the projects that still show them, the others listed), after the commit.
    */
-  detachSharedFiles(projectIds: string[]): Promise<void>;
-  /** Read before deleting the projects: the file rows disappear with them (ON DELETE CASCADE). */
-  listProjectFiles(projectIds: string[]): Promise<ProjectFile[]>;
-  /** Removes objects from the bucket. Never throws. */
   deleteObjects(keys: string[]): Promise<void>;
   /** Key of an upload URL of `userId` for one of `purposes`; 400 FILE_URL_NOT_ALLOWED / FILE_NOT_OWNED otherwise. */
   resolveUpload(url: string, userId: string, purposes: UploadPurpose[]): Promise<string>;

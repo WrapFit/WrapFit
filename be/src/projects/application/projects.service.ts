@@ -274,11 +274,10 @@ export class ProjectsService {
     const candidates = await this.projects.findTrashedBefore(cutoff, PURGE_BATCH);
     if (!candidates.length) return 0;
 
-    await this.files.detachSharedFiles(candidates);
-    const files = await this.files.listProjectFiles(candidates);
-    const deleted = new Set(await this.projects.deleteTrashed(candidates, cutoff));
-    await this.files.deleteObjects(files.filter((file) => deleted.has(file.projectId)).map((file) => file.key));
-    return deleted.size;
+    // Shared files are handed over and the keys listed in the deleting transaction; the objects go after the commit.
+    const { deleted, keys } = await this.projects.deleteTrashed(candidates, cutoff);
+    await this.files.deleteObjects(keys);
+    return deleted.length;
   }
 
   /**
@@ -314,13 +313,12 @@ export class ProjectsService {
     // with the project row locked, in case an order or a restore committed in between. No object is deleted then.
     const holding = await this.projects.findOrderHoldingDesign(projectId);
     if (holding) throw projectInActiveOrder(holding);
-    await this.files.detachSharedFiles([projectId]);
-    const files = await this.files.listProjectFiles([projectId]);
+    // Shared files are handed over and the keys listed in the deleting transaction; the objects go after the commit.
     const outcome = await this.projects.delete(projectId);
     if (outcome.kind === 'IN_ORDER') throw projectInActiveOrder(outcome.orderCode);
     if (outcome.kind === 'NOT_IN_TRASH') throw notInTrash();
     if (outcome.kind === 'NOT_FOUND') throw new NotFoundException('Project not found');
-    await this.files.deleteObjects(files.map((file) => file.key));
+    await this.files.deleteObjects(outcome.keys);
   }
 
   /** Throws 404 when the project does not exist or belongs to someone else (no information leak). */

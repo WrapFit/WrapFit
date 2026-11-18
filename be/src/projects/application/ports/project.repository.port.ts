@@ -14,7 +14,8 @@ export const PROJECT_REPOSITORY = Symbol('PROJECT_REPOSITORY');
 
 /** Outcome of a permanent deletion. */
 export type PermanentDeletion =
-  | { kind: 'DELETED' }
+  /** `keys`: objects of the deleted project to remove from the bucket once committed. */
+  | { kind: 'DELETED'; keys: string[] }
   | { kind: 'NOT_FOUND' }
   /** Restored meanwhile (another tab). */
   | { kind: 'NOT_IN_TRASH' }
@@ -132,11 +133,11 @@ export interface IProjectRepository {
    */
   findTrashedBefore(cutoff: Date, limit: number): Promise<string[]>;
   /**
-   * Permanently deletes those of `projectIds` that are still in the trash since before `cutoff` (one may have
-   * been restored meanwhile) and that no order holds (one may have been ordered meanwhile), and returns the ids
-   * actually deleted.
+   * Permanently deletes those of `projectIds` that are still in the trash since before `cutoff` (one may have been
+   * restored meanwhile), that no other transaction holds and that no order holds (one may have been ordered
+   * meanwhile). Returns the ids deleted and the keys of their objects to remove from the bucket once committed.
    */
-  deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]>;
+  deleteTrashed(projectIds: string[], cutoff: Date): Promise<{ deleted: string[]; keys: string[] }>;
   /** Projects without a FitCheck score, by ascending id after `afterId` (at most `limit`). */
   findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]>;
   /** Stores a FitCheck result without touching `updatedAt` (the dashboard order). */

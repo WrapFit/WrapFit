@@ -62,20 +62,15 @@ describe('ProjectsService', () => {
       update: jest.fn().mockImplementation(async (_id, changes) => changes),
       updateContent: jest.fn().mockImplementation(async (_id, changes) => changes),
       setLifecycle: jest.fn().mockImplementation(async (_id, state) => state),
-      delete: jest.fn().mockResolvedValue({ kind: 'DELETED' }),
+      delete: jest.fn().mockResolvedValue({ kind: 'DELETED', keys: [] }),
       findOrderHoldingDesign: jest.fn().mockResolvedValue(null),
       findTrashedBefore: jest.fn().mockResolvedValue(['p-1', 'p-2', 'p-3']),
-      deleteTrashed: jest.fn().mockResolvedValue(['p-1', 'p-3']),
+      // p-2 was restored between the lookup and the deletion: the repository leaves it and its files.
+      deleteTrashed: jest.fn().mockResolvedValue({ deleted: ['p-1', 'p-3'], keys: ['a.png', 'c.png'] }),
       findUnchecked: jest.fn().mockResolvedValue([]),
       saveFitCheck: jest.fn(),
     };
     files = {
-      detachSharedFiles: jest.fn(),
-      listProjectFiles: jest.fn().mockResolvedValue([
-        { projectId: 'p-1', key: 'a.png' },
-        { projectId: 'p-2', key: 'b.png' },
-        { projectId: 'p-3', key: 'c.png' },
-      ]),
       deleteObjects: jest.fn(),
       resolveUpload: jest.fn(),
       assertCanvasUploads: jest.fn(),
@@ -416,13 +411,9 @@ describe('ProjectsService', () => {
 
       expect(repo.findTrashedBefore).toHaveBeenCalledWith(cutoff, expect.any(Number));
       expect(repo.deleteTrashed).toHaveBeenCalledWith(['p-1', 'p-2', 'p-3'], cutoff);
-      // Files still shown by copies are detached before the file list is read.
-      expect(files.detachSharedFiles).toHaveBeenCalledWith(['p-1', 'p-2', 'p-3']);
-      expect(files.detachSharedFiles.mock.invocationCallOrder[0]).toBeLessThan(
-        files.listProjectFiles.mock.invocationCallOrder[0],
-      );
-      // p-2 was restored between the lookup and the deletion: its file must stay.
+      // The keys the repository listed in its transaction, deleted from the bucket after the commit.
       expect(files.deleteObjects).toHaveBeenCalledWith(['a.png', 'c.png']);
+      expect(repo.deleteTrashed.mock.invocationCallOrder[0]).toBeLessThan(files.deleteObjects.mock.invocationCallOrder[0]);
     });
 
     it('does nothing when the trash has nothing expired', async () => {
@@ -436,10 +427,9 @@ describe('ProjectsService', () => {
   it('remove deletes only projects that are in the trash', async () => {
     await expect(service.remove('project-1')).rejects.toThrow(ConflictException);
     repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
-    files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
+    repo.delete.mockResolvedValueOnce({ kind: 'DELETED', keys: ['thumb.webp'] });
     await service.remove('project-1');
     expect(repo.delete).toHaveBeenCalledWith('project-1');
-    expect(files.detachSharedFiles).toHaveBeenCalledWith(['project-1']);
     expect(files.deleteObjects).toHaveBeenCalledWith(['thumb.webp']);
   });
 
@@ -460,7 +450,6 @@ describe('ProjectsService', () => {
         status: 409,
         body: { code: 'PROJECT_IN_ACTIVE_ORDER', message: expect.stringContaining('WF-2611-0042') },
       });
-      expect(files.detachSharedFiles).not.toHaveBeenCalled();
       expect(repo.delete).not.toHaveBeenCalled();
       expect(files.deleteObjects).not.toHaveBeenCalled();
     });
@@ -468,7 +457,6 @@ describe('ProjectsService', () => {
     it('answers the same 409 when an order was placed between the check and the locked DELETE, and deletes no object', async () => {
       inTrash();
       repo.delete.mockResolvedValueOnce({ kind: 'IN_ORDER', orderCode: 'WF-2611-0043' });
-      files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
       await expect(refusal(service.remove('project-1'))).resolves.toEqual({
         status: 409,
         body: { code: 'PROJECT_IN_ACTIVE_ORDER', message: expect.stringContaining('WF-2611-0043') },
@@ -479,7 +467,6 @@ describe('ProjectsService', () => {
     it('answers 409 when another tab restored the project meanwhile, and deletes no object', async () => {
       inTrash();
       repo.delete.mockResolvedValueOnce({ kind: 'NOT_IN_TRASH' });
-      files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
       await expect(refusal(service.remove('project-1'))).resolves.toMatchObject({ status: 409 });
       expect(files.deleteObjects).not.toHaveBeenCalled();
     });

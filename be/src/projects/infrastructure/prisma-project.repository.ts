@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import type { FitCheckReport } from '@wrapfit/shared';
 import { noOrderHoldsDesign, ORDER_STATUSES_HOLDING_DESIGN } from '../../orders/order-status';
 import { PrismaService } from '../../shared/prisma';
-import { toStoredCanvas } from '../../storage';
+import { StorageService, toStoredCanvas } from '../../storage';
 import type {
   DesignTemplateSource,
   IProjectRepository,
@@ -19,9 +19,15 @@ import type { ProjectDetail, ProjectSummary } from '../domain/project.types';
 import { syncProjectFileRefs } from './project-file-refs';
 import { detailSelect, json, nullableJson, summarySelect, toDetail, toSummary } from './project.select';
 
+/** A purge batch (up to PURGE_BATCH projects and their cascades) runs in one transaction. */
+const PURGE_TRANSACTION_TIMEOUT_MS = 60_000;
+
 @Injectable()
 export class PrismaProjectRepository implements IProjectRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   findTemplateRules(templateId: string): Promise<TemplateRules | null> {
     return this.prisma.boxTemplate.findUnique({
@@ -173,9 +179,10 @@ export class PrismaProjectRepository implements IProjectRepository {
       if (row.status !== 'DELETED') return { kind: 'NOT_IN_TRASH' };
       const orderCode = await orderHoldingDesign(tx, projectId);
       if (orderCode) return { kind: 'IN_ORDER', orderCode };
+      const keys = await this.releaseFiles(tx, [projectId]);
       // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
       await tx.$executeRaw`DELETE FROM packaging_projects WHERE id = ${projectId}::uuid`;
-      return { kind: 'DELETED' };
+      return { kind: 'DELETED', keys };
     });
   }
 
@@ -194,23 +201,40 @@ export class PrismaProjectRepository implements IProjectRepository {
     return rows.map((row) => row.id);
   }
 
-  async deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]> {
-    if (!projectIds.length) return [];
-    return this.prisma.$transaction(async (tx) => {
-      // Lock first, as `delete` does, but skip the rows another transaction holds (a checkout writing an order, a
-      // restore): the next run retries them. The DELETE, a new statement, then sees the orders committed before.
-      const locked = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM packaging_projects
-        WHERE id = ANY(${projectIds}::uuid[]) AND status = 'DELETED' AND deleted_at < ${cutoff.toISOString()}::timestamptz
-        FOR UPDATE SKIP LOCKED`;
-      if (!locked.length) return [];
-      // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
-      const rows = await tx.$queryRaw<{ id: string }[]>`
-        DELETE FROM packaging_projects p
-        WHERE p.id = ANY(${locked.map((row) => row.id)}::uuid[]) AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
-        RETURNING p.id`;
-      return rows.map((row) => row.id);
-    });
+  async deleteTrashed(projectIds: string[], cutoff: Date): Promise<{ deleted: string[]; keys: string[] }> {
+    if (!projectIds.length) return { deleted: [], keys: [] };
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Lock first, as `delete` does, but skip the rows another transaction holds (a checkout writing an order, a
+        // restore): the next run retries them. The statements below then see the orders committed before the lock.
+        const locked = await tx.$queryRaw<{ id: string }[]>`
+          SELECT id FROM packaging_projects
+          WHERE id = ANY(${projectIds}::uuid[]) AND status = 'DELETED' AND deleted_at < ${cutoff.toISOString()}::timestamptz
+          FOR UPDATE SKIP LOCKED`;
+        if (!locked.length) return { deleted: [], keys: [] };
+        // Exactly the projects that go: a skipped one (locked, or held by an order) can still receive a shared file.
+        const going = (
+          await tx.$queryRaw<{ id: string }[]>`
+            SELECT p.id FROM packaging_projects p
+            WHERE p.id = ANY(${locked.map((row) => row.id)}::uuid[]) AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}`
+        ).map((row) => row.id);
+        if (!going.length) return { deleted: [], keys: [] };
+        const keys = await this.releaseFiles(tx, going);
+        // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
+        await tx.$executeRaw`DELETE FROM packaging_projects WHERE id = ANY(${going}::uuid[])`;
+        return { deleted: going, keys };
+      },
+      { timeout: PURGE_TRANSACTION_TIMEOUT_MS },
+    );
+  }
+
+  /**
+   * In the deleting transaction, with the projects locked: hands the files other projects still show over to them,
+   * then lists the keys of the files that go with these projects (docs/30 review round 3).
+   */
+  private async releaseFiles(tx: Prisma.TransactionClient, projectIds: string[]): Promise<string[]> {
+    await this.storage.detachSharedFiles(projectIds, tx);
+    return (await this.storage.listProjectFiles(projectIds, tx)).map((file) => file.key);
   }
 
   async findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]> {
