@@ -3,8 +3,8 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { getUnreadNotificationCount, listNotifications, markAllNotificationsRead, markNotificationRead } from "@/api/notifications";
-import { API_BASE_URL, OFFLINE_DEMO } from "@/config";
 import { queryKeys } from "@/hooks/data";
+import { onServerEvent } from "@/services/realtime";
 import type { NotificationPage } from "@/types/api";
 
 /** The badge is refreshed this often while the tab is visible, and when the tab gets the focus back. */
@@ -90,39 +90,13 @@ export function useMarkAllNotificationsRead() {
 /**
  * Live push: the API's WebSocket gateway sends `notifications.changed` to my sockets when my inbox gets a new row (a
  * remix, or an export finished in the worker, bridged through Redis). Best effort: no socket, no harm, the poll of
- * useUnreadNotificationCount catches up. socket.io-client is loaded only for signed-in users.
+ * useUnreadNotificationCount catches up. The socket is the tab's shared one (services/realtime).
  */
 export function useNotificationsLive(enabled: boolean) {
   const queryClient = useQueryClient();
   useEffect(() => {
-    if (!enabled || OFFLINE_DEMO || typeof window === "undefined") return;
-    let closed = false;
-    let socket: import("socket.io-client").Socket | null = null;
-    let retry: ReturnType<typeof setTimeout> | undefined;
-    void import("socket.io-client")
-      .then(({ io }) => {
-        if (closed) return;
-        // `/api` -> `<this origin>/events` on path `/api/socket.io` (the gateway's path, behind the same proxy).
-        const base = new URL(API_BASE_URL, window.location.href);
-        socket = io(`${base.origin}/events`, {
-          path: `${base.pathname.replace(/\/+$/, "")}/socket.io`,
-          // The Next.js `/api/*` rewrite drops a trailing slash before the query (the gateway accepts both).
-          addTrailingSlash: false,
-          withCredentials: true,
-          reconnectionDelayMax: 30_000,
-        });
-        socket.on(NOTIFICATIONS_CHANGED, () => void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }));
-        // The server closes a socket whose access cookie expired: come back once the client has refreshed it.
-        socket.on("disconnect", (reason) => {
-          if (reason === "io server disconnect") retry = setTimeout(() => socket?.connect(), 15_000);
-        });
-      })
-      .catch(() => undefined);
-    return () => {
-      closed = true;
-      clearTimeout(retry);
-      socket?.close();
-    };
+    if (!enabled) return;
+    return onServerEvent(NOTIFICATIONS_CHANGED, () => void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }));
   }, [enabled, queryClient]);
 }
 

@@ -20,7 +20,7 @@ export type PaymentPurpose = ExportPackId | XuPackId | "PRO_MONTH" | "SAMPLE_ORD
 /** Validity of a purchased lot (xu; export credits before they were converted to xu). */
 export const PURCHASED_LOT_VALID_MONTHS = 12;
 
-/** Pro (`STARTER`): unlimited clean exports for 30 days (docs/17 M4). */
+/** Pro (`STARTER`) for 30 days: more storage and a larger xu allowance. It does not unlock print files (docs/28 Q1). */
 export const PRO_MONTH = { plan: "STARTER", priceVnd: 99_000, periodDays: 30 } as const;
 
 /** Business (`PRO_BUSINESS`): price shown on the pricing page with a "Liên hệ" button, not sold online yet. */

@@ -47,7 +47,12 @@ export type ApiErrorCode =
   | "AI_IMAGE_UNAVAILABLE"
   | "AI_IMAGE_BUSY"
   | "STORAGE_QUOTA_EXCEEDED"
-  | "VNPAY_NOT_CONFIGURED";
+  | "STORAGE_UNAVAILABLE"
+  | "VNPAY_NOT_CONFIGURED"
+  | "STOCK_PHOTO_TOO_LARGE"
+  | "STOCK_RATE_LIMITED"
+  | "STOCK_PROVIDER_ERROR"
+  | "STOCK_UNAVAILABLE";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {

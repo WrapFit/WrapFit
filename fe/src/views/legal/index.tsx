@@ -44,8 +44,9 @@ const PRIVACY: LegalDoc = {
   label: "Quyền riêng tư",
   title: "Chính sách quyền riêng tư",
   lead: "WrapFit chỉ thu thập những gì cần để bạn thiết kế, lưu và in chiếc hộp của mình — và không bán dữ liệu của bạn cho bất kỳ ai.",
-  updated: "2026-10-12",
+  updated: "2026-11-18",
   versions: [
+    { version: "1.2", date: "2026-11-18", change: "Đơn, thanh toán và hoá đơn lưu 10 năm theo Luật Kế toán, kể cả khi xoá tài khoản." },
     { version: "1.1", date: "2026-10-12", change: "Thêm phần đơn in mẫu và xưởng in đối tác." },
     { version: "1.0", date: "2026-09-20", change: "Bản đầu tiên cho bản thử nghiệm (beta)." },
   ],
@@ -110,6 +111,8 @@ const PRIVACY: LegalDoc = {
           items={[
             "Dự án và tệp: lưu đến khi bạn xoá.",
             "Thùng rác: dự án đã xoá được giữ 30 ngày rồi xoá hẳn cùng các tệp của nó.",
+            "Đơn in mẫu, thanh toán và thông tin xuất hoá đơn: lưu tối thiểu 10 năm kể từ cuối năm phát sinh, theo Luật Kế toán 2015 (Điều 41) và Nghị định 174/2016/NĐ-CP, kể cả khi tài khoản bị xoá. Gồm tên, số điện thoại, địa chỉ người nhận và thiết kế đã in, dùng cho kế toán, đối soát, giao hàng và khiếu nại.",
+            "Tài khoản đã xoá: hết 10 năm đó, tên, số điện thoại, địa chỉ người nhận và thông tin xuất hoá đơn được xoá; số tiền và nội dung đơn được giữ ở dạng không định danh. Tài khoản còn dùng thì vẫn xem được lịch sử đơn của mình.",
             "Phiên đăng nhập: hết hạn tự động; “Đăng xuất mọi thiết bị” huỷ tất cả ngay lập tức.",
           ]}
         />
@@ -121,7 +124,7 @@ const PRIVACY: LegalDoc = {
       body: (
         <>
           <P>Bạn có quyền xem, sửa, tải xuống và yêu cầu xoá dữ liệu của mình, theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.</P>
-          <UL items={["Sửa hồ sơ trong Cài đặt tài khoản.", "Tải file in của từng dự án trong Đơn hàng & file in.", "Yêu cầu xoá tài khoản: gửi email đến privacy@wrapfit.vn, chúng tôi xử lý trong 7 ngày làm việc."]} />
+          <UL items={["Sửa hồ sơ trong Cài đặt tài khoản.", "Tải file in của từng dự án trong Đơn hàng & file in.", "Yêu cầu xoá tài khoản: gửi email đến privacy@wrapfit.vn, chúng tôi xử lý trong 7 ngày làm việc. Tài khoản đã có đơn hoặc thanh toán thì được ẩn danh thay vì xoá: email, tên, ảnh và các dự án khác bị xoá; đơn, thanh toán và hoá đơn được giữ theo thời hạn của Luật Kế toán ở mục Thời gian lưu giữ."]} />
         </>
       ),
     },
@@ -237,17 +240,17 @@ const COOKIES: LegalDoc = {
             </thead>
             <tbody className="divide-y divide-landing-line/60">
               <tr>
-                <td className="px-4 py-3 font-mono text-xs">wf_access</td>
+                <td className="px-4 py-3 font-mono text-xs">__Secure-wf_access</td>
                 <td className="px-4 py-3">Phiên đăng nhập ngắn hạn (HttpOnly, không đọc được bằng JavaScript)</td>
                 <td className="px-4 py-3">Vài phút, tự gia hạn</td>
               </tr>
               <tr>
-                <td className="px-4 py-3 font-mono text-xs">wf_refresh</td>
+                <td className="px-4 py-3 font-mono text-xs">__Secure-wf_refresh</td>
                 <td className="px-4 py-3">Giữ đăng nhập, xoay vòng sau mỗi lần dùng (HttpOnly)</td>
                 <td className="px-4 py-3">Đến khi đăng xuất</td>
               </tr>
               <tr>
-                <td className="px-4 py-3 font-mono text-xs">Trạng thái Google</td>
+                <td className="px-4 py-3 font-mono text-xs">__Secure-wf_oauth_state</td>
                 <td className="px-4 py-3">Chống giả mạo khi đăng nhập bằng Google</td>
                 <td className="px-4 py-3">Vài phút</td>
               </tr>

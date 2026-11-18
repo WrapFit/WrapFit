@@ -1,6 +1,15 @@
 import { BLEED_MM, MIN_DPI, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, XU_PATTERN_COST } from "@wrapfit/shared";
 import { ROUTES } from "@/constants";
-import { PLANS, PLANS_ON_SALE, PRO_PERIOD_DAYS, formatQuota, formatVnd, type SaleTier } from "@/features/pricing";
+import {
+  PLANS,
+  PLANS_ON_SALE,
+  PRINT_FILE_RULE,
+  PRO_BENEFITS,
+  PRO_PERIOD_DAYS,
+  formatQuota,
+  formatVnd,
+  type SaleTier,
+} from "@/features/pricing";
 
 // Copy of /pricing. Names, prices and storage come from features/pricing (a display layer over @wrapfit/shared/billing,
 // the numbers the backend charges and enforces); FitCheck rules from @wrapfit/shared.
@@ -48,11 +57,11 @@ export const PLAN_CARDS: Record<SaleTier, PlanCardCopy> = {
     subtitle: "Cho shop làm hộp mỗi tuần",
     note: `Trả một lần cho ${PRO_PERIOD_DAYS} ngày, không tự gia hạn`,
     features: [
-      `Xuất file in sạch không giới hạn trong ${PRO_PERIOD_DAYS} ngày`,
-      "PDF CMYK 4 lớp · SVG · DXF · PDF A4/A3",
-      `${formatQuota(STARTER.storageBytes)} lưu trữ · ${xu(STARTER.xuPerPeriod)} Wrap mỗi tháng`,
-      "Ưu tiên đặt in hộp mẫu qua xưởng đối tác",
+      PRO_BENEFITS.storage,
+      PRO_BENEFITS.xu,
+      PRO_BENEFITS.rollover,
       "Mọi tính năng của gói Miễn phí",
+      `${PRINT_FILE_RULE}, kể cả ${STARTER.name}`,
     ],
     cta: `Chọn ${STARTER.name}`,
     popular: true,
@@ -87,14 +96,8 @@ const perTier = (value: (tier: SaleTier) => string) =>
 export const COMPARISON: ComparisonRow[] = [
   { feature: "Studio, 4 cấu trúc hộp, hộp gấp 3D", values: sameForAll("Có") },
   { feature: "FitCheck™ và Auto-Fix", values: sameForAll("Có") },
-  {
-    feature: "PDF A4 in tại nhà",
-    values: { FREE: "Khi đặt in mẫu", STARTER: "Không giới hạn", PRO_BUSINESS: "Không giới hạn" },
-  },
-  {
-    feature: "PDF CMYK 4 lớp cho xưởng · SVG · DXF",
-    values: { FREE: "Khi đặt in mẫu", STARTER: "Không giới hạn", PRO_BUSINESS: "Không giới hạn" },
-  },
+  // Print files open with the paid sample order of the design on every plan (docs/28 Q1): no plan unlocks them.
+  { feature: "File in: PDF A4, PDF CMYK 4 lớp cho xưởng, SVG, DXF", values: sameForAll("Khi thanh toán đơn in mẫu") },
   { feature: "Lưu trữ", values: perTier((tier) => formatQuota(PLANS[tier].storageBytes)) },
   { feature: "Xu Wrap mỗi kỳ (ảnh, hoa văn AI)", values: perTier((tier) => xu(PLANS[tier].xuPerPeriod)) },
   {
@@ -118,7 +121,7 @@ export const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: `Gói ${STARTER.name} có tự gia hạn không?`,
-    answer: `Không. Gói ${STARTER.name} ${formatVnd(STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán, xuất file sạch không giới hạn. Hết hạn, tài khoản trở về gói Miễn phí; dự án không bị xoá.`,
+    answer: `Không. Gói ${STARTER.name} ${formatVnd(STARTER.price.monthly)} dùng trong ${PRO_PERIOD_DAYS} ngày kể từ lúc thanh toán: ${formatQuota(STARTER.storageBytes)} lưu trữ và ${xu(STARTER.xuPerPeriod)} Wrap. Gói ${STARTER.name} không mở file in: file in của mỗi thiết kế mở khi bạn thanh toán đơn in mẫu, như mọi gói. Hết hạn, tài khoản trở về gói Miễn phí; dự án không bị xoá.`,
   },
   {
     question: "Xu Wrap là gì, được tính thế nào?",

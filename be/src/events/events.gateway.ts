@@ -17,6 +17,8 @@ import {
   AuthUser,
   ConfigService,
   JwtPayload,
+  PROJECT_SAVED,
+  ProjectSavedEvent,
   readCookie,
   SESSIONS_REVOKED,
   SessionsRevokedEvent,
@@ -34,7 +36,10 @@ import { PrismaService } from '../shared/prisma';
  * sessions of its user are revoked (SESSIONS_REVOKED).
  *
  * Server -> client events: `notifications.changed` (empty payload) when the user's inbox got a new notification, sent by
- * NotificationsPushBridge; the client refetches the unread count. Socket.IO state is per API process (no Redis adapter).
+ * NotificationsPushBridge; the client refetches the unread count. `project.saved` { projectId, version, updatedAt, tabId }
+ * when the user saved a project (PROJECT_SAVED): their other editor tabs load it (docs/28 Q5). It is emitted by the API
+ * process that took the save, so it only reaches sockets of that process. Socket.IO state is per API process (no Redis
+ * adapter): with several API instances, a tab on another instance learns of the save at its next save (409).
  */
 // addTrailingSlash: false also accepts `/api/socket.io?EIO=…`: the Next.js dev proxy strips the slash before the query.
 @WebSocketGateway({ namespace: 'events', path: '/api/socket.io', addTrailingSlash: false })
@@ -101,6 +106,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   @OnEvent(SESSIONS_REVOKED)
   closeSessions({ userId }: SessionsRevokedEvent): void {
     this.server.in(`user:${userId}`).disconnectSockets(true);
+  }
+
+  @OnEvent(PROJECT_SAVED)
+  projectSaved({ userId, ...save }: ProjectSavedEvent): void {
+    this.emitToUser(userId, PROJECT_SAVED, save);
   }
 
   /** Sends an event to all sockets of one user (any device). */

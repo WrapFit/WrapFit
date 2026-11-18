@@ -121,6 +121,16 @@ describe('FitCheck (shared by the editor and the server)', () => {
     ]);
   });
 
+  it('refuses a box printed with stock photos alone, not once the user adds their own element (Pexels terms §5)', () => {
+    const photo = element({ id: 'p', type: 'image', content: 'https://x/p.jpg', dpi: 300, source: 'pexels' });
+    expect(codes([photo])).toEqual([['STOCK_PHOTO_ALONE', 'error']]);
+    // A shape adds no creative work; a hidden text does not print.
+    expect(codes([photo, element({ id: 's', type: 'shape', content: '' })]).map(([code]) => code)).toContain('STOCK_PHOTO_ALONE');
+    expect(codes([photo, element({ id: 't', y: 40, hidden: true })])).toEqual([['STOCK_PHOTO_ALONE', 'error']]);
+    expect(codes([photo, element({ id: 't', y: 40 })])).toEqual([]);
+    expect(codes([photo, element({ id: 'u', y: 40, type: 'image', content: 'https://x/u.jpg', dpi: 300 })])).toEqual([]);
+  });
+
   it('scores 100 − 30 per error − 10 per warning', () => {
     const report = checkBox(tuckTop, [
       element({ id: 'a', x: -4 }),

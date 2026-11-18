@@ -652,7 +652,19 @@ export function StudioWorkspace({
     return () => window.clearTimeout(timer);
   }, [isDemo, demoAssetsReady, payload, occasion, boxType, currentStep]);
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
-  const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
+  const sync = useProjectSync({
+    project,
+    payload,
+    invalidReason,
+    renderThumbnail: renderPreview,
+    // Another tab saved this project and this one has nothing unsaved: open its save here (docs/28 Q5).
+    onOtherTabSave: onReload
+      ? () => {
+          toast.show({ title: "Đã cập nhật từ tab khác", description: "Thiết kế vừa được lưu ở tab hoặc cửa sổ khác của bạn." });
+          onReload();
+        }
+      : undefined,
+  });
   // 422 of the last export, shown in the FitCheck tab while the design is the one the server checked.
   const payloadKey = useMemo(() => JSON.stringify(payload), [payload]);
   const [exportBlock, setExportBlock] = useState<{ report: FitCheckReport; key: string } | null>(null);
@@ -878,6 +890,8 @@ export function StudioWorkspace({
                 type: isVector ? "logo" : "image",
                 content,
                 crop: undefined,
+                // The user's own file replaces the stock photo: no longer a Pexels photo (FitCheck STOCK_PHOTO_ALONE).
+                source: undefined,
                 dpi: size && !isVector ? Math.round(size.width / (el.width / 25.4)) : 300,
               }
             : el

@@ -50,8 +50,10 @@ export async function hardDeleteUser(tx: Prisma.TransactionClient, storage: Stor
  * Anonymizes a user with financial history, inside the caller's transaction (the user row is locked). Returns the
  * keys of the objects to delete from the bucket after the commit.
  *
- * Kept: payments, orders and their lines and history, credit lots and debits, export unlocks, subscriptions, bank
- * transactions, AI usage rows (without their prompts), and the designs an order that is not cancelled prints, with
+ * Kept, whatever happens to the account (docs/28 Q4): payments with the VAT invoice details they were made with,
+ * orders with their recipient name, phone and address (delivered ones included), for the legal retention of accounting
+ * records (10 years after the end of their year; InvoiceRetentionTask then removes that personal data), their lines and
+ * history, credit lots and debits, export unlocks, subscriptions, bank transactions, AI usage rows (without their prompts), and the designs an order that is not cancelled prints, with
  * their files, snapshots, export jobs and unboxing page (QR codes may be printed on boxes already). Those designs
  * turn PRIVATE, cannot be remixed, leave the trash (the purge would delete them) and lose their review link.
  *

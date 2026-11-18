@@ -32,7 +32,7 @@ import {
   TEMPLATE_LAYOUTS,
   type BoxDimensions,
 } from "@wrapfit/shared";
-import { importStockPhoto, listLibraryAssets, searchStockPhotos } from "@/api";
+import { errorMessage, importStockPhoto, listLibraryAssets, searchStockPhotos } from "@/api";
 import { useToast } from "@/components/common/Toast";
 import { buttonClass, Field, Input, Select } from "@/components/ui";
 import { cn } from "@/utils/helpers";
@@ -74,7 +74,8 @@ function designFiles(elements: CanvasElement[]): ShelfItem[] {
     seen.add(el.content);
     const width = Math.min(60, el.width);
     items.push({
-      id: `mine:${el.content}`,
+      // A stock photo placed again stays a stock photo (STOCK_PHOTO_ALONE): `pick` reads the prefix.
+      id: `${el.source === "pexels" ? "stock" : "mine"}:${el.content}`,
       name: el.name ?? (el.type === "logo" ? "Logo của bạn" : "Ảnh của bạn"),
       category: "sticker",
       elementType: el.type,
@@ -225,7 +226,9 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
 
   /** Places an item on the face and remembers it as used. */
   const pick = (item: ShelfItem) => {
-    onAddElement(placeItem(item, panel, geometry));
+    const element = placeItem(item, panel, geometry);
+    // Stock photos placed again from the recent or design-files shelves keep their source.
+    onAddElement(item.id.startsWith("stock:") ? { ...element, source: "pexels" } : element);
     shelves.markUsed(item);
   };
   const favorite = { isFavorite: shelves.isFavorite, onToggle: shelves.toggleFavorite };
@@ -265,11 +268,11 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
         dpi: Math.round(copy.width / (widthMm / 25.4)),
         attribution: copy.attribution,
       };
-      // The credit stays with the photo as its layer name.
-      onAddElement({ ...placeItem(item, panel, geometry), name: copy.attribution });
+      // The credit stays with the photo as its layer name; `source` lets FitCheck refuse a box of stock photos alone.
+      onAddElement({ ...placeItem(item, panel, geometry), name: copy.attribution, source: "pexels" });
       shelves.markUsed(item);
-    } catch {
-      toast.show({ tone: "error", title: "Chưa chèn được ảnh kho", description: "Kiểm tra kết nối rồi thử lại." });
+    } catch (error) {
+      toast.show({ tone: "error", title: "Chưa chèn được ảnh kho", description: errorMessage(error) });
     } finally {
       setImporting(null);
     }
@@ -408,7 +411,7 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
           {stock.isPending ? (
             <p className="text-body-sm text-fg-muted">Đang tải ảnh…</p>
           ) : stock.isError ? (
-            <p className="text-body-sm text-fg-muted">Chưa tải được ảnh kho. Thử lại sau.</p>
+            <p className="text-body-sm text-fg-muted">{errorMessage(stock.error)}</p>
           ) : !stock.data?.enabled ? (
             <p className="rounded-control bg-surface-sunken px-3 py-2 text-body-sm text-fg-muted">Ảnh kho chưa được bật trên máy chủ này.</p>
           ) : stock.data.items.length === 0 ? (

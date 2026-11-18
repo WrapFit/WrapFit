@@ -274,6 +274,28 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
     });
   }
 
+  // Pexels terms §5: a stock photo may not be sold on its own ("Standalone": unaltered, or only cropped, filtered,
+  // recoloured or resized), printed on a product included; combined with other elements into a new work it may
+  // (docs/28 Q3). A box printed with stock photos needs one element of the user's own: text, a logo, a pattern or an
+  // image that is not a stock photo. A shape or a barcode alone adds no creative work.
+  const printed = elements.filter((element) => !element.hidden);
+  const stock = printed.filter((element) => element.source === "pexels");
+  const ownWork = (element: CanvasElement) =>
+    element.source !== "pexels" && (element.type === "text" || element.type === "logo" || element.type === "pattern" || element.type === "image");
+  if (stock.length > 0 && !printed.some(ownWork)) {
+    violations.push({
+      id: "stock_photo_alone",
+      code: "STOCK_PHOTO_ALONE",
+      severity: "error",
+      elementId: stock[0].id,
+      panelId: stock[0].panelId,
+      title: "Ảnh kho chưa đi kèm thiết kế của bạn",
+      message:
+        "Điều khoản Pexels không cho in bán ảnh kho đứng một mình (nguyên ảnh, hoặc chỉ cắt, đổi màu, đổi cỡ). Hộp này chỉ có ảnh kho.",
+      suggestion: "Thêm chữ, logo, hoa văn hoặc ảnh của bạn lên hộp để ảnh kho thành một phần của thiết kế mới.",
+    });
+  }
+
   // Inside elements sit on the mirrored dieline (docs/23 S5).
   let inside: DielinePiece[] | null = null;
   const piecesFor = (element: CanvasElement) => (element.side === "inside" ? (inside ??= insidePieces(pieces)) : pieces);

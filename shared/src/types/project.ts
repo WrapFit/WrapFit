@@ -108,6 +108,8 @@ export interface CanvasElement {
   mask?: ImageMask | null;
   fit?: ElementFit;
   shape?: { kind: ShapeKind; cornerRadius?: number; points?: number; innerRatio?: number };
+  /** A stock photo copied from Pexels (the library's "Ảnh kho"): never printed on its own (FitCheck STOCK_PHOTO_ALONE). */
+  source?: "pexels";
 }
 
 /** A font file the user uploaded (storage purpose FONT), checked for the Vietnamese letters. */

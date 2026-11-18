@@ -91,3 +91,22 @@ export const formatUsd = formatVnd;
 export function formatQuota(bytes: number): string {
   return bytes >= 1024 * MB ? `${bytes / (1024 * MB)} GB` : `${bytes / MB} MB`;
 }
+
+const proXu = `${PLANS.STARTER.xuPerPeriod.toLocaleString("vi-VN")} xu Wrap`;
+
+/**
+ * What Pro gives, the one source of its benefit copy (docs/28 Q1): only what the backend grants, a larger storage quota
+ * (STORAGE_QUOTA_BYTES) and the xu allowance of each 30-day period (XuWalletService.ensureAllowance). Pro does not
+ * unlock print files: a design's print file opens with its paid sample order, on every plan (ExportService).
+ */
+export const PRO_BENEFITS = {
+  storage: `${formatQuota(PLANS.STARTER.storageBytes)} lưu trữ cho ảnh, logo và file in`,
+  xu: `${proXu} mỗi kỳ ${PRO_PERIOD_DAYS} ngày cho ảnh và hoa văn AI`,
+  rollover: "Xu chưa dùng được giữ thêm một kỳ",
+} as const;
+
+/** Pro in one line: `2 GB lưu trữ · 1.000 xu Wrap mỗi 30 ngày`. */
+export const PRO_SUMMARY = `${formatQuota(PLANS.STARTER.storageBytes)} lưu trữ · ${proXu} mỗi ${PRO_PERIOD_DAYS} ngày`;
+
+/** How print files open, the same on every plan: said wherever Pro is sold so nobody buys it for the files. */
+export const PRINT_FILE_RULE = "File in của mỗi thiết kế mở khi bạn thanh toán đơn in mẫu, ở mọi gói";

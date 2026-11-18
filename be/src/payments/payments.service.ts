@@ -180,7 +180,7 @@ export class PaymentsService {
   async create(userId: string, dto: CreatePaymentDto, ip?: string): Promise<PaymentView> {
     const { amountVnd, metadata } = await this.priceOf(userId, dto);
     // Demo accounts never take the real-money VietQR path, real accounts never the sandbox (docs/21 §6).
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { isDemo: true } });
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { isDemo: true, billingDetails: true } });
     const provider = user.isDemo ? PaymentProvider.VNPAY : PaymentProvider.VIETQR;
     if (provider === PaymentProvider.VNPAY && !this.vnpay.configured) {
       // The simulate button is the demo fallback (docs/21 D5): while it is on, a demo payment is still created and the
@@ -224,8 +224,16 @@ export class PaymentsService {
             provider,
             reference: newPaymentReference(),
             expiresAt: new Date(Date.now() + PAYMENT_TTL_MS),
-            // The payment terms the user accepted for this payment, kept as evidence next to what was bought.
-            metadata: { ...metadata, termsVersion: dto.termsVersion ?? null, termsAcceptedAt: new Date().toISOString() },
+            // The payment terms the user accepted for this payment, kept as evidence next to what was bought, and the
+            // VAT invoice details of that moment: payments are kept for the legal retention of accounting records,
+            // whatever happens to the account (docs/28 Q4), while the details on the user row change, and go when the
+            // account is anonymized. InvoiceRetentionTask removes them after the retention.
+            metadata: {
+              ...metadata,
+              termsVersion: dto.termsVersion ?? null,
+              termsAcceptedAt: new Date().toISOString(),
+              ...(user.billingDetails ? { billingDetails: user.billingDetails } : {}),
+            },
           },
         });
         this.logger.log(`payment.created id=${payment.id} user=${userId} purpose=${dto.purpose} amount=${amountVnd}`);

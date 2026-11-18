@@ -36,6 +36,7 @@ const RULES: { title: string; detail: string; codes: FitCheckErrorCode[] }[] = [
   { title: "Hướng đọc", detail: "Chữ đứng xuôi khi hộp đã gấp", codes: ["READING_DIRECTION"] },
   { title: "Chữ dễ đọc", detail: "≥ 6 pt, rõ nền, tránh nếp gấp", codes: ["TEXT_TOO_SMALL", "LOW_CONTRAST", "TEXT_ON_CREASE"] },
   { title: "Cửa sổ & lỗ khoét", detail: "Hình chính tránh lỗ khoét", codes: ["UNDER_OPENING"] },
+  { title: "Ảnh kho", detail: "Ảnh Pexels đi kèm chữ, logo, hoa văn hoặc ảnh của bạn", codes: ["STOCK_PHOTO_ALONE"] },
 ];
 
 interface Step6ReviewExportProps {

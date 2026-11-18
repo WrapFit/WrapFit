@@ -14,7 +14,7 @@ const MOCK_TRANSFERS: { scenario: MockTransferScenario; label: string }[] = [
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { useToast } from "@/components/common/Toast";
 import { Alert, Badge, Button, Dialog, LoadingState, Spinner } from "@/components/ui";
-import { formatVnd } from "@/features/pricing";
+import { PRO_SUMMARY, formatVnd } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
 import type { Payment, SalePurpose } from "@/types/api";
@@ -46,7 +46,7 @@ function knownPriceOf(purpose: SalePurpose, xu?: number): number | null {
 const VNPAY_TEST_CARD = { bank: "NCB", number: "9704198526191432198", holder: "NGUYEN VAN A", issued: "07/15", otp: "123456" };
 
 function successText(payment: Payment): string {
-  if (payment.purpose === "PRO_MONTH") return "Gói Pro đã bật: xuất file in sạch không giới hạn trong 30 ngày.";
+  if (payment.purpose === "PRO_MONTH") return `Gói Pro đã bật: ${PRO_SUMMARY}.`;
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
   if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
   // An export pack bought before the packs stopped (docs/25 item 7): the server turned it into xu.

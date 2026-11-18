@@ -200,7 +200,13 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
   AI_IMAGE_UNAVAILABLE: "Tạo ảnh AI đang tạm dừng. Thử lại sau ít phút.",
   AI_IMAGE_BUSY: "Chờ các ảnh đang tạo xong rồi tạo tiếp.",
   STORAGE_QUOTA_EXCEEDED: "Bộ nhớ của gói đã đầy. Xoá bớt ảnh hoặc nâng cấp gói.",
+  STORAGE_UNAVAILABLE: "Kho lưu tệp chưa được cấu hình trên máy chủ này.",
   VNPAY_NOT_CONFIGURED: "Cổng VNPay sandbox chưa được cấu hình trên máy chủ này. Hãy liên hệ WrapFit để bật thanh toán thử nghiệm.",
+  // Stock photos (be/src/library/stock-photos.service.ts). STOCK_RATE_LIMITED has its own text below (Retry-After).
+  STOCK_PHOTO_TOO_LARGE: "Ảnh kho này quá lớn để chèn (trên 60 MB). Hãy chọn ảnh khác.",
+  STOCK_RATE_LIMITED: "Ảnh kho đang tạm nghỉ vì đã dùng hết lượt tìm trong giờ này. Thử lại sau ít phút.",
+  STOCK_PROVIDER_ERROR: "Pexels, nguồn ảnh kho, đang lỗi. Thử lại sau ít phút.",
+  STOCK_UNAVAILABLE: "Ảnh kho chưa được bật trên máy chủ này.",
 };
 
 /** Codes whose server message is written for the user (Vietnamese, with the details): shown as sent. */
@@ -211,6 +217,10 @@ export function errorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "Đã có lỗi xảy ra. Vui lòng thử lại.";
   if (error.code === "INSUFFICIENT_CREDITS" && error.body?.kind === "XU") {
     return `Cần ${error.body.cost ?? "thêm"} xu, bạn còn ${error.body.balance ?? 0} xu. Nạp thêm xu ở trang Thanh toán & gói.`;
+  }
+  if (error.code === "STOCK_RATE_LIMITED" && error.retryAfter) {
+    const wait = error.retryAfter >= 60 ? `${Math.ceil(error.retryAfter / 60)} phút` : `${error.retryAfter} giây`;
+    return `Ảnh kho đang tạm nghỉ vì đã dùng hết lượt tìm trong giờ này. Thử lại sau ${wait}.`;
   }
   if (error.code && SERVER_WORDED_CODES.has(error.code) && error.messages[0]) return error.messages[0];
   // Codes without their own text (e.g. 429 LOGIN_RATE_LIMITED) fall back to the message of their status.
@@ -225,8 +235,9 @@ export function errorMessage(error: unknown): string {
         ? "Email hoặc mật khẩu không đúng, hoặc email này chưa được đăng ký."
         : "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.";
     case 403:
-      // The only 403 of an upload request: the files already stored fill the quota of the subscription tier.
-      return error.body?.path.endsWith("/storage/presigned-upload")
+      // The only 403 of an upload request (a file, or a stock photo copied into the user's files): the files already
+      // stored fill the quota of the subscription tier.
+      return error.body?.path.endsWith("/storage/presigned-upload") || /\/stock\/photos\/\d+\/import$/.test(error.body?.path ?? "")
         ? "Đã hết dung lượng lưu trữ của gói. Xoá bớt dự án hoặc nâng cấp gói để tải thêm."
         : "Bạn không có quyền thực hiện thao tác này.";
     case 404:

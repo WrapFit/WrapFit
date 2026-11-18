@@ -308,4 +308,17 @@ describe('PaymentsService', () => {
     expect(created).toHaveBeenCalledWith({ data: expect.objectContaining({ provider }) });
     expect(view.provider).toBe(provider);
   });
+
+  it('create() keeps the VAT invoice details of the moment with the payment (docs/28 Q4)', async () => {
+    const billingDetails = { company: 'Shop Nến', taxCode: '0312345678', email: 'ketoan@shop.vn' };
+    const created = jest.fn(({ data }) => Promise.resolve({ ...pendingXu, ...data }));
+    const prisma = {
+      user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ isDemo: false, billingDetails }) },
+      payment: { create: created },
+    } as unknown as PrismaService;
+
+    await serviceWith({ 'payments.simulation': true, 'payments.vietqr': null }, prisma).create('u1', { purpose: 'XU_500' } as never);
+
+    expect(created).toHaveBeenCalledWith({ data: expect.objectContaining({ metadata: expect.objectContaining({ billingDetails }) }) });
+  });
 });

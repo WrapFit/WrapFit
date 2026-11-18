@@ -130,8 +130,10 @@ Chỉ làm khi đã điền `VIETQR_*` bằng tài khoản ngân hàng thật. T
    điền một trong hai biến đầu.
 4. Tài khoản đi đường VNPay khi `users.is_demo = true`. Seed demo (3.2) bật cờ cho `SEED_DEMO_EMAIL` ở mỗi lần khởi động, kể cả
    tài khoản đã tồn tại. Tài khoản khác: admin bật / tắt ở *Quản trị → Tài khoản → chi tiết* hoặc `PATCH /api/users/:id { "isDemo": true }`.
-5. Kiểm: đăng nhập tài khoản demo, mua 1 lượt → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox → quay về
-   `/payments/vnpay-return` hiện thành công, lượt xuất tăng. Chưa thử với credential sandbox thật tại thời điểm viết (docs/21 §9).
+5. Kiểm: đăng nhập tài khoản demo, mua gói Pro ở `/pricing` (hoặc một gói xu ở `/dashboard/billing`) → "Mở cổng VNPay" →
+   thẻ test NCB trong tài liệu sandbox → quay về `/payments/vnpay-return` hiện thành công; `/dashboard/billing` ghi gói Pro
+   (hoặc số xu tăng). Gói lượt xuất đã ngừng bán (docs/25 mục 7): mua nó nhận 400 `EXPORT_PACK_DISCONTINUED`. Chưa thử với
+   credential sandbox thật tại thời điểm viết (docs/21 §9).
 
 ## 4. Deploy backend lên VPS
 
@@ -204,9 +206,9 @@ Tắt Wi-Fi, dùng 4G, mở `https://wrap-fit.vercel.app`. Chạy hai lần liê
 | 2 | `/editor/new` → Hộp nắp gài → 80 × 80 × 95 → 350 g → Ivory 300 → Tạo | Chip "Đáy khóa FEFCO 0215" |
 | 3 | Kéo logo sát mép cắt → Auto-Fix | FitCheck đỏ, Gói `measuring`; sau Auto-Fix chỉ logo dời, FitCheck 100 |
 | 4 | Gập 0 → 100 %, xoay 360° | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D |
-| 5 | Xuất → PDF A4 | File có dòng watermark ở tai dán (tài khoản Free không lượt) |
-| 6 | Xuất SVG → 402 → Mua 1 lượt → QR → Giả lập | File SVG sạch, số lượt về 0 (tài khoản Free không lượt) |
-| 7 | Đặt in mẫu 1 hộp → giỏ → Đặt in mẫu 49.000đ → QR → Giả lập | Đơn `PAID` trong `/dashboard/orders` |
+| 5 | Bước 6 "Xem & xuất" trước khi đặt in | Thẻ file in ghi "mở sau khi bạn thanh toán đơn in ở giỏ hàng", nút "Thanh toán". Không có file miễn phí, kể cả PDF A4 |
+| 6 | "Thanh toán" → giỏ → Đặt in mẫu 1 hộp 49.000đ → QR → "Giả lập đã thanh toán" | Đơn `PAID` trong `/dashboard/orders` |
+| 7 | Quay lại bước 6 → "Xuất file in ngay" → SVG, rồi PDF CMYK | Hai file sạch tải về. Sửa thiết kế rồi quay lại: nút về "Thanh toán" (bản mới cần đơn mới) |
 | 8 | Quét QR trên nắp bằng camera điện thoại | Trang 3D mở hộp kèm lời chúc |
 | 9 | `/dashboard` | Số hộp, kiểu hộp, lỗi FitCheck đã chặn, thời gian tạo hộp tăng |
 | 10 | Quét mã VietQR trong CheckoutDialog bằng app ngân hàng (không chuyển) | Ghi lại app nào đọc được tên ngân hàng, số tiền, nội dung `WF…` (S5 chưa kiểm) |
@@ -241,7 +243,7 @@ S8 không đọc được hóa đơn (không đăng nhập tài khoản nào). S
 | Mạng sân khấu yếu / mất | Trang tải chậm, xoay vòng | Dùng 4G điện thoại phát; mở sẵn các tab (studio, dashboard, giỏ in) trước khi lên; VietQR dựng tại backend nên không cần dịch vụ ngoài |
 | Vercel hoặc rewrite `/api` lỗi | `/api/health` trên Vercel trả 404 / 502 | Chuyển sang `https://<APP_DOMAIN>` (VPS phục vụ cả frontend), cùng tài khoản và dữ liệu |
 | Backend VPS chết | Mọi trang báo "Máy chủ…" | `docker compose ... ps`, `logs backend`; khởi động lại `docker compose ... up -d`. Dự phòng cuối: video quay sẵn kịch bản §5 |
-| Worker chết, file in không ra | ExportDialog đứng ở "Đang dựng file" quá 30 s | `/api/health` báo `worker` khác `up`: `docker compose ... restart worker`. Lượt đã trừ được hoàn tự động khi job thất bại (docs/16 §5.3) |
+| Worker chết, file in không ra | ExportDialog đứng ở "Đang dựng file" quá 30 s | `/api/health` báo `worker` khác `up`: `docker compose ... restart worker`, rồi xuất lại. Đơn in đã thanh toán vẫn mở file, không trừ gì thêm |
 | Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend`. Nút chỉ hiện với tài khoản demo (`is_demo`); tài khoản thường gọi route nhận 403 `SIMULATION_DEMO_ONLY` |
 | Sandbox VNPay lỗi lúc demo | Cổng VNPay không mở / không quay về | Đặt `PAYMENT_SIMULATION=true`: CheckoutDialog của tài khoản demo vẫn có nút "Giả lập đã thanh toán" (IPN và nút giả lập đến cùng lúc vẫn chỉ cấp quyền lợi một lần) |
 | Webhook SePay không tới | Chuyển khoản xong thanh toán vẫn `PENDING` | Xem *Tích hợp Webhooks → Nhật ký* trên SePay (401 = sai `SEPAY_WEBHOOK_API_KEY`); giao dịch tới nhưng không khớp nằm ở `/admin/bank-transactions` để gán tay |
@@ -262,13 +264,13 @@ qua thư mục này: chép sang thư mục slide khi cần).
 |---|---|
 | Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` |
 | Studio 3D có nhãn mặt, hũ nến 80 × 80 × 95 có logo | `s8-studio-3d-labels-demo_wrapfit_vn-{M,Xp}-0.png` |
-| ExportDialog: nhãn "Có watermark" / "Cần 1 lượt xuất" | `e2e/{M,Xp}-07-export-dialog-free.png`, `s8-export-dialog-demo_wrapfit_vn-{M,Xp}-0.png` |
-| PDF A4 có watermark xuất xong | `e2e/{M,Xp}-07-export-pdf-a4-watermarked.png` |
-| SVG → 402 "Bạn đã hết lượt xuất" | `e2e/{M,Xp}-16-export-402.png` |
-| CheckoutDialog VietQR 19.000đ, nút giả lập / đã thanh toán | `e2e/{M,Xp}-16-checkout-vietqr.png`, `e2e/{M,Xp}-16-checkout-paid.png` |
-| SVG sạch sau khi mua lượt | `e2e/{M,Xp}-16-export-svg-clean.png` |
-| CheckoutDialog gói 5 lượt từ `/dashboard/billing` | `s8-checkout-vietqr-demo_wrapfit_vn-{M,Xp}-0.png` |
+| Thẻ file in ở bước 6 trước khi đặt in: nút "Thanh toán" | **chưa chụp lại** (ảnh `e2e/*-07-*` cũ còn nhãn watermark, bỏ) |
 | Giỏ in mẫu, VietQR 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` |
+| Thẻ file in sau khi thanh toán: "Xuất file in ngay", SVG sạch tải về | **chưa chụp lại** (ảnh `e2e/*-16-*` cũ là luồng mua lượt xuất, bỏ) |
+| CheckoutDialog gói Pro từ `/pricing` | **chưa chụp lại** (ảnh `s8-checkout-vietqr-*` cũ là gói 5 lượt, bỏ) |
+
+Bước 7 và 16 của `fe/scripts/e2e-scenario.mjs` còn kiểm luồng cũ (PDF A4 có watermark, 402, "Mua 1 lượt") nên sẽ hỏng
+trên bản hiện tại: phải viết lại theo luồng đơn in mẫu trước khi chụp lại (docs/28 mục 14).
 
 Chụp lại trên bản deploy: `node fe/scripts/e2e-scenario.mjs --base-url=https://wrap-fit.vercel.app --steps=…` cần
 Mailpit (chỉ có ở local), nên trên production chạy bằng tài khoản có sẵn: `--user=<email> --password=<mật khẩu>

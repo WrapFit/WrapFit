@@ -7,7 +7,7 @@ import React from "react";
 import { BLEED_MM, MIN_DPI, SAFE_MARGIN_CUT_MM } from "@wrapfit/shared";
 import { Container, Reveal } from "@/components/landing";
 import { CheckList, PageHero, PhotoFrame, PRIMARY_CTA, SECONDARY_CTA, Section, SitePage, StatGrid } from "@/components/site";
-import { formatVnd, PLANS } from "@/features/pricing";
+import { formatVnd, PLANS, PRO_SUMMARY } from "@/features/pricing";
 import { PHOTOS } from "@/features/site/photos";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { DielineSketch } from "@/features/templates/components/DielineSketch";
@@ -68,7 +68,7 @@ const TRACKS = [
     title: "Thương hiệu đang lớn",
     who: "Nhóm 2–3 người đã có logo — 35% người trả lời khảo sát",
     image: PHOTOS.cosmetics,
-    price: `${formatVnd(PLANS.STARTER.price.monthly)}/tháng · xuất file không giới hạn`,
+    price: `${formatVnd(PLANS.STARTER.price.monthly)}/tháng · ${PRO_SUMMARY}`,
     points: ["Bộ nhận diện: logo, màu, phông chữ dùng lại cho mọi hộp", "FitCheck™ trước mỗi lần gửi xưởng", "PDF CMYK tách lớp, SVG, DXF cho máy cắt", "Đặt in mẫu qua xưởng đối tác"],
     href: "/pricing",
     cta: `Xem gói ${PLANS.STARTER.name}`,

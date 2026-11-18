@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { FileDown, MessageCircleMore, Package, Ruler, ShieldCheck } from "lucide-react";
 import { ROUTES } from "@/constants";
-import { PLANS as TIERS, PRO_PERIOD_DAYS, formatQuota, formatVnd } from "@/features/pricing";
+import { PLANS as TIERS, PRO_SUMMARY, formatQuota, formatVnd } from "@/features/pricing";
 import { PHOTOS } from "@/features/site/photos";
 import type { Industry, Occasion } from "@/types/api";
 
@@ -170,7 +170,7 @@ export const PLANS = {
   // The plans of /pricing on sale (@wrapfit/shared/billing): Free, Pro, Business (export packs stopped, docs/25 item 7).
   options: [
     { price: formatVnd(0), unit: TIERS.FREE.name, detail: `Thiết kế & báo giá · ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
-    { price: formatVnd(TIERS.STARTER.price.monthly), unit: `${TIERS.STARTER.name} · tháng`, detail: `Xuất không giới hạn trong ${PRO_PERIOD_DAYS} ngày` },
+    { price: formatVnd(TIERS.STARTER.price.monthly), unit: `${TIERS.STARTER.name} · tháng`, detail: PRO_SUMMARY },
     { price: "Liên hệ", unit: TIERS.PRO_BUSINESS.name, detail: "Cho thương hiệu và xưởng in" },
   ],
   selected: 1,

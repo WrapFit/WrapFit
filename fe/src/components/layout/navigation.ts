@@ -30,7 +30,7 @@ export const RESOURCE_LINKS: NavLink[] = [
   { label: "Về chúng tôi", href: ROUTES.about, description: "Hành trình và đội ngũ EXE101 đứng sau WrapFit" },
   { label: "Trung tâm hỗ trợ", href: "/support", description: "Câu trả lời về kích thước, FitCheck™, file in" },
   { label: "Liên hệ", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
-  { label: "Bảng giá", href: "/pricing", description: "Miễn phí, Lượt xuất, Pro và Business" },
+  { label: "Bảng giá", href: "/pricing", description: "Miễn phí, Pro và Business" },
   { label: "Thiết kế cộng đồng", href: `${ROUTES.templates}?tab=community`, description: "Thiết kế công khai đạt FitCheck™ từ 90 điểm" },
 ];
 

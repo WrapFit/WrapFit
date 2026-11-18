@@ -27,7 +27,9 @@ export type FitCheckErrorCode =
   /** Text across a crease inside its face. */
   | "TEXT_ON_CREASE"
   /** Words that are not possible Vietnamese syllables (docs/23 S22): likely typos. */
-  | "SPELLING";
+  | "SPELLING"
+  /** Stock photos with nothing of the user's own: the Pexels licence forbids selling them on their own (docs/28 Q3). */
+  | "STOCK_PHOTO_ALONE";
 
 export type SeverityLevel = "error" | "warning" | "info";
 

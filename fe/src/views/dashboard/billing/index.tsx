@@ -19,7 +19,7 @@ import { TIER_LABELS } from '@/constants';
 import { RequireAuth, useAuth } from '@/features/auth';
 import { ConfirmDialog, DIALOG_DANGER, formatBytes, usagePercent, useAiUsage, useStorageUsage } from '@/features/dashboard';
 import { CheckoutDialog } from '@/features/payments';
-import { PLANS, PRO_PERIOD_DAYS, formatQuota, formatVnd } from '@/features/pricing';
+import { PLANS, PRO_PERIOD_DAYS, PRO_SUMMARY, formatQuota, formatVnd } from '@/features/pricing';
 import { queryKeys } from '@/hooks/data';
 import type { BillingDetails, PaymentHistoryEntry, PaymentPurpose, SalePurpose } from '@/types/api';
 import { cn } from '@/utils/helpers';
@@ -107,7 +107,7 @@ function BillingScreen() {
                       ? 'Gói lượt xuất đã ngừng bán: lượt còn lại được đổi sang xu Wrap. File in mở khi bạn thanh toán đơn in mẫu.'
                       : plan.contactOnly
                         ? 'Gói theo hợp đồng với WrapFit.'
-                        : `${formatVnd(plan.price.monthly)} / ${PRO_PERIOD_DAYS} ngày xuất file không giới hạn.`}
+                        : `${formatVnd(plan.price.monthly)} / ${PRO_PERIOD_DAYS} ngày: ${PRO_SUMMARY}.`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

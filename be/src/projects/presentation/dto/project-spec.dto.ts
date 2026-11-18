@@ -512,6 +512,10 @@ export class CanvasElementDto implements CanvasElement {
   flipY?: boolean;
 
   @IsOptional()
+  @IsIn(['pexels'])
+  source?: 'pexels';
+
+  @IsOptional()
   @IsIn(FINISHES)
   finish?: ElementFinish | null;
 

@@ -7,7 +7,7 @@ import React from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import { isExportPackId } from "@wrapfit/shared";
-import { PLANS, PRO_PERIOD_DAYS, formatQuota, formatVnd } from "@/features/pricing";
+import { PLANS, PRINT_FILE_RULE, PRO_BENEFITS, PRO_PERIOD_DAYS, formatQuota, formatVnd } from "@/features/pricing";
 import type { SubscriptionTier } from "@/types/api";
 import { cn } from "@/utils/helpers";
 
@@ -149,9 +149,10 @@ function OrderSummary({ tier }: { tier: PaidTier }) {
         </li>
         <li className="flex items-start gap-3">
           <Check className="mt-0.5 size-4 shrink-0 text-fpt-orange-ink" aria-hidden />
-          {`Xuất file in sạch không giới hạn trong ${PRO_PERIOD_DAYS} ngày`}
+          {PRO_BENEFITS.rollover}
         </li>
       </ul>
+      <p className="mt-4 text-body-sm text-fg-muted">{`${PRINT_FILE_RULE}: gói ${plan.name} không đi kèm file in.`}</p>
 
       <dl className="mt-6 flex flex-col gap-2.5 border-t border-line pt-5 text-body-sm">
         <div className="flex justify-between gap-3">

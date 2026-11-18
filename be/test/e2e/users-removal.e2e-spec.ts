@@ -7,6 +7,7 @@ import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { AuthMaintenanceTask } from '../../src/auth/auth-maintenance.task';
 import { PrismaService } from '../../src/shared/prisma';
+import { scrubExpiredInvoiceData } from '../../src/users/invoice-retention';
 import { signUp, TEST_PASSWORD, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 import { createPaidOrder, placeSampleOrder } from './helpers/orders';
@@ -276,6 +277,46 @@ describe('Admin deletes a user (e2e)', () => {
       expect(billing).toMatchObject({ tier: 'FREE', xu: { balance: 50 } });
       expect(billing).not.toHaveProperty('exportCredits');
       expect(await prisma.creditLot.count({ where: { userId: again.id, source: 'PURCHASE' } })).toBe(0);
+    });
+
+    it('keeps the invoice data 10 years after the end of its year, then removes its personal part (docs/28 Q4)', async () => {
+      // The VAT invoice details of the moment travel with each payment, so anonymizing the account kept them.
+      expect((await prisma.payment.findUniqueOrThrow({ where: { id: paidXuId } })).metadata).toMatchObject({
+        billingDetails: { company: 'Mộc An', taxCode: '0312345678' },
+      });
+      const vietnamYear = new Date(Date.now() + 7 * 3600_000).getUTCFullYear();
+      const lastChangedIn = async (year: number) => {
+        const at = new Date(Date.UTC(year, 5, 1)).toISOString();
+        await prisma.$executeRaw`UPDATE orders SET updated_at = ${at}::timestamptz WHERE id = ${orderId}::uuid`;
+        await prisma.$executeRaw`UPDATE payments SET updated_at = ${at}::timestamptz WHERE id = ${paidXuId}::uuid`;
+      };
+
+      // A record of 10 years ago is in the last year of its retention: kept.
+      await lastChangedIn(vietnamYear - 10);
+      await scrubExpiredInvoiceData(prisma);
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).toMatchObject({ recipientName: 'Nguyễn Mai Anh' });
+      expect((await prisma.payment.findUniqueOrThrow({ where: { id: paidXuId } })).metadata).toHaveProperty('billingDetails');
+
+      // One year older: past retention. The person goes, the accounting record stays.
+      await lastChangedIn(vietnamYear - 11);
+      const scrubbed = await scrubExpiredInvoiceData(prisma);
+      expect(scrubbed.orders).toBeGreaterThanOrEqual(1);
+      expect(scrubbed.payments).toBeGreaterThanOrEqual(1);
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).toMatchObject({
+        status: 'IN_PRODUCTION',
+        recipientName: 'Tài khoản đã xóa',
+        recipientPhone: '',
+        shippingAddress: '',
+        notes: null,
+      });
+      const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paidXuId } });
+      expect(payment).toMatchObject({ status: 'PAID', amountVnd: 50_000 });
+      expect(payment.metadata).not.toHaveProperty('billingDetails');
+      expect(payment.metadata).toHaveProperty('termsVersion');
+      // A second run changes nothing.
+      const again = await scrubExpiredInvoiceData(prisma);
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).toMatchObject({ recipientName: 'Tài khoản đã xóa' });
+      expect(again.orders).toBe(0);
     });
   });
 
