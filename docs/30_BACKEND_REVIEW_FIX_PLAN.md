@@ -1,6 +1,6 @@
 # 30. Kế hoạch sửa 7 lỗi của review backend
 
-> Ngày lập: 2026-11-18 · Nhánh gốc: `develop` (de2328d, đã commit phần docs/28) · Nhánh làm: `fix/be-review-29` · Trạng thái: **đang làm**, Q1 và Q2 theo mặc định (2026-11-18)
+> Ngày lập: 2026-11-18 · Nhánh gốc: `develop` (de2328d, đã commit phần docs/28) · Nhánh làm: `fix/be-review-29` · Trạng thái: **xong** S0–S5 ngày 2026-11-18, Q1 và Q2 theo mặc định; chưa push, chưa merge
 > Phạm vi: `be/`. Frontend chỉ đụng ở chỗ một session ghi rõ.
 > Nguồn: [docs/29](29_BACKEND_CODE_REVIEW.md). Số mục giữ nguyên theo docs/29 để dễ tra.
 
@@ -280,4 +280,11 @@ Làm mục này trước vì nó làm mất dữ liệu thật và ít việc nh
 
 | Ngày | Session | Commit | Kết quả |
 |---|---|---|---|
-| | | | |
+| 2026-11-18 | S0 | de2328d (trên `develop`), c691563 | Q1: phần docs/28 commit riêng lên `develop` (de2328d), rồi cắt `fix/be-review-29`; docs/29 và docs/30 ở c691563. Mốc: lint đạt, unit 1166/1166 (77 bộ), e2e 294/294 (24 bộ). |
+| 2026-11-18 | S1 | 999823f | SQL gom canvas của dự án và snapshot, lấy key từ `content`, `style.fontUrl`, `customFonts[].url`. Migration `20261118000100_font_file_refs`. 3 e2e mới trong `unused-files` (fail trên SQL cũ). DB local: **0** canvas trỏ tới phông đã mất (chưa canvas nào dùng phông tải lên). e2e cả bộ 296/297: `analytics` quá 5 s một lần, chạy lại riêng thì đạt. |
+| 2026-11-18 | S2 | 76eae02 | `request` đọc dự án một lần bằng `FOR UPDATE`; job lưu `project_version` và `design` (migration `20261118000200_export_job_design`). Worker render từ `design`, snapshot tự động cũng lấy từ `design`. Refs tính thêm `design` của job `PENDING`/`PROCESSING`. Hai bước đổi trạng thái có điều kiện. 2 e2e mới (tạm dừng hàng đợi BullMQ để sửa bản B giữa lúc request và lúc render), 5 unit mới. Unit 1171/1171, e2e 299/299. |
+| 2026-11-18 | S3 | 58f02f7 | Khóa `pg_advisory_xact_lock(4802, hashtext(userId))` ở nhánh Pro của `fulfil`; namespace khóa gom vào `be/src/common/db/advisory-locks.ts`. 2 e2e mới: làm chậm `PlanService.sync` 150 ms để hai lần xác nhận chắc chắn đan xen; bỏ khóa thì cả hai e2e fail (E + 30 thay vì E + 60, và lỗi index). Unit 1172/1172, e2e 301/301. |
+| 2026-11-18 | S4 | 46bc654 | Q2 mặc định. `DELETE` trả `409 PROJECT_IN_ACTIVE_ORDER` kèm mã đơn; `findTrashedBefore` và `deleteTrashed` bỏ qua dự án bị đơn giữ. FE: thêm mã vào nhóm hiện nguyên câu của server; đã xem trên trình duyệt (toast hiện câu kèm mã đơn). Khác plan: e2e lùi `deleted_at` 31 ngày rồi gọi `purgeExpiredTrash()` thay vì gọi với `now + 31 ngày`, để không xóa thùng rác thật của DB local. Test `export` "deletes the exported files" phải chuyển đơn sang `SHIPPED` trước khi xóa. Unit 1174/1174, e2e 304/304. |
+| 2026-11-18 | S5 | e2133ce | Bản sao lưu của khôi phục dựng từ dòng đã khóa; port nhận `backupName`. Gallery ảnh AI dùng cursor `(createdAt, id)`, cursor ngày trần vẫn nhận. 2 e2e mới, fail trên code cũ. Unit 1174/1174 (một lần `oauth-state.store.spec` fail rồi đạt khi chạy lại, không liên quan), e2e 306/306. |
+
+Chưa làm: chạy `next lint` của FE (lệnh hỏi cấu hình ESLint, chưa từng cấu hình); FE chỉ kiểm bằng `tsc`.
