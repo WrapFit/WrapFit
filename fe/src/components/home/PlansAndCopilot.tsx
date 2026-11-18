@@ -54,7 +54,7 @@ function PlansPanel() {
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-landing-ink">
                   {option.unit}
-                  {featured && <span className="rounded-full bg-fpt-orange-light px-2 py-0.5 text-[11px] font-bold text-fpt-orange-ink">Phổ biến</span>}
+                  {featured && <span className="rounded-full bg-fpt-orange-light px-2 py-0.5 text-caption font-bold text-fpt-orange-ink">Phổ biến</span>}
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed text-fg-muted">{option.detail}</p>
               </div>

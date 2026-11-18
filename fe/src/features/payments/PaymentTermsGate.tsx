@@ -85,7 +85,7 @@ export function PaymentTermsGate({ itemLabel, amountVnd, accepted, onAcceptedCha
               <li key={clause.id} className="flex gap-3">
                 <span
                   aria-hidden
-                  className="flex size-5 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-[11px] font-semibold tabular-nums text-fg-muted"
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full bg-surface-sunken text-caption font-semibold tabular-nums text-fg-muted"
                 >
                   {index + 1}
                 </span>
