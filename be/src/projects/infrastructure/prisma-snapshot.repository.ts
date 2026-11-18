@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import type { FitCheckReport } from '@wrapfit/shared';
 import { PrismaService } from '../../shared/prisma';
 import { toStoredCanvas } from '../../storage';
@@ -11,6 +12,15 @@ import type { ProjectDetail, SnapshotSummary } from '../domain/project.types';
 import { syncProjectFileRefs } from './project-file-refs';
 import { pruneAutomaticSnapshots } from './snapshot-retention';
 import { detailSelect, json, nullableJson, snapshotSummarySelect, toDetail, toSnapshotSummary } from './project.select';
+
+/** The project row read, locked, by `restore`: what the backup keeps. */
+interface LockedDesign {
+  canvasState: Prisma.InputJsonObject;
+  dimensions: Prisma.InputJsonObject;
+  formulaVersion: number;
+  thumbnailKey: string | null;
+  same: boolean;
+}
 
 @Injectable()
 export class PrismaSnapshotRepository implements ISnapshotRepository {
@@ -64,22 +74,34 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
   async restore(
     projectId: string,
     snapshot: SnapshotContent,
-    backup: NewSnapshot,
+    backupName: string,
     fitCheck: FitCheckReport | null,
   ): Promise<{ project: ProjectDetail; backup: SnapshotSummary }> {
     const canvasState = json(toStoredCanvas(snapshot.canvasState));
     const dimensions = json(snapshot.dimensions);
     const [backupRow, projectRow] = await this.prisma.$transaction(async (tx) => {
+      // Row locked: no save slips in between, and the backup is built from this read (stored form already), so it
+      // holds exactly the design this restore overwrites (docs/30 item 5).
       // Restoring the design the project already has (e.g. the snapshot of the last export) keeps its version, so
-      // print files paid for and a print approval stay valid (decision Q3). Row locked: no save slips in between.
-      // jsonb equality ignores key order.
-      const [current] = await tx.$queryRaw<{ same: boolean }[]>`
-        SELECT canvas_state = ${JSON.stringify(canvasState)}::jsonb
-          AND dimensions = ${JSON.stringify(dimensions)}::jsonb
-          AND (${snapshot.formulaVersion}::int IS NULL OR formula_version = ${snapshot.formulaVersion}::int) AS same
+      // print files paid for and a print approval stay valid (decision Q3). jsonb equality ignores key order.
+      const [current] = await tx.$queryRaw<LockedDesign[]>`
+        SELECT canvas_state AS "canvasState", dimensions, formula_version AS "formulaVersion",
+               thumbnail_key AS "thumbnailKey",
+               canvas_state = ${JSON.stringify(canvasState)}::jsonb
+                 AND dimensions = ${JSON.stringify(dimensions)}::jsonb
+                 AND (${snapshot.formulaVersion}::int IS NULL OR formula_version = ${snapshot.formulaVersion}::int) AS same
         FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
+      if (!current) throw new NotFoundException('Project not found');
       const backupRow = await tx.projectSnapshot.create({
-        data: { ...this.toData(projectId, backup), isAutomatic: true },
+        data: {
+          projectId,
+          name: backupName,
+          previewKey: current.thumbnailKey,
+          canvasState: current.canvasState,
+          dimensions: current.dimensions,
+          formulaVersion: current.formulaVersion,
+          isAutomatic: true,
+        },
         select: snapshotSummarySelect,
       });
       const projectRow = await tx.packagingProject.update({
@@ -92,7 +114,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
           fitcheckState: nullableJson(fitCheck),
           fitcheckScore: fitCheck?.score ?? null,
           // An editor still showing the old design must reload, not save over it.
-          ...(!current?.same && { version: { increment: 1 } }),
+          ...(!current.same && { version: { increment: 1 } }),
         },
         select: detailSelect,
       });

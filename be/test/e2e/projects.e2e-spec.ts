@@ -13,6 +13,7 @@ import { FitCheckBackfillTask } from '../../src/projects/presentation/fitcheck-b
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
 import { ProjectsService } from '../../src/projects/application/projects.service';
 import { PROJECT_REPOSITORY, type IProjectRepository } from '../../src/projects/application/ports/project.repository.port';
+import { SNAPSHOT_REPOSITORY, type ISnapshotRepository } from '../../src/projects/application/ports/snapshot.repository.port';
 import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
@@ -772,6 +773,29 @@ describe('Projects API (e2e)', () => {
       expect(await prisma.projectSnapshot.count({ where: { projectId: expired } })).toBe(0);
       expect(await prisma.packagingProject.findUnique({ where: { id: recent } })).not.toBeNull();
     });
+  });
+
+  it('backs up the design a restore overwrites, even an autosave that landed during the restore (docs/30 item 5)', async () => {
+    const text = (content: string) => ({ id: 't', type: 'text', panelId: 'panel_front', x: 10, y: 10, width: 40, height: 10, rotation: 0, content });
+    const id = (await as(carol).post('/api/projects').send(newProject({ title: 'Khôi phục', canvasState: { elements: [text('Mốc')] } })).expect(201)).body.id;
+    const snapshot = (await as(carol).post(`/api/projects/${id}/snapshots`).send({ name: 'Mốc' }).expect(201)).body;
+    await as(carol).patch(`/api/projects/${id}`).send({ canvasState: { elements: [text('Trước autosave')] } }).expect(200);
+
+    // The autosave lands after the service read the project, before the repository locks it.
+    const repo = app.get<ISnapshotRepository>(SNAPSHOT_REPOSITORY);
+    const findContent = repo.findContent.bind(repo);
+    const spy = jest.spyOn(repo, 'findContent').mockImplementationOnce(async (...args) => {
+      await as(carol).patch(`/api/projects/${id}`).send({ canvasState: { elements: [text('Autosave')] } }).expect(200);
+      return findContent(...args);
+    });
+    const restored = await as(carol).post(`/api/projects/${id}/snapshots/${snapshot.id}/restore`).expect(200);
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+
+    const backup = await prisma.projectSnapshot.findUniqueOrThrow({ where: { id: restored.body.backup.id } });
+    expect(backup.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Autosave' })] });
+    const project = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+    expect(project.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Mốc' })] });
   });
 
   it('keeps the newest automatic snapshots only, never touching manual ones', async () => {

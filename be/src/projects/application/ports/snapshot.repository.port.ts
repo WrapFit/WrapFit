@@ -33,14 +33,15 @@ export interface ISnapshotRepository {
   /** Returns false when nothing was deleted. */
   delete(projectId: string, snapshotId: string): Promise<boolean>;
   /**
-   * In one transaction: saves `backup` (the current state, automatic), then copies the snapshot into the project
-   * (with its formula version when it has one) and the FitCheck of the restored design. The project's `version`
-   * increases unless the snapshot is the design it already has.
+   * In one transaction, with the project row locked: saves its current state as an automatic snapshot named
+   * `backupName` (read from the locked row, so a save that landed just before is in it, docs/30 item 5), then copies
+   * the snapshot into the project (with its formula version when it has one) and the FitCheck of the restored
+   * design. The project's `version` increases unless the snapshot is the design it already has.
    */
   restore(
     projectId: string,
     snapshot: SnapshotContent,
-    backup: NewSnapshot,
+    backupName: string,
     fitCheck: FitCheckReport | null,
   ): Promise<{ project: ProjectDetail; backup: SnapshotSummary }>;
   /**

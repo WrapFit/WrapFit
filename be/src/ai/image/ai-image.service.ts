@@ -23,7 +23,7 @@ import {
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { XuWalletService, type XuDebitReason } from '../../billing';
-import { ConfigService, currentRequestId, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../../common';
+import { ConfigService, currentRequestId, encodePageCursor, olderThan, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../../common';
 import { PrismaService } from '../../shared/prisma';
 import sharp from 'sharp';
 import { assetUrl, isUploadKey, StorageService, uploadKeyOf } from '../../storage';
@@ -302,16 +302,19 @@ export class AiImageService {
   }
 
   /** "Ảnh AI của tôi": the images still kept, newest first. `nextBefore` continues the list. */
-  async gallery(userId: string, { before = new Date(), limit = 30 }: AiGalleryQueryDto) {
+  async gallery(userId: string, { before, limit = 30 }: AiGalleryQueryDto) {
+    // Paged by (createdAt, id): the images of one job are saved with createMany at the same instant, so a cursor of
+    // createdAt alone skipped those left after a page boundary (docs/30 item 7).
     const rows = await this.prisma.aiImageOutput.findMany({
-      where: { job: { userId }, createdAt: { lt: before } },
+      where: { job: { userId }, ...olderThan(before) },
       select: { ...OUTPUT_SELECT, job: { select: { id: true, kind: true, modelKey: true, prompt: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit,
     });
+    const last = rows[rows.length - 1];
     return {
       items: rows.map(({ job, ...output }) => ({ ...toOutputView(output), job })),
-      nextBefore: rows.length === limit ? rows[rows.length - 1].createdAt.toISOString() : null,
+      nextBefore: rows.length === limit ? encodePageCursor(last) : null,
     };
   }
 

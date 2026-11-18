@@ -64,16 +64,12 @@ export class SnapshotsService {
     const snapshot = await this.snapshots.findContent(projectId, snapshotId);
     if (!snapshot) throw new NotFoundException('Snapshot not found');
 
+    // The backup itself is read by the repository from the locked row: `project` may be older than the design the
+    // restore overwrites (an autosave between this read and the lock).
     return this.snapshots.restore(
       projectId,
       snapshot,
-      {
-        name: `Trước khi khôi phục: ${snapshot.name}`.slice(0, MAX_TITLE_LENGTH),
-        previewKey: project.thumbnailUrl ? uploadKeyOf(project.thumbnailUrl) : null,
-        canvasState: project.canvasState,
-        dimensions: project.dimensions,
-        formulaVersion: project.formulaVersion,
-      },
+      `Trước khi khôi phục: ${snapshot.name}`.slice(0, MAX_TITLE_LENGTH),
       fitCheckOf(
         project.template.id,
         snapshot.dimensions,

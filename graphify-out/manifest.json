@@ -186,15 +186,15 @@
     "semantic_hash": ""
   },
   "be/src/ai/image/ai-image.service.ts": {
-    "mtime": 1794715430.1941452,
-    "seen": 1794852246.2642257,
-    "ast_hash": "cd98ae9546eafbbef855a90d4e0ada5e",
+    "mtime": 1795004432.539887,
+    "seen": 1795004680.2121916,
+    "ast_hash": "52eefca0116daa13d5040783dafc459c",
     "semantic_hash": ""
   },
   "be/src/ai/image/dto/ai-image-tool.dto.ts": {
-    "mtime": 1794715430.195149,
-    "seen": 1794852246.264227,
-    "ast_hash": "a5c3893dfaaa1c5f9c93478e7f83a0d4",
+    "mtime": 1795004432.5408862,
+    "seen": 1795004680.2121937,
+    "ast_hash": "8e03e176dfa39acc2db73a04d1bd9c87",
     "semantic_hash": ""
   },
   "be/src/ai/image/dto/create-ai-image.dto.ts": {
@@ -1362,9 +1362,9 @@
     "semantic_hash": ""
   },
   "be/src/projects/application/ports/snapshot.repository.port.ts": {
-    "mtime": 1794938069.0404124,
-    "seen": 1794989058.3838296,
-    "ast_hash": "4ff74592a3b37f5826bbec6b7d38533d",
+    "mtime": 1795004432.5408862,
+    "seen": 1795004680.237501,
+    "ast_hash": "50d58e8703e13e94f2d3fb380a838781",
     "semantic_hash": ""
   },
   "be/src/projects/application/projects.service.spec.ts": {
@@ -1380,15 +1380,15 @@
     "semantic_hash": ""
   },
   "be/src/projects/application/snapshots.service.spec.ts": {
-    "mtime": 1791788224.6264997,
-    "seen": 1794852246.2644637,
-    "ast_hash": "a73e262f58110292d991583fa07cc74c",
+    "mtime": 1795004432.5418873,
+    "seen": 1795004680.2376971,
+    "ast_hash": "ebb36a7acf7313ae83a19c3456bba541",
     "semantic_hash": ""
   },
   "be/src/projects/application/snapshots.service.ts": {
-    "mtime": 1791788160.3046036,
-    "seen": 1794852246.2644644,
-    "ast_hash": "b2dd3530a0974b1d44f3216fba00cc59",
+    "mtime": 1795004432.5418873,
+    "seen": 1795004680.2376983,
+    "ast_hash": "f180d8375c7f12c2edae1bf4a0581316",
     "semantic_hash": ""
   },
   "be/src/projects/domain/dieline-geometry.spec.ts": {
@@ -1458,9 +1458,9 @@
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/prisma-snapshot.repository.ts": {
-    "mtime": 1794938069.0424125,
-    "seen": 1794989058.3857622,
-    "ast_hash": "fce83813e65844db0a52869da054aa42",
+    "mtime": 1795004432.5428958,
+    "seen": 1795004680.2395396,
+    "ast_hash": "8dae380711240de3cd20e2461523ed20",
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/project-file-refs.ts": {
@@ -1890,9 +1890,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/ai-images.e2e-spec.ts": {
-    "mtime": 1794938069.0494483,
-    "seen": 1794989058.3923488,
-    "ast_hash": "ec06afdbc6af2b2c5538ead9670624c1",
+    "mtime": 1795004343.0531518,
+    "seen": 1795004680.2480779,
+    "ast_hash": "105c527a99add94bb3246473ecfa058e",
     "semantic_hash": ""
   },
   "be/test/e2e/ai.e2e-spec.ts": {
@@ -1956,9 +1956,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/projects.e2e-spec.ts": {
-    "mtime": 1795003911.4641829,
-    "seen": 1795004206.6798878,
-    "ast_hash": "8f49f05b98a66b2a98114671c68ac3c0",
+    "mtime": 1795004373.4973962,
+    "seen": 1795004680.2494135,
+    "ast_hash": "47d0ede677e277ff09637486d47db22e",
     "semantic_hash": ""
   },
   "be/test/e2e/public-showcase.e2e-spec.ts": {
