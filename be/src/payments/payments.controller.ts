@@ -21,7 +21,7 @@ export class PaymentsController {
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiOperation({
     summary:
-      'Tạo thanh toán (hạn 15 phút): gói lượt xuất, xu, Pro 30 ngày hoặc đơn in mẫu. Tài khoản thật nhận vietqr, tài khoản demo nhận vnpay.payUrl; demo mà chưa cấu hình VNPay và không bật giả lập → 503 VNPAY_NOT_CONFIGURED',
+      'Tạo thanh toán (hạn 15 phút): xu, Pro 30 ngày hoặc đơn in mẫu (gói lượt xuất: 400 EXPORT_PACK_DISCONTINUED). Tài khoản thật nhận vietqr, tài khoản demo nhận vnpay.payUrl; demo mà chưa cấu hình VNPay và không bật giả lập → 503 VNPAY_NOT_CONFIGURED',
   })
   create(@CurrentUser('id') userId: string, @Body() dto: CreatePaymentDto, @Ip() ip: string) {
     return this.payments.create(userId, dto, ip);

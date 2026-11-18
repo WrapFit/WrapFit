@@ -11,6 +11,7 @@ import { RadioGroup } from "@/components/ui";
 import { queryKeys } from "@/hooks/data";
 import { CheckoutDialog } from "@/features/payments";
 import type { AiPatternResult, AiUsage, GeneratePatternRequest, XuPackPurpose } from "@/types/api";
+import { panelLabel } from "@/features/studio/utils/dieline";
 import { renderPatternPng, tileBackground } from "./patternImage";
 
 const MAX_THEME = 200;
@@ -114,7 +115,6 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
         content: fileUrl,
         dpi,
       });
-      toast.show({ tone: "success", title: "Đã phủ hoa văn", description: `${result.themeName} · ${panel.name}` });
     } catch (err) {
       toast.error(err, "Chưa thêm được hoa văn");
     } finally {
@@ -233,7 +233,7 @@ export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }:
             onClick={() => void insert()}
             className="w-full min-h-[44px] rounded-full bg-landing-green-night hover:bg-black text-white text-sm font-semibold transition disabled:opacity-60 disabled:cursor-wait"
           >
-            {inserting ? "Đang phủ hoa văn…" : `Dùng cho ${panel?.name ?? "mặt đang chọn"}`}
+            {inserting ? "Đang phủ hoa văn…" : `Dùng cho ${panel ? panelLabel(panel.name) : "mặt đang chọn"}`}
           </button>
         </div>
       )}

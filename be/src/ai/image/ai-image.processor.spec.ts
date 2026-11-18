@@ -101,6 +101,23 @@ describe('AiImageProcessor', () => {
     expect(refunds.fail).toHaveBeenCalledWith('job-1', `${BLOCKED_PREFIX}nsfw`);
   });
 
+  it('runs a tool on an upload of the user, reading its size from the file (docs/23 S20)', async () => {
+    prisma.aiImageJob.findUniqueOrThrow.mockResolvedValue({
+      userId: 'user-1',
+      kind: 'REMOVE_BG',
+      modelKey: 'remove-bg',
+      numImages: 1,
+      source: null,
+      sourceFile: { key: 'users/user-1/image/photo.png', contentType: 'image/png' },
+    });
+    storage.getObject.mockResolvedValue({ body: png, contentType: 'image/png' });
+    provider.runTool.mockResolvedValue({ requestId: 'req-2', images: [{ body: png }] });
+    await expect(processor.process(job())).resolves.toEqual({ images: 1 });
+    expect(storage.getObject).toHaveBeenCalledWith('users/user-1/image/photo.png');
+    expect(provider.runTool.mock.calls[0][0]).toMatchObject({ tool: 'remove-bg' });
+    expect(provider.generate).not.toHaveBeenCalled();
+  });
+
   it('does nothing for a job finished meanwhile', async () => {
     prisma.aiImageJob.updateMany.mockResolvedValue({ count: 0 });
     await expect(processor.process(job())).resolves.toEqual({ images: 0 });

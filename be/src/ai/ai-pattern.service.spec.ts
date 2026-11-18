@@ -11,20 +11,22 @@ describe('AiPatternService', () => {
     theme: 'valentine',
     preferredColors: [],
   });
-  const tx = { tx: true };
-  let prisma: { $transaction: jest.Mock; aiGeneration: { create: jest.Mock } };
+  let tx: { $queryRaw: jest.Mock; aiGeneration: { create: jest.Mock; findFirst: jest.Mock } };
+  let prisma: { $transaction: jest.Mock; $queryRaw: jest.Mock };
   let ai: { generate: jest.Mock };
   let costGuard: { budgetReached: jest.Mock; record: jest.Mock };
   let xuWallet: { spend: jest.Mock; refund: jest.Mock; wallet: jest.Mock };
 
   beforeEach(() => {
+    // The debit rows locked by recordGeneration / refundOrphanedDebits: not refunded.
+    tx = { $queryRaw: jest.fn().mockResolvedValue([{ refunded_at: null }]), aiGeneration: { create: jest.fn(), findFirst: jest.fn() } };
     prisma = {
       $transaction: jest.fn((run: (db: typeof tx) => unknown) => run(tx)),
-      aiGeneration: { create: jest.fn() },
+      $queryRaw: jest.fn().mockResolvedValue([]),
     };
     costGuard = {
       budgetReached: jest.fn().mockResolvedValue(false),
-      record: jest.fn(),
+      record: jest.fn().mockResolvedValue(undefined),
     };
     xuWallet = {
       spend: jest.fn().mockResolvedValue({ operationId: 'op-1', balance: 49 }),
@@ -69,7 +71,7 @@ describe('AiPatternService', () => {
     });
     expect(result.tile.svg).toMatch(/^<svg /);
     expect(xuWallet.spend).not.toHaveBeenCalled();
-    expect(prisma.aiGeneration.create).not.toHaveBeenCalled();
+    expect(tx.aiGeneration.create).not.toHaveBeenCalled();
   });
 
   it('spends the xu of the quality before the call and records the generation with its debit', async () => {
@@ -88,7 +90,7 @@ describe('AiPatternService', () => {
       preferredColors: ['#E11D48'],
       quality: 'fast',
     });
-    expect(prisma.aiGeneration.create).toHaveBeenCalledWith({
+    expect(tx.aiGeneration.create).toHaveBeenCalledWith({
       data: {
         userId: 'u-1',
         theme: 'valentine',
@@ -130,8 +132,76 @@ describe('AiPatternService', () => {
       usage: { charged: 0, balance: 50 },
     });
     expect(xuWallet.refund).toHaveBeenCalledWith('op-1');
-    expect(prisma.aiGeneration.create).not.toHaveBeenCalled();
+    expect(tx.aiGeneration.create).not.toHaveBeenCalled();
     expect(costGuard.record).not.toHaveBeenCalled();
+  });
+
+  it('refunds once and falls back when storing the generation fails after the call', async () => {
+    tx.aiGeneration.create.mockRejectedValueOnce(new Error('connection lost'));
+    const svc = service(ai);
+    jest.spyOn(svc['logger'], 'warn').mockImplementation(() => undefined);
+
+    const result = await svc.generate('u-1', { theme: 'Tết' });
+    expect(result).toMatchObject({ source: 'procedural', usage: { charged: 0, balance: 50 } });
+    expect(xuWallet.refund).toHaveBeenCalledTimes(1);
+    expect(xuWallet.refund).toHaveBeenCalledWith('op-1');
+    expect(costGuard.record).not.toHaveBeenCalled();
+  });
+
+  it('still answers when the refund fails too, leaving the debit to the reconcile task', async () => {
+    ai.generate.mockRejectedValueOnce(new Error('timeout'));
+    xuWallet.refund.mockRejectedValueOnce(new Error('database down'));
+    const svc = service(ai);
+    jest.spyOn(svc['logger'], 'warn').mockImplementation(() => undefined);
+    const error = jest.spyOn(svc['logger'], 'error').mockImplementation(() => undefined);
+
+    const result = await svc.generate('u-1', { theme: 'Tết' });
+    expect(result).toMatchObject({ source: 'procedural', usage: { charged: 0, balance: 49 } });
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('op=op-1'));
+  });
+
+  it('locks the debit before storing the generation, and keeps the pattern free when the reconcile refunded it first', async () => {
+    tx.$queryRaw.mockResolvedValueOnce([{ refunded_at: new Date() }]);
+    const result = await service(ai).generate('u-1', { theme: 'Tết' });
+    expect(result).toMatchObject({ source: 'ai', usage: { charged: 0, balance: 50 } });
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.aiGeneration.create.mock.invocationCallOrder[0]);
+    expect(tx.aiGeneration.create).toHaveBeenCalledWith({ data: expect.objectContaining({ credits: 0, debitOperationId: 'op-1' }) });
+    expect(xuWallet.refund).not.toHaveBeenCalled();
+  });
+
+  describe('refundOrphanedDebits', () => {
+    const now = new Date('2026-11-16T10:00:00Z');
+
+    it('looks for AI_PATTERN debits older than 10 minutes without a generation row', async () => {
+      await service(ai).refundOrphanedDebits(now);
+      const [strings, since, cutoff] = prisma.$queryRaw.mock.calls[0] as [TemplateStringsArray, string, string];
+      const sql = strings.join('?');
+      expect(sql).toContain("d.reason = 'AI_PATTERN' AND d.refunded_at IS NULL");
+      expect(sql).toContain('NOT EXISTS (SELECT 1 FROM ai_generations g WHERE g.debit_operation_id = d.operation_id)');
+      expect(cutoff).toBe('2026-11-16T09:50:00.000Z');
+      expect(since).toBe('2026-11-09T10:00:00.000Z');
+    });
+
+    it('refunds an orphan under the debit lock, and skips one whose generation was stored meanwhile', async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([{ operation_id: 'op-orphan' }, { operation_id: 'op-done' }]);
+      tx.aiGeneration.findFirst.mockImplementation(async ({ where }: { where: { debitOperationId: string } }) =>
+        where.debitOperationId === 'op-done' ? { id: 'gen-1' } : null,
+      );
+      const svc = service(ai);
+      jest.spyOn(svc['logger'], 'warn').mockImplementation(() => undefined);
+
+      expect(await svc.refundOrphanedDebits(now)).toBe(1);
+      expect(xuWallet.refund).toHaveBeenCalledTimes(1);
+      expect(xuWallet.refund).toHaveBeenCalledWith('op-orphan', tx);
+      expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.aiGeneration.findFirst.mock.invocationCallOrder[0]);
+    });
+
+    it('counts nothing when the debit was already refunded (CreditsService.refund returns 0)', async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([{ operation_id: 'op-orphan' }]);
+      tx.aiGeneration.findFirst.mockResolvedValue(null);
+      xuWallet.refund.mockResolvedValueOnce(0);
+      expect(await service(ai).refundOrphanedDebits(now)).toBe(0);
+    });
   });
 
   it('answers 402 without calling the AI when the wallet is short', async () => {

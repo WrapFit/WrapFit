@@ -65,11 +65,10 @@ SMTP, Google) giữ nguyên; danh sách đầy đủ ở `be/README.md`, mục "
 | `AI_MODEL_PREMIUM` | `claude-opus-5-5` | Chỉ gói khác Free mới dùng được (`quality: 'premium'`) |
 | `AI_MONTHLY_BUDGET_USD` | đề xuất `5` | Cầu chì: vượt ngân sách tháng (giờ VN) thì hoa văn sinh bằng thuật toán, không gọi Claude. Trống = không giới hạn |
 | `ANTHROPIC_API_KEY` | khóa của tài khoản Anthropic | Trống = chỉ hoa văn thuật toán (miễn phí), demo vẫn chạy |
-| `PAYMENT_SIMULATION` | `true` | Bật nút "Giả lập đã thanh toán" (docs/17 M6). **Đặt lại `false` sau CP4** trước khi bán thật |
+| `PAYMENT_SIMULATION` | `true` | Bật nút "Giả lập đã thanh toán" (docs/17 M6), **chỉ cho tài khoản demo** (`is_demo`, docs/25 mục 6). Backend không khởi động nếu `true` cùng `VIETQR_*` thật. **Đặt lại `false` sau CP4** trước khi bán thật |
 | `VIETQR_BANK_BIN`, `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME` | trống, hoặc tài khoản thật (Q1) | Đặt cả ba hoặc để trống cả ba. Trống = tài khoản mẫu, giao diện ghi "Mô phỏng" |
 | `SEED_DEMO_EMAIL` | `demo@wrapfit.vn` (mặc định) | Tài khoản demo, xem 3.2 |
 | `SEED_DEMO_PASSWORD` | mật khẩu riêng, chỉ người demo biết | Trống = không tạo tài khoản demo. Không ghi vào slide, tài liệu, chat |
-| `SEED_DEMO_CREDITS` | `5` (mặc định) | Số lượt xuất được nạp lại mỗi lần container khởi động |
 | `FAL_KEY` | khóa fal.ai (Xu Wrap, docs/19) | Truyền vào cả `backend` và `worker`. Trống = tắt ảnh AI (studio báo "đang tắt"), hoa văn và phần còn lại vẫn chạy. Không ghi vào slide, tài liệu, chat |
 | `AI_IMAGE_PROVIDER` | `fal` (mặc định) | `fake` chỉ cho dev / e2e, bị từ chối khi `NODE_ENV=production` |
 | `AI_IMAGE_MODELS` | trống | Trống = các model có `enabled: true`. GPT Image 2 medium chưa đo giá thật (docs/19 §3): bỏ khỏi danh sách nếu muốn chắc biên, vd. `flux2-klein,gpt-image-2-low,seedream-4.5,nano-banana-2,recraft-v3-vector,nano-banana-pro` |
@@ -87,15 +86,12 @@ Container backend chạy `prisma db seed` mỗi lần khởi động. Khi có `S
 
 - Tạo một lần tài khoản `MAKER` gói **Free**, email đã xác minh, tên "Chị Linh (demo)", cửa hàng "Nến thơm Mộc An".
   Địa chỉ đã thuộc tài khoản khác vai trò thì bỏ qua (không chiếm tài khoản).
-- Nạp lượt xuất (lô `ADMIN`, không hết hạn) cho đủ `SEED_DEMO_CREDITS`. Buổi tập dùng hết lượt thì lần deploy / khởi
-  động lại sau nạp lại. Muốn nạp ngay không khởi động lại: admin gọi `POST /api/admin/users/:id/credits`.
+- Không còn nạp lượt xuất (docs/25 mục 7: gói lượt xuất ngừng bán, file in mở bằng đơn in mẫu đã thanh toán).
+  Trước deploy bản có thay đổi này, chạy một lần `npm --workspace=be run db:convert-export-credits` (chạy thử) rồi thêm
+  `-- --apply` để đổi lượt xuất còn lại sang xu; xem docs/25 §6.
 - Tạo một lần dự án **"Hũ nến thơm Mộc An"**: hộp nắp gài 80 × 80 × 95 mm, quà 350 g (đáy khóa FEFCO 0215), Ivory 300 GSM
   mờ, logo SVG ở mặt trước (tải lên bucket công khai như một upload của studio), FitCheck 100.
 - Muốn có lại dự án mới tinh: xóa vĩnh viễn dự án đó trong thùng rác, rồi khởi động lại backend.
-
-Lưu ý: tài khoản có 5 lượt nên trong ExportDialog file sạch hiện "Dùng 1 lượt? Còn 5 lượt", không phải khung "Bạn đã hết
-lượt xuất". Muốn diễn đúng bước "SVG → 402 → mua 1 lượt qua VietQR" của §5, dùng một tài khoản Free mới (đăng ký trước
-buổi demo) hoặc đặt `SEED_DEMO_CREDITS=0`.
 
 ### 3.3. Cloudflare R2 (còn thiếu từ 2026-10-30)
 
@@ -134,8 +130,10 @@ Chỉ làm khi đã điền `VIETQR_*` bằng tài khoản ngân hàng thật. T
    điền một trong hai biến đầu.
 4. Tài khoản đi đường VNPay khi `users.is_demo = true`. Seed demo (3.2) bật cờ cho `SEED_DEMO_EMAIL` ở mỗi lần khởi động, kể cả
    tài khoản đã tồn tại. Tài khoản khác: admin bật / tắt ở *Quản trị → Tài khoản → chi tiết* hoặc `PATCH /api/users/:id { "isDemo": true }`.
-5. Kiểm: đăng nhập tài khoản demo, mua 1 lượt → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox → quay về
-   `/payments/vnpay-return` hiện thành công, lượt xuất tăng. Chưa thử với credential sandbox thật tại thời điểm viết (docs/21 §9).
+5. Kiểm: đăng nhập tài khoản demo, mua gói Pro ở `/pricing` (hoặc một gói xu ở `/dashboard/billing`) → "Mở cổng VNPay" →
+   thẻ test NCB trong tài liệu sandbox → quay về `/payments/vnpay-return` hiện thành công; `/dashboard/billing` ghi gói Pro
+   (hoặc số xu tăng). Gói lượt xuất đã ngừng bán (docs/25 mục 7): mua nó nhận 400 `EXPORT_PACK_DISCONTINUED`. Chưa thử với
+   credential sandbox thật tại thời điểm viết (docs/21 §9).
 
 ## 4. Deploy backend lên VPS
 
@@ -208,9 +206,9 @@ Tắt Wi-Fi, dùng 4G, mở `https://wrap-fit.vercel.app`. Chạy hai lần liê
 | 2 | `/editor/new` → Hộp nắp gài → 80 × 80 × 95 → 350 g → Ivory 300 → Tạo | Chip "Đáy khóa FEFCO 0215" |
 | 3 | Kéo logo sát mép cắt → Auto-Fix | FitCheck đỏ, Gói `measuring`; sau Auto-Fix chỉ logo dời, FitCheck 100 |
 | 4 | Gập 0 → 100 %, xoay 360° | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D |
-| 5 | Xuất → PDF A4 | File có dòng watermark ở tai dán (tài khoản Free không lượt) |
-| 6 | Xuất SVG → 402 → Mua 1 lượt → QR → Giả lập | File SVG sạch, số lượt về 0 (tài khoản Free không lượt) |
-| 7 | Đặt in mẫu 1 hộp → giỏ → Đặt in mẫu 49.000đ → QR → Giả lập | Đơn `PAID` trong `/dashboard/orders` |
+| 5 | Bước 6 "Xem & xuất" trước khi đặt in | Thẻ file in ghi "mở sau khi bạn thanh toán đơn in ở giỏ hàng", nút "Thanh toán". Không có file miễn phí, kể cả PDF A4 |
+| 6 | "Thanh toán" → giỏ → Đặt in mẫu 1 hộp 49.000đ → QR → "Giả lập đã thanh toán" | Đơn `PAID` trong `/dashboard/orders` |
+| 7 | Quay lại bước 6 → "Xuất file in ngay" → SVG, rồi PDF CMYK | Hai file sạch tải về. Sửa thiết kế rồi quay lại: nút về "Thanh toán" (bản mới cần đơn mới) |
 | 8 | Quét QR trên nắp bằng camera điện thoại | Trang 3D mở hộp kèm lời chúc |
 | 9 | `/dashboard` | Số hộp, kiểu hộp, lỗi FitCheck đã chặn, thời gian tạo hộp tăng |
 | 10 | Quét mã VietQR trong CheckoutDialog bằng app ngân hàng (không chuyển) | Ghi lại app nào đọc được tên ngân hàng, số tiền, nội dung `WF…` (S5 chưa kiểm) |
@@ -230,7 +228,6 @@ trang giá công khai của nhà cung cấp, kiểm lại trước khi đưa và
 | fal.ai | Ảnh AI cho mặt hộp, phóng to, xóa nền, vector hóa (Xu Wrap, docs/19) | Trả theo ảnh / MP, nạp trước; cầu chì `AI_MONTHLY_BUDGET_USD` tính cả ảnh | Không | Theo lượt dùng; mỗi ảnh $0.01–0.15 (docs/19 §3), giá bán ≥ 2,5 lần chi phí |
 | Anthropic Claude API | AI sinh hoa văn (`claude-haiku-5-5`), viết lại mô tả ảnh AI | Trả theo token, cầu chì `AI_MONTHLY_BUDGET_USD` | Không | ≤ `AI_MONTHLY_BUDGET_USD` USD. Ước tính một lượt Haiku 13–34đ (S3, chưa có token thật) |
 | Email SMTP (Resend theo docs/10) | email xác minh, đặt lại mật khẩu | Free | 3.000 email / tháng, 100 email / ngày | _điền_ |
-| Cloudinary | CDN ảnh công khai (đã kết nối, chưa dùng) | Free (dùng chung tài khoản) | 25 credit / tháng | 0đ |
 | Tên miền `wrapfit.vn` | `APP_DOMAIN`, email gửi đi | Nhà đăng ký: IT điền | Không | _điền_ (theo năm / 12) |
 | GitHub (repo, Actions CI + deploy) | CI, deploy | Free | Repo công khai: Actions không giới hạn phút; repo riêng: 2.000 phút / tháng | 0đ |
 | Let's Encrypt (qua Caddy), Google OAuth | HTTPS, đăng nhập Google | Free | Không giới hạn đáng kể | 0đ |
@@ -246,12 +243,10 @@ S8 không đọc được hóa đơn (không đăng nhập tài khoản nào). S
 | Mạng sân khấu yếu / mất | Trang tải chậm, xoay vòng | Dùng 4G điện thoại phát; mở sẵn các tab (studio, dashboard, giỏ in) trước khi lên; VietQR dựng tại backend nên không cần dịch vụ ngoài |
 | Vercel hoặc rewrite `/api` lỗi | `/api/health` trên Vercel trả 404 / 502 | Chuyển sang `https://<APP_DOMAIN>` (VPS phục vụ cả frontend), cùng tài khoản và dữ liệu |
 | Backend VPS chết | Mọi trang báo "Máy chủ…" | `docker compose ... ps`, `logs backend`; khởi động lại `docker compose ... up -d`. Dự phòng cuối: video quay sẵn kịch bản §5 |
-| Worker chết, file in không ra | ExportDialog đứng ở "Đang dựng file" quá 30 s | `/api/health` báo `worker` khác `up`: `docker compose ... restart worker`. Lượt đã trừ được hoàn tự động khi job thất bại (docs/16 §5.3) |
-| Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend` |
+| Worker chết, file in không ra | ExportDialog đứng ở "Đang dựng file" quá 30 s | `/api/health` báo `worker` khác `up`: `docker compose ... restart worker`, rồi xuất lại. Đơn in đã thanh toán vẫn mở file, không trừ gì thêm |
+| Quên bật `PAYMENT_SIMULATION` | CheckoutDialog không có nút "Giả lập đã thanh toán" | Đặt `PAYMENT_SIMULATION=true` trong `.env`, `docker compose ... up -d backend`. Nút chỉ hiện với tài khoản demo (`is_demo`); tài khoản thường gọi route nhận 403 `SIMULATION_DEMO_ONLY` |
 | Sandbox VNPay lỗi lúc demo | Cổng VNPay không mở / không quay về | Đặt `PAYMENT_SIMULATION=true`: CheckoutDialog của tài khoản demo vẫn có nút "Giả lập đã thanh toán" (IPN và nút giả lập đến cùng lúc vẫn chỉ cấp quyền lợi một lần) |
 | Webhook SePay không tới | Chuyển khoản xong thanh toán vẫn `PENDING` | Xem *Tích hợp Webhooks → Nhật ký* trên SePay (401 = sai `SEPAY_WEBHOOK_API_KEY`); giao dịch tới nhưng không khớp nằm ở `/admin/bank-transactions` để gán tay |
-| Tài khoản demo hết lượt sau buổi tập | Khung "Bạn đã hết lượt xuất" | Đúng là bước 6 của §6 (mua 1 lượt qua VietQR giả lập). Muốn nạp lại: khởi động lại backend (seed nạp đủ `SEED_DEMO_CREDITS`) hoặc admin cấp lượt |
-| Tài khoản demo còn lượt nên không thấy 402 | Hộp thoại "Dùng 1 lượt? Còn N lượt" | Diễn bằng tài khoản Free mới, hoặc nói rõ "tài khoản đã mua gói 5 lượt" rồi bấm "Dùng 1 lượt" |
 | Tên xưởng "Minh Tâm Prolab" của kịch bản không có trong danh sách xưởng | Giỏ in chỉ có 4 xưởng mẫu (Sài Gòn Xanh, Hà Thành, Đà Nẵng, Cần Thơ) | Chọn "Để WrapFit chọn xưởng phù hợp" hoặc một xưởng mẫu; muốn đúng tên cần thêm xưởng vào `be/src/print-shops/print-shops.service.ts` (danh sách tĩnh) |
 | Hết ngân sách AI hoặc chưa có `ANTHROPIC_API_KEY` | Hoa văn "AI" là hoa văn thuật toán | Không chặn demo; nói rõ cầu chì chi phí là tính năng (S3) |
 | Throttle (100 request / phút / IP, 10 lần đăng nhập) khi cả hội đồng dùng chung Wi-Fi | 429 | Hội đồng thử trên 4G riêng; demo chính dùng một máy |
@@ -269,13 +264,13 @@ qua thư mục này: chép sang thư mục slide khi cần).
 |---|---|
 | Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` |
 | Studio 3D có nhãn mặt, hũ nến 80 × 80 × 95 có logo | `s8-studio-3d-labels-demo_wrapfit_vn-{M,Xp}-0.png` |
-| ExportDialog: nhãn "Có watermark" / "Cần 1 lượt xuất" | `e2e/{M,Xp}-07-export-dialog-free.png`, `s8-export-dialog-demo_wrapfit_vn-{M,Xp}-0.png` |
-| PDF A4 có watermark xuất xong | `e2e/{M,Xp}-07-export-pdf-a4-watermarked.png` |
-| SVG → 402 "Bạn đã hết lượt xuất" | `e2e/{M,Xp}-16-export-402.png` |
-| CheckoutDialog VietQR 19.000đ, nút giả lập / đã thanh toán | `e2e/{M,Xp}-16-checkout-vietqr.png`, `e2e/{M,Xp}-16-checkout-paid.png` |
-| SVG sạch sau khi mua lượt | `e2e/{M,Xp}-16-export-svg-clean.png` |
-| CheckoutDialog gói 5 lượt từ `/dashboard/billing` | `s8-checkout-vietqr-demo_wrapfit_vn-{M,Xp}-0.png` |
+| Thẻ file in ở bước 6 trước khi đặt in: nút "Thanh toán" | **chưa chụp lại** (ảnh `e2e/*-07-*` cũ còn nhãn watermark, bỏ) |
 | Giỏ in mẫu, VietQR 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` |
+| Thẻ file in sau khi thanh toán: "Xuất file in ngay", SVG sạch tải về | **chưa chụp lại** (ảnh `e2e/*-16-*` cũ là luồng mua lượt xuất, bỏ) |
+| CheckoutDialog gói Pro từ `/pricing` | **chưa chụp lại** (ảnh `s8-checkout-vietqr-*` cũ là gói 5 lượt, bỏ) |
+
+Bước 7 và 16 của `fe/scripts/e2e-scenario.mjs` còn kiểm luồng cũ (PDF A4 có watermark, 402, "Mua 1 lượt") nên sẽ hỏng
+trên bản hiện tại: phải viết lại theo luồng đơn in mẫu trước khi chụp lại (docs/28 mục 14).
 
 Chụp lại trên bản deploy: `node fe/scripts/e2e-scenario.mjs --base-url=https://wrap-fit.vercel.app --steps=…` cần
 Mailpit (chỉ có ở local), nên trên production chạy bằng tài khoản có sẵn: `--user=<email> --password=<mật khẩu>

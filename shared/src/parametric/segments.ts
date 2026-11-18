@@ -26,7 +26,17 @@ export function segmentWriter() {
       pathString: `M ${num(start.x)} ${num(start.y)} Q ${num(control.x)} ${num(control.y)} ${num(end.x)} ${num(end.y)}`,
     });
   };
-  return { segments, line, path, curve };
+  /** Cubic Bézier from `start` to `end` through the two control points (true circular arcs, see openings.ts). */
+  const cubic = (id: string, type: LineType, start: Point2D, c1: Point2D, c2: Point2D, end: Point2D) => {
+    segments.push({
+      id,
+      type,
+      start,
+      end,
+      pathString: `M ${num(start.x)} ${num(start.y)} C ${num(c1.x)} ${num(c1.y)} ${num(c2.x)} ${num(c2.y)} ${num(end.x)} ${num(end.y)}`,
+    });
+  };
+  return { segments, line, path, curve, cubic };
 }
 
 const COMMAND = /([MLQC])([^MLQC]*)/gi;

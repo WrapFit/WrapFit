@@ -79,19 +79,14 @@ describe('SnapshotsService', () => {
     await expect(service.restore('project-1', 'snap-1')).rejects.toThrow(ConflictException);
   });
 
-  it('backs up the current state before restoring, and re-runs FitCheck on the restored design', async () => {
+  it('asks for a backup of the current state before restoring, and re-runs FitCheck on the restored design', async () => {
     await service.restore('project-1', 'snap-1');
     expect(repo.findContent).toHaveBeenCalledWith('project-1', 'snap-1');
+    // Only the name: the repository builds the backup from the locked row (docs/30 item 5).
     expect(repo.restore).toHaveBeenCalledWith(
       'project-1',
       saved,
-      {
-        name: 'Trước khi khôi phục: Mốc 1',
-        previewKey: thumbnailKey,
-        canvasState: current.canvasState,
-        dimensions: current.dimensions,
-        formulaVersion: 1,
-      },
+      'Trước khi khôi phục: Mốc 1',
       expect.objectContaining({ isValidForProduction: true, score: 100 }),
     );
   });

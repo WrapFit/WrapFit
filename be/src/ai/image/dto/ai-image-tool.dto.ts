@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDate, IsIn, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 import { XU_TOOL_COST, type AiImageTool } from '@wrapfit/shared';
+import { IsPageCursor } from '../../../common/utils/page-cursor.util';
 
 const TOOLS = Object.keys(XU_TOOL_COST) as AiImageTool[];
 
@@ -22,14 +23,28 @@ export class AiImageToolDto {
   clientRequestId?: string;
 }
 
+export class AiUploadToolParams {
+  @ApiProperty({ enum: TOOLS })
+  @IsIn(TOOLS)
+  tool: AiImageTool;
+}
+
+/** An image the user uploaded, as the canvas shows it (its URL) or its storage key (docs/23 S20). */
+export class AiUploadToolDto extends AiImageToolDto {
+  @ApiProperty({ description: 'URL or storage key of one of my uploaded images (PNG, JPEG, WebP)' })
+  @IsString()
+  @MaxLength(1000)
+  content: string;
+}
+
 export const AI_GALLERY_MAX_LIMIT = 60;
 
 export class AiGalleryQueryDto {
-  @ApiPropertyOptional({ description: '`nextBefore` of the previous page; omitted = from now' })
+  @ApiPropertyOptional({ description: '`nextBefore` of the previous page (opaque; a bare date is still read); omitted = from the newest' })
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  before?: Date;
+  @IsString()
+  @IsPageCursor()
+  before?: string;
 
   @ApiPropertyOptional({ default: 30, maximum: AI_GALLERY_MAX_LIMIT })
   @IsOptional()

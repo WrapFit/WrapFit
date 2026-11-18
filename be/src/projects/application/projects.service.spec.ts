@@ -62,19 +62,15 @@ describe('ProjectsService', () => {
       update: jest.fn().mockImplementation(async (_id, changes) => changes),
       updateContent: jest.fn().mockImplementation(async (_id, changes) => changes),
       setLifecycle: jest.fn().mockImplementation(async (_id, state) => state),
-      delete: jest.fn(),
+      delete: jest.fn().mockResolvedValue({ kind: 'DELETED', keys: [] }),
+      findOrderHoldingDesign: jest.fn().mockResolvedValue(null),
       findTrashedBefore: jest.fn().mockResolvedValue(['p-1', 'p-2', 'p-3']),
-      deleteTrashed: jest.fn().mockResolvedValue(['p-1', 'p-3']),
+      // p-2 was restored between the lookup and the deletion: the repository leaves it and its files.
+      deleteTrashed: jest.fn().mockResolvedValue({ deleted: ['p-1', 'p-3'], keys: ['a.png', 'c.png'] }),
       findUnchecked: jest.fn().mockResolvedValue([]),
       saveFitCheck: jest.fn(),
     };
     files = {
-      detachSharedFiles: jest.fn(),
-      listProjectFiles: jest.fn().mockResolvedValue([
-        { projectId: 'p-1', key: 'a.png' },
-        { projectId: 'p-2', key: 'b.png' },
-        { projectId: 'p-3', key: 'c.png' },
-      ]),
       deleteObjects: jest.fn(),
       resolveUpload: jest.fn(),
       assertCanvasUploads: jest.fn(),
@@ -273,6 +269,36 @@ describe('ProjectsService', () => {
       expect(repo.updateContent.mock.lastCall![1]).not.toHaveProperty('fitCheck');
     });
 
+    it('drops the design fields equal to the saved ones, so a rename from the editor is metadata only (Q3)', async () => {
+      // The editor sends the whole design with every save; key order of the client differs from the stored JSON.
+      repo.findById.mockResolvedValueOnce(project({ canvasState: { elements: [text(1.5)] } as never }));
+      await service.update('project-1', userId, {
+        version: 4,
+        title: 'Hộp mới',
+        canvasState: { elements: [{ ...text(1.5), content: 'Tết', id: 't' }] } as never,
+        dimensions: { height: 60, width: 80, length: 120, paperThickness: 0.4 },
+        materialSpec: { finish: 'matte', caliper: 0.4, gsm: 300, type: 'kraft' } as never,
+      });
+      const changes = repo.updateContent.mock.lastCall![1];
+      expect(changes).toMatchObject({ title: 'Hộp mới' });
+      expect(changes.canvasState).toBeUndefined();
+      expect(changes.dimensions).toBeUndefined();
+      expect(changes.materialSpec).toBeUndefined();
+      expect(changes).not.toHaveProperty('fitCheck');
+    });
+
+    it('keeps a design field whose value differs, with the FitCheck of the new design', async () => {
+      await service.update('project-1', userId, {
+        title: 'Gift box',
+        canvasState: { elements: [text(1.5)] },
+        dimensions: { length: 120, width: 80, height: 60 },
+      });
+      const changes = repo.updateContent.mock.lastCall![1];
+      expect(changes.canvasState).toEqual({ elements: [text(1.5)] });
+      expect(changes.dimensions).toBeUndefined(); // completed with the caliper: equal to the saved dimensions
+      expect(changes.fitCheck).toMatchObject({ score: 90 });
+    });
+
     it('allows removing the project from its collection without an ownership lookup', async () => {
       await service.update('project-1', userId, { collectionId: null });
       expect(repo.isCollectionOwnedBy).not.toHaveBeenCalled();
@@ -385,13 +411,9 @@ describe('ProjectsService', () => {
 
       expect(repo.findTrashedBefore).toHaveBeenCalledWith(cutoff, expect.any(Number));
       expect(repo.deleteTrashed).toHaveBeenCalledWith(['p-1', 'p-2', 'p-3'], cutoff);
-      // Files still shown by copies are detached before the file list is read.
-      expect(files.detachSharedFiles).toHaveBeenCalledWith(['p-1', 'p-2', 'p-3']);
-      expect(files.detachSharedFiles.mock.invocationCallOrder[0]).toBeLessThan(
-        files.listProjectFiles.mock.invocationCallOrder[0],
-      );
-      // p-2 was restored between the lookup and the deletion: its file must stay.
+      // The keys the repository listed in its transaction, deleted from the bucket after the commit.
       expect(files.deleteObjects).toHaveBeenCalledWith(['a.png', 'c.png']);
+      expect(repo.deleteTrashed.mock.invocationCallOrder[0]).toBeLessThan(files.deleteObjects.mock.invocationCallOrder[0]);
     });
 
     it('does nothing when the trash has nothing expired', async () => {
@@ -405,11 +427,49 @@ describe('ProjectsService', () => {
   it('remove deletes only projects that are in the trash', async () => {
     await expect(service.remove('project-1')).rejects.toThrow(ConflictException);
     repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
-    files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
+    repo.delete.mockResolvedValueOnce({ kind: 'DELETED', keys: ['thumb.webp'] });
     await service.remove('project-1');
     expect(repo.delete).toHaveBeenCalledWith('project-1');
-    expect(files.detachSharedFiles).toHaveBeenCalledWith(['project-1']);
     expect(files.deleteObjects).toHaveBeenCalledWith(['thumb.webp']);
+  });
+
+  describe('remove of a design an order still needs (docs/30 item 4)', () => {
+    const inTrash = () => repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
+    const refusal = (promise: Promise<unknown>) =>
+      promise.then(
+        () => {
+          throw new Error('expected a rejection');
+        },
+        (e: ConflictException) => ({ status: e.getStatus(), body: e.getResponse() }),
+      );
+
+    it('answers 409 PROJECT_IN_ACTIVE_ORDER with the order code before touching any file', async () => {
+      inTrash();
+      repo.findOrderHoldingDesign.mockResolvedValueOnce('WF-2611-0042');
+      await expect(refusal(service.remove('project-1'))).resolves.toEqual({
+        status: 409,
+        body: { code: 'PROJECT_IN_ACTIVE_ORDER', message: expect.stringContaining('WF-2611-0042') },
+      });
+      expect(repo.delete).not.toHaveBeenCalled();
+      expect(files.deleteObjects).not.toHaveBeenCalled();
+    });
+
+    it('answers the same 409 when an order was placed between the check and the locked DELETE, and deletes no object', async () => {
+      inTrash();
+      repo.delete.mockResolvedValueOnce({ kind: 'IN_ORDER', orderCode: 'WF-2611-0043' });
+      await expect(refusal(service.remove('project-1'))).resolves.toEqual({
+        status: 409,
+        body: { code: 'PROJECT_IN_ACTIVE_ORDER', message: expect.stringContaining('WF-2611-0043') },
+      });
+      expect(files.deleteObjects).not.toHaveBeenCalled();
+    });
+
+    it('answers 409 when another tab restored the project meanwhile, and deletes no object', async () => {
+      inTrash();
+      repo.delete.mockResolvedValueOnce({ kind: 'NOT_IN_TRASH' });
+      await expect(refusal(service.remove('project-1'))).resolves.toMatchObject({ status: 409 });
+      expect(files.deleteObjects).not.toHaveBeenCalled();
+    });
   });
 
   it('assertOwner hides projects of other users behind a 404', async () => {

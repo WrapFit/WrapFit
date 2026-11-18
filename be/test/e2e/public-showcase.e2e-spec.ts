@@ -7,6 +7,7 @@ import { middleware } from '../../src/app.middleware';
 import { PROJECT_FORKED } from '../../src/common';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /** Sharing, public page, remix and likes (IT3-06). Users use the `@e2e.test` domain and are removed afterwards. */
 describe('Public showcase (e2e)', () => {
@@ -59,7 +60,7 @@ describe('Public showcase (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

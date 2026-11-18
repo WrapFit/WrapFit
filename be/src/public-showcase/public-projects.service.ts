@@ -103,7 +103,11 @@ export class PublicProjectsService {
     };
   }
 
-  /** 1-Click Remix: copies the design into the caller's workspace and notifies the author. */
+  /**
+   * 1-Click Remix: copies the design into the caller's workspace. When the caller is not the author, emits
+   * PROJECT_FORKED: NotificationsListener stores (or folds into an unread one) a "your design was remixed" notification
+   * in the author's inbox, linking to the author's own design.
+   */
   async fork(slug: string, userId: string): Promise<ProjectDetail> {
     const source = await this.findShared(slug);
     if (!source.allowFork && source.userId !== userId) {

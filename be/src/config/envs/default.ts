@@ -55,12 +55,10 @@ export const config = (env: EnvironmentVariables) => ({
     /** Encrypted database dumps, written by the backup job. Empty = none. */
     backupBucket: env.STORAGE_BACKUP_BUCKET,
   },
-  /** Public image CDN (shared/cloudinary). `cloudName` empty = disabled. */
-  cloudinary: {
-    cloudName: env.CLOUDINARY_CLOUD_NAME,
-    apiKey: env.CLOUDINARY_API_KEY,
-    apiSecret: env.CLOUDINARY_API_SECRET,
-    folder: env.CLOUDINARY_FOLDER,
+  /** Stock photos of the studio through the backend (docs/23 D10): the key never reaches the browser. */
+  stock: {
+    pexelsKey: env.PEXELS_API_KEY,
+    enabled: env.PEXELS_API_KEY !== '',
   },
   /**
    * `anthropicApiKey` empty = built-in procedural patterns only (and AI image prompts sent as typed). `monthlyBudgetUsd`

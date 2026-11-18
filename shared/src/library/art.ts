@@ -23,6 +23,10 @@ export interface ArtShape {
   strokeWidth?: number;
   /** Round line caps and joins (line icons). */
   round?: boolean;
+  /** Fill ink the user typed in CMYK (docs/23 S7): printed as is instead of converting `fill`. */
+  cmyk?: [number, number, number, number];
+  /** Linear gradient of the fill, in the coordinates of the element (docs/23 S11); `fill` is its first colour. */
+  gradient?: { angle: number; stops: { offset: number; color: string }[] };
 }
 
 export interface ArtText {
@@ -72,9 +76,35 @@ export const ART_PALETTES: ArtPalette[] = [
   { id: "bien-xanh", name: "Xanh biển", base: "#DBEAFE", ink: "#1E3A8A", accent: "#2563EB", deep: "#93C5FD" },
   { id: "kem-sua", name: "Kem sữa", base: "#FFF7ED", ink: "#7C2D12", accent: "#EA580C", deep: "#FED7AA" },
   { id: "den-sang", name: "Đen ánh kim", base: "#1C1917", ink: "#F5E6B8", accent: "#D4AF37", deep: "#000000" },
+  { id: "xanh-matcha", name: "Xanh matcha", base: "#9CBF7A", ink: "#FFFFFF", accent: "#7FA65A", deep: "#557F3A" },
+  { id: "den-than", name: "Đen than", base: "#161616", ink: "#F5F5F4", accent: "#9CBF7A", deep: "#000000" },
+  { id: "nau-ca-phe", name: "Nâu cà phê", base: "#EADBC8", ink: "#3B2416", accent: "#8B5A3C", deep: "#5C3A24" },
 ];
 
-const PALETTES = new Map(ART_PALETTES.map((p) => [p.id, p]));
+const PRESET_PALETTES = new Map(ART_PALETTES.map((p) => [p.id, p]));
+
+/**
+ * A colour the user picked instead of a preset palette: `x-RRGGBB` (one colour) or `x-RRGGBB-RRGGBB` (two colours, the
+ * ends of a gradient). Base = first colour, deep = second, ink = black or white for contrast.
+ */
+const CUSTOM_PALETTE = /^x-([0-9A-F]{6})(?:-([0-9A-F]{6}))?$/;
+export function customPaletteId(first: string, second?: string): string {
+  const hex = (c: string) => c.replace("#", "").toUpperCase();
+  return second ? `x-${hex(first)}-${hex(second)}` : `x-${hex(first)}`;
+}
+function customPalette(id: string): ArtPalette | null {
+  const match = CUSTOM_PALETTE.exec(id);
+  if (!match) return null;
+  const base = `#${match[1]}`;
+  const deep = match[2] ? `#${match[2]}` : base;
+  const ch = (i: number) => parseInt(match[1].slice(i, i + 2), 16) / 255;
+  const light = 0.2126 * ch(0) + 0.7152 * ch(2) + 0.0722 * ch(4) > 0.55;
+  return { id, name: "Màu tự chọn", base, ink: light ? "#111827" : "#FFFFFF", accent: deep, deep };
+}
+const PALETTES = {
+  has: (id: string) => PRESET_PALETTES.has(id) || CUSTOM_PALETTE.test(id),
+  get: (id: string) => PRESET_PALETTES.get(id) ?? customPalette(id) ?? undefined,
+};
 
 // ---------------------------------------------------------------- geometry helpers
 
@@ -751,6 +781,108 @@ const DESIGNS: ArtDesign[] = [
     },
   },
   // ---- backgrounds: drawn over the whole element (a panel plus its bleed); motifs that would cross the edge are left out
+  // ---- print marks a box usually needs (docs/23 S14): recycling, origin, dates, handling
+  {
+    id: "recycle-mark",
+    name: "Ký hiệu tái chế",
+    kind: "sticker",
+    aspect: 1,
+    lines: ["TÁI CHẾ"],
+    draw: (w, h, p, [word]) => {
+      const { s, cx, cy } = square(w, h);
+      const r = s / 2;
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: circle(cx, cy, r), fill: p.base },
+          { d: circle(cx, cy, r * 0.88), stroke: p.ink, strokeWidth: line(s * 0.02) },
+          iconShape("recycle", cx - s * 0.23, cy - s * 0.33, s * 0.46, p.ink),
+        ],
+        texts: fit(word, cx, cy + s * 0.33, s * 0.11, s * 0.62, "be-vietnam-pro", p.ink),
+      };
+    },
+  },
+  {
+    id: "made-in",
+    name: "Xuất xứ Việt Nam",
+    kind: "label",
+    aspect: 2.6,
+    lines: ["MADE IN", "VIETNAM"],
+    draw: (w, h, p, [small, big]) => {
+      const starR = h * 0.3;
+      const sx = h * 0.55;
+      const points: [number, number][] = Array.from({ length: 10 }, (_, i) => {
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        const radius = i % 2 ? starR * 0.42 : starR;
+        return [sx + radius * Math.cos(a), h / 2 + radius * Math.sin(a)];
+      });
+      const textX = sx + starR + h * 0.22;
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: roundRect(0, 0, w, h, h * 0.22), fill: p.base },
+          { d: roundRect(h * 0.08, h * 0.08, w - h * 0.16, h - h * 0.16, h * 0.16), stroke: p.accent, strokeWidth: line(h * 0.03) },
+          { d: polygon(points), fill: p.accent },
+        ],
+        texts: [
+          ...fit(small, textX, h * 0.42, h * 0.2, w - textX - h * 0.2, "inter", p.ink, "start"),
+          ...fit(big, textX, h * 0.76, h * 0.34, w - textX - h * 0.2, "big-shoulders-display", p.ink, "start"),
+        ],
+      };
+    },
+  },
+  {
+    id: "date-block",
+    name: "Ô ngày sản xuất, hạn dùng",
+    kind: "label",
+    aspect: 1.7,
+    lines: ["NSX:", "HSD:", "Số lô:"],
+    draw: (w, h, p, rows) => {
+      const pad = w * 0.07;
+      const rowH = (h - 2 * pad) / rows.length;
+      const ink = isLight(p.base) ? p.ink : p.base;
+      const dots: ArtShape[] = [];
+      rows.forEach((_, i) => {
+        // A dotted line to write or stamp the date on.
+        const y = pad + rowH * (i + 0.78);
+        for (let x = w * 0.4; x < w - pad; x += h * 0.06) dots.push({ d: rect(x, y, h * 0.03, line(h * 0.012)), fill: ink });
+      });
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: rect(0, 0, w, h), fill: "#FFFFFF" },
+          { d: rect(line(h * 0.015) / 2, line(h * 0.015) / 2, w - line(h * 0.015), h - line(h * 0.015)), stroke: ink, strokeWidth: line(h * 0.015) },
+          ...dots,
+        ],
+        texts: rows.flatMap((row, i) => fit(row, pad, pad + rowH * (i + 0.72), rowH * 0.42, w * 0.3, "be-vietnam-pro", ink, "start")),
+      };
+    },
+  },
+  {
+    id: "care-row",
+    name: "Hàng ký hiệu bảo quản",
+    kind: "label",
+    aspect: 3.2,
+    lines: ["Giữ khô", "Tránh nắng", "Dễ vỡ"],
+    draw: (w, h, p, words) => {
+      const icons = ["droplet", "sun", "glass-water"];
+      const cell = w / 3;
+      const size = Math.min(cell * 0.5, h * 0.52);
+      const ink = isLight(p.base) ? p.ink : p.base;
+      return {
+        width: w,
+        height: h,
+        shapes: [
+          { d: roundRect(0, 0, w, h, h * 0.12), stroke: ink, strokeWidth: line(h * 0.02) },
+          ...icons.map((icon, i) => iconShape(icon, cell * i + (cell - size) / 2, h * 0.1, size, ink)),
+        ],
+        texts: words.slice(0, 3).flatMap((word, i) => fit(word, cell * i + cell / 2, h * 0.86, h * 0.17, cell * 0.9, "inter", ink)),
+      };
+    },
+  },
   {
     id: "bg-solid",
     name: "Nền màu trơn",
@@ -758,6 +890,21 @@ const DESIGNS: ArtDesign[] = [
     aspect: 1,
     lines: [],
     draw: (w, h, p) => ({ width: w, height: h, shapes: [{ d: rect(0, 0, w, h), fill: p.base }], texts: [] }),
+  },
+  {
+    // Gradient from the base to the deep colour, top to bottom, as thin bands (print files keep flat vector fills).
+    id: "bg-gradient",
+    name: "Nền chuyển màu",
+    kind: "background",
+    aspect: 1,
+    lines: [],
+    draw: (w, h, p) => {
+      const bands = 64;
+      const step = h / bands;
+      const shapes: ArtShape[] = [{ d: rect(0, 0, w, h), fill: p.base }];
+      for (let i = 1; i < bands; i++) shapes.push({ d: rect(0, step * i, w, h - step * i + 0.01), fill: mixHex(p.base, p.deep, i / (bands - 1)) });
+      return { width: w, height: h, shapes, texts: [] };
+    },
   },
   {
     id: "bg-dots",
@@ -822,6 +969,14 @@ const DESIGNS: ArtDesign[] = [
       }, 3.2),
   },
   {
+    id: "bg-pixels",
+    name: "Nền ô pixel",
+    kind: "background",
+    aspect: 1,
+    lines: [],
+    draw: (w, h, p) => pixels(w, h, p, 6),
+  },
+  {
     id: "bg-waves",
     name: "Nền sóng nước",
     kind: "background",
@@ -843,6 +998,46 @@ const DESIGNS: ArtDesign[] = [
     },
   },
 ];
+
+/** 0 … 1, the same for the same cell (pixel mosaics). */
+function cellNoise(i: number, j: number, seed: number): number {
+  let h = Math.imul(i + 0x9e37, 0x85ebca6b) ^ Math.imul(j + 0x7f4a, 0xc2b2ae35) ^ seed;
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+  h ^= h >>> 13;
+  return (h >>> 0) / 0xffffffff;
+}
+
+/**
+ * A mosaic of square pixels in the shades of the palette, in blotches (a coarse noise plus a fine one), like a
+ * pixelated photo. One path per shade, so even a large panel stays a handful of shapes.
+ */
+function pixels(w: number, h: number, p: ArtPalette, size: number): VectorArt {
+  const cols = Math.ceil(w / size);
+  const rows = Math.ceil(h / size);
+  const paths: Record<"accent" | "deep" | "ink", string[]> = { accent: [], deep: [], ink: [] };
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      const v = 0.55 * cellNoise(Math.floor(i / 3), Math.floor(j / 3), 17) + 0.45 * cellNoise(i, j, 71);
+      const shade = v > 0.82 ? "deep" : v > 0.58 ? "accent" : v < 0.12 ? "ink" : null;
+      if (!shade) continue;
+      const x = i * size;
+      const y = j * size;
+      paths[shade].push(rect(x, y, Math.min(size, w - x), Math.min(size, h - y)));
+    }
+  }
+  const shapes: ArtShape[] = [{ d: rect(0, 0, w, h), fill: p.base }];
+  if (paths.accent.length) shapes.push({ d: paths.accent.join(" "), fill: p.accent });
+  if (paths.deep.length) shapes.push({ d: paths.deep.join(" "), fill: p.deep });
+  // A few light pixels: a lighter tint of the base (the ink is white or near-black, too strong on a large area).
+  if (paths.ink.length && luminanceOf(p.ink) > 0.5) shapes.push({ d: paths.ink.join(" "), fill: mixHex(p.base, p.ink, 0.35) });
+  return { width: w, height: h, shapes, texts: [] };
+}
+
+/** `a` mixed with `t` of `b` (`#RRGGBB`). */
+function mixHex(a: string, b: string, t: number): string {
+  const ch = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);
+  return `#${[1, 3, 5].map((i) => Math.round(ch(a, i) * (1 - t) + ch(b, i) * t).toString(16).padStart(2, "0")).join("")}`.toUpperCase();
+}
 
 /** Base fill plus a motif repeated every `step` mm, keeping only motifs `margin` mm or more inside the element. */
 function tiled(w: number, h: number, p: ArtPalette, step: number, motif: (x: number, y: number, row: number) => ArtShape[], margin: number): VectorArt {

@@ -10,6 +10,7 @@ import { INDUSTRIES, INDUSTRY_LABELS, OCCASIONS, OCCASION_LABELS } from "@/featu
 import { queryKeys } from "@/hooks/data";
 import type { Industry, Occasion, ProjectDetail, ProjectVisibility, UpdateProjectRequest } from "@/types/api";
 import { StudioDialog } from "../dialog/StudioDialog";
+import { ReviewLinkSection } from "../review/ReviewPanel";
 
 /** Score a public design needs to be listed in the community section of the template hub (docs/06 §8). */
 const COMMUNITY_MIN_SCORE = 90;
@@ -79,7 +80,6 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
     setSaving("community");
     try {
       await patch({ occasion: occasion || null, industry: industry || null });
-      toast.show({ tone: "success", title: "Đã lưu chủ đề cho thư viện cộng đồng" });
     } catch (err) {
       toast.error(err, "Chưa lưu được chủ đề");
     } finally {
@@ -245,6 +245,14 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
           </div>
         </section>
       )}
+
+      {/* docs/23 S23: a secret review link, whatever the visibility (a private design stays private). */}
+      <section aria-labelledby="share-review" className="mt-5 space-y-2 border-t border-landing-line pt-5">
+        <h3 id="share-review" className="text-sm font-semibold text-landing-ink">
+          Duyệt mẫu với khách / xưởng in
+        </h3>
+        <ReviewLinkSection projectId={project.id} />
+      </section>
     </StudioDialog>
   );
 }

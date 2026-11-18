@@ -4,20 +4,18 @@ import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { CommonModule, ConfigService } from './common';
 import { configuration, validateEnv } from './config';
-import { CloudinaryModule, CloudinaryService } from './shared/cloudinary';
 
 /**
- * Checks the two storage services of the environment before the app depends on them: each R2 / S3 bucket of the
- * STORAGE_* variables (reachable with the API token) and the Cloudinary credentials. Reads only, writes nothing.
+ * Checks the file storage of the environment before the app depends on it: each R2 / S3 bucket of the STORAGE_*
+ * variables (public, private, backup) is reachable with the API token. Reads only, writes nothing.
  *   npm --workspace=be run storage:check                       (development, reads be/.env)
  *   docker compose exec backend node dist/storage-check.js     (production container)
- * Exit code 0 = every configured service answered; a service left empty is reported as skipped.
+ * Exit code 0 = every configured bucket answered; a bucket left empty is reported as skipped.
  */
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnv, load: [configuration] }),
     CommonModule,
-    CloudinaryModule,
   ],
 })
 class StorageCheckModule {}
@@ -85,26 +83,10 @@ async function checkBuckets(config: ConfigService): Promise<boolean> {
   return ok;
 }
 
-async function checkCloudinary(cloudinary: CloudinaryService): Promise<boolean> {
-  if (!cloudinary.enabled) {
-    console.log('Cloudinary: skipped (CLOUDINARY_CLOUD_NAME is empty)');
-    return true;
-  }
-  const check = await cloudinary.ping();
-  if (!check.ok) {
-    console.error(`Cloudinary: failed, ${check.error}`);
-    return false;
-  }
-  console.log(`Cloudinary "${cloudinary.client.config().cloud_name}": OK (folder ${cloudinary.folder}/)`);
-  return true;
-}
-
 async function main(): Promise<number> {
   const app = await NestFactory.createApplicationContext(StorageCheckModule, { logger: ['error', 'warn'] });
   try {
-    const buckets = await checkBuckets(app.get(ConfigService));
-    const cloudinary = await checkCloudinary(app.get(CloudinaryService));
-    return buckets && cloudinary ? 0 : 1;
+    return (await checkBuckets(app.get(ConfigService))) ? 0 : 1;
   } finally {
     await app.close();
   }

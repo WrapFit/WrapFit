@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ACCESS_COOKIE, AuthUser, ConfigService, JwtPayload } from '../../common';
+import { ACCESS_COOKIE, AuthUser, ConfigService, JwtPayload, readCookie } from '../../common';
 import { PrismaService } from '../../shared/prisma';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       // Browsers send the HttpOnly cookie; the Bearer header stays available for non-browser clients and tools.
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.[ACCESS_COOKIE] ?? null,
+        (req: Request) => readCookie(req?.cookies, ACCESS_COOKIE) ?? null,
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,

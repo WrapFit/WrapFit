@@ -95,8 +95,6 @@ export function BalanceAside({ billing, tier, loading, refreshing, onRefresh }: 
               <dd className="tabular-nums text-fg">{day(proEnd)}</dd>
             </>
           )}
-          <dt className="text-fg-muted">Lượt xuất còn lại</dt>
-          <dd className="tabular-nums text-fg">{billing ? billing.exportCredits.balance : '–'}</dd>
         </dl>
         <ButtonLink href="/dashboard/billing" variant="outline" shape="rounded" size="sm" block className="mt-4">
           Quản lý gói và hóa đơn

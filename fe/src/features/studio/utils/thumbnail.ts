@@ -1,12 +1,22 @@
 import {
+  faceCss,
+  filterCss,
+  imageDraw,
+  isCropped,
+  maskPath,
   matchesPanel,
+  orderElements,
   PRINT_FONTS,
-  TEXT_FONT_WEIGHT,
+  printedFace,
+  sideOf,
+  underlineOf,
   type CanvasElement,
   type DielineGeometry,
   type DielinePiece,
 } from "@wrapfit/shared";
+import { elementImageKey, recoloredSrc } from "./svgRecolor";
 import { layoutBoxText } from "../components/canvas/boxText";
+import { curvedChars } from "../components/canvas/elementVisuals";
 import { artMarkup, elementArt } from "../components/library/elementArt";
 
 /** Paper colour of each look of the editor (BoxMaterialTheme). */
@@ -69,17 +79,34 @@ export async function renderThumbnail(
   const ink = materialTheme === "forest" ? "#F7F5F0" : "#1C1917";
 
   const images = new Map<string, string | null>();
+  const sizes = new Map<string, { width: number; height: number }>();
   await Promise.all(
     elements
       .filter((el) => (el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content))
       .map(async (el) => {
-        if (!images.has(el.content)) images.set(el.content, await inlineImage(new URL(el.content, location.href).href));
+        const key = elementImageKey(el);
+        if (images.has(key)) return;
+        images.set(key, null);
+        const src = await recoloredSrc(el.content, el.style?.colorMap);
+        const href = src.startsWith("data:") ? src : await inlineImage(new URL(src, location.href).href);
+        images.set(key, href);
+        // Natural size of the file, for cropped and filled photos (docs/23 S10).
+        if (href) {
+          const img = new Image();
+          img.src = href;
+          try {
+            await img.decode();
+            if (img.naturalWidth && img.naturalHeight) sizes.set(key, { width: img.naturalWidth, height: img.naturalHeight });
+          } catch {
+            // drawn without its crop
+          }
+        }
       })
   );
 
   let x = 0;
   const drawn = pieces.map(({ geometry }) => {
-    const group = `<g transform="translate(${x} 0)">${pieceSvg(geometry, elements, images, paper, ink)}</g>`;
+    const group = `<g transform="translate(${x} 0)">${pieceSvg(geometry, elements, images, paper, ink, sizes)}</g>`;
     x += geometry.totalBoundingBox.width + GAP_MM;
     return group;
   });
@@ -112,7 +139,8 @@ function pieceSvg(
   elements: CanvasElement[],
   images: Map<string, string | null>,
   paper: string,
-  ink: string
+  ink: string,
+  sizes: Map<string, { width: number; height: number }> = new Map()
 ): string {
   // Panels are outlined too: dielines of formula version 1 have no cut lines.
   const panels = dieline.panels
@@ -127,29 +155,56 @@ function pieceSvg(
     })
     .join("");
 
-  const artwork = elements
+  // The outside of the sheet, visible layers, in paint order.
+  const artwork = orderElements(elements)
     .map((el) => {
       const panel = dieline.panels.find((p) => matchesPanel(p, el.panelId));
-      if (!panel) return "";
+      if (!panel || el.hidden || sideOf(el) !== "outside") return "";
       const x = panel.bounds.x + el.x;
       const y = panel.bounds.y + el.y;
-      const rotate = el.rotation ? ` transform="rotate(${el.rotation} ${x + el.width / 2} ${y + el.height / 2})"` : "";
+      const [cx, cy] = [x + el.width / 2, y + el.height / 2];
+      const turns = [
+        el.rotation ? `rotate(${el.rotation} ${cx} ${cy})` : "",
+        el.flipX || el.flipY ? `translate(${cx} ${cy}) scale(${el.flipX ? -1 : 1} ${el.flipY ? -1 : 1}) translate(${-cx} ${-cy})` : "",
+      ].filter(Boolean);
+      const alpha = typeof el.style?.opacity === "number" && el.style.opacity < 1 ? ` opacity="${el.style.opacity}"` : "";
+      const rotate = (turns.length ? ` transform="${turns.join(" ")}"` : "") + alpha;
       const art = elementArt(el);
       if (art) return artMarkup(art, x, y, rotate);
       if ((el.type === "image" || el.type === "logo" || el.type === "pattern") && isFileUrl(el.content)) {
-        const href = images.get(el.content);
-        return href
-          ? `<image href="${href}" x="${x}" y="${y}" width="${el.width}" height="${el.height}" preserveAspectRatio="xMidYMid meet"${rotate}/>`
-          : `<rect x="${x}" y="${y}" width="${el.width}" height="${el.height}" fill="${ink}" fill-opacity="0.08"${rotate}/>`;
+        const href = images.get(elementImageKey(el));
+        if (!href) return `<rect x="${x}" y="${y}" width="${el.width}" height="${el.height}" fill="${ink}" fill-opacity="0.08"${rotate}/>`;
+        const size = sizes.get(elementImageKey(el));
+        const filter = filterCss(el.style?.filters);
+        const look = filter !== "none" ? ` style="filter:${filter}"` : "";
+        let picture = `<image href="${href}" x="${x}" y="${y}" width="${el.width}" height="${el.height}" preserveAspectRatio="xMidYMid meet"${look}/>`;
+        if (size && isCropped(el)) {
+          const d = imageDraw(el, size);
+          picture = `<svg x="${x + d.dx}" y="${y + d.dy}" width="${d.dw}" height="${d.dh}" viewBox="${d.sx} ${d.sy} ${d.sw} ${d.sh}" preserveAspectRatio="none"><image href="${href}" width="${size.width}" height="${size.height}"${look}/></svg>`;
+        }
+        const mask = maskPath(el.mask, el.width, el.height);
+        if (!mask) return `<g${rotate}>${picture}</g>`;
+        const id = `thumb-mask-${el.id.replace(/[^w-]/g, "")}`;
+        return `<g${rotate}><clipPath id="${id}"><path transform="translate(${x} ${y})" d="${mask}"/></clipPath><g clip-path="url(#${id})">${picture}</g></g>`;
       }
       // Lines as on the canvas and in the print files. An SVG drawn as an image cannot use the page's web fonts, so
       // the preview names the family and the system draws it (or a fallback).
       const box = layoutBoxText(el);
+      const { weight, style } = faceCss(printedFace(box.font, box.face));
       const lines = box.lines
         .filter((line) => line.text)
-        .map((line) => `<text x="${x + line.x}" y="${y + line.baseline}">${escapeXml(line.text)}</text>`)
+        .map((line) => {
+          if (box.curve) {
+            return curvedChars(box, line.text, x + el.width / 2, y + line.baseline)
+              .map((c) => `<text x="${c.x}" y="${c.y}" text-anchor="middle" transform="rotate(${c.angle} ${c.x} ${c.y})">${escapeXml(c.char)}</text>`)
+              .join("");
+          }
+          const u = box.underline ? underlineOf(line, box.fontSizeMm) : null;
+          const bar = u ? `<rect x="${x + u.x}" y="${y + u.y}" width="${u.width}" height="${u.height}"/>` : "";
+          return `<text x="${x + line.x}" y="${y + line.baseline}">${escapeXml(line.text)}</text>${bar}`;
+        })
         .join("");
-      return `<g font-size="${box.fontSizeMm}" font-weight="${TEXT_FONT_WEIGHT}" font-family="${escapeXml(PRINT_FONTS[box.font])}, sans-serif" fill="${escapeXml(el.style?.color ?? ink)}"${rotate}>${lines}</g>`;
+      return `<g font-size="${box.fontSizeMm}" font-weight="${weight}" font-style="${style}" font-family="${escapeXml(PRINT_FONTS[box.font])}, sans-serif" fill="${escapeXml(el.style?.color ?? ink)}"${box.spacingMm && !box.curve ? ` letter-spacing="${box.spacingMm}"` : ""}${box.stroke ? ` stroke="${escapeXml(box.stroke.color)}" stroke-width="${box.stroke.widthMm * 2}" stroke-linejoin="round" paint-order="stroke"` : ""}${rotate}>${lines}</g>`;
     })
     .join("");
 

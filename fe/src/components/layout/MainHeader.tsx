@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Bell, ChevronDown, Coins, Menu, Shield, User, X } from 'lucide-react';
+import { ArrowRight, ChevronDown, Coins, Menu, Shield, User, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
@@ -8,6 +8,7 @@ import { ViewTransition } from '@/components/common/ViewTransition';
 import { landingFontVariables } from '@/assets/fonts/landing';
 import { ROUTES } from '@/constants';
 import { ADMIN_HOME, homeForRole, isRealAdmin, useAuth } from '@/features/auth';
+import { NotificationBell } from '@/features/notifications';
 import { useBoxStructures } from '@/features/templates/hooks';
 import { useHydrated } from '@/hooks/dom';
 import { cn } from '@/utils/helpers';
@@ -147,11 +148,7 @@ export function MainHeader({ className = '', showCta = true }: MainHeaderProps) 
               <ArrowRight className="size-4" aria-hidden />
             </Link>
           )}
-          {user && (
-            <Link href="/notifications" className={cn(ICON_BUTTON, 'hidden sm:inline-flex')} aria-label="Thông báo" title="Thông báo">
-              <Bell className="size-[18px]" strokeWidth={1.75} aria-hidden />
-            </Link>
-          )}
+          {user && <NotificationBell buttonClassName={ICON_BUTTON} />}
           {user ? (
             <UserAvatarDropdown size="md" align="right" labelClassName="hidden" />
           ) : status === 'loading' ? (
@@ -206,8 +203,9 @@ function MenuPanel({ group, pathname, onNavigate }: { group: NavGroup; pathname:
     <div id={`menu-${group.id}`} className="absolute top-full left-0 pt-2">
       <ul
         className={cn(
-          'grid gap-1 rounded-2xl bg-white p-2 shadow-[0_10px_30px_-6px_rgba(29,41,61,0.18)] ring-1 ring-landing-ink/10',
-          group.wide ? 'w-[440px] grid-cols-2' : 'w-[360px] grid-cols-1'
+          'grid max-w-[calc(100vw-2rem)] gap-1 rounded-2xl bg-white p-2 shadow-[0_10px_30px_-6px_rgba(29,41,61,0.18)] ring-1 ring-landing-ink/10 origin-top-left animate-pop-in motion-reduce:animate-none',
+          // Long lists spread over columns so the panel stays short and balanced under the header.
+          group.links.length > 8 ? 'w-[600px] grid-cols-3' : group.wide || group.links.length > 4 ? 'w-[420px] grid-cols-2' : 'w-[240px] grid-cols-1'
         )}
       >
         {group.links.map((link) => (
@@ -216,10 +214,9 @@ function MenuPanel({ group, pathname, onNavigate }: { group: NavGroup; pathname:
               href={link.href}
               onClick={onNavigate}
               aria-current={pathname === link.href ? 'page' : undefined}
-              className="flex flex-col gap-0.5 rounded-xl p-3 transition-colors hover:bg-landing-tile/60 aria-[current=page]:bg-landing-tile/60"
+              className="flex rounded-xl px-3 py-2.5 transition-colors hover:bg-landing-tile/60 aria-[current=page]:bg-landing-tile/60"
             >
               <span className="text-sm font-medium text-landing-ink">{link.label}</span>
-              {link.description && <span className="line-clamp-2 text-xs leading-4 text-landing-muted">{link.description}</span>}
             </Link>
           </li>
         ))}
@@ -259,7 +256,7 @@ function MobileMenu({
               <ChevronDown className={cn('size-4 transition-transform', open === group.id && 'rotate-180')} aria-hidden />
             </button>
             {open === group.id && (
-              <ul className={cn('grid gap-1 pb-2', group.wide && 'grid-cols-2')}>
+              <ul className={cn('grid gap-1 pb-2', (group.wide || group.links.length > 6) && 'grid-cols-2')}>
                 {group.links.map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} onClick={onNavigate} className="block rounded-lg px-3 py-2.5 text-sm text-landing-muted hover:bg-landing-tile/60">

@@ -11,8 +11,15 @@ import { MAX_SNAPSHOTS_PER_PROJECT } from '../../src/projects/application/snapsh
 import { MAX_AUTOMATIC_SNAPSHOTS } from '../../src/projects';
 import { FitCheckBackfillTask } from '../../src/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
+import { ProjectsService } from '../../src/projects/application/projects.service';
+import { PROJECT_REPOSITORY, type IProjectRepository } from '../../src/projects/application/ports/project.repository.port';
+import { SNAPSHOT_REPOSITORY, type ISnapshotRepository } from '../../src/projects/application/ports/snapshot.repository.port';
 import { PrismaService } from '../../src/shared/prisma';
+import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
+import { holdTransaction, untilLockWaiters } from './helpers/locks';
+import { createPaidOrder, sampleOrderData } from './helpers/orders';
 
 /**
  * Projects CRUD (IT3-03), lifecycle, duplicate, snapshots and trash purge (IT3-04). Needs the migrated and seeded database (box templates).
@@ -61,8 +68,12 @@ describe('Projects API (e2e)', () => {
     daveCollection = (await as(dave).post('/api/collections').send({ title: 'Dave' }).expect(201)).body.id;
   });
 
+  /** Print orders written by the test: orders do not go with their user. */
+  const orderIds: string[] = [];
+
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 
@@ -328,12 +339,18 @@ describe('Projects API (e2e)', () => {
 
     it('refuses a save based on an older version instead of overwriting the newer one (409)', async () => {
       const { version } = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      const textCanvas = (content: string) => ({
+        elements: [{ id: 't', type: 'text', panelId: 'front', x: 4, y: 4, width: 40, height: 10, rotation: 0, content }],
+      });
 
-      // Tab A saves first: the version moves on.
-      const saved = await as(carol).patch(`/api/projects/${projectId}`).send({ version, title: 'Tab A' }).expect(200);
+      // Tab A saves a new design first: the version moves on.
+      const saved = await as(carol)
+        .patch(`/api/projects/${projectId}`)
+        .send({ version, title: 'Tab A', canvasState: textCanvas('Tab A') })
+        .expect(200);
       expect(saved.body.version).toBe(version + 1);
 
-      // Tab B still holds the old version.
+      // Tab B still holds the old version: refused, even for a rename only.
       const stale = await as(carol).patch(`/api/projects/${projectId}`).send({ version, title: 'Tab B' }).expect(409);
       expect(stale.body).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: version + 1 });
       expect((await as(carol).get(`/api/projects/${projectId}`).expect(200)).body.title).toBe('Tab A');
@@ -341,6 +358,45 @@ describe('Projects API (e2e)', () => {
       // Sharing settings do not touch the design: they leave the version alone.
       await as(carol).patch(`/api/projects/${projectId}/visibility`).send({ allowFork: false }).expect(200);
       await as(carol).patch(`/api/projects/${projectId}`).send({ version: version + 1, title: 'Hộp đã sửa' }).expect(200);
+    });
+
+    it('increases the version only when the design changes, not for its name, tags or thumbnail (Q3)', async () => {
+      const current = (await as(carol).get(`/api/projects/${projectId}`).expect(200)).body;
+      const { version } = current;
+      const patch = (body: Record<string, unknown>) => as(carol).patch(`/api/projects/${projectId}`).send(body).expect(200);
+
+      // Metadata only: same version, saved.
+      const renamed = await patch({ version, title: 'Tên mới', tags: ['tet'] });
+      expect(renamed.body).toMatchObject({ title: 'Tên mới', tags: ['tet'], version });
+      const thumbnailUrl = await uploadPng(app, carol.cookie, 'THUMBNAIL', projectId);
+      expect((await patch({ version, thumbnailUrl })).body).toMatchObject({ thumbnailUrl, version });
+      expect((await patch({ version })).body.version).toBe(version);
+
+      // The editor's autosave sends the whole design with every save: a rename with an equal design keeps the version,
+      // even with the keys in another order.
+      const reversed = (value: Record<string, unknown>) => Object.fromEntries(Object.entries(value).reverse());
+      const autosave = {
+        version,
+        title: 'Tên từ studio',
+        dimensions: reversed(current.dimensions),
+        materialSpec: reversed(current.materialSpec),
+        canvasState: { ...current.canvasState, elements: current.canvasState.elements.map(reversed) },
+      };
+      expect((await patch(autosave)).body).toMatchObject({ title: 'Tên từ studio', version });
+
+      // A metadata-only save over a stale version is still refused.
+      const stale = await as(carol).patch(`/api/projects/${projectId}`).send({ version: version - 1, title: 'Cũ' }).expect(409);
+      expect(stale.body).toMatchObject({ code: 'PROJECT_VERSION_CONFLICT', currentVersion: version });
+
+      // A change of the canvas, the dimensions or the material: exactly one more.
+      const canvas = { elements: [{ ...current.canvasState.elements[0], content: 'Đổi chữ' }] };
+      expect((await patch({ ...autosave, canvasState: canvas })).body.version).toBe(version + 1);
+      const dimensions = { ...current.dimensions, height: current.dimensions.height + 5 };
+      expect((await patch({ version: version + 1, dimensions })).body.version).toBe(version + 2);
+      const materialSpec = { ...current.materialSpec, finish: current.materialSpec.finish === 'matte' ? 'glossy' : 'matte' };
+      expect((await patch({ version: version + 2, materialSpec })).body.version).toBe(version + 3);
+      const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: projectId } });
+      expect(stored.version).toBe(version + 3);
     });
 
     it('rejects null for fields that cannot be cleared (400, not 500)', async () => {
@@ -537,6 +593,10 @@ describe('Projects API (e2e)', () => {
         .patch(`/api/projects/${projectId}`)
         .send({ version: res.body.project.version, canvasState: text('stale') })
         .expect(409);
+
+      // Restoring the design the project already has keeps its version (paid print files, print approval).
+      const same = await as(carol).post(url(`/${res.body.backup.id}/restore`)).expect(200);
+      expect(same.body.project).toMatchObject({ canvasState: text('v2'), version: undo.body.project.version });
     });
 
     it('deletes a version', async () => {
@@ -547,8 +607,8 @@ describe('Projects API (e2e)', () => {
     });
 
     it('limits manual versions to 50; automatic ones (restore backups, exports) do not count', async () => {
-      // The restore test above left two automatic backups.
-      expect(await prisma.projectSnapshot.count({ where: { projectId, isAutomatic: true } })).toBe(2);
+      // The restore test above left three automatic backups (one per restore, the one that changed nothing included).
+      expect(await prisma.projectSnapshot.count({ where: { projectId, isAutomatic: true } })).toBe(3);
 
       const fill = (count: number, isAutomatic: boolean) =>
         prisma.projectSnapshot.createMany({
@@ -716,6 +776,29 @@ describe('Projects API (e2e)', () => {
     });
   });
 
+  it('backs up the design a restore overwrites, even an autosave that landed during the restore (docs/30 item 5)', async () => {
+    const text = (content: string) => ({ id: 't', type: 'text', panelId: 'panel_front', x: 10, y: 10, width: 40, height: 10, rotation: 0, content });
+    const id = (await as(carol).post('/api/projects').send(newProject({ title: 'Khôi phục', canvasState: { elements: [text('Mốc')] } })).expect(201)).body.id;
+    const snapshot = (await as(carol).post(`/api/projects/${id}/snapshots`).send({ name: 'Mốc' }).expect(201)).body;
+    await as(carol).patch(`/api/projects/${id}`).send({ canvasState: { elements: [text('Trước autosave')] } }).expect(200);
+
+    // The autosave lands after the service read the project, before the repository locks it.
+    const repo = app.get<ISnapshotRepository>(SNAPSHOT_REPOSITORY);
+    const findContent = repo.findContent.bind(repo);
+    const spy = jest.spyOn(repo, 'findContent').mockImplementationOnce(async (...args) => {
+      await as(carol).patch(`/api/projects/${id}`).send({ canvasState: { elements: [text('Autosave')] } }).expect(200);
+      return findContent(...args);
+    });
+    const restored = await as(carol).post(`/api/projects/${id}/snapshots/${snapshot.id}/restore`).expect(200);
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
+
+    const backup = await prisma.projectSnapshot.findUniqueOrThrow({ where: { id: restored.body.backup.id } });
+    expect(backup.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Autosave' })] });
+    const project = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+    expect(project.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Mốc' })] });
+  });
+
   it('keeps the newest automatic snapshots only, never touching manual ones', async () => {
     const id = (await as(carol).post('/api/projects').send(newProject({ title: 'Nhiều lần xuất' })).expect(201)).body.id;
     const manual = (await as(carol).post(`/api/projects/${id}/snapshots`).send({ name: 'Thủ công' }).expect(201)).body;
@@ -725,5 +808,240 @@ describe('Projects API (e2e)', () => {
     }
     expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: true } })).toBe(MAX_AUTOMATIC_SNAPSHOTS);
     expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: false } })).toBe(1);
+  });
+
+  // docs/30 item 4 (Q2): an order waiting for payment, paid or in production still needs the design.
+  describe.each(['PENDING_PAYMENT', 'PAID', 'IN_PRODUCTION'] as const)('permanent deletion of a design in a %s order', (status) => {
+    it('is refused by hand and by the trash purge until the order is shipped', async () => {
+      const id = (await as(carol).post('/api/projects').send(newProject({ title: `Hộp đơn ${status}` })).expect(201)).body.id as string;
+      const storage = app.get(StorageService);
+      const exportKey = `private/projects/${id}/exports/e2e-${status}.dxf`;
+      await storage.putGeneratedFile({ userId: carol.id, projectId: id, key: exportKey, purpose: 'EXPORT', contentType: 'application/dxf', body: Buffer.from('0\nEOF\n') });
+      const orderId = await createPaidOrder(prisma, carol.id, id, run);
+      orderIds.push(orderId);
+      const { orderCode } = await prisma.order.update({
+        where: { id: orderId },
+        data: { status, paidAt: status === 'PENDING_PAYMENT' ? null : new Date() },
+        select: { orderCode: true },
+      });
+      await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+
+      const refused = await as(carol).delete(`/api/projects/${id}`).expect(409);
+      expect(refused.body).toMatchObject({ code: 'PROJECT_IN_ACTIVE_ORDER' });
+      expect(refused.body.message).toContain(orderCode);
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: id });
+      await expect(storage.getObject(exportKey)).resolves.toMatchObject({ contentType: 'application/dxf' });
+
+      // In the trash for 31 days: the purge leaves it, and does not even pick it (it would fill every batch).
+      await prisma.packagingProject.update({ where: { id }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      expect(await app.get<IProjectRepository>(PROJECT_REPOSITORY).findTrashedBefore(cutoff, 10_000)).not.toContain(id);
+      await app.get(ProjectsService).purgeExpiredTrash();
+      expect(await prisma.packagingProject.findUnique({ where: { id } })).not.toBeNull();
+      await expect(storage.getObject(exportKey)).resolves.toBeDefined();
+
+      // Shipped: the next purge deletes the project and its files; the order keeps its line without the project.
+      await prisma.order.update({ where: { id: orderId }, data: { status: 'SHIPPED', paidAt: new Date(), shippedAt: new Date() } });
+      await app.get(ProjectsService).purgeExpiredTrash();
+      expect(await prisma.packagingProject.findUnique({ where: { id } })).toBeNull();
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: null });
+      await expect(storage.getObject(exportKey)).rejects.toThrow();
+    });
+  });
+
+  // docs/30 item 4, review round 2: a checkout or a restore that commits while the deletion waits for the project row.
+  describe('permanent deletion racing a checkout or a restore', () => {
+    const hold = <T>(work: (tx: Prisma.TransactionClient) => Promise<T>) => holdTransaction(prisma, work);
+    const untilWaiting = (count: number) => untilLockWaiters(prisma, count);
+    const trashedProject = async (title: string) => {
+      const id = (await as(carol).post('/api/projects').send(newProject({ title })).expect(201)).body.id as string;
+      // Read by the checkout while the project was still active (orders.service.ts reads it without a lock).
+      const project = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+      await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+      return project;
+    };
+    const checkout = (project: Awaited<ReturnType<typeof trashedProject>>) =>
+      hold(async (tx) => {
+        const order = await tx.order.create({ data: sampleOrderData(carol.id, project, run), select: { id: true } });
+        orderIds.push(order.id);
+        return order;
+      });
+
+    it('the checkout locks first: the deletion waits, then answers 409 and the order keeps its design', async () => {
+      const project = await trashedProject('Đơn trước, xoá sau');
+      const order = checkout(project);
+      await order.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      order.release();
+      const { id: orderId } = await order.done;
+
+      const res = await deleting;
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: 'PROJECT_IN_ACTIVE_ORDER' });
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).not.toBeNull();
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: project.id });
+    });
+
+    it('the deletion locks first: the checkout fails on the missing project, no order is left without its design', async () => {
+      const project = await trashedProject('Xoá trước, đơn sau');
+      await prisma.projectSnapshot.create({ data: { projectId: project.id, name: 'Mốc', canvasState: { elements: [] }, dimensions: {} } });
+      // Holding a snapshot row pauses the deletion inside its transaction, after it locked the project (cascade).
+      const pause = hold((tx) => tx.$queryRaw`SELECT id FROM project_snapshots WHERE project_id = ${project.id}::uuid FOR UPDATE`);
+      await pause.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      const order = checkout(project);
+      const failed = order.done.then(
+        () => null,
+        (error: unknown) => error,
+      );
+      await untilWaiting(2);
+      pause.release();
+      await pause.done;
+
+      expect((await deleting).status).toBe(204);
+      expect(await failed).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).toBeNull();
+      // The whole checkout rolled back: no order line of this design, with or without its project.
+      expect(await prisma.orderItem.count({ where: { projectTitle: project.title } })).toBe(0);
+    });
+
+    it('a restore that commits while the deletion waits keeps the project: 409, still ACTIVE', async () => {
+      const project = await trashedProject('Khôi phục ở tab khác');
+      const restore = hold((tx) => tx.$executeRaw`
+        UPDATE packaging_projects SET status = 'ACTIVE', deleted_at = NULL WHERE id = ${project.id}::uuid`);
+      await restore.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      restore.release();
+      await restore.done;
+
+      expect((await deleting).status).toBe(409);
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).toMatchObject({ status: 'ACTIVE' });
+    });
+
+    // Review round 3: the files a deletion removes are listed after the lock, in the transaction that deletes.
+    it('a file written to the project while the deletion waits is deleted from the bucket too', async () => {
+      const project = await trashedProject('QR ghi giữa lúc xoá');
+      const other = (await as(carol).post('/api/projects').send(newProject({ title: 'Dự án khác' })).expect(201)).body.id as string;
+      const storage = app.get(StorageService);
+      const key = `projects/${project.id}/unboxing/qr-e2e-${run}.png`;
+      await storage.putGeneratedFile({ userId: carol.id, projectId: other, key, purpose: 'QR_CODE', contentType: 'image/png', body: Buffer.from('qr') });
+      // The QR code of the project is being stored: its row (holding the project row) commits after the deletion began.
+      const qr = hold((tx) => tx.storedFile.update({ where: { key }, data: { projectId: project.id } }));
+      await qr.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      qr.release();
+      await qr.done;
+
+      expect((await deleting).status).toBe(204);
+      expect(await prisma.storedFile.findUnique({ where: { key } })).toBeNull();
+      await expect(storage.getObject(key)).rejects.toThrow();
+    });
+
+    it('the purge hands a file over to a remix it skips because the remix is locked, and still deletes the source', async () => {
+      const source = (await as(carol).post('/api/projects').send(newProject({ title: 'Bản gốc có ảnh' })).expect(201)).body.id as string;
+      const image = await uploadPng(app, carol.cookie, 'IMAGE', source);
+      const element = { id: 'img', type: 'image', panelId: 'front', x: 1, y: 1, width: 5, height: 5, rotation: 0, content: image };
+      await as(carol).patch(`/api/projects/${source}`).send({ canvasState: { elements: [element] } }).expect(200);
+      const remix = (await as(carol).post(`/api/projects/${source}/duplicate`).expect(201)).body.id as string;
+      const key = image.slice(image.indexOf('users/'));
+      expect(await prisma.storedFile.findUniqueOrThrow({ where: { key } })).toMatchObject({ projectId: source });
+      const expired = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+      for (const id of [source, remix]) {
+        await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+        await prisma.packagingProject.update({ where: { id }, data: { deletedAt: expired } });
+      }
+
+      // Another transaction holds the remix (a checkout writing an order of it): this run skips it.
+      const busy = hold((tx) => tx.$queryRaw`SELECT 1 FROM packaging_projects WHERE id = ${remix}::uuid FOR KEY SHARE`);
+      await busy.started;
+      try {
+        await app.get(ProjectsService).purgeExpiredTrash();
+      } finally {
+        busy.release();
+        await busy.done;
+      }
+
+      expect(await prisma.packagingProject.findUnique({ where: { id: source } })).toBeNull();
+      expect(await prisma.packagingProject.findUnique({ where: { id: remix } })).not.toBeNull();
+      expect(await prisma.storedFile.findUniqueOrThrow({ where: { key } })).toMatchObject({ projectId: remix });
+      expect((await fetch(image)).status).toBe(200);
+    });
+
+    // Review round 4: a generated file whose project is deleted between its upload and its row.
+    it('a QR code stored while its project is deleted leaves no object behind', async () => {
+      const project = await trashedProject('Xoá giữa lúc lưu QR');
+      const storage = app.get(StorageService);
+      const client = (storage as unknown as { client: { send: (command: unknown) => Promise<unknown> } }).client;
+      const send = client.send.bind(client);
+      // The object is in the bucket; the project goes before the row is written.
+      const between = jest.spyOn(client, 'send').mockImplementationOnce(async (command: unknown) => {
+        const output = await send(command);
+        await prisma.packagingProject.delete({ where: { id: project.id } });
+        return output;
+      });
+      const key = `projects/${project.id}/unboxing/qr-gone-${run}.png`;
+      try {
+        await expect(
+          storage.putGeneratedFile({ userId: carol.id, projectId: project.id, key, purpose: 'QR_CODE', contentType: 'image/png', body: Buffer.from('qr') }),
+        ).rejects.toThrow();
+      } finally {
+        between.mockRestore();
+      }
+      expect(await prisma.storedFile.findUnique({ where: { key } })).toBeNull();
+      await expect(storage.getObject(key)).rejects.toThrow();
+    });
+
+    it('the purge starts again when the remix it hands a file to is deleted meanwhile', async () => {
+      const source = (await as(carol).post('/api/projects').send(newProject({ title: 'Gốc, remix đang bị xoá' })).expect(201)).body.id as string;
+      const image = await uploadPng(app, carol.cookie, 'IMAGE', source);
+      const element = { id: 'img', type: 'image', panelId: 'front', x: 1, y: 1, width: 5, height: 5, rotation: 0, content: image };
+      await as(carol).patch(`/api/projects/${source}`).send({ canvasState: { elements: [element] } }).expect(200);
+      const remix = (await as(carol).post(`/api/projects/${source}/duplicate`).expect(201)).body.id as string;
+      const key = image.slice(image.indexOf('users/'));
+      for (const id of [source, remix]) await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+      // Only the source is due for the purge; the remix is deleted by hand at the same time.
+      await prisma.packagingProject.update({ where: { id: source }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });
+      await prisma.projectSnapshot.create({ data: { projectId: remix, name: 'Mốc', canvasState: { elements: [] }, dimensions: {} } });
+
+      // Holding a snapshot row pauses the manual deletion after it locked the remix.
+      const pause = hold((tx) => tx.$queryRaw`SELECT id FROM project_snapshots WHERE project_id = ${remix}::uuid FOR UPDATE`);
+      await pause.started;
+      const deleting = as(carol).delete(`/api/projects/${remix}`).then((res) => res);
+      await untilWaiting(1);
+      // The purge hands the image to the remix and waits for its lock.
+      const purging = app.get(ProjectsService).purgeExpiredTrash().then(
+        (count) => ({ count }),
+        (error: unknown) => ({ error }),
+      );
+      await untilWaiting(2);
+      pause.release();
+      await pause.done;
+
+      expect((await deleting).status).toBe(204);
+      expect(await purging).toEqual({ count: expect.any(Number) });
+      expect(await prisma.packagingProject.findUnique({ where: { id: source } })).toBeNull();
+      expect(await prisma.storedFile.findUnique({ where: { key } })).toBeNull();
+      expect((await fetch(image)).status).toBe(404);
+    });
+
+    it('the trash purge leaves a project a checkout is writing an order for', async () => {
+      const project = await trashedProject('Dọn thùng rác giữa lúc đặt đơn');
+      await prisma.packagingProject.update({ where: { id: project.id }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });
+      const order = checkout(project);
+      await order.started;
+      const purging = app.get(ProjectsService).purgeExpiredTrash();
+      // Either the purge skips the locked row and ends, or (before the fix) it waits for it.
+      await Promise.race([purging, untilWaiting(1)]);
+      order.release();
+      const { id: orderId } = await order.done;
+      await purging;
+
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).not.toBeNull();
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: project.id });
+    });
   });
 });

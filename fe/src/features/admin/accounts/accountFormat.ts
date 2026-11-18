@@ -34,7 +34,11 @@ export const ROLE_TONES: Record<Role, { badge: string; dot: string; avatar: stri
 /** Shown on the controls of the signed-in admin's own row; the API refuses these changes too (400). */
 export const SELF_EDIT_HINT = "Không thể tự sửa tài khoản của mình";
 
+/** Name shown for an account an admin deleted but kept for its payments and orders (docs/25 item 3). */
+export const ANONYMIZED_LABEL = "Tài khoản đã xoá";
+
 export function displayName(user: SafeUser): string {
+  if (user.anonymizedAt) return ANONYMIZED_LABEL;
   return user.fullName?.trim() || user.email;
 }
 
@@ -84,9 +88,9 @@ export function matchesFilter(user: SafeUser, filter: AccountFilter): boolean {
     case "all":
       return true;
     case "unverified":
-      return !user.emailVerifiedAt;
+      return !user.emailVerifiedAt && !user.anonymizedAt;
     case "locked":
-      return !user.isActive;
+      return !user.isActive && !user.anonymizedAt;
     default:
       return user.role === filter;
   }

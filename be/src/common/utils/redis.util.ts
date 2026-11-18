@@ -14,3 +14,12 @@ export function redisConnection(url: string): ConnectionOptions {
     family: 4,
   };
 }
+
+/**
+ * Whether a rejected Redis command was never written to the server. ioredis refuses a command at once while the
+ * connection is not writable and the offline queue is off, as on the producer connection of BullMQ (queue.module.ts).
+ * Any other error (`Connection is closed.`, MaxRetriesPerRequestError, a timeout) may come after Redis ran it.
+ */
+export function neverSentToRedis(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith("Stream isn't writeable and enableOfflineQueue options is false");
+}

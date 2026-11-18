@@ -159,15 +159,26 @@ function seed(): MockDb {
       expiresAt: iso(now + 356 * DAY),
       createdAt: iso(now - 9 * DAY),
     },
+    // An export pack bought before the packs stopped: its 3 credits left became 474 xu (docs/25 item 7).
     {
       id: "lot-seed-exp005",
       userId: DEMO_USER_ID,
       kind: "EXPORT",
       source: "PURCHASE",
       quantity: 5,
-      remaining: 3,
+      remaining: 0,
       expiresAt: iso(now + 345 * DAY),
       createdAt: iso(now - 20 * DAY),
+    },
+    {
+      id: "lot-seed-exp005-xu",
+      userId: DEMO_USER_ID,
+      kind: "XU",
+      source: "PURCHASE",
+      quantity: 474,
+      remaining: 474,
+      expiresAt: iso(now + 345 * DAY),
+      createdAt: iso(now - 1 * DAY),
     },
   ];
   const spends: MockSpend[] = [

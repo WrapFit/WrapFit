@@ -1,6 +1,7 @@
 import React from "react";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { Skeleton } from "@/components/ui";
+import { SlowLoadNotice } from "./SlowLoadNotice";
 
 /**
  * Placeholder of the studio while its code (Three.js, Fabric) and the project load: the stepper bar, then the 2D
@@ -12,6 +13,7 @@ export function StudioSkeleton({ label = "Đang mở Studio 3D…" }: { label?: 
       <span role="status" className="sr-only">
         {label}
       </span>
+      <SlowLoadNotice />
       <header className="sticky top-0 z-40 bg-white/95" aria-hidden>
         <div className="mx-auto flex h-[72px] w-full max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6">
           <Skeleton className="h-8 w-28 rounded-full" />

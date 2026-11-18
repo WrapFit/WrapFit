@@ -43,7 +43,7 @@ src/
   worker.ts                # khởi động worker BullMQ (không mở cổng HTTP) -> dist/worker.js
   repl.ts                  # shell tương tác trên module API: npm run start:repl
   mail-test.ts             # gửi thử 1 email bằng cấu hình SMTP hiện tại
-  storage-check.ts         # kiểm tra kết nối bucket R2 / S3 và Cloudinary (chỉ đọc): npm run storage:check
+  storage-check.ts         # kiểm tra kết nối các bucket R2 / S3 (chỉ đọc): npm run storage:check
   app.middleware.ts        # cấu hình dùng chung (request id, helmet, CORS, prefix /api, ValidationPipe)
   app.module.ts            # ghép module + guard/filter/interceptor toàn cục
   swagger.ts
@@ -59,7 +59,6 @@ src/
     prisma/                # PrismaModule (global) + PrismaService
     queue/                 # kết nối BullMQ (Redis)
     redis/                 # RedisModule (global): client ioredis `REDIS` cho bộ đếm nhỏ (đăng nhập sai, lượt xem)
-    cloudinary/            # CloudinaryModule (global): CloudinaryService, CDN ảnh công khai (chưa dùng)
   auth/                    # register, login, refresh, logout, Google OAuth, JwtAuthGuard
   base/                    # GET /api/health
   users/                   # hồ sơ cá nhân + quản trị user (ADMIN)
@@ -135,7 +134,7 @@ cp .env.example .env            # điền JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 docker compose up -d --build
 ```
 
-Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, mỗi lần khởi động nạp lượt xuất cho đủ `SEED_DEMO_CREDITS`, mặc định 5; dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
+Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, không còn nạp lượt xuất (docs/25 mục 7); dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
 
 Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `backend` (API), `worker` (cùng image, lệnh `worker`, chỉ chạy hàng đợi xuất file), `frontend`.
 
@@ -172,8 +171,6 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `STORAGE_PUBLIC_URL` | `storage.publicUrl` | – | URL công khai để đọc file, vd. `https://cdn.wrapfit.vn` hoặc `http://localhost:8333/wrapfit` |
 | `STORAGE_FORCE_PATH_STYLE` | `storage.forcePathStyle` | `false` | `true` cho SeaweedFS |
 | `STORAGE_BACKUP_BUCKET` | `storage.backupBucket` | *(trống)* | Bucket R2 không công khai chứa bản dump DB đã mã hóa; job backup ghi, API không dùng. Chỉ `storage:check` đọc |
-| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | `cloudinary.cloudName` / `.apiKey` / `.apiSecret` | *(trống)* | CDN ảnh công khai (`shared/cloudinary`). Đặt cả ba hoặc để trống cả ba (= tắt). Hiện chỉ có kết nối, chưa có dữ liệu nào đi qua |
-| `CLOUDINARY_FOLDER` | `cloudinary.folder` | `wrapfit` | Thư mục gốc của môi trường trên Cloudinary, vd. `wrapfit-dev` ở máy dev |
 | `ANTHROPIC_API_KEY` | `ai.anthropicApiKey` | *(trống)* | Khóa Claude API cho `/api/ai/pattern`; để trống = chỉ dùng hoa văn sinh bằng thuật toán (miễn phí) |
 | `AI_MODEL_FAST` | `ai.models.fast` | `claude-haiku-5-5` | Model của chất lượng `fast` (mặc định, mọi gói) |
 | `AI_MODEL_PREMIUM` | `ai.models.premium` | `claude-opus-5-5` | Model của chất lượng `premium` (gói khác `FREE`) |
@@ -184,6 +181,7 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `FAL_KEY` | `ai.image.falKey` | *(trống)* | Khóa fal.ai. Trống với `AI_IMAGE_PROVIDER=fal` = tắt ảnh AI (`503 AI_IMAGE_UNAVAILABLE`, studio ẩn công cụ) |
 | `AI_IMAGE_MODELS` | `ai.image.models` | *(model có `enabled: true`)* | Khóa model ảnh đang bán, cách nhau bằng dấu phẩy (`shared/src/billing/ai-image-models.ts`); bật model chưa chốt giá mà không sửa code |
 | `AI_IMAGE_TIMEOUT_MS` | `ai.image.timeoutMs` | `180000` | Thời gian chờ tối đa một job ảnh ở provider |
+| `PEXELS_API_KEY` | `stock.pexelsKey` | *(trống)* | Khóa API Pexels cho ảnh kho trong studio (docs/23 S15, D10), chỉ nằm ở backend. Trống = tắt ảnh kho (`GET /library/stock/photos` trả `enabled: false`, studio ẩn mục) |
 | `AI_IMAGE_CONCURRENCY` | `ai.image.concurrency` | `2` | Số job ảnh worker chạy cùng lúc |
 | `USD_VND_RATE` | `ai.usdVndRate` | `26000` | Tỉ giá quy đổi chi phí provider sang VNĐ trong báo cáo xu |
 | `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs/17 M6). `false` → route giả lập trả 404 |
@@ -347,13 +345,7 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 7. (Tùy chọn, cho backup DB) **Create bucket** thứ ba `wrapfit-backups`: không Custom Domain, không `r2.dev`, không CORS; thêm **Lifecycle rule** xóa object sau 30 ngày. Job backup nên dùng một API token riêng chỉ có quyền ghi bucket này. Đặt `STORAGE_BACKUP_BUCKET=wrapfit-backups`.
 8. Kiểm tra: `npm --workspace=be run storage:check` (container: `docker compose exec backend node dist/storage-check.js`) gọi `HeadBucket` trên từng bucket đã khai báo và báo `OK` hoặc mã lỗi HTTP kèm nguyên nhân thường gặp (401 = sai Access Key ID, 403 = token thiếu quyền bucket đó hoặc sai Secret Access Key, 404 = sai tên bucket). Không ghi gì.
 
-**Cloudinary (CDN ảnh công khai)**: theo kế hoạch lưu trữ hybrid (`docs/wrapfit_architecture_security_blueprint.md`, mục 4), avatar, logo, texture AI và thumbnail sẽ chuyển sang Cloudinary (resize, `f_auto,q_auto`); file xuất in và backup ở lại R2. Hiện mới có kết nối (`src/shared/cloudinary`, `CloudinaryService` toàn cục), **chưa** có upload hay URL nào của ứng dụng đi qua Cloudinary: mọi file vẫn nằm trên R2 như trên.
-
-1. Tạo tài khoản tại [cloudinary.com](https://cloudinary.com) (gói Free). **Dashboard** → *Product Environment* hiện *Cloud name*.
-2. **Settings** → **API Keys** → **Generate New API Key** → lấy *API Key* / *API Secret*. Không commit secret.
-3. **Settings** → **Security**: bật *Strict transformations* (chỉ cho phép transformation đã khai báo, chống người lạ dùng hạn mức) và tắt *Allow delivery of PDF and ZIP files* (để mặc định tắt).
-4. Điền vào `.env`: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER` (`wrapfit-dev` ở máy dev, `wrapfit` ở production để không lẫn file).
-5. `npm --workspace=be run storage:check` phải báo `Cloudinary "<cloud name>": OK`.
+Mọi file (ảnh tải lên, ảnh AI, thumbnail, file xuất in, backup) nằm trên R2 qua `StorageService`; ảnh của chính trang web nằm trong `fe/public` (`next/image`). Không dùng CDN ảnh bên thứ ba (docs/25 mục 9).
 
 File xuất in tạo trước khi có bucket riêng tư (key `projects/<id>/exports/...`) vẫn nằm trong bucket công khai và vẫn tải được; chúng bị xóa cùng dự án như trước.
 

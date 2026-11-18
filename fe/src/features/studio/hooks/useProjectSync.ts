@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FitCheckReport } from "@wrapfit/shared";
 import { ApiError, changeProjectStatus, updateProject, uploadFileToStorage } from "@/api";
 import { queryKeys } from "@/hooks/data";
+import { onServerEvent, TAB_ID } from "@/services/realtime";
 import type { ProjectDetail, UpdateProjectRequest } from "@/types/api";
 
 /** What the editor saves: only fields UpdateProjectDto accepts (the API refuses unknown fields with 400). */
@@ -27,6 +28,16 @@ const RETRY_DELAY_MS = 5000;
 const LEAVE_SAVE_ATTEMPTS = 4;
 /** At most one thumbnail upload per minute, plus one when leaving the editor. */
 const THUMBNAIL_INTERVAL_MS = 60_000;
+/** Saves of another tab are loaded once they stop for this long: a tab being edited saves about every second. */
+const OTHER_TAB_SETTLE_MS = 1500;
+
+/** Push of the API (`be/src/common/events/project.events.ts`, PROJECT_SAVED): the user saved a project. */
+const PROJECT_SAVED = "project.saved";
+interface ProjectSavedPush {
+  projectId: string;
+  version: number;
+  tabId: string | null;
+}
 
 interface ProjectSyncOptions {
   /** The project as loaded; null for the offline demo. Only read on mount: remount the editor to load another state. */
@@ -36,6 +47,11 @@ interface ProjectSyncOptions {
   invalidReason: string | null;
   /** PNG preview of the current design (upload purpose THUMBNAIL). */
   renderThumbnail: () => Promise<Blob>;
+  /**
+   * Another tab of this user saved the project and this one has nothing unsaved: load the saved project (remount the
+   * editor). With unsaved changes the conflict banner shows instead (docs/28 Q5).
+   */
+  onOtherTabSave?: () => void;
 }
 
 export interface ProjectSync {
@@ -84,7 +100,7 @@ const isVersionConflict = (err: unknown): err is ApiError =>
  * Autosave of a project (docs/12 Phase 3a): debounced PATCH with the version last loaded or saved (optimistic
  * concurrency), one save at a time, a final save when leaving the editor, and a thumbnail at most once a minute.
  */
-export function useProjectSync({ project, payload, invalidReason, renderThumbnail }: ProjectSyncOptions): ProjectSync {
+export function useProjectSync({ project, payload, invalidReason, renderThumbnail, onOtherTabSave }: ProjectSyncOptions): ProjectSync {
   const queryClient = useQueryClient();
   const projectId = project?.id ?? null;
   const key = JSON.stringify(payload);
@@ -107,6 +123,9 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
   latestRef.current = { key, payload, savedKey, blocked: trashed || conflict !== null || invalidReason !== null };
   const renderRef = useRef(renderThumbnail);
   renderRef.current = renderThumbnail;
+  const otherTabRef = useRef(onOtherTabSave);
+  otherTabRef.current = onOtherTabSave;
+  const savingRef = useRef(false);
   const thumbRef = useRef({ key, at: 0, timer: undefined as ReturnType<typeof setTimeout> | undefined });
   // Set once `replace` gave the project a new version: this editor is about to be remounted and must not save.
   const detachedRef = useRef(false);
@@ -169,6 +188,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
       // Already sent by an earlier task of the queue (e.g. a flush before the debounce timer fired).
       if (sendKey === latestRef.current.savedKey) return true;
       setSaving(true);
+      savingRef.current = true;
       try {
         const saved = await updateProject(projectId, { ...body, version: versionRef.current });
         savedProject(saved);
@@ -195,6 +215,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
         return false;
       } finally {
         setSaving(false);
+        savingRef.current = false;
       }
     },
     [projectId, savedProject, scheduleThumbnail]
@@ -238,6 +259,42 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
       }
     };
   }, [projectId, enqueue, save, uploadThumbnail]);
+
+  // Saves of the other editor tabs of this user, pushed by the API's WebSocket gateway (docs/28 Q5). They are loaded
+  // once they settle, and only when the user sees this tab (a hidden tab waits until it is shown). Without the push
+  // (no socket) the next save of this tab still answers 409 for a newer design.
+  useEffect(() => {
+    if (!projectId) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let waiting = false;
+    let otherVersion: number | undefined;
+    const settle = () => {
+      timer = undefined;
+      waiting = document.hidden;
+      if (waiting || detachedRef.current || latestRef.current.blocked) return;
+      const { key: current, savedKey: saved } = latestRef.current;
+      if (current !== saved || savingRef.current) setConflict({ version: otherVersion });
+      else otherTabRef.current?.();
+    };
+    const off = onServerEvent(PROJECT_SAVED, (payload) => {
+      const push = payload as Partial<ProjectSavedPush> | null;
+      if (!push || push.projectId !== projectId || push.tabId === TAB_ID) return;
+      // Already loaded (this tab saved later on top of it).
+      if (typeof push.version === "number" && versionRef.current !== undefined && push.version < versionRef.current) return;
+      otherVersion = push.version;
+      clearTimeout(timer);
+      timer = setTimeout(settle, OTHER_TAB_SETTLE_MS);
+    });
+    const shown = () => {
+      if (waiting && !document.hidden) settle();
+    };
+    document.addEventListener("visibilitychange", shown);
+    return () => {
+      off();
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", shown);
+    };
+  }, [projectId]);
 
   const dirty = !!projectId && (key !== savedKey || saving);
 

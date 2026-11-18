@@ -21,8 +21,10 @@ interface QuoteCardProps {
   dimensions: BoxDimensions;
   formulaVersion?: number;
   material: BoxMaterialTheme;
-  /** Finishes chosen in step 3. */
+  /** Finishes chosen in step 3 and those of the elements (foil, UV, embossing). */
   finishes: QuoteFinish[];
+  /** The design prints on the inside of the sheet too (second printing pass). */
+  insidePrint?: boolean;
   title: string;
   /** Saved project: the sample goes to the cart; the offline demo confirms it here. */
   projectId: string | null;
@@ -30,6 +32,8 @@ interface QuoteCardProps {
   blocked: boolean;
   quantity: number;
   onQuantityChange(quantity: number): void;
+  showBreakdown?: boolean;
+  onToggleBreakdown?(): void;
 }
 
 /** Step 6: estimated price by quantity, the cheaper size when there is one, and the sample order. */
@@ -40,20 +44,23 @@ export function QuoteCard({
   formulaVersion,
   material,
   finishes,
+  insidePrint = false,
   title,
   projectId,
   blocked,
   quantity,
   onQuantityChange: setQuantity,
+  showBreakdown,
+  onToggleBreakdown,
 }: QuoteCardProps) {
   const toast = useToast();
   const [sampleRequested, setSampleRequested] = useState(false);
   const paper = paperStockOf(material).quotePaper;
-  const result = useMemo(() => quote({ structure, pieces, quantity, paper, finishes }), [structure, pieces, quantity, paper, finishes]);
-  const sample = useMemo(() => quote({ structure, pieces, quantity: 1, paper, finishes }), [structure, pieces, paper, finishes]);
+  const result = useMemo(() => quote({ structure, pieces, quantity, paper, finishes, insidePrint }), [structure, pieces, quantity, paper, finishes, insidePrint]);
+  const sample = useMemo(() => quote({ structure, pieces, quantity: 1, paper, finishes, insidePrint }), [structure, pieces, paper, finishes, insidePrint]);
   const saving = useMemo(
-    () => (quantity >= 20 ? quoteSaving({ structure, dimensions, formulaVersion, quantity, paper, finishes }) : null),
-    [structure, dimensions, formulaVersion, quantity, paper, finishes]
+    () => (quantity >= 20 ? quoteSaving({ structure, dimensions, formulaVersion, quantity, paper, finishes, insidePrint }) : null),
+    [structure, dimensions, formulaVersion, quantity, paper, finishes, insidePrint]
   );
 
   const summary = [
@@ -65,7 +72,7 @@ export function QuoteCard({
       ...result.lines.filter((line) => line.group === group.group).map((line) => `  - ${line.label}: ${formatVnd(line.vnd)} (${line.detail})`),
     ]),
     `Tổng: ${formatVnd(result.total)} (${formatVnd(result.perBox)}/hộp) · sản xuất khoảng ${result.leadDays} ngày làm việc`,
-    "Giá hộp hoàn thiện, chưa gồm VAT, vận chuyển và lưu kho (thỏa thuận với xưởng). Đơn giá giả định cho bản demo.",
+    "Chưa gồm VAT, vận chuyển, lưu kho. Đơn giá giả định cho bản demo.",
   ].join("\n");
   const copy = async () => {
     try {
@@ -101,7 +108,7 @@ export function QuoteCard({
                 {value}
               </button>
             ))}
-            <label className="flex h-9 items-center gap-1.5 rounded-full bg-surface-sunken px-3 text-label-sm text-fg-muted">
+            <label className="flex h-9 items-center gap-1 rounded-full bg-surface-sunken px-2.5 text-label-sm text-fg-muted">
               <span>Khác</span>
               <input
                 type="number"
@@ -109,15 +116,14 @@ export function QuoteCard({
                 max={100000}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Math.min(100000, Number(e.target.value) || 1)))}
-                className="w-16 bg-transparent text-fg tabular-nums outline-none"
+                className="w-12 bg-transparent text-sm text-fg tabular-nums outline-none"
                 aria-label="Số lượng hộp khác"
               />
             </label>
           </div>
           {saving && (
-            <p className="mt-3 rounded-control bg-success-bg px-3 py-2 text-body-sm text-success-fg">
-              Bớt {saving.deltaMm} mm {AXIS_LABELS[saving.axis]} thì được {saving.perSheet} hộp mỗi tờ, còn {formatVnd(saving.perBox)}/hộp
-              (rẻ hơn {Math.round(saving.saving * 100)}%) nếu món quà vẫn vừa.
+            <p className="mt-3 w-fit max-w-full rounded-control bg-success-bg px-2.5 py-1.5 text-caption font-medium text-success-fg">
+              Bớt {saving.deltaMm} mm {AXIS_LABELS[saving.axis]}: rẻ hơn {Math.round(saving.saving * 100)}%, còn {formatVnd(saving.perBox)}/hộp
             </p>
           )}
         </div>
@@ -140,10 +146,20 @@ export function QuoteCard({
               Sản xuất khoảng {result.leadDays} ngày làm việc
             </li>
           </ul>
-          <p className="mt-3 text-caption leading-5 text-fg-muted">Giá hộp hoàn thiện tại xưởng đối tác, chưa gồm VAT và vận chuyển.</p>
-          <a href="#quote-detail" className="mt-1 inline-flex min-h-8 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
-            Xem báo giá chi tiết
-          </a>
+          <p className="mt-3 text-caption leading-5 text-fg-muted">Chưa gồm VAT và vận chuyển.</p>
+          {onToggleBreakdown ? (
+            <button
+              type="button"
+              onClick={onToggleBreakdown}
+              className="mt-1 inline-flex min-h-8 items-center gap-1.5 text-xs font-semibold text-fpt-orange hover:text-fpt-orange-dark underline underline-offset-2 cursor-pointer transition-colors"
+            >
+              <span>{showBreakdown ? "Thu gọn bảng chi tiết ▴" : "Xem phân rã chi phí chi tiết ▾"}</span>
+            </button>
+          ) : (
+            <a href="#quote-detail" className="mt-1 inline-flex min-h-8 items-center text-body-sm font-semibold text-accent underline-offset-2 hover:underline">
+              Xem báo giá chi tiết
+            </a>
+          )}
         </div>
 
         <div className="flex flex-col justify-center gap-2 lg:pl-6">

@@ -5,7 +5,7 @@ import { type BoxDimensions, caliperOf, type CanvasState, type FitCheckReport, t
 export type ProjectStatus = 'ACTIVE' | 'ARCHIVED' | 'DELETED';
 export type ProjectVisibility = 'PRIVATE' | 'UNLISTED' | 'PUBLIC';
 export type Occasion = 'TET' | 'CHRISTMAS' | 'WEDDING' | 'VALENTINE' | 'BIRTHDAY' | 'MINIMAL';
-export type Industry = 'COSMETICS' | 'CANDLES' | 'BAKERY' | 'JEWELRY' | 'TEA_AGRI';
+export type Industry = 'COSMETICS' | 'CANDLES' | 'BAKERY' | 'JEWELRY' | 'TEA_AGRI' | 'BEVERAGE';
 
 /** Content of the `canvas_state` column: elements + editor look (contract of `@wrapfit/shared`). */
 export type { CanvasState };

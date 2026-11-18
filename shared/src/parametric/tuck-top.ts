@@ -17,9 +17,11 @@
  * The lid and the bottom are L × W (they close the L × W opening); their tuck flaps fold into the front panel and are
  * at most half the body height, so the two never overlap; the dust flaps on the side panels fold under them and reach
  * at most half the length, so they never meet. The bottom is a tuck closure, the simple form of the crash-lock bottom.
+ * `window: true` (docs/23 S17) cuts a display window in the front panel (see openings.ts); nothing else moves.
  */
 
 import { BoxDimensions, DielineGeometry, PanelFace, Point2D } from "../types/dieline";
+import { cutOpening, windowIn } from "./openings";
 import { segmentWriter } from "./segments";
 
 /** Gifts heavier than this (grams) get the crash-lock bottom (FEFCO 0215) unless the user picks the tuck bottom. */
@@ -97,7 +99,8 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     },
   ];
 
-  const { segments, line, path } = segmentWriter();
+  const writer = segmentWriter();
+  const { segments, line, path } = writer;
   const cutPath = (id: string, points: Point2D[]) => path(id, "cut", points);
 
   // Creases: the four body folds, the lid / bottom hinges, their tuck flaps, the dust flaps
@@ -216,6 +219,9 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     ]);
   }
 
+  const window = dimensions.window ? windowIn(panels.find((panel) => panel.id === "panel_front")!) : null;
+  if (window) cutOpening(writer, "cut_window", window);
+
   return {
     structureType: "tuck-top",
     dimensions,
@@ -223,6 +229,7 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
     panels,
     segments,
     glueAreas: [{ x: 0, y: yBody, width: glue, height: H }],
+    ...(window ? { openings: [window] } : {}),
     orientation: { up: "-y", front: "+z" },
   };
 }

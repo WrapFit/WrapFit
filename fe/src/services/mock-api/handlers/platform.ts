@@ -179,6 +179,34 @@ const runTool: Handler = ({ params }) => {
   return { job: jobView(job), balance };
 };
 
+/** Tools on an image of the canvas (docs/23 S20): the offline demo answers with a generated image. */
+const runUploadTool: Handler = ({ params }) => {
+  const user = currentUser();
+  const tool = params.tool as AiImageTool;
+  if (!(tool in XU_TOOL_COST)) throw notFound();
+  const id = newId();
+  const balance = spendXu(user, XU_TOOL_COST[tool], "AI_TOOL", id);
+  const kind = tool === "upscale" ? "UPSCALE" : tool === "remove-bg" ? "REMOVE_BG" : "VECTORIZE";
+  const job = {
+    id,
+    userId: user.id,
+    kind: kind as AiImageJob["kind"],
+    modelKey: tool,
+    status: "PENDING" as const,
+    prompt: "Ảnh tải lên",
+    aspectRatio: "1:1",
+    numImages: 1,
+    xuCost: XU_TOOL_COST[tool],
+    error: null,
+    createdAt: nowIso(),
+    completedAt: null,
+    outputs: [output("Ảnh tải lên", "1:1", Date.now(), tool)],
+  };
+  db().aiJobs.push(job);
+  save();
+  return { job: jobView(job), balance };
+};
+
 const getJob: Handler = ({ params }) => {
   const user = currentUser();
   const job = db().aiJobs.find((j) => j.id === params.jobId && j.userId === user.id);
@@ -245,6 +273,8 @@ const deleteUser: Handler = ({ params }) => {
   db().users = db().users.filter((u) => u.id !== params.id);
   db().projects = db().projects.filter((p) => p.ownerId !== params.id);
   save();
+  // The mock has no payments to keep: always a hard delete (the API may answer ANONYMIZED, docs/25 item 3).
+  return { id: params.id, result: "DELETED" };
 };
 
 const health: Handler = () => {
@@ -339,6 +369,7 @@ export const platformRoutes: [string, string, Handler][] = [
   ["POST", "/ai/images", createImages],
   ["GET", "/ai/images", gallery],
   ["GET", "/ai/images/jobs/:jobId", getJob],
+  ["POST", "/ai/images/uploads/:tool", runUploadTool],
   ["POST", "/ai/images/:outputId/:tool", runTool],
   ["GET", "/users", listUsers],
   ["GET", "/users/:id", getUser],
@@ -350,6 +381,8 @@ export const platformRoutes: [string, string, Handler][] = [
   ["GET", "/admin/bank-transactions/payment-preview/:reference", previewBank],
   ["POST", "/admin/bank-transactions/:id/resolve", resolveBank],
   ["GET", "/analytics/summary", analytics],
+  // Stock photos need the backend and its Pexels key: off in the demo without a backend.
+  ["GET", "/library/stock/photos", () => ({ enabled: false, items: [], page: 1, hasMore: false })],
   ["GET", "/library/licenses", () => [
     { id: "CC0", name: "CC0 1.0 (Public Domain)", attribution: false },
     { id: "CC-BY-4.0", name: "CC BY 4.0", attribution: true },

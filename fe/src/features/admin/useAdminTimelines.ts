@@ -16,6 +16,7 @@ const REASONS: Record<string, string> = {
   AMOUNT_MISMATCH: "sai số tiền",
   EXPIRED: "mã đã hết hạn",
   ALREADY_PAID: "thanh toán đã trả",
+  ORDER_NOT_PAYABLE: "đơn in đã hủy",
 };
 
 /** A bank transfer as an event of the activity strip. */

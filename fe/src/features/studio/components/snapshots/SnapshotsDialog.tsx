@@ -69,7 +69,6 @@ export function SnapshotsDialog({ projectId, flush, replace, renderPreview, onRe
       }
       await createSnapshot(projectId, { name: title.slice(0, MAX_NAME_LENGTH), previewUrl });
       setName("");
-      toast.show({ tone: "success", title: "Đã lưu mốc phiên bản", description: title });
       await refresh();
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {

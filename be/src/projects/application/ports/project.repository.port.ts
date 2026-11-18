@@ -12,6 +12,16 @@ import type {
 
 export const PROJECT_REPOSITORY = Symbol('PROJECT_REPOSITORY');
 
+/** Outcome of a permanent deletion. */
+export type PermanentDeletion =
+  /** `keys`: objects of the deleted project to remove from the bucket once committed. */
+  | { kind: 'DELETED'; keys: string[] }
+  | { kind: 'NOT_FOUND' }
+  /** Restored meanwhile (another tab). */
+  | { kind: 'NOT_IN_TRASH' }
+  /** An order still needs the design: the code of the oldest such order. */
+  | { kind: 'IN_ORDER'; orderCode: string };
+
 export interface TemplateRules {
   id: string;
   isActive: boolean;
@@ -103,19 +113,31 @@ export interface IProjectRepository {
   /** Settings that do not touch the design (visibility, remix permission): the version stays the same. */
   update(projectId: string, changes: ProjectChanges): Promise<ProjectDetail>;
   /**
-   * Changes the design only if the project is still at `expectedVersion`, and increases the version.
+   * Saves the changes only if the project is still at `expectedVersion`. The version increases only when `changes`
+   * holds a canvas, dimensions or a material (pass only values that differ from the saved ones).
    * Returns `null` when another save got there first.
    */
   updateContent(projectId: string, changes: ProjectChanges, expectedVersion: number): Promise<ProjectDetail | null>;
   setLifecycle(projectId: string, state: LifecycleState): Promise<ProjectDetail>;
-  delete(projectId: string): Promise<void>;
-  /** Ids of projects moved to the trash before `cutoff` (at most `limit`). */
+  /**
+   * Permanently deletes the project if it is still in the trash and no order holds its design
+   * (ORDER_STATUSES_HOLDING_DESIGN). Both are read after the project row is locked, so a checkout or a restore that
+   * commits meanwhile is seen. Says why nothing was deleted otherwise.
+   */
+  delete(projectId: string): Promise<PermanentDeletion>;
+  /** Code of the oldest order that still holds the design of the project (ORDER_STATUSES_HOLDING_DESIGN), or null. */
+  findOrderHoldingDesign(projectId: string): Promise<string | null>;
+  /**
+   * Ids of projects moved to the trash before `cutoff` (at most `limit`), leaving out those an order still holds:
+   * they would fill every batch and stop the purge.
+   */
   findTrashedBefore(cutoff: Date, limit: number): Promise<string[]>;
   /**
-   * Permanently deletes those of `projectIds` that are still in the trash since before `cutoff` (one may have
-   * been restored meanwhile) and returns the ids actually deleted.
+   * Permanently deletes those of `projectIds` that are still in the trash since before `cutoff` (one may have been
+   * restored meanwhile), that no other transaction holds and that no order holds (one may have been ordered
+   * meanwhile). Returns the ids deleted and the keys of their objects to remove from the bucket once committed.
    */
-  deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]>;
+  deleteTrashed(projectIds: string[], cutoff: Date): Promise<{ deleted: string[]; keys: string[] }>;
   /** Projects without a FitCheck score, by ascending id after `afterId` (at most `limit`). */
   findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]>;
   /** Stores a FitCheck result without touching `updatedAt` (the dashboard order). */

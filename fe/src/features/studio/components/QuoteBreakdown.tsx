@@ -21,6 +21,8 @@ interface QuoteBreakdownProps {
   pieces: DielinePiece[];
   material: BoxMaterialTheme;
   finishes: QuoteFinish[];
+  /** The design prints on the inside of the sheet too. */
+  insidePrint?: boolean;
   quantity: number;
 }
 
@@ -28,11 +30,11 @@ interface QuoteBreakdownProps {
  * Step 6, the estimate in full as an invoice: what the price is computed from on the left, every line grouped by
  * material, printing and converting on the right, with the total. Shipping and storage are agreed with the shop.
  */
-export function QuoteBreakdown({ structure, pieces, material, finishes, quantity }: QuoteBreakdownProps) {
+export function QuoteBreakdown({ structure, pieces, material, finishes, insidePrint = false, quantity }: QuoteBreakdownProps) {
   const stock = paperStockOf(material);
   const result = useMemo(
-    () => quote({ structure, pieces, paper: stock.quotePaper, finishes, quantity }),
-    [structure, pieces, stock.quotePaper, finishes, quantity]
+    () => quote({ structure, pieces, paper: stock.quotePaper, finishes, insidePrint, quantity }),
+    [structure, pieces, stock.quotePaper, finishes, insidePrint, quantity]
   );
   const yields = useMemo(() => sheetYield(pieces), [pieces]);
   const perBox = (vnd: number) => formatVnd(Math.round(vnd / result.quantity / 10) * 10);

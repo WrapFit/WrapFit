@@ -108,4 +108,22 @@ describe('asset keys', () => {
     expect(isAllowedMediaUrl('//tracker.example/a.mp3')).toBe(false);
     expect(isAllowedMediaUrl('xuan.mp3')).toBe(false);
   });
+
+  it('stores the uploaded fonts of a design as keys and refuses fonts from other hosts (docs/23 S13)', () => {
+    const fontKey = 'users/0192a4c0-0000-7000-8000-000000000001/font/0192a4c0-0000-7000-8000-0000000000bb.ttf';
+    const fontUrl = `https://cdn.wrapfit.vn/${fontKey}`;
+    const client = {
+      elements: [{ id: 't', type: 'text', panelId: 'front', content: 'Chào', style: { fontFamily: "'Nét Tay'", fontUrl } }],
+      customFonts: [{ family: 'Nét Tay', url: fontUrl }],
+    };
+    const stored = toStoredCanvas(client);
+    expect(stored.elements[0].style?.fontUrl).toBe(fontKey);
+    expect(stored.customFonts?.[0].url).toBe(fontKey);
+    expect(storedCanvasKeys(stored)).toEqual([fontKey]);
+    expect(toClientCanvas(stored).customFonts?.[0].url).toBe(fontUrl);
+    const foreign = { elements: [{ ...client.elements[0], style: { fontUrl: 'https://fonts.example/x.ttf' } }] };
+    expect(disallowedFileContents(foreign)).toEqual(['https://fonts.example/x.ttf']);
+    expect(disallowedFileContents({ elements: [], customFonts: [{ family: 'x', url: '/fonts/x.ttf' }] })).toEqual(['/fonts/x.ttf']);
+    expect(disallowedFileContents(client)).toEqual([]);
+  });
 });

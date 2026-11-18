@@ -9,6 +9,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { WorkerModule } from '../../src/worker';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * AI images paid with xu (docs/19 S2): the API debits and queues, a real worker context runs the fake provider
@@ -57,7 +58,7 @@ describe('AI images (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: `-${run}@e2e.test` } } });
+    await deleteUsers(prisma, { email: { endsWith: `-${run}@e2e.test` } });
     await worker.close();
     await app.close();
   }, 30_000);
@@ -89,6 +90,30 @@ describe('AI images (e2e)', () => {
     // A canvas may show the image: it is an IMAGE upload of the user.
     const keys = job.outputs.map((output: { url: string }) => app.get(StorageService).uploadedKeyOf(output.url));
     await expect(prisma.storedFile.count({ where: { key: { in: keys }, userId: maker.id, purpose: 'IMAGE' } })).resolves.toBe(2);
+  });
+
+  it('pages the gallery by (createdAt, id): images of the same instant are all listed across page boundaries (docs/30 item 7)', async () => {
+    // The images of one job are saved by createMany at one instant; make every image of the user share it.
+    await prisma.aiImageOutput.updateMany({ where: { job: { userId: maker.id } }, data: { createdAt: new Date('2026-11-18T08:00:00.000Z') } });
+    const total = await prisma.aiImageOutput.count({ where: { job: { userId: maker.id } } });
+    expect(total).toBeGreaterThanOrEqual(2);
+
+    const page = async (before?: string) =>
+      (await api().get('/api/ai/images').query({ limit: 1, ...(before && { before }) }).set('Cookie', maker.cookie).expect(200))
+        .body as { items: { id: string }[]; nextBefore: string | null };
+    const seen: string[] = [];
+    let before: string | undefined;
+    for (let i = 0; i < total; i++) {
+      const { items, nextBefore } = await page(before);
+      expect(items).toHaveLength(1);
+      seen.push(items[0].id);
+      before = nextBefore!;
+    }
+    expect(new Set(seen).size).toBe(total);
+    expect((await page(before)).items).toEqual([]);
+    // A cursor of the former shape (a bare date) is still read: rows strictly older.
+    expect((await page('2026-11-18T08:00:00.000Z')).items).toEqual([]);
+    await api().get('/api/ai/images').query({ before: 'not-a-cursor' }).set('Cookie', maker.cookie).expect(400);
   });
 
   it('answers 402 when the xu are short, without creating a job', async () => {

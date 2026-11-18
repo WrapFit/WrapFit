@@ -33,12 +33,26 @@ export function isAccountPage(pathname: string): boolean {
 }
 
 /**
- * Maker features an administrator must not open (the studio, cart, checkout, payments, affiliate). Links to them from
- * the home page or a typed address send the administrator back to the console. /dashboard is guarded by
- * WorkspaceShell, which keeps the account pages open.
+ * The only pages an administrator may open: the console, the sign-in and account email flows, and their own profile
+ * and settings. The customer site (home, templates, pricing, studio, cart, checkout…) is not for administrators: a
+ * link or a typed address to any other page sends them back to the console (AdminRouteGate in AuthProvider).
  */
-const MAKER_ONLY_PREFIXES = ["/editor", "/cart", "/checkout", "/payments", "/affiliate"];
+const ADMIN_ALLOWED_PREFIXES = [
+  ADMIN_HOME,
+  "/auth",
+  "/login",
+  "/register",
+  ROUTES.checkEmail,
+  ROUTES.verifyEmail,
+  ROUTES.forgotPassword,
+  ROUTES.resetPassword,
+  ROUTES.completeSignup,
+];
 
-export function isMakerOnlyPage(pathname: string): boolean {
-  return MAKER_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function isAdminAllowedPage(pathname: string): boolean {
+  return isAccountPage(pathname) || ADMIN_ALLOWED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 }

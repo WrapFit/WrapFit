@@ -14,6 +14,7 @@ import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
 import type { AiImageJob, AiImageOutput, AiImageTool, AiUsage, XuPackPurpose } from "@/types/api";
 import { cn } from "@/utils/helpers";
+import { panelLabel } from "@/features/studio/utils/dieline";
 
 const MAX_PROMPT = 500;
 const POLL_MS = 2_000;
@@ -30,7 +31,7 @@ const running = (job: AiImageJob | undefined) => job?.status === "PENDING" || jo
  * One click, one id: the server answers a repeated request with the same job instead of charging twice. A UUID v4;
  * `crypto.randomUUID` is missing on plain-http pages other than localhost (a phone on the LAN).
  */
-function newRequestId(): string {
+export function newRequestId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -169,7 +170,6 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
     const placed = onPlace(output);
     if (!placed) return;
     setLowDpi(placed.dpi < UPSCALE_HINT_DPI ? { outputId: output.id, dpi: placed.dpi } : null);
-    toast.show({ tone: "success", title: "Đã đặt ảnh AI", description: panel?.name });
   };
 
   const pose: MascotPose = busy ? "delivery" : lowDpi ? "measuring" : status === "COMPLETED" ? "celebration" : "presenting";
@@ -221,11 +221,11 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
             size="sm"
             variant="primary"
             className="min-w-0 flex-1 px-2.5 text-xs font-semibold shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all"
-            title={`Dùng cho ${panel?.name ?? "mặt đang chọn"}`}
+            title={`Dùng cho ${panel ? panelLabel(panel.name) : "mặt đang chọn"}`}
             onClick={() => place(output)}
             disabled={!output.url || !panel}
           >
-            <span className="truncate">Dùng cho {panel?.name ?? "mặt"}</span>
+            <span className="truncate">Dùng cho {panel ? panelLabel(panel.name) : "mặt"}</span>
           </Button>
           {tools && !vector && (
             <DropdownMenu
@@ -330,7 +330,7 @@ export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
               {panel && (
                 <>
                   {" "}
-                  theo {panel.name} ({Math.round(panel.bounds.width)} × {Math.round(panel.bounds.height)} mm)
+                  theo {panelLabel(panel.name)} ({Math.round(panel.bounds.width)} × {Math.round(panel.bounds.height)} mm)
                 </>
               )}
             </span>

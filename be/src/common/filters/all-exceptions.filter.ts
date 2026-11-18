@@ -9,6 +9,7 @@ import {
 import { Prisma } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { currentRequestId } from '../context/request-context';
+import { loggableUrl } from '../utils/log-url.util';
 
 interface NormalizedError {
   status: number;
@@ -46,9 +47,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(
-        `${request.method} ${request.url} -> ${status}`,
+        `${request.method} ${loggableUrl(request.originalUrl ?? request.url)} -> ${status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+    }
+
+    // A 429 whose body says when to come back (`retryAfterSeconds`) also says it the standard way.
+    const retryAfter = details?.retryAfterSeconds;
+    if (status === HttpStatus.TOO_MANY_REQUESTS && typeof retryAfter === 'number' && retryAfter > 0) {
+      response.setHeader('Retry-After', String(Math.ceil(retryAfter)));
     }
 
     response.status(status).json({

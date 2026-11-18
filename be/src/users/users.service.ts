@@ -15,8 +15,12 @@ import { StorageService } from '../storage';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { UpdateBrandKitDto } from './dto/update-brand-kit.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { anonymizeUser, hardDeleteUser, hasFinancialHistory, userAnonymized, UserRemovalResult } from './user-removal';
 import { revokeUserSessions } from './user-sessions';
 import { presentUser, SafeUser, userSelect } from './user.select';
+
+/** A user with many projects and files: the default 5 s of an interactive transaction is too short. */
+const REMOVAL_TIMEOUT_MS = 60_000;
 
 @Injectable()
 export class UsersService {
@@ -179,13 +183,19 @@ export class UsersService {
     if (id === actorId && (dto.role !== undefined || dto.isActive === false)) {
       throw new BadRequestException('You cannot change your own role or deactivate yourself');
     }
+    // An anonymized account stays as it is: never unlocked, never given a role or the demo flag again (409).
+    const current = await this.prisma.user.findUnique({ where: { id }, select: { anonymizedAt: true } });
+    if (!current) throw new NotFoundException('User not found');
+    if (current.anonymizedAt) throw userAnonymized();
+    // `anonymizedAt: null` also covers an anonymization that commits between the read above and this update (404).
+    const where = { id, anonymizedAt: null };
 
     const data: Prisma.UserUpdateInput = { role: dto.role, isActive: dto.isActive, isDemo: dto.isDemo };
 
     if (dto.isActive === false) {
       // Deactivated users must lose all existing sessions (also the access tokens: unlocking does not revive them).
       const user = await this.prisma.$transaction(async (tx) => {
-        const row = await tx.user.update({ where: { id }, data, select: userSelect });
+        const row = await tx.user.update({ where, data, select: userSelect });
         await revokeUserSessions(tx, id);
         return row;
       });
@@ -193,15 +203,43 @@ export class UsersService {
       return presentUser(user);
     }
 
-    return presentUser(await this.prisma.user.update({ where: { id }, data, select: userSelect }));
+    return presentUser(await this.prisma.user.update({ where, data, select: userSelect }));
   }
 
-  async remove(id: string, actorId: string): Promise<void> {
+  /**
+   * Admin deletion (docs/25 item 3). A user without financial history (`hasFinancialHistory`) is deleted with their
+   * projects and files as before; a user with it is anonymized instead (`anonymizeUser`), so payments, orders and
+   * credits keep their owner. One transaction either way; bucket objects go after the commit. Deleting an anonymized
+   * user again changes nothing and answers ANONYMIZED.
+   *
+   * The row lock is FOR NO KEY UPDATE, not FOR UPDATE: a payment confirmation running at the same moment locks its
+   * payment, then inserts a credit lot (a KEY SHARE lock on this row); FOR UPDATE would deadlock with it while this
+   * transaction waits for that payment.
+   *
+   * shortcut: a payment created between the check and a hard delete makes the delete fail on the RESTRICT foreign key
+   * (409 from the exception filter, nothing deleted); the admin retries and the user is anonymized. No automatic retry.
+   */
+  async remove(id: string, actorId: string): Promise<{ id: string; result: UserRemovalResult }> {
     if (id === actorId) throw new BadRequestException('You cannot delete yourself');
-    const keys = await this.storage.releaseUserFiles(id);
-    await this.prisma.user.delete({ where: { id } });
-    this.sessionsRevoked(id);
+    const { result, keys, revoked } = await this.prisma.$transaction(
+      async (tx) => {
+        const [row] = await tx.$queryRaw<{ anonymized_at: Date | null }[]>`
+          SELECT anonymized_at FROM users WHERE id = ${id}::uuid FOR NO KEY UPDATE`;
+        if (!row) throw new NotFoundException('User not found');
+        if (row.anonymized_at) return { result: 'ANONYMIZED' as const, keys: [], revoked: false };
+        if (!(await hasFinancialHistory(tx, id))) {
+          return { result: 'DELETED' as const, keys: await hardDeleteUser(tx, this.storage, id), revoked: true };
+        }
+        return { result: 'ANONYMIZED' as const, keys: await anonymizeUser(tx, this.storage, id, actorId), revoked: true };
+      },
+      { timeout: REMOVAL_TIMEOUT_MS },
+    );
+    if (revoked) {
+      this.logger.log(`users.removed userId=${id} result=${result} files=${keys.length} by=${actorId}`);
+      this.sessionsRevoked(id);
+    }
     await this.storage.deleteObjects(keys);
+    return { id, result };
   }
 
   /** Open WebSocket connections of the user close too (EventsGateway). */

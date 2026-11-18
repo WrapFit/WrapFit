@@ -8,24 +8,24 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ExportFileType, Prisma } from '@prisma/client';
-import type { BoxDimensions, CanvasElement, ExportMode } from '@wrapfit/shared';
 import { Queue } from 'bullmq';
 import { ProductEventsService } from '../analytics';
-import { CreditsService, EntitlementsService, orderPaymentRequired } from '../billing';
-import { currentRequestId, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../common';
+import { orderPaymentRequired } from '../billing';
+import { currentRequestId, neverSentToRedis, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../common';
 import { PrismaService } from '../shared/prisma';
 import { StorageService } from '../storage';
-import { ExportCreditRefunds } from './export-credits';
 import {
   DOWNLOAD_URL_TTL_SECONDS,
   EXPORT_JOB_OPTIONS,
   EXPORT_QUEUE,
+  ExportDesign,
   ExportJobData,
   FILE_FORMATS,
   titleSlug,
   RENDER_JOB,
 } from './export.constants';
-import { checkProject } from '../projects';
+import { checkProject, syncProjectFileRefs } from '../projects';
+import { failExport } from './export-failure';
 
 const jobSelect = {
   id: true,
@@ -42,15 +42,16 @@ const jobSelect = {
 
 type JobRow = Prisma.ExportJobGetPayload<{ select: typeof jobSelect }>;
 
-
-/** What an export request is allowed to produce, decided before the job is created (docs/16 §5.2 steps 4–5). */
+/** What unlocked an export request: a paid print order (null), or an unlock bought before the print cart (its id). */
 interface ExportGrant {
-  watermarked: boolean;
-  /** One credit was spent by this request. */
-  charged: boolean;
   unlockId: string | null;
-  /** Balance after the debit, when one was made. */
-  balance?: number;
+}
+
+/** The project row read once, locked, by `request`. */
+interface LockedProject extends ExportDesign {
+  userId: string;
+  status: string;
+  version: number;
 }
 
 /** Download name of an export: "Hộp nến Tết" + PDF_CMYK -> "hop-nen-tet-pdf-cmyk.pdf". */
@@ -67,8 +68,9 @@ const validUnlock = (projectId: string, version: number, now: Date): Prisma.Expo
 });
 
 /**
- * API side of the print export (docs 07, section 3.1): checks the design, decides whether the file is clean or
- * watermarked (docs/16 §5), records an ExportJob and queues it. The heavy rendering runs in the separate worker
+ * API side of the print export (docs 07, section 3.1): checks the design and that this version is unlocked, records an
+ * ExportJob and queues it. Every export is a clean file: the watermarked free A4 PDF and the export credits are gone
+ * (docs/25 item 7). The heavy rendering runs in the separate worker
  * process (ExportProcessor), never in an HTTP request.
  */
 @Injectable()
@@ -79,38 +81,64 @@ export class ExportService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly events: ProductEventsService,
-    private readonly credits: CreditsService,
-    private readonly entitlements: EntitlementsService,
-    private readonly refunds: ExportCreditRefunds,
     @InjectQueue(EXPORT_QUEUE) private readonly queue: Queue<ExportJobData>,
   ) {}
 
-  async request(projectId: string, fileType: ExportFileType, useCredit = false) {
+  async request(projectId: string, fileType: ExportFileType) {
     if (!this.storage.enabled) throw new ServiceUnavailableException('File storage is not configured');
 
-    const project = await this.prisma.packagingProject.findUniqueOrThrow({
-      where: { id: projectId },
-      select: { userId: true, status: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
-    });
-    if (project.status === 'DELETED') {
-      throw new ConflictException('Restore the project from the trash before exporting it');
-    }
+    // One transaction with the project row locked (docs/30 item 1): FitCheck, the unlock and the job all see the same
+    // version, and the job keeps that design, so the worker prints what was checked and paid for even if the user
+    // edits the project before it runs. ProjectOwnerGuard already made sure the caller is the owner.
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const [project] = await tx.$queryRaw<LockedProject[]>`
+        SELECT user_id AS "userId", status::text AS status, version, title, template_id AS "templateId",
+               formula_version AS "formulaVersion", dimensions, canvas_state AS "canvasState"
+        FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
+      if (!project) throw new NotFoundException('Project not found');
+      if (project.status === 'DELETED') {
+        throw new ConflictException('Restore the project from the trash before exporting it');
+      }
 
-    // FitCheck again on the server: the client's result is never trusted for production files.
-    const fitCheck = checkProject(
-      project.templateId,
-      project.dimensions as unknown as BoxDimensions,
-      (project.canvasState as { elements?: CanvasElement[] }).elements ?? [],
-      project.formulaVersion,
-    );
-    await this.prisma.packagingProject.update({
-      where: { id: projectId },
-      data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject, fitcheckScore: fitCheck.score },
+      // FitCheck again on the server: the client's result is never trusted for production files.
+      const fitCheck = checkProject(project.templateId, project.dimensions, project.canvasState.elements ?? [], project.formulaVersion);
+      await tx.packagingProject.update({
+        where: { id: projectId },
+        data: { fitcheckState: fitCheck as unknown as Prisma.InputJsonObject, fitcheckScore: fitCheck.score },
+      });
+      // Returned, not thrown: the FitCheck result saved above must be committed.
+      if (!fitCheck.isValidForProduction) return { kind: 'blocked' as const, userId: project.userId, fitCheck };
+      const grant = await this.grant(tx, projectId, project.version);
+      if (!grant) return { kind: 'unpaid' as const };
+
+      const design: ExportDesign = {
+        title: project.title,
+        templateId: project.templateId,
+        formulaVersion: project.formulaVersion,
+        dimensions: project.dimensions,
+        canvasState: project.canvasState,
+      };
+      const job = await tx.exportJob.create({
+        data: {
+          projectId,
+          fileType,
+          unlockId: grant.unlockId,
+          projectVersion: project.version,
+          design: design as unknown as Prisma.InputJsonObject,
+        },
+        select: jobSelect,
+      });
+      // The files of this design stay alive until the job ends, even if the next save drops them.
+      await syncProjectFileRefs(tx, projectId);
+      return { kind: 'queued' as const, job, fitCheck };
     });
-    if (!fitCheck.isValidForProduction) {
+
+    if (outcome.kind === 'unpaid') throw orderPaymentRequired();
+    const { fitCheck } = outcome;
+    if (outcome.kind === 'blocked') {
       // Analytics dashboard (decision M9): errors that would have reached the printer.
       await this.events.record('EXPORT_BLOCKED_FITCHECK', {
-        userId: project.userId,
+        userId: outcome.userId,
         projectId,
         payload: { errors: fitCheck.violations.filter((v) => v.severity === 'error').length, fileType },
       });
@@ -119,18 +147,7 @@ export class ExportService {
         fitCheck,
       });
     }
-
-    // ProjectOwnerGuard already made sure the caller is the owner. `useCredit` is kept for older clients and ignored:
-    // the print file is sold only through the print cart now.
-    void useCredit;
-    const { job, grant } = await this.prisma.$transaction(async (tx) => {
-      const grant = await this.grant(tx, projectId);
-      const job = await tx.exportJob.create({
-        data: { projectId, fileType, watermarked: grant.watermarked, unlockId: grant.unlockId },
-        select: jobSelect,
-      });
-      return { job, grant };
-    });
+    const { job } = outcome;
 
     try {
       await withTimeout(
@@ -143,43 +160,40 @@ export class ExportService {
         'export queue',
       );
     } catch (error) {
+      if (!neverSentToRedis(error)) {
+        // Outcome unknown: no answer within QUEUE_ADD_TIMEOUT_MS (queue.add goes on), or a connection lost after the
+        // command was written. Redis may have the job, which a worker will run: the job stays PENDING and the client
+        // follows it. One that never reached the queue is failed by ExportReconcileTask after STUCK_EXPORT_AFTER_MS.
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Export ${job.id}: queue outcome unknown (${reason}), left PENDING`);
+        return { jobId: job.id, status: job.status, fitCheck };
+      }
+      // Refused before anything was sent (Redis down, offline queue off): the job is not queued. Only a PENDING row
+      // is failed, never one a worker already took.
       this.logger.error('Could not queue the export', error instanceof Error ? error.stack : String(error));
-      await this.prisma.exportJob.update({
-        where: { id: job.id },
-        data: { status: 'FAILED', errorLog: 'The export queue is unavailable' },
-      });
-      // The credit just spent buys nothing: give it back.
-      if (grant.charged) await this.refunds.refundFailed(job.id);
-      throw new ServiceUnavailableException('The export queue is unavailable, try again in a moment');
+      if (await failExport(this.prisma, job.id, 'The export queue is unavailable', ['PENDING'])) {
+        throw new ServiceUnavailableException('The export queue is unavailable, try again in a moment');
+      }
+      const current = await this.prisma.exportJob.findUniqueOrThrow({ where: { id: job.id }, select: { status: true } });
+      return { jobId: job.id, status: current.status, fitCheck };
     }
-    const balance = grant.balance ?? (await this.credits.balance(project.userId));
-    return {
-      jobId: job.id,
-      status: job.status,
-      fitCheck,
-      watermarked: grant.watermarked,
-      charged: grant.charged,
-      exportCredits: { balance },
-    };
+    return { jobId: job.id, status: job.status, fitCheck };
   }
 
   /**
-   * Whether the print file of this version may be exported (clean, never watermarked). The print file is sold through
-   * the print cart: a paid order (not cancelled) holding this exact version unlocks it; Pro and export credits no
-   * longer skip the cart. An unlock bought before this flow still counts until it expires. Runs in the transaction
-   * that creates the job, with the project row locked, so an edit cannot slip in between the check and the job.
+   * What unlocks the print file of this version, or null. The print file is sold through the print cart: a paid order
+   * (not cancelled) holding this exact version unlocks it; Pro does not skip the cart and no export credit is read. An
+   * unlock bought with an export credit before this flow still counts until it expires. Runs in the transaction that
+   * creates the job, with the project row locked by `request` (`version` is the locked row's).
    */
-  private async grant(tx: Prisma.TransactionClient, projectId: string): Promise<ExportGrant> {
-    const [row] = await tx.$queryRaw<{ version: number }[]>`
-      SELECT version FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
-    if (await this.paidOrderHolds(tx, projectId, row.version)) return { watermarked: false, charged: false, unlockId: null };
+  private async grant(tx: Prisma.TransactionClient, projectId: string, version: number): Promise<ExportGrant | null> {
+    if (await this.paidOrderHolds(tx, projectId, version)) return { unlockId: null };
     const unlock = await tx.exportUnlock.findFirst({
-      where: validUnlock(projectId, row.version, new Date()),
+      where: validUnlock(projectId, version, new Date()),
       orderBy: { expiresAt: 'desc' },
       select: { id: true },
     });
-    if (unlock) return { watermarked: false, charged: false, unlockId: unlock.id };
-    throw orderPaymentRequired();
+    return unlock ? { unlockId: unlock.id } : null;
   }
 
   /** A paid print order (not cancelled) holds this version of the design. */
@@ -193,29 +207,22 @@ export class ExportService {
 
   /**
    * What the studio shows before a request: whether this version is unlocked (a paid print order holds it, or an
-   * older unlock is still valid). `mode` and `balance` stay in the answer for older clients.
+   * older unlock is still valid).
    */
-  async access(projectId: string): Promise<{ mode: ExportMode; unlocked: boolean; unlockExpiresAt: Date | null; balance: number }> {
+  async access(projectId: string): Promise<{ unlocked: boolean; unlockExpiresAt: Date | null }> {
     const project = await this.prisma.packagingProject.findUniqueOrThrow({
       where: { id: projectId },
-      select: { userId: true, version: true },
+      select: { version: true },
     });
-    const { entitlements } = await this.entitlements.of(project.userId);
-    const [paid, unlock, balance] = await Promise.all([
+    const [paid, unlock] = await Promise.all([
       this.paidOrderHolds(this.prisma, projectId, project.version),
       this.prisma.exportUnlock.findFirst({
         where: validUnlock(projectId, project.version, new Date()),
         orderBy: { expiresAt: 'desc' },
         select: { expiresAt: true },
       }),
-      this.credits.balance(project.userId),
     ]);
-    return {
-      mode: entitlements.export.mode,
-      unlocked: paid || unlock !== null,
-      unlockExpiresAt: paid ? null : (unlock?.expiresAt ?? null),
-      balance,
-    };
+    return { unlocked: paid || unlock !== null, unlockExpiresAt: paid ? null : (unlock?.expiresAt ?? null) };
   }
 
   /** Job status; a COMPLETED job includes a download link valid for 15 minutes. */

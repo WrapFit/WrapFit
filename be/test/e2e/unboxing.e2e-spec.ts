@@ -6,6 +6,7 @@ import { middleware } from '../../src/app.middleware';
 import { qrSvg } from '../../src/unboxing/qr-code';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 // The 1200 px PNG QR code (qrcode + pngjs) takes about 3.5 s to render inside Jest's sandbox, against 60 ms in plain
 // Node: the tests that create or download it need more than Jest's default 5 s on CI runners.
@@ -55,7 +56,7 @@ describe('Unboxing (e2e)', () => {
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 

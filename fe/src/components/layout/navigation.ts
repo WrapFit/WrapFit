@@ -20,7 +20,7 @@ export interface NavGroup {
 }
 
 export const STUDIO_LINKS: NavLink[] = [
-  { label: "Thiết kế hộp mới", href: ROUTES.editorDemo, description: "Mở Studio 2D & 3D, không cần đăng nhập; đăng nhập để lưu dự án" },
+  { label: "Thiết kế hộp mới", href: `${ROUTES.editorDemo}?new=1`, description: "Mở Studio 2D & 3D, không cần đăng nhập; đăng nhập để lưu dự án" },
   { label: "Dự án của tôi", href: ROUTES.projects, description: "Mở lại các thiết kế đã lưu" },
   { label: "Mở hộp bằng mã QR", href: ROUTES.unboxCode, description: "Nhập mã in kèm món quà để mở hộp 3D" },
 ];
@@ -30,7 +30,7 @@ export const RESOURCE_LINKS: NavLink[] = [
   { label: "Về chúng tôi", href: ROUTES.about, description: "Hành trình và đội ngũ EXE101 đứng sau WrapFit" },
   { label: "Trung tâm hỗ trợ", href: "/support", description: "Câu trả lời về kích thước, FitCheck™, file in" },
   { label: "Liên hệ", href: ROUTES.contact, description: "Hỗ trợ kỹ thuật, hợp tác xưởng in & đặt hàng" },
-  { label: "Bảng giá", href: "/pricing", description: "Miễn phí, Lượt xuất, Pro và Business" },
+  { label: "Bảng giá", href: "/pricing", description: "Miễn phí, Pro và Business" },
   { label: "Thiết kế cộng đồng", href: `${ROUTES.templates}?tab=community`, description: "Thiết kế công khai đạt FitCheck™ từ 90 điểm" },
 ];
 

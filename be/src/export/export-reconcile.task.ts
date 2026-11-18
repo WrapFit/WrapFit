@@ -3,7 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../shared/prisma';
-import { ExportCreditRefunds } from './export-credits';
 import {
   EXPORT_QUEUE,
   ExportJobData,
@@ -11,6 +10,7 @@ import {
   UNFINISHED_EXPORT,
   WORKER_LOST_ERROR,
 } from './export.constants';
+import { failExport } from './export-failure';
 
 /** Exports checked per run; the rest wait for the next run. */
 const RECONCILE_BATCH = 100;
@@ -28,7 +28,6 @@ export class ExportReconcileTask {
   constructor(
     private readonly prisma: PrismaService,
     @InjectQueue(EXPORT_QUEUE) private readonly queue: Queue<ExportJobData>,
-    private readonly refunds: ExportCreditRefunds,
   ) {}
 
   @Interval('export-reconcile', 5 * 60 * 1000)
@@ -61,16 +60,10 @@ export class ExportReconcileTask {
       if (state !== 'failed' && state !== 'unknown') continue;
 
       const reason = state === 'failed' ? (await this.queue.getJob(id))?.failedReason : 'job missing from the queue';
-      const { count } = await this.prisma.exportJob.updateMany({
-        where: { id, status: UNFINISHED_EXPORT },
-        data: { status: 'FAILED', errorLog: WORKER_LOST_ERROR },
-      });
-      if (count) {
+      if (await failExport(this.prisma, id, WORKER_LOST_ERROR)) {
         this.logger.warn(`Export ${id} was never finished by the worker (${reason ?? 'no reason'})`);
-        // docs/16 §5.3, like the last attempt in the worker; a refund error must not stop the other rows.
-        await this.refunds.refundFailed(id).catch((error: Error) => this.logger.error(`Could not refund export ${id}: ${error.message}`));
+        failed++;
       }
-      failed += count;
     }
     return failed;
   }

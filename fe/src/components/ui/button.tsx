@@ -40,11 +40,12 @@ export const BUTTON_VARIANTS = {
 } as const;
 
 export const BUTTON_SIZES = {
-  sm: "h-control-sm px-3.5 text-label gap-1.5",
-  md: "h-control px-5 text-label gap-1.5",
-  lg: "h-control-lg px-6 text-body font-semibold gap-2",
-  /** 48 px: the main action of a step or a form (studio, account pages). */
-  xl: "h-12 px-6 text-body gap-2",
+  // Compact on purpose: 32 / 36 / 40 / 42 px, as on most product sites; a button is as wide as its label.
+  sm: "h-8 px-3 text-label-sm gap-1.5",
+  md: "h-9 px-4 text-label gap-1.5",
+  lg: "h-10 px-5 text-label font-semibold gap-1.5",
+  /** 42 px: the main action of a step or a form (studio, account pages). */
+  xl: "h-[42px] px-5 text-body-sm font-semibold gap-2",
   /** Square icon buttons: 36 / 40 / 44 px. */
   "icon-sm": "size-control-sm p-0",
   icon: "size-control p-0",

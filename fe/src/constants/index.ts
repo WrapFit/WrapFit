@@ -35,6 +35,8 @@ export const ROUTES = {
   },
   publicProject: (slug: string) => `/p/${slug}`,
   unbox: (slug: string) => `/unbox/${slug}`,
+  /** Design review link (docs/23 S23): a customer or print shop comments and approves for print. */
+  review: (token: string) => `/review/${token}`,
   /** Code-entry page: the recipient types or pastes the code printed with the gift. */
   unboxCode: "/unbox",
   /** Contact Us page */

@@ -12,7 +12,17 @@ import {
 import { Role } from '@prisma/client';
 import { parse as parseCookies } from 'cookie';
 import { Namespace, Socket } from 'socket.io';
-import { ACCESS_COOKIE, AuthUser, ConfigService, JwtPayload, SESSIONS_REVOKED, SessionsRevokedEvent } from '../common';
+import {
+  ACCESS_COOKIE,
+  AuthUser,
+  ConfigService,
+  JwtPayload,
+  PROJECT_SAVED,
+  ProjectSavedEvent,
+  readCookie,
+  SESSIONS_REVOKED,
+  SessionsRevokedEvent,
+} from '../common';
 import { PrismaService } from '../shared/prisma';
 
 /**
@@ -24,8 +34,15 @@ import { PrismaService } from '../shared/prisma';
  * Every socket joins the room `user:<id>` (and `admins` for admins). The token is checked once, at the handshake: a
  * socket is closed when its access token expires (the client reconnects with the refreshed cookie) and when the
  * sessions of its user are revoked (SESSIONS_REVOKED).
+ *
+ * Server -> client events: `notifications.changed` (empty payload) when the user's inbox got a new notification, sent by
+ * NotificationsPushBridge; the client refetches the unread count. `project.saved` { projectId, version, updatedAt, tabId }
+ * when the user saved a project (PROJECT_SAVED): their other editor tabs load it (docs/28 Q5). It is emitted by the API
+ * process that took the save, so it only reaches sockets of that process. Socket.IO state is per API process (no Redis
+ * adapter): with several API instances, a tab on another instance learns of the save at its next save (409).
  */
-@WebSocketGateway({ namespace: 'events', path: '/api/socket.io' })
+// addTrailingSlash: false also accepts `/api/socket.io?EIO=…`: the Next.js dev proxy strips the slash before the query.
+@WebSocketGateway({ namespace: 'events', path: '/api/socket.io', addTrailingSlash: false })
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(EventsGateway.name);
 
@@ -91,9 +108,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.in(`user:${userId}`).disconnectSockets(true);
   }
 
-  /** Sends an event to every connected client. */
-  emitToAll(event: string, payload: unknown): void {
-    this.server.emit(event, payload);
+  @OnEvent(PROJECT_SAVED)
+  projectSaved({ userId, ...save }: ProjectSavedEvent): void {
+    this.emitToUser(userId, PROJECT_SAVED, save);
   }
 
   /** Sends an event to all sockets of one user (any device). */
@@ -109,6 +126,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (typeof header === 'string' && header.startsWith('Bearer ')) return header.slice(7);
 
     const cookieHeader = socket.handshake.headers.cookie;
-    return cookieHeader ? parseCookies(cookieHeader)[ACCESS_COOKIE] : undefined;
+    return cookieHeader ? readCookie(parseCookies(cookieHeader), ACCESS_COOKIE) : undefined;
   }
 }

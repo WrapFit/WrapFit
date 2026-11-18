@@ -108,17 +108,27 @@ export class AiImageProcessor extends WorkerHost implements OnApplicationBootstr
         aspectRatio: true,
         numImages: true,
         source: { select: { width: true, height: true, storedFile: { select: { key: true, contentType: true } } } },
+        sourceFile: { select: { key: true, contentType: true } },
       },
     });
 
     let result: ProviderResult;
     const tool = TOOL_OF[job.kind];
     if (tool) {
-      if (!job.source || job.source.width === null || job.source.height === null) {
-        throw new UnrecoverableError('The image to work on was deleted');
+      let image: Awaited<ReturnType<typeof prepareSource>>;
+      if (job.sourceFile) {
+        // An upload of the user (docs/23 S20): its size is read from the file.
+        const { body, contentType } = await this.storage.getObject(job.sourceFile.key);
+        const meta = await sharp(body).metadata();
+        if (!meta.width || !meta.height) throw new UnrecoverableError('The uploaded image cannot be read');
+        image = await prepareSource(tool, { body, contentType, width: meta.width, height: meta.height });
+      } else {
+        if (!job.source || job.source.width === null || job.source.height === null) {
+          throw new UnrecoverableError('The image to work on was deleted');
+        }
+        const { body, contentType } = await this.storage.getObject(job.source.storedFile.key);
+        image = await prepareSource(tool, { body, contentType, width: job.source.width, height: job.source.height });
       }
-      const { body, contentType } = await this.storage.getObject(job.source.storedFile.key);
-      const image = await prepareSource(tool, { body, contentType, width: job.source.width, height: job.source.height });
       result = await this.provider.runTool({ tool, image });
     } else {
       result = await this.provider.generate({

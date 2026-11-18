@@ -1,35 +1,32 @@
 import type { Queue } from 'bullmq';
-import { ENTITLEMENTS } from '@wrapfit/shared';
 import type { ProductEventsService } from '../analytics';
-import { insufficientCredits, type CreditsService, type EntitlementsService } from '../billing';
 import type { PrismaService } from '../shared/prisma';
 import type { StorageService } from '../storage';
-import type { ExportCreditRefunds } from './export-credits';
 import type { ExportJobData } from './export.constants';
+import { TimeoutError } from '../common';
 import { ExportService } from './export.service';
 
 /**
- * Export gating (docs/16 §5.2): an in-memory ledger stands in for PostgreSQL, so each case reads like the story it
- * tells (no paid order, paid order, edit, Pro). Row locks and concurrency are covered by the e2e test.
+ * Export gating: an in-memory store stands in for PostgreSQL, so each case reads like the story it tells (no paid
+ * order, paid order, edit, old unlock). Row locks and concurrency are covered by the e2e test. The service has no
+ * credit ledger and no plan to read (docs/25 item 7): export credits and Pro never unlock an export, and any read of
+ * `credit_lots` fails the test.
  */
 describe('ExportService.request gating', () => {
-  type Tier = keyof typeof ENTITLEMENTS;
-  let tier: Tier;
   let version: number;
-  let balance: number;
   let unlocks: { id: string; projectVersion: number; expiresAt: Date; refundedAt: Date | null; debitOperationId: string }[];
-  let jobs: { id: string; fileType: string; watermarked: boolean; unlockId: string | null }[];
+  let jobs: { id: string; fileType: string; watermarked?: boolean; unlockId: string | null }[];
   // Print orders holding project p-1: the cart flow unlocks the print file of the version a paid order holds.
   let orders: { projectVersion: number; status: string; paidAt: Date | null }[];
   let queue: { add: jest.Mock };
-  let credits: { balance: jest.Mock; debit: jest.Mock };
-  let refunds: { refundFailed: jest.Mock };
   let tx: Record<string, unknown>;
+  let prisma: { packagingProject: { findUniqueOrThrow: jest.Mock; update: jest.Mock } } & Record<string, unknown>;
   let service: ExportService;
 
   const project = {
     userId: 'u-1',
     status: 'ACTIVE',
+    title: 'Hộp nến',
     templateId: 'tuck-top',
     formulaVersion: 3,
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.4 },
@@ -37,9 +34,7 @@ describe('ExportService.request gating', () => {
   };
 
   beforeEach(() => {
-    tier = 'FREE';
     version = 1;
-    balance = 0;
     unlocks = [];
     jobs = [];
     orders = [];
@@ -55,7 +50,11 @@ describe('ExportService.request gating', () => {
         unlocks.find((u) => u.projectVersion === where.projectVersion && !u.refundedAt && u.expiresAt > now()) ?? null,
       );
     tx = {
-      $queryRaw: jest.fn(() => Promise.resolve([{ version }])),
+      // The project row, read once and locked (SELECT ... FOR UPDATE).
+      $queryRaw: jest.fn(() => Promise.resolve([{ ...project, version }])),
+      // syncProjectFileRefs
+      $executeRaw: jest.fn().mockResolvedValue(0),
+      packagingProject: { update: jest.fn() },
       orderItem: { findFirst: jest.fn(findPaidItem) },
       exportUnlock: {
         findFirst: jest.fn(findUnlock),
@@ -66,6 +65,8 @@ describe('ExportService.request gating', () => {
         }),
       },
       exportJob: {
+        // failExport, when the queue refuses the job.
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         create: jest.fn(({ data }) => {
           const job = { id: `job-${jobs.length + 1}`, status: 'PENDING', ...data };
           jobs.push(job);
@@ -73,14 +74,24 @@ describe('ExportService.request gating', () => {
         }),
       },
     };
-    const prisma = {
+    const noCreditRead = () => {
+      throw new Error('an export must never read the credit ledger');
+    };
+    tx.creditLot = { findMany: jest.fn(noCreditRead), aggregate: jest.fn(noCreditRead) };
+    tx.creditDebit = { createMany: jest.fn(noCreditRead) };
+    prisma = {
+      creditLot: { findMany: jest.fn(noCreditRead), aggregate: jest.fn(noCreditRead) },
       packagingProject: {
         findUniqueOrThrow: jest.fn(() => Promise.resolve({ ...project, version })),
         update: jest.fn(),
       },
       exportUnlock: { findFirst: jest.fn(findUnlock) },
       orderItem: { findFirst: jest.fn(findPaidItem) },
-      exportJob: { update: jest.fn() },
+      // The status read after a refused queue found the job taken.
+      exportJob: {
+        findUnique: jest.fn().mockResolvedValue({ projectId: 'p-1' }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ status: 'PROCESSING' }),
+      },
       // Interactive transaction; when the callback throws, what it wrote is rolled back like PostgreSQL would.
       $transaction: jest.fn(async (fn: (client: unknown) => unknown) => {
         const [savedUnlocks, savedJobs] = [[...unlocks], [...jobs]];
@@ -92,23 +103,11 @@ describe('ExportService.request gating', () => {
         }
       }),
     };
-    credits = {
-      balance: jest.fn(() => Promise.resolve(balance)),
-      debit: jest.fn(() => {
-        if (balance < 1) return Promise.reject(insufficientCredits(balance));
-        balance -= 1;
-        return Promise.resolve({ operationId: 'op', balance });
-      }),
-    };
-    refunds = { refundFailed: jest.fn().mockResolvedValue(1) };
     queue = { add: jest.fn().mockResolvedValue({}) };
     service = new ExportService(
       prisma as unknown as PrismaService,
       { enabled: true } as unknown as StorageService,
       { record: jest.fn() } as unknown as ProductEventsService,
-      credits as unknown as CreditsService,
-      { of: () => Promise.resolve({ tier, entitlements: ENTITLEMENTS[tier] }) } as unknown as EntitlementsService,
-      refunds as unknown as ExportCreditRefunds,
       queue as unknown as Queue<ExportJobData>,
     );
   });
@@ -134,29 +133,38 @@ describe('ExportService.request gating', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  it('export credits and useCredit no longer skip the cart: nothing spent, 402', async () => {
-    balance = 3;
-    await expect(error(service.request('p-1', 'SVG', true))).resolves.toMatchObject({ status: 402 });
-    expect(credits.debit).not.toHaveBeenCalled();
-    expect(unlocks).toEqual([]);
-    expect(balance).toBe(3);
-  });
-
-  it('Pro without a paid order: 402 too (Pro no longer skips the cart)', async () => {
-    tier = 'STARTER';
-    await expect(error(service.request('p-1', 'SVG'))).resolves.toMatchObject({ status: 402 });
-    expect(jobs).toEqual([]);
-  });
-
-  it('a paid order of this version: clean file in every format, nothing charged', async () => {
+  it('a paid order of this version: clean file in every format, no credit read, no unlock created', async () => {
     payOrder(1);
-    for (const fileType of ['SVG', 'DXF', 'PDF_CMYK', 'PDF_A4_PRINT'] as const) {
-      await expect(service.request('p-1', fileType)).resolves.toMatchObject({ watermarked: false, charged: false });
+    for (const fileType of ['SVG', 'DXF', 'PDF_CMYK', 'PDF_A4_PRINT', 'PRINT_PACKAGE'] as const) {
+      const started = await service.request('p-1', fileType);
+      expect(started).toEqual({ jobId: expect.any(String), status: 'PENDING', fitCheck: expect.any(Object) });
     }
-    expect(credits.debit).not.toHaveBeenCalled();
-    expect(jobs.every((job) => !job.watermarked && job.unlockId === null)).toBe(true);
+    // Never written: the column default (false) applies, every new export is clean.
+    expect(jobs.every((job) => job.watermarked === undefined && job.unlockId === null)).toBe(true);
+    expect(unlocks).toEqual([]);
     // The project row is locked first, so an edit cannot slip in between the check and the job.
     expect((tx.$queryRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('FOR UPDATE');
+  });
+
+  it('reads the project once, locked, and checks, unlocks and freezes that same version in the job (docs/30 item 1)', async () => {
+    version = 7;
+    payOrder(7);
+    await service.request('p-1', 'SVG');
+
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    expect((tx.$queryRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('FOR UPDATE');
+    expect(prisma.packagingProject.findUniqueOrThrow).not.toHaveBeenCalled();
+    // FitCheck is saved in the same transaction, for the row read above.
+    expect((tx.packagingProject as { update: jest.Mock }).update).toHaveBeenCalledTimes(1);
+    expect(prisma.packagingProject.update).not.toHaveBeenCalled();
+    expect((tx.orderItem as { findFirst: jest.Mock }).findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ projectVersion: 7 }) }),
+    );
+    const { userId: _userId, status: _status, ...design } = project;
+    expect(jobs).toEqual([expect.objectContaining({ projectVersion: 7, design })]);
+    // The refs are recomputed in that transaction: the files of the frozen design stay alive until the job ends.
+    const sql = (tx.$executeRaw as jest.Mock).mock.calls.map(([strings]) => (strings as string[]).join('?'));
+    expect(sql.some((text) => text.includes('WITH canvases') && text.includes('export_jobs'))).toBe(true);
   });
 
   it('after an edit (new version) the design needs a new paid order', async () => {
@@ -164,7 +172,7 @@ describe('ExportService.request gating', () => {
     version = 2;
     await expect(error(service.request('p-1', 'SVG'))).resolves.toMatchObject({ status: 402 });
     payOrder(2);
-    await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ watermarked: false });
+    await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ status: 'PENDING' });
   });
 
   it('an order waiting for payment or cancelled does not unlock', async () => {
@@ -181,25 +189,58 @@ describe('ExportService.request gating', () => {
     );
     await expect(error(service.request('p-1', 'DXF'))).resolves.toMatchObject({ status: 402 });
     unlocks.push({ id: 'valid', projectVersion: 1, expiresAt: new Date(Date.now() + 86_400_000), refundedAt: null, debitOperationId: 'c' });
-    await expect(service.request('p-1', 'DXF')).resolves.toMatchObject({ watermarked: false, charged: false });
+    await expect(service.request('p-1', 'DXF')).resolves.toMatchObject({ status: 'PENDING' });
     expect(jobs[0]).toMatchObject({ unlockId: 'valid' });
+    expect(jobs[0].watermarked).toBeUndefined();
   });
 
-  it('marks the job failed when it cannot be queued, nothing to refund', async () => {
-    payOrder(1);
-    queue.add.mockRejectedValue(new Error('redis down'));
-    jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
-    await expect(service.request('p-1', 'SVG')).rejects.toThrow('The export queue is unavailable');
-    expect(refunds.refundFailed).not.toHaveBeenCalled();
+  describe('queueing (docs/30 item 6, review round 2)', () => {
+    const exportJob = () => tx.exportJob as { updateMany: jest.Mock };
+    beforeEach(() => {
+      payOrder(1);
+      jest.spyOn(service['logger'], 'error').mockImplementation(() => undefined);
+      jest.spyOn(service['logger'], 'warn').mockImplementation(() => undefined);
+    });
+
+    it('a queue that does not answer in time leaves the job PENDING and answers it: Redis may already have it', async () => {
+      queue.add.mockRejectedValue(new TimeoutError('export queue timed out after 3000 ms'));
+      await expect(service.request('p-1', 'SVG')).resolves.toEqual({ jobId: 'job-1', status: 'PENDING', fitCheck: expect.any(Object) });
+      expect(exportJob().updateMany).not.toHaveBeenCalled();
+    });
+
+    it('a queue that refuses fails the PENDING job (refs recomputed) and answers 503', async () => {
+      queue.add.mockRejectedValue(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
+      await expect(service.request('p-1', 'SVG')).rejects.toThrow('The export queue is unavailable');
+      expect(exportJob().updateMany).toHaveBeenCalledWith({
+        where: { id: 'job-1', status: { in: ['PENDING'] } },
+        data: { status: 'FAILED', errorLog: 'The export queue is unavailable' },
+      });
+      expect((tx.$executeRaw as jest.Mock).mock.calls.at(-1)[0].join('?')).toContain('project_file_refs');
+    });
+
+    it('a connection lost after the command was written leaves the job PENDING too: Redis may have it', async () => {
+      for (const lost of [new Error('Connection is closed.'), new Error('Reached the max retries per request limit (which is 1).')]) {
+        queue.add.mockRejectedValueOnce(lost);
+        await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ status: 'PENDING' });
+      }
+      expect(exportJob().updateMany).not.toHaveBeenCalled();
+    });
+
+    it('never fails a job a worker already took: answers it with its current status', async () => {
+      queue.add.mockRejectedValue(new Error("Stream isn't writeable and enableOfflineQueue options is false"));
+      exportJob().updateMany.mockResolvedValueOnce({ count: 0 });
+      await expect(service.request('p-1', 'SVG')).resolves.toMatchObject({ jobId: 'job-1', status: 'PROCESSING' });
+    });
   });
 
-  it('access: unlocked once a paid order holds this version, locked again after an edit, Pro alone is not enough', async () => {
-    await expect(service.access('p-1')).resolves.toEqual({ mode: 'FREE_A4', unlocked: false, unlockExpiresAt: null, balance: 0 });
+  it('access: unlocked once a paid order holds this version or an old unlock is valid, locked again after an edit', async () => {
+    await expect(service.access('p-1')).resolves.toEqual({ unlocked: false, unlockExpiresAt: null });
     payOrder(1);
-    await expect(service.access('p-1')).resolves.toMatchObject({ unlocked: true, unlockExpiresAt: null });
+    await expect(service.access('p-1')).resolves.toEqual({ unlocked: true, unlockExpiresAt: null });
     version = 2;
-    await expect(service.access('p-1')).resolves.toMatchObject({ unlocked: false });
-    tier = 'STARTER';
-    await expect(service.access('p-1')).resolves.toMatchObject({ mode: 'UNLIMITED', unlocked: false });
+    await expect(service.access('p-1')).resolves.toEqual({ unlocked: false, unlockExpiresAt: null });
+    const expiresAt = new Date(Date.now() + 86_400_000);
+    unlocks.push({ id: 'valid', projectVersion: 2, expiresAt, refundedAt: null, debitOperationId: 'c' });
+    await expect(service.access('p-1')).resolves.toEqual({ unlocked: true, unlockExpiresAt: expiresAt });
   });
 });

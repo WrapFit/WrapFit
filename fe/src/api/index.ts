@@ -11,11 +11,13 @@ import * as collectionsApi from "./collections";
 import * as commonApi from "./common";
 import * as exportsApi from "./exports";
 import * as libraryApi from "./library";
+import * as notificationsApi from "./notifications";
 import * as ordersApi from "./orders";
 import * as paymentsApi from "./payments";
 import * as printShopsApi from "./print-shops";
 import * as projectsApi from "./projects";
 import * as publicApi from "./public";
+import * as reviewsApi from "./reviews";
 import * as storageApi from "./storage";
 import * as templatesApi from "./templates";
 import * as unboxingApi from "./unboxing";
@@ -29,11 +31,13 @@ export * from "./collections";
 export * from "./common";
 export * from "./exports";
 export * from "./library";
+export * from "./notifications";
 export * from "./orders";
 export * from "./payments";
 export * from "./print-shops";
 export * from "./projects";
 export * from "./public";
+export * from "./reviews";
 export * from "./storage";
 export * from "./templates";
 export * from "./unboxing";
@@ -46,6 +50,7 @@ export const apiClient = {
   ...authApi,
   ...collectionsApi,
   ...libraryApi,
+  ...notificationsApi,
   ...commonApi,
   ...exportsApi,
   ...ordersApi,
@@ -53,6 +58,7 @@ export const apiClient = {
   ...printShopsApi,
   ...projectsApi,
   ...publicApi,
+  ...reviewsApi,
   ...storageApi,
   ...templatesApi,
   ...unboxingApi,

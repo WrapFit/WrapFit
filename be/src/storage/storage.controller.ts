@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { ACCESS_COOKIE, CurrentUser } from '../common';
+import { InspectFontDto } from './dto/inspect-font.dto';
 import { PresignUploadDto } from './dto/presign-upload.dto';
 import { StorageService } from './storage.service';
 
@@ -19,6 +20,14 @@ export class StorageController {
   })
   presignUpload(@CurrentUser('id') userId: string, @Body() dto: PresignUploadDto) {
     return this.storageService.presignUpload(userId, dto);
+  }
+
+  @Post('fonts/inspect')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Check an uploaded font: it must open and draw every Vietnamese letter; returns its family name' })
+  inspectFont(@CurrentUser('id') userId: string, @Body() dto: InspectFontDto) {
+    return this.storageService.inspectFont(userId, dto.url);
   }
 
   @Get('usage')

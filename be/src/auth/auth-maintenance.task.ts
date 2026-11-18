@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { pruneNotifications } from '../notifications/notification-pruning';
 import { PrismaService } from '../shared/prisma';
 
 /** Rows deleted per statement, so one run never holds long locks on the auth tables. */
@@ -10,13 +11,14 @@ const AUTH_TOKEN_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Password accounts whose email was never verified are deleted after a week, when they hold nothing: no project, no
- * file. Whoever registered an address without owning it cannot keep it indefinitely.
+ * file, no payment, order or credit. Whoever registered an address without owning it cannot keep it indefinitely.
  */
 export const UNVERIFIED_ACCOUNT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Every day at 03:00 (Vietnam time), deletes refresh tokens and email tokens nobody can use any more, so the auth
- * tables do not grow forever, and empty accounts that never verified their email. Running it twice, or on several
+ * tables do not grow forever, and empty accounts that never verified their email. It also bounds the notification
+ * inbox (pruneNotifications: read rows after 30 days, at most 200 rows per user). Running it twice, or on several
  * instances at once, is harmless.
  *
  * Revoked refresh tokens are kept until they expire: replaying one is how token theft is detected (AuthService.refresh).
@@ -32,10 +34,10 @@ export class AuthMaintenanceTask {
   async run(): Promise<void> {
     try {
       const startedAt = Date.now();
-      const { refreshTokens, authTokens, unverifiedAccounts } = await this.cleanup();
-      if (refreshTokens || authTokens || unverifiedAccounts) {
+      const { refreshTokens, authTokens, unverifiedAccounts, notifications } = await this.cleanup();
+      if (refreshTokens || authTokens || unverifiedAccounts || notifications) {
         this.logger.log(
-          `auth.cleanup refreshTokens=${refreshTokens} authTokens=${authTokens} unverifiedAccounts=${unverifiedAccounts} ms=${Date.now() - startedAt}`,
+          `auth.cleanup refreshTokens=${refreshTokens} authTokens=${authTokens} unverifiedAccounts=${unverifiedAccounts} notifications=${notifications} ms=${Date.now() - startedAt}`,
         );
       }
     } catch (error) {
@@ -44,7 +46,9 @@ export class AuthMaintenanceTask {
     }
   }
 
-  async cleanup(now = new Date()): Promise<{ refreshTokens: number; authTokens: number; unverifiedAccounts: number }> {
+  async cleanup(
+    now = new Date(),
+  ): Promise<{ refreshTokens: number; authTokens: number; unverifiedAccounts: number; notifications: number }> {
     const refreshTokens = await this.deleteInBatches(
       (limit) => this.prisma.$executeRaw`
         DELETE FROM refresh_tokens WHERE id IN (
@@ -68,9 +72,18 @@ export class AuthMaintenanceTask {
             AND u.created_at < ${accountCutoff}::timestamptz
             AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.user_id = u.id)
             AND NOT EXISTS (SELECT 1 FROM stored_files f WHERE f.user_id = u.id)
+            -- Money records block a hard delete (ON DELETE RESTRICT, docs/25 item 3): such an account is never
+            -- empty, and an anonymized one stays for its payments and orders.
+            AND u.anonymized_at IS NULL
+            AND NOT EXISTS (SELECT 1 FROM payments pay WHERE pay.user_id = u.id)
+            AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id)
+            AND NOT EXISTS (SELECT 1 FROM credit_lots l WHERE l.user_id = u.id)
+            AND NOT EXISTS (SELECT 1 FROM subscriptions s WHERE s.user_id = u.id)
+            AND NOT EXISTS (SELECT 1 FROM bank_transactions b WHERE b.resolved_by = u.id)
           LIMIT ${limit} FOR UPDATE SKIP LOCKED)`,
     );
-    return { refreshTokens, authTokens, unverifiedAccounts };
+    const pruned = await pruneNotifications(this.prisma, now);
+    return { refreshTokens, authTokens, unverifiedAccounts, notifications: pruned.read + pruned.overCap };
   }
 
   private async deleteInBatches(deleteBatch: (limit: number) => Promise<number>): Promise<number> {

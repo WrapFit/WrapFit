@@ -10,18 +10,21 @@ import {
   ChevronDown,
   Info,
 } from "lucide-react";
-import { FitCheckReport } from "@wrapfit/shared";
+import { FitCheckReport, type FitCheckViolation } from "@wrapfit/shared";
 
 
 interface FitCheckDrawerProps {
   report: FitCheckReport;
   onAutoFix?: () => void;
+  /** Applies the one-click fix of one violation (`violation.fix`, e.g. turn a text upright, docs/23 S21). */
+  onFixViolation?: (violation: FitCheckViolation) => void;
   className?: string;
 }
 
 export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
   report,
   onAutoFix,
+  onFixViolation,
   className = "",
 }) => {
   const handleAutoFixClick = () => {
@@ -105,6 +108,16 @@ export const FitCheckDrawer: React.FC<FitCheckDrawerProps> = ({
               <p className="text-caption italic font-medium pt-1 text-landing-ink">
                 👉 Gợi ý: {v.suggestion}
               </p>
+              {v.fix && v.elementId && onFixViolation && (
+                <button
+                  type="button"
+                  onClick={() => onFixViolation(v)}
+                  className="mt-1 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-caption font-semibold text-landing-ink ring-1 ring-inset ring-landing-line hover:ring-landing-ink"
+                >
+                  <Wand2 className="w-3 h-3" aria-hidden />
+                  Xoay chữ cho đúng chiều
+                </button>
+              )}
             </div>
           ))}
         </div>

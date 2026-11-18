@@ -15,9 +15,10 @@ export interface FlowStepModalProps {
   initialStepIndex?: number;
 }
 
-interface StepInfo {
+export interface FlowStep {
   number: string;
-  badgeLabel: string;
+  /** Name of the step, as in the step bar of the studio. */
+  name: string;
   title: string;
   imageSrc: string;
   imageAlt: string;
@@ -25,44 +26,65 @@ interface StepInfo {
   ctaLabel: string;
 }
 
-const STEPS: StepInfo[] = [
+/** The six steps of the studio, in its order; each image is a screenshot of that step. */
+export const FLOW_STEPS: FlowStep[] = [
   {
     number: "01",
-    badgeLabel: "BƯỚC 01 · ĐO KÍCH THƯỚC QUÀ",
-    title: "Bước 01: Nhập kích thước món quà, hộp tự may đo theo milimét",
-    imageSrc: "/branding/screen-flow-1.png",
-    imageAlt: "Bước Kích thước của Studio WrapFit: nhập dài, rộng, cao món quà, hộp 3D đổi theo",
+    name: "Chọn kiểu hộp",
+    title: "Bước 01: Chọn kiểu hộp, xem trước dạng 3D và khuôn bế",
+    imageSrc: "/branding/studio-step-1.webp",
+    imageAlt: "Bước Kiểu hộp của Studio WrapFit: lưới các kiểu hộp và khung xem trước 3D",
+    targetHref: `${ROUTES.editorDemo}?step=1`,
+    ctaLabel: "Chọn kiểu hộp",
+  },
+  {
+    number: "02",
+    name: "Nhập kích thước",
+    title: "Bước 02: Nhập kích thước món quà, hộp tự may đo theo milimét",
+    imageSrc: "/branding/studio-step-2.webp",
+    imageAlt: "Bước Kích thước của Studio WrapFit: thanh trượt dài, rộng, cao và hộp 3D có đường kích thước",
     targetHref: `${ROUTES.editorDemo}?step=2`,
     ctaLabel: "Nhập kích thước",
   },
   {
-    number: "02",
-    badgeLabel: "BƯỚC 02 · THIẾT KẾ & GẬP 3D",
-    title: "Bước 02: Thiết kế trên khuôn bế 2D, xem hộp gập 3D",
-    imageSrc: "/branding/screen-flow-2.png",
-    imageAlt: "Bước Thiết kế của Studio WrapFit: thanh công cụ bên trái, khuôn bế 2D ở giữa",
+    number: "03",
+    name: "Chọn giấy",
+    title: "Bước 03: Chọn giấy, cán màng và gia công",
+    imageSrc: "/branding/studio-step-3.webp",
+    imageAlt: "Bước Giấy của Studio WrapFit: hộp 3D và bảng chọn loại giấy, độ dày, cán màng",
+    targetHref: `${ROUTES.editorDemo}?step=3`,
+    ctaLabel: "Chọn giấy",
+  },
+  {
+    number: "04",
+    name: "Thiết kế",
+    title: "Bước 04: Thiết kế trên khuôn bế 2D, xem hộp gập 3D",
+    imageSrc: "/branding/studio-step-4.webp",
+    imageAlt: "Bước Thiết kế của Studio WrapFit: thư viện mẫu bên trái, khuôn bế 2D đã áp mẫu ở giữa",
     targetHref: `${ROUTES.editorDemo}?step=4`,
     ctaLabel: "Mở Studio",
   },
   {
-    number: "03",
-    badgeLabel: "BƯỚC 03 · FITCHECK™ AI",
-    title: "Bước 03: FitCheck™ tự kiểm tra lỗi in trước khi xuất",
-    imageSrc: "/branding/screen-flow-3.png",
-    imageAlt: "Bước Đặt in của Studio WrapFit: khuôn bế 1:1 và danh sách quy tắc sản xuất FitCheck",
-    targetHref: `${ROUTES.editorDemo}?step=6`,
-    ctaLabel: "Thử FitCheck",
+    number: "05",
+    name: "Quà & mở hộp",
+    title: "Bước 05: Bối cảnh 3D, lời chúc và mã QR mở hộp",
+    imageSrc: "/branding/studio-step-5.webp",
+    imageAlt: "Bước Quà & mở hộp của Studio WrapFit: hộp 3D trên bàn và nút tạo lời chúc, mã QR",
+    targetHref: `${ROUTES.editorDemo}?step=5`,
+    ctaLabel: "Tạo lời chúc",
   },
   {
-    number: "04",
-    badgeLabel: "BƯỚC 04 · XUẤT FILE & CẮT BẾ",
-    title: "Bước 04: Báo giá, thanh toán và xuất file in",
-    imageSrc: "/branding/screen-flow-4.png",
-    imageAlt: "Bước Đặt in của Studio WrapFit: báo giá in theo số lượng và báo giá chi tiết",
+    number: "06",
+    name: "Đặt in",
+    title: "Bước 06: FitCheck™, báo giá, đặt in và xuất file in",
+    imageSrc: "/branding/studio-step-6.webp",
+    imageAlt: "Bước Đặt in của Studio WrapFit: khuôn bế 1:1, FitCheck và báo giá in theo số lượng",
     targetHref: `${ROUTES.editorDemo}?step=6`,
     ctaLabel: "Xem báo giá",
   },
 ];
+
+const STEPS = FLOW_STEPS;
 
 export function FlowStepModal({
   isOpen,

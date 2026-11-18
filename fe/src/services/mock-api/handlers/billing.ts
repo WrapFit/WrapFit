@@ -1,5 +1,5 @@
 /**
- * Plan, xu wallet, export credits, payments and export access of the offline demo. Payments are VietQR on a sample
+ * Plan, xu wallet, payments and export access of the offline demo (export packs are no longer sold, docs/25 item 7). Payments are VietQR on a sample
  * account and are confirmed by the "Giả lập đã thanh toán" button (PAYMENT_SIMULATION), which grants what was bought.
  */
 
@@ -7,8 +7,6 @@ import QRCode from "qrcode";
 import {
   customXuError,
   customXuPriceVnd,
-  ENTITLEMENTS,
-  EXPORT_PACKS,
   exportLotExpiresAt,
   isExportPackId,
   isXuPackId,
@@ -126,10 +124,6 @@ const billingMe: Handler = (): BillingSummary => {
   save();
   return {
     tier,
-    exportCredits: {
-      balance: balanceOf(user, "EXPORT"),
-      lots: liveLots(user, "EXPORT").map((lot) => ({ ...lotView(lot), source: lot.source === "ADMIN" ? "ADMIN" : "PURCHASE" })),
-    },
     subscription: lastSubscription
       ? {
           plan: lastSubscription.plan,
@@ -165,7 +159,9 @@ const newReference = () => `WF${Array.from({ length: 6 }, () => REFERENCE_CHARS[
 
 /** Amount and what a purpose buys. */
 function priceOf(purpose: PaymentPurpose, xu: number | undefined, orderId: string | undefined, user: MockUser) {
-  if (isExportPackId(purpose)) return { amountVnd: EXPORT_PACKS[purpose].priceVnd, credits: EXPORT_PACKS[purpose].credits, xu: null };
+  if (isExportPackId(purpose)) {
+    throw new MockHttpError(400, "Gói lượt xuất đã ngừng bán. File in mở khi bạn thanh toán đơn in mẫu.", { code: "EXPORT_PACK_DISCONTINUED" });
+  }
   if (isXuPackId(purpose)) return { amountVnd: XU_PACKS[purpose].priceVnd, credits: null, xu: XU_PACKS[purpose].xu };
   if (purpose === "XU_CUSTOM") {
     const error = xu === undefined ? "Cần nhập số xu muốn nạp." : customXuError(xu);
@@ -233,7 +229,6 @@ function settle(payment: MockPayment, via: NonNullable<Payment["confirmedVia"]>)
   payment.paidAt = now.toISOString();
   payment.confirmedVia = via;
   const expires = exportLotExpiresAt(now).toISOString();
-  if (payment.credits) grantLot(payment.userId, "EXPORT", "PURCHASE", payment.credits, expires);
   if (payment.xu) grantLot(payment.userId, "XU", "PURCHASE", payment.xu, expires);
   if (payment.purpose === "PRO_MONTH") {
     const current = db()
@@ -378,8 +373,7 @@ function paidOrderHolds(projectId: string, version: number): boolean {
 const exportAccess: Handler = ({ params }) => {
   const project = ownProject(params.id);
   const user = currentUser();
-  const unlocked = paidOrderHolds(project.id, project.version);
-  return { mode: ENTITLEMENTS[tierOf(user)].export.mode, unlocked, unlockExpiresAt: null, balance: balanceOf(user, "EXPORT") };
+  return { unlocked: paidOrderHolds(project.id, project.version), unlockExpiresAt: null };
 };
 
 /**
@@ -402,11 +396,13 @@ const grantCredits: Handler = ({ params, body }) => {
   if (!user) throw notFound("Không tìm thấy tài khoản.");
   const quantity = Number(body.quantity);
   if (!Number.isInteger(quantity) || quantity === 0) throw badRequest("Số lượng phải là số nguyên khác 0.");
-  const kind = body.kind === "XU" ? "XU" : "EXPORT";
+  // Only xu: export credits are no longer granted (docs/25 item 7).
+  if (body.kind !== undefined && body.kind !== "XU") throw badRequest("Lượt xuất đã ngừng: chỉ cấp được xu Wrap");
+  const kind = "XU";
   const days = Number(body.expiresInDays);
   const expiresAt = days > 0 ? new Date(Date.now() + days * 86_400_000).toISOString() : null;
   if (quantity > 0) grantLot(user.id, kind, "ADMIN", quantity, expiresAt);
-  else if (kind === "XU") spendXu(user, -quantity, "ADMIN_ADJUSTMENT", null);
+  else spendXu(user, -quantity, "ADMIN_ADJUSTMENT", null);
   save();
 };
 

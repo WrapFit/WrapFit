@@ -149,24 +149,6 @@ export class EnvironmentVariables {
   @IsString()
   STORAGE_BACKUP_BUCKET: string = '';
 
-  /**
-   * Cloudinary account of the public image CDN (avatars, logos, AI textures, thumbnails). Set the three together or
-   * leave them all empty (Cloudinary disabled). Dashboard → Settings → API Keys.
-   */
-  @IsString()
-  CLOUDINARY_CLOUD_NAME: string = '';
-
-  @IsString()
-  CLOUDINARY_API_KEY: string = '';
-
-  @IsString()
-  CLOUDINARY_API_SECRET: string = '';
-
-  /** Root folder of this environment's assets, e.g. `wrapfit` in production and `wrapfit-dev` on a laptop. */
-  @IsString()
-  @IsNotEmpty()
-  CLOUDINARY_FOLDER: string = 'wrapfit';
-
   /** Claude API key for the AI pattern generator. Empty = built-in procedural patterns only (free). */
   @IsString()
   ANTHROPIC_API_KEY: string = '';
@@ -231,7 +213,9 @@ export class EnvironmentVariables {
 
   /**
    * `true` = `POST /payments/:id/simulate-confirm` marks a payment paid without a bank transfer, and the checkout shows
-   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken.
+   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken. A VietQR payment (real
+   * bank transfer) can only be simulated by a demo account (`users.is_demo`); the server refuses to start in
+   * production with `true` and a real VIETQR_* account (docs/25 item 6).
    */
   @IsIn(['true', 'false'])
   PAYMENT_SIMULATION: string = 'false';
@@ -321,6 +305,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   MAIL_FROM: string = 'WrapFit <no-reply@wrapfit.local>';
+
+  /** Pexels API key for the studio's stock photos (docs/23 S15, D10). Empty = stock photos off (503 STOCK_UNAVAILABLE). */
+  @IsString()
+  PEXELS_API_KEY: string = '';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
@@ -354,16 +342,20 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
       throw new Error(`Invalid environment variables:\n - STORAGE_BUCKET is set, so ${missing.join(', ')} must be set too`);
     }
   }
-  const cloudinary = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'] as const;
-  if (cloudinary.some((key) => validated[key]) && !cloudinary.every((key) => validated[key])) {
-    throw new Error(
-      'Invalid environment variables:\n - CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set together (or all left empty)',
-    );
-  }
   const vietqr = ['VIETQR_BANK_BIN', 'VIETQR_ACCOUNT_NO', 'VIETQR_ACCOUNT_NAME'] as const;
   if (vietqr.some((key) => validated[key]) && !vietqr.every((key) => validated[key])) {
     throw new Error(
       'Invalid environment variables:\n - VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME must be set together (or all left empty)',
+    );
+  }
+  // docs/25 item 6: with a real bank account on the QR codes, simulation would let anyone mark real transfers paid.
+  if (
+    validated.NODE_ENV === NodeEnv.Production &&
+    validated.PAYMENT_SIMULATION === 'true' &&
+    vietqr.every((key) => validated[key])
+  ) {
+    throw new Error(
+      'Invalid environment variables:\n - PAYMENT_SIMULATION=true is refused in production while VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME name a real account: set PAYMENT_SIMULATION=false (demo accounts pay through VNPay sandbox)',
     );
   }
   if (!validated.VNPAY_TMN_CODE !== !validated.VNPAY_HASH_SECRET) {

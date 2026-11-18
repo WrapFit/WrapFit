@@ -6,15 +6,15 @@ import { DEMO_EXPORTS } from "@/features/dashboard/demoData";
 
 /**
  * Queues an export (202). 422 with `fitCheck` (see `ApiError.fitCheck`) when FitCheck finds blocking errors; 402
- * `EXPORT_CREDIT_REQUIRED` (send again with `useCredit`) or `INSUFFICIENT_CREDITS`, with `balance`, for a clean file of
- * a design that is not unlocked. At most 10 requests per minute. Errors reach the caller: ExportDialog builds the file
- * in the browser itself when the API cannot be reached, and a payment answer must never turn into a fake success.
+ * `ORDER_PAYMENT_REQUIRED` for a design version no paid print order holds. At most 10 requests per minute. Errors reach
+ * the caller: ExportDialog builds the file in the browser itself when the API cannot be reached, and a payment answer
+ * must never turn into a fake success.
  */
-export function requestExport(projectId: string, fileType: ExportFileType, useCredit?: boolean): Promise<ExportStarted> {
-  return request(`/projects/${projectId}/exports`, { method: "POST", json: useCredit ? { fileType, useCredit } : { fileType } });
+export function requestExport(projectId: string, fileType: ExportFileType): Promise<ExportStarted> {
+  return request(`/projects/${projectId}/exports`, { method: "POST", json: { fileType } });
 }
 
-/** Plan mode, whether the current version of the design is unlocked, and export credits left. */
+/** Whether the current version of the design is unlocked (a paid print order holds it). */
 export function getExportAccess(projectId: string): Promise<ExportAccess> {
   return request(`/projects/${projectId}/exports/access`);
 }

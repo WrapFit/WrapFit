@@ -5,17 +5,18 @@
  * warning are kept, so a generated template always exports. The seed of the API and the offline demo of the editor
  * use the same list, so both show the same designs.
  */
-import { checkBox, safeMarginsOf, cutSidesOf } from "../fitcheck/validator";
+import { backgroundFor, panelTouchesGlue } from "../canvas/elements";
+import { turnTextsUpright, withAnchors } from "../canvas/reflow";
+import { checkBox, safeMarginsOf } from "../fitcheck/validator";
 import { caliperOf } from "../parametric/paper";
 import { generateDielinePieces, type DielinePiece } from "../parametric/registry";
-import { BLEED_BOX_MM } from "../print/prepress";
 import { PT_TO_MM, PRINT_FONTS, type PrintFontId } from "../print/text-layout";
 import type { BoxDimensions, PanelFace } from "../types/dieline";
 import type { CanvasElement, CanvasState, MaterialSpecification } from "../types/project";
 import { artDesignOf, artPaletteOf, libraryArtContent } from "./art";
 import type { LibraryOccasion } from "./catalog";
 
-export type TemplateIndustry = "COSMETICS" | "CANDLES" | "BAKERY" | "JEWELRY" | "TEA_AGRI";
+export type TemplateIndustry = "COSMETICS" | "CANDLES" | "BAKERY" | "JEWELRY" | "TEA_AGRI" | "BEVERAGE";
 
 export interface StyleKit {
   id: string;
@@ -67,7 +68,7 @@ export const STYLE_KITS: StyleKit[] = [
     label: { design: "tag", palette: "kem-sua" }, tags: ["valentine", "tình yêu", "hồng"],
   },
   {
-    id: "sinh-nhat-cam", name: "Sinh Nhật Cam Tươi", occasion: "BIRTHDAY", industries: ["BAKERY", "CANDLES", "COSMETICS"], material: "ivory",
+    id: "sinh-nhat-cam", name: "Sinh Nhật Cam Tươi", occasion: "BIRTHDAY", industries: ["BAKERY", "CANDLES", "COSMETICS", "BEVERAGE"], material: "ivory",
     background: { design: "bg-stripes", palette: "cam-fpt" }, ink: "#FFFFFF", titleFont: "big-shoulders-display", bodyFont: "be-vietnam-pro",
     tagline: "Happy Birthday", sticker: { design: "burst", palette: "bien-xanh", texts: ["HPBD", "Sinh nhật vui vẻ"] },
     label: { design: "ribbon", palette: "bien-xanh" }, tags: ["sinh nhật", "vui tươi", "cam"],
@@ -79,7 +80,7 @@ export const STYLE_KITS: StyleKit[] = [
     label: { design: "label", palette: "oai-huong" }, tags: ["sinh nhật", "tím", "nhẹ nhàng"],
   },
   {
-    id: "toi-gian-kraft", name: "Kraft Thủ Công", occasion: "MINIMAL", industries: ["CANDLES", "TEA_AGRI", "BAKERY", "COSMETICS"], material: "kraft",
+    id: "toi-gian-kraft", name: "Kraft Thủ Công", occasion: "MINIMAL", industries: ["CANDLES", "TEA_AGRI", "BAKERY", "COSMETICS", "BEVERAGE"], material: "kraft",
     background: null, ink: "#3F2A1D", titleFont: "cormorant-garamond", bodyFont: "be-vietnam-pro",
     tagline: "Làm thủ công từng chiếc", sticker: { design: "seal", palette: "kraft-moc", texts: ["HANDMADE", "With Love", "SINCE 2026"] },
     label: { design: "oval", palette: "kraft-moc" }, tags: ["kraft", "handmade", "mộc mạc"],
@@ -102,12 +103,31 @@ export const STYLE_KITS: StyleKit[] = [
     tagline: "Phiên bản giới hạn", sticker: { design: "seal", palette: "den-sang", texts: ["LUXURY", "Edition", "2026"] },
     label: { design: "ticket", palette: "den-sang" }, tags: ["sang trọng", "đen", "ánh kim"],
   },
+  // Đồ uống mang đi: vỏ khay xách đen than chữ trắng, ly pixel xanh matcha.
+  {
+    id: "do-uong-den-than", name: "Đen Than Mang Đi", occasion: "MINIMAL", industries: ["BEVERAGE"], material: "ivory",
+    background: { design: "bg-solid", palette: "den-than" }, ink: "#F5F5F4", titleFont: "inter", bodyFont: "inter",
+    tagline: "Coffee • Take away", sticker: { design: "seal", palette: "xanh-matcha", texts: ["TAKE AWAY", "Coffee", "SINCE 2026"] },
+    label: { design: "ticket", palette: "den-than" }, tags: ["đồ uống", "cà phê", "đen", "mang đi"],
+  },
+  {
+    id: "do-uong-matcha-pixel", name: "Matcha Pixel", occasion: "MINIMAL", industries: ["BEVERAGE"], material: "ivory",
+    background: { design: "bg-pixels", palette: "xanh-matcha" }, ink: "#FFFFFF", titleFont: "inter", bodyFont: "inter",
+    tagline: "Matcha latte", sticker: { design: "hexagon", palette: "den-than", texts: ["Matcha", "Uji Nhật Bản"] },
+    label: { design: "label", palette: "den-than" }, tags: ["đồ uống", "matcha", "pixel", "trà sữa"],
+  },
+  {
+    id: "do-uong-ca-phe-sua", name: "Cà Phê Sữa", occasion: "MINIMAL", industries: ["BEVERAGE"], material: "kraft",
+    background: null, ink: "#3B2416", titleFont: "big-shoulders-display", bodyFont: "be-vietnam-pro",
+    tagline: "Rang mộc • Pha phin", sticker: { design: "seal", palette: "nau-ca-phe", texts: ["COLD BREW", "Cà Phê", "Ủ LẠNH 12H"] },
+    label: { design: "oval", palette: "nau-ca-phe" }, tags: ["đồ uống", "cà phê", "kraft", "mộc mạc"],
+  },
 ];
 
 interface Product {
   id: string;
   industry: TemplateIndustry;
-  structure: "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow";
+  structure: "tuck-top" | "sleeve-drawer" | "lid-base" | "pillow" | "mailer" | "gable" | "cup-carrier" | "hang-tag" | "folded-card" | "belly-band";
   dimensions: BoxDimensions;
   name: string;
   detail: string;
@@ -115,7 +135,13 @@ interface Product {
 }
 
 const PAPER_350 = caliperOf(350);
-const dims = (length: number, width: number, height: number): BoxDimensions => ({ length, width, height, paperThickness: PAPER_350 });
+const dims = (length: number, width: number, height: number, cells?: BoxDimensions["cells"]): BoxDimensions => ({
+  length,
+  width,
+  height,
+  paperThickness: PAPER_350,
+  ...(cells && { cells }),
+});
 
 const PRODUCTS: Product[] = [
   { id: "nen-thom", industry: "CANDLES", structure: "tuck-top", dimensions: dims(90, 90, 110), name: "Nến Thơm", detail: "Sáp đậu nành thủ công", info: ["Thành phần: sáp đậu nành", "Khối lượng: 200 g", "Thời gian cháy: 40 giờ"] },
@@ -126,7 +152,20 @@ const PRODUCTS: Product[] = [
   { id: "trang-suc", industry: "JEWELRY", structure: "pillow", dimensions: dims(100, 80, 30), name: "Trang Sức", detail: "Bạc ta thủ công", info: [] },
   { id: "nhan-bac", industry: "JEWELRY", structure: "lid-base", dimensions: dims(90, 90, 40), name: "Nhẫn Bạc", detail: "Quà tặng tinh tế", info: [] },
   { id: "tra-sen", industry: "TEA_AGRI", structure: "lid-base", dimensions: dims(180, 120, 85), name: "Trà Sen", detail: "Ướp sen Tây Hồ", info: [] },
+  { id: "hop-qua-my-pham", industry: "COSMETICS", structure: "mailer", dimensions: dims(200, 150, 60), name: "Hộp Quà Mỹ Phẩm", detail: "Giao tận tay, mở là thấy quà", info: [] },
+  { id: "hop-banh-giao", industry: "BAKERY", structure: "mailer", dimensions: dims(220, 160, 70), name: "Hộp Bánh Giao Tận Nơi", detail: "Bánh nướng mới mỗi sáng", info: [] },
+  { id: "tra-tet-xach", industry: "TEA_AGRI", structure: "gable", dimensions: dims(160, 90, 120), name: "Hộp Quà Trà Tết", detail: "Xách tay đi biếu", info: [] },
+  { id: "hop-banh-xach", industry: "BAKERY", structure: "gable", dimensions: dims(180, 100, 90), name: "Hộp Bánh Xách Tay", detail: "Mang đi tiện, không lo móp", info: [] },
+  { id: "the-treo-trang-suc", industry: "JEWELRY", structure: "hang-tag", dimensions: dims(55, 1, 90), name: "Thẻ Treo Trang Sức", detail: "Bạc ta thủ công", info: [] },
+  { id: "thiep-cam-on", industry: "CANDLES", structure: "folded-card", dimensions: dims(100, 1, 140), name: "Thiệp Cảm Ơn", detail: "Cảm ơn bạn đã ghé tiệm", info: [] },
+  { id: "dai-hop-banh", industry: "BAKERY", structure: "belly-band", dimensions: dims(200, 200, 60), name: "Đai Hộp Bánh", detail: "Bánh nướng mỗi sáng", info: [] },
   { id: "ca-phe", industry: "TEA_AGRI", structure: "tuck-top", dimensions: dims(80, 80, 150), name: "Cà Phê Rang Xay", detail: "Arabica Cầu Đất", info: ["Khối lượng: 250 g", "Rang mộc, xay vừa", "Ngày rang: xem đáy hộp"] },
+  // Đồ uống: khay xách ly mang đi (ly 90 mm, nắp vòm), hộp chai nước ép, set quà cà phê, thẻ treo cổ chai.
+  { id: "khay-2-ly", industry: "BEVERAGE", structure: "cup-carrier", dimensions: dims(190, 95, 60, { rows: 1, cols: 2 }), name: "Khay Xách 2 Ly", detail: "Cà phê mang đi", info: ["Vừa ly giấy 12–16 oz", "Miệng ly Ø 90 mm", "Tái chế được"] },
+  { id: "khay-4-ly", industry: "BEVERAGE", structure: "cup-carrier", dimensions: dims(190, 190, 60, { rows: 2, cols: 2 }), name: "Khay Xách 4 Ly", detail: "Trà sữa giao tận nơi", info: [] },
+  { id: "chai-nuoc-ep", industry: "BEVERAGE", structure: "tuck-top", dimensions: dims(70, 70, 210), name: "Nước Ép Lạnh", detail: "Ép lạnh mỗi sáng", info: ["Dung tích: 330 ml", "Bảo quản lạnh 2–6 °C", "Dùng trong 3 ngày"] },
+  { id: "set-cold-brew", industry: "BEVERAGE", structure: "gable", dimensions: dims(160, 80, 200), name: "Set Cold Brew", detail: "Hai chai ủ lạnh 12 giờ", info: [] },
+  { id: "the-treo-chai", industry: "BEVERAGE", structure: "hang-tag", dimensions: dims(55, 1, 90), name: "Thẻ Treo Cổ Chai", detail: "Ủ lạnh, uống ngay", info: [] },
 ];
 
 /** The face that sells the box, and the one that carries the product information. */
@@ -135,6 +174,12 @@ const MAIN_PANEL: Record<Product["structure"], string> = {
   "sleeve-drawer": "sleeve_top",
   "lid-base": "lid_top",
   pillow: "pillow_front",
+  mailer: "mailer_lid",
+  gable: "gable_front",
+  "cup-carrier": "carrier_front",
+  "hang-tag": "tag_front",
+  "folded-card": "card_front",
+  "belly-band": "band_top",
 };
 /** The face that sells the box (title, label), or null for a structure without one. */
 export const mainPanelOf = (structure: string): string | null => MAIN_PANEL[structure as Product["structure"]] ?? null;
@@ -142,6 +187,9 @@ const INFO_PANEL: Partial<Record<Product["structure"], string>> = {
   "tuck-top": "panel_back",
   "sleeve-drawer": "sleeve_bottom",
   pillow: "pillow_back",
+  mailer: "mailer_back",
+  gable: "gable_back",
+  "cup-carrier": "carrier_back",
 };
 /** Where a small seal goes when it is not on the main face. */
 const SEAL_PANEL: Partial<Record<Product["structure"], string>> = { "tuck-top": "panel_top_lid" };
@@ -207,7 +255,11 @@ function safeArea(panel: PanelFace, piece: DielinePiece) {
   const m = safeMarginsOf(panel, piece.geometry);
   // A little more than the minimum, so rounding never touches the limit.
   const pad = 1;
-  return { x: m.left + pad, y: m.top + pad, width: panel.bounds.width - m.left - m.right - 2 * pad, height: panel.bounds.height - m.top - m.bottom - 2 * pad };
+  // Below the holes cut near the top of the face (the string hole of a hang tag), and the clipped corners next to them.
+  const top = (piece.geometry.openings ?? [])
+    .filter((o) => o.kind === "hole" && o.panelId === panel.id)
+    .reduce((y, o) => Math.max(y, o.y + o.height - panel.bounds.y + 2), m.top);
+  return { x: m.left + pad, y: top + pad, width: panel.bounds.width - m.left - m.right - 2 * pad, height: panel.bounds.height - top - m.bottom - 2 * pad };
 }
 
 /** A one-line text element as large as `maxPt` that still fits `width` (estimated). */
@@ -251,20 +303,10 @@ export function boxBackgrounds(
   const elements: CanvasElement[] = [];
   for (const piece of pieces) {
     for (const panel of piece.geometry.panels) {
-      const cut = cutSidesOf(panel, piece.geometry);
-      const bleed = (side: "top" | "right" | "bottom" | "left") => (cut.has(side) ? BLEED_BOX_MM : 0);
-      const box = {
-        x: -bleed("left"),
-        y: -bleed("top"),
-        width: panel.bounds.width + bleed("left") + bleed("right"),
-        height: panel.bounds.height + bleed("top") + bleed("bottom"),
-      };
-      const onSheet = { x: panel.bounds.x + box.x, y: panel.bounds.y + box.y, width: box.width, height: box.height };
-      const glued = piece.geometry.glueAreas?.some(
-        (g) => onSheet.x < g.x + g.width && g.x < onSheet.x + onSheet.width && onSheet.y < g.y + g.height && g.y < onSheet.y + onSheet.height
-      );
       // Exact sizes (not rounded): a background that only touches a glue flap must not grow onto it.
-      if (!glued) elements.push({ id: `bg_${panel.id}`, type: "pattern", panelId: panel.id, ...box, rotation: 0, content: panel.id === plainPanelId ? plain : content });
+      if (!panelTouchesGlue(panel, piece.geometry)) {
+        elements.push(backgroundFor(panel, piece.geometry, panel.id === plainPanelId ? plain : content));
+      }
     }
   }
   return elements;
@@ -357,6 +399,12 @@ const STRUCTURE_NAMES: Record<Product["structure"], string> = {
   "sleeve-drawer": "hộp kéo bao diêm",
   "lid-base": "hộp âm dương",
   pillow: "hộp gối",
+  mailer: "hộp nắp cài",
+  gable: "hộp quai xách",
+  "cup-carrier": "khay xách ly",
+  "hang-tag": "thẻ treo",
+  "folded-card": "thiệp gấp đôi",
+  "belly-band": "đai giấy bọc hộp",
 };
 
 /** Candidates FitCheck turned down, with the reasons (tests and the generator's tuning). */
@@ -372,7 +420,7 @@ function build(): GeneratedTemplate[] {
       const start = (kitIndex + productIndex) % LAYOUTS.length;
       for (const layout of [LAYOUTS[start], LAYOUTS[(start + 2) % LAYOUTS.length]]) {
         const pieces = generateDielinePieces(product.structure, product.dimensions);
-        const elements = dress(product, kit, layout, pieces);
+        const elements = withAnchors(pieces, turnTextsUpright(pieces, dress(product, kit, layout, pieces)));
         const report = checkBox(pieces, elements);
         const blocking = report.violations.filter((v) => v.severity !== "info");
         if (blocking.length) {
@@ -448,7 +496,7 @@ export function dressWithKit(input: {
   const pieces = generateDielinePieces(structure, input.dimensions, input.formulaVersion);
   const order = [input.layout ?? "classic", ...LAYOUTS].filter((layout, i, all) => all.indexOf(layout) === i);
   for (const layout of order) {
-    const elements = dress(product, kit, layout, pieces);
+    const elements = withAnchors(pieces, turnTextsUpright(pieces, dress(product, kit, layout, pieces)));
     if (!checkBox(pieces, elements).violations.some((v) => v.severity !== "info")) return elements;
   }
   return [];

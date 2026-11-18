@@ -1,6 +1,7 @@
 /** Projects, their lifecycle and version snapshots (`be/src/projects`). Rules: docs/06, sections 5 and 6. */
 
 import { request } from "@/services/api";
+import { TAB_ID } from "@/services/realtime";
 import type {
   ChangeVisibilityRequest,
   CreateProjectRequest,
@@ -64,7 +65,8 @@ export function createProject(data: CreateProjectRequest): Promise<ProjectDetail
  * when another tab saved since. 409 without code: the project is in the trash.
  */
 export function updateProject(id: string, data: UpdateProjectRequest): Promise<ProjectDetail> {
-  return request(`/projects/${id}`, { method: "PATCH", json: data });
+  // The tab id comes back in the `project.saved` push, so this tab ignores its own save (docs/28 Q5).
+  return request(`/projects/${id}`, { method: "PATCH", json: data, headers: { "X-WF-Tab": TAB_ID } });
 }
 
 /** ARCHIVED, DELETED (trash, purged after 30 days) or back to ACTIVE. */

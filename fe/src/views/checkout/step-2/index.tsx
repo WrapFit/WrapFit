@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/checkout/step-2?plan=&pack=`: invoice details and payment method. The details are prefilled from the account
+ * `/checkout/step-2?plan=`: invoice details and payment method. The details are prefilled from the account
  * (`GET /auth/me`), checked here and not sent yet; no card number is asked. VietQR is the only method open (S5): the
  * card and wallets are shown as coming soon.
  */
@@ -32,7 +32,7 @@ const METHODS = [
 function Payment() {
   const router = useRouter();
   const { user } = useAuth();
-  const { tier, pack, query } = useCheckoutParams();
+  const { tier, query } = useCheckoutParams();
   const [name, setName] = useState(user?.fullName ?? '');
   const [company, setCompany] = useState(user?.shopName ?? '');
   const [taxCode, setTaxCode] = useState('');
@@ -54,7 +54,7 @@ function Payment() {
   };
 
   return (
-    <CheckoutShell step={2} tier={tier} pack={pack} query={query()}>
+    <CheckoutShell step={2} tier={tier} query={query()}>
       <form onSubmit={onSubmit} noValidate aria-labelledby="checkout-title" className="p-6 sm:p-8">
         <h1 id="checkout-title" className="font-landing-heading text-3xl font-bold tracking-tight sm:text-4xl">
           Thông tin thanh toán

@@ -17,6 +17,7 @@ export const INDUSTRY_LABELS: Record<Industry, string> = {
   BAKERY: "Bánh ngọt",
   JEWELRY: "Trang sức",
   TEA_AGRI: "Trà & nông sản",
+  BEVERAGE: "Đồ uống",
 };
 
 export const MATERIAL_LABELS: Record<MaterialType, string> = {

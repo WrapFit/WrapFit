@@ -53,6 +53,7 @@ enum Industry {
   BAKERY // Bánh ngọt & Bếp thủ công
   JEWELRY // Trang sức & Phụ kiện
   TEA_AGRI // Trà hoa & Nông sản cao cấp
+  BEVERAGE // Đồ uống: cà phê, trà sữa, nước ép mang đi
 }
 
 // Mục đích của file người dùng tải lên (IT3-08): quyết định định dạng và dung lượng tối đa được phép.
@@ -61,6 +62,7 @@ enum FilePurpose {
   IMAGE // Ảnh đặt lên mặt hộp (PNG, JPEG, WebP; tối đa 15 MB)
   THUMBNAIL // Ảnh xem trước dự án / mốc phiên bản (PNG, JPEG, WebP; tối đa 2 MB)
   AVATAR // Ảnh đại diện (PNG, JPEG, WebP; tối đa 2 MB)
+  FONT // Phông chữ người dùng tải lên cho thiết kế (TTF, OTF, WOFF, WOFF2; tối đa 10 MB; phải đủ dấu tiếng Việt)
   QR_CODE // Mã QR mở hộp do backend sinh (PNG + SVG), người dùng không upload được
   EXPORT // File in (PDF / SVG / DXF) do worker xuất (IT3-11)
 }
@@ -110,28 +112,33 @@ model User {
   // Tăng mỗi lần đăng xuất mọi thiết bị (đặt lại mật khẩu, logout-all, khóa tài khoản…). Access / refresh token mang
   // số này (claim `sv`): token mang số cũ bị từ chối ngay, không chờ hết hạn.
   sessionVersion   Int              @default(0) @map("session_version")
+  // Admin xóa tài khoản có lịch sử tiền (docs/25 mục 3): dòng ở lại cho payment, đơn, lô xu; mọi thông tin nhận diện bị
+  // xóa, email thành deleted-<id>@deleted.invalid. Không đăng nhập, khôi phục mật khẩu hay mở khóa lại được.
+  anonymizedAt     DateTime?        @map("anonymized_at") @db.Timestamptz(3)
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  referredBy    User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
-  referrals     User[]              @relation("UserReferrals")
-  refreshTokens RefreshToken[]
-  authTokens    AuthToken[]
-  projects      PackagingProject[]
-  productEvents ProductEvent[]
-  collections   ProjectCollection[]
-  mockups       SocialMockup[]
-  projectLikes  ProjectLike[]
-  storedFiles   StoredFile[]
-  aiGenerations AiGeneration[]
-  aiImageJobs   AiImageJob[]
-  payments      Payment[]
-  creditLots    CreditLot[]
-  exportUnlocks ExportUnlock[]
-  subscriptions Subscription[]
-  orders        Order[]
-  shopMember    PrintShopMember?
-  resolvedBankTransactions BankTransaction[] @relation("BankTransactionResolver")
+  referredBy               User?               @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals                User[]              @relation("UserReferrals")
+  refreshTokens            RefreshToken[]
+  authTokens               AuthToken[]
+  projects                 PackagingProject[]
+  productEvents            ProductEvent[]
+  collections              ProjectCollection[]
+  projectLikes             ProjectLike[]
+  storedFiles              StoredFile[]
+  aiGenerations            AiGeneration[]
+  aiImageJobs              AiImageJob[]
+  designComments           DesignComment[]
+  payments                 Payment[]
+  creditLots               CreditLot[]
+  exportUnlocks            ExportUnlock[]
+  subscriptions            Subscription[]
+  orders                   Order[]
+  shopMember               PrintShopMember?
+  resolvedBankTransactions BankTransaction[]   @relation("BankTransactionResolver")
+  notifications            Notification[]      @relation("NotificationRecipient")
+  notificationsCaused      Notification[]      @relation("NotificationActor")
 
   @@index([referredById])
   @@map("users")
@@ -192,7 +199,7 @@ model ProjectCollection {
 }
 
 model BoxTemplate {
-  id             String  @id // tuck-top, sleeve-drawer, lid-base, pillow
+  id             String  @id // tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, insert, hang-tag, folded-card, belly-band
   name           String
   category       String  @default("retail") // retail, luxury, food, accessories
   description    String?
@@ -274,13 +281,15 @@ model PackagingProject {
   exportJobs     ExportJob[]
   productEvents  ProductEvent[]
   unboxingConfig UnboxingExperience?
-  socialMockups  SocialMockup[]
   snapshots      ProjectSnapshot[]
   likes          ProjectLike[]
   files          StoredFile[]
   fileRefs       ProjectFileRef[]
   exportUnlocks  ExportUnlock[]
   orderItems     OrderItem[]
+  review         ProjectReview?
+  comments       DesignComment[]
+  notifications  Notification[]
 
   @@index([userId, status]) // Dashboard: lọc dự án theo trạng thái
   @@index([visibility, status, likesCount]) // Thư viện cộng đồng: dự án PUBLIC, nhiều tim nhất trước
@@ -340,33 +349,22 @@ model UnboxingExperience {
   @@map("unboxing_experiences")
 }
 
-model SocialMockup {
-  id         String   @id @default(uuid(7)) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  projectId  String   @map("project_id") @db.Uuid
-  presetName String   @map("preset_name")
-  renderKey  String   @map("render_key") // Key trên bucket của ảnh render
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([projectId])
-  @@index([userId])
-  @@map("social_mockups")
-}
-
 model ExportJob {
-  id          String         @id @default(uuid(7)) @db.Uuid
-  projectId   String         @map("project_id") @db.Uuid
-  fileType    ExportFileType @map("file_type")
-  status      ExportStatus   @default(PENDING)
-  storageKey  String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
-  errorLog    String?        @map("error_log")
-  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  completedAt DateTime?      @map("completed_at") @db.Timestamptz(3)
-  watermarked Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
-  unlockId    String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
+  id             String         @id @default(uuid(7)) @db.Uuid
+  projectId      String         @map("project_id") @db.Uuid
+  fileType       ExportFileType @map("file_type")
+  status         ExportStatus   @default(PENDING)
+  storageKey     String?        @map("storage_key") // Key trên S3/R2; link tải là pre-signed URL sinh lúc request
+  errorLog       String?        @map("error_log")
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt    DateTime?      @map("completed_at") @db.Timestamptz(3)
+  watermarked    Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
+  unlockId       String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
+  // Phiên bản và bản thiết kế chốt lúc request (docs/30 mục 1): worker render từ `design`, không đọc dự án hiện tại.
+  // `design` = { title, templateId, formulaVersion, dimensions, canvasState } (canvas dạng lưu trữ, chứa key).
+  // NULL ở các job tạo trước migration 20261118000200.
+  projectVersion Int?           @map("project_version")
+  design         Json?
 
   project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   unlock  ExportUnlock?    @relation(fields: [unlockId], references: [id], onDelete: SetNull)
@@ -391,11 +389,12 @@ model StoredFile {
   confirmedAt DateTime?   @map("confirmed_at") @db.Timestamptz(3)
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  refs    ProjectFileRef[]
-  library LibraryAsset?
-  aiImage AiImageOutput?
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  refs       ProjectFileRef[]
+  library    LibraryAsset?
+  aiImage    AiImageOutput?
+  aiToolJobs AiImageJob[]      @relation("AiImageToolUpload")
 
   @@index([userId])
   @@index([projectId])
@@ -485,6 +484,7 @@ model AiGeneration {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@index([debitOperationId]) // Hoàn xu AI_PATTERN không có kết quả (AiPatternService.refundOrphanedDebits)
   @@map("ai_generations")
 }
 
@@ -515,6 +515,7 @@ model AiImageJob {
   allowText         Boolean          @default(false) @map("allow_text")
   numImages         Int              @default(1) @map("num_images")
   sourceOutputId    String?          @map("source_output_id") @db.Uuid // Công cụ: ảnh AI được xử lý
+  sourceFileId      String?          @map("source_file_id") @db.Uuid // Công cụ: ảnh tải lên được xử lý (docs/23 S20)
   xuCost            Int              @map("xu_cost")
   estCostUsd        Decimal          @map("est_cost_usd") @db.Decimal(10, 4) // Chi phí provider ước tính (cầu chì, báo cáo)
   status            AiImageJobStatus @default(PENDING)
@@ -525,16 +526,57 @@ model AiImageJob {
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   completedAt       DateTime?        @map("completed_at") @db.Timestamptz(3)
 
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  source  AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
-  outputs AiImageOutput[] @relation("AiImageJobOutputs")
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source     AiImageOutput?  @relation("AiImageToolSource", fields: [sourceOutputId], references: [id], onDelete: SetNull)
+  sourceFile StoredFile?     @relation("AiImageToolUpload", fields: [sourceFileId], references: [id], onDelete: SetNull)
+  outputs    AiImageOutput[] @relation("AiImageJobOutputs")
 
   @@unique([userId, clientRequestId])
   @@index([userId, createdAt])
   @@index([status, createdAt]) // AiImageReconcileTask
   @@index([createdAt]) // Cầu chì chi phí tháng
   @@index([sourceOutputId])
+  @@index([sourceFileId])
   @@map("ai_image_jobs")
+}
+
+// Link duyệt mẫu của một dự án (docs/23 S23): khách / xưởng in mở bằng token, không cần tài khoản, góp ý và bấm
+// "Duyệt in". Duyệt gắn với phiên bản thiết kế lúc bấm: sửa thiết kế sau đó thì mẫu thành "đã sửa sau khi duyệt".
+// Tắt link chỉ xóa token, giữ lại lần duyệt.
+model ProjectReview {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  projectId       String    @unique @map("project_id") @db.Uuid
+  token           String?   @unique
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  approvedAt      DateTime? @map("approved_at") @db.Timestamptz(3)
+  approvedBy      String?   @map("approved_by") // Tên người duyệt tự gõ
+  approvedVersion Int?      @map("approved_version") // packaging_projects.version lúc duyệt
+
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_reviews")
+}
+
+// Góp ý trên thiết kế (docs/23 S23): của chủ dự án (author_user_id) hoặc của khách qua link duyệt (chỉ có tên).
+// Có thể ghim vào một mặt hộp (panel_id) tại một điểm (x, y mm trên mặt).
+model DesignComment {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  projectId    String    @map("project_id") @db.Uuid
+  authorUserId String?   @map("author_user_id") @db.Uuid
+  authorName   String    @map("author_name")
+  body         String
+  panelId      String?   @map("panel_id")
+  x            Float?
+  y            Float?
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  author  User?            @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([authorUserId])
+  @@map("design_comments")
 }
 
 // Một ảnh một job tạo ra. Ảnh chưa đặt lên thiết kế nào được giữ tới keep_until (30 ngày) rồi bị dọn như ảnh upload;
@@ -607,6 +649,7 @@ enum BankTxUnmatchedReason {
   AMOUNT_MISMATCH
   EXPIRED // Thanh toán đã hết hạn
   ALREADY_PAID
+  ORDER_NOT_PAYABLE // Thanh toán đơn in mẫu, nhưng đơn đã hủy hoặc đã được trả bằng thanh toán khác: hoàn tiền
 }
 
 enum CreditKind {
@@ -636,22 +679,23 @@ enum SubscriptionStatus {
 // One payment request (VietQR transfer confirmed by SePay, VNPay sandbox for demo users, or simulated). `reference` is
 // the transfer content.
 model Payment {
-  id        String         @id @default(uuid(7)) @db.Uuid
-  userId    String         @map("user_id") @db.Uuid
-  purpose   PaymentPurpose
-  amountVnd Int            @map("amount_vnd")
-  reference String         @unique // "WF" + 6 ký tự [A-Z0-9] (CHECK), khớp nội dung chuyển khoản
-  status    PaymentStatus  @default(PENDING)
-  expiresAt DateTime       @map("expires_at") @db.Timestamptz(3)
-  paidAt    DateTime?      @map("paid_at") @db.Timestamptz(3)
-  metadata  Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
+  id            String               @id @default(uuid(7)) @db.Uuid
+  userId        String               @map("user_id") @db.Uuid
+  purpose       PaymentPurpose
+  amountVnd     Int                  @map("amount_vnd")
+  reference     String               @unique // "WF" + 6 ký tự [A-Z0-9] (CHECK), khớp nội dung chuyển khoản
+  status        PaymentStatus        @default(PENDING)
+  expiresAt     DateTime             @map("expires_at") @db.Timestamptz(3)
+  paidAt        DateTime?            @map("paid_at") @db.Timestamptz(3)
+  metadata      Json? // Chụp lại lúc tạo: { credits } | { periodDays } | { orderId }
   provider      PaymentProvider      @default(VIETQR) // Chọn lúc tạo: user.isDemo ? VNPAY : VIETQR
   confirmedVia  PaymentConfirmation? @map("confirmed_via") // Đường đã xác nhận, null khi chưa PAID
   providerTxnId String?              @map("provider_txn_id") // id giao dịch SePay hoặc vnp_TransactionNo
-  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict (docs/25 mục 3): xóa user có payment phải đi đường ẩn danh hóa, không cascade mất tiền.
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   creditLots       CreditLot[]
   subscriptions    Subscription[]
   orders           Order[]
@@ -683,7 +727,7 @@ model BankTransaction {
   createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
 
   payment  Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  resolver User?    @relation("BankTransactionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  resolver User?    @relation("BankTransactionResolver", fields: [resolvedBy], references: [id], onDelete: Restrict) // Admin đã đối soát: ẩn danh hóa, không xóa
 
   @@index([status, createdAt]) // Hàng đợi đối soát
   @@index([paymentId])
@@ -706,7 +750,8 @@ model CreditLot {
   note      String?
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict: đường xóa cứng tự xóa lô ADMIN / PLAN_ALLOWANCE trước; user có lô PURCHASE thì được ẩn danh hóa.
+  user    User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   payment Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   debits  CreditDebit[]
 
@@ -733,6 +778,7 @@ model CreditDebit {
   @@unique([operationId, lotId])
   @@index([lotId])
   @@index([userId, createdAt])
+  @@index([reason, createdAt]) // Hoàn xu AI_PATTERN không có kết quả
   @@map("credit_debits")
 }
 
@@ -769,7 +815,7 @@ model Subscription {
   createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict) // Chỉ tạo khi có payment
   payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
@@ -800,7 +846,7 @@ model Order {
   notes           String?
   subtotalVnd     Int         @map("subtotal_vnd")
   shippingVnd     Int         @default(0) @map("shipping_vnd")
-  discountVnd     Int         @default(0) @map("discount_vnd") // Mã ưu đãi do server tính (shared/src/billing/promo.ts)
+  discountVnd     Int         @default(0) @map("discount_vnd") // Luôn 0: đã bỏ mã ưu đãi (docs/25 mục 1), giữ cột cho tính năng voucher sau này
   promoCode       String?     @map("promo_code")
   totalVnd        Int         @map("total_vnd") // = subtotal + shipping - discount (CHECK trong migration)
   status          OrderStatus @default(PENDING_PAYMENT)
@@ -812,7 +858,7 @@ model Order {
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Restrict) // docs/25 mục 3
   payment Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   items   OrderItem[]
   history OrderStatusHistory[]
@@ -830,7 +876,7 @@ model OrderItem {
   projectId      String? @map("project_id") @db.Uuid // null khi dự án đã bị xóa vĩnh viễn
   projectVersion Int     @map("project_version")
   projectTitle   String  @map("project_title")
-  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow)
+  structure      String // id cấu trúc hộp (tuck-top, sleeve-drawer, lid-base, pillow, mailer, gable, cup-carrier, insert, hang-tag, folded-card, belly-band)
   dimensions     Json // { length, width, height, paperThickness } lúc đặt
   paperStock     String  @map("paper_stock")
   quantity       Int // 1–10 (CHECK)
@@ -898,4 +944,34 @@ model ProductEvent {
   @@index([userId, type, createdAt]) // Khối "Của bạn"
   @@index([projectId, type]) // Thời gian tạo hộp: nhịp studio và lần xuất đầu tiên của từng dự án
   @@map("product_events")
+}
+
+// Hộp thư thông báo (docs/25 S8): "có người remix thiết kế của bạn" và "file in đã xong". Chỉ lưu id: tên người remix
+// được đọc lúc hiển thị, nên tài khoản đã xóa hay ẩn danh không còn tên trong hộp thư của ai.
+enum NotificationType {
+  PROJECT_REMIXED // project = thiết kế gốc của người nhận; actor = người remix gần nhất; count = số lượt gộp lại
+  EXPORT_COMPLETED // project = thiết kế đã xuất; payload { exportJobId, fileType }
+}
+
+model Notification {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid // Người nhận
+  type      NotificationType
+  projectId String           @map("project_id") @db.Uuid
+  actorId   String?          @map("actor_id") @db.Uuid // Người gây ra (remix); null khi tài khoản bị xóa hoặc ẩn danh
+  count     Int              @default(1) // Lượt remix chưa đọc của cùng thiết kế được gộp vào một dòng
+  payload   Json             @default("{}")
+  readAt    DateTime?        @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user    User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor   User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Thêm trong migration (Prisma chưa khai báo được chỉ mục một phần): notifications_unread_idx (user_id, project_id)
+  // WHERE read_at IS NULL, cho số chưa đọc và luật gộp remix.
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)]) // Danh sách mới nhất trước, con trỏ (createdAt, id)
+  @@index([projectId]) // CASCADE khi xóa dự án
+  @@index([actorId]) // SET NULL khi xóa người dùng
+  @@map("notifications")
 }

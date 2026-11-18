@@ -6,8 +6,9 @@ import QRCode from "qrcode";
 import {
   barcodeArt,
   ean13Digits,
+  elementVectorArt,
+  gradientLine,
   IMAGE_ELEMENT_TYPES,
-  libraryArt,
   PRINT_FONTS,
   TEXT_FONT_WEIGHT,
   type CanvasElement,
@@ -42,29 +43,46 @@ function barcodeVectorArt(content: string, width: number, height: number): Vecto
 const cache = new Map<string, VectorArt | null>();
 
 /**
- * Vector art an element shows instead of a file: library art (`wf-art:` contents) and barcodes. Null for texts and
- * file images. Cached by content and size (QR codes are not free to compute).
+ * Vector art an element shows instead of a file: shapes, library art (`wf-art:` contents) and barcodes. Null for
+ * texts and file images. Cached by content, size and shape style (QR codes are not free to compute).
  */
-export function elementArt(el: Pick<CanvasElement, "type" | "content" | "width" | "height">): VectorArt | null {
-  const isArt = IMAGE_ELEMENT_TYPES.has(el.type);
+export function elementArt(el: Pick<CanvasElement, "type" | "content" | "width" | "height" | "style" | "shape">): VectorArt | null {
+  const isArt = IMAGE_ELEMENT_TYPES.has(el.type) || el.type === "shape";
   if (!isArt && el.type !== "barcode") return null;
-  const key = `${el.type}|${el.content}|${el.width}|${el.height}`;
+  const look = el.type === "shape" ? JSON.stringify([el.shape, el.style?.fillColor, el.style?.strokeColor, el.style?.strokeWidth, el.style?.color, el.style?.gradient, el.style?.cmyk]) : "";
+  const key = `${el.type}|${el.content}|${el.width}|${el.height}|${look}`;
   if (!cache.has(key)) {
     if (cache.size > 400) cache.clear();
-    cache.set(key, isArt ? libraryArt(el.content, el.width, el.height) : barcodeVectorArt(el.content.trim(), el.width, el.height));
+    cache.set(key, isArt ? elementVectorArt(el) : barcodeVectorArt(el.content.trim(), el.width, el.height));
   }
   return cache.get(key) ?? null;
 }
 
 /** The art as SVG elements, at (x, y) in the parent's units (mm). Texts use the print fonts loaded by the page. */
 export function ArtShapes({ art, x = 0, y = 0 }: { art: VectorArt; x?: number; y?: number }) {
+  const uid = React.useId().replace(/:/g, "");
   return (
     <g transform={`translate(${x} ${y})`} className="pointer-events-none">
+      {art.shapes.some((shape) => shape.gradient) && (
+        <defs>
+          {art.shapes.map((shape, i) => {
+            if (!shape.gradient) return null;
+            const line = gradientLine(shape.gradient.angle, art.width, art.height);
+            return (
+              <linearGradient key={i} id={`${uid}-g${i}`} gradientUnits="userSpaceOnUse" {...line}>
+                {shape.gradient.stops.map((stop, j) => (
+                  <stop key={j} offset={stop.offset} stopColor={stop.color} />
+                ))}
+              </linearGradient>
+            );
+          })}
+        </defs>
+      )}
       {art.shapes.map((shape, i) => (
         <path
           key={i}
           d={shape.d}
-          fill={shape.fill ?? "none"}
+          fill={shape.gradient ? `url(#${uid}-g${i})` : (shape.fill ?? "none")}
           stroke={shape.stroke}
           strokeWidth={shape.stroke ? shape.strokeWidth : undefined}
           strokeLinecap={shape.round ? "round" : undefined}
@@ -93,7 +111,13 @@ export function ArtShapes({ art, x = 0, y = 0 }: { art: VectorArt; x?: number; y
 export function drawArt(ctx: CanvasRenderingContext2D, art: VectorArt) {
   for (const shape of art.shapes) {
     const path = new Path2D(shape.d);
-    if (shape.fill) {
+    if (shape.gradient) {
+      const line = gradientLine(shape.gradient.angle, art.width, art.height);
+      const gradient = ctx.createLinearGradient(line.x1, line.y1, line.x2, line.y2);
+      for (const stop of shape.gradient.stops) gradient.addColorStop(Math.min(1, Math.max(0, stop.offset)), stop.color);
+      ctx.fillStyle = gradient;
+      ctx.fill(path);
+    } else if (shape.fill) {
       ctx.fillStyle = shape.fill;
       ctx.fill(path);
     }

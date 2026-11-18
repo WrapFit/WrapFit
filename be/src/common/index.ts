@@ -2,6 +2,7 @@ export * from './adapters';
 export * from './common.module';
 export * from './constants';
 export * from './context';
+export * from './db';
 export * from './decorators';
 export * from './dto';
 export * from './events';

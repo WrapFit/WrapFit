@@ -8,7 +8,7 @@ import { GoiMascot, type MascotPose } from "@/components/common/GoiMascot";
 import { Alert, Button, ButtonLink } from "@/components/ui";
 import { RequireAuth } from "@/features/auth";
 import { DEFAULT_RETURN_TO, clearPendingVnpay, readPendingVnpay } from "@/features/payments/vnpaySession";
-import { formatVnd } from "@/features/pricing";
+import { PRO_SUMMARY, formatVnd } from "@/features/pricing";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage, isApiError } from "@/services/api";
 import type { Payment, VnpayReturnResult } from "@/types/api";
@@ -208,10 +208,11 @@ function Outcome({
 }
 
 function successText(payment: Payment): string {
-  if (payment.purpose === "PRO_MONTH") return "Gói Pro đã bật: xuất file in sạch không giới hạn trong 30 ngày.";
+  if (payment.purpose === "PRO_MONTH") return `Gói Pro đã bật: ${PRO_SUMMARY}.`;
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
   if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
-  return `Đã cộng ${payment.credits ?? 0} lượt xuất vào tài khoản, dùng trong 12 tháng.`;
+  // An export pack bought before the packs stopped (docs/25 item 7): the server turned it into xu.
+  return "Thanh toán đã ghi nhận: số tiền được đổi sang xu Wrap trong ví, dùng trong 12 tháng.";
 }
 
 function Missing({

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -19,7 +20,6 @@ import {
 import {
   customXuError,
   customXuPriceVnd,
-  EXPORT_PACKS,
   exportLotExpiresAt,
   isExportPackId,
   isXuPackId,
@@ -28,8 +28,8 @@ import {
   XU_PACKS,
 } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
-import { CreditsService, PlanService } from '../billing';
-import { ConfigService } from '../common';
+import { CreditsService, PlanService, xuForExportCredits } from '../billing';
+import { ADVISORY_LOCK, ConfigService, encodePageCursor, lockForTransaction, olderThan } from '../common';
 import { OrdersService } from '../orders';
 import { PrismaService } from '../shared/prisma';
 import type { CreatePaymentDto } from './dto/create-payment.dto';
@@ -75,7 +75,7 @@ export interface PaymentView {
   expiresAt: string;
   paidAt: string | null;
   createdAt: string;
-  /** Export credits of a pack, null otherwise. */
+  /** Export credits of an old export pack payment (no longer sold), null otherwise. */
   credits: number | null;
   /** Xu of a xu pack, null otherwise. */
   xu: number | null;
@@ -109,16 +109,47 @@ export interface PaymentHistoryPage {
   nextBefore: string | null;
 }
 
+export const PAYMENT_EXPIRED = 'PAYMENT_EXPIRED';
+
+/** 400 for a new payment of an export pack (EXPORT_1/5/15): no longer sold, no export spends a credit (docs/25 item 7). */
+export const EXPORT_PACK_DISCONTINUED = 'EXPORT_PACK_DISCONTINUED';
+const exportPackDiscontinued = () =>
+  new BadRequestException({
+    code: EXPORT_PACK_DISCONTINUED,
+    message: 'Gói lượt xuất đã ngừng bán: file in mở khi thanh toán đơn in mẫu, tác vụ AI dùng xu Wrap',
+  });
 const paymentExpired = () =>
   new HttpException(
-    { code: 'PAYMENT_EXPIRED', message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
+    { code: PAYMENT_EXPIRED, message: 'Mã thanh toán đã hết hạn, hãy tạo mã mới' },
     HttpStatus.CONFLICT,
   );
 
 /**
+ * docs/25 item 6: a VietQR payment to the real bank account of WrapFit is a real transfer (or stands for one: it grants
+ * xu, Pro, a printed sample order), so only a demo account (`users.is_demo`) may simulate it, by the button or by a mock
+ * bank transfer. Without a real account (no VIETQR_*: the QR names the sample account "WRAPFIT MO PHONG"), no money
+ * can arrive at all, so every account may simulate: registered, demo or seeded. VNPay sandbox stays open to all.
+ */
+export function assertMaySimulate(provider: PaymentProvider, isDemo: boolean, sampleAccount = false): void {
+  if (provider === PaymentProvider.VIETQR && !isDemo && !sampleAccount) {
+    throw new ForbiddenException({
+      code: 'SIMULATION_DEMO_ONLY',
+      message: 'Chỉ tài khoản demo được giả lập thanh toán chuyển khoản VietQR',
+    });
+  }
+}
+
+/** The `code` in the body of an HttpException (PAYMENT_EXPIRED, ORDER_NOT_PAYABLE...), undefined for anything else. */
+export function httpErrorCode(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) return undefined;
+  const body = error.getResponse();
+  return typeof body === 'object' && body !== null && 'code' in body ? String(body.code) : undefined;
+}
+
+/**
  * VietQR payments (docs/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
- * grants what it bought in the same transaction: an export credit lot, a xu lot (docs/19), 30 days of Pro, or a sample
- * order moved to PAID.
+ * grants what it bought in the same transaction: a xu lot (docs/19; also for an old export pack), 30 days of Pro, or
+ * a sample order moved to PAID.
  * Every path that marks a payment paid (simulate button, SePay webhook, VNPay, admin) goes through `confirmPaid`.
  */
 @Injectable()
@@ -146,11 +177,16 @@ export class PaymentsService {
     return this.simulation;
   }
 
+  /** No VIETQR_* account: QR codes name the sample account, so a VietQR payment can never carry real money. */
+  get usesSampleAccount(): boolean {
+    return this.sampleAccount;
+  }
+
   /** `ip` is the customer's address (`req.ip`, which honours TRUST_PROXY): VNPay wants it in the pay URL. */
   async create(userId: string, dto: CreatePaymentDto, ip?: string): Promise<PaymentView> {
     const { amountVnd, metadata } = await this.priceOf(userId, dto);
     // Demo accounts never take the real-money VietQR path, real accounts never the sandbox (docs/21 §6).
-    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { isDemo: true } });
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { isDemo: true, billingDetails: true } });
     const provider = user.isDemo ? PaymentProvider.VNPAY : PaymentProvider.VIETQR;
     if (provider === PaymentProvider.VNPAY && !this.vnpay.configured) {
       // The simulate button is the demo fallback (docs/21 D5): while it is on, a demo payment is still created and the
@@ -194,8 +230,16 @@ export class PaymentsService {
             provider,
             reference: newPaymentReference(),
             expiresAt: new Date(Date.now() + PAYMENT_TTL_MS),
-            // The payment terms the user accepted for this payment, kept as evidence next to what was bought.
-            metadata: { ...metadata, termsVersion: dto.termsVersion ?? null, termsAcceptedAt: new Date().toISOString() },
+            // The payment terms the user accepted for this payment, kept as evidence next to what was bought, and the
+            // VAT invoice details of that moment: payments are kept for the legal retention of accounting records,
+            // whatever happens to the account (docs/28 Q4), while the details on the user row change, and go when the
+            // account is anonymized. InvoiceRetentionTask removes them after the retention.
+            metadata: {
+              ...metadata,
+              termsVersion: dto.termsVersion ?? null,
+              termsAcceptedAt: new Date().toISOString(),
+              ...(user.billingDetails ? { billingDetails: user.billingDetails } : {}),
+            },
           },
         });
         this.logger.log(`payment.created id=${payment.id} user=${userId} purpose=${dto.purpose} amount=${amountVnd}`);
@@ -211,10 +255,10 @@ export class PaymentsService {
    * The caller's payments, newest first, for "Lịch sử thanh toán". No QR or pay URL: reopen one with `GET /payments/:id`.
    * A PENDING payment past its expiry is reported EXPIRED (the row is updated the next time it is read on its own).
    */
-  async listMine(userId: string, limit: number, before?: Date): Promise<PaymentHistoryPage> {
+  async listMine(userId: string, limit: number, before?: string): Promise<PaymentHistoryPage> {
     const rows = await this.prisma.payment.findMany({
-      where: { userId, ...(before ? { createdAt: { lt: before } } : {}) },
-      orderBy: { createdAt: 'desc' },
+      where: { userId, ...olderThan(before) },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
     });
     const now = new Date();
@@ -239,7 +283,7 @@ export class PaymentsService {
           orderId: metadata.orderId ?? null,
         };
       }),
-      nextBefore: rows.length > limit ? page[page.length - 1].createdAt.toISOString() : null,
+      nextBefore: rows.length > limit ? encodePageCursor(page[page.length - 1]) : null,
     };
   }
 
@@ -259,15 +303,18 @@ export class PaymentsService {
 
   /**
    * Marks a payment paid without a transfer (PAYMENT_SIMULATION only, 404 otherwise, as if the route did not exist).
-   * Only the owner may do it; `confirmPaid` does the rest.
+   * Only the owner may do it, and a VietQR payment only a demo account (`assertMaySimulate`); `confirmPaid` does the
+   * rest.
    */
   async simulateConfirm(id: string, userId: string): Promise<PaymentView> {
     if (!this.simulation) throw new NotFoundException();
 
     const payment = await this.prisma.$transaction(async (tx) => {
-      const owned = await tx.$queryRaw<{ id: string }[]>`
-        SELECT id FROM payments WHERE id = ${id}::uuid AND user_id = ${userId}::uuid FOR UPDATE`;
-      if (owned.length === 0) throw new NotFoundException('Thanh toán không tồn tại');
+      const [owned] = await tx.$queryRaw<{ provider: PaymentProvider; is_demo: boolean }[]>`
+        SELECT p.provider, u.is_demo FROM payments p JOIN users u ON u.id = p.user_id
+        WHERE p.id = ${id}::uuid AND p.user_id = ${userId}::uuid FOR UPDATE OF p`;
+      if (!owned) throw new NotFoundException('Thanh toán không tồn tại');
+      assertMaySimulate(owned.provider, owned.is_demo, this.sampleAccount);
       return this.confirmPaid(tx, id, { via: PaymentConfirmation.SIMULATION });
     });
     return this.toView(payment);
@@ -278,7 +325,9 @@ export class PaymentsService {
    * admin. Locks the payment row, so a webhook and a simulate click arriving together grant once: the second waits,
    * sees PAID and returns it untouched. Runs inside the caller's transaction (the caller may have locked the row
    * already; locking again is a no-op). Throws 404 for an unknown id, 409 PAYMENT_EXPIRED for a payment that is no
-   * longer PENDING or is past its expiry, unless `allowExpired`.
+   * longer PENDING or is past its expiry, unless `allowExpired`, and 409 ORDER_NOT_PAYABLE for a sample order payment
+   * whose order is no longer PENDING_PAYMENT (cancelled, or paid by another payment). Both 409s are thrown before
+   * anything is written, so a caller that catches them can still use its transaction.
    */
   async confirmPaid(tx: Prisma.TransactionClient, paymentId: string, options: ConfirmPaidOptions): Promise<Payment> {
     const locked = await tx.$queryRaw<{ id: string }[]>`
@@ -290,6 +339,11 @@ export class PaymentsService {
     const now = new Date();
     const open = current.status === PaymentStatus.PENDING || (options.allowExpired && current.status === PaymentStatus.EXPIRED);
     if (!open || (!options.allowExpired && current.expiresAt <= now)) throw paymentExpired();
+    // Lock and check the order before the payment is written: a cancelled order must not leave a PAID payment that
+    // granted nothing. The lock (payment row, then order row) also makes a concurrent cancel wait for this transaction.
+    if (current.purpose === PaymentPurpose.SAMPLE_ORDER) {
+      await this.orders.lockPayable((current.metadata as { orderId: string }).orderId, tx);
+    }
 
     const paid = await tx.payment.update({
       where: { id: paymentId },
@@ -315,10 +369,7 @@ export class PaymentsService {
     if (dto.purpose !== PaymentPurpose.SAMPLE_ORDER && dto.orderId) {
       throw new BadRequestException('orderId chỉ dùng cho thanh toán đơn in mẫu');
     }
-    if (isExportPackId(dto.purpose)) {
-      const pack = EXPORT_PACKS[dto.purpose];
-      return { amountVnd: pack.priceVnd, metadata: { credits: pack.credits } };
-    }
+    if (isExportPackId(dto.purpose)) throw exportPackDiscontinued();
     if (dto.purpose !== PaymentPurpose.XU_CUSTOM && dto.xu !== undefined) {
       throw new BadRequestException('xu chỉ dùng cho nạp số xu tùy chọn');
     }
@@ -349,14 +400,20 @@ export class PaymentsService {
     const metadata = payment.metadata as PaymentMetadata;
 
     if ('credits' in metadata) {
+      // An export pack payment created before the packs stopped (docs/25 item 7) and confirmed only now (a late
+      // transfer the admin assigns, a webhook in its last minutes): no export credit lot any more, the money becomes
+      // xu at the price paid, the rule of the one-time conversion (prisma/scripts/convert-export-credits.ts).
+      const { xu, valueVnd } = xuForExportCredits(metadata.credits, metadata.credits, payment.amountVnd);
       await this.credits.grant(
         payment.userId,
         {
-          quantity: metadata.credits,
+          kind: 'XU',
+          quantity: xu,
           source: 'PURCHASE',
           expiresAt: exportLotExpiresAt(now),
           paymentId: payment.id,
-          note: payment.reference,
+          valueVnd,
+          note: `${payment.reference} (${metadata.credits} lượt xuất đổi sang xu)`,
         },
         tx,
       );
@@ -376,6 +433,12 @@ export class PaymentsService {
         tx,
       );
     } else if ('periodDays' in metadata) {
+      // One Pro payment of a user at a time (docs/30 item 3). Each transaction only locks its own payment, so two
+      // payments confirmed at once read the same period end and both wrote end + 30 days, or both created a
+      // subscription and the second failed on subscriptions_user_id_active_key. The second now waits here and reads
+      // what the first committed. Not a lock on the users row: UsersService.remove holds it while it waits for the
+      // payment locks, which would deadlock with this transaction.
+      await lockForTransaction(tx, ADVISORY_LOCK.SUBSCRIPTION, payment.userId);
       // Ends a Pro period that is over first, so a renewal after it starts from now, not from the old end.
       await this.plans.sync(payment.userId, tx, now);
       const active = await tx.subscription.findFirst({

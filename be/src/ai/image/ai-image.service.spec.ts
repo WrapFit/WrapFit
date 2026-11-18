@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import sharp from 'sharp';
 import type { Queue } from 'bullmq';
 import type { XuWalletService } from '../../billing';
 import type { ConfigService } from '../../common';
@@ -160,5 +161,46 @@ describe('AiImageService', () => {
     await service.runTool('user-1', 'out-1', 'upscale', {});
     expect(tx.aiImageJob.create.mock.calls[0][0].data).toMatchObject({ kind: 'UPSCALE', sourceOutputId: 'out-1', xuCost: 20 });
     expect(xuWallet.spend.mock.calls[0][1]).toMatchObject({ quantity: 20, reason: 'AI_TOOL' });
+  });
+
+  describe('tools on an uploaded image (docs/23 S20)', () => {
+    const key = 'users/user-1/image/photo.png';
+    let storedFile: { findFirst: jest.Mock };
+    let getObject: jest.Mock;
+    const png = (width: number, height: number) =>
+      sharp({ create: { width, height, channels: 3, background: '#e0c080' } }).png().toBuffer();
+
+    beforeEach(() => {
+      storedFile = { findFirst: jest.fn().mockResolvedValue({ id: 'file-1', contentType: 'image/png' }) };
+      getObject = jest.fn();
+      Object.assign(prisma, { storedFile });
+      Object.assign(storage, { getObject });
+    });
+
+    it('charges a tool on one of my uploads, by its storage key', async () => {
+      await service.runToolOnUpload('user-1', key, 'remove-bg', {});
+      expect(storedFile.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { key, userId: 'user-1', purpose: { in: ['IMAGE', 'LOGO'] } } }),
+      );
+      expect(tx.aiImageJob.create.mock.calls[0][0].data).toMatchObject({ kind: 'REMOVE_BG', sourceFileId: 'file-1', xuCost: 5 });
+      expect(tx.aiImageJob.create.mock.calls[0][0].data.sourceOutputId).toBeUndefined();
+    });
+
+    it("refuses a file that is not one of the user's uploads, a URL of another site and a vector logo", async () => {
+      storedFile.findFirst.mockResolvedValueOnce(null);
+      await expect(service.runToolOnUpload('user-1', key, 'upscale', {})).rejects.toMatchObject({ status: 404 });
+      await expect(service.runToolOnUpload('user-1', 'https://elsewhere.example/a.png', 'upscale', {})).rejects.toMatchObject({ status: 404 });
+      storedFile.findFirst.mockResolvedValueOnce({ id: 'file-2', contentType: 'image/svg+xml' });
+      await expect(service.runToolOnUpload('user-1', key, 'remove-bg', {})).rejects.toMatchObject({ status: 400 });
+      expect(xuWallet.spend).not.toHaveBeenCalled();
+    });
+
+    it('upscales a small upload and refuses one that is large already', async () => {
+      getObject.mockResolvedValueOnce({ body: await png(4096, 4096), contentType: 'image/png' });
+      await expect(service.runToolOnUpload('user-1', key, 'upscale', {})).rejects.toMatchObject({ status: 400 });
+      getObject.mockResolvedValueOnce({ body: await png(800, 600), contentType: 'image/png' });
+      await service.runToolOnUpload('user-1', key, 'upscale', {});
+      expect(tx.aiImageJob.create.mock.calls[0][0].data).toMatchObject({ kind: 'UPSCALE', sourceFileId: 'file-1', xuCost: 20 });
+    });
   });
 });

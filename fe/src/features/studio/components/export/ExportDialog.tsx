@@ -23,7 +23,7 @@ const FORMATS: { type: ExportFileType; title: string; hint: string }[] = [
   {
     type: "PDF_CMYK",
     title: "PDF in CMYK nhiều lớp (Offset / Công nghiệp)",
-    hint: "Cho xưởng in: lớp Artwork, Crease (#3182CE), CutContour (#E53E3E), Dimensions; chữ đã outline, ảnh CMYK nhúng sẵn, tràn lề 3 mm.",
+    hint: "Cho xưởng in: Tích hợp dấu chữ thập canh kẽm 4 màu, dải thang màu CMYK, chuẩn ICC FOGRA39 / ISO 12647-2, lớp CutContour, Crease, chữ đã outline và tràn lề 3 mm.",
   },
   {
     type: "PDF_A4_PRINT",
@@ -107,7 +107,7 @@ export function ExportDialog({ projectId, flush, onBlocked, onClose, design, rep
     enabled: Boolean(projectId && !offline && !isDemoProjectId(projectId)),
   });
 
-  // Watermark label and credit count; the server decides again on every request.
+  // Whether this version is unlocked (a paid print order holds it); the server decides again on every request.
   const accessKey = [...queryKeys.projects.exports(projectId), "access"] as const;
   const access = useQuery({
     queryKey: accessKey,

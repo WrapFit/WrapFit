@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   Patch,
@@ -12,7 +13,14 @@ import {
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { ACCESS_COOKIE, CurrentUser } from '../../common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  ACCESS_COOKIE,
+  CurrentUser,
+  EDITOR_TAB_HEADER,
+  PROJECT_SAVED,
+  type ProjectSavedEvent,
+} from '../../common';
 import { ProjectsService } from '../application/projects.service';
 import { SnapshotsService } from '../application/snapshots.service';
 import { ChangeStatusDto } from './dto/change-status.dto';
@@ -24,6 +32,9 @@ import { RecordProjectEventDto } from './dto/record-project-event.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectOwnerGuard } from './project-owner.guard';
 
+/** Tab ids the editor makes (services/realtime.ts): a UUID, or a random fallback of letters and digits. */
+const TAB_ID = /^[A-Za-z0-9-]{1,64}$/;
+
 @ApiTags('projects')
 @ApiCookieAuth(ACCESS_COOKIE)
 @Controller('projects')
@@ -31,6 +42,7 @@ export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
     private readonly snapshotsService: SnapshotsService,
+    private readonly events: EventEmitter2,
   ) {}
 
   @Post()
@@ -55,8 +67,25 @@ export class ProjectsController {
   @Patch(':id')
   @UseGuards(ProjectOwnerGuard)
   @ApiOperation({ summary: 'Update title, dimensions, material, canvas, collection, thumbnail or tags' })
-  update(@Param('id') id: string, @CurrentUser('id') userId: string, @Body() dto: UpdateProjectDto) {
-    return this.projectsService.update(id, userId, dto);
+  async update(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateProjectDto,
+    @Headers(EDITOR_TAB_HEADER) tab?: string,
+  ) {
+    const saved = await this.projectsService.update(id, userId, dto);
+    // The owner's other editor tabs load this save (docs/28 Q5). A new thumbnail alone changes nothing they edit.
+    if (Object.entries(dto).some(([field, value]) => value !== undefined && field !== 'version' && field !== 'thumbnailUrl')) {
+      const event: ProjectSavedEvent = {
+        userId,
+        projectId: id,
+        version: saved.version,
+        updatedAt: new Date(saved.updatedAt).toISOString(),
+        tabId: typeof tab === 'string' && TAB_ID.test(tab) ? tab : null,
+      };
+      this.events.emit(PROJECT_SAVED, event);
+    }
+    return saved;
   }
 
   @Patch(':id/status')

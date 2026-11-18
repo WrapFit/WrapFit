@@ -8,6 +8,7 @@ import {
   CurrentUser,
   GoogleProfile,
   Public,
+  readCookie,
   REFRESH_COOKIE,
   SessionMeta,
   ThrottlePerSession,
@@ -144,7 +145,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Rotate the refresh token cookie and issue a new access token cookie' })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<AuthSessionResponse> {
     try {
-      const result = await this.authService.refresh(req.cookies?.[REFRESH_COOKIE] ?? '', sessionMeta(req));
+      const result = await this.authService.refresh(readCookie(req.cookies, REFRESH_COOKIE) ?? '', sessionMeta(req));
       return this.startSession(res, result);
     } catch (error) {
       // A dead session must not linger in the browser.
@@ -158,9 +159,10 @@ export class AuthController {
   @Post('logout')
   @ApiOperation({ summary: 'Revoke the current session and clear the auth cookies' })
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
-    const refreshToken = req.cookies?.[REFRESH_COOKIE];
+    const refreshToken = readCookie(req.cookies, REFRESH_COOKIE);
     if (refreshToken) await this.authService.logout(refreshToken);
     this.cookies.clearAuthCookies(res);
+    this.cookies.clearSiteCookies(res);
   }
 
   @ApiCookieAuth(ACCESS_COOKIE)
@@ -177,6 +179,7 @@ export class AuthController {
   async logoutAll(@CurrentUser('id') userId: string, @Res({ passthrough: true }) res: Response): Promise<void> {
     await this.authService.revokeAllForUser(userId);
     this.cookies.clearAuthCookies(res);
+    this.cookies.clearSiteCookies(res);
   }
 
   @Public()

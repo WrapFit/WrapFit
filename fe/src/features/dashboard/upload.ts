@@ -22,6 +22,7 @@ export const UPLOAD_RULES: Record<UploadPurpose, { types: readonly string[]; max
   IMAGE: { types: IMAGE_TYPES, maxBytes: 15 * MB, formats: IMAGE_FORMATS },
   THUMBNAIL: { types: IMAGE_TYPES, maxBytes: 2 * MB, formats: IMAGE_FORMATS },
   AVATAR: { types: IMAGE_TYPES, maxBytes: 2 * MB, formats: IMAGE_FORMATS },
+  FONT: { types: ["font/ttf", "font/otf", "font/woff", "font/woff2"], maxBytes: 10 * MB, formats: "TTF, OTF, WOFF hoặc WOFF2" },
 };
 
 /** `accept` attribute of the file input. */

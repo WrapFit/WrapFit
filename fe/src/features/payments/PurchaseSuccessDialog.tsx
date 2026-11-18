@@ -6,13 +6,14 @@ import { createPortal } from "react-dom";
 import { GoiMascot } from "@/components/common/GoiMascot";
 import { Button, ButtonLink, ModalLayer } from "@/components/ui";
 import { ROUTES } from "@/constants";
-import { formatVnd } from "@/features/pricing";
+import { PRO_BENEFITS, formatVnd } from "@/features/pricing";
 import type { Payment, PaymentPurpose } from "@/types/api";
 
 const PACKAGE_NAMES: Record<PaymentPurpose, string> = {
-  EXPORT_1: "gói 1 lượt xuất",
-  EXPORT_5: "gói 5 lượt xuất",
-  EXPORT_15: "gói 15 lượt xuất",
+  // Export packs are no longer sold (docs/25 item 7); an old one confirmed late is paid out in xu.
+  EXPORT_1: "gói lượt xuất cũ (đổi sang xu)",
+  EXPORT_5: "gói lượt xuất cũ (đổi sang xu)",
+  EXPORT_15: "gói lượt xuất cũ (đổi sang xu)",
   PRO_MONTH: "gói Pro 30 ngày",
   SAMPLE_ORDER: "đơn in mẫu",
   XU_500: "gói 500 xu Wrap",
@@ -23,10 +24,10 @@ const PACKAGE_NAMES: Record<PaymentPurpose, string> = {
 
 /** What the purchase unlocked, in three short lines. */
 function benefitsOf(payment: Payment): string[] {
-  if (payment.purpose === "PRO_MONTH") return ["Xuất file in sạch không giới hạn trong 30 ngày", "Dung lượng lưu trữ lớn hơn", "Xu Wrap hằng tháng cho tác vụ AI"];
+  if (payment.purpose === "PRO_MONTH") return [PRO_BENEFITS.storage, PRO_BENEFITS.xu, PRO_BENEFITS.rollover];
   if (payment.xu) return [`${payment.xu.toLocaleString("vi-VN")} xu đã vào ví`, "Dùng cho ảnh AI, hoa văn AI và công cụ ảnh", "Hạn dùng 12 tháng"];
   if (payment.purpose === "SAMPLE_ORDER") return ["Đơn in mẫu đã thanh toán", "Xưởng in gọi xác nhận trước khi in"];
-  return [`${payment.credits ?? 0} lượt xuất file in sạch đã vào tài khoản`, "Mỗi lượt mở khóa mọi định dạng của một thiết kế trong 7 ngày", "Hạn dùng 12 tháng"];
+  return ["Số tiền đã trả được đổi sang xu Wrap trong ví", "Dùng cho ảnh AI, hoa văn AI và công cụ ảnh", "Hạn dùng 12 tháng"];
 }
 
 interface PurchaseSuccessDialogProps {

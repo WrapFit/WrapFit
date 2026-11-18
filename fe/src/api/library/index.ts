@@ -1,7 +1,7 @@
 /** Shared library of imported assets (`be/src/library`): public list, admin import. No backend: an empty library. */
 
 import { request } from "@/services/api";
-import type { CreateLibraryAsset, LibraryAsset, LibraryLicense, LibraryQuery, Paginated, UpdateLibraryAsset } from "@/types/api";
+import type { CreateLibraryAsset, ImportedStockPhoto, LibraryAsset, LibraryLicense, LibraryQuery, Paginated, StockPhotoPage, UpdateLibraryAsset } from "@/types/api";
 
 const EMPTY: Paginated<LibraryAsset> = { items: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
 
@@ -28,4 +28,14 @@ export function createLibraryAsset(input: CreateLibraryAsset): Promise<LibraryAs
 /** Admin: edits an asset or hides it. */
 export function updateLibraryAsset(id: string, input: UpdateLibraryAsset): Promise<LibraryAsset> {
   return request<LibraryAsset>(`/library/assets/${id}`, { method: "PATCH", json: input });
+}
+
+/** Stock photos (Pexels) searched through the backend (docs/23 S15, D10); `enabled: false` when it has no key. */
+export function searchStockPhotos(query: { q?: string; page?: number } = {}): Promise<StockPhotoPage> {
+  return request<StockPhotoPage>("/library/stock/photos", { query: { ...query } });
+}
+
+/** Copies a stock photo into the user's files (an IMAGE upload) to place it; carries the credit to show. */
+export function importStockPhoto(id: number): Promise<ImportedStockPhoto> {
+  return request<ImportedStockPhoto>(`/library/stock/photos/${id}/import`, { method: "POST" });
 }

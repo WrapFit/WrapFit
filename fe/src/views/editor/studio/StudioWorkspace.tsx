@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { useCtrlWheelZoom } from "@/hooks/dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,6 +24,8 @@ import {
   LogIn,
   X,
   Box,
+  Gift,
+  Tag,
   LayoutPanelTop,
   PackageOpen,
   PenTool,
@@ -35,13 +37,65 @@ import {
   Upload,
   Undo2,
   Redo2,
+  AlertTriangle,
 } from "lucide-react";
 import { buttonClass, hasSeenTour, markTourSeen, ProductTour, useTourContinuation } from "@/components/ui";
-import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
+import { skipStudioStepTours, STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
 import { ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
-import { artPaletteOf, autoFixElements, type QuoteFinish, boxBackgrounds, BoxDimensions, CanvasElement, FitCheckReport, mainPanelOf, parseLibraryArt, recolorDesign, safeMarginsOf } from "@wrapfit/shared";
+import {
+  artPaletteOf,
+  autoFixElements,
+  type QuoteFinish,
+  boxBackgrounds,
+  BoxDimensions,
+  CANVAS_SCHEMA_VERSION,
+  CanvasElement,
+  duplicateElements,
+  groupElements,
+  canGroup,
+  ungroupElements,
+  newElementId,
+  TEXT_COMBOS,
+  textComboStyle,
+  FitCheckReport,
+  insidePieces,
+  isBackground,
+  mainPanelOf,
+  moveLayer,
+  orderElements,
+  panelTouchesGlue,
+  parseLibraryArt,
+  printsInside,
+  quoteFinishesOf,
+  recolorDesign,
+  refitBackgrounds,
+  reflowElements,
+  PRODUCT_LABEL_DISCLAIMER,
+  safeMarginsOf,
+  samePanel,
+  setPanelBackground,
+  sideOf,
+  type CustomFont,
+  type PrintSide,
+  customPaletteId,
+} from "@wrapfit/shared";
+import { copyId, LayersPanel } from "@/features/studio/components/layers/LayersPanel";
+import {
+  CustomFontsContext,
+  DesignColorsContext,
+  designColorsOf,
+  ElementInspector,
+  ImageInspector,
+  newShape,
+  ShapeInspector,
+  ShapePicker,
+  TEXT_PRESETS,
+  TextInspector,
+} from "@/features/studio/components/inspector/ElementInspector";
+import { layoutBoxText } from "@/features/studio/components/canvas/boxText";
+import { SelectionToolbar } from "@/features/studio/components/inspector/SelectionToolbar";
 import { usePresentMode } from "@/features/demo/presentMode";
 import { AiCopilotAssistant } from "@/features/studio/components/copilot/AiCopilotAssistant";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
@@ -53,6 +107,7 @@ import { PanelNavigator } from "@/features/studio/components/PanelNavigator";
 import {
   BoxBackgroundPicker,
   ColorPaletteSelector,
+  CustomBackgroundPicker,
   paletteColors,
 } from "@/features/studio/components/ColorPaletteSelector";
 import {
@@ -66,13 +121,24 @@ import { Step3PaperFinish } from "@/features/studio/components/Step3PaperFinish"
 import { Step5Model3DWithEnvironments } from "@/features/studio/components/Step5Model3DWithEnvironments";
 import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExport";
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
-import { StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
+import { continueTo, StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useStudioHeartbeat";
-import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
+import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, panelLabel, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
-import { createProject, errorMessage, restoreSnapshot, uploadFileToStorage } from "@/api";
+import { clearDemoAssets, restoreDemoAssets, syncDemoAssets } from "@/features/studio/utils/demoDraftAssets";
+import {
+  createProject,
+  errorMessage,
+  inspectFont,
+  restoreSnapshot,
+  saveProjectUnboxing,
+  updateProject,
+  uploadFileToStorage,
+} from "@/api";
+import { loadOfflineUnboxing, storeOfflineUnboxing } from "@/features/showcase/offlineGift";
+import { asFontFile, FONT_ACCEPT, inspectFontFile, MAX_FONT_BYTES, registerCustomFont } from "@/features/studio/utils/customFonts";
 import { useToast } from "@/components/common/Toast";
 import { ROUTES } from "@/constants";
 import type { AiImageOutput, BoxStructure, ProjectDetail, SnapshotSummary, TemplateDetail } from "@/types/api";
@@ -99,7 +165,7 @@ const HISTORY_GAP_MS = 600;
 const HISTORY_LIMIT = 60;
 
 /** Keys of the step 4 rail (DesignRail shows the same letters in its tooltips). */
-const RAIL_KEYS: Record<string, DesignRailId> = { t: "text", u: "uploads", s: "elements", c: "colors", a: "patterns", i: "aiImage" };
+const RAIL_KEYS: Record<string, DesignRailId> = { t: "text", h: "shapes", u: "uploads", s: "elements", c: "colors", a: "patterns", i: "aiImage", l: "layers" };
 
 /** Seamless patterns of older designs (`canvasState.backgroundPattern`), shown on screen only: converted to printed
  *  library backgrounds when the design opens. */
@@ -110,7 +176,7 @@ const LEGACY_PATTERNS: Record<string, { design: string; palette: string }> = {
   gold: { design: "bg-diamonds", palette: "kim-ngan" },
 };
 /** Faces that take the unboxing QR code, in order of preference (back or bottom first). */
-const QR_PANELS = ["panel_back", "sleeve_bottom", "pillow_back", "base_bottom", "lid_top", "panel_front", "sleeve_top", "pillow_front"];
+const QR_PANELS = ["panel_back", "sleeve_bottom", "pillow_back", "mailer_back", "gable_back", "card_back", "base_bottom", "lid_top", "panel_front", "sleeve_top", "pillow_front"];
 /** The QR code of the gift's unboxing page (online `/unbox/<slug>`, offline `/unbox/demo#g=…`). */
 const isUnboxingQr = (el: CanvasElement) => el.type === "barcode" && el.content.includes("/unbox/");
 /** Palette of a background chosen before any palette. */
@@ -137,6 +203,55 @@ const scoreToneOf = (score: number) =>
 /** Design of the offline demo (`/editor/demo`). */
 const DEMO_ELEMENTS: CanvasElement[] = [];
 
+/** What the demo starts from: a template of the hub, or the draft this browser kept. */
+type DemoSource = Pick<TemplateDetail, "title" | "occasion" | "dimensions" | "materialSpec" | "canvasState"> & {
+  structure: Pick<TemplateDetail["structure"], "id">;
+};
+type DemoDraft = DemoSource & { step: StudioStep };
+const DEMO_DRAFT_KEY = "wrapfit:studio-demo-draft";
+
+function loadDemoDraft(): DemoDraft | null {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DEMO_DRAFT_KEY) ?? "null") as DemoDraft | null;
+    if (!draft?.structure?.id || !BOX_STRUCTURES.some((s) => s.id === draft.structure.id) || !draft.dimensions) return null;
+    const step = Number(draft.step);
+    return { ...draft, step: (step >= 1 && step <= 6 ? step : 1) as StudioStep };
+  } catch {
+    return null;
+  }
+}
+
+function saveDemoDraft(draft: DemoDraft) {
+  try {
+    localStorage.setItem(DEMO_DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage full or blocked: the demo still works, only without the draft.
+  }
+  // Uploaded images and fonts are blob: URLs of this tab: their files go to IndexedDB, under the URL the draft keeps.
+  const urls = [
+    ...(draft.canvasState?.elements ?? []).map((el) => el.content),
+    ...(draft.canvasState?.customFonts ?? []).map((f) => f.url),
+  ];
+  void syncDemoAssets(urls).catch(() => undefined);
+}
+
+function readStoredDemoDraft(): string | null {
+  try {
+    return localStorage.getItem(DEMO_DRAFT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function clearDemoDraft() {
+  try {
+    localStorage.removeItem(DEMO_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+  void clearDemoAssets().catch(() => undefined);
+}
+
 const SYNC_LABELS: Record<SyncState, { label: string; tone: "ok" | "busy" | "warn" | "muted" }> = {
   demo: { label: "Bản dùng thử · không lưu", tone: "muted" },
   saved: { label: "Đã lưu trên Cloud", tone: "ok" },
@@ -154,6 +269,14 @@ const DOT_CLASS = {
   warn: "bg-vibrant-coral",
   muted: "bg-landing-muted",
 };
+
+/** Header FitCheck badge: orange when it passes, the state colours when it does not, grey while the box has no artwork. */
+const FIT_BADGE_CLASS = {
+  ok: "bg-orange-50 text-fpt-orange-ink border-orange-200/60 hover:bg-orange-100/80",
+  warning: "bg-warning-bg text-warning-fg border-transparent hover:brightness-95",
+  error: "bg-danger-bg text-danger-fg border-transparent hover:brightness-95",
+  empty: "bg-white text-landing-muted border-landing-line hover:bg-landing-canvas",
+} as const;
 
 /** Pixel size of an image file; null when the browser cannot tell (e.g. an SVG without a size). */
 async function imageSizeOf(file: File): Promise<{ width: number; height: number } | null> {
@@ -224,10 +347,17 @@ export function StudioWorkspace({
 
   // Query parameter overrides for demo mode (home page, structure pages, template hub or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
+  // The demo keeps its design in this browser so a reload does not start over; a link that names a starting point
+  // (template, structure, size) opens that one instead.
+  const [demoDraft] = useState<DemoDraft | null>(() =>
+    // `?new=1` ("Thiết kế hộp mới") always starts over at step 1.
+    isDemo && !searchParams.get("new") && !demoTemplate && !paramStructure && !searchParams.get("l") && !searchParams.get("length") ? loadDemoDraft() : null
+  );
+  const demoSource: DemoSource | null = demoDraft ?? demoTemplate;
   const initialStructure =
     isDemo && paramStructure && BOX_STRUCTURES.some((s) => s.id === paramStructure)
       ? paramStructure
-      : (project?.template.id ?? demoTemplate?.structure.id ?? "tuck-top");
+      : (project?.template.id ?? demoSource?.structure.id ?? "tuck-top");
 
   const paramL = Number(searchParams.get("l") || searchParams.get("length"));
   const paramW = Number(searchParams.get("w") || searchParams.get("width"));
@@ -243,9 +373,30 @@ export function StudioWorkspace({
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
     if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
+    if (demoDraft) return demoDraft.step;
     if (hasParamDims || paramStructure || demoTemplate) return 4;
     return 1;
   });
+
+  // The step is kept in the address (?step=), so a reload opens the step the user was on.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("step") === String(currentStep)) return;
+    url.searchParams.set("step", String(currentStep));
+    window.history.replaceState(window.history.state, "", url);
+  }, [currentStep]);
+
+  const [isStepChanging, startStepTransition] = useTransition();
+
+  const navigateToStep = useCallback((targetStep: StudioStep) => {
+    if (targetStep === currentStep) return;
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    startStepTransition(() => {
+      setCurrentStep(targetStep);
+    });
+  }, [currentStep]);
 
   // Going to another step while the intro is open leaves the intro (counted as skipped); that step's own tour starts
   // if it was not seen. The first value, from the address or the project, is not a change.
@@ -260,30 +411,30 @@ export function StudioWorkspace({
   }, [currentStep, introSeen]);
 
   // Project Core State: a saved project fills it once, on mount
-  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoTemplate?.title ?? "Bao bì quà tặng sang trọng");
+  const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoSource?.title ?? "Bao bì quà tặng sang trọng");
   const [boxType, setBoxType] = useState<BoxStructureType>(initialStructure);
   const [activeMaterial, setActiveMaterial] = useState<BoxMaterialTheme>(() => {
     if (project) return materialThemeOf(project.canvasState?.materialTheme, project.materialSpec);
     if (isDemo && paramPaper && ["ivory", "kraft", "black_matte", "white_gloss", "metallics"].includes(paramPaper)) {
       return paramPaper;
     }
-    if (demoTemplate) return materialThemeOf(demoTemplate.canvasState?.materialTheme, demoTemplate.materialSpec);
+    if (demoSource) return materialThemeOf(demoSource.canvasState?.materialTheme, demoSource.materialSpec);
     return "ivory";
   });
   // The design before the last palette change; offered back while that change is still the last edit.
   const [paletteUndo, setPaletteUndo] = useState<{ paletteId: string | null; elements: CanvasElement[]; applied: CanvasElement[] } | null>(null);
   // Occasion of the design (template, quick start): the scenes of step 5 suggest the one that suits it.
-  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoTemplate?.occasion ?? null);
+  const [occasion, setOccasion] = useState<string | null>(project?.occasion ?? demoSource?.occasion ?? null);
   // Finishes of the print shop (lamination, foil, spot UV): priced in steps 3 and 6, stored with the canvas.
-  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoTemplate?.canvasState?.finishes));
+  const [finishes, setFinishes] = useState<QuoteFinish[]>(() => finishesOf(project?.canvasState?.finishes ?? demoSource?.canvasState?.finishes));
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
-    project?.canvasState?.backgroundPattern ?? demoTemplate?.canvasState?.backgroundPattern ?? null
+    project?.canvasState?.backgroundPattern ?? demoSource?.canvasState?.backgroundPattern ?? null
   );
 
   // Image 2 Inspired Palette & Typography states
   // Palette of the design (a library palette); choosing one recolours the printed artwork. Null until one is chosen.
   const [paletteId, setPaletteId] = useState<string | null>(() => {
-    const canvas = project?.canvasState ?? demoTemplate?.canvasState;
+    const canvas = project?.canvasState ?? demoSource?.canvasState;
     if (canvas?.backgroundTheme && artPaletteOf(canvas.backgroundTheme)) return canvas.backgroundTheme;
     for (const el of canvas?.elements ?? []) {
       const ref = parseLibraryArt(el.content);
@@ -304,7 +455,7 @@ export function StudioWorkspace({
         paperThickness: 0.38, // 300 GSM
       };
     }
-    if (demoTemplate) return { ...demoTemplate.dimensions };
+    if (demoSource) return { ...demoSource.dimensions };
     return {
       length: 120,
       width: 80,
@@ -325,8 +476,12 @@ export function StudioWorkspace({
 
   // Step 4 stage: the flat dieline to edit, or the folded box to check it; the dock's text tool opens the composer
   const [artView, setArtView] = useState<"2d" | "3d">("2d");
+  // Side of the sheet being designed (docs/23 S5): the inside is edited on the dieline mirrored, as seen from inside.
+  const [editSide, setEditSide] = useState<PrintSide>("outside");
   const [foldProgress, setFoldProgress] = useState<number>(1);
   const [lidOpen, setLidOpen] = useState<boolean>(false);
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  const [showFaceLabels, setShowFaceLabels] = useState<boolean>(true);
   const [textComposerOpen, setTextComposerOpen] = useState<boolean>(false);
 
   // Ctrl/⌘ + wheel (or trackpad pinch) over the stage zooms the dieline, never the browser page. In 3D the box's own
@@ -342,9 +497,30 @@ export function StudioWorkspace({
   useCtrlWheelZoom(stageRef, zoomStage);
 
   // Artwork Canvas Elements
-  const [elements, setElements] = useState<CanvasElement[]>(
-    project ? (project.canvasState?.elements ?? []) : (demoTemplate?.canvasState?.elements ?? DEMO_ELEMENTS)
+  const [elements, setElements] = useState<CanvasElement[]>(() => {
+    const saved = project ? (project.canvasState?.elements ?? []) : (demoSource?.canvasState?.elements ?? DEMO_ELEMENTS);
+    return refitBackgrounds(orderElements(saved), dielinePiecesOf(boxType, dimensions, project?.formulaVersion));
+  });
+  // Finishes the quote prices: those chosen in step 3 and those of the elements; a second pass for the inside.
+  const quoteFinishes = useMemo(() => [...new Set([...finishes, ...quoteFinishesOf(elements)])], [finishes, elements]);
+  const insidePrint = useMemo(() => printsInside(elements), [elements]);
+  const selectedElement = elements.find((el) => el.id === selectedElementId && !isBackground(el)) ?? null;
+  // Layers selected together (Shift + click, selection rectangle, a group). A selection made elsewhere (layers panel,
+  // a new element) collapses it to that one layer.
+  const [multiIds, setMultiIds] = useState<string[]>([]);
+  const selectedIds = useMemo(
+    () => (selectedElementId && multiIds.includes(selectedElementId) ? multiIds : selectedElementId ? [selectedElementId] : []),
+    [selectedElementId, multiIds]
   );
+  const selectIds = useCallback((ids: string[], primary?: string | null) => {
+    setMultiIds(ids);
+    setSelectedElementId(primary !== undefined ? primary : (ids[ids.length - 1] ?? null));
+  }, []);
+  const updateElement = useCallback((element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el))), []);
+  /** Copied layer (Ctrl+C), pasted with Ctrl+V on the face that receives new elements. */
+  const clipboard = useRef<CanvasElement | null>(null);
+  // Fonts uploaded for this design (docs/23 S13), saved with the canvas.
+  const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoSource)?.canvasState?.customFonts ?? []);
 
   // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
   const history = useRef({ past: [] as CanvasElement[][], future: [] as CanvasElement[][], current: elements, at: 0, travelling: false });
@@ -395,7 +571,17 @@ export function StudioWorkspace({
   const [pieceIndex, setPieceIndex] = useState<number>(() =>
     elements.length ? Math.max(0, pieceIndexOfPanel(pieces, elements[0].panelId)) : 0
   );
-  const dieline = (pieces[pieceIndex] ?? pieces[0]).geometry;
+  const editPieces = useMemo(() => (editSide === "inside" ? insidePieces(pieces) : pieces), [editSide, pieces]);
+  const dieline = (editPieces[pieceIndex] ?? editPieces[0]).geometry;
+  // Backgrounds follow their faces when the size, the structure or the formulas change (docs/23 D4); the other
+  // elements keep their place on their face by their anchor (docs/23 S20).
+  const fittedPieces = useRef(pieces);
+  useEffect(() => {
+    if (fittedPieces.current === pieces) return;
+    const before = fittedPieces.current;
+    fittedPieces.current = pieces;
+    setElements((prev) => refitBackgrounds(reflowElements(before, pieces, prev), pieces));
+  }, [pieces]);
   // Panel that receives new elements: the selected one, else the front (or first) panel of the piece on screen
   const placementPanel =
     dieline.panels.find((p) => p.id === activePanelId) ??
@@ -422,17 +608,72 @@ export function StudioWorkspace({
       dimensions,
       materialSpec: materialSpecFor(activeMaterial, dimensions.paperThickness, finishes),
       canvasState: {
+        schemaVersion: CANVAS_SCHEMA_VERSION,
         elements,
         backgroundPattern: backgroundPatternSvg,
         backgroundTheme: paletteId,
+        customFonts,
         materialTheme: activeMaterial,
         finishes,
       },
     }),
-    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId]
+    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId, customFonts]
   );
+  // Demo draft restored: its uploaded images and fonts come back from IndexedDB with new blob: URLs of this tab.
+  // Until then the draft is not written again, so the stored files are not dropped.
+  const [demoAssetsReady, setDemoAssetsReady] = useState(!demoDraft);
+  useEffect(() => {
+    if (!demoDraft) return;
+    let cancelled = false;
+    const canvas = demoDraft.canvasState;
+    const urls = [...(canvas?.elements ?? []).map((el) => el.content), ...(canvas?.customFonts ?? []).map((f) => f.url)];
+    restoreDemoAssets(urls)
+      .catch(() => new Map<string, string>())
+      .then((restored) => {
+        if (cancelled) return;
+        const remap = (url: string) => (url.startsWith("blob:") ? (restored.get(url) ?? "") : url);
+        setElements((prev) => prev.map((el) => ({ ...el, content: remap(el.content) })).filter((el) => el.content !== ""));
+        setCustomFonts((prev) => prev.map((f) => ({ ...f, url: remap(f.url) })).filter((f) => f.url !== ""));
+        history.current.past = [];
+        setDemoAssetsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [demoDraft]);
+
+  // Demo: keep the design (and its step) in this browser, a moment after the last change.
+  useEffect(() => {
+    if (!isDemo || !demoAssetsReady) return;
+    const timer = window.setTimeout(
+      () =>
+        saveDemoDraft({
+          title: payload.title,
+          occasion: occasion as DemoDraft["occasion"],
+          dimensions: payload.dimensions,
+          materialSpec: payload.materialSpec,
+          canvasState: payload.canvasState as DemoDraft["canvasState"],
+          structure: { id: boxType },
+          step: currentStep,
+        }),
+      400
+    );
+    return () => window.clearTimeout(timer);
+  }, [isDemo, demoAssetsReady, payload, occasion, boxType, currentStep]);
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
-  const sync = useProjectSync({ project, payload, invalidReason, renderThumbnail: renderPreview });
+  const sync = useProjectSync({
+    project,
+    payload,
+    invalidReason,
+    renderThumbnail: renderPreview,
+    // Another tab saved this project and this one has nothing unsaved: open its save here (docs/28 Q5).
+    onOtherTabSave: onReload
+      ? () => {
+          toast.show({ title: "Đã cập nhật từ tab khác", description: "Thiết kế vừa được lưu ở tab hoặc cửa sổ khác của bạn." });
+          onReload();
+        }
+      : undefined,
+  });
   // 422 of the last export, shown in the FitCheck tab while the design is the one the server checked.
   const payloadKey = useMemo(() => JSON.stringify(payload), [payload]);
   const [exportBlock, setExportBlock] = useState<{ report: FitCheckReport; key: string } | null>(null);
@@ -441,6 +682,13 @@ export function StudioWorkspace({
   // The score the server stored with the last save; while a change waits for its save, the score of the browser.
   const displayReport = sync.dirty || !sync.serverReport ? fitcheckReport : sync.serverReport;
   const scoreTone = scoreToneOf(displayReport.score);
+  const fitBadge = useMemo(() => {
+    const errors = displayReport.violations.filter((v) => v.severity === "error").length;
+    const warnings = displayReport.violations.filter((v) => v.severity === "warning").length;
+    const empty = displayReport.violations.some((v) => v.code === "EMPTY_DESIGN");
+    const tone: keyof typeof FIT_BADGE_CLASS = errors ? "error" : warnings ? "warning" : empty ? "empty" : "ok";
+    return { errors, warnings, tone };
+  }, [displayReport]);
   const flaggedElementIds = useMemo(
     () => new Set(fitcheckReport.violations.flatMap((v) => (v.elementId ? [v.elementId] : []))),
     [fitcheckReport]
@@ -464,19 +712,26 @@ export function StudioWorkspace({
     setElements((prev) => autoFixElements(pieces, prev));
   }, [pieces, elements, project?.id]);
 
+  /** The one-click fix of one FitCheck violation (docs/23 S21: turn a text upright). */
+  const handleFixViolation = useCallback((violation: { elementId?: string; fix?: { rotation: number } }) => {
+    const { elementId, fix } = violation;
+    if (!elementId || !fix) return;
+    setElements((prev) => prev.map((el) => (el.id === elementId ? { ...el, rotation: fix.rotation } : el)));
+  }, []);
+
   // Background over the whole box (all pieces), in the design's palette; null leaves the paper.
   const boxBackgroundDesign = useMemo(() => {
     const designs = elements.filter(isLibraryBackground).map((el) => parseLibraryArt(el.content)!.design);
     return designs.find((d) => d !== "bg-solid") ?? designs[0] ?? null;
   }, [elements]);
   const applyBoxBackground = useCallback(
-    (design: string | null) => {
-      const palette = paletteId ?? DEFAULT_BACKGROUND_PALETTE;
-      if (!paletteId && design) setPaletteId(palette);
+    (design: string | null, customPalette?: string) => {
+      const palette = customPalette ?? paletteId ?? DEFAULT_BACKGROUND_PALETTE;
+      if (!customPalette && !paletteId && design) setPaletteId(palette);
       setElements((prev) => {
         const kept = prev.filter((el) => !isLibraryBackground(el));
         if (!design) return kept;
-        const fills = boxBackgrounds(pieces, { design, palette }, mainPanelOf(boxType) ?? undefined).map((el) => ({ ...el, id: `fill_${el.id}` }));
+        const fills = boxBackgrounds(pieces, { design, palette }, customPalette ? undefined : (mainPanelOf(boxType) ?? undefined)).map((el) => ({ ...el, id: `fill_${el.id}` }));
         return [...fills, ...kept];
       });
     },
@@ -516,7 +771,6 @@ export function StudioWorkspace({
           content: url,
         };
         setElements((prev) => [...prev.filter((el) => !isUnboxingQr(el)), qr]);
-        toast.show({ tone: "success", title: "Đã đặt mã QR lên hộp", description: `${panel.name.replace(/\s*\(.*\)$/, "")}, ${size} × ${size} mm, in đen K100.` });
         return;
       }
       toast.show({ tone: "error", title: "Chưa đặt được mã QR", description: "Hộp không có mặt nào đủ chỗ cho mã QR 15 mm." });
@@ -525,10 +779,14 @@ export function StudioWorkspace({
   );
 
   // Add Element from Sticker Bank or Image Upload
-  const handleAddElement = useCallback((newEl: CanvasElement) => {
-    setElements((prev) => [...prev, newEl]);
-    setSelectedElementId(newEl.id);
-  }, []);
+  const handleAddElement = useCallback(
+    (newEl: CanvasElement) => {
+      // New elements go on the side of the sheet being designed.
+      setElements((prev) => [...prev, editSide === "inside" ? { ...newEl, side: "inside" } : newEl]);
+      setSelectedElementId(newEl.id);
+    },
+    [editSide]
+  );
 
   // Image / logo upload: the file goes to WrapFit storage first, the canvas keeps its URL (the API refuses data URLs).
   // The demo stays offline: the image is only shown in this tab.
@@ -594,6 +852,195 @@ export function StudioWorkspace({
     [placementPanel, project, toast, handleAddElement]
   );
 
+  // "Thay ảnh, giữ khung" (docs/23 S10): another file in the same box, crop reset, DPI of the new file.
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const replaceTarget = useRef<string | null>(null);
+  const requestReplaceImage = useCallback((elementId: string) => {
+    replaceTarget.current = elementId;
+    replaceInputRef.current?.click();
+  }, []);
+  const handleReplaceImage = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      const file = input.files?.[0];
+      input.value = "";
+      const targetId = replaceTarget.current;
+      const target = elements.find((el) => el.id === targetId);
+      if (!file || !target) return;
+      const isVector = VECTOR_TYPES.includes(file.type);
+      if (!isVector && !PHOTO_TYPES.includes(file.type)) {
+        toast.show({ tone: "error", title: "Định dạng ảnh chưa hỗ trợ", description: "Chọn ảnh PNG, JPG, WebP hoặc logo SVG." });
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        toast.show({ tone: "error", title: "Ảnh quá lớn", description: "Mỗi ảnh tối đa 15 MB." });
+        return;
+      }
+      const size = await imageSizeOf(file);
+      let content: string;
+      if (!project) {
+        content = URL.createObjectURL(file);
+      } else {
+        setUploading(true);
+        try {
+          content = (await uploadFileToStorage(file, isVector ? "LOGO" : "IMAGE", project.id)).fileUrl;
+        } catch (err) {
+          toast.error(err, "Chưa tải được ảnh lên");
+          return;
+        } finally {
+          setUploading(false);
+        }
+      }
+      setElements((prev) =>
+        prev.map((el) =>
+          el.id === target.id
+            ? {
+                ...el,
+                type: isVector ? "logo" : "image",
+                content,
+                crop: undefined,
+                // The user's own file replaces the stock photo: no longer a Pexels photo (FitCheck STOCK_PHOTO_ALONE).
+                source: undefined,
+                dpi: size && !isVector ? Math.round(size.width / (el.width / 25.4)) : 300,
+              }
+            : el
+        )
+      );
+    },
+    [elements, project, toast]
+  );
+  const { user: signedInUser } = useAuth();
+  const brandFonts = signedInUser?.brandKit?.fonts ?? [];
+  /** A ready-made text (heading, subheading, body) on the face, in the brand fonts when the Brand Kit has some. */
+  const addPresetText = useCallback(
+    (presetId: string) => {
+      const preset = TEXT_PRESETS.find((p) => p.id === presetId);
+      if (!preset || !placementPanel) return;
+      const family = presetId === "body" ? (brandFonts[1] ?? brandFonts[0]) : brandFonts[0];
+      const style = { color: "#1A362B", fontFamily: family ? `'${family}', sans-serif` : presetId === "heading" ? "'Playfair Display', serif" : "Inter, sans-serif", ...preset.style };
+      const maxWidth = Math.max(10, placementPanel.bounds.width - 10);
+      const probe = layoutBoxText({ content: preset.content, width: maxWidth, height: 1000, style });
+      const width = Math.round((Math.min(maxWidth, Math.max(...probe.lines.map((line) => line.width))) + 2) * 10) / 10;
+      const height = Math.round((probe.lines.length * probe.lineHeightMm + 2) * 10) / 10;
+      handleAddElement({
+        id: newElementId("text"),
+        type: "text",
+        panelId: placementPanel.id,
+        x: Math.round(((placementPanel.bounds.width - width) / 2) * 10) / 10,
+        y: Math.round(((placementPanel.bounds.height - height) / 2) * 10) / 10,
+        width,
+        height,
+        rotation: 0,
+        content: preset.content,
+        style,
+      });
+    },
+    [placementPanel, brandFonts, handleAddElement]
+  );
+  /** A ready-made text combo (docs/23 S14): its lines stacked and centred on the face, grouped to move as one. */
+  const addTextCombo = useCallback(
+    (comboId: string) => {
+      const combo = TEXT_COMBOS.find((c) => c.id === comboId);
+      if (!combo || !placementPanel) return;
+      const maxWidth = Math.max(10, placementPanel.bounds.width - 10);
+      const lines = combo.lines.map((line) => {
+        const style = textComboStyle(combo, line);
+        const probe = layoutBoxText({ content: line.text, width: maxWidth, height: 1000, style });
+        const width = Math.round((Math.min(maxWidth, Math.max(...probe.lines.map((l) => l.width))) + 2) * 10) / 10;
+        const height = Math.round((probe.lines.length * probe.lineHeightMm + 1) * 10) / 10;
+        return { line, style, width, height };
+      });
+      const total = lines.reduce((sum, l) => sum + l.height, 0);
+      const groupId = newElementId("group");
+      let y = Math.round(((placementPanel.bounds.height - total) / 2) * 10) / 10;
+      for (const { line, style, width, height } of lines) {
+        handleAddElement({
+          id: newElementId("text"),
+          type: "text",
+          panelId: placementPanel.id,
+          x: Math.round(((placementPanel.bounds.width - width) / 2) * 10) / 10,
+          y,
+          width,
+          height,
+          rotation: 0,
+          content: line.text,
+          style,
+          groupId,
+        });
+        y = Math.round((y + height) * 10) / 10;
+      }
+    },
+    [placementPanel, handleAddElement]
+  );
+  const designColors = useMemo(() => designColorsOf(elements), [elements]);
+
+  // Fonts uploaded for this design (docs/23 S13, D11): checked for the Vietnamese letters in the browser, then by the
+  // API after the upload; kept in the canvas so the design keeps them.
+  useEffect(() => {
+    customFonts.forEach((font) => void registerCustomFont(font));
+  }, [customFonts]);
+  const fontInputRef = useRef<HTMLInputElement>(null);
+  const [fontRights, setFontRights] = useState(false);
+  const [fontBusy, setFontBusy] = useState(false);
+  const applyCustomFont = useCallback(
+    (font: CustomFont) => {
+      if (selectedElement?.type !== "text") return;
+      updateElement({ ...selectedElement, style: { ...selectedElement.style, fontFamily: `'${font.family}', sans-serif`, fontUrl: font.url, fontWeight: undefined, fontStyle: undefined } });
+    },
+    [selectedElement, updateElement]
+  );
+  const handleFontUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      const picked = input.files?.[0];
+      input.value = "";
+      if (!picked) return;
+      const file = asFontFile(picked);
+      if (!file) {
+        toast.show({ tone: "error", title: "Định dạng phông chưa hỗ trợ", description: "Chọn tệp TTF, OTF, WOFF hoặc WOFF2." });
+        return;
+      }
+      if (file.size > MAX_FONT_BYTES) {
+        toast.show({ tone: "error", title: "Phông quá lớn", description: "Mỗi tệp phông tối đa 10 MB." });
+        return;
+      }
+      setFontBusy(true);
+      try {
+        const checked = await inspectFontFile(file);
+        if (!checked) {
+          toast.show({ tone: "error", title: "Không đọc được phông", description: "Tệp này không phải phông chữ hoặc đã hỏng." });
+          return;
+        }
+        if (checked.missing.length) {
+          toast.show({
+            tone: "error",
+            title: "Phông thiếu dấu tiếng Việt",
+            description: `Phông không vẽ được: ${checked.missing.slice(0, 16).join(" ")}${checked.missing.length > 16 ? " …" : ""}. Chữ có dấu sẽ in thành ô trống.`,
+          });
+          return;
+        }
+        let font: CustomFont;
+        if (!project) {
+          // The demo keeps the font in this tab only, like its images.
+          font = { family: checked.family, url: URL.createObjectURL(file) };
+        } else {
+          const { fileUrl } = await uploadFileToStorage(file, "FONT", project.id);
+          font = { family: checked.family, url: fileUrl };
+          // The API checks the file again (the browser check could be bypassed) and names its family.
+          if (/^https?:/.test(fileUrl)) font = { family: (await inspectFont(fileUrl)).family, url: fileUrl };
+        }
+        await registerCustomFont(font);
+        setCustomFonts((list) => [...list.filter((item) => item.url !== font.url), font]);
+        applyCustomFont(font);
+      } catch (err) {
+        toast.error(err, "Chưa thêm được phông");
+      } finally {
+        setFontBusy(false);
+      }
+    },
+    [project, toast, applyCustomFont]
+  );
+
   // AI image (docs/19 S4): as large as the safe area of the face allows, with the image's proportions, centred. Same
   // element and DPI as an uploaded image, so FitCheck judges it the same way; the file is already in WrapFit storage.
   const handlePlaceAiImage = useCallback(
@@ -635,10 +1082,41 @@ export function StudioWorkspace({
   );
 
   // AI pattern: under the other elements of the panel
-  const handleInsertPattern = useCallback((pattern: CanvasElement) => {
-    setElements((prev) => [pattern, ...prev]);
-    setSelectedElementId(pattern.id);
-  }, []);
+  const handleInsertPattern = useCallback(
+    (pattern: CanvasElement) => {
+      setElements((prev) =>
+        refitBackgrounds(
+          orderElements([
+            { ...pattern, role: "background", ...(editSide === "inside" ? { side: "inside" as const } : {}) },
+            ...prev.filter((el) => !(isBackground(el) && samePanel(el.panelId, pattern.panelId) && sideOf(el) === sideOf(pattern))),
+          ]),
+          pieces
+        )
+      );
+      setSelectedElementId(null);
+    },
+    [pieces, editSide]
+  );
+  // Background of the face that receives new elements, and copying it to every face.
+  const faceBackground = placementPanel
+    ? elements.find((el) => isBackground(el) && samePanel(el.panelId, placementPanel.id) && sideOf(el) === editSide) ?? null
+    : null;
+  const applyFaceBackgroundEverywhere = useCallback(() => {
+    if (!faceBackground) return;
+    setElements((prev) => {
+      let next = prev;
+      for (const piece of editPieces) {
+        for (const panel of piece.geometry.panels) {
+          if (!panelTouchesGlue(panel, piece.geometry)) next = setPanelBackground(next, panel, piece.geometry, faceBackground.content, { side: editSide });
+        }
+      }
+      return next;
+    });
+  }, [faceBackground, editPieces, editSide]);
+  const removeFaceBackground = useCallback(() => {
+    if (!placementPanel) return;
+    setElements((prev) => setPanelBackground(prev, placementPanel, dieline, null, { side: editSide }));
+  }, [placementPanel, dieline, editSide]);
 
   // Step 4 rail: "Văn bản" opens the text composer on the flat dieline, "Tải lên" the file picker (shortcut U).
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -663,11 +1141,76 @@ export function StudioWorkspace({
       const target = e.target as HTMLElement | null;
       if (target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
       const key = e.key.toLowerCase();
+      const sel = elements.find((el) => el.id === selectedElementId && !isBackground(el)) ?? null;
+      const chosen = elements.filter((el) => selectedIds.includes(el.id) && !isBackground(el));
+      const movable = chosen.filter((el) => !el.locked);
       if (e.ctrlKey || e.metaKey) {
+        if (key === "a" && placementPanel) {
+          // Ctrl + A: every layer of the face on screen.
+          e.preventDefault();
+          const ids = elements.filter((el) => samePanel(el.panelId, placementPanel.id) && sideOf(el) === editSide && !isBackground(el) && !el.hidden).map((el) => el.id);
+          selectIds(ids);
+          return;
+        }
+        if (key === "g" && chosen.length) {
+          e.preventDefault();
+          const ids = chosen.map((el) => el.id);
+          if (e.shiftKey) setElements((prev) => ungroupElements(prev, ids));
+          else if (canGroup(elements, ids)) setElements((prev) => groupElements(prev, ids, newElementId("group")));
+          return;
+        }
         if (key === "z" || key === "y") {
           e.preventDefault();
           travel(key === "y" || e.shiftKey ? "redo" : "undo");
+        } else if (sel && (e.code === "BracketRight" || e.code === "BracketLeft")) {
+          e.preventDefault();
+          const up = e.code === "BracketRight";
+          setElements((prev) => moveLayer(prev, sel.id, up ? (e.shiftKey ? "front" : "forward") : e.shiftKey ? "back" : "backward"));
+        } else if (chosen.length && key === "d") {
+          e.preventDefault();
+          const result = duplicateElements(elements, chosen.map((el) => el.id), copyId);
+          setElements(result.elements);
+          selectIds(result.ids);
+        } else if (sel && key === "c") {
+          clipboard.current = sel;
+        } else if (key === "v" && clipboard.current && placementPanel) {
+          e.preventDefault();
+          const source = clipboard.current;
+          const same = samePanel(source.panelId, placementPanel.id);
+          const copy: CanvasElement = {
+            ...source,
+            id: copyId(source),
+            panelId: placementPanel.id,
+            x: same ? source.x + 5 : Math.round((placementPanel.bounds.width - source.width) / 2),
+            y: same ? source.y + 5 : Math.round((placementPanel.bounds.height - source.height) / 2),
+            locked: undefined,
+            groupId: null,
+            side: editSide === "inside" ? "inside" : undefined,
+          };
+          clipboard.current = copy;
+          setElements((prev) => [...prev, copy]);
+          setSelectedElementId(copy.id);
         }
+        return;
+      }
+      if (key === "escape" && selectedIds.length) {
+        selectIds([], null);
+        return;
+      }
+      if (movable.length && (key === "delete" || key === "backspace")) {
+        e.preventDefault();
+        const gone = new Set(movable.map((el) => el.id));
+        setElements((prev) => prev.filter((el) => !gone.has(el.id)));
+        selectIds([], null);
+        return;
+      }
+      if (movable.length && key.startsWith("arrow")) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = key === "arrowleft" ? -step : key === "arrowright" ? step : 0;
+        const dy = key === "arrowup" ? -step : key === "arrowdown" ? step : 0;
+        const moving = new Set(movable.map((el) => el.id));
+        setElements((prev) => prev.map((el) => (moving.has(el.id) ? { ...el, x: Math.round((el.x + dx) * 10) / 10, y: Math.round((el.y + dy) * 10) / 10 } : el)));
         return;
       }
       if (e.altKey || textComposerOpen) return;
@@ -679,7 +1222,7 @@ export function StudioWorkspace({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [currentStep, readOnly, textComposerOpen, travel, selectRailKey]);
+  }, [currentStep, readOnly, textComposerOpen, travel, selectRailKey, elements, selectedElementId, placementPanel, selectedIds, selectIds, editSide]);
 
   // Export, snapshots, sharing and the QR code work on the saved project: none of them in the demo.
   const openDialog = (id: StudioDialogId) => {
@@ -725,50 +1268,119 @@ export function StudioWorkspace({
   const queryClient = useQueryClient();
   const { status: authStatus } = useAuth();
   const [savingProject, setSavingProject] = useState(false);
+  /** POST /projects with the demo design; images uploaded in the demo (blob: URLs) go to WrapFit storage first. */
+  const createProjectFromDemo = async () => {
+    // The API refuses blob: URLs; only the uploads that fail are left out.
+    const uploaded = new Map<string, string | null>();
+    for (const url of new Set(elements.filter((el) => el.content.startsWith("blob:")).map((el) => el.content))) {
+      try {
+        const blob = await (await fetch(url)).blob();
+        const purpose = VECTOR_TYPES.includes(blob.type) ? "LOGO" : "IMAGE";
+        uploaded.set(url, (await uploadFileToStorage(blob, purpose)).fileUrl);
+      } catch {
+        uploaded.set(url, null);
+      }
+    }
+    const local = [...uploaded.values()].filter((v) => v === null);
+    const savedElements = elements
+      .map((el) => (uploaded.has(el.content) ? { ...el, content: uploaded.get(el.content) ?? "" } : el))
+      .filter((el) => el.content !== "");
+    const created = await createProject({
+      templateId: boxType,
+      title: payload.title,
+      dimensions,
+      materialSpec: payload.materialSpec,
+      canvasState: { ...payload.canvasState, elements: savedElements },
+      occasion: (occasion as never) ?? undefined,
+    });
+    queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    await carryDemoUnboxing(created);
+    return { created, local };
+  };
+  /**
+   * The greeting and QR code made in the demo live in this browser only (offline link with the gift inside): they move
+   * to the new project's unboxing page, and a QR code already placed on the box gets the link of that page.
+   */
+  const carryDemoUnboxing = async (created: ProjectDetail) => {
+    const gift = loadOfflineUnboxing("demo");
+    if (!gift) return;
+    try {
+      const saved = await saveProjectUnboxing(created.id, {
+        recipientName: gift.recipientName,
+        giftNote: gift.giftNote,
+        particleEffect: gift.particleEffect,
+        audioTrackUrl: gift.audioTrackUrl,
+      });
+      queryClient.setQueryData([...queryKeys.projects.unboxing(created.id), "api"], saved);
+      storeOfflineUnboxing("demo", null);
+      const qrOnBox = created.canvasState.elements?.some(isUnboxingQr);
+      if (qrOnBox) {
+        const canvasState = {
+          ...created.canvasState,
+          elements: created.canvasState.elements.map((el) => (isUnboxingQr(el) ? { ...el, content: saved.unboxUrl } : el)),
+        };
+        const updated = await updateProject(created.id, { version: created.version, canvasState });
+        queryClient.setQueryData(queryKeys.projects.detail(created.id), updated);
+      }
+    } catch {
+      // The offline link keeps working; the greeting can be made again in step 5.
+    }
+  };
   const saveAsProject = async () => {
     if (invalidReason) {
       toast.show({ tone: "error", title: "Chưa lưu được dự án", description: invalidReason });
       return;
     }
     setSavingProject(true);
+    demoSavedRef.current = true;
     try {
-      // Images uploaded in the demo live only in this tab (blob: URLs) and the API refuses them: the user is signed in
-      // now, so they go to WrapFit storage first. Only the ones that fail are left out.
-      const uploaded = new Map<string, string | null>();
-      for (const url of new Set(elements.filter((el) => el.content.startsWith("blob:")).map((el) => el.content))) {
-        try {
-          const blob = await (await fetch(url)).blob();
-          const purpose = VECTOR_TYPES.includes(blob.type) ? "LOGO" : "IMAGE";
-          uploaded.set(url, (await uploadFileToStorage(blob, purpose)).fileUrl);
-        } catch {
-          uploaded.set(url, null);
-        }
-      }
-      const local = [...uploaded.values()].filter((v) => v === null);
-      const savedElements = elements
-        .map((el) => (uploaded.has(el.content) ? { ...el, content: uploaded.get(el.content) ?? "" } : el))
-        .filter((el) => el.content !== "");
-      const created = await createProject({
-        templateId: boxType,
-        title: payload.title,
-        dimensions,
-        materialSpec: payload.materialSpec,
-        canvasState: { ...payload.canvasState, elements: savedElements },
-        occasion: (occasion as never) ?? undefined,
-      });
-      queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+      const { created, local } = await createProjectFromDemo();
       toast.show({
         tone: "success",
         title: "Đã lưu thành dự án",
         description: local.length ? `${local.length} ảnh tải lên ở bản dùng thử chưa lưu được: hãy tải lại trong dự án.` : "Thiết kế giờ tự lưu lên cloud.",
       });
+      clearDemoDraft();
       router.replace(`${ROUTES.editor(created.id)}?step=${currentStep}`);
     } catch (err) {
+      demoSavedRef.current = false;
       toast.error(err, "Chưa lưu được dự án");
       setSavingProject(false);
     }
   };
+
+  // Leaving the demo studio mid-design while signed in keeps the work as a project ("Dự án của tôi"), so the next
+  // "Thiết kế hộp mới" starts again from step 1. A guest keeps the draft in this browser only.
+  const demoSavedRef = useRef(false);
+  const demoTouchedRef = useRef(false);
+  useEffect(() => {
+    if (isDemo && (currentStep > 1 || elements.length > 0)) demoTouchedRef.current = true;
+  }, [isDemo, currentStep, elements.length]);
+  const leaveDemoRef = useRef<() => void>(() => undefined);
+  leaveDemoRef.current = () => {
+    if (!isDemo || demoSavedRef.current || !demoTouchedRef.current || authStatus !== "authenticated" || invalidReason) return;
+    demoSavedRef.current = true;
+    const storedDraft = readStoredDemoDraft();
+    void createProjectFromDemo()
+      .then(() => {
+        // A new design opened meanwhile has written its own draft: leave that one alone.
+        if (readStoredDemoDraft() === storedDraft) clearDemoDraft();
+        toast.show({ tone: "success", title: "Đã lưu bản nháp", description: "Thiết kế dang dở nằm trong Dự án của tôi." });
+      })
+      .catch(() => undefined); // the local draft stays as a fallback
+  };
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      // Deferred: React's dev double-mount runs this cleanup and remounts at once; only a real unmount saves.
+      window.setTimeout(() => {
+        if (!mountedRef.current) leaveDemoRef.current();
+      }, 0);
+    };
+  }, []);
 
   // A saved project autosaves; this button saves now, at any step, whatever FitCheck says (only the print file is sold).
   const saveNow = async () => {
@@ -817,7 +1429,7 @@ export function StudioWorkspace({
 
   return (
     <div className={`${landingFontVariables} min-h-screen bg-landing-canvas flex flex-col font-landing-body select-none overflow-x-hidden`}>
-      {/* ================= 1. GLOBAL TOP STEPPER NAVBAR ================= */}
+      {/* Top bar: logo, the 6 steps, save state, FitCheck, help, save */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
           {/* Left: logo */}
@@ -825,10 +1437,10 @@ export function StudioWorkspace({
             <LandingLogo size="sm" />
           </div>
 
-          {/* Center: 4-Step Segmented Breadcrumb Stepper */}
+          {/* The 6 steps */}
           <StudioStepper
             current={currentStep}
-            onSelect={setCurrentStep}
+            onSelect={navigateToStep}
             locked={isDemo ? {} : { 1: "Cấu trúc hộp cố định sau khi tạo dự án. Tạo dự án mới để đổi kiểu hộp." }}
           />
 
@@ -852,19 +1464,24 @@ export function StudioWorkspace({
             <button
               type="button"
               onClick={() => {
-                setCurrentStep(6);
+                navigateToStep(6);
               }}
-              title={sync.dirty || !sync.serverReport ? "Điểm tạm tính, chưa lưu" : "Điểm máy chủ kiểm khi lưu"}
+              title={
+                fitBadge.tone === "empty"
+                  ? "Hộp chưa có hình in: FitCheck mới xét khuôn và kích thước"
+                  : `${fitBadge.errors} lỗi · ${fitBadge.warnings} cảnh báo · ${sync.dirty || !sync.serverReport ? "điểm tạm tính, chưa lưu" : "điểm máy chủ kiểm khi lưu"}`
+              }
               data-tour="studio-fitcheck"
-              aria-label={`FitCheck: ${displayReport.score}/100`}
-              className="hidden sm:flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-full whitespace-nowrap bg-orange-50 text-fpt-orange-ink border border-orange-200/60 text-sm font-semibold tabular-nums transition-colors hover:bg-orange-100/80"
+              aria-label={fitBadge.tone === "empty" ? "FitCheck: hộp chưa có hình in" : `FitCheck: ${displayReport.score}/100, ${fitBadge.errors} lỗi, ${fitBadge.warnings} cảnh báo`}
+              className={`hidden sm:flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-full whitespace-nowrap border text-sm font-semibold tabular-nums transition-colors ${FIT_BADGE_CLASS[fitBadge.tone]}`}
             >
-              <ShieldCheck className="w-4 h-4 text-fpt-orange" />
+              {fitBadge.tone === "error" || fitBadge.tone === "warning" ? <AlertTriangle className="w-4 h-4" aria-hidden /> : <ShieldCheck className="w-4 h-4" aria-hidden />}
               {/* Laptops and tablets: the score alone */}
               <span aria-hidden>
                 <span className="hidden xl:inline">FitCheck: </span>
-                {displayReport.score}
-                <span className="hidden xl:inline">/100</span>
+                <span className="font-bold">{displayReport.score}</span>
+                <span className="hidden xl:inline font-normal opacity-70">/100</span>
+                {fitBadge.tone === "empty" && <span className="hidden 2xl:inline text-xs font-normal opacity-80"> (khuôn chuẩn)</span>}
               </span>
             </button>
 
@@ -879,7 +1496,7 @@ export function StudioWorkspace({
               className={buttonClass({ variant: "ghost", size: "sm", className: "hidden md:inline-flex" })}
             >
               <CircleHelp aria-hidden />
-              <span className="sr-only xl:not-sr-only">Hướng dẫn</span>
+              <span className="sr-only 2xl:not-sr-only">Hướng dẫn</span>
             </button>
 
             {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
@@ -1018,6 +1635,8 @@ export function StudioWorkspace({
             setIntroSeen(true);
             // A replayed intro that was finished goes on with the tour of the step that is open; skipped, it stops.
             if (completed && replay > 0) setChainedStep(currentStep);
+            // Skipped on the first visit: no step guide pops up right after (they stay one click away in "Hướng dẫn").
+            if (!completed && replay === 0) skipStudioStepTours();
           }}
         />
       ) : (
@@ -1031,9 +1650,10 @@ export function StudioWorkspace({
         />
       )}
 
-      {/* ================= 2. DYNAMIC STEP VIEW CONTENT ================= */}
+      {/* The open step */}
       {/* `inert`: a trashed project can be looked at, not edited */}
-      <main className="flex-1 w-full flex flex-col" inert={readOnly || undefined}>
+      <main className={cn("flex-1 w-full flex flex-col transition-opacity duration-200", isStepChanging && "opacity-85")} inert={readOnly || undefined}>
+        <div key={currentStep} className="w-full flex-1 flex flex-col animate-in fade-in duration-200 ease-out fill-mode-both">
         {/* STEP 1: CHỌN MẪU HỘP (demo only) */}
         {currentStep === 1 && (
           <Step1BoxTemplatePicker
@@ -1041,8 +1661,17 @@ export function StudioWorkspace({
             onSelectStructure={(t) => {
               setBoxType(t);
               setPieceIndex(0);
+              if (t === "cup-carrier") {
+                setDimensions((prev) => ({
+                  ...prev,
+                  cells: prev.cells ?? { rows: 1, cols: 2 },
+                  length: prev.length >= 100 && prev.length <= 400 ? prev.length : 205,
+                  width: prev.width >= 100 && prev.width <= 300 ? prev.width : 105,
+                  height: prev.height >= 45 && prev.height <= 80 ? prev.height : 55,
+                }));
+              }
             }}
-            onNext={() => setCurrentStep(2)}
+            onNext={() => navigateToStep(2)}
           />
         )}
 
@@ -1057,8 +1686,8 @@ export function StudioWorkspace({
             limits={limits}
             structure={boxType}
             formulaVersion={project?.formulaVersion}
-            onBack={isDemo ? () => setCurrentStep(1) : undefined}
-            onNext={() => setCurrentStep(3)}
+            onBack={isDemo ? () => navigateToStep(1) : undefined}
+            onNext={() => navigateToStep(3)}
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
           />
@@ -1079,8 +1708,8 @@ export function StudioWorkspace({
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
             formulaVersion={project?.formulaVersion}
-            onBack={() => setCurrentStep(2)}
-            onNext={() => setCurrentStep(4)}
+            onBack={() => navigateToStep(2)}
+            onNext={() => navigateToStep(4)}
           />
         )}
 
@@ -1101,22 +1730,43 @@ export function StudioWorkspace({
               tabIndex={-1}
               aria-hidden
             />
+            <input
+              ref={replaceInputRef}
+              type="file"
+              accept={[...PHOTO_TYPES, ...VECTOR_TYPES].join(",")}
+              onChange={(e) => void handleReplaceImage(e)}
+              className="hidden"
+              tabIndex={-1}
+              aria-hidden
+            />
 
             {railPanel && (
               <DesignFlyout id={railPanel} onClose={() => setRailPanel(null)}>
+                <DesignColorsContext.Provider value={designColors}>
+                <CustomFontsContext.Provider value={customFonts}>
                 {railPanel === "elements" && placementPanel && (
                   <LibraryPanel
                     panel={placementPanel}
                     geometry={dieline}
                     onAddElement={(element: CanvasElement) => {
-                      // Backgrounds go under the other elements of the panel, like AI patterns.
+                      // A background replaces the one of its face, under the artwork (docs/23 D4).
                       if (element.type === "pattern") handleInsertPattern(element);
                       else handleAddElement(element);
-                      setSelectedElementId(element.id);
                     }}
                     selectedElement={elements.find((el) => el.id === selectedElementId) ?? null}
                     onUpdateElement={(element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el)))}
                     box={{ structure: boxType, dimensions, formulaVersion: project?.formulaVersion, title: projectTitle }}
+                    onApplyKit={(kitElements: CanvasElement[]) =>
+                      // The previous whole-box design (ids "kit_", KIT_PREFIX of LibraryPanel) goes, the user's own pieces stay; its backgrounds go under them.
+                      setElements((prev) => {
+                        const kitHasBackground = kitElements.some((el) => el.type === "pattern");
+                        const own = prev.filter(
+                          (el) => !el.id.startsWith("kit_") && !(kitHasBackground && (isLibraryBackground(el) || el.role === "background"))
+                        );
+                        return orderElements([...kitElements.filter((el) => el.type === "pattern"), ...own, ...kitElements.filter((el) => el.type !== "pattern")]);
+                      })
+                    }
+                    designElements={elements}
                   />
                 )}
 
@@ -1128,12 +1778,123 @@ export function StudioWorkspace({
                     </button>
                     <p className="text-caption leading-5 text-fg-muted">
                       Chữ được đặt lên <strong className="text-fg">{placementPanel?.name ?? "mặt đang chọn"}</strong>. Chọn mặt khác ở dải “Mặt hộp” dưới khung thiết kế.
+                      Bấm đúp vào chữ trên khung để sửa ngay tại chỗ.
+                    </p>
+                    <div role="group" aria-label="Kiểu chữ dựng sẵn" className="grid gap-2">
+                      {TEXT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => addPresetText(preset.id)}
+                          className={cn(
+                            "min-h-11 rounded-panel bg-surface-sunken px-4 text-left text-fg ring-1 ring-inset ring-transparent transition hover:ring-fg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40",
+                            preset.id === "heading" ? "text-heading-sm font-bold" : preset.id === "subheading" ? "text-label font-bold uppercase tracking-wider" : "text-body-sm"
+                          )}
+                          style={brandFonts[0] && preset.id !== "body" ? { fontFamily: `'${brandFonts[0]}', sans-serif` } : undefined}
+                        >
+                          Thêm {preset.label.toLowerCase()}
+                        </button>
+                      ))}
+                      {brandFonts.length > 0 && <p className="text-caption text-fg-muted">Dùng phông trong Brand Kit của bạn.</p>}
+                      <p className="text-caption leading-5 text-fg-muted">{PRODUCT_LABEL_DISCLAIMER}</p>
+                    </div>
+                    <section aria-labelledby="text-combos" className="space-y-2">
+                      <h3 id="text-combos" className="text-label font-semibold text-fg">
+                        Tổ hợp chữ <span className="font-normal text-fg-muted">· thêm cả nhóm, sửa chữ sau</span>
+                      </h3>
+                      <ul className="grid grid-cols-2 gap-2">
+                        {TEXT_COMBOS.map((combo) => (
+                          <li key={combo.id}>
+                            <button
+                              type="button"
+                              onClick={() => addTextCombo(combo.id)}
+                              title={combo.name}
+                              aria-label={`Thêm tổ hợp chữ: ${combo.name}`}
+                              className="flex min-h-20 w-full flex-col items-center justify-center gap-0.5 overflow-hidden rounded-panel bg-white px-2 py-2 text-center ring-1 ring-line transition hover:ring-fg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-focus/40"
+                            >
+                              {combo.lines.map((line, i) => {
+                                const style = textComboStyle(combo, line);
+                                return (
+                                  <span
+                                    key={i}
+                                    className="block max-w-full truncate leading-tight"
+                                    style={{
+                                      fontFamily: style.fontFamily,
+                                      fontWeight: style.fontWeight,
+                                      fontStyle: style.fontStyle,
+                                      color: style.color,
+                                      fontSize: `${Math.max(8, Math.min(18, line.sizePt * 0.62))}px`,
+                                      letterSpacing: style.letterSpacing ? `${style.letterSpacing / 1000}em` : undefined,
+                                    }}
+                                  >
+                                    {line.text}
+                                  </span>
+                                );
+                              })}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                    <section aria-label="Phông của bạn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                      <h3 className="text-label font-semibold text-fg">Phông của bạn</h3>
+                      {customFonts.length > 0 && (
+                        <ul className="space-y-1">
+                          {customFonts.map((font) => (
+                            <li key={font.url} className="flex items-center justify-between gap-2">
+                              <span className="truncate text-body-sm text-fg">{font.family}</span>
+                              <button
+                                type="button"
+                                disabled={selectedElement?.type !== "text"}
+                                className={buttonClass({ variant: "ghost", size: "sm", shape: "rounded" })}
+                                title={selectedElement?.type === "text" ? "Dùng cho chữ đang chọn" : "Chọn một chữ trước"}
+                                onClick={() => applyCustomFont(font)}
+                              >
+                                Dùng
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <label className="flex items-start gap-2 text-caption leading-5 text-fg-muted">
+                        <input type="checkbox" checked={fontRights} onChange={(e) => setFontRights(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
+                        Tôi có quyền dùng phông này cho bao bì in (phông tự làm, đã mua giấy phép, hoặc giấy phép mở như OFL).
+                      </label>
+                      <input ref={fontInputRef} type="file" accept={FONT_ACCEPT} onChange={(e) => void handleFontUpload(e)} className="hidden" tabIndex={-1} aria-hidden />
+                      <button
+                        type="button"
+                        disabled={!fontRights || fontBusy || readOnly}
+                        onClick={() => fontInputRef.current?.click()}
+                        className={buttonClass({ variant: "secondary", size: "sm", block: true })}
+                      >
+                        <Upload className="size-4" aria-hidden />
+                        {fontBusy ? "Đang kiểm tra phông…" : "Tải phông lên (TTF, OTF, WOFF)"}
+                      </button>
+                      <p className="text-caption leading-5 text-fg-muted">Phông phải có đủ dấu tiếng Việt. Một tệp là một kiểu chữ (muốn đậm thì tải tệp Bold).</p>
+                    </section>
+                    {selectedElement?.type === "text" && (
+                      <section aria-label="Chữ đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Chữ đang chọn</h3>
+                        <TextInspector
+                          element={selectedElement}
+                          onChange={updateElement}
+                          onApplyFontToAll={(fontFamily) =>
+                            setElements((prev) => prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily } } : el)))
+                          }
+                        />
+                      </section>
+                    )}
+                    <p className="text-caption leading-5 text-fg-muted">
+                      {selectedElement?.type === "text" ? "Bộ phông dưới đây đổi phông của chữ đang chọn." : "Chưa chọn chữ nào: bộ phông dưới đây đổi phông của mọi chữ."}
                     </p>
                     <FontSelectorCards
                       selectedFontId={selectedFont.id}
                       onSelectFont={(f) => {
                         setSelectedFont(f);
-                        setElements((prev) => prev.map((el) => (el.type === "text" ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el)));
+                        const target = selectedElement?.type === "text" ? selectedElement.id : null;
+                        setElements((prev) =>
+                          prev.map((el) => (el.type === "text" && (!target || el.id === target) ? { ...el, style: { ...el.style, fontFamily: f.fontFamilyHeading } } : el))
+                        );
                       }}
                     />
                   </div>
@@ -1155,6 +1916,12 @@ export function StudioWorkspace({
                       <li>Ảnh cần ≥ 300 DPI ở kích thước in để rõ nét; FitCheck báo khi ảnh mờ.</li>
                       <li>Logo SVG in sắc nét ở mọi cỡ.</li>
                     </ul>
+                    {selectedElement && (selectedElement.type === "image" || selectedElement.type === "logo") && !parseLibraryArt(selectedElement.content) && (
+                      <section aria-label="Ảnh đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Ảnh đang chọn</h3>
+                        <ImageInspector element={selectedElement} onChange={updateElement} onReplaceImage={requestReplaceImage} />
+                      </section>
+                    )}
                   </div>
                 )}
 
@@ -1181,7 +1948,69 @@ export function StudioWorkspace({
                           : null
                       }
                     />
-                    <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={applyBoxBackground} />
+                    <BoxBackgroundPicker selectedDesign={boxBackgroundDesign} paletteId={paletteId ?? DEFAULT_BACKGROUND_PALETTE} onSelect={(design) => applyBoxBackground(design)} />
+                    <CustomBackgroundPicker
+                      disabled={readOnly}
+                      onApply={(design, colors) => applyBoxBackground(design, customPaletteId(colors[0], colors[1]))}
+                    />
+                    <section aria-label="Nền của mặt đang chọn" className="space-y-2 rounded-panel bg-surface-sunken p-3">
+                      <h3 className="text-label font-semibold text-fg">Nền mặt {placementPanel?.name ?? ""}</h3>
+                      <p className="text-caption leading-5 text-fg-muted">
+                        {faceBackground
+                          ? "Nền gắn chặt vào mặt, phủ cả phần tràn lề và tự khớp khi đổi kích thước."
+                          : "Mặt này chưa có nền riêng. Chọn một nền ở “Thành phần” hoặc tạo bằng “Hoa văn AI”."}
+                      </p>
+                      {faceBackground && !readOnly && (
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" className={buttonClass({ variant: "secondary", size: "sm" })} onClick={applyFaceBackgroundEverywhere}>
+                            Áp nền này cho mọi mặt
+                          </button>
+                          <button type="button" className={buttonClass({ variant: "ghost", size: "sm" })} onClick={removeFaceBackground}>
+                            Xóa nền mặt này
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                )}
+
+                {railPanel === "shapes" && (
+                  <div className="space-y-5">
+                    <p className="text-caption leading-5 text-fg-muted">
+                      Hình được đặt lên <strong className="text-fg">{placementPanel?.name ?? "mặt đang chọn"}</strong>, trong vùng an toàn.
+                    </p>
+                    <ShapePicker
+                      disabled={!placementPanel}
+                      onPick={(kind) => placementPanel && handleAddElement(newShape(kind, placementPanel, dieline, `shape_${Date.now().toString(36)}`))}
+                    />
+                    {selectedElement?.type === "shape" && (
+                      <section aria-label="Hình đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Hình đang chọn</h3>
+                        <ShapeInspector element={selectedElement} onChange={updateElement} />
+                      </section>
+                    )}
+                  </div>
+                )}
+
+                {railPanel === "layers" && placementPanel && (
+                  <div className="space-y-5">
+                    <LayersPanel
+                      elements={elements}
+                      onChange={setElements}
+                      selectedId={selectedElement?.id ?? null}
+                      onSelect={setSelectedElementId}
+                      faces={pieces.flatMap((piece) => piece.geometry.panels.map((panel) => ({ id: panel.id, name: pieces.length > 1 ? `${piece.name} · ${panelLabel(panel.name)}` : panelLabel(panel.name) })))}
+                      faceId={placementPanel.id}
+                      onFaceChange={selectPanel}
+                      readOnly={readOnly}
+                      side={editSide}
+                    />
+                    {selectedElement && !readOnly && (
+                      <section aria-label="Thuộc tính lớp đang chọn" className="space-y-3 rounded-panel bg-surface-sunken p-3">
+                        <h3 className="text-label font-semibold text-fg">Thuộc tính</h3>
+                        <ElementInspector element={selectedElement} onChange={updateElement} onReplaceImage={requestReplaceImage} />
+                      </section>
+                    )}
                   </div>
                 )}
 
@@ -1208,9 +2037,11 @@ export function StudioWorkspace({
                         Máy chủ chặn xuất file vì các lỗi dưới đây. Sửa xong thì xuất lại.
                       </p>
                     )}
-                    <FitCheckDrawer report={blockingReport ?? displayReport} onAutoFix={handleAutoFix} />
+                    <FitCheckDrawer report={blockingReport ?? displayReport} onAutoFix={handleAutoFix} onFixViolation={handleFixViolation} />
                   </div>
                 )}
+                </CustomFontsContext.Provider>
+                </DesignColorsContext.Provider>
               </DesignFlyout>
             )}
 
@@ -1245,7 +2076,7 @@ export function StudioWorkspace({
                   )}
                 </div>
 
-                <div className="flex items-center justify-center">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                   <ViewToggle<"2d" | "3d">
                     label="Chế độ xem"
                     value={artView}
@@ -1255,13 +2086,26 @@ export function StudioWorkspace({
                       { value: "3d", label: "Gập hộp 3D", icon: Box },
                     ]}
                   />
+                  {artView === "2d" && (
+                    <ViewToggle<PrintSide>
+                      label="Mặt giấy đang thiết kế"
+                      value={editSide}
+                      onChange={(side) => {
+                        setEditSide(side);
+                        setSelectedElementId(null);
+                      }}
+                      options={[
+                        { value: "outside", label: "Mặt ngoài" },
+                        { value: "inside", label: "Mặt trong" },
+                      ]}
+                    />
+                  )}
                 </div>
 
                 <div className="flex min-w-0 items-center gap-2">
-                  <button type="button" data-tour="studio-next" onClick={() => setCurrentStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
-                    <span>
-                      Tiếp: <span className="hidden md:inline">3D &amp; </span>quà
-                    </span>
+                  <button type="button" data-tour="studio-next" onClick={() => navigateToStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
+                    <span className="hidden md:inline">{continueTo(5)}</span>
+                    <span className="md:hidden">Tiếp tục</span>
                     <ArrowRight className="size-4" aria-hidden />
                   </button>
                 </div>
@@ -1299,6 +2143,24 @@ export function StudioWorkspace({
                 </div>
               )}
 
+              {/* Toolbar of the selection (docs/23 S8): exact place, size and turn, align, group */}
+              {artView === "2d" && !readOnly && selectedIds.length > 0 && (
+                <SelectionToolbar
+                  elements={elements}
+                  selectedIds={selectedIds}
+                  onChange={setElements}
+                  onSelect={selectIds}
+                  faceSize={(panelId) => {
+                    for (const piece of editPieces) {
+                      const panel = piece.geometry.panels.find((p) => samePanel(p.id, panelId));
+                      if (panel) return { width: panel.bounds.width, height: panel.bounds.height };
+                    }
+                    return null;
+                  }}
+                  onOpenSettings={() => setRailPanel(selectedElement?.type === "text" ? "text" : selectedElement?.type === "shape" ? "shapes" : "layers")}
+                />
+              )}
+
               {/* Stage: the dieline sits on the grey desk like a slide */}
               <div ref={stageRef} data-tour="studio-stage" className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-auto lg:min-h-0 lg:flex-1">
                 {artView === "2d" ? (
@@ -1311,6 +2173,8 @@ export function StudioWorkspace({
                     onElementsChange={setElements}
                     selectedElementId={selectedElementId}
                     onSelectElement={setSelectedElementId}
+                    selectedIds={selectedIds}
+                    onSelectIds={setMultiIds}
                     backgroundPatternSvg={backgroundPatternSvg}
                     activePanelId={activePanelId}
                     onSelectPanel={selectPanel}
@@ -1318,24 +2182,107 @@ export function StudioWorkspace({
                     flaggedElementIds={flaggedElementIds}
                     textComposerOpen={textComposerOpen}
                     onTextComposerOpenChange={setTextComposerOpen}
+                    side={editSide}
                   />
                 ) : (
-                  <Box3DView
-                    dimensions={dimensions}
-                    foldProgress={foldProgress}
-                    faceLabels
-                    boxType={boxType}
-                    theme={activeMaterial}
-                    elements={elements}
-                    formulaVersion={project?.formulaVersion}
-                    backgroundPatternSvg={backgroundPatternSvg}
-                    environment="transparent"
-                    interactiveOpenState={lidOpen}
-                    showHud={false}
-                    showStatusBar={false}
-                    frameless
-                    minHeight={false}
-                  />
+                  <div className="relative h-full w-full">
+                    <Box3DView
+                      dimensions={dimensions}
+                      foldProgress={foldProgress}
+                      faceLabels={showFaceLabels}
+                      showCups={dimensions.showCups !== false}
+                      boxType={boxType}
+                      theme={activeMaterial}
+                      elements={elements}
+                      formulaVersion={project?.formulaVersion}
+                      backgroundPatternSvg={backgroundPatternSvg}
+                      environment="transparent"
+                      interactiveOpenState={lidOpen}
+                      cameraView={cameraView}
+                      showHud={false}
+                      showStatusBar={false}
+                      frameless
+                      minHeight={false}
+                      className="h-full w-full"
+                    />
+
+                    {/* Floating 3D Controls Dock identical to Step 2 & Step 3 */}
+                    <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-20 flex justify-center px-4">
+                      <div
+                        role="toolbar"
+                        aria-label="Góc nhìn hộp 3D"
+                        className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md"
+                      >
+                        {boxType !== "pillow" && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFoldProgress(1);
+                                setLidOpen((open) => !open);
+                              }}
+                              aria-pressed={lidOpen}
+                              title={lidOpen ? "Đóng nắp hộp" : "Mở nắp hộp"}
+                              className={cn(
+                                "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                                lidOpen
+                                  ? "bg-fpt-orange text-white shadow-xs"
+                                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                              )}
+                            >
+                              <Gift className="size-3.5" aria-hidden />
+                              <span>{lidOpen ? "Đóng nắp" : "Mở nắp"}</span>
+                            </button>
+                            <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+                          </>
+                        )}
+
+                        {(
+                          [
+                            { view: "angle", label: "3/4" },
+                            { view: "front", label: "Trước" },
+                            { view: "side", label: "Bên" },
+                            { view: "top", label: "Trên" },
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.view}
+                            type="button"
+                            onClick={() => setCameraView(item.view)}
+                            aria-pressed={cameraView === item.view}
+                            title={`Góc nhìn ${item.label.toLowerCase()}`}
+                            className={cn(
+                              "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                              cameraView === item.view
+                                ? "bg-fpt-orange text-white shadow-xs"
+                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                            )}
+                          >
+                            {item.view === "angle" && <Box className="size-3" aria-hidden />}
+                            <span>{item.label}</span>
+                          </button>
+                        ))}
+
+                        <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
+
+                        <button
+                          type="button"
+                          onClick={() => setShowFaceLabels((prev) => !prev)}
+                          aria-pressed={showFaceLabels}
+                          title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
+                          className={cn(
+                            "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
+                            showFaceLabels
+                              ? "bg-fpt-orange text-white shadow-xs"
+                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                          )}
+                        >
+                          <Tag className="size-3" aria-hidden />
+                          <span>Nhãn mặt</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -1424,20 +2371,6 @@ export function StudioWorkspace({
                       >
                         <Box className="size-4" aria-hidden />
                       </button>
-                      {boxType !== "pillow" && (
-                        <button
-                          type="button"
-                          aria-pressed={lidOpen}
-                          onClick={() => {
-                            setFoldProgress(1);
-                            setLidOpen((open) => !open);
-                          }}
-                          className={lightToolButton(lidOpen, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}
-                        >
-                          <PackageOpen className="size-4" aria-hidden />
-                          {lidOpen ? "Đóng nắp" : "Mở nắp"}
-                        </button>
-                      )}
                     </div>
                   </>
                 )}
@@ -1458,8 +2391,9 @@ export function StudioWorkspace({
             formulaVersion={project?.formulaVersion}
             occasion={occasion}
             title={projectTitle}
-            onBack={() => setCurrentStep(4)}
-            onNext={() => setCurrentStep(6)}
+            onDimensionsChange={setDimensions}
+            onBack={() => navigateToStep(4)}
+            onNext={() => navigateToStep(6)}
             onOpenQrModal={() => openDialog("unboxing")}
             hasUnboxingQr={elements.some(isUnboxingQr)}
           />
@@ -1472,14 +2406,15 @@ export function StudioWorkspace({
             boxType={boxType}
             dimensions={dimensions}
             activeMaterial={activeMaterial}
-            finishes={finishes}
+            finishes={quoteFinishes}
+            insidePrint={insidePrint}
             elements={elements}
             backgroundPatternSvg={backgroundPatternSvg}
             formulaVersion={project?.formulaVersion}
             pieces={pieces}
             report={blockingReport ?? displayReport}
             blocked={!!blockingReport}
-            onBack={() => setCurrentStep(5)}
+            onBack={() => navigateToStep(5)}
             onAutoFix={handleAutoFix}
             onExport={() => openDialog("export")}
             signedIn={authStatus === "authenticated"}
@@ -1488,11 +2423,12 @@ export function StudioWorkspace({
             title={projectTitle}
             projectId={project?.id ?? null}
             onDesign={() => {
-              setCurrentStep(4);
+              navigateToStep(4);
               setRailPanel("elements");
             }}
           />
         )}
+        </div>
       </main>
 
       {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}

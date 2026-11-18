@@ -8,6 +8,7 @@ import React from 'react';
 import { landingFontVariables } from '@/assets/fonts/landing';
 import { ROUTES } from '@/constants';
 import { useAuth } from '@/features/auth';
+import { BOX_STRUCTURES } from '@/features/studio/utils/boxStructures';
 import { useBoxStructures } from '@/features/templates/hooks';
 import { useHydrated } from '@/hooks/dom';
 import { cn } from '@/utils/helpers';
@@ -30,6 +31,14 @@ const ACCOUNT_SIGNED_IN: NavLink[] = [
   { label: 'Cài đặt', href: ROUTES.settings },
 ];
 
+/** Structures listed in the footer column before "Tất cả mẫu hộp". */
+const FOOTER_STRUCTURES = 5;
+/** Order of the studio's step 1 (most used first); unknown structures go last. */
+const studioOrder = (id: string) => {
+  const index = BOX_STRUCTURES.findIndex((structure) => structure.id === id);
+  return index === -1 ? BOX_STRUCTURES.length : index;
+};
+
 const ACCOUNT_ANONYMOUS: NavLink[] = [
   { label: 'Đăng nhập', href: ROUTES.login },
   { label: 'Tạo tài khoản', href: ROUTES.register },
@@ -51,7 +60,17 @@ export function MainFooter({ className = '', compact = false }: MainFooterProps)
 
   const columns: { title: string; links: NavLink[] }[] = [
     { title: 'Studio', links: [...STUDIO_LINKS, { label: 'Giỏ in mẫu', href: '/cart' }] },
-    { title: 'Mẫu hộp', links: structureLinks(hydrated ? structures.data : undefined) },
+    // The five most used structures and "Tất cả mẫu hộp": as long as the other columns (the header menu lists them all).
+    {
+      title: 'Mẫu hộp',
+      links: structureLinks(
+        hydrated
+          ? [...(structures.data ?? [])]
+              .sort((a, b) => studioOrder(a.id) - studioOrder(b.id))
+              .slice(0, FOOTER_STRUCTURES)
+          : undefined
+      ),
+    },
     { title: 'Ngành hàng', links: [...industries, ...occasions.slice(0, 3)] },
     { title: 'Tài nguyên', links: RESOURCE_LINKS.filter((link) => link.href !== ROUTES.about) },
     { title: 'Công ty', links: COMPANY_LINKS },

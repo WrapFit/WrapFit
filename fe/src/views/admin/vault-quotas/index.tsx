@@ -25,6 +25,7 @@ const PURPOSE_LABELS: Record<keyof typeof UPLOAD_RULES, string> = {
   IMAGE: 'Ảnh trên hộp',
   THUMBNAIL: 'Ảnh thu nhỏ dự án',
   AVATAR: 'Ảnh đại diện',
+  FONT: 'Phông chữ tải lên',
 };
 
 function VaultQuotas() {

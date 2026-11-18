@@ -14,6 +14,7 @@ import {
   findDimensionViolations,
   readDimensionLimits,
 } from '../domain/project.policy';
+import { sameJson } from '../domain/project-content';
 import { fitCheckOf } from '../domain/project-fitcheck';
 import { changeStatus, duplicateTitle, purgeCutoff } from '../domain/project-lifecycle';
 import {
@@ -123,6 +124,11 @@ export class ProjectsService {
   /**
    * Saves the design. The write only succeeds if nobody saved in between (compare-and-set on `version`), so an older
    * tab cannot overwrite a newer save and the stored FitCheck always matches the stored canvas and dimensions.
+   * Only a change of the design increases `version`; a save of the name, tags or thumbnail returns the same version.
+   * shortcut: a metadata-only save no longer moves `version`, so a second editor tab still at that version saves its
+   * older title over a rename made in the first tab without a 409 (the design itself is still protected). A separate
+   * save counter for the compare-and-set would close it; not worth a schema and client change while titles are the
+   * only metadata the editor sends with every save.
    */
   async update(projectId: string, userId: string, dto: UpdateProjectDto): Promise<ProjectDetail> {
     const project = await this.findOne(projectId);
@@ -155,6 +161,7 @@ export class ProjectsService {
       changes.dimensions = this.completeDimensions(dto.dimensions, dto.materialSpec ?? project.materialSpec);
       this.assertDimensionsFit(project.template.id, changes.dimensions, template?.formulaSchema);
     }
+    dropUnchangedContent(changes, project);
     // The FitCheck score on the dashboard and in the template hub always matches the saved design.
     if (changes.canvasState || changes.dimensions) {
       changes.fitCheck = fitCheckOf(
@@ -267,11 +274,10 @@ export class ProjectsService {
     const candidates = await this.projects.findTrashedBefore(cutoff, PURGE_BATCH);
     if (!candidates.length) return 0;
 
-    await this.files.detachSharedFiles(candidates);
-    const files = await this.files.listProjectFiles(candidates);
-    const deleted = new Set(await this.projects.deleteTrashed(candidates, cutoff));
-    await this.files.deleteObjects(files.filter((file) => deleted.has(file.projectId)).map((file) => file.key));
-    return deleted.size;
+    // Shared files are handed over and the keys listed in the deleting transaction; the objects go after the commit.
+    const { deleted, keys } = await this.projects.deleteTrashed(candidates, cutoff);
+    await this.files.deleteObjects(keys);
+    return deleted.length;
   }
 
   /**
@@ -302,13 +308,17 @@ export class ProjectsService {
 
   async remove(projectId: string): Promise<void> {
     const project = await this.findOne(projectId);
-    if (!canDeletePermanently(project.status)) {
-      throw new ConflictException('Move the project to the trash before deleting it permanently');
-    }
-    await this.files.detachSharedFiles([projectId]);
-    const files = await this.files.listProjectFiles([projectId]);
-    await this.projects.delete(projectId);
-    await this.files.deleteObjects(files.map((file) => file.key));
+    if (!canDeletePermanently(project.status)) throw notInTrash();
+    // An order that still needs the design keeps it (docs/30 item 4): checked first so nothing is touched, and again
+    // with the project row locked, in case an order or a restore committed in between. No object is deleted then.
+    const holding = await this.projects.findOrderHoldingDesign(projectId);
+    if (holding) throw projectInActiveOrder(holding);
+    // Shared files are handed over and the keys listed in the deleting transaction; the objects go after the commit.
+    const outcome = await this.projects.delete(projectId);
+    if (outcome.kind === 'IN_ORDER') throw projectInActiveOrder(outcome.orderCode);
+    if (outcome.kind === 'NOT_IN_TRASH') throw notInTrash();
+    if (outcome.kind === 'NOT_FOUND') throw new NotFoundException('Project not found');
+    await this.files.deleteObjects(outcome.keys);
   }
 
   /** Throws 404 when the project does not exist or belongs to someone else (no information leak). */
@@ -332,6 +342,9 @@ export class ProjectsService {
       paperThickness: dto.paperThickness ?? material.caliper,
       ...(dto.giftWeight !== undefined && { giftWeight: dto.giftWeight }),
       ...(dto.bottomType !== undefined && { bottomType: dto.bottomType }),
+      ...(dto.window && { window: true }),
+      ...(dto.showCups !== undefined && { showCups: dto.showCups }),
+      ...(dto.cells && { cells: { rows: dto.cells.rows, cols: dto.cells.cols } }),
     };
   }
 
@@ -356,7 +369,32 @@ function assertOwnFileContents(
   if (disallowedFileContents(canvas, current).length) throw fileUrlNotAllowed();
 }
 
+/**
+ * Decision Q3 (docs/25 S3): only a different canvas, dimensions or material gives the project a new `version`, which
+ * paid print files and a client's print approval are tied to. The editor sends all three with every save (a rename
+ * too), so a field is a change only when its value differs from the saved one; an equal field is dropped and not
+ * written again. Comparing with the project read before the write is safe: every content write increases `version`
+ * and the write is a compare-and-set on it, so the content of a given version never changes.
+ */
+function dropUnchangedContent(changes: ProjectChanges, saved: ProjectDetail): void {
+  if (changes.canvasState && sameJson(toStoredCanvas(changes.canvasState), toStoredCanvas(saved.canvasState))) {
+    changes.canvasState = undefined;
+  }
+  if (changes.dimensions && sameJson(changes.dimensions, saved.dimensions)) changes.dimensions = undefined;
+  if (changes.materialSpec && sameJson(changes.materialSpec, saved.materialSpec)) changes.materialSpec = undefined;
+}
+
 /** 409 with a stable code: the editor reloads the project (or offers to) instead of overwriting the newer save. */
+const notInTrash = () => new ConflictException('Move the project to the trash before deleting it permanently');
+
+/** 409 PROJECT_IN_ACTIVE_ORDER: the message is shown as is by the frontend, so it is in Vietnamese. */
+export function projectInActiveOrder(orderCode: string): ConflictException {
+  return new ConflictException({
+    code: 'PROJECT_IN_ACTIVE_ORDER',
+    message: `Dự án đang nằm trong đơn in ${orderCode} chưa gửi đi, xưởng in còn cần thiết kế này. Bạn xoá vĩnh viễn được khi đơn đã gửi đi hoặc đã huỷ.`,
+  });
+}
+
 export function versionConflict(currentVersion: number): ConflictException {
   return new ConflictException({
     code: 'PROJECT_VERSION_CONFLICT',

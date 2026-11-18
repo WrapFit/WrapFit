@@ -23,9 +23,10 @@ import {
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { XuWalletService, type XuDebitReason } from '../../billing';
-import { ConfigService, currentRequestId, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../../common';
+import { ConfigService, currentRequestId, encodePageCursor, olderThan, QUEUE_ADD_TIMEOUT_MS, withTimeout } from '../../common';
 import { PrismaService } from '../../shared/prisma';
-import { assetUrl, StorageService } from '../../storage';
+import sharp from 'sharp';
+import { assetUrl, isUploadKey, StorageService, uploadKeyOf } from '../../storage';
 import { AiCostGuard } from '../ai-cost.guard';
 import { AiImageRefunds } from './ai-image-refunds';
 import {
@@ -110,6 +111,9 @@ type NewJob = Omit<Prisma.AiImageJobUncheckedCreateInput, 'userId' | 'debitOpera
   xuCost: number;
   estCostUsd: number;
 };
+
+/** Uploads the tools accept (an SVG or a PDF logo is sharp already and has no pixels to work on). */
+const UPLOAD_TOOL_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
 const unavailable = (message: string) =>
   new ServiceUnavailableException({ code: 'AI_IMAGE_UNAVAILABLE', message });
@@ -236,6 +240,61 @@ export class AiImageService {
     );
   }
 
+  /**
+   * The same tools on an image the user uploaded (docs/23 S20): the studio offers them on any image of the canvas.
+   * `content` is the URL the canvas shows or the storage key; only the user's own raster uploads qualify.
+   */
+  async runToolOnUpload(
+    userId: string,
+    content: string,
+    tool: AiImageTool,
+    dto: AiImageToolDto,
+  ): Promise<{ job: AiImageJobView; balance: number }> {
+    const key = isUploadKey(content) ? content : uploadKeyOf(content);
+    const file = key
+      ? await this.prisma.storedFile.findFirst({
+          where: { key, userId, purpose: { in: ['IMAGE', 'LOGO'] } },
+          select: { id: true, contentType: true },
+        })
+      : null;
+    if (!file) throw new NotFoundException('Uploaded image not found');
+    if (!UPLOAD_TOOL_TYPES.has(file.contentType)) {
+      throw new BadRequestException('Only PNG, JPEG and WebP images can be processed');
+    }
+    if (tool === 'upscale') {
+      const size = await this.uploadSize(key!);
+      if (upscaleFactor(size.width, size.height) < UPSCALE_MIN_FACTOR) {
+        throw new BadRequestException('This image is as large as an upscale makes it');
+      }
+    }
+
+    const replay = await this.replay(userId, dto.clientRequestId);
+    if (replay) return replay;
+    await this.assertCanRun(userId);
+
+    return this.charge(
+      userId,
+      {
+        kind: TOOL_KIND[tool],
+        modelKey: tool,
+        sourceFileId: file.id,
+        numImages: 1,
+        xuCost: XU_TOOL_COST[tool],
+        estCostUsd: TOOL_COST_USD[tool],
+        clientRequestId: dto.clientRequestId,
+      },
+      'AI_TOOL',
+    );
+  }
+
+  /** Pixel size of an uploaded image. */
+  private async uploadSize(key: string): Promise<{ width: number; height: number }> {
+    const { body } = await this.storage.getObject(key);
+    const meta = await sharp(body).metadata();
+    if (!meta.width || !meta.height) throw new BadRequestException('The image cannot be read');
+    return { width: meta.width, height: meta.height };
+  }
+
   async job(userId: string, jobId: string): Promise<AiImageJobView> {
     const job = await this.prisma.aiImageJob.findFirst({ where: { id: jobId, userId }, select: JOB_SELECT });
     if (!job) throw new NotFoundException('AI image job not found');
@@ -243,16 +302,19 @@ export class AiImageService {
   }
 
   /** "Ảnh AI của tôi": the images still kept, newest first. `nextBefore` continues the list. */
-  async gallery(userId: string, { before = new Date(), limit = 30 }: AiGalleryQueryDto) {
+  async gallery(userId: string, { before, limit = 30 }: AiGalleryQueryDto) {
+    // Paged by (createdAt, id): the images of one job are saved with createMany at the same instant, so a cursor of
+    // createdAt alone skipped those left after a page boundary (docs/30 item 7).
     const rows = await this.prisma.aiImageOutput.findMany({
-      where: { job: { userId }, createdAt: { lt: before } },
+      where: { job: { userId }, ...olderThan(before) },
       select: { ...OUTPUT_SELECT, job: { select: { id: true, kind: true, modelKey: true, prompt: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit,
     });
+    const last = rows[rows.length - 1];
     return {
       items: rows.map(({ job, ...output }) => ({ ...toOutputView(output), job })),
-      nextBefore: rows.length === limit ? rows[rows.length - 1].createdAt.toISOString() : null,
+      nextBefore: rows.length === limit ? encodePageCursor(last) : null,
     };
   }
 

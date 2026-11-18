@@ -8,9 +8,12 @@
  * Paper thickness t: creases sit on the paper mid-plane, so the base bottom is L + t by W + t, plus 2t along L for the
  * corner tabs glued inside the left and right walls; the walls are H + t/2 high (the bottom adds half a thickness).
  * The lid is sized on the outside of the base (base + t) plus LID_CLEARANCE, then the same allowances.
+ * `window: true` (docs/23 S17) cuts a display window in the top of the lid (see openings.ts).
  */
 
 import { BoxDimensions, DielineGeometry } from "../types/dieline";
+import { cutOpening, windowIn } from "./openings";
+import { segmentWriter } from "./segments";
 import { generateTray } from "./tray";
 
 /** Gap between the outside of the base and the inside of the lid, mm. */
@@ -63,6 +66,14 @@ export function generateLidBaseDieline(dimensions: BoxDimensions): {
       right: { id: "lid_right", name: "Vách nắp phải" },
     },
   });
+
+  const window = dimensions.window ? windowIn(lid.panels.find((panel) => panel.id === "lid_top")!) : null;
+  if (window) {
+    const writer = segmentWriter();
+    cutOpening(writer, "cut_window", window);
+    lid.segments.push(...writer.segments);
+    lid.openings = [window];
+  }
 
   return { base, lid };
 }

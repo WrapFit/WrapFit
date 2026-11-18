@@ -1,10 +1,12 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { ANALYTICS_BOX_TYPES } from '@wrapfit/shared';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
+import { deleteUsers } from './helpers/cleanup';
 
 /**
  * Template hub (IT3-07). Needs the seeded database (box templates + curated designs).
@@ -48,19 +50,20 @@ describe('Template hub (e2e)', () => {
   afterAll(async () => {
     await prisma.designTemplate.update({ where: { id: TET_CANDLE }, data: { usesCount: usesBefore } });
     await prisma.designTemplate.deleteMany({ where: { tags: { has: tag } } });
-    await prisma.user.deleteMany({ where: { email: { endsWith: '@e2e.test' } } });
+    await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
 
   describe('box structures', () => {
-    it('lists the four structures with their size limits, without login', async () => {
+    it('lists the structures with their size limits, without login', async () => {
       const res = await api().get('/api/templates/structures').expect(200);
-      expect(res.body.map((s: { id: string }) => s.id)).toEqual(['lid-base', 'pillow', 'sleeve-drawer', 'tuck-top']);
-      expect(res.body[3]).toMatchObject({
+      expect(res.body.map((s: { id: string }) => s.id)).toEqual([...ANALYTICS_BOX_TYPES].sort());
+      const tuckTop = res.body.find((s: { id: string }) => s.id === 'tuck-top');
+      expect(tuckTop).toMatchObject({
         id: 'tuck-top',
         dimensionLimits: { length: { min: 40, max: 600 }, width: { min: 30, max: 600 }, height: { min: 20, max: 600 } },
       });
-      expect(res.body[3].formulaSchema).toBeUndefined();
+      expect(tuckTop?.formulaSchema).toBeUndefined();
     });
   });
 

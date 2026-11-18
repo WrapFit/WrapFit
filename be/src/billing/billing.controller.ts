@@ -18,7 +18,7 @@ export class BillingController {
   ) {}
 
   @Get('me')
-  @ApiOperation({ summary: 'My plan, its limits, export credits, xu wallet, and my live subscription' })
+  @ApiOperation({ summary: 'My plan, its limits, xu wallet, and my live subscription' })
   me(@CurrentUser('id') userId: string) {
     return this.billing.me(userId);
   }
@@ -50,7 +50,7 @@ export class AdminCreditsController {
 
   @Post(':id/credits')
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Grant export credits to a user by hand (admin, e.g. demo accounts)' })
+  @ApiOperation({ summary: 'Grant xu to a user by hand (admin, e.g. demo accounts); export credits: 400' })
   grant(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: GrantCreditsDto,

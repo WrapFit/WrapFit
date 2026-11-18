@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, CreditCard, Factory, LifeBuoy, Minus, PackagePlus, Plus, ShieldCheck, ShoppingBag, Tag, Trash2, Truck } from "lucide-react";
+import { CheckCircle2, CreditCard, Factory, LifeBuoy, Minus, PackagePlus, Plus, ShieldCheck, ShoppingBag, Trash2, Truck } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { listProjects } from "@/api/projects";
@@ -14,7 +14,6 @@ import { RequireAuth } from "@/features/auth";
 import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
 import { MAX_QUANTITY, PAPER_STOCKS, sampleFee, useSampleCart } from "@/features/site/cart";
-import { findSamplePromo, samplePromoDiscount } from "@wrapfit/shared";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { queryKeys } from "@/hooks/data";
 import { errorMessage } from "@/services/api";
@@ -44,9 +43,6 @@ function CartScreen() {
   const projects = useQuery({ queryKey: queryKeys.projects.list(PROJECTS_QUERY), queryFn: () => listProjects(PROJECTS_QUERY) });
   const shops = useQuery({ queryKey: queryKeys.printShops.all, queryFn: listPrintShops, staleTime: 10 * 60_000 });
   const [shopId, setShopId] = useState<string>("");
-  const [promo, setPromo] = useState("");
-  const [applied, setApplied] = useState<string | null>(null);
-  const [promoError, setPromoError] = useState<string | null>(null);
   const [form, setForm] = useState({ recipientName: "", phone: "", shippingAddress: "", notes: "" });
   const [formError, setFormError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<SampleOrder[] | null>(null);
@@ -68,8 +64,6 @@ function CartScreen() {
   const lines = cart.items.map((item) => ({ item, project: byId.get(item.projectId) }));
   const known = lines.filter((line) => line.project);
   const subtotal = known.reduce((sum, { item }) => sum + sampleFee(item.quantity), 0);
-  // The server applies the code to each order (one per project); the cart shows the same sum.
-  const discount = applied ? known.reduce((sum, { item }) => sum + samplePromoDiscount(applied, sampleFee(item.quantity)), 0) : 0;
   const suggestions = (projects.data?.items ?? []).filter((project) => !cart.items.some((item) => item.projectId === project.id)).slice(0, 3);
   const activeShops = (shops.data ?? []).filter((shop) => (shop.status ?? shop.state ?? "active") === "active");
 
@@ -82,31 +76,18 @@ function CartScreen() {
         recipientName: form.recipientName.trim(),
         phone: form.phone.trim(),
         shippingAddress: form.shippingAddress.trim(),
-        promoCode: applied ?? undefined,
         notes: form.notes.trim() || undefined,
       });
       return [bill];
     },
     onSuccess: (orders) => {
       setPlaced(orders);
-      // One order (the usual sample): its VietQR checkout opens right away, unless a promo made it free.
+      // One order (the usual sample): its VietQR checkout opens right away.
       if (orders.length === 1 && orders[0].status === "pending_payment") setPaying(orders[0]);
       cart.clear();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
   });
-
-  const applyPromo = () => {
-    const code = promo.trim().toUpperCase();
-    if (!code) return;
-    if (!findSamplePromo(code)) {
-      setApplied(null);
-      setPromoError("Mã không hợp lệ hoặc đã hết hạn.");
-      return;
-    }
-    setApplied(code);
-    setPromoError(null);
-  };
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -127,66 +108,108 @@ function CartScreen() {
       setPlaced((current) => current?.map((item) => (item.id === id ? { ...item, status: "paid", orderStatus: "PAID" } : item)) ?? null);
     const unpaid = placed.filter((item) => item.status === "pending_payment");
     return (
-      <Container className="max-w-3xl pb-16 pt-28 sm:pt-32">
-        <Card className="text-center sm:p-10">
-          <CheckCircle2 className="mx-auto size-12 text-fpt-orange-ink" aria-hidden />
-          <h1 className="mt-4 font-landing-heading text-3xl font-bold">Đã gửi đơn in mẫu</h1>
-          <p className="mt-2 text-sm text-landing-muted">
-            {unpaid.length
-              ? "Thanh toán bằng VietQR để xưởng bắt đầu in. Đơn chưa trả vẫn nằm trong Đơn hàng & file in."
-              : "Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in."}
-          </p>
-          <ul className="mx-auto mt-6 flex max-w-md flex-col gap-2 text-left">
-            {placed.map((bill) => {
-              const designs = bill.items?.length
-                ? bill.items
-                : [{ projectId: bill.projectId, projectTitle: bill.projectTitle, quantity: bill.quantity, lineTotalVnd: bill.sampleFeeVnd ?? 0 }];
-              const paid = bill.status !== "pending_payment";
-              return (
-                <li key={bill.id} className="rounded-2xl bg-landing-canvas px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-mono text-xs text-landing-muted">{bill.orderCode ?? bill.id}</span>
-                    <span className="font-semibold">{formatVnd(bill.totalVnd ?? bill.sampleFeeVnd ?? 0)}</span>
+      <Container className="max-w-2xl pb-16 pt-28 sm:pt-32">
+        <Card className="overflow-hidden p-0 sm:p-0">
+          <header className="flex items-start gap-4 border-b border-landing-line px-6 py-6 sm:px-8">
+            <span
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-full",
+                unpaid.length ? "bg-warning-bg text-warning-fg" : "bg-success-bg text-success-fg"
+              )}
+            >
+              {unpaid.length ? <CreditCard className="size-5" aria-hidden /> : <CheckCircle2 className="size-5" aria-hidden />}
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-landing-heading text-2xl font-bold tracking-tight">{unpaid.length ? "Đơn in mẫu chờ thanh toán" : "Đã nhận đơn in mẫu"}</h1>
+              <p className="mt-1 text-sm text-landing-muted">
+                {unpaid.length
+                  ? "Thanh toán để xưởng bắt đầu in. Đơn chưa trả vẫn nằm trong Đơn hàng & file in."
+                  : "Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in."}
+              </p>
+            </div>
+          </header>
+
+          {placed.map((bill) => {
+            const designs = bill.items?.length
+              ? bill.items
+              : [{ projectId: bill.projectId, projectTitle: bill.projectTitle, quantity: bill.quantity, lineTotalVnd: bill.sampleFeeVnd ?? 0 }];
+            const paid = bill.status !== "pending_payment";
+            return (
+              <section key={bill.id} aria-label={`Đơn ${bill.orderCode ?? bill.id}`} className="border-b border-landing-line px-6 py-5 sm:px-8">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs text-landing-muted">Mã đơn</p>
+                    <p className="font-mono text-sm font-semibold tracking-wide">{bill.orderCode ?? bill.id}</p>
                   </div>
-                  <ul className="mt-2 divide-y divide-landing-line">
-                    {designs.map((design, index) => (
-                      <li key={`${design.projectId ?? index}`} className="flex items-center justify-between gap-3 py-2">
-                        <span className="min-w-0 truncate font-semibold">{design.projectTitle}</span>
-                        <span className="flex shrink-0 items-center gap-3 text-landing-muted">
-                          {design.quantity} hộp · {formatVnd(design.lineTotalVnd)}
-                          {/* Paying the print order unlocks the print file of that design version in the studio. */}
-                          {paid && design.projectId && (
-                            <Link href={`/editor/${design.projectId}?step=6`} className={buttonClass({ variant: "brand", size: "sm" })}>
-                              Xuất file in
-                            </Link>
-                          )}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-3 flex justify-end">
-                    {paid ? (
-                      <Badge size="sm" tone="success">
-                        Đã thanh toán
-                      </Badge>
-                    ) : (
-                      <Button size="sm" onClick={() => setPaying(bill)}>
-                        Thanh toán cả đơn
-                      </Button>
-                    )}
-                  </div>
+                  <Badge size="sm" tone={paid ? "success" : "warning"}>
+                    {paid ? "Đã thanh toán" : "Chờ thanh toán"}
+                  </Badge>
+                </div>
+
+                <ul className="mt-4 divide-y divide-landing-line border-y border-landing-line">
+                  {designs.map((design, index) => (
+                    <li key={`${design.projectId ?? index}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{design.projectTitle}</p>
+                        <p className="text-xs text-landing-muted">{design.quantity} hộp in mẫu</p>
+                      </div>
+                      <span className="tabular-nums">{formatVnd(design.lineTotalVnd)}</span>
+                      {/* Paying the print order unlocks the print file of that design version in the studio. */}
+                      {paid && design.projectId && (
+                        <Link href={`/editor/${design.projectId}?step=6`} className={buttonClass({ variant: "secondary", size: "sm" })}>
+                          Xuất file in
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-sm text-landing-muted">Tổng cộng</span>
+                  <span className="font-landing-heading text-lg font-bold tabular-nums">{formatVnd(bill.totalVnd ?? bill.sampleFeeVnd ?? 0)}</span>
+                </div>
+                {!paid && (
+                  <Button className="mt-4" block onClick={() => setPaying(bill)}>
+                    Thanh toán đơn này
+                  </Button>
+                )}
+              </section>
+            );
+          })}
+
+          <section aria-labelledby="next-title" className="px-6 py-5 sm:px-8">
+            <h2 id="next-title" className="text-sm font-semibold">
+              Tiếp theo
+            </h2>
+            <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+              {[
+                { icon: Factory, title: "Xưởng xác nhận", text: "Gọi lại trong giờ làm việc" },
+                { icon: PackagePlus, title: "In mẫu", text: "1–3 ngày làm việc" },
+                { icon: Truck, title: "Giao hàng", text: "Tới địa chỉ bạn đã nhập" },
+              ].map(({ icon: Icon, title, text }, index) => (
+                <li key={title} className="flex gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-landing-canvas text-landing-muted">
+                    <Icon className="size-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">
+                      {index + 1}. {title}
+                    </span>
+                    <span className="block text-xs text-landing-muted">{text}</span>
+                  </span>
                 </li>
-              );
-            })}
-          </ul>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/dashboard/orders" className={PRIMARY_CTA}>
-              Xem đơn hàng
-            </Link>
+              ))}
+            </ol>
+          </section>
+
+          <footer className="flex flex-wrap justify-end gap-3 border-t border-landing-line bg-landing-canvas/60 px-6 py-4 sm:px-8">
             <Link href="/dashboard/projects" className={SECONDARY_CTA}>
               Về dự án
             </Link>
-          </div>
+            <Link href="/dashboard/orders" className={PRIMARY_CTA}>
+              Xem đơn hàng
+            </Link>
+          </footer>
         </Card>
         {paying && (
           <CheckoutDialog
@@ -280,36 +303,16 @@ function CartScreen() {
                 <dt className="text-landing-muted">{known.length} thiết kế · {known.reduce((sum, { item }) => sum + item.quantity, 0)} hộp</dt>
                 <dd className="font-semibold">{formatVnd(subtotal)}</dd>
               </div>
-              {applied && (
-                <div className="flex justify-between text-fpt-orange-ink">
-                  <dt>{findSamplePromo(applied)?.label}</dt>
-                  <dd className="font-semibold">−{formatVnd(discount)}</dd>
-                </div>
-              )}
               <div className="flex justify-between">
                 <dt className="text-landing-muted">Giao hàng</dt>
                 <dd className="text-landing-muted">Xưởng báo khi xác nhận</dd>
               </div>
               <div className="flex justify-between border-t border-landing-line/60 pt-3 text-base">
                 <dt className="font-semibold">Tạm tính</dt>
-                <dd className="font-landing-heading text-xl font-bold">{formatVnd(Math.max(0, subtotal - discount))}</dd>
+                <dd className="font-landing-heading text-xl font-bold">{formatVnd(subtotal)}</dd>
               </div>
             </dl>
             <p className="text-xs text-landing-muted">49.000đ hộp đầu, 25.000đ mỗi hộp thêm của cùng thiết kế.</p>
-
-            <div>
-              <label htmlFor="promo" className="flex items-center gap-1.5 text-sm font-medium">
-                <Tag className="size-4" aria-hidden /> Mã ưu đãi
-              </label>
-              <div className="mt-1 flex gap-2">
-                <input id="promo" value={promo} onChange={(event) => setPromo(event.target.value)} placeholder="WORKSHOPTET" className="h-10 min-w-0 flex-1 rounded-full bg-landing-canvas px-4 font-mono text-sm uppercase outline-none ring-1 ring-landing-line focus-visible:ring-fpt-orange" />
-                <button type="button" onClick={applyPromo} className="h-10 rounded-full bg-landing-ink px-4 text-sm font-semibold text-white">
-                  Áp dụng
-                </button>
-              </div>
-              {promoError && <p className="mt-1 text-xs font-medium text-danger-fg">{promoError}</p>}
-              {applied && <p className="mt-1 text-xs text-landing-muted">Số tiền giảm được trừ ngay vào khoản thanh toán.</p>}
-            </div>
           </Card>
 
           <Card className="flex flex-col gap-3 p-5 sm:p-6">
@@ -353,7 +356,7 @@ function CartScreen() {
               </p>
             )}
             <button type="submit" disabled={!known.length || order.isPending} className={cn(PRIMARY_CTA, "h-12 w-full disabled:opacity-50")}>
-              {order.isPending ? "Đang gửi đơn…" : `Đặt in mẫu · ${formatVnd(Math.max(0, subtotal - discount))}`}
+              {order.isPending ? "Đang gửi đơn…" : `Đặt in mẫu · ${formatVnd(subtotal)}`}
             </button>
             <div className="flex flex-col gap-1.5 text-xs text-landing-muted">
               <p className="flex items-center gap-1.5">

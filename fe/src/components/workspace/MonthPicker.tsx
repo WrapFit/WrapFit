@@ -91,7 +91,7 @@ export function MonthPicker({ value, onChange, max, label = "Tháng báo cáo" }
         <div
           role="dialog"
           aria-label="Chọn tháng"
-          className="absolute right-0 top-full z-40 mt-2 w-72 rounded-2xl bg-white p-3 shadow-[0_16px_40px_-12px_rgba(29,41,61,0.28)] ring-1 ring-line/70 animate-fadeIn"
+          className="absolute right-0 top-full z-40 mt-2 w-72 origin-top-right animate-pop-in motion-reduce:animate-none rounded-2xl bg-white p-3 shadow-[0_16px_40px_-12px_rgba(29,41,61,0.28)] ring-1 ring-line/70 animate-fadeIn"
         >
           <div className="mb-2 flex items-center justify-between">
             <button type="button" className={arrow} aria-label="Năm trước" onClick={() => setViewYear((y) => y - 1)}>

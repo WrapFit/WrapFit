@@ -1,4 +1,6 @@
-import { BadRequestException, ForbiddenException, HttpStatus, ServiceUnavailableException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { BadRequestException, ForbiddenException, HttpStatus, ServiceUnavailableException, UnprocessableEntityException } from '@nestjs/common';
+import { readFileSync } from 'fs';
 import type { ConfigService } from '../common';
 import type { PrismaService } from '../shared/prisma';
 import { StorageService } from './storage.service';
@@ -143,7 +145,7 @@ describe('StorageService', () => {
 
       await expect(service.dropUnusedUploads(now)).resolves.toBe(1);
       const [sql, ...values] = queryRaw.mock.calls[0] as [TemplateStringsArray, ...unknown[]];
-      for (const place of ['project_file_refs', 'avatar_key', 'logoKey', 'thumbnail_key', 'preview_key', 'render_key']) {
+      for (const place of ['project_file_refs', 'avatar_key', 'logoKey', 'thumbnail_key', 'preview_key']) {
         expect(sql.join('?')).toContain(place);
       }
       expect(values[0]).toEqual(new Date('2026-10-11T10:00:00Z')); // made more than 24 hours ago
@@ -238,6 +240,31 @@ describe('StorageService', () => {
     });
   });
 
+  describe('putGeneratedFile when the row cannot be written (docs/30 review round 4)', () => {
+    const qr = { userId: 'u-1', projectId: 'p-1', key: 'projects/p-1/unboxing/qr-x.png', purpose: 'QR_CODE' as const, contentType: 'image/png', body: Buffer.from('qr') };
+    const commands = (send: jest.SpyInstance) => send.mock.calls.map(([command]) => command.constructor.name);
+
+    it('deletes the uploaded object when its project (or user) is gone: P2003', async () => {
+      const service = build();
+      const send = mockS3(service, async () => ({}));
+      const gone = new Prisma.PrismaClientKnownRequestError('Foreign key constraint violated on the constraint: `stored_files_project_id_fkey`', {
+        code: 'P2003',
+        clientVersion: 'test',
+      });
+      prisma.storedFile.upsert = jest.fn().mockRejectedValue(gone);
+      await expect(service.putGeneratedFile(qr)).rejects.toBe(gone);
+      expect(commands(send)).toEqual(['PutObjectCommand', 'DeleteObjectsCommand']);
+    });
+
+    it('keeps the object on any other error: a row may already point at it', async () => {
+      const service = build();
+      const send = mockS3(service, async () => ({}));
+      prisma.storedFile.upsert = jest.fn().mockRejectedValue(new Error('connection reset'));
+      await expect(service.putGeneratedFile(qr)).rejects.toThrow('connection reset');
+      expect(commands(send)).toEqual(['PutObjectCommand']);
+    });
+  });
+
   describe('private bucket (print exports)', () => {
     const exportKey = 'private/projects/p-1/exports/job-1.pdf';
 
@@ -271,5 +298,35 @@ describe('StorageService', () => {
     expect(service.uploadedKeyOf('https://evil.example/users/u-1/image/a.png')).toBeNull();
     expect(service.uploadedKeyOf('https://cdn.wrapfit.vn.evil.example/users/a.png')).toBeNull();
     expect(build({ 'storage.bucket': '', 'storage.publicUrl': '' }).uploadedKeyOf('https://cdn.wrapfit.vn/users/a.png')).toBeNull();
+  });
+
+  describe('inspectFont (docs/23 S13)', () => {
+    const playfair = readFileSync(require.resolve('@expo-google-fonts/playfair-display/400Regular/PlayfairDisplay_400Regular.ttf'));
+    const url = 'https://cdn.wrapfit.vn/users/u-1/font/a.ttf';
+    const inspect = (body: Buffer) => {
+      const service = build();
+      jest.spyOn(service, 'resolveUpload').mockResolvedValue('users/u-1/font/a.ttf');
+      jest.spyOn(service, 'getObject').mockResolvedValue({ body, contentType: 'font/ttf' } as never);
+      return service.inspectFont('u-1', url);
+    };
+
+    it('reads the family name of a font that draws Vietnamese', async () => {
+      await expect(inspect(playfair)).resolves.toEqual({ url, family: 'Playfair Display' });
+    });
+
+    it('answers 422 FONT_UNREADABLE, not 500, for a font whose cmap table is broken (audit finding 22)', async () => {
+      // The real Playfair file with every cmap subtable pointing past the end of the file: the font opens, the first
+      // glyph lookup throws (fontkit reads the table lazily).
+      const broken = Buffer.from(playfair);
+      const tableCount = broken.readUInt16BE(4);
+      const record = [...Array(tableCount).keys()].map((i) => 12 + 16 * i).find((r) => broken.toString('latin1', r, r + 4) === 'cmap')!;
+      const cmap = broken.readUInt32BE(record + 8);
+      for (let i = 0; i < broken.readUInt16BE(cmap + 2); i++) broken.writeUInt32BE(0x7ffffff0, cmap + 4 + 8 * i + 4);
+
+      const error = await inspect(broken).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(UnprocessableEntityException);
+      expect((error as UnprocessableEntityException).getResponse()).toMatchObject({ code: 'FONT_UNREADABLE' });
+      await expect(inspect(Buffer.from('not a font at all'))).rejects.toThrow(UnprocessableEntityException);
+    });
   });
 });

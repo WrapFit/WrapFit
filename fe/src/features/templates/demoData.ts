@@ -827,6 +827,13 @@ export function getStructureTemplateCounts(tab: "curated" | "community"): Record
     "sleeve-drawer": 0,
     "lid-base": 0,
     pillow: 0,
+    mailer: 0,
+    gable: 0,
+    "cup-carrier": 0,
+    insert: 0,
+    "hang-tag": 0,
+    "folded-card": 0,
+    "belly-band": 0,
     "sticker-label": 0,
   };
 
