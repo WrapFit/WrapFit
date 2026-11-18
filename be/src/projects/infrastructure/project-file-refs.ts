@@ -1,25 +1,24 @@
 import { Prisma } from '@prisma/client';
 
 /**
- * Recomputes which uploads a project shows: the file elements of its canvas and of all its snapshots (canvases store
- * upload keys, see storage/asset-keys.ts). Call it in the transaction that changed the canvas or the snapshots, so
- * the refs always match what is stored. One statement; keys without a stored_files row are ignored.
+ * Recomputes which uploads a project shows: every file reference of its canvas and of all its snapshots (canvases
+ * store upload keys, see storage/asset-keys.ts). Call it in the transaction that changed the canvas or the snapshots,
+ * so the refs always match what is stored. One statement; keys without a stored_files row are ignored.
+ *
+ * The file sources must stay the same as `fileReferences()` in storage/asset-keys.ts: `content` of the file elements
+ * (logo, image, pattern), `style.fontUrl` of any element, and `url` of each `customFonts` entry. A source missing here
+ * lets the daily maintenance (`StorageService.dropUnusedUploads`) delete a file the design still uses.
  */
 export async function syncProjectFileRefs(tx: Prisma.TransactionClient, projectId: string): Promise<void> {
   await tx.$executeRaw`
-    WITH shown AS (
+    WITH canvases AS (
+      SELECT p.canvas_state AS canvas FROM packaging_projects p WHERE p.id = ${projectId}::uuid
+      UNION ALL
+      SELECT s.canvas_state FROM project_snapshots s WHERE s.project_id = ${projectId}::uuid
+    ),
+    shown AS (
       SELECT f.id
-      FROM (
-        SELECT e ->> 'content' AS key
-        FROM packaging_projects p, jsonb_array_elements(
-          CASE WHEN jsonb_typeof(p.canvas_state -> 'elements') = 'array' THEN p.canvas_state -> 'elements' ELSE '[]'::jsonb END) e
-        WHERE p.id = ${projectId}::uuid AND e ->> 'type' IN ('logo', 'image', 'pattern')
-        UNION
-        SELECT e ->> 'content'
-        FROM project_snapshots s, jsonb_array_elements(
-          CASE WHEN jsonb_typeof(s.canvas_state -> 'elements') = 'array' THEN s.canvas_state -> 'elements' ELSE '[]'::jsonb END) e
-        WHERE s.project_id = ${projectId}::uuid AND e ->> 'type' IN ('logo', 'image', 'pattern')
-      ) keys
+      FROM (${canvasFileKeys(Prisma.sql`canvases`)}) keys
       JOIN stored_files f ON f.key = keys.key
     ),
     removed AS (
@@ -29,4 +28,20 @@ export async function syncProjectFileRefs(tx: Prisma.TransactionClient, projectI
     INSERT INTO project_file_refs (project_id, stored_file_id)
     SELECT ${projectId}::uuid, id FROM shown
     ON CONFLICT DO NOTHING`;
+}
+
+/**
+ * `SELECT key` of every file reference of the canvases in `source` (a relation with a jsonb column `canvas`). The
+ * backfill migration 20261118000100_font_file_refs repeats this query for every project.
+ */
+function canvasFileKeys(source: Prisma.Sql): Prisma.Sql {
+  const elements = Prisma.sql`jsonb_array_elements(
+    CASE WHEN jsonb_typeof(c.canvas -> 'elements') = 'array' THEN c.canvas -> 'elements' ELSE '[]'::jsonb END) e`;
+  return Prisma.sql`
+    SELECT e ->> 'content' AS key FROM ${source} c, ${elements} WHERE e ->> 'type' IN ('logo', 'image', 'pattern')
+    UNION
+    SELECT e -> 'style' ->> 'fontUrl' FROM ${source} c, ${elements}
+    UNION
+    SELECT font ->> 'url' FROM ${source} c, jsonb_array_elements(
+      CASE WHEN jsonb_typeof(c.canvas -> 'customFonts') = 'array' THEN c.canvas -> 'customFonts' ELSE '[]'::jsonb END) font`;
 }

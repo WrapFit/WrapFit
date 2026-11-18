@@ -30,10 +30,28 @@ export async function signUp(
  * Uploads a small PNG like the browser does (pre-signed PUT to the local SeaweedFS) and returns its public URL, the
  * value a client puts in `thumbnailUrl`, `avatarUrl`, `logoUrl` or a canvas element.
  */
-export async function uploadPng(
+export function uploadPng(
   app: INestApplication,
   cookie: string,
   purpose: 'LOGO' | 'IMAGE' | 'THUMBNAIL' | 'AVATAR',
+  projectId?: string,
+): Promise<string> {
+  return upload(app, cookie, purpose, 'image/png', projectId);
+}
+
+/**
+ * Uploads a font file the same way: the value of `style.fontUrl` or of a `customFonts` entry. The bytes are not a real
+ * font (saving a canvas does not open the file; POST /storage/fonts/inspect would refuse it).
+ */
+export function uploadFont(app: INestApplication, cookie: string): Promise<string> {
+  return upload(app, cookie, 'FONT', 'font/ttf');
+}
+
+async function upload(
+  app: INestApplication,
+  cookie: string,
+  purpose: 'LOGO' | 'IMAGE' | 'THUMBNAIL' | 'AVATAR' | 'FONT',
+  contentType: string,
   projectId?: string,
 ): Promise<string> {
   const size = 64;
@@ -41,7 +59,7 @@ export async function uploadPng(
     await request(app.getHttpServer())
       .post('/api/storage/presigned-upload')
       .set('Cookie', cookie)
-      .send({ purpose, contentType: 'image/png', size, projectId })
+      .send({ purpose, contentType, size, projectId })
       .expect(200)
   ).body as { uploadUrl: string; headers: Record<string, string>; fileUrl: string };
   // Cast: the DOM `BodyInit` typing does not accept Node's typed arrays, although fetch does.

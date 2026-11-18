@@ -94,7 +94,10 @@ const mapFileContents = <T extends CanvasLike>(canvas: T, map: (content: string)
   };
 };
 
-/** Every file reference of a canvas: file elements, fonts of texts, uploaded fonts. */
+/**
+ * Every file reference of a canvas: file elements, fonts of texts, uploaded fonts. `syncProjectFileRefs`
+ * (projects/infrastructure/project-file-refs.ts) reads the same sources in SQL: change both together.
+ */
 function fileReferences(canvas: CanvasLike | null | undefined): { content: string; font: boolean }[] {
   const refs: { content: string; font: boolean }[] = [];
   for (const element of canvas?.elements ?? []) {

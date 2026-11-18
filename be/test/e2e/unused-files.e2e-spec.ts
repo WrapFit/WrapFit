@@ -1,11 +1,14 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { middleware } from '../../src/app.middleware';
 import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
-import { signUp, uploadPng } from './helpers/accounts';
+import { storedCanvasKeys } from '../../src/storage/asset-keys';
+import { signUp, uploadFont, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
@@ -88,6 +91,87 @@ describe('Unused files (e2e)', () => {
     expect(await alive(removed)).toBe(false);
     expect(await alive(preview)).toBe(false);
     expect(await alive(onCanvas)).toBe(true);
+  });
+
+  // docs/30 item 2: fonts used to be missing from project_file_refs, so the maintenance deleted them after a day.
+  describe('uploaded fonts', () => {
+    const text = (id: string, fontUrl: string) => ({
+      id, type: 'text', panelId: 'front', x: 1, y: 1, width: 40, height: 10, rotation: 0, content: 'Chữ', style: { fontSize: 12, fontUrl },
+    });
+    const refKeys = async (projectId: string) =>
+      (await prisma.projectFileRef.findMany({ where: { projectId }, select: { storedFile: { select: { key: true } } } }))
+        .map((ref) => ref.storedFile.key)
+        .sort();
+    const keyOf = (url: string) => url.slice(url.indexOf('users/'));
+
+    it('keeps the fonts a canvas or a snapshot uses and deletes the unused one', async () => {
+      const vy = await register('vy-fonts');
+      const projectId = await newProject(vy);
+      const [inStyle, inCustomFonts, inSnapshot, unused] = [
+        await uploadFont(app, vy.cookie),
+        await uploadFont(app, vy.cookie),
+        await uploadFont(app, vy.cookie),
+        await uploadFont(app, vy.cookie),
+      ];
+      const save = (canvasState: object) => as(vy).patch(`/api/projects/${projectId}`).send({ canvasState }).expect(200);
+      // The snapshot keeps a font the canvas drops afterwards.
+      await save({ elements: [text('old', inSnapshot)] });
+      await as(vy).post(`/api/projects/${projectId}/snapshots`).send({ name: 'Mốc' }).expect(201);
+      await save({ elements: [text('t', inStyle)], customFonts: [{ family: 'Chu Viet', url: inCustomFonts }] });
+
+      const dayAgo = new Date(Date.now() - 25 * 60 * 60 * 1000);
+      await prisma.storedFile.updateMany({ where: { userId: vy.id }, data: { createdAt: dayAgo, confirmedAt: dayAgo } });
+      await app.get(StorageService).dropUnusedUploads();
+
+      const alive = async (url: string) => (await fetch(url)).status === 200;
+      for (const url of [inStyle, inCustomFonts, inSnapshot]) expect(await alive(url)).toBe(true);
+      expect(await alive(unused)).toBe(false);
+    });
+
+    it('records the same files as storedCanvasKeys, for a canvas with every kind of file reference', async () => {
+      const lan = await register('lan-fonts');
+      const projectId = await newProject(lan);
+      const [logo, image, pattern, font, customFont] = [
+        await uploadPng(app, lan.cookie, 'LOGO'),
+        await uploadPng(app, lan.cookie, 'IMAGE'),
+        await uploadPng(app, lan.cookie, 'IMAGE'),
+        await uploadFont(app, lan.cookie),
+        await uploadFont(app, lan.cookie),
+      ];
+      const file = (id: string, type: string, content: string) => ({ id, type, panelId: 'front', x: 1, y: 1, width: 5, height: 5, rotation: 0, content });
+      await as(lan)
+        .patch(`/api/projects/${projectId}`)
+        .send({
+          canvasState: {
+            elements: [file('l', 'logo', logo), file('i', 'image', image), file('p', 'pattern', pattern), text('t', font)],
+            customFonts: [{ family: 'Chu Viet', url: customFont }],
+          },
+        })
+        .expect(200);
+
+      const { canvasState } = await prisma.packagingProject.findUniqueOrThrow({ where: { id: projectId }, select: { canvasState: true } });
+      const expected = storedCanvasKeys(canvasState as Parameters<typeof storedCanvasKeys>[0]).sort();
+      expect(expected).toEqual([logo, image, pattern, font, customFont].map(keyOf).sort());
+      expect(await refKeys(projectId)).toEqual(expected);
+    });
+
+    it('the backfill migration adds the font refs of existing projects', async () => {
+      const kim = await register('kim-fonts');
+      const projectId = await newProject(kim);
+      const [font, customFont] = [await uploadFont(app, kim.cookie), await uploadFont(app, kim.cookie)];
+      await as(kim)
+        .patch(`/api/projects/${projectId}`)
+        .send({ canvasState: { elements: [text('t', font)], customFonts: [{ family: 'Chu Viet', url: customFont }] } })
+        .expect(200);
+      const before = await refKeys(projectId);
+      expect(before).toEqual([font, customFont].map(keyOf).sort());
+
+      // As the refs were before the fix: no font at all.
+      await prisma.projectFileRef.deleteMany({ where: { projectId } });
+      const migration = join(__dirname, '../../prisma/migrations/20261118000100_font_file_refs/migration.sql');
+      await prisma.$executeRawUnsafe(readFileSync(migration, 'utf8'));
+      expect(await refKeys(projectId)).toEqual(before);
+    });
   });
 
   afterAll(async () => {
