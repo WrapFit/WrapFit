@@ -62,7 +62,7 @@ describe('ProjectsService', () => {
       update: jest.fn().mockImplementation(async (_id, changes) => changes),
       updateContent: jest.fn().mockImplementation(async (_id, changes) => changes),
       setLifecycle: jest.fn().mockImplementation(async (_id, state) => state),
-      delete: jest.fn().mockResolvedValue(true),
+      delete: jest.fn().mockResolvedValue({ kind: 'DELETED' }),
       findOrderHoldingDesign: jest.fn().mockResolvedValue(null),
       findTrashedBefore: jest.fn().mockResolvedValue(['p-1', 'p-2', 'p-3']),
       deleteTrashed: jest.fn().mockResolvedValue(['p-1', 'p-3']),
@@ -465,12 +465,22 @@ describe('ProjectsService', () => {
       expect(files.deleteObjects).not.toHaveBeenCalled();
     });
 
-    it('answers the same 409 when an order was placed between the check and the DELETE, and deletes no object', async () => {
+    it('answers the same 409 when an order was placed between the check and the locked DELETE, and deletes no object', async () => {
       inTrash();
-      repo.findOrderHoldingDesign.mockResolvedValueOnce(null).mockResolvedValueOnce('WF-2611-0043');
-      repo.delete.mockResolvedValueOnce(false);
+      repo.delete.mockResolvedValueOnce({ kind: 'IN_ORDER', orderCode: 'WF-2611-0043' });
       files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
-      await expect(refusal(service.remove('project-1'))).resolves.toMatchObject({ status: 409, body: { code: 'PROJECT_IN_ACTIVE_ORDER' } });
+      await expect(refusal(service.remove('project-1'))).resolves.toEqual({
+        status: 409,
+        body: { code: 'PROJECT_IN_ACTIVE_ORDER', message: expect.stringContaining('WF-2611-0043') },
+      });
+      expect(files.deleteObjects).not.toHaveBeenCalled();
+    });
+
+    it('answers 409 when another tab restored the project meanwhile, and deletes no object', async () => {
+      inTrash();
+      repo.delete.mockResolvedValueOnce({ kind: 'NOT_IN_TRASH' });
+      files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
+      await expect(refusal(service.remove('project-1'))).resolves.toMatchObject({ status: 409 });
       expect(files.deleteObjects).not.toHaveBeenCalled();
     });
   });

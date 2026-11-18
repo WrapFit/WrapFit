@@ -12,6 +12,15 @@ import type {
 
 export const PROJECT_REPOSITORY = Symbol('PROJECT_REPOSITORY');
 
+/** Outcome of a permanent deletion. */
+export type PermanentDeletion =
+  | { kind: 'DELETED' }
+  | { kind: 'NOT_FOUND' }
+  /** Restored meanwhile (another tab). */
+  | { kind: 'NOT_IN_TRASH' }
+  /** An order still needs the design: the code of the oldest such order. */
+  | { kind: 'IN_ORDER'; orderCode: string };
+
 export interface TemplateRules {
   id: string;
   isActive: boolean;
@@ -110,10 +119,11 @@ export interface IProjectRepository {
   updateContent(projectId: string, changes: ProjectChanges, expectedVersion: number): Promise<ProjectDetail | null>;
   setLifecycle(projectId: string, state: LifecycleState): Promise<ProjectDetail>;
   /**
-   * Permanently deletes the project unless an order still holds its design (ORDER_STATUSES_HOLDING_DESIGN, checked in
-   * the same statement). Returns false when nothing was deleted.
+   * Permanently deletes the project if it is still in the trash and no order holds its design
+   * (ORDER_STATUSES_HOLDING_DESIGN). Both are read after the project row is locked, so a checkout or a restore that
+   * commits meanwhile is seen. Says why nothing was deleted otherwise.
    */
-  delete(projectId: string): Promise<boolean>;
+  delete(projectId: string): Promise<PermanentDeletion>;
   /** Code of the oldest order that still holds the design of the project (ORDER_STATUSES_HOLDING_DESIGN), or null. */
   findOrderHoldingDesign(projectId: string): Promise<string | null>;
   /**

@@ -8,6 +8,7 @@ import type {
   DesignTemplateSource,
   IProjectRepository,
   NewProject,
+  PermanentDeletion,
   ProjectChanges,
   ProjectListQuery,
   TemplateRules,
@@ -161,22 +162,25 @@ export class PrismaProjectRepository implements IProjectRepository {
     return toDetail(row);
   }
 
-  async delete(projectId: string): Promise<boolean> {
-    // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
-      DELETE FROM packaging_projects p
-      WHERE p.id = ${projectId}::uuid AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
-      RETURNING p.id`;
-    return rows.length > 0;
+  async delete(projectId: string): Promise<PermanentDeletion> {
+    return this.prisma.$transaction(async (tx) => {
+      // Lock first (docs/30 item 4). The lock waits for a checkout writing an order line of this project (its foreign
+      // key check holds the row) and for a restore from another tab. The statements below start after it, so they see
+      // what those committed: a check inside the DELETE itself would read the database as it was before the wait.
+      const [row] = await tx.$queryRaw<{ status: string }[]>`
+        SELECT status::text AS status FROM packaging_projects WHERE id = ${projectId}::uuid FOR UPDATE`;
+      if (!row) return { kind: 'NOT_FOUND' };
+      if (row.status !== 'DELETED') return { kind: 'NOT_IN_TRASH' };
+      const orderCode = await orderHoldingDesign(tx, projectId);
+      if (orderCode) return { kind: 'IN_ORDER', orderCode };
+      // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
+      await tx.$executeRaw`DELETE FROM packaging_projects WHERE id = ${projectId}::uuid`;
+      return { kind: 'DELETED' };
+    });
   }
 
-  async findOrderHoldingDesign(projectId: string): Promise<string | null> {
-    const item = await this.prisma.orderItem.findFirst({
-      where: { projectId, order: { status: { in: [...ORDER_STATUSES_HOLDING_DESIGN] } } },
-      select: { order: { select: { orderCode: true } } },
-      orderBy: { order: { createdAt: 'asc' } },
-    });
-    return item?.order.orderCode ?? null;
+  findOrderHoldingDesign(projectId: string): Promise<string | null> {
+    return orderHoldingDesign(this.prisma, projectId);
   }
 
   async findTrashedBefore(cutoff: Date, limit: number): Promise<string[]> {
@@ -192,14 +196,21 @@ export class PrismaProjectRepository implements IProjectRepository {
 
   async deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]> {
     if (!projectIds.length) return [];
-    // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
-      DELETE FROM packaging_projects p
-      WHERE p.id = ANY(${projectIds}::uuid[]) AND p.status = 'DELETED'
-        AND p.deleted_at < ${cutoff.toISOString()}::timestamptz
-        AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
-      RETURNING p.id`;
-    return rows.map((row) => row.id);
+    return this.prisma.$transaction(async (tx) => {
+      // Lock first, as `delete` does, but skip the rows another transaction holds (a checkout writing an order, a
+      // restore): the next run retries them. The DELETE, a new statement, then sees the orders committed before.
+      const locked = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM packaging_projects
+        WHERE id = ANY(${projectIds}::uuid[]) AND status = 'DELETED' AND deleted_at < ${cutoff.toISOString()}::timestamptz
+        FOR UPDATE SKIP LOCKED`;
+      if (!locked.length) return [];
+      // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
+      const rows = await tx.$queryRaw<{ id: string }[]>`
+        DELETE FROM packaging_projects p
+        WHERE p.id = ANY(${locked.map((row) => row.id)}::uuid[]) AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
+        RETURNING p.id`;
+      return rows.map((row) => row.id);
+    });
   }
 
   async findUnchecked(afterId: string | null, limit: number): Promise<UncheckedProject[]> {
@@ -240,4 +251,14 @@ export class PrismaProjectRepository implements IProjectRepository {
       }),
     } satisfies Prisma.PackagingProjectUncheckedUpdateManyInput;
   }
+}
+
+/** Code of the oldest order that still holds the design of the project (ORDER_STATUSES_HOLDING_DESIGN), or null. */
+async function orderHoldingDesign(db: Prisma.TransactionClient, projectId: string): Promise<string | null> {
+  const item = await db.orderItem.findFirst({
+    where: { projectId, order: { status: { in: [...ORDER_STATUSES_HOLDING_DESIGN] } } },
+    select: { order: { select: { orderCode: true } } },
+    orderBy: { order: { createdAt: 'asc' } },
+  });
+  return item?.order.orderCode ?? null;
 }

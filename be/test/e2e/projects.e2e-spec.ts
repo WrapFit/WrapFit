@@ -18,7 +18,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
-import { createPaidOrder } from './helpers/orders';
+import { createPaidOrder, sampleOrderData } from './helpers/orders';
 
 /**
  * Projects CRUD (IT3-03), lifecycle, duplicate, snapshots and trash purge (IT3-04). Needs the migrated and seeded database (box templates).
@@ -845,6 +845,121 @@ describe('Projects API (e2e)', () => {
       expect(await prisma.packagingProject.findUnique({ where: { id } })).toBeNull();
       expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: null });
       await expect(storage.getObject(exportKey)).rejects.toThrow();
+    });
+  });
+
+  // docs/30 item 4, review round 2: a checkout or a restore that commits while the deletion waits for the project row.
+  describe('permanent deletion racing a checkout or a restore', () => {
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    /** Holds a transaction open after `work`, until `release`: a checkout (or a second tab) between its write and its commit. */
+    const hold = <T>(work: (tx: Prisma.TransactionClient) => Promise<T>) => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      let written!: () => void;
+      const started = new Promise<void>((resolve) => (written = resolve));
+      const done = prisma.$transaction(
+        async (tx): Promise<T> => {
+          const result = await work(tx);
+          written();
+          await gate;
+          return result;
+        },
+        { timeout: 30_000 },
+      );
+      return { started, release, done };
+    };
+    /** Resolves once `count` sessions wait for a row lock (a statement blocked by another transaction). */
+    const untilWaiting = async (count: number) => {
+      for (let i = 0; i < 200; i++) {
+        const [{ n }] = await prisma.$queryRaw<{ n: number }[]>`
+          SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+        if (n >= count) return;
+        await sleep(25);
+      }
+      throw new Error(`fewer than ${count} sessions wait for a lock`);
+    };
+    const trashedProject = async (title: string) => {
+      const id = (await as(carol).post('/api/projects').send(newProject({ title })).expect(201)).body.id as string;
+      // Read by the checkout while the project was still active (orders.service.ts reads it without a lock).
+      const project = await prisma.packagingProject.findUniqueOrThrow({ where: { id } });
+      await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+      return project;
+    };
+    const checkout = (project: Awaited<ReturnType<typeof trashedProject>>) =>
+      hold(async (tx) => {
+        const order = await tx.order.create({ data: sampleOrderData(carol.id, project, run), select: { id: true } });
+        orderIds.push(order.id);
+        return order;
+      });
+
+    it('the checkout locks first: the deletion waits, then answers 409 and the order keeps its design', async () => {
+      const project = await trashedProject('Đơn trước, xoá sau');
+      const order = checkout(project);
+      await order.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      order.release();
+      const { id: orderId } = await order.done;
+
+      const res = await deleting;
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({ code: 'PROJECT_IN_ACTIVE_ORDER' });
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).not.toBeNull();
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: project.id });
+    });
+
+    it('the deletion locks first: the checkout fails on the missing project, no order is left without its design', async () => {
+      const project = await trashedProject('Xoá trước, đơn sau');
+      await prisma.projectSnapshot.create({ data: { projectId: project.id, name: 'Mốc', canvasState: { elements: [] }, dimensions: {} } });
+      // Holding a snapshot row pauses the deletion inside its transaction, after it locked the project (cascade).
+      const pause = hold((tx) => tx.$queryRaw`SELECT id FROM project_snapshots WHERE project_id = ${project.id}::uuid FOR UPDATE`);
+      await pause.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      const order = checkout(project);
+      const failed = order.done.then(
+        () => null,
+        (error: unknown) => error,
+      );
+      await untilWaiting(2);
+      pause.release();
+      await pause.done;
+
+      expect((await deleting).status).toBe(204);
+      expect(await failed).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).toBeNull();
+      // The whole checkout rolled back: no order line of this design, with or without its project.
+      expect(await prisma.orderItem.count({ where: { projectTitle: project.title } })).toBe(0);
+    });
+
+    it('a restore that commits while the deletion waits keeps the project: 409, still ACTIVE', async () => {
+      const project = await trashedProject('Khôi phục ở tab khác');
+      const restore = hold((tx) => tx.$executeRaw`
+        UPDATE packaging_projects SET status = 'ACTIVE', deleted_at = NULL WHERE id = ${project.id}::uuid`);
+      await restore.started;
+      const deleting = as(carol).delete(`/api/projects/${project.id}`).then((res) => res);
+      await untilWaiting(1);
+      restore.release();
+      await restore.done;
+
+      expect((await deleting).status).toBe(409);
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).toMatchObject({ status: 'ACTIVE' });
+    });
+
+    it('the trash purge leaves a project a checkout is writing an order for', async () => {
+      const project = await trashedProject('Dọn thùng rác giữa lúc đặt đơn');
+      await prisma.packagingProject.update({ where: { id: project.id }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });
+      const order = checkout(project);
+      await order.started;
+      const purging = app.get(ProjectsService).purgeExpiredTrash();
+      // Either the purge skips the locked row and ends, or (before the fix) it waits for it.
+      await Promise.race([purging, untilWaiting(1)]);
+      order.release();
+      const { id: orderId } = await order.done;
+      await purging;
+
+      expect(await prisma.packagingProject.findUnique({ where: { id: project.id } })).not.toBeNull();
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: project.id });
     });
   });
 });

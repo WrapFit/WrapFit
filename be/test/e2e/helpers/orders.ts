@@ -1,6 +1,44 @@
 import { INestApplication } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { PrismaService } from '../../../src/shared/prisma';
+
+/** Code of a test order: WF-<4 digits>-<4 digits> (CHECK), a year far ahead and random digits keep it apart from real orders. */
+const testOrderCode = (run: number) =>
+  `WF-9${String(run % 1000).padStart(3, '0')}-${String(Math.floor(Math.random() * 10_000)).padStart(4, '0')}`;
+
+/**
+ * Data of a one-line PENDING_PAYMENT print order holding `project` at its version, as the checkout writes it. For a
+ * test that writes the order in a transaction of its own (a checkout caught between its insert and its commit).
+ */
+export const sampleOrderData = (
+  userId: string,
+  project: { id: string; version: number; title: string; templateId: string; dimensions: unknown },
+  run: number,
+): Prisma.OrderUncheckedCreateInput => ({
+  orderCode: testOrderCode(run),
+  userId,
+  printShopId: 'ps-sg-01',
+  recipientName: 'E2E',
+  recipientPhone: '0900000000',
+  shippingAddress: 'E2E',
+  subtotalVnd: 49_000,
+  totalVnd: 49_000,
+  status: 'PENDING_PAYMENT',
+  items: {
+    create: {
+      projectId: project.id,
+      projectVersion: project.version,
+      projectTitle: project.title,
+      structure: project.templateId,
+      dimensions: project.dimensions as Prisma.InputJsonValue,
+      paperStock: 'ivory-300',
+      quantity: 1,
+      unitPriceVnd: 49_000,
+      lineTotalVnd: 49_000,
+    },
+  },
+});
 
 /**
  * A paid print order holding the current version of the design: what unlocks its print file (the cart flow).
@@ -8,34 +46,8 @@ import { PrismaService } from '../../../src/shared/prisma';
  */
 export const createPaidOrder = async (prisma: PrismaService, userId: string, projectId: string, run: number): Promise<string> => {
   const stored = await prisma.packagingProject.findUniqueOrThrow({ where: { id: projectId } });
-  // WF-<4 digits>-<4 digits> (CHECK): a year far ahead and random digits keep it apart from real orders.
-  const code = `WF-9${String(run % 1000).padStart(3, '0')}-${String(Math.floor(Math.random() * 10_000)).padStart(4, '0')}`;
   const order = await prisma.order.create({
-    data: {
-      orderCode: code,
-      userId,
-      printShopId: 'ps-sg-01',
-      recipientName: 'E2E',
-      recipientPhone: '0900000000',
-      shippingAddress: 'E2E',
-      subtotalVnd: 49_000,
-      totalVnd: 49_000,
-      status: 'PAID',
-      paidAt: new Date(),
-      items: {
-        create: {
-          projectId,
-          projectVersion: stored.version,
-          projectTitle: stored.title,
-          structure: stored.templateId,
-          dimensions: stored.dimensions as never,
-          paperStock: 'ivory-300',
-          quantity: 1,
-          unitPriceVnd: 49_000,
-          lineTotalVnd: 49_000,
-        },
-      },
-    },
+    data: { ...sampleOrderData(userId, stored, run), status: 'PAID', paidAt: new Date() },
     select: { id: true },
   });
   return order.id;
