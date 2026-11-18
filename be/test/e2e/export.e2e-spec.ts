@@ -490,6 +490,12 @@ describe('Print export (e2e)', () => {
     expect((await fetch(latest.downloadUrl)).status).toBe(200);
 
     await as(pia).patch(`/api/projects/${projectId}/status`).send({ status: 'DELETED' }).expect(200);
+    // A paid order still needs the design (docs/30 item 4): the project goes once its order is shipped.
+    await as(pia).delete(`/api/projects/${projectId}`).expect(409);
+    await prisma.order.updateMany({
+      where: { id: { in: orderIds }, items: { some: { projectId } } },
+      data: { status: 'SHIPPED', shippedAt: new Date() },
+    });
     await as(pia).delete(`/api/projects/${projectId}`).expect(204);
     expect((await fetch(latest.downloadUrl)).status).toBe(404);
   });

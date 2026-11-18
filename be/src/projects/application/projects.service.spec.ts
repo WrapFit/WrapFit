@@ -62,7 +62,8 @@ describe('ProjectsService', () => {
       update: jest.fn().mockImplementation(async (_id, changes) => changes),
       updateContent: jest.fn().mockImplementation(async (_id, changes) => changes),
       setLifecycle: jest.fn().mockImplementation(async (_id, state) => state),
-      delete: jest.fn(),
+      delete: jest.fn().mockResolvedValue(true),
+      findOrderHoldingDesign: jest.fn().mockResolvedValue(null),
       findTrashedBefore: jest.fn().mockResolvedValue(['p-1', 'p-2', 'p-3']),
       deleteTrashed: jest.fn().mockResolvedValue(['p-1', 'p-3']),
       findUnchecked: jest.fn().mockResolvedValue([]),
@@ -440,6 +441,38 @@ describe('ProjectsService', () => {
     expect(repo.delete).toHaveBeenCalledWith('project-1');
     expect(files.detachSharedFiles).toHaveBeenCalledWith(['project-1']);
     expect(files.deleteObjects).toHaveBeenCalledWith(['thumb.webp']);
+  });
+
+  describe('remove of a design an order still needs (docs/30 item 4)', () => {
+    const inTrash = () => repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
+    const refusal = (promise: Promise<unknown>) =>
+      promise.then(
+        () => {
+          throw new Error('expected a rejection');
+        },
+        (e: ConflictException) => ({ status: e.getStatus(), body: e.getResponse() }),
+      );
+
+    it('answers 409 PROJECT_IN_ACTIVE_ORDER with the order code before touching any file', async () => {
+      inTrash();
+      repo.findOrderHoldingDesign.mockResolvedValueOnce('WF-2611-0042');
+      await expect(refusal(service.remove('project-1'))).resolves.toEqual({
+        status: 409,
+        body: { code: 'PROJECT_IN_ACTIVE_ORDER', message: expect.stringContaining('WF-2611-0042') },
+      });
+      expect(files.detachSharedFiles).not.toHaveBeenCalled();
+      expect(repo.delete).not.toHaveBeenCalled();
+      expect(files.deleteObjects).not.toHaveBeenCalled();
+    });
+
+    it('answers the same 409 when an order was placed between the check and the DELETE, and deletes no object', async () => {
+      inTrash();
+      repo.findOrderHoldingDesign.mockResolvedValueOnce(null).mockResolvedValueOnce('WF-2611-0043');
+      repo.delete.mockResolvedValueOnce(false);
+      files.listProjectFiles.mockResolvedValueOnce([{ projectId: 'project-1', key: 'thumb.webp' }]);
+      await expect(refusal(service.remove('project-1'))).resolves.toMatchObject({ status: 409, body: { code: 'PROJECT_IN_ACTIVE_ORDER' } });
+      expect(files.deleteObjects).not.toHaveBeenCalled();
+    });
   });
 
   it('assertOwner hides projects of other users behind a 404', async () => {

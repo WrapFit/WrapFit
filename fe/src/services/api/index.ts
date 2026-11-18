@@ -193,6 +193,8 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
   FILE_URL_NOT_ALLOWED: "Ảnh phải được tải lên WrapFit trước khi dùng.",
   FILE_NOT_OWNED: "Chỉ dùng được ảnh do bạn tải lên.",
   PROJECT_VERSION_CONFLICT: "Dự án vừa được lưu ở tab hoặc thiết bị khác.",
+  // Fallback only: the server message names the order (SERVER_WORDED_CODES).
+  PROJECT_IN_ACTIVE_ORDER: "Dự án đang nằm trong một đơn in chưa gửi đi. Bạn xoá vĩnh viễn được khi đơn đã gửi đi hoặc đã huỷ.",
   ORIGIN_NOT_ALLOWED: "Yêu cầu phải được gửi từ trang WrapFit.",
   EXPORT_PACK_DISCONTINUED: "Gói lượt xuất đã ngừng bán. File in mở khi bạn thanh toán đơn in mẫu.",
   INSUFFICIENT_CREDITS: "Bạn không đủ xu Wrap cho tác vụ này.",
@@ -210,7 +212,13 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
 };
 
 /** Codes whose server message is written for the user (Vietnamese, with the details): shown as sent. */
-const SERVER_WORDED_CODES: ReadonlySet<ApiErrorCode> = new Set(["PROMPT_REJECTED", "AI_IMAGE_UNAVAILABLE", "AI_IMAGE_BUSY"]);
+const SERVER_WORDED_CODES: ReadonlySet<ApiErrorCode> = new Set([
+  "PROMPT_REJECTED",
+  "AI_IMAGE_UNAVAILABLE",
+  "AI_IMAGE_BUSY",
+  // Names the print order that still needs the design (docs/30 item 4).
+  "PROJECT_IN_ACTIVE_ORDER",
+]);
 
 /** Vietnamese message for a failed call (docs/06, section 2). Validation errors keep the server's field messages. */
 export function errorMessage(error: unknown): string {

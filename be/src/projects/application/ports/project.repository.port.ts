@@ -109,12 +109,22 @@ export interface IProjectRepository {
    */
   updateContent(projectId: string, changes: ProjectChanges, expectedVersion: number): Promise<ProjectDetail | null>;
   setLifecycle(projectId: string, state: LifecycleState): Promise<ProjectDetail>;
-  delete(projectId: string): Promise<void>;
-  /** Ids of projects moved to the trash before `cutoff` (at most `limit`). */
+  /**
+   * Permanently deletes the project unless an order still holds its design (ORDER_STATUSES_HOLDING_DESIGN, checked in
+   * the same statement). Returns false when nothing was deleted.
+   */
+  delete(projectId: string): Promise<boolean>;
+  /** Code of the oldest order that still holds the design of the project (ORDER_STATUSES_HOLDING_DESIGN), or null. */
+  findOrderHoldingDesign(projectId: string): Promise<string | null>;
+  /**
+   * Ids of projects moved to the trash before `cutoff` (at most `limit`), leaving out those an order still holds:
+   * they would fill every batch and stop the purge.
+   */
   findTrashedBefore(cutoff: Date, limit: number): Promise<string[]>;
   /**
    * Permanently deletes those of `projectIds` that are still in the trash since before `cutoff` (one may have
-   * been restored meanwhile) and returns the ids actually deleted.
+   * been restored meanwhile) and that no order holds (one may have been ordered meanwhile), and returns the ids
+   * actually deleted.
    */
   deleteTrashed(projectIds: string[], cutoff: Date): Promise<string[]>;
   /** Projects without a FitCheck score, by ascending id after `afterId` (at most `limit`). */

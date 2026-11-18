@@ -1,4 +1,4 @@
-import { OrderStatus, Role } from '@prisma/client';
+import { OrderStatus, Prisma, Role } from '@prisma/client';
 
 /**
  * Lifecycle of a sample print order. An order is placed as PENDING_PAYMENT; the payment (S5, or an admin by hand)
@@ -28,3 +28,20 @@ export const STATUS_TIMESTAMP: Partial<Record<OrderStatus, 'paidAt' | 'shippedAt
   DELIVERED: 'deliveredAt',
   CANCELLED: 'cancelledAt',
 };
+
+/**
+ * Orders that still need the design of their project (docs/30 item 4, Q2): waiting for payment, paid, in production.
+ * A project such an order holds cannot be deleted permanently, by hand or by the trash purge: the print shop would
+ * lose the design and its print files, and a pending order could still be paid (`markPaid` does not look at the
+ * project). Once the order is shipped, delivered or cancelled the project may go.
+ */
+export const ORDER_STATUSES_HOLDING_DESIGN: readonly OrderStatus[] = [
+  OrderStatus.PENDING_PAYMENT,
+  OrderStatus.PAID,
+  OrderStatus.IN_PRODUCTION,
+];
+
+/** SQL condition: no order in ORDER_STATUSES_HOLDING_DESIGN holds the project whose id is `projectId` (a column). */
+export const noOrderHoldsDesign = (projectId: Prisma.Sql): Prisma.Sql => Prisma.sql`NOT EXISTS (
+  SELECT 1 FROM order_items i JOIN orders o ON o.id = i.order_id
+  WHERE i.project_id = ${projectId} AND o.status::text = ANY(${[...ORDER_STATUSES_HOLDING_DESIGN]}::text[]))`;

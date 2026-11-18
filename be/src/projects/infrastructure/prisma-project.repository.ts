@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { FitCheckReport } from '@wrapfit/shared';
+import { noOrderHoldsDesign, ORDER_STATUSES_HOLDING_DESIGN } from '../../orders/order-status';
 import { PrismaService } from '../../shared/prisma';
 import { toStoredCanvas } from '../../storage';
 import type {
@@ -160,18 +161,32 @@ export class PrismaProjectRepository implements IProjectRepository {
     return toDetail(row);
   }
 
-  async delete(projectId: string): Promise<void> {
-    await this.prisma.packagingProject.delete({ where: { id: projectId } });
+  async delete(projectId: string): Promise<boolean> {
+    // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      DELETE FROM packaging_projects p
+      WHERE p.id = ${projectId}::uuid AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
+      RETURNING p.id`;
+    return rows.length > 0;
+  }
+
+  async findOrderHoldingDesign(projectId: string): Promise<string | null> {
+    const item = await this.prisma.orderItem.findFirst({
+      where: { projectId, order: { status: { in: [...ORDER_STATUSES_HOLDING_DESIGN] } } },
+      select: { order: { select: { orderCode: true } } },
+      orderBy: { order: { createdAt: 'asc' } },
+    });
+    return item?.order.orderCode ?? null;
   }
 
   async findTrashedBefore(cutoff: Date, limit: number): Promise<string[]> {
     // Uses the (status, deleted_at) index.
-    const rows = await this.prisma.packagingProject.findMany({
-      where: { status: 'DELETED', deletedAt: { lt: cutoff } },
-      select: { id: true },
-      orderBy: { deletedAt: 'asc' },
-      take: limit,
-    });
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT p.id FROM packaging_projects p
+      WHERE p.status = 'DELETED' AND p.deleted_at < ${cutoff.toISOString()}::timestamptz
+        AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
+      ORDER BY p.deleted_at
+      LIMIT ${limit}`;
     return rows.map((row) => row.id);
   }
 
@@ -179,10 +194,11 @@ export class PrismaProjectRepository implements IProjectRepository {
     if (!projectIds.length) return [];
     // Snapshots, likes, files, exports... are removed by ON DELETE CASCADE.
     const rows = await this.prisma.$queryRaw<{ id: string }[]>`
-      DELETE FROM packaging_projects
-      WHERE id = ANY(${projectIds}::uuid[]) AND status = 'DELETED'
-        AND deleted_at < ${cutoff.toISOString()}::timestamptz
-      RETURNING id`;
+      DELETE FROM packaging_projects p
+      WHERE p.id = ANY(${projectIds}::uuid[]) AND p.status = 'DELETED'
+        AND p.deleted_at < ${cutoff.toISOString()}::timestamptz
+        AND ${noOrderHoldsDesign(Prisma.sql`p.id`)}
+      RETURNING p.id`;
     return rows.map((row) => row.id);
   }
 

@@ -11,9 +11,13 @@ import { MAX_SNAPSHOTS_PER_PROJECT } from '../../src/projects/application/snapsh
 import { MAX_AUTOMATIC_SNAPSHOTS } from '../../src/projects';
 import { FitCheckBackfillTask } from '../../src/projects/presentation/fitcheck-backfill.task';
 import { TrashPurgeTask } from '../../src/projects/presentation/trash-purge.task';
+import { ProjectsService } from '../../src/projects/application/projects.service';
+import { PROJECT_REPOSITORY, type IProjectRepository } from '../../src/projects/application/ports/project.repository.port';
 import { PrismaService } from '../../src/shared/prisma';
+import { StorageService } from '../../src/storage';
 import { signUp, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
+import { createPaidOrder } from './helpers/orders';
 
 /**
  * Projects CRUD (IT3-03), lifecycle, duplicate, snapshots and trash purge (IT3-04). Needs the migrated and seeded database (box templates).
@@ -62,7 +66,11 @@ describe('Projects API (e2e)', () => {
     daveCollection = (await as(dave).post('/api/collections').send({ title: 'Dave' }).expect(201)).body.id;
   });
 
+  /** Print orders written by the test: orders do not go with their user. */
+  const orderIds: string[] = [];
+
   afterAll(async () => {
+    await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
     await deleteUsers(prisma, { email: { endsWith: '@e2e.test' } });
     await app.close();
   });
@@ -775,5 +783,44 @@ describe('Projects API (e2e)', () => {
     }
     expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: true } })).toBe(MAX_AUTOMATIC_SNAPSHOTS);
     expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: false } })).toBe(1);
+  });
+
+  // docs/30 item 4 (Q2): an order waiting for payment, paid or in production still needs the design.
+  describe.each(['PENDING_PAYMENT', 'PAID', 'IN_PRODUCTION'] as const)('permanent deletion of a design in a %s order', (status) => {
+    it('is refused by hand and by the trash purge until the order is shipped', async () => {
+      const id = (await as(carol).post('/api/projects').send(newProject({ title: `Hộp đơn ${status}` })).expect(201)).body.id as string;
+      const storage = app.get(StorageService);
+      const exportKey = `private/projects/${id}/exports/e2e-${status}.dxf`;
+      await storage.putGeneratedFile({ userId: carol.id, projectId: id, key: exportKey, purpose: 'EXPORT', contentType: 'application/dxf', body: Buffer.from('0\nEOF\n') });
+      const orderId = await createPaidOrder(prisma, carol.id, id, run);
+      orderIds.push(orderId);
+      const { orderCode } = await prisma.order.update({
+        where: { id: orderId },
+        data: { status, paidAt: status === 'PENDING_PAYMENT' ? null : new Date() },
+        select: { orderCode: true },
+      });
+      await as(carol).patch(`/api/projects/${id}/status`).send({ status: 'DELETED' }).expect(200);
+
+      const refused = await as(carol).delete(`/api/projects/${id}`).expect(409);
+      expect(refused.body).toMatchObject({ code: 'PROJECT_IN_ACTIVE_ORDER' });
+      expect(refused.body.message).toContain(orderCode);
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: id });
+      await expect(storage.getObject(exportKey)).resolves.toMatchObject({ contentType: 'application/dxf' });
+
+      // In the trash for 31 days: the purge leaves it, and does not even pick it (it would fill every batch).
+      await prisma.packagingProject.update({ where: { id }, data: { deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) } });
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      expect(await app.get<IProjectRepository>(PROJECT_REPOSITORY).findTrashedBefore(cutoff, 10_000)).not.toContain(id);
+      await app.get(ProjectsService).purgeExpiredTrash();
+      expect(await prisma.packagingProject.findUnique({ where: { id } })).not.toBeNull();
+      await expect(storage.getObject(exportKey)).resolves.toBeDefined();
+
+      // Shipped: the next purge deletes the project and its files; the order keeps its line without the project.
+      await prisma.order.update({ where: { id: orderId }, data: { status: 'SHIPPED', paidAt: new Date(), shippedAt: new Date() } });
+      await app.get(ProjectsService).purgeExpiredTrash();
+      expect(await prisma.packagingProject.findUnique({ where: { id } })).toBeNull();
+      expect(await prisma.orderItem.findFirstOrThrow({ where: { orderId } })).toMatchObject({ projectId: null });
+      await expect(storage.getObject(exportKey)).rejects.toThrow();
+    });
   });
 });

@@ -312,9 +312,17 @@ export class ProjectsService {
     if (!canDeletePermanently(project.status)) {
       throw new ConflictException('Move the project to the trash before deleting it permanently');
     }
+    // An order that still needs the design keeps it (docs/30 item 4): checked first so nothing is touched, and again
+    // by the DELETE itself in case an order was placed in between. No object is deleted in either case.
+    const holding = await this.projects.findOrderHoldingDesign(projectId);
+    if (holding) throw projectInActiveOrder(holding);
     await this.files.detachSharedFiles([projectId]);
     const files = await this.files.listProjectFiles([projectId]);
-    await this.projects.delete(projectId);
+    if (!(await this.projects.delete(projectId))) {
+      const order = await this.projects.findOrderHoldingDesign(projectId);
+      if (order) throw projectInActiveOrder(order);
+      throw new NotFoundException('Project not found');
+    }
     await this.files.deleteObjects(files.map((file) => file.key));
   }
 
@@ -382,6 +390,14 @@ function dropUnchangedContent(changes: ProjectChanges, saved: ProjectDetail): vo
 }
 
 /** 409 with a stable code: the editor reloads the project (or offers to) instead of overwriting the newer save. */
+/** 409 PROJECT_IN_ACTIVE_ORDER: the message is shown as is by the frontend, so it is in Vietnamese. */
+export function projectInActiveOrder(orderCode: string): ConflictException {
+  return new ConflictException({
+    code: 'PROJECT_IN_ACTIVE_ORDER',
+    message: `Dự án đang nằm trong đơn in ${orderCode} chưa gửi đi, xưởng in còn cần thiết kế này. Bạn xoá vĩnh viễn được khi đơn đã gửi đi hoặc đã huỷ.`,
+  });
+}
+
 export function versionConflict(currentVersion: number): ConflictException {
   return new ConflictException({
     code: 'PROJECT_VERSION_CONFLICT',

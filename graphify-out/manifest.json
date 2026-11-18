@@ -1236,9 +1236,9 @@
     "semantic_hash": ""
   },
   "be/src/orders/order-status.ts": {
-    "mtime": 1793290884.8901956,
-    "seen": 1794852246.2644217,
-    "ast_hash": "cd45e251782725827b23deaf36220246",
+    "mtime": 1795003820.2211766,
+    "seen": 1795004206.6613984,
+    "ast_hash": "e9f9e9cf0dd13216fe9bb35435c246c7",
     "semantic_hash": ""
   },
   "be/src/orders/orders.controller.ts": {
@@ -1356,9 +1356,9 @@
     "semantic_hash": ""
   },
   "be/src/projects/application/ports/project.repository.port.ts": {
-    "mtime": 1794938069.0394068,
-    "seen": 1794989058.383828,
-    "ast_hash": "97a2ac57783e6059b033b4c24bfa9696",
+    "mtime": 1795003820.2219086,
+    "seen": 1795004206.6650996,
+    "ast_hash": "af46a49076fc151ff48410610c35cd67",
     "semantic_hash": ""
   },
   "be/src/projects/application/ports/snapshot.repository.port.ts": {
@@ -1368,15 +1368,15 @@
     "semantic_hash": ""
   },
   "be/src/projects/application/projects.service.spec.ts": {
-    "mtime": 1794938069.0404124,
-    "seen": 1794989058.3838308,
-    "ast_hash": "0f326f80f1f08f46622918c88418a638",
+    "mtime": 1795003848.201499,
+    "seen": 1795004206.665198,
+    "ast_hash": "79a7df3d15b8fd204d6314343237bf95",
     "semantic_hash": ""
   },
   "be/src/projects/application/projects.service.ts": {
-    "mtime": 1794938069.0414128,
-    "seen": 1794989058.3838322,
-    "ast_hash": "24612a088653aa42b61c93f9de6fd5ea",
+    "mtime": 1795003830.2653916,
+    "seen": 1795004206.6651993,
+    "ast_hash": "f6da7d6fab8c0ab894fa5dc04dc0da17",
     "semantic_hash": ""
   },
   "be/src/projects/application/snapshots.service.spec.ts": {
@@ -1452,9 +1452,9 @@
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/prisma-project.repository.ts": {
-    "mtime": 1794938069.0424125,
-    "seen": 1794989058.385761,
-    "ast_hash": "f1a7fe5ee24f4583fbf58072952f594f",
+    "mtime": 1795003820.2219086,
+    "seen": 1795004206.668079,
+    "ast_hash": "edc90b31dc690a7dbd8c1b6f1bc60888",
     "semantic_hash": ""
   },
   "be/src/projects/infrastructure/prisma-snapshot.repository.ts": {
@@ -1932,9 +1932,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/export.e2e-spec.ts": {
-    "mtime": 1795003162.170136,
-    "seen": 1795003362.1548736,
-    "ast_hash": "0c38f920a102257f941b4df9e1a95e62",
+    "mtime": 1795004156.565127,
+    "seen": 1795004206.6792617,
+    "ast_hash": "80e18576e7c48d048c354d733fbee4b2",
     "semantic_hash": ""
   },
   "be/test/e2e/helpers/accounts.ts": {
@@ -1956,9 +1956,9 @@
     "semantic_hash": ""
   },
   "be/test/e2e/projects.e2e-spec.ts": {
-    "mtime": 1794938069.056244,
-    "seen": 1794989058.39246,
-    "ast_hash": "46c418cb2279fd74189c684bb0552f63",
+    "mtime": 1795003911.4641829,
+    "seen": 1795004206.6798878,
+    "ast_hash": "8f49f05b98a66b2a98114671c68ac3c0",
     "semantic_hash": ""
   },
   "be/test/e2e/public-showcase.e2e-spec.ts": {
@@ -4368,9 +4368,9 @@
     "semantic_hash": ""
   },
   "fe/src/services/api/index.ts": {
-    "mtime": 1794988450.8284419,
-    "seen": 1794989058.4343913,
-    "ast_hash": "b22303d56aeecf21b81843bd535733b6",
+    "mtime": 1795003980.3893156,
+    "seen": 1795004206.7273061,
+    "ast_hash": "d4c7f5a9be88905ee170aa224c4581ea",
     "semantic_hash": ""
   },
   "fe/src/services/audio/tactileAudio.ts": {
@@ -4416,9 +4416,9 @@
     "semantic_hash": ""
   },
   "fe/src/types/api/index.ts": {
-    "mtime": 1794988450.8279276,
-    "seen": 1794989058.4359252,
-    "ast_hash": "350e6d5893a85df53d0717183fe53e04",
+    "mtime": 1795003949.7567225,
+    "seen": 1795004206.7293582,
+    "ast_hash": "bfefdafda6985286cbe9f8279c047654",
     "semantic_hash": ""
   },
   "fe/src/types/components/index.ts": {
