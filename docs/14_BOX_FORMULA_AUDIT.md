@@ -1,7 +1,13 @@
 # 14 — Rà soát công thức hộp (Phase 8)
 
-> Kế hoạch: docs/12 Phase 8 (mục H1–H11, việc 8.1–8.11). Phiên S10, bắt đầu 2026-10-12.
+> Kế hoạch: Phase 8 của kế hoạch nối FE–BE tháng 10/2026 (mục H1–H11, việc 8.1–8.11). Phiên S10, bắt đầu 2026-10-12.
 > Mã: `shared/src/parametric/**`, test `be/src/projects/domain/dieline-geometry.spec.ts`.
+> Đối chiếu lại: 2026-11-19 trên `develop` (fb720a9). `CURRENT_FORMULA_VERSION` vẫn là 3.
+>
+> **Phạm vi.** File này chỉ rà 4 cấu trúc của MVP ban đầu: `tuck-top`, `sleeve-drawer`, `lid-base`, `pillow`, ở công
+> thức bản 1 và bản 3. Seed hiện có 11 cấu trúc trong DB (`be/prisma/seed-data.ts`), bộ công thức bản 3 có thêm
+> `sticker-label`. Các cấu trúc thêm sau (`mailer`, `gable`, `cup-carrier`, `insert`, `hang-tag`, `folded-card`,
+> `belly-band`) có test riêng trong `be/src/projects/domain/*-dieline.spec.ts`, không nằm trong bảng H1–H11.
 
 ## 1. Cách kiểm
 
@@ -46,10 +52,34 @@ L × W × H là **lòng trong**; `t` = độ dày giấy (≈ GSM × 0,0014). N�
 | H7 | Ảnh xem trước, thumbnail | Thumbnail chỉ vẽ mảnh đầu. `BoxPreview` (phác thảo isometric khi chưa có thumbnail) vẽ theo L : W : H thật, cạnh ngắn tối thiểu ¼ cạnh dài nhất cho dễ nhìn (cố ý, giữ). **Sửa**: thumbnail vẽ mọi mảnh cạnh nhau | Đã sửa |
 | H8 | Số liệu hiển thị | Khổ trải phẳng `2L + 2W + 30` cứng, "bù 2t"; số nếp gấp cứng ở bước 1; kích thước mặt hiện 15 chữ số thập phân khi có bù `t`. **Sửa**: khổ phôi lấy từ `totalBoundingBox` của từng mảnh, "bù t mỗi mặt" (công thức cũ: không bù); số nếp gấp đếm trên phôi; `formatMm` (1 chữ số thập phân); canvas 2D đánh dấu phần tử theo báo cáo FitCheck (trước: chỉ xét mép trái / trên) và không còn vẽ phần tử của mảnh kia ở góc phôi | Đã sửa |
 | H9 | Vật liệu, độ dày | Ba bảng GSM / độ dày khác nhau (0,38 / 0,42 / 0,45 / 0,52 cho cùng loại giấy); mặc định backend `caliper: 0,35` cho 300 GSM. **Sửa**: `caliperOf(gsm)` = GSM × 0,0014 cho mọi bảng và mặc định (300 GSM = 0,42) | Đã sửa |
-| H10 | Gợi ý của Gói | Auto-fix chỉ đẩy về mép trái / trên. **Sửa**: `autoFixElements` của shared (mọi mép, khung đã xoay, thu nhỏ phần tử lớn hơn mặt, kéo hoa văn ra bleed); hoa văn AI phủ kín mặt + tràn 2 mm ở mép cắt. `AiCopilotAssistant` (preset kích thước) không màn nào dùng | Đã sửa |
+| H10 | Gợi ý của Gói | Auto-fix chỉ đẩy về mép trái / trên. **Sửa**: `autoFixElements` của shared (mọi mép, khung đã xoay, thu nhỏ phần tử lớn hơn mặt, kéo hoa văn ra bleed); hoa văn AI phủ kín mặt + tràn 2 mm ở mép cắt. `AiCopilotAssistant` (preset kích thước) không màn nào dùng (nay đã gắn vào studio, `StudioWorkspace.tsx`; bảng quà mẫu của nó vẫn viết cứng độ dày giấy, xem [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1) | Đã sửa |
 | H11 | Mã không dùng | `shared/src/exporter/pdf-export.ts` (bộ xuất cũ) và `FoldingBox3D.tsx` (không màn nào dùng) đã xoá; `core/contracts.ts` giữ (AGENTS.md trỏ tới) nhưng ghi rõ là phác thảo, không export; `PanelFace.hingeAxis` / `hingeOffset` (không dùng) thay bằng `fold` | Đã sửa |
 
+### 3.1. Ngưỡng FitCheck hiện hành (đối chiếu mã ngày 2026-11-19)
+
+Cột H3 ở trên ghi lại lần sửa tháng 10/2026; câu "Chỉ lề an toàn 3 mm và DPI" là **trạng thái trước khi sửa**. Ngưỡng
+đang chạy (`shared/src/print/prepress.ts`, `shared/src/fitcheck/validator.ts`):
+
+| Quy tắc | Ngưỡng | Mức |
+|---|---|---|
+| Lề an toàn | Nội dung cách nét cắt 5 mm, cách nếp gấp 3 mm. Thiếu lề (`CUT_OVERLAP`, `CREASE_OVERLAP`) | Cảnh báo |
+| Lề quá sát | Cách dưới 1 mm, hoặc tràn ra ngoài mặt | Lỗi chặn xuất |
+| Tràn lề | Nền chạm nét cắt phải tràn ≥ 2 mm (`BLEED_INSUFFICIENT`). `BleedBox` của PDF là 3 mm | Cảnh báo |
+| DPI | Chỉ áp dụng ảnh raster có DPI, tính ở kích thước in. Từ 150 đến dưới 300 | Cảnh báo |
+| DPI | Dưới 150 | Lỗi chặn xuất |
+
+- **Điều kiện xuất file**: không còn vi phạm mức `error`. Điểm số không quyết định việc xuất.
+- **Mốc ≥ 90 điểm** chỉ dùng khi đưa mẫu vào thư viện cộng đồng (`MIN_COMMUNITY_FITCHECK_SCORE`).
+- **Điểm**: 100 − 30 × số lỗi − 10 × số cảnh báo, thấp nhất 0 (dòng tính `score` trong `validator.ts`).
+- **Còn mở**: FitCheck vẫn chưa kiểm chữ tràn khung (chú thích đầu `validator.ts` còn ghi "Not checked yet"). Việc này
+  theo dõi ở [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1.
+- Các luật thêm sau tháng 10/2026 (hướng đọc, chữ < 6 pt, tương phản, chữ vắt qua nếp, hình dưới cửa sổ, ảnh kho đứng
+  một mình…) nằm ngoài phạm vi file này.
+
 ## 4. Ảnh phôi
+
+> **Ảnh so sánh lịch sử.** Ảnh chụp ngày 2026-10-12 ở commit của S10 và không chụp lại. Công thức bản 3 chưa đổi phiên
+> bản từ đó, nhưng bộ vẽ phôi có thể đã khác ở nhãn và lớp.
 
 Bản 1 (dự án cũ) và bản 3 (dự án mới), cùng 4 cỡ:
 
@@ -60,10 +90,23 @@ Bản 1 (dự án cũ) và bản 3 (dự án mới), cùng 4 cỡ:
 | Âm dương | ![](assets/14/lid-base.v1.png) | ![](assets/14/lid-base.v3.png) |
 | Bao diêm | ![](assets/14/sleeve-drawer.v1.png) | ![](assets/14/sleeve-drawer.v3.png) |
 
+Kiểm ảnh ngày 2026-11-19 (mở từng file):
+
+- Mỗi ảnh có 4 cột theo đúng thứ tự §1: rộng 120 × 80 × 60, cao 60 × 60 × 150, dẹt 200 × 150 × 40, nhỏ nhất
+  40 × 30 × 20. Chú thích đầu mỗi cột ghi cỡ đặt và khổ phôi.
+- Cấu trúc hai mảnh vẽ hai mảnh cạnh nhau trong cùng một cột: âm dương là đáy rồi nắp, bao diêm là vỏ rồi khay.
+- Ảnh bản 1 không có nét đỏ (nét cắt) ở cả 4 cấu trúc, kể cả nắp gài (bản 2 thêm nét cắt cho nắp gài, bản 3 cho ba
+  cấu trúc còn lại). Ở cỡ "dẹt" của nắp gài bản 1, nắp trên đè lên mặt sau: đây là lỗi đã sửa ở bản 2.
+- Cột "cao" của hộp gối bản 3 (H = 150 > W/2 = 30) cho cánh rất lớn. Quy tắc tỉ lệ ở H2 nay chặn cỡ này (API 400); ảnh
+  giữ lại để thấy vì sao có quy tắc đó.
+
 **4b. Mô hình 3D bản 3** (dự án thử, studio bước 4, Chrome headless 1440 px): nắp gài, gối, âm dương, bao diêm; trái
 đóng hẳn, phải mở nắp / nhấc nắp / rút khay. Chữ trên mặt in đọc xuôi từ phía trước.
 
 ![](assets/14/3d-v3.png)
+
+Ảnh có 4 hàng theo thứ tự nắp gài, gối, âm dương, bao diêm; cột trái đóng, cột phải mở. Hộp gối không có trạng thái mở
+nên hai ảnh của hàng đó giống nhau. Chữ "WrapFit S10" là dữ liệu thử của phiên chụp.
 
 Ghi chú thiết kế: phần tử in theo hướng của phôi, nên trên hộp thật (và trong 3D) chữ ở thành sau của khay, nắp trên
 của hộp nắp gài và mặt hông trái của vỏ bao diêm nằm ngược chiều khi nhìn từ trước, đúng như khi gấp tờ in. Bản 3 đặt
@@ -91,6 +134,27 @@ Dự án thử bản 3 (chữ trên mặt chính), worker `node be/dist/worker.j
 | Bao diêm 140 × 90 × 40 | `[56.693 56.693 1143.383 859.465]` | 2 đường khép kín (vỏ, khay) | kiểm ở unit test |
 
 Chưa làm: mở file bằng Illustrator / Inkscape / viewer DXF (máy local không có), in thử 1 : 1 và gấp tay.
+
+### 6.1. Nghiệm thu vật lý
+
+Việc của xưởng in hoặc nhóm thiết kế; đến 2026-11-19 chưa ai làm. Cách kiểm:
+
+1. Xuất PDF / SVG / DXF bằng worker từ 4 dự án bản 3, chọn cỡ nhỏ để phôi vừa A4 khi in 1 : 1 (ví dụ nắp gài
+   50 × 30 × 40).
+2. Illustrator hoặc Inkscape: có 4 lớp `Artwork`, `Crease`, `CutContour`, `Dimensions`; lớp `Dimensions` không in; màu
+   pha `CutContour` / `Crease`; xem Overprint Preview; `TrimBox` bằng phôi, `BleedBox` rộng hơn phôi 3 mm.
+3. LibreCAD hoặc viewer DXF: mỗi đường cắt là một polyline liền.
+4. In A4 ở tỉ lệ 100 % (tắt "fit to page"), đo một cạnh phôi bằng thước: sai ≤ 0,5 mm.
+5. Cắt, gấp, đo lòng trong L × W × H: sai ≤ 1 mm.
+
+| Mẫu hộp | Kích thước đặt (mm) | Kích thước đo sau gấp (mm) | Loại giấy | Trình xem file | Kết quả | Ảnh |
+|---|---|---|---|---|---|---|
+| Nắp gài (`tuck-top`) | | | | | Chờ kiểm thực tế (xưởng in hoặc nhóm thiết kế) | |
+| Gối (`pillow`) | | | | | Chờ kiểm thực tế (xưởng in hoặc nhóm thiết kế) | |
+| Âm dương (`lid-base`) | | | | | Chờ kiểm thực tế (xưởng in hoặc nhóm thiết kế) | |
+| Bao diêm (`sleeve-drawer`) | | | | | Chờ kiểm thực tế (xưởng in hoặc nhóm thiết kế) | |
+
+Ghi ngày, commit và người kiểm khi điền. Kết quả tóm tắt thêm vào [04](04_PROGRESS.md).
 
 ## 7. Dự án đã tạo bằng công thức cũ (8.10, D + B)
 
