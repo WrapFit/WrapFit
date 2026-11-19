@@ -1,10 +1,21 @@
 #!/usr/bin/env node
 /**
- * The end-to-end scenario of docs/12 §7, clicked through in headless Chrome at real phone and desktop sizes, with a
- * screenshot of every checkpoint. Each size runs the whole story with its own new account. Steps 16–18 are the paid part
- * of the CP4 demo (docs/17 §5): the backend must run with PAYMENT_SIMULATION=true.
+ * The end-to-end story of a maker, clicked through in headless Chrome at real phone and desktop sizes, with a screenshot
+ * of every checkpoint. Each size runs the whole story with its own new account: register and verify the email, reset the
+ * password, design a box, conflicts and snapshots, share, QR unboxing, project management, Brand Kit, templates, admin
+ * lock, token refresh. Then the print file, which is sold through the print cart:
+ *   7   FitCheck on the server blocks the export (422), the quick fix clears it, and the fixed design is still locked
+ *       (402 ORDER_PAYMENT_REQUIRED) because no paid print order holds it;
+ *   16  the account is made a demo account, orders a sample print of the design from the export dialog and pays it in
+ *       the checkout (simulation); that version then exports as SVG, PDF CMYK and DXF;
+ *   17  a new name keeps the paid file, an edit on the canvas makes a new version that is locked again;
+ *   18  the dashboard counts what the account did.
  *
- * Needs the frontend, the backend, the worker (mail, exports) and Mailpit (http://localhost:8025).
+ * Needs the frontend, the backend, the worker (mail, exports), Mailpit (http://localhost:8025) and in be/.env:
+ *   - PAYMENT_SIMULATION=true on the backend (the checkout's "Giả lập đã thanh toán"). The VNPay sandbox keys are not
+ *     needed: step 16 sets the demo flag, and a demo account may always simulate, with or without VIETQR_* configured;
+ *   - SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (steps 13 and 16, and removing the accounts at the end);
+ *   - SEED_DEMO_PASSWORD with the seeded demo account (step 8, a second maker).
  *   node fe/scripts/e2e-scenario.mjs                         steps 1–14 and 16–18 at M and X+
  *   node fe/scripts/e2e-scenario.mjs --sizes=X+ --steps=4-7  some steps (step 4 creates the project the later ones use)
  *   node fe/scripts/e2e-scenario.mjs --steps=15 --backend-down   step 15, with the backend stopped
@@ -503,7 +514,15 @@ async function projectOf(api, id) {
 /** Adds a text through the studio's "Chèn Vào Mặt Hộp" form. */
 async function addText(page, text) {
   const open = await page.eval(`[...document.querySelectorAll('textarea[placeholder^="Ví dụ"]')].some((el) => el.checkVisibility())`);
-  if (!open) await page.click('Thêm chữ');
+  if (!open) {
+    // The canvas toolbar's "Thêm chữ" when it shows; otherwise the design rail's text panel, "Thêm hộp văn bản".
+    const visible = (label) => page.eval(`[...document.querySelectorAll('button')].some((el) => el.checkVisibility() && el.textContent.trim() === ${JSON.stringify(label)})`);
+    if (await visible('Thêm chữ')) await page.click('Thêm chữ');
+    else {
+      if (!(await visible('Thêm hộp văn bản'))) await page.click('Văn bản');
+      await page.click('Thêm hộp văn bản');
+    }
+  }
   await page.type('textarea[placeholder^="Ví dụ"]', text);
   await page.click('Chèn Vào Mặt Hộp');
 }
@@ -633,13 +652,21 @@ function scenario(size, browser, report) {
       state.globalBefore = await (await state.owner.api())
         .request('/analytics/summary', { query: { scope: 'global', days: 30 } })
         .catch(() => null);
+      // A new box starts in the demo studio (/editor/new → /editor/demo): kind, size, then "Lưu dự án" makes the project.
       await page.goto('/editor/new');
-      await page.click({ text: 'nắp gài' });
-      for (const [nth, value] of [120, 80, 60].entries()) await page.type('input[aria-label$="(mm)"]', String(value), { nth, enter: true });
+      await page.click({ text: 'Hộp nắp gài đáy khóa' });
+      await page.click('Tiếp tục: kích thước');
+      // Dài, Rộng, Cao (mm).
+      for (const [nth, value] of [120, 80, 60].entries()) await page.type('input[inputmode="decimal"]', String(value), { nth, enter: true });
       log.shots.push(await page.shot('04-new-dimensions'));
-      await page.click('Tạo dự án & mở studio');
+      await page.click('Lưu dự án');
       const url = await page.waitUrl(/\/editor\/[0-9a-f-]{36}/, 30000);
       state.projectId = url.match(/\/editor\/([0-9a-f-]{36})/)[1];
+      await page.settle();
+      const { dimensions } = await projectOf(await state.owner.api(), state.projectId);
+      const size = [dimensions.length, dimensions.width, dimensions.height].join(' × ');
+      if (size !== '120 × 80 × 60') throw new Error(`the new project is ${size} mm`);
+      await page.click({ selector: '[aria-label^="Bước 4: Thiết kế"]' });
       await page.settle();
       await page.upload('input[type="file"][accept*="image"]', pngFile());
       await page.waitFor(`document.querySelectorAll('image, img[src*="wrapfit"]').length > 0`, 'the uploaded image on the canvas', 30000);
@@ -655,24 +682,42 @@ function scenario(size, browser, report) {
       log.notes.push(`project ${state.projectId} v${project.version}: ${types}`);
       log.shots.push(await page.shot('04-after-reload'));
     },
-    /** 5: two tabs on one project, both edit: the second gets the conflict dialog and loads the newer version. */
+    /**
+     * 5: two tabs on one project. A save of the first reaches the second (WebSocket push): with nothing unsaved it
+     * loads the newer version by itself. With an unsaved edit (made offline here) it gets the conflict dialog instead,
+     * and "Tải bản mới" drops that edit for the newer version.
+     */
     5: async (log) => {
       const first = state.ownerPage;
       const second = await state.owner.newPage(size);
+      const shows = (page, text) => page.waitFor(`document.body.innerHTML.includes(${JSON.stringify(text)})`, `"${text}" on the canvas`, 30000);
       await second.goto(`/editor/${state.projectId}`);
       await saved(second);
       await first.front();
       await addText(first, 'Từ tab 1');
       await saved(first);
       await second.front();
+      await shows(second, 'Từ tab 1');
+      await saved(second);
+      log.shots.push(await second.shot('05-other-tab-loaded'));
+      // The second tab edits without a connection, so its edit is still unsaved when the first tab saves again.
+      await second.send('Network.emulateNetworkConditions', { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
       await addText(second, 'Từ tab 2');
+      await first.front();
+      await addText(first, 'Tab 1 lần hai');
+      await saved(first);
+      await second.front();
+      await second.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
       await second.waitText('Tải bản mới', 30000);
       log.shots.push(await second.shot('05-conflict-dialog'));
       await second.click({ text: 'Tải bản mới', in: DIALOG });
+      await shows(second, 'Tab 1 lần hai');
       await saved(second);
       const texts = await elementTexts();
-      if (!texts.includes('Từ tab 1') || texts.includes('Từ tab 2')) throw new Error(`canvas after reload: ${texts.join(' | ')}`);
-      log.notes.push(`saved canvas: ${texts.join(' | ')}`);
+      if (!texts.includes('Từ tab 1') || !texts.includes('Tab 1 lần hai') || texts.includes('Từ tab 2')) {
+        throw new Error(`canvas after reload: ${texts.join(' | ')}`);
+      }
+      log.notes.push(`clean tab loaded the other save; conflict → newer version: ${texts.join(' | ')}`);
       log.shots.push(await second.shot('05-newer-version-loaded'));
       await second.close();
       await first.front();
@@ -706,7 +751,10 @@ function scenario(size, browser, report) {
       log.notes.push(`restore → ${restored.length} texts, undo → ${undone.length}`);
       log.shots.push(await page.shot('06-undone'));
     },
-    /** 7: a text on the cut line blocks the PDF (422 → FitCheck), the auto-fix clears it, then PDF, SVG and DXF. */
+    /**
+     * 7: a text on the cut line: the server's FitCheck blocks the export (422), the quick margin fix clears it. The fixed
+     * design is still locked: no paid print order holds this version (402 ORDER_PAYMENT_REQUIRED). No file is made.
+     */
     7: async (log) => {
       const page = state.ownerPage;
       const api = await state.owner.api();
@@ -714,32 +762,41 @@ function scenario(size, browser, report) {
       // Stands in for dragging on the canvas: the first text goes to the panel's left edge.
       const elements = project.canvasState.elements.map((e) => (e.type === 'text' && e.content === 'Chúc mừng sinh nhật' ? { ...e, x: 0 } : e));
       await api.request(`/projects/${state.projectId}`, { method: 'PATCH', json: { version: project.version, canvasState: { ...project.canvasState, elements } } });
-      await page.reload();
+      // With FitCheck errors the print step greys out its export button; the dialog still opens from the address.
+      await page.goto(`/editor/${state.projectId}?step=6&dialog=export`);
       await saved(page);
       await openExportDialog(page);
       await page.click({ text: 'PDF in CMYK nhiều lớp', in: DIALOG });
       await page.waitText('Mở FitCheck để sửa', 30000);
       log.shots.push(await page.shot('07-export-blocked'));
       await page.click('Mở FitCheck để sửa');
-      await page.click('Tự sửa lề an toàn');
+      // The print step shows the server's report; its details offer the quick margin fix.
+      await page.click('lỗi cần sửa');
+      await page.click({ text: 'Tự sửa lề nhanh', in: DIALOG });
       await saved(page);
+      const moved = await waitFor(async () => {
+        const text = (await projectOf(api, state.projectId)).canvasState.elements.find((e) => e.content === 'Chúc mừng sinh nhật');
+        return text && text.x > 0 && text;
+      }, 'the fixed text to be saved');
+      log.notes.push(`FitCheck 422, quick fix moved the text to x ${Math.round(moved.x * 10) / 10}`);
       log.shots.push(await page.shot('07-fitcheck-fixed'));
-      // A new account is Free (docs/16 §5.2): the home-print PDF is free with a watermark on the glue flap, the clean
-      // formats need a credit. Step 16 buys it; here the free file only.
+      // Locked until a paid print order holds this version: the dialog shows the unpaid card, the API answers 402.
+      const access = await api.request(`/projects/${state.projectId}/exports/access`);
+      if (access.unlocked) throw new Error(`a new design is unlocked: ${JSON.stringify(access)}`);
       await openExportDialog(page);
-      await page.waitText('Có watermark');
-      log.shots.push(await page.shot('07-export-dialog-free'));
-      const a4 = await exportFile(page, api, state.projectId, 'PDF_A4_PRINT', 'PDF A4/A3 In Thủ Công');
-      if (!a4.job.watermarked) throw new Error('the Free PDF A4 is not watermarked');
-      log.notes.push(`PDF_A4_PRINT ${a4.bytes} B, watermarked`);
-      log.shots.push(await page.shot('07-export-pdf-a4-watermarked'));
+      await page.click({ text: 'SVG nhiều lớp', in: DIALOG });
+      await page.waitText('Chưa thanh toán đơn in của bản thiết kế này', 30000);
+      await expectPaymentRequired(api, state.projectId);
+      log.notes.push('access unlocked: false, POST exports → 402 ORDER_PAYMENT_REQUIRED');
+      log.shots.push(await page.shot('07-export-locked'));
       await page.closeDialog();
     },
     /** 8: unlisted link opened by a guest (noindex), then liked and remixed by another account. */
     8: async (log) => {
       const page = state.ownerPage;
       // Step 7 ends on the print step; on a phone the share button sits in the design step's toolbar.
-      await page.click({ selector: '[aria-label="Bước 4: Thiết kế"]' });
+      // A past step's label ends in " (đã qua)".
+      await page.click({ selector: '[aria-label^="Bước 4: Thiết kế"]' });
       await page.click('Chia sẻ');
       await page.click({ text: 'Có link', in: DIALOG });
       const ownerApi = await state.owner.api();
@@ -781,8 +838,8 @@ function scenario(size, browser, report) {
     /** 9: QR unboxing page, opened by a guest. */
     9: async (log) => {
       const page = state.ownerPage;
-      await page.click({ selector: '[aria-label="Bước 5: Quà & mở hộp"]' });
-      await page.click('Viết lời chúc & tạo mã QR');
+      await page.click({ selector: '[aria-label^="Bước 5: Quà & mở hộp"]' });
+      await page.click('Tạo lời chúc & mã QR');
       await page.waitSelector('input[placeholder="Mẹ yêu"]');
       await page.settle(800);
       await page.type('input[placeholder="Mẹ yêu"]', 'Mai Anh');
@@ -890,7 +947,8 @@ function scenario(size, browser, report) {
       const templateId = new URL(url).searchParams.get('template');
       await page.settle();
       log.shots.push(await page.shot('12-template-start'));
-      await page.click('Tạo dự án & mở studio');
+      // The template opens in the demo studio; "Lưu dự án" makes it a project.
+      await page.click('Lưu dự án');
       const studio = await page.waitUrl(/\/editor\/[0-9a-f-]{36}/, 30000);
       const projectId = studio.match(/\/editor\/([0-9a-f-]{36})/)[1];
       await saved(page);
@@ -942,78 +1000,86 @@ function scenario(size, browser, report) {
       log.shots.push(await page.shot('14-after-refresh'));
     },
     /**
-     * 16 (docs/17 §5): a clean SVG needs a credit (402), one is bought through the VietQR checkout in simulation
-     * mode, the SVG comes out clean; PDF CMYK and DXF of the same version cost nothing more.
+     * 16: the account becomes a demo account (admin), orders a sample print of the design from the export dialog and
+     * pays it in the checkout by simulation. The paid order holds this version: SVG, PDF CMYK and DXF all export.
      */
     16: async (log) => {
       const page = state.ownerPage;
       const api = await state.owner.api();
+      // A demo account pays through the VNPay sandbox, and the server lets it simulate the payment whether or not a
+      // real VietQR account is configured (a normal account may simulate only with the sample VietQR account).
+      const adminApi = new AppSession(baseUrl);
+      await adminApi.signIn(admin.email, admin.password);
+      const account = await findAccount(adminApi, user.email);
+      if (!account) throw new Error(`the admin cannot find ${user.email}`);
+      await adminApi.request(`/users/${account.id}`, { method: 'PATCH', json: { isDemo: true } });
+      log.notes.push('isDemo set');
       await openStudio(page, api);
+      const { title, version } = await projectOf(api, state.projectId);
       const before = await api.request(`/projects/${state.projectId}/exports/access`);
-      if (before.unlocked || before.balance !== 0) throw new Error(`expected a locked design and no credit, got ${JSON.stringify(before)}`);
-      await openExportDialog(page);
-      await page.waitText('Cần 1 lượt xuất');
-      await page.click({ text: 'SVG nhiều lớp', in: DIALOG });
-      await page.waitText('Bạn đã hết lượt xuất', 30000);
-      log.shots.push(await page.shot('16-export-402'));
-      const known = new Set((await api.request(`/projects/${state.projectId}/exports`)).map((job) => job.id));
-      await page.click({ text: 'Mua 1 lượt', in: DIALOG });
-      await page.waitText('Giả lập đã thanh toán', 30000);
-      const reference = await page.eval(`document.body.innerText.match(/WF[A-Z2-9]{6}/)?.[0] ?? null`);
-      if (!reference) throw new Error('the checkout shows no WF reference');
-      log.shots.push(await page.shot('16-checkout-vietqr'));
-      await page.click({ text: 'Giả lập đã thanh toán', in: DIALOG });
-      await page.waitText('Thanh toán thành công', 30000);
-      log.shots.push(await page.shot('16-checkout-paid'));
-      await page.click({ text: 'Xuất SVG ngay', in: DIALOG });
-      const svg = await downloadJob(await waitForJob(api, state.projectId, 'SVG', known), 'SVG');
-      if (svg.job.watermarked) throw new Error('the SVG paid with a credit is watermarked');
-      await page.waitText('Tải về', 30000);
-      log.shots.push(await page.shot('16-export-svg-clean'));
-      const after = await api.request(`/projects/${state.projectId}/exports/access`);
-      if (!after.unlocked || after.balance !== 0) throw new Error(`after paying: ${JSON.stringify(after)}`);
-      const notes = [`paid ${reference}`, `SVG ${svg.bytes} B clean`];
-      for (const [format, title] of [['PDF_CMYK', 'PDF in CMYK nhiều lớp'], ['DXF', 'DXF']]) {
-        const { job, bytes } = await exportFile(page, api, state.projectId, format, title);
-        if (job.watermarked) throw new Error(`${format} of the unlocked design is watermarked`);
-        notes.push(`${format} ${bytes} B`);
-        log.shots.push(await page.shot(`16-export-${format.toLowerCase()}`));
-      }
-      const balance = (await api.request(`/projects/${state.projectId}/exports/access`)).balance;
-      if (balance !== 0) throw new Error(`balance ${balance} after the free re-exports`);
-      log.notes.push(...notes, 'same version: no second credit');
-      await page.closeDialog();
-    },
-    /** 17 (docs/17 §5 step 5): a 49.000đ sample order from the export dialog, paid by VietQR simulation → PAID. */
-    17: async (log) => {
-      const page = state.ownerPage;
-      const api = await state.owner.api();
-      await openStudio(page, api);
+      if (before.unlocked) throw new Error(`the design is unlocked before paying: ${JSON.stringify(before)}`);
       await openExportDialog(page);
       await page.click({ text: 'Đặt in mẫu 1 hộp', in: DIALOG });
       await page.waitUrl(/\/cart/);
       await page.waitText('Đặt in mẫu ·', 30000);
+      await page.waitText(title);
       await page.type('input[autocomplete="name"]', 'Nguyễn Mai Anh');
       await page.type('input[autocomplete="tel"]', '0901234567');
       await page.type('input[autocomplete="street-address"]', '12 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh');
-      log.shots.push(await page.shot('17-cart'));
+      log.shots.push(await page.shot('16-cart'));
       await page.click({ selector: 'form button[type="submit"]' });
-      await page.waitText('Giả lập đã thanh toán', 30000);
-      const amount = await page.eval(`document.querySelector('[role="dialog"]')?.innerText.match(/[\\d.]+\\s?đ/)?.[0] ?? null`);
-      log.shots.push(await page.shot('17-checkout-vietqr'));
-      await page.click({ text: 'Giả lập đã thanh toán', in: DIALOG });
-      await page.waitText('Thanh toán thành công', 30000);
-      log.shots.push(await page.shot('17-checkout-paid'));
+      const receipt = await payInCheckout(page, log, '16');
       await page.click({ text: 'Xong', in: DIALOG });
-      const orders = (await api.request('/orders/my-orders')).filter((o) => o.projectId === state.projectId);
+      const orders = (await api.request('/orders/my-orders')).filter(
+        (o) => o.projectId === state.projectId || o.items?.some((item) => item.projectId === state.projectId),
+      );
       const order = orders.find((o) => o.orderStatus === 'PAID');
       if (!order) throw new Error(`orders of the project: ${orders.map((o) => `${o.orderCode} ${o.orderStatus}`).join(', ') || 'none'}`);
-      await page.goto('/dashboard/orders');
-      await page.waitText(order.orderCode, 30000);
-      log.notes.push(`order ${order.orderCode} ${amount ?? ''} PAID`);
-      log.shots.push(await page.shot('17-orders-paid'));
+      if (!/^WF-\d{4}-\d{6}$/.test(order.orderCode)) throw new Error(`order code ${order.orderCode}`);
+      const after = await api.request(`/projects/${state.projectId}/exports/access`);
+      if (!after.unlocked) throw new Error(`still locked after paying: ${JSON.stringify(after)}`);
+      log.notes.push(`order ${order.orderCode} PAID (${receipt}), v${version} unlocked`);
+      await openStudio(page, api);
+      for (const [format, label] of [['SVG', 'SVG nhiều lớp'], ['PDF_CMYK', 'PDF in CMYK nhiều lớp'], ['DXF', 'DXF']]) {
+        const { bytes } = await exportFile(page, api, state.projectId, format, label);
+        log.notes.push(`${format} ${bytes} B`);
+        log.shots.push(await page.shot(`16-export-${format.toLowerCase()}`));
+      }
+      await page.closeDialog();
     },
-    /** 18 (docs/17 §5 step 7): /dashboard counts what this account just did; the global block grew too. */
+    /** 17: a new name keeps the paid print file; an edit on the canvas makes a new version, locked until it is paid. */
+    17: async (log) => {
+      const page = state.ownerPage;
+      const api = await state.owner.api();
+      const before = await projectOf(api, state.projectId);
+      const title = `${before.title} · đã đặt in`;
+      await api.request(`/projects/${state.projectId}`, { method: 'PATCH', json: { title } });
+      const renamed = await projectOf(api, state.projectId);
+      if (renamed.title !== title || renamed.version !== before.version) {
+        throw new Error(`rename: "${renamed.title}" v${renamed.version}, expected "${title}" v${before.version}`);
+      }
+      const access = await api.request(`/projects/${state.projectId}/exports/access`);
+      if (!access.unlocked) throw new Error(`the rename locked the design: ${JSON.stringify(access)}`);
+      await openStudio(page, api);
+      const again = await exportFile(page, api, state.projectId, 'PDF_CMYK', 'PDF in CMYK nhiều lớp');
+      log.notes.push(`renamed, v${renamed.version} still unlocked: PDF_CMYK ${again.bytes} B`);
+      await page.closeDialog();
+      await page.click({ selector: '[aria-label^="Bước 4: Thiết kế"]' });
+      await addText(page, 'Sửa sau khi đặt in');
+      await saved(page);
+      const edited = await projectOf(api, state.projectId);
+      if (!(edited.version > renamed.version)) throw new Error(`the edit left the version at ${edited.version}`);
+      const locked = await api.request(`/projects/${state.projectId}/exports/access`);
+      if (locked.unlocked) throw new Error(`the new version v${edited.version} is unlocked: ${JSON.stringify(locked)}`);
+      await expectPaymentRequired(api, state.projectId);
+      await openExportDialog(page);
+      await page.click({ text: 'SVG nhiều lớp', in: DIALOG });
+      await page.waitText('Chưa thanh toán đơn in của bản thiết kế này', 30000);
+      log.notes.push(`edit → v${edited.version}: unlocked false, POST exports → 402 ORDER_PAYMENT_REQUIRED`);
+      log.shots.push(await page.shot('17-new-version-locked'));
+      await page.closeDialog();
+    },
+    /** 18: /dashboard counts what this account just did; the global block grew too. */
     18: async (log) => {
       const page = state.ownerPage;
       const api = await state.owner.api();
@@ -1022,7 +1088,7 @@ function scenario(size, browser, report) {
       const problems = [
         me.boxes.total < 1 && `boxes ${me.boxes.total}`,
         me.fitcheck.prevented < 1 && `FitCheck prevented ${me.fitcheck.prevented}`,
-        !(exported.SVG >= 1 && exported.PDF_A4_PRINT >= 1) && `exports ${JSON.stringify(exported)}`,
+        !(exported.SVG >= 1 && exported.PDF_CMYK >= 1 && exported.DXF >= 1) && `exports ${JSON.stringify(exported)}`,
       ].filter(Boolean);
       if (problems.length) throw new Error(`analytics of this account: ${problems.join(', ')}`);
       if (state.globalBefore) {
@@ -1084,17 +1150,30 @@ function scenario(size, browser, report) {
     state.ownerPage = await state.owner.newPage(size);
   }
 
+  /**
+   * Removes the account the run made (also once step 16 made it a demo account). With a paid order the backend keeps
+   * the order and anonymizes the account instead of deleting it. Returns false when that failed.
+   */
   async function cleanup() {
     for (const context of contexts) await context.close();
-    if (keep || !state.owner || option('user')) return;
+    if (keep || !state.owner || option('user')) return true;
+    const log = { size: size.code, step: 'cleanup', ok: true, notes: [] };
     try {
       const adminApi = new AppSession(baseUrl);
       await adminApi.signIn(admin.email, admin.password);
       const account = await findAccount(adminApi, user.email);
-      if (account) await adminApi.request(`/users/${account.id}`, { method: 'DELETE' });
+      if (!account) log.notes.push(`${user.email} not found`);
+      else {
+        const { result } = await adminApi.request(`/users/${account.id}`, { method: 'DELETE' });
+        log.notes.push(`${user.email}${account.isDemo ? ' (demo)' : ''}: ${result}`);
+      }
     } catch (error) {
-      report.push({ size: size.code, step: 'cleanup', ok: false, error: error.message });
+      log.ok = false;
+      log.error = error.message;
     }
+    report.push(log);
+    console.log(`${log.ok ? 'ok  ' : 'FAIL'} cleanup  ${[...log.notes, log.error ?? ''].filter(Boolean).join(' · ')}`);
+    return log.ok;
   }
 
   /** With --user, a step after 4 can run alone: sign in and take the account's newest project. */
@@ -1133,11 +1212,55 @@ async function waitFor(check, what) {
   throw new Error(`timed out waiting for ${what}`);
 }
 
+/** Opens the export dialog from the print step (step 6) of the studio, unless it is open already. */
 async function openExportDialog(page) {
-  if (!(await page.eval(`Boolean(document.querySelector('[role="dialog"]'))`))) await page.click({ selector: '[aria-label="Xuất file in"]' });
+  if (!(await page.eval(`document.body.innerText.includes('Lần xuất gần đây')`))) {
+    const onPrintStep = await page.eval(`Boolean(document.querySelector('[aria-label^="Bước 6: Đặt in"][aria-current="step"]'))`);
+    if (!onPrintStep) await page.click({ selector: '[aria-label^="Bước 6: Đặt in"]' });
+    // The action bar's button (also the payment card's once the design is paid); greyed out while FitCheck has errors.
+    await page.click('Xuất file in ngay');
+  }
   await page.waitText('Lần xuất gần đây');
   // The panel springs in (anime.js): a click during the animation lands on a moving button and is lost.
   await page.settle(1200);
+}
+
+/** The API refuses an export of the current version: 402 ORDER_PAYMENT_REQUIRED (no paid print order holds it). */
+async function expectPaymentRequired(api, projectId) {
+  const refused = await api.request(`/projects/${projectId}/exports`, { method: 'POST', json: { fileType: 'SVG' } }).then(
+    (job) => new Error(`the export was accepted: ${JSON.stringify(job)}`),
+    (error) => (error.status === 402 && error.code === 'ORDER_PAYMENT_REQUIRED' ? null : error),
+  );
+  if (refused) throw refused;
+}
+
+/**
+ * The checkout dialog after "Đặt in mẫu": accepts the payment terms (they unlock once scrolled to the end), then marks
+ * the payment paid with the simulation button. Picks the "Giả lập" tab when the dialog offers tabs. Returns the receipt
+ * (amount, reference, method).
+ */
+async function payInCheckout(page, log, step) {
+  const terms = '[role="region"][aria-label="Điều khoản thanh toán"]';
+  await page.waitSelector(terms, 30000);
+  await page.eval(`(() => { const el = document.querySelector(${JSON.stringify(terms)}); el.scrollTop = el.scrollHeight; el.dispatchEvent(new Event('scroll', { bubbles: true })); })()`);
+  await page.waitText('Đã đọc hết');
+  await page.click({ text: 'Tôi đã đọc và đồng ý', in: DIALOG });
+  await page.click({ text: 'Đồng ý & thanh toán', in: DIALOG });
+  const simulateTab = `[...document.querySelectorAll('[role="dialog"] [role="tab"]')].find((el) => el.checkVisibility() && /Giả lập/.test(el.textContent))`;
+  await page.waitFor(
+    `Boolean(${simulateTab}) || document.body.innerText.includes('Giả lập đã thanh toán')`,
+    'the simulation button (is PAYMENT_SIMULATION=true on the backend?)',
+    30000,
+  );
+  if (await page.eval(`(() => { const tab = ${simulateTab}; return Boolean(tab) && tab.getAttribute('aria-selected') !== 'true'; })()`)) {
+    await page.click({ text: 'Giả lập', in: '[role="dialog"] [role="tablist"]' });
+  }
+  await page.settle(600);
+  log.shots.push(await page.shot(`${step}-checkout`));
+  await page.click({ text: 'Giả lập đã thanh toán', in: DIALOG });
+  await page.waitText('Thanh toán thành công', 30000);
+  log.shots.push(await page.shot(`${step}-checkout-paid`));
+  return page.eval(`[...document.querySelectorAll('[role="dialog"] dl > div')].map((row) => row.innerText.replace(/\\s+/g, ' ').trim()).join(', ')`);
 }
 
 /** Clicks a format of the export dialog, waits for its job and downloads the file. */
@@ -1206,7 +1329,7 @@ try {
       console.log(`${log.ok ? 'ok  ' : 'FAIL'} ${String(step).padStart(2)}  ${log.seconds}s  ${[...log.notes, log.error ?? ''].filter(Boolean).join(' · ')}`);
       if (!log.ok) break;
     }
-    await cleanup();
+    if (!(await cleanup())) failed = true;
   }
 } finally {
   await browser.close();
