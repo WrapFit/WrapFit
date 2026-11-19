@@ -1,6 +1,6 @@
 # 32. Kế hoạch đồng bộ tài liệu sau audit docs
 
-> Ngày lập: 2026-11-19 · Cập nhật: 2026-11-19, đã chốt Q1–Q8 · Nhánh gốc: `develop` (09ca9d4) · Nhánh tích hợp: `docs/sync-after-audit` · Trạng thái: **đang thực hiện (S0)**
+> Ngày lập: 2026-11-19 · Cập nhật: 2026-11-19, đã chốt Q1–Q5 · Nhánh gốc: `develop` (09ca9d4) · Nhánh tích hợp: `docs/sync-after-audit` · Trạng thái: **chưa bắt đầu**
 > Phạm vi gồm bốn phần:
 > - 34 file Markdown trong `docs/` và 9 ảnh của [14](assets/14/).
 > - Kịch bản FE `fe/scripts/e2e-scenario.mjs` (theo Q3).
@@ -818,4 +818,3 @@ Plan này chỉ chuẩn bị chỗ ghi kết quả. Các việc dưới đây c�
 |---|---|---|---|---|---|
 | 2026-11-19 | Lập plan | 09ca9d4 (chưa commit) | 104 dòng (95 khi không tính bản audit) | 0 | Đã kiểm lại các phát hiện chính của audit với mã |
 | 2026-11-19 | Chốt Q1–Q5 | chưa commit | — | 0 | Xóa kế hoạch đã xong và đánh số lại; xóa 26/27/27a/31; sửa script FE trong đợt; làm song song. Script §4.3 xem trước: 682 chỗ trong 290 file giữ lại, 25 dòng cần sửa tay |
-| 2026-11-19 | S0 · Chuẩn bị | `docs/sync-after-audit` (từ `09ca9d4`) | 95 dòng (trừ 32 & README) | 0 | Cắt nhánh tích hợp, lưu `$env:TEMP\renumber-docs.mjs` (xem trước 792 chỗ trước khi gỡ file, 25 dòng sửa tay), tạo 6 worktree A–F |
