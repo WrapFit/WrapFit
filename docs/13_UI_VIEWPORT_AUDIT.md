@@ -1,6 +1,7 @@
 # 13 — Rà soát giao diện theo kích thước màn hình (Phase 7)
 
-> Cập nhật: 2026-10-11 · Nhánh `feat/fe-be-integration` · Phiên S9 của [`12`](12_FE_BE_INTEGRATION_PLAN.md) §4 Phase 7
+> Cập nhật: 2026-10-11 · Nhánh `feat/fe-be-integration` · Phiên S9 (Phase 7) của kế hoạch nối FE–BE tháng 10/2026
+> Đối chiếu lại: 2026-11-19 trên `develop` (fb720a9). §1–§5 giữ nguyên số đo của đợt đầu. Phần kiểm lại sau đợt đầu ở §6.
 
 ## 1. Cách chạy
 
@@ -59,7 +60,7 @@ Chỉ ghi nhận, không làm trượt: nhãn ngắn xuống dòng (`wrap`), vù
 | G7 Studio | 8 | 10 / 16 | 10 / 16 | Chỉ ghi mốc, xem §4 |
 
 Ngoài kiểm tra tự động, ảnh G1–G5 đã được xem ở cả 6 kích thước, G6 ở M, T, W, G7 ở M, X+ theo checklist của
-docs/12 Phase 7 (ảnh ghép 6 kích thước / route). Lỗi chỉ thấy bằng mắt (avatar lặp, mega menu chồng menu tài khoản,
+Phase 7 trong kế hoạch nối FE–BE (ảnh ghép 6 kích thước / route). Lỗi chỉ thấy bằng mắt (avatar lặp, mega menu chồng menu tài khoản,
 `&bull;`, sidebar admin) nằm trong §3.
 
 ### 2.2. Bảng route × kích thước (lượt cuối)
@@ -275,4 +276,56 @@ Mức: **P1** che / cắt nội dung, không bấm được, tràn ngang; **P2**
 - Ảnh có nút "N" của Next dev ở góc trái dưới: chỉ có ở `next dev`, không phải lỗi.
 - Chạy 4 tiến trình song song trên `next dev` làm trang chậm; một số ô trượt vì backend trả 500 trong lúc khởi động lại
   (proxy `ECONNREFUSED`) đã được chạy lại riêng.
+
+## 6. Kiểm lại sau đợt đầu (đối chiếu mã ngày 2026-11-19)
+
+Từ sau đợt đầu, giao diện đổi nhiều: phần lớn màn Stitch được viết tay lại ([11](11_STITCH_PARITY_AUDIT.md) §0), dashboard
+và admin dùng khung chung có sidebar (`fe/src/components/workspace/WorkspaceShell.tsx`, sidebar hiện từ `lg`, dưới `lg`
+là một hàng chip điều hướng cuộn ngang), studio đổi thành 6 bước. Lần đồng bộ docs này **không chạy** `shots`: các cột
+dưới chỉ đọc từ mã. Ô nào cần số đo mới ghi "chờ kiểm thực tế" kèm vai trò người kiểm.
+
+Chạy lại như §1, ví dụ cho các route của P3:
+
+```bash
+node fe/scripts/ui-fixtures.mjs
+npm --workspace=fe run shots -- --routes --only=intro,pricing,g4-dashboard,g3-accounts,g4-projects,g6-admin --table
+```
+
+### 6.1. Kiểm lại P3-1 đến P3-6
+
+| # | Route còn tồn tại không | Cách thử | Viewport | Kết quả mới | Ảnh |
+|---|---|---|---|---|---|
+| P3-1 | Còn: `/intro/blueprint`, `/intro/minimal` là 2 màn Stitch `converted` cuối cùng | Mở trên điện thoại thật (iOS Safari và Android Chrome), kiểm cuộn ngang; giả lập Chrome không đủ tin cậy (§4) | Điện thoại thật, dọc | Chờ kiểm thực tế (người có thiết bị, §6.3) | — |
+| P3-2 | Route còn, thanh tab cũ không còn. Dashboard và admin dùng hàng chip của `WorkspaceShell` dưới `lg` (`overflow-x-auto`, ẩn thanh cuộn, không có mép mờ). `/admin/accounts` vẫn có bảng cuộn ngang (`AccountsTable.tsx`) | `shots --only=g4-dashboard,g4-projects,g3-accounts` ở M, T; xem chip cuối có bị cắt mà không có dấu hiệu còn mục bên phải | M, T | Đọc mã: vẫn không có dấu hiệu còn mục khi hàng chip tràn. Chờ kiểm thực tế (dev FE chạy `shots`) | — |
+| P3-3 | Route `/pricing` còn, nhưng là màn `manual`; dock Stitch với nhãn "2D / 3D Proof", "Caliper Specs" không còn trong `fe/src` | `shots --only=g6-pricing` ở M | M | Đọc mã: lỗi cũ không còn chỗ xảy ra. Chờ ảnh xác nhận (dev FE chạy `shots`) | — |
+| P3-4 | Route `/dashboard` còn. Lưới dự án nay là `sm:grid-cols-2 xl:grid-cols-4`: ở L (1024 px) chỉ 2 cột | `shots --only=g4-dashboard` ở L, X | L, X | Đọc mã: lưới 4 cột chỉ từ 1280 px, nên ca ở L không còn; ở X cần xem lại tên dự án có bị cắt. Chờ kiểm thực tế (dev FE chạy `shots`) | — |
+| P3-5 | Route admin còn, nhưng khung đổi: `AdminShell` có sidebar 248 px từ `lg`, cột nội dung ở 1024 px còn khoảng 776 px | `shots --only=g6-admin,g3-accounts` ở L | L | Đọc mã: tình huống "sidebar từ `lg`, cột hẹp ở L" vẫn còn, chỉ khác bề rộng. Chờ kiểm thực tế (dev FE chạy `shots`) | — |
+| P3-6 | Route còn; `DashboardHeaderNav` (thanh tab dashboard) đã bị xoá, thay bằng sidebar từ `lg` | `shots --only=g4-dashboard` ở X (1280) và X+ (1440) | X, X+ | Đọc mã: thanh tab ở 1280 px không còn, ca này không còn chỗ xảy ra. Chờ ảnh xác nhận (dev FE chạy `shots`) | — |
+
+Khi có ảnh mới, ghi kết quả và đường dẫn ảnh vào hai cột cuối, kèm ngày và commit.
+
+### 6.2. Khoảng trống từ đợt kiểm tour hướng dẫn (2026-11-11)
+
+Đợt kiểm tour hướng dẫn tương tác chỉ chạy được một phần quét. Các khoảng trống dưới đây chưa ai lấp:
+
+| Khoảng trống | Lý do lúc đó | Trạng thái 2026-11-19 | Cách lấp |
+|---|---|---|---|
+| Tài khoản demo | Chưa đăng nhập tài khoản demo, nên tour chưa thử với danh sách dự án, thẻ xu và VNPay thật | `page-shots.routes.json` đã có vai trò `demo` (nhóm G8: ví, thanh toán VNPay). Chưa chạy. Chờ kiểm thực tế (dev FE, tài khoản demo) | Chạy `shots --routes --group=G8`, rồi mở tour dashboard và studio bằng tài khoản demo |
+| Giao diện tối | Chỉ kiểm màu chữ tour; màn tối của Studio chỉ kiểm bằng script đọc mã nguồn | `page-shots.mjs` chưa có tuỳ chọn giao diện tối. Chờ kiểm thực tế (dev FE) | Bật giao diện tối trong trình duyệt, xem Studio và tour ở M và X+ |
+| Bước Studio 4–6 | Các bước Thiết kế, Quà & mở hộp, Đặt in chỉ kiểm bằng script đọc mã, chưa bấm từng bước | Chờ kiểm thực tế (dev FE) | Bấm hết tour của từng bước trên trình duyệt thật ở M và X+ |
+| Route chưa quét | Frontend chạy ở cổng 3107 nhưng backend chỉ nhận origin `http://localhost:3000` (`CORS_ORIGINS`), nên đăng nhập maker và admin trả `403 ORIGIN_NOT_ALLOWED`. Chỉ quét được route khách của G5 ở M và X+ | Danh sách nay có 110 route (G1–G8). Chưa quét lại đủ. Chờ kiểm thực tế (dev FE) | Chạy frontend ở cổng 3000 hoặc thêm cổng vào `CORS_ORIGINS`, rồi `shots --routes` đủ 6 kích thước |
+| Danh sách route G7 cũ | (Tìm thấy khi đối chiếu ngày 2026-11-19) | `g7-editor-new*` vẫn mở `/editor/new`, nay chuyển hướng sang `/editor/demo`, nên sẽ trượt ở kiểm tra `redirect`. Còn mở | Dev FE cập nhật các route G7 theo studio 6 bước trước khi quét |
+| Lớp tối của tour che chữ cuối trang | `page-shots` mở trang bằng hồ sơ mới nên tour tự chạy, lớp `fixed inset-0` bị báo `covered` ở `/templates` (M, T) | Còn mở | Đánh dấu mọi tour là đã xem trước khi quét, như `e2e-scenario.mjs` đang làm |
+
+### 6.3. Ca cần Safari iOS, bàn phím ảo hoặc máy thật
+
+Chrome headless không giả lập được các ca dưới (§5). Người có thiết bị làm, ghi kết quả vào đây và vào [04](04_PROGRESS.md).
+
+| Ca | Trang | Trạng thái |
+|---|---|---|
+| Trang cuộn ngang 7 px (P3-1) | `/intro/blueprint`, `/intro/minimal` | Chờ kiểm thực tế (người có thiết bị) |
+| Bàn phím ảo che ô nhập (checklist mục 7 của Phase 7) | Đăng nhập, đăng ký, hồ sơ, ô kích thước ở studio | Chờ kiểm thực tế (người có thiết bị) |
+| Thanh địa chỉ co giãn làm thanh nổi (`BottomNavBar`, dock, bottom sheet) che nội dung | Mọi trang có thanh nổi dưới đáy, studio trên điện thoại | Chờ kiểm thực tế (người có thiết bị) |
+| Vùng bấm < 44 px (`small` trong `report.json` chỉ được đếm) | Mọi trang ở M | Chờ kiểm thực tế (người có thiết bị) |
+| Chạm qua lỗ khoét của tour, kéo canvas, chụm thu phóng | Studio, `/editor/demo` | Chờ kiểm thực tế (người có thiết bị) |
 
