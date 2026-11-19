@@ -1,8 +1,31 @@
 # WRAPFIT PLATFORM — BẢN PHÂN TÍCH KIẾN TRÚC & GIẢI PHÁP AN TOÀN DỮ LIỆU
 > **Dự án**: WrapFit Platform (Packaging Personalization & Intelligence Platform)  
-> **Tài liệu tham khảo**: Mã nguồn `minhduyhodev/NasaFilm` & Báo cáo phản biện 3 lỗ hổng hệ thống.
+> **Tài liệu tham khảo**: Mã nguồn `minhduyhodev/NasaFilm` & Báo cáo phản biện 3 lỗ hổng hệ thống.  
+> **Đối chiếu với mã**: 19/11/2026, `develop` tại fb720a9. Tên biến môi trường lấy từ [`env.validation.ts`](../be/src/config/env.validation.ts), [`be/.env.example`](../be/.env.example) và [`.env.example`](../.env.example).
 >
-> **Cập nhật 2026-11-16 (docs/25 mục 9, Q6):** không dùng Cloudinary. Mọi file lưu trên R2 qua `StorageService` (bucket công khai và bucket riêng tư), ảnh của trang web nằm trong `fe/public`. Phần "Hybrid Cloudinary" bên dưới chỉ còn là đề xuất cũ: không cấu hình `CLOUDINARY_*`.
+> Bản đầu của tài liệu này là **đề xuất** viết trước khi có mã. Từ bản cập nhật ngày 19/11/2026, mỗi mục có nhãn trạng thái theo ba mức:
+> - **Có mã trên `develop`**: đã có trong mã nguồn.
+> - **Đã kiểm bằng test/E2E (ngày)**: có test tự động chạy qua vào ngày ghi.
+> - **Chờ kiểm thực tế (vai trò)**: cần người giữ tài khoản hoặc người vận hành kiểm trên môi trường thật.
+>
+> Phần chưa có mã ghi nhãn **Đề xuất**. Các phương án cũ không còn dùng (Cloudinary, PayOS/Stripe, mã hóa trường dữ liệu, kịch bản backup) được gom ở [mục 6](#6-quyết-định-cũ--cần-xác-nhận).
+
+---
+
+## 0. TÓM TẮT TRẠNG THÁI (19/11/2026)
+
+| Hạng mục | Đang vận hành | Trạng thái |
+| :--- | :--- | :--- |
+| **Xác thực** | JWT access 15 phút + refresh 7 ngày xoay vòng trong bảng `refresh_tokens`, `users.session_version`, cookie `httpOnly` + `SameSite=Lax` (+ `Secure` khi `COOKIE_SECURE=true`), Google OAuth, `POST /auth/logout-all` | Có mã trên `develop`. Đã kiểm bằng E2E (19/11/2026) |
+| **Lưu trữ file** | S3/R2 qua `StorageService`: bucket công khai cho ảnh tải lên, ảnh AI, thumbnail; bucket riêng tư cho file xuất in. Dev dùng SeaweedFS | Có mã trên `develop`. Đã kiểm bằng E2E với SeaweedFS (19/11/2026). R2 production: chờ kiểm thực tế (người vận hành VPS) |
+| **Thanh toán** | Tài khoản thường: VietQR, SePay gọi webhook khi tiền về. Tài khoản demo (`users.is_demo`): VNPay sandbox. Giả lập chỉ mở khi `PAYMENT_SIMULATION=true` | Có mã trên `develop`. Đã kiểm bằng E2E (19/11/2026). Tiền thật qua SePay và VNPay sandbox thật: chờ kiểm thực tế (người giữ tài khoản ngân hàng, SePay, VNPay) |
+| **Xử lý bất đồng bộ** | Redis + BullMQ, worker riêng với ba hàng đợi `export`, `mail`, `ai-image`. Redis bật AOF và `noeviction` | Có mã trên `develop`. Đã kiểm bằng E2E (19/11/2026) |
+| **Email** | SMTP qua nodemailer, gửi ở worker. Dev dùng Mailpit | Có mã trên `develop`. Nhà cung cấp SMTP production: chờ kiểm thực tế (người vận hành VPS) |
+| **Backup CSDL** | Biến `STORAGE_BACKUP_BUCKET` đã có, chỉ `npm run storage:check` đọc. **Repo chưa có job backup** | Bucket backup: chờ kiểm thực tế (người vận hành VPS tạo bucket và đặt biến). Job backup và diễn tập khôi phục: **Đề xuất**, chưa kiểm khôi phục lần nào |
+| **Dữ liệu cá nhân** | SĐT, địa chỉ người nhận lưu dạng chữ thường trong bảng `orders`. Tài khoản có lịch sử tài chính bị ẩn danh hóa thay vì xóa. Sau 10 năm, tác vụ `invoice-retention` xóa dữ liệu cá nhân còn trên chứng từ của tài khoản đã xóa | Có mã trên `develop`. Mã hóa trường dữ liệu: **Đề xuất** |
+| **Giám sát** | Log JSON (`LOG_FORMAT`), không có Sentry | Sentry/Logtail: **Đề xuất** |
+
+> **Đọc kỹ**: "bucket backup đã cấu hình" **không** có nghĩa là "đã có bản backup" hay "đã kiểm khôi phục". Đến 19/11/2026, chưa có job nào ghi vào bucket này và chưa có lần khôi phục thử nào.
 
 ---
 
@@ -10,138 +33,169 @@
 
 Dự án **NasaFilm** (hệ thống rạp chiếu phim trực tuyến) giải quyết tốt bài toán phân cấp dịch vụ và luồng thanh toán / lưu trữ đa tầng. Khi đối chiếu với đặc thù của **WrapFit**, ta rút ra các bài học kiến trúc quan trọng:
 
-| Hạng mục | Triển khai ở NasaFilm | Khác biệt & Ứng dụng chuẩn cho WrapFit |
-| :--- | :--- | :--- |
-| **Authentication & Tokens** | JWT Access (15m) + Refresh (7d) trong DB, Google OAuth. | WrapFit đã có `session_version` và `Refresh_tokens` xoay vòng trong DB. Cần giữ cookie `httpOnly + Secure + SameSite=Lax`. |
-| **Lưu trữ nhị phân (Storage)** | **Hybrid**: Cloudinary (Poster/Avatar) + AWS S3 (Media/Video VOD có Presigned URL TTL 900s). | **Cực kỳ phù hợp!** Cloudinary chỉ dành cho ảnh public (Avatar, Logo, Texture). S3/Cloudflare R2 dành cho file in (PDF CMYK 300 DPI, DXF cắt bế) và DB Backup vì Cloudinary chặn tải PDF và giới hạn file raw 10MB ở gói Free. |
-| **Cổng thanh toán** | **Hybrid 2 cổng**: Stripe (Quốc tế) + VietQR MB Bank (Nội địa). | WrapFit cần mô hình tương tự: **VietQR (qua PayOS / SeAPay)** cho Maker/Artisan Việt Nam đặt in mẫu hộp, và **Stripe** cho khách mua gói trả phí hoặc xuất file vector. |
-| **Xử lý bất đồng bộ** | API đồng bộ + Cron job kiểm tra. | WrapFit dùng **Redis + BullMQ** cho worker render file in nặng (`export_jobs`). Cần cấu hình Redis AOF để không mất job. |
+| Hạng mục | Triển khai ở NasaFilm | Áp dụng cho WrapFit | Trạng thái ở WrapFit |
+| :--- | :--- | :--- | :--- |
+| **Authentication & Tokens** | JWT Access (15m) + Refresh (7d) trong DB, Google OAuth. | WrapFit có `session_version` và `refresh_tokens` xoay vòng trong DB, cookie `httpOnly + Secure + SameSite=Lax`. | Có mã trên `develop` |
+| **Lưu trữ nhị phân (Storage)** | **Hybrid**: Cloudinary (Poster/Avatar) + AWS S3 (Media/Video VOD có Presigned URL TTL 900s). | WrapFit **không dùng Cloudinary** (quyết định ngày 16/11/2026). Mọi file nằm trên S3/R2: bucket công khai và bucket riêng tư cho file in. Link tải file in hết hạn sau 15 phút. | Có mã trên `develop` |
+| **Cổng thanh toán** | **Hybrid 2 cổng**: Stripe (Quốc tế) + VietQR MB Bank (Nội địa). | WrapFit dùng **VietQR + SePay** cho tài khoản thường và **VNPay sandbox** cho tài khoản demo. Stripe và PayOS không dùng. | Có mã trên `develop`. Tiền thật: chờ kiểm thực tế (người giữ tài khoản ngân hàng và SePay) |
+| **Xử lý bất đồng bộ** | API đồng bộ + Cron job kiểm tra. | WrapFit dùng **Redis + BullMQ** cho worker render file in, gửi email, sinh ảnh AI. Redis bật AOF để không mất job. | Có mã trên `develop` |
 
 ---
 
-## 2. DANH MỤC API KEYS & BIẾN MÔI TRƯỜNG (.ENV) CHUẨN PRODUCTION
+## 2. DANH MỤC BIẾN MÔI TRƯỜNG (.ENV) PRODUCTION
 
-Để đảm bảo hệ thống vận hành trơn tru và không bị lỗ hổng bảo mật, toàn bộ biến môi trường phải được gom nhóm và kiểm soát chặt chẽ:
+Danh sách dưới chỉ gồm biến mà mã đang đọc. Giá trị mẫu là chỗ trống, không phải khóa thật. Mô tả đầy đủ và giá trị mặc định ở [`be/.env.example`](../be/.env.example). Trong production, [`docker-compose.prod.yml`](../docker-compose.prod.yml) đọc file `.env` ở thư mục gốc (mẫu: [`.env.example`](../.env.example)) và đặt sẵn `COOKIE_SECURE`, `TRUST_PROXY`, `CORS_ORIGINS`, `FRONTEND_URL` theo `APP_DOMAIN`.
 
 ```bash
 # ==============================================================================
 # 1. CORE SERVER & DATABASE (POSTGRESQL & REDIS)
 # ==============================================================================
 NODE_ENV=production
-PORT=3001
-APP_FRONTEND_URL=https://wrapfit.vn
-DATABASE_URL="postgresql://wrapfit_user:StrongPassword123@postgres-db:5432/wrapfit_prod?schema=public&sslmode=prefer"
-REDIS_URL="redis://:RedisPassword123@redis-cache:6379"
+PORT=8080                       # API, prefix /api
+FRONTEND_URL=https://<domain>
+CORS_ORIGINS=https://<domain>
+TRUST_PROXY=true                # Sau Caddy
+DATABASE_URL="postgresql://<user>:<password>@postgres:5432/<db>"
+REDIS_URL="redis://:<password>@redis:6379"
+THROTTLE_TTL_SECONDS=60
+THROTTLE_LIMIT=100
+LOG_FORMAT=                     # Trống = json khi NODE_ENV=production
+SWAGGER_ENABLED=false
 
 # ==============================================================================
 # 2. CRYPTOGRAPHY, AUTHENTICATION & SESSION KEYS (TUYỆT ĐỐI KHÔNG LỘ)
 # ==============================================================================
 # Sinh bằng: openssl rand -base64 64
-JWT_ACCESS_SECRET="c2VjcmV0LWtleS1hY2Nlc3Mtd3JhcGZpdC0yMDI2..."
-JWT_REFRESH_SECRET="c2VjcmV0LWtleS1yZWZyZXNoLXdyYXBmaXQtMjAyNi..."
-JWT_ACCESS_EXPIRATION="15m"
-JWT_REFRESH_EXPIRATION="7d"
+JWT_ACCESS_SECRET="<bí mật>"
+JWT_REFRESH_SECRET="<bí mật>"
+AUTH_TOKEN_SECRET="<bí mật>"    # Ký link xác minh email / đặt lại mật khẩu. Trống = dùng JWT_REFRESH_SECRET
+JWT_ACCESS_TTL_SECONDS=900      # 15 phút
+JWT_REFRESH_TTL_SECONDS=604800  # 7 ngày
+COOKIE_SECURE=true
+BCRYPT_ROUNDS=10
 
-# Khóa đối xứng 256-bit để mã hóa SĐT, Địa chỉ người nhận trong DB (AES-256-GCM)
-# Sinh bằng: openssl rand -hex 32
-PII_ENCRYPTION_KEY="a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0"
-COOKIE_SECRET="super-secret-cookie-signing-salt"
-
-# Google OAuth
-GOOGLE_CLIENT_ID="xxxx-xxxx.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="GOCSPX-xxxx"
-GOOGLE_CALLBACK_URL="https://wrapfit.vn/api/auth/google/callback"
+# Google OAuth (đặt cả hai hoặc để trống cả hai)
+GOOGLE_CLIENT_ID="<id>.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="<bí mật>"
+GOOGLE_CALLBACK_URL="https://<domain>/api/auth/google/callback"
 
 # ==============================================================================
-# 3. STORAGE HYBRID: CLOUDINARY (PUBLIC) & S3-COMPATIBLE (PRIVATE FILES & BACKUP)
+# 3. STORAGE: S3-COMPATIBLE (CLOUDFLARE R2 Ở PRODUCTION)
 # ==============================================================================
-# (Đã bỏ Cloudinary, docs/25 mục 9: ảnh công khai cũng nằm trên R2, xem STORAGE_* trong .env.example)
-
-# Cloudflare R2 / AWS S3 (File in vector riêng tư, link tải 15 phút, DB Backups)
-S3_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"
-S3_REGION="auto"
-S3_ACCESS_KEY_ID="r2_access_key_wrapfit"
-S3_SECRET_ACCESS_KEY="r2_secret_key_wrapfit"
-S3_BUCKET_PRIVATE="wrapfit-private-assets"
-S3_BUCKET_BACKUPS="wrapfit-encrypted-backups"
-S3_PRESIGNED_TTL=900 # 15 phút
+STORAGE_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"
+STORAGE_REGION="auto"
+STORAGE_ACCESS_KEY_ID="<khóa>"
+STORAGE_SECRET_ACCESS_KEY="<bí mật>"
+STORAGE_BUCKET="<bucket công khai>"          # Ảnh tải lên, ảnh AI, thumbnail
+STORAGE_PUBLIC_URL="https://<domain ảnh>"
+STORAGE_PRIVATE_BUCKET="<bucket riêng tư>"   # File xuất in, chỉ tải qua link ký 15 phút
+STORAGE_BACKUP_BUCKET="<bucket backup>"      # Bản dump CSDL đã mã hóa. Hiện chỉ storage:check đọc, chưa có job ghi
+STORAGE_PUBLIC_ENDPOINT=                     # Chỉ cần khi endpoint trình duyệt thấy khác endpoint nội bộ
+STORAGE_FORCE_PATH_STYLE=false
 
 # ==============================================================================
-# 4. PAYMENT GATEWAYS (VIETQR NỘI ĐỊA & STRIPE QUỐC TẾ)
+# 4. PAYMENT GATEWAYS (VIETQR + SEPAY, VNPAY SANDBOX)
 # ==============================================================================
-# VietQR Webhook & Tự động đối soát (Khuyên dùng PayOS - Miễn phí API VietQR chuẩn)
-PAYOS_CLIENT_ID="xxxx-xxxx-xxxx"
-PAYOS_API_KEY="xxxx-xxxx-xxxx"
-PAYOS_CHECKSUM_KEY="xxxx-xxxx-xxxx"
+VIETQR_BANK_BIN="<mã BIN ngân hàng>"
+VIETQR_ACCOUNT_NO="<số tài khoản nhận>"
+VIETQR_ACCOUNT_NAME="<TÊN CHỦ TÀI KHOẢN>"
+SEPAY_WEBHOOK_API_KEY="<khóa webhook SePay>"  # So bằng timingSafeEqual
 
-# Stripe (Thẻ quốc tế)
-STRIPE_PUBLISHABLE_KEY="pk_live_xxxx"
-STRIPE_SECRET_KEY="sk_live_xxxx"
-STRIPE_WEBHOOK_SECRET="whsec_xxxx"
+VNPAY_TMN_CODE="<mã sandbox>"                 # Chỉ dùng cho tài khoản demo
+VNPAY_HASH_SECRET="<bí mật sandbox>"
+VNPAY_PAY_URL="https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+VNPAY_RETURN_URL=                             # Trống = ${FRONTEND_URL}/payments/vnpay-return. IPN: https://<api>/api/payments/vnpay/ipn
+
+PAYMENT_SIMULATION=false        # true: mở nút giả lập. Tài khoản thường chỉ giả lập được khi VIETQR_* trống
 
 # ==============================================================================
 # 5. AI ENGINE & PATTERN GENERATION
 # ==============================================================================
-ANTHROPIC_API_KEY="sk-ant-api03-xxxx"     # Sinh hoa văn bao bì & hỗ trợ CAD
-GROQ_API_KEY="gsk_xxxx"                  # Llama 3.1 fallback / xử lý text siêu tốc
+ANTHROPIC_API_KEY="<khóa>"      # Hoa văn AI. Trống = hoa văn thuật toán
+AI_MODEL_FAST=<model>
+AI_MODEL_PREMIUM=<model>
+AI_MONTHLY_BUDGET_USD=<ngân sách>
+AI_TIMEOUT_MS=<ms>
+USD_VND_RATE=<tỉ giá>
+FAL_KEY="<khóa fal.ai>"         # Job ảnh AI (Xu Wrap)
+AI_IMAGE_PROVIDER=fal
+AI_IMAGE_MODELS=<danh sách>
+AI_IMAGE_CONCURRENCY=<số job>
+AI_IMAGE_TIMEOUT_MS=<ms>
+PEXELS_API_KEY="<khóa>"         # Ảnh stock trong thư viện
+EXPORT_CONCURRENCY=<số job>
 
 # ==============================================================================
-# 6. TRANSACTIONAL EMAIL & OBSERVABILITY
+# 6. TRANSACTIONAL EMAIL (SMTP)
 # ==============================================================================
-# Resend API (hoặc SMTP)
-RESEND_API_KEY="re_xxxx"
-MAIL_FROM="WrapFit Platform <support@wrapfit.vn>"
-
-# Sentry & Log centralization (Phát hiện lỗi sập server tức thì)
-SENTRY_DSN="https://xxxx@o12345.ingest.sentry.io/67890"
-LOGTAIL_SOURCE_TOKEN="xxxx"               # Thu thập audit logs & stdout ra cloud
+SMTP_HOST=<host>
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<user>
+SMTP_PASS=<mật khẩu>
+MAIL_FROM="WrapFit <no-reply@<domain>>"
 ```
+
+Biến chỉ dùng cho seed (chạy mỗi lần container backend khởi động): `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_DEMO_EMAIL`, `SEED_DEMO_PASSWORD`. Biến của Docker Compose ở thư mục gốc: `APP_DOMAIN`, `ACME_EMAIL`, `POSTGRES_*`, `REDIS_PASSWORD`, `EXTRA_CORS_ORIGINS`.
 
 ---
 
-## 3. LỰA CHỌN 3RD-PARTY SERVICES PHÙ HỢP NHẤT
+## 3. KIẾN TRÚC DỊCH VỤ BÊN THỨ BA ĐANG VẬN HÀNH
+
+Nét liền là luồng có mã trên `develop`. Nét đứt là **đề xuất**, chưa có mã.
 
 ```mermaid
 flowchart TD
-    Client["Client (Browser / Mobile)"] -->|Tải ảnh UI, Avatar| Cloudinary["Cloudinary (Public CDN)"]
-    Client -->|Yêu cầu xuất PDF/DXF| API["NestJS Backend"]
-    API -->|Đẩy tác vụ xuất in| BullMQ["Redis BullMQ"]
-    BullMQ -->|Worker render file vector| R2["Cloudflare R2 (Private Bucket)"]
-    API -->|Ký Pre-signed URL 15m| Client
-    Client -->|Tải file an toàn qua Presigned URL| R2
-    Client -->|Thanh toán đơn in mẫu| PayOS["PayOS (VietQR) / Stripe"]
-    PayOS -->|Webhook Signature Verified| API
-    API -->|Lưu đơn vào Postgres| DB[(PostgreSQL)]
-    DB -.->|Cron pg_dump + Mã hoá age| BackupBucket["Cloudflare R2 (Backups)"]
+    Client["Trình duyệt"] -->|HTTPS| Caddy["Caddy (HTTPS)"]
+    Caddy --> FE["Next.js 15"]
+    Caddy -->|/api| API["NestJS API"]
+    API -->|Ký URL tải lên 5 phút| Client
+    Client -->|Tải ảnh lên qua URL ký| R2pub["R2 bucket công khai<br/>(có mã)"]
+    API -->|FitCheck + kiểm quyền, tạo job| BullMQ["Redis BullMQ<br/>export · mail · ai-image<br/>(có mã)"]
+    BullMQ --> Worker["Worker"]
+    Worker -->|Render file in| R2priv["R2 bucket riêng tư<br/>(có mã)"]
+    API -->|Ký URL tải file in 15 phút| Client
+    Client -->|Tải file in qua URL ký| R2priv
+    Worker -->|Email| SMTP["SMTP<br/>(có mã, chờ kiểm production)"]
+    Worker -->|Ảnh AI| Fal["fal.ai<br/>(có mã)"]
+    API -->|Hoa văn AI| Claude["Anthropic Claude<br/>(có mã)"]
+    Client -->|Tài khoản thường: quét VietQR| Bank["Ngân hàng"]
+    Bank --> SePay["SePay"]
+    SePay -->|Webhook Apikey, idempotent theo external_id| API
+    Client -->|Tài khoản demo| VNPay["VNPay sandbox"]
+    VNPay -->|IPN, chữ ký HMAC| API
+    API --> DB[(PostgreSQL)]
+    DB -.->|Đề xuất: cron pg_dump + mã hóa age| Backup["R2 bucket backup<br/>(biến đã có, chưa có job)"]
 ```
 
-1. **Cổng thanh toán (Payment Gateway)**:
-   - **Nội địa**: Dùng **PayOS (VietQR)**. Không mất phí duy trì, tạo mã VietQR động theo đơn, tự động gọi Webhook về server khi tiền vào tài khoản. Khách không cần thẻ tín dụng, chỉ cần quét app ngân hàng.
-   - **Quốc tế**: Dùng **Stripe Checkout**. Hỗ trợ Apple Pay, Google Pay, thẻ quốc tế khi bán bản quyền thiết kế ra nước ngoài.
-   - **An toàn giao dịch**: Bắt buộc xác thực chữ ký Webhook (`whsec` / checksum) và áp dụng cơ chế **Idempotency Key** để nếu cổng thanh toán bắn lại webhook 2 lần thì không bị trừ tiền hay nhân đôi đơn.
+1. **Cổng thanh toán (Payment Gateway)** — có mã trên `develop`, đã kiểm bằng E2E (19/11/2026):
+   - **Tài khoản thường**: VietQR. Mỗi thanh toán có mã tham chiếu `WF…` trong nội dung chuyển khoản. SePay gọi webhook khi tiền vào tài khoản. Webhook xác thực bằng khóa `Apikey` (so bằng `timingSafeEqual`). Mỗi giao dịch lưu một dòng trong `bank_transactions` theo `external_id` duy nhất, nên SePay gửi lại cũng không tạo thêm dòng. Giao dịch không khớp (lệch tiền, thiếu mã) nằm trong hàng đợi đối soát để admin gán tay (`be/src/payments/admin/`).
+   - **Tài khoản demo**: VNPay sandbox, xác thực chữ ký HMAC.
+   - **Giả lập**: chỉ mở khi máy chủ bật `PAYMENT_SIMULATION=true`. Tài khoản demo luôn được giả lập. Tài khoản thường chỉ được giả lập khi máy chủ chưa cấu hình `VIETQR_*`. Có tài khoản VietQR thật thì tài khoản thường giả lập → `403 SIMULATION_DEMO_ONLY`.
+   - Tiền thật qua SePay: chờ kiểm thực tế (người giữ tài khoản ngân hàng và SePay).
 
-2. **Lưu trữ (Storage Strategy)**:
-   - **Mô hình Hybrid**:
-     - *Cloudinary*: Lưu `AVATAR`, `LOGO`, `IMAGE` (hoa văn canvas). Tận dụng tính năng resize tự động, chuyển đổi định dạng WebP/AVIF giúp canvas tải mượt.
-     - *Cloudflare R2*: Lưu `EXPORT` (file PDF CMYK, SVG, DXF) và file `Database Backup`. Cloudflare R2 tương thích S3, **hoàn toàn miễn phí Egress fee (băng thông tải về)** và dung lượng rẻ hơn AWS S3 3 lần.
+2. **Lưu trữ (Storage Strategy)** — có mã trên `develop`:
+   - Mọi file nằm trên S3/R2 qua `StorageService`. Ảnh của chính trang web nằm trong `fe/public`. Không dùng CDN ảnh bên thứ ba.
+   - Cloudflare R2 tương thích S3 và không tính phí băng thông tải về.
 
-3. **Email xác thực & Thông báo đơn**:
-   - Sử dụng **Resend** (3,000 email/tháng miễn phí) thay vì Gmail SMTP cá nhân (Gmail dễ bị chặn IP khi gửi nhiều hoặc đổi IP máy chủ).
+3. **Email xác thực & thông báo** — có mã trên `develop`:
+   - Gửi bằng SMTP (nodemailer) ở worker. Nhà cung cấp SMTP production chưa chốt: chờ kiểm thực tế (người vận hành VPS).
 
-4. **Giám sát & Sentry**:
-   - Tích hợp **Sentry**: Mọi lỗi unhandled rejection hoặc crash worker sẽ tự động báo về Telegram/Email kèm Stacktrace và Request Context.
+4. **Giám sát** — **Đề xuất**:
+   - Hiện có log JSON và request id. Chưa tích hợp Sentry hay dịch vụ gom log.
 
 ---
 
 ## 4. CHIẾN LƯỢC PHÂN LOẠI & LƯU TRỮ DỮ LIỆU (KHÔNG LƯU HẾT VÀO DB)
 
-| Nơi Lưu Trữ | Dạng Dữ Liệu | Cơ Chế Bảo Mật & Tối Ưu |
-| :--- | :--- | :--- |
-| **PostgreSQL** | Dữ liệu quan hệ cốt lõi: Tài khoản (`users`), Dự án (`packaging_projects`), Đơn in mẫu (`orders`), Danh mục file (`stored_files`), Audit Log (`audit_events`). | - Chỉ lưu key của file, không lưu file nhị phân.<br>- `canvas_state` lưu dạng JSONB (Postgres tự động nén TOAST).<br>- Giới hạn tối đa 50 mốc snapshot thủ công + 20 mốc tự động. |
-| **Cloudinary (Public CDN)** | File ảnh giao diện: Avatar, Logo cửa hàng, Texture AI, Thumbnail dự án. | - Đặt quyền `public`.<br>- Tối ưu dung lượng qua `f_auto,q_auto`.<br>- Dọn dẹp tự động khi người dùng xóa file. |
-| **Cloudflare R2 (Private S3)** | File nhạy cảm & Bản quyền: File xuất in (PDF CMYK 300 DPI, DXF, SVG cắt), Bản backup database. | - Bucket ở chế độ **Private 100%**.<br>- Người dùng chỉ tải qua **Pre-signed URL** hết hạn sau 15 phút (`TTL=900`).<br>- Chặn mọi truy cập trực tiếp. |
-| **Redis** | Hàng đợi tác vụ BullMQ (Xuất in, gửi email, hoàn tất thanh toán), Bộ đếm brute-force login. | - Bật chế độ `appendonly yes` (AOF) và `noeviction` để khi khởi động lại Redis không bị mất hàng đợi đang chờ xử lý. |
-| **Trình duyệt (Client)** | Session Token (Cookie `httpOnly`), Cài đặt giao diện (Theme, Layout, Tour guide). | - **Tuyệt đối không lưu Access/Refresh Token trong LocalStorage** (chống lỗ hổng XSS).<br>- Không lưu PII (SĐT, Địa chỉ, Thẻ) trong LocalStorage. |
+| Nơi Lưu Trữ | Dạng Dữ Liệu | Cơ Chế Bảo Mật & Tối Ưu | Trạng thái |
+| :--- | :--- | :--- | :--- |
+| **PostgreSQL** | 32 bảng. Dữ liệu quan hệ cốt lõi: tài khoản (`users`), dự án (`packaging_projects`), đơn in mẫu (`orders`, `order_items`, `order_status_history`), thanh toán (`payments`, `bank_transactions`), danh mục file (`stored_files`). | - Chỉ lưu key của file, không lưu file nhị phân.<br>- Thiết kế canvas lưu dạng JSONB.<br>- Tối đa 50 mốc snapshot thủ công, giữ 20 mốc tự động mới nhất.<br>- Dự án trong thùng rác bị xóa sau 30 ngày, trừ dự án đang nằm trong đơn còn hiệu lực. | Có mã trên `develop`. Đã kiểm bằng E2E (19/11/2026) |
+| **R2 bucket công khai** | Ảnh tải lên (logo, ảnh), ảnh AI, thumbnail dự án. | - Tải lên qua URL ký hết hạn sau 5 phút, có kiểm quyền sở hữu dự án.<br>- Tác vụ dọn file mồ côi. | Có mã trên `develop` |
+| **R2 bucket riêng tư** | File xuất in. | - Không có URL công khai.<br>- Chỉ tải qua **Pre-signed URL** hết hạn sau 15 phút.<br>- Thiếu `STORAGE_PRIVATE_BUCKET` thì file in rơi vào bucket công khai và API ghi cảnh báo khi khởi động. | Có mã trên `develop`. Bucket production: chờ kiểm thực tế (người vận hành VPS) |
+| **R2 bucket backup** | Bản dump CSDL đã mã hóa. | - Không có URL công khai.<br>- Nên dùng API token riêng chỉ có quyền ghi và lifecycle xóa sau 30 ngày (xem [`be/README.md`](../be/README.md)). | Biến đã có. Job backup: **Đề xuất**. Chưa kiểm khôi phục |
+| **Redis** | Hàng đợi BullMQ (xuất in, gửi email, ảnh AI), bộ đếm rate limit, đẩy thông báo từ worker sang API. | - Bật `appendonly yes` (AOF) và `noeviction` ở cả dev và production, để Redis khởi động lại không mất job đang chờ.<br>- Production đặt mật khẩu (`REDIS_PASSWORD`). | Có mã trên `develop` |
+| **Trình duyệt (Client)** | Cookie phiên `httpOnly`, cài đặt giao diện, trạng thái tour hướng dẫn. | - **Không lưu Access/Refresh Token trong LocalStorage** (chống lỗ hổng XSS).<br>- Không lưu dữ liệu cá nhân (SĐT, địa chỉ, thẻ) trong LocalStorage. | Có mã trên `develop` |
 
 ---
 
@@ -149,78 +203,35 @@ flowchart TD
 
 ### 1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG
 
-#### A. Khai tử ngay biến RAM `SAMPLE_ORDERS`
-- **Nguyên nhân**: `orders.service.ts:37` đang dùng `const SAMPLE_ORDERS = new Map<string, SamplePrintOrder>();`. Khi máy chủ restart hoặc deploy phiên bản mới, toàn bộ đơn hàng trong RAM biến mất. Khách đã thanh toán tiền in mẫu mà mất đơn sẽ dẫn đến khiếu nại và đền bù!
-- **Giải pháp xử lý ngay**:
-  1. Thêm model `Order` vào `prisma/schema.prisma`:
-  ```prisma
-  enum OrderStatus {
-    PENDING_PAYMENT
-    PAID
-    IN_PRODUCTION
-    SHIPPED
-    DELIVERED
-    CANCELLED
-  }
+#### A. Khai tử biến RAM `SAMPLE_ORDERS` — đã xong
 
-  model Order {
-    id              String      @id @default(uuid(7)) @db.Uuid
-    orderCode       String      @unique @map("order_code")
-    userId          String      @map("user_id") @db.Uuid
-    projectId       String      @map("project_id") @db.Uuid
-    printShopId     String      @map("print_shop_id")
-    quantity        Int         @default(1)
-    recipientName   String      @map("recipient_name")
-    phoneEncrypted  String      @map("phone_encrypted")    // AES-256-GCM
-    addressEncrypted String     @map("address_encrypted")  // AES-256-GCM
-    totalVnd        Int         @map("total_vnd")
-    status          OrderStatus @default(PENDING_PAYMENT)
-    paymentRef      String?     @map("payment_ref")
-    createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-    updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+- **Vấn đề cũ**: `orders.service.ts` từng giữ đơn trong một `Map` trong RAM. Máy chủ restart là mất đơn.
+- **Hiện tại** (có mã trên `develop`, đã kiểm bằng E2E 19/11/2026): đơn nằm trong các bảng `orders`, `order_items`, `order_status_history` của [`schema.prisma`](../be/prisma/schema.prisma). Tài khoản có đơn hoặc thanh toán không bị xóa cứng mà bị ẩn danh hóa, vì khóa ngoại của các bảng tài chính là `ON DELETE RESTRICT`.
+- **Còn mở** (**Đề xuất**): danh sách xưởng in vẫn là hằng `PARTNERS` trong `be/src/print-shops/print-shops.service.ts`. Chưa có bảng `print_shops`; bảng `print_shop_members` chỉ gán tài khoản xưởng vào mã xưởng.
 
-    user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-    project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+#### B. Sao lưu CSDL
 
-    @@index([userId, status])
-    @@map("orders")
-  }
-  ```
-  2. Toàn bộ `PARTNERS` trong `print-shops.service.ts` đưa vào bảng `print_shops` trong DB để quản lý động, không hardcode.
+- **Hiện tại**: biến `STORAGE_BACKUP_BUCKET` và hướng dẫn tạo bucket đã có. Repo **chưa có job backup**, chưa có bản backup nào được kiểm khôi phục.
+- **Việc cần làm trước khi coi là "có backup"**:
+  1. Người vận hành VPS tạo bucket backup và đặt biến (chờ kiểm thực tế).
+  2. Thêm job backup hằng đêm (**Đề xuất**, phương án ở mục 6).
+  3. Khôi phục thử một bản dump vào CSDL tạm và ghi ngày kiểm (chờ kiểm thực tế, người vận hành VPS).
 
-#### B. Quy trình Sao lưu Tự động (Backup Strategy 3-2-1)
-- **Sao lưu Cơ sở dữ liệu (PostgreSQL)**:
-  - Nếu dùng Cloud Managed DB (Neon / Supabase): Bật tính năng **Point-in-Time Restore (PITR)** (cho phép quay ngược trạng thái database về bất kỳ giây nào trong 7 ngày qua).
-  - Nếu tự host trên VPS Docker: Thiết lập cronjob hàng đêm lúc 02:00:
-    ```bash
-    # Dump database -> Nén -> Mã hóa bằng age -> Upload sang Cloudflare R2
-    pg_dump -Fc -U postgres wrapfit_prod | age -r age1wrapfitkey... | aws s3 cp - s3://wrapfit-encrypted-backups/db-$(date +%F).dump.age --endpoint-url https://<id>.r2.cloudflarestorage.com
-    ```
-  - **Diễn tập khôi phục (Drill Restore)**: Mỗi tháng một lần, kích hoạt script restore thử nghiệm file dump vào một database staging để đảm bảo file backup không bị hỏng.
+#### C. Sao lưu file thiết kế của khách hàng — **Đề xuất**
 
-#### C. Sao lưu File Thiết kế của Khách hàng
-- Không backup toàn bộ! Chỉ cần backup thư mục `users/<userId>/` chứa `LOGO`, `IMAGE` gốc của khách hàng.
-- Các file `EXPORT` (PDF, DXF) và `THUMBNAIL` không cần tốn tiền backup vì worker có thể render lại 100% dựa vào dữ liệu tọa độ `canvas_state` trong DB.
+- Không backup toàn bộ. Chỉ cần backup ảnh gốc khách tải lên.
+- File xuất in và thumbnail không cần backup, vì worker dựng lại được từ thiết kế lưu trong CSDL.
 
 ---
 
 ### 2. RỦI RO LỖI HỆ THỐNG, CRASH CODE & TRANH CHẤP THANH TOÁN
 
-1. **Cơ chế Tự hàn gắn Đơn hàng dở dang (Order Reconcile Task)**:
-   - Nếu khách chuyển tiền thành công nhưng webhook từ ngân hàng bị nghẽn mạng:
-   - Xây dựng NestJS Cron Task chạy 5 phút/lần (`OrderReconcileTask`): Tự động tìm các đơn hàng ở trạng thái `PENDING_PAYMENT` trên 10 phút và gọi API sang PayOS/Stripe để đối soát trạng thái giao dịch. Nếu cổng báo đã nhận tiền, tự động cập nhật đơn sang `PAID` và gửi email thông báo cho khách.
-2. **Ngăn chặn Double-Spending (Thanh toán trùng)**:
-   - Dùng Transaction trong Prisma khi cập nhật trạng thái đơn hàng:
-   ```typescript
-   await this.prisma.$transaction(async (tx) => {
-     const order = await tx.order.findUnique({ where: { orderCode } });
-     if (order.status === OrderStatus.PAID) return; // Đã xử lý rồi, bỏ qua
-     await tx.order.update({
-       where: { orderCode },
-       data: { status: OrderStatus.PAID, paymentRef: transactionId },
-     });
-   });
-   ```
+1. **Đối soát thanh toán** (có mã trên `develop`, đã kiểm bằng E2E 19/11/2026):
+   - Webhook SePay lưu mọi giao dịch đến. Giao dịch khớp mã `WF…` và đủ tiền thì thanh toán chuyển sang đã trả. Giao dịch lệch tiền hoặc không có mã nằm trong hàng đợi để admin gán tay.
+   - Phương án cũ là cron gọi API của PayOS/Stripe để hỏi trạng thái. Phương án này không dùng vì WrapFit không dùng hai cổng đó (mục 6).
+2. **Chống ghi nhận trùng**:
+   - `bank_transactions.external_id` là khóa idempotency: SePay gửi lại cùng giao dịch thì không thêm dòng.
+   - Mã đơn in có dạng `WF-<năm>-<6 chữ số>`, thanh toán có `reference` duy nhất.
 
 ---
 
@@ -231,26 +242,41 @@ Khách hàng thiết kế bao bì là các xưởng sản xuất, chủ shop han
 - Đội ngũ Admin hoặc lập trình viên lén xem và sao chép tác phẩm.
 - Lộ số điện thoại và địa chỉ khách nhận quà.
 
-#### Giải pháp Triệt để:
+#### Giải pháp:
 
-1. **Bảo mật File Thiết kế (Private Assets)**:
-   - Mọi dự án có `visibility: PRIVATE` thì file xuất in PDF và ảnh tải lên canvas đều phải lưu ở đường dẫn riêng và chỉ cấp quyền xem qua **Pre-signed URL 15 phút**.
-   - Kiểm tra chặt quyền sở hữu: Endpoint tạo Pre-signed URL kiểm tra `project.userId === currentUser.id`. Người lạ có biết URL cũng không xem được sau 15 phút.
+1. **Bảo mật file thiết kế** (có mã trên `develop`):
+   - File xuất in nằm trong bucket riêng tư, chỉ tải qua Pre-signed URL 15 phút.
+   - API kiểm quyền sở hữu dự án trước khi ký URL tải lên và trước khi tạo job xuất.
 
-2. **Mã hóa Dữ liệu Nhạy cảm (PII Encryption)**:
-   - Số điện thoại và địa chỉ nhận hàng của khách được mã hóa ở tầng ứng dụng bằng thuật toán **AES-256-GCM** với khóa bí mật `PII_ENCRYPTION_KEY` lưu trong `.env`.
-   - Ngay cả khi hacker dump được database Postgres, toàn bộ cột `phone_encrypted` và `address_encrypted` chỉ là chuỗi hex vô nghĩa.
-   - Chính sách xóa PII: Tự động xóa (hoặc ẩn) số điện thoại/địa chỉ sau 30 ngày kể từ khi đơn in mẫu giao thành công.
+2. **Dữ liệu cá nhân trong đơn**:
+   - Hiện tại (có mã trên `develop`): SĐT và địa chỉ người nhận lưu dạng chữ thường trong `orders`. Chứng từ kế toán được giữ ít nhất 10 năm (Luật Kế toán 2015). Sau thời hạn đó, tác vụ `invoice-retention` xóa tên, SĐT, địa chỉ, ghi chú trên đơn và thông tin hóa đơn của các tài khoản đã xóa.
+   - Mã hóa cột bằng AES-256-GCM: **Đề xuất** (mục 6).
 
-3. **Hệ thống Nhật ký Kiểm toán (Admin Audit Trail)**:
-   - Tạo bảng `audit_events` ghi lại toàn bộ hành động nhạy cảm:
-     - `ADMIN_VIEW_USER_PROJECT` (Mỗi khi admin mở xem dự án của một user khác -> Bắt buộc ghi log lý do và thời gian).
-     - `USER_EXPORT_VECTOR` (Xuất file in).
-     - `ORDER_REFUND` (Hoàn tiền đơn hàng).
-   - Minh bạch hóa với người dùng: Cam kết trong Điều khoản dịch vụ rằng nhân viên chỉ mở dự án khi có yêu cầu hỗ trợ kỹ thuật từ khách hàng và mọi lượt truy cập đều được ghi log bất biến.
+3. **Nhật ký kiểm toán** — **Đề xuất**:
+   - Chưa có bảng `audit_events`. Hiện có `order_status_history` (ai đổi trạng thái đơn, lúc nào) và `bank_transactions.resolved_by` (admin nào gán giao dịch).
+   - Đề xuất ghi thêm: admin mở dự án của người khác, xuất file in, hoàn tiền.
 
-4. **Trang Minh Bạch "Dữ liệu của tôi" (Tuân thủ Nghị định 13/2023/NĐ-CP & Luật BV Dữ liệu cá nhân 2025)**:
-   - Cung cấp cho người dùng 3 quyền hạn trực quan trong Dashboard:
-     1. **Xuất toàn bộ dữ liệu (Export My Data)**: Tải về file ZIP chứa toàn bộ thông tin tài khoản, danh sách dự án (JSON) và toàn bộ file ảnh gốc đã tải lên.
-     2. **Quản lý phiên đăng nhập**: Xem IP, thiết bị, trình duyệt đang đăng nhập (dữ liệu từ `refresh_tokens`) và nút "Đăng xuất khỏi tất cả thiết bị".
-     3. **Quyền được lãng quên (Xóa tài khoản)**: Áp dụng cơ chế **Soft-Delete 7 ngày** (tránh trường hợp bị hack xóa nhầm), sau 7 ngày hệ thống cron tự động xóa sạch dữ liệu cá nhân, file trên bucket và các token.
+4. **Quyền của người dùng với dữ liệu** (Nghị định 13/2023/NĐ-CP & Luật Bảo vệ dữ liệu cá nhân 2025):
+   - **Đăng xuất khỏi mọi thiết bị**: có mã trên `develop` (`POST /api/auth/logout-all`, thu hồi refresh token và tăng `session_version`).
+   - **Xóa tài khoản**: có mã trên `develop` nhưng chỉ admin gọi được (`DELETE /api/users/:id`). Tài khoản không có lịch sử tài chính bị xóa hẳn. Tài khoản có lịch sử tài chính bị ẩn danh hóa. Tự xóa tài khoản với thời gian chờ 7 ngày: **Đề xuất**.
+   - **Xuất toàn bộ dữ liệu (file ZIP)** và **xem danh sách phiên theo IP, thiết bị**: **Đề xuất**.
+
+---
+
+## 6. QUYẾT ĐỊNH CŨ / CẦN XÁC NHẬN
+
+Các phương án dưới đây có trong bản đầu của tài liệu. Chúng **không** chạy trong hệ thống hiện tại. Giữ lại để tham khảo; muốn dùng lại thì chủ dự án phải xác nhận và mở việc mới.
+
+| Phương án | Trạng thái | Ghi chú |
+| :--- | :--- | :--- |
+| **Cloudinary** cho ảnh công khai (`f_auto,q_auto`, biến `CLOUDINARY_*`) | Đã bỏ (16/11/2026) | Mọi file trên R2. Không cấu hình `CLOUDINARY_*` |
+| **PayOS** cho VietQR (`PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`) | Không dùng | Thay bằng VietQR + SePay webhook |
+| **Stripe** cho thẻ quốc tế (`STRIPE_*`) | Đề xuất, cần xác nhận | Chưa có nhu cầu bán ra nước ngoài |
+| **Mã hóa SĐT, địa chỉ** bằng AES-256-GCM (`PII_ENCRYPTION_KEY`, cột `phone_encrypted`, `address_encrypted`) | Đề xuất, cần xác nhận | Cần đổi schema `orders` và có quy trình xoay khóa |
+| **Tự xóa dữ liệu người nhận 30 ngày sau khi giao** | Cần xác nhận | Mâu thuẫn với nghĩa vụ giữ chứng từ 10 năm đang có trong mã |
+| **Backup CSDL bằng cron trên VPS**: 02:00 hằng đêm, `pg_dump -Fc` → mã hóa bằng `age` → tải lên bucket backup; khôi phục thử mỗi tháng vào CSDL tạm. Nếu chuyển sang CSDL managed (Neon / Supabase) thì bật Point-in-Time Restore | Đề xuất | Bucket đã có biến. Job, khóa `age` và lịch khôi phục thử chưa có |
+| **Resend** thay SMTP (`RESEND_API_KEY`) | Cần xác nhận | Mã hiện gửi qua SMTP, dùng được với mọi nhà cung cấp có SMTP |
+| **Sentry, Logtail** (`SENTRY_DSN`, `LOGTAIL_SOURCE_TOKEN`) | Đề xuất | Chưa có mã |
+| **Groq** làm AI dự phòng (`GROQ_API_KEY`) | Không dùng | Dự phòng hiện là hoa văn thuật toán, miễn phí |
+| **`COOKIE_SECRET`** ký cookie | Không dùng | Cookie phiên là JWT đã ký bằng `JWT_*_SECRET` |
+| Tên biến cũ `S3_*`, `APP_FRONTEND_URL`, `JWT_*_EXPIRATION`, `PORT=3001` | Đã thay | Tên đúng: `STORAGE_*`, `FRONTEND_URL`, `JWT_*_TTL_SECONDS`, `PORT=8080` (mục 2) |

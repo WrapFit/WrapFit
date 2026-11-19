@@ -4,9 +4,17 @@
 > **Tham chiếu công nghiệp**: [Pacdora.com](https://www.pacdora.com/) — Nền tảng CAD & 3D Packaging Design số 1 thế giới  
 > **Khóa học**: EXE101 — Trải nghiệm Khởi nghiệp Đổi mới Sáng tạo (FPT University)  
 > **Kiến trúc chủ đạo**: **Clean Architecture kết hợp Domain-Driven Design (DDD)** & **GoF Design Patterns**  
-> **Nền tảng Backend**: **NestJS 11** (TypeScript) + Prisma ORM + PostgreSQL — Frontend: Next.js 14 (xem tài liệu 07, Mục 1)  
+> **Nền tảng Backend**: **NestJS 11** (TypeScript) + Prisma ORM + PostgreSQL — Frontend: Next.js 15 (xem tài liệu 07, Mục 1)  
 > **Phiên bản tài liệu**: v7.1 (Hiện thực hóa kiến trúc trên NestJS: Module, Dependency Injection, Guards, BullMQ)  
-> *v7.0: Master Enterprise Packaging & Full-Lifecycle Commercial Web Specification*
+> *v7.0: Master Enterprise Packaging & Full-Lifecycle Commercial Web Specification*  
+> **v7.2 (19/11/2026)**: Gắn trạng thái và liên kết mã, đối chiếu với `develop` tại fb720a9. Không vẽ lại sơ đồ.
+
+> **Cách đọc trạng thái.** Tài liệu này vừa mô tả phần đã chạy vừa giữ thiết kế tương lai. Mỗi phần ghi một trong ba mức:
+> - **Có mã trên `develop`**: thành phần có trong `be/src/`, `fe/src/` hoặc `shared/src/`, kèm đường dẫn.
+> - **Một phần**: có module, nhưng chỉ một phần của sơ đồ được làm, hoặc làm theo cách khác sơ đồ.
+> - **Đề xuất**: chưa có mã. Sơ đồ giữ lại làm hướng thiết kế, không mô tả hệ thống hiện tại.
+>
+> Bảng tổng hợp ở [Mục 7](#7-ánh-xạ-26-gói-phân-hệ-sang-nestjs-modules). Các interface trong [`shared/src/core/contracts.ts`](../shared/src/core/contracts.ts) chỉ là **bản phác thảo**: file tự ghi là không thuộc API của package, không được export và không có mã nào import. Kiểu dữ liệu đang dùng nằm ở [`shared/src/types/`](../shared/src/types/), hình học hộp ở [`shared/src/parametric/`](../shared/src/parametric/), kiểm tra in ở [`shared/src/fitcheck/`](../shared/src/fitcheck/).
 
 ---
 
@@ -55,7 +63,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ CLIENT LAYER — fe/ (Next.js 14, ngoài phạm vi NestJS)                       │
+│ CLIENT LAYER — fe/ (Next.js 15, ngoài phạm vi NestJS)                       │
 │    • 2D Vector Canvas (Fabric.js / Paper.js wrapper)                        │
 │    • 3D WebGL Folding Stage (Three.js / React Three Fiber)                  │
 │    • Public 3D Viewer, iFrame Widget, Cart Drawer, Checkout, Address Book   │
@@ -103,6 +111,8 @@
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+> **Trạng thái sơ đồ 4 tầng: một phần.** Sơ đồ là mục tiêu thiết kế. Đã có mã: `ProjectsController` và 4 tầng của [`be/src/projects/`](../be/src/projects/), `AuthController`, `JwtAuthGuard`, `RolesGuard`, `ProjectOwnerGuard`, `@Processor` / `@Cron` / `@OnEvent`, S3/R2 qua [`StorageService`](../be/src/storage/storage.service.ts), BullMQ với ba hàng đợi `export`, `mail`, `ai-image`, cổng VNPay sandbox ([`be/src/payments/vnpay/`](../be/src/payments/vnpay/)) và VietQR + SePay ([`be/src/payments/`](../be/src/payments/)). **Đề xuất**: `ECommerceController`, `SubscriptionTierGuard`, `ProjectAccess`, interceptor Audit Log, các service Address Book / Refund / Collaboration / Newsletter / Contact / Banner, Stripe và MoMo adapter, GHTK/GHN adapter, Resend/SendGrid/WebPush adapter (email hiện gửi qua SMTP, [`smtp-mailer.ts`](../be/src/mail/smtp-mailer.ts)). Phần dựng file in không nằm ở `@wrapfit/shared` mà ở [`be/src/export/rendering/`](../be/src/export/rendering/).
+
 ### 1.1. Ánh xạ Clean Architecture sang NestJS
 
 | Tầng | Thành phần NestJS | Thư mục | Quy tắc phụ thuộc |
@@ -112,7 +122,7 @@
 | **Domain Core** | Class TypeScript thuần: Aggregate, Entity, Value Object, Domain Event, Domain Policy; thuật toán từ `@wrapfit/shared` | `src/<tên>/domain/` | **Không** import `@nestjs/*`, `@prisma/client`, SDK bên thứ ba → test được bằng Jest thuần, không cần khởi động Nest. |
 | **Infrastructure** | `PrismaXxxRepository`, `StripePaymentGatewayAdapter`, `S3StorageAdapter`... đăng ký bằng custom provider | `src/<tên>/infrastructure/` | Implement các Port. Là nơi duy nhất được dùng `PrismaService` và SDK bên ngoài. |
 
-Thực tế trong code: `be/src/projects/` là module đủ 4 tầng. Cấu trúc một module đầy đủ (ví dụ `address-book`, chưa triển khai):
+Thực tế trong code: [`be/src/projects/`](../be/src/projects/) là module đủ 4 tầng. Cấu trúc một module đầy đủ (ví dụ `address-book`, **đề xuất**, chưa triển khai):
 
 ```
 be/src/address-book/
@@ -181,9 +191,9 @@ export class AddressBookModule {}
 
 | Loại module | Hiện có trong `be/src/` | Cấu trúc áp dụng |
 | :--- | :--- | :--- |
-| **Nghiệp vụ phức tạp** (có trạng thái, quy tắc, cổng ra hạ tầng) | `projects` (State Pattern, thùng rác 30 ngày, port `PROJECT_REPOSITORY`, `SNAPSHOT_REPOSITORY`, `PROJECT_FILES`). Về sau: Billing, Orders, Collaboration | Đủ 4 tầng: `presentation / application / domain / infrastructure` + Port & Token |
-| **Nhiều thành phần, ít quy tắc** | `auth` (`guards/`, `strategies/`), `export` (`rendering/`), `ai` (`pattern/`) | Phẳng + thư mục con theo vai trò. Tách 4 tầng khi phát sinh quy tắc nghiệp vụ |
-| **CRUD đơn giản** | `collections`, `templates`, `users`, `unboxing`, `public-showcase`. Về sau: Newsletter, Contact, Banner, WebConfig | Gọn 3 lớp: `Controller → Service → PrismaService`, vẫn có DTO và Guard đầy đủ |
+| **Nghiệp vụ phức tạp** (có trạng thái, quy tắc, cổng ra hạ tầng) | `projects` (State Pattern, thùng rác 30 ngày, port `PROJECT_REPOSITORY`, `SNAPSHOT_REPOSITORY`, `PROJECT_FILES`, `PROJECT_EVENTS`). Collaboration: đề xuất | Đủ 4 tầng: `presentation / application / domain / infrastructure` + Port & Token |
+| **Nhiều thành phần, ít quy tắc** | `auth` (`guards/`, `strategies/`), `export` (`rendering/`), `ai` (`pattern/`, `image/`), `payments` (`sepay/`, `vnpay/`, `admin/`). `billing`, `orders`, `notifications`, `analytics`, `library` hiện phẳng dù có quy tắc nghiệp vụ | Phẳng + thư mục con theo vai trò. Tách 4 tầng khi phát sinh quy tắc nghiệp vụ |
+| **CRUD đơn giản** | `collections`, `templates`, `users`, `unboxing`, `public-showcase`, `print-shops`, `reviews`. Newsletter, Contact, Banner, WebConfig: đề xuất | Gọn 3 lớp: `Controller → Service → PrismaService`, vẫn có DTO và Guard đầy đủ |
 | **Hạ tầng / kỹ thuật** | `common/` (CommonModule `@Global`), `shared/prisma`, `shared/queue`, `storage` (`@Global`), `mail`, `events`, `base` | Không chứa quy tắc nghiệp vụ. `common/` và `shared/` không import module nghiệp vụ |
 
 Khi một module CRUD phát sinh nghiệp vụ phức tạp hơn, tách dần ra Port/Repository mà không ảnh hưởng tới Controller.
@@ -213,17 +223,21 @@ graph LR
     storage -.->|import type: port PROJECT_FILES| projects
 ```
 
+> **Trạng thái: có mã trên `develop`, sơ đồ chưa đủ.** Sơ đồ vẽ khi `be/src/` có 11 module nghiệp vụ. Từ đó có thêm `billing`, `payments`, `orders`, `print-shops`, `reviews`, `library`, `notifications`, `analytics` và `shared/redis`; các phụ thuộc của chúng chưa có trên sơ đồ. Nguồn đúng là các `import` trong mã, ESLint `import/no-cycle` kiểm trong CI.
+
 - **Không vòng import**: mỗi module export qua `index.ts` (barrel) và module khác import qua thư mục (`from '../projects'`). ESLint `import/no-cycle` báo lỗi nếu có vòng; `import type` bị xóa khi biên dịch nên không tính.
 - **Khi module A cần thứ của module B mà B lại phụ thuộc A**, chọn một trong hai cách đang dùng trong code:
   1. *Đảo phụ thuộc bằng Port* (Mục 1.2): `projects` khai báo port `PROJECT_FILES` (`projects/application/ports/project-files.port.ts`), `StorageService` implement nó và `ProjectsModule` gắn bằng `{ provide: PROJECT_FILES, useExisting: StorageService }` — `storage` chỉ `import type` từ `projects`.
   2. *Đưa phần dùng chung xuống `common/`*: tên cookie `ACCESS_COOKIE` (11 controller cần) ở `common/constants/`, hàm băm token email (cả `auth` lẫn `mail` cần) ở `common/utils/auth-token.crypto.ts`.
-- **API & worker**: module có phần chạy nền khai báo 2 class trong cùng file `*.module.ts` — `ExportModule` (controller + đẩy job, import vào `app.module.ts`) và `ExportWorkerModule` (`ExportProcessor`, import vào `worker.ts`); tương tự `MailModule` / `MailWorkerModule`. Các `@Processor` (BullMQ) chỉ tồn tại trong process worker, các `@Cron` chỉ trong process API.
+- **API & worker**: module có phần chạy nền khai báo 2 class trong cùng file `*.module.ts` — `ExportModule` (controller + đẩy job, import vào `app.module.ts`) và `ExportWorkerModule` (`ExportProcessor`, import vào `worker.ts`); tương tự `MailModule` / `MailWorkerModule` và `AiImageWorkerModule` ([`be/src/worker.ts`](../be/src/worker.ts)). Các `@Processor` (BullMQ) chỉ tồn tại trong process worker, các `@Cron` chỉ trong process API.
 
 ---
 
 ## 2. SƠ ĐỒ LỚP KIẾN TRÚC TỔNG THỂ (MASTER SYSTEM CLASS DIAGRAM)
 
 Sơ đồ dưới đây thể hiện cách các lớp được hiện thực trong NestJS: Controller (`<<Controller>>`) chỉ phụ thuộc Application Service; Application Service chỉ phụ thuộc **Port** (`<<interface>>`); Adapter ở tầng Infrastructure **hiện thực** Port và được NestJS DI gắn vào lúc chạy.
+
+> **Trạng thái: đề xuất.** Trong sơ đồ này chỉ `ProjectsController` có trong mã ([`projects.controller.ts`](../be/src/projects/presentation/projects.controller.ts)). Các aggregate, port và adapter khác (`PackagingProjectAggregate`, `UserAggregate`, `OrderAggregate`, `IOrderRepository`, `IShippingProvider`, `StripePaymentGatewayAdapter`, `VnpayPaymentGatewayAdapter`, `GhtkShippingAdapter`, `ResendEmailNotificationAdapter`...) là thiết kế, chưa có class tương ứng. Một số tên chỉ có trong bản phác thảo `contracts.ts`. Mã thanh toán thật: [`payments.service.ts`](../be/src/payments/payments.service.ts), [`vnpay.gateway.ts`](../be/src/payments/vnpay/vnpay.gateway.ts), [`sepay-webhook.service.ts`](../be/src/payments/sepay/sepay-webhook.service.ts). Mã đơn in thật: [`orders.service.ts`](../be/src/orders/orders.service.ts).
 
 > `EditorStudioController` của v7.0 là controller phía giao diện (khởi tạo Studio, xử lý kéo thanh kích thước) nên thuộc `fe/`. Phía Backend được thay bằng `ProjectsController` (REST API).
 
@@ -395,6 +409,8 @@ classDiagram
 ## 3. CHI TIẾT 26 GÓI PHÂN HỆ CHUYÊN SÂU (DEEP DOMAIN CLASS DIAGRAMS)
 
 *(Các Gói 1 đến 21 đã được trình bày chi tiết. Dưới đây là các Gói 22 đến 26 hoàn thiện toàn bộ các luồng web thông thường còn lại).*
+
+> **Trạng thái: đề xuất.** Gói 22–26 chưa có mã. Sơ đồ lớp dưới đây là thiết kế cho sau MVP. Trạng thái của cả 26 gói xem [Mục 7](#7-ánh-xạ-26-gói-phân-hệ-sang-nestjs-modules).
 
 ### 3.22. Gói 22: Sổ Địa Chỉ & Vận Chuyển Đa Điểm (Address Book & Multi-Shipping)
 Quản trị sổ địa chỉ giao hàng cá nhân của người dùng, hỗ trợ nhiều địa chỉ (nhà riêng, công ty, xưởng quà), tự động đề xuất địa chỉ mặc định khi thanh toán.
@@ -618,6 +634,8 @@ classDiagram
 
 ---
 
+> **Trạng thái: đề xuất.** Luồng 24–28 dựa trên Gói 22–26, chưa có mã.
+
 > **Quy ước chung cho các luồng (NestJS)**: Mọi request từ giao diện đi vào **Controller** → qua **Guard** (`JwtAuthGuard`, `RolesGuard`...) → **ValidationPipe** kiểm tra DTO → gọi **Application Service**. Email/thông báo luôn được đẩy vào hàng đợi BullMQ `mail` để không làm chậm phản hồi HTTP.
 
 ### Luồng 24: Quản Lý Sổ Địa Chỉ Giao Hàng Đa Điểm (Address Book Flow)
@@ -839,39 +857,39 @@ sequenceDiagram
 
 ## 7. ÁNH XẠ 26 GÓI PHÂN HỆ SANG NESTJS MODULES
 
-Cột **Ưu tiên** khớp với Milestone trong tài liệu 07 (WBS). Các gói đánh dấu **Sau MVP** chưa có trong WBS hiện tại; nên triển khai sau khi hoàn thành CP4.
+Cột **Ưu tiên** khớp với Milestone trong tài liệu 07 (WBS). Cột **Trạng thái** đối chiếu với `develop` ngày 19/11/2026: **Có mã** (thành phần chính của gói đã có), **Một phần** (có module nhưng thiếu phần lớn sơ đồ, hoặc làm khác sơ đồ), **Đề xuất** (chưa có mã). Cột **Mã hiện có** dẫn tới module thật; route ghi không có tiền tố `/api`.
 
-| Gói | Phân hệ | NestJS Module (`be/src/<module>/`) | Route chính (`/api/...`) | Ghi chú kỹ thuật | Ưu tiên |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | Vòng đời Dự án & Aggregate Root | `projects` | `/projects`, `/projects/:id/snapshots` | State Pattern trong `domain/`, `ProjectOwnerGuard` | CP3 |
-| 2 | Động cơ Toán Hình Học CAD | *(không phải module — thư viện `@wrapfit/shared/parametric`)* | — | `projects` gọi để validate kích thước / tái tính dieline khi đổi kích thước | CP2 |
-| 3 | Phòng thu Vector 2D | *(phía `fe/`)* | — | BE chỉ validate & lưu `canvasState` (JSON) theo schema trong `@wrapfit/shared` | CP3 |
-| 4 | WebGL 3D & Gập Động Học | *(phía `fe/`)* | — | Không có thành phần Backend | CP3 |
-| 5 | FitCheck™ Preflight | `projects` (`domain/project-fitcheck.ts`) | *(chạy nội bộ khi xuất file / đăng Template)* | Chạy lại `@wrapfit/shared/fitcheck` phía server, không tin điểm do client gửi lên; lưu kết quả vào `fitcheckState` | CP3 |
-| 6 | Xuất bản Công nghiệp & Render Đám mây | `export` | `/projects/:id/exports`, `/exports/:jobId` | `@Processor('export')` (BullMQ) trong process `worker` | CP4 |
-| 7 | Public Showcase & Unboxing | `public-showcase`, `unboxing` | `/public/projects/:slug`, `/projects/:id/unboxing`, `/public/unboxing/:slug` | `@Public()`, `@nestjs/throttler` cho like/fork, sinh QR bằng `qrcode` | CP4 |
-| 8 | Xác thực & RBAC | `auth`, `users` | `/auth/*`, `/users/me` | Passport Google + JWT cookie; `JwtAuthGuard` (`auth/guards/`, toàn cục), `RolesGuard` (`common/guards/`) | CP2 |
-| 9 | Wishlist & Collections | `collections` (+ like trong `public-showcase`) | `/collections`, `/public/projects/:slug/like` | CRUD gọn 3 lớp | CP3 |
-| 10 | Lưu trữ, Thùng rác 30 ngày & Quota S3 | `storage` (`@Global`, + `StorageMaintenanceTask`) + `TrashPurgeTask` trong `projects` | `/storage/presigned-upload`, `/storage/usage` | `@Cron` 02:00 hằng ngày; kiểm tra quota theo `subscriptionTier` trước khi cấp pre-signed URL | CP3 |
-| 11 | Quản trị Nền tảng & Audit Log | `admin` | `/admin/*` | `@Roles(Role.ADMIN)` ở cấp Controller, `AuditLogInterceptor` | Sau MVP |
-| 12 | Bảo mật Tài khoản & Mật khẩu | `auth` + `mail` | `/auth/verify-email`, `/auth/password/forgot`, `/auth/password/reset`, `/auth/logout-all` | Token xác minh / đặt lại mật khẩu lưu dạng băm (đặt lại: hết hạn 30 phút), email đi qua hàng đợi `mail` do worker gửi | ✅ Đã có (CP3) |
-| 13 | Thanh toán & Thuê bao | `billing` | `/billing/*`, `/webhooks/stripe`, `/webhooks/vnpay`, `/webhooks/momo` | Webhook cần raw body: `NestFactory.create(AppModule, { rawBody: true })`; xác minh chữ ký; xử lý idempotent | Sau MVP |
-| 14 | Giỏ hàng, Đặt hàng & Vận chuyển | `cart`, `orders`, `shipping` | `/cart`, `/orders` | `IShippingProvider` (GHTK/GHN Adapter) | Sau MVP |
-| 15 | Thông báo Đa kênh | `events` (đã có: `EventsGateway` Socket.IO `/api/socket.io`) + `notifications` (chưa có) | `/notifications` | `notifications` lắng nghe `project.forked`, `export.completed` (`common/events/`) bằng `@OnEvent`, lưu thông báo và đẩy realtime qua `EventsGateway` | CP4 (in-app cơ bản) |
-| 16 | Hỗ trợ Khách hàng & Ticket | `support` | `/support/tickets` | Đính kèm ảnh qua pre-signed upload | Sau MVP |
-| 17 | Tìm kiếm, Lọc & Phân trang | `common/dto` (`PaginationQueryDto`, `PaginatedResponseDto<T>`) | *(dùng chung)* | PostgreSQL full-text search / `pg_trgm` cho tìm theo tên, tag | CP3 |
-| 18 | Mã giảm giá & Tiếp thị liên kết | `promotions` | `/coupons/validate`, `/referrals` | Dùng `User.referralCode`, `referredById` sẵn có | Sau MVP |
-| 19 | 2FA TOTP & Phiên thiết bị | `auth` | `/auth/2fa/*`, `/users/me/sessions` | `otplib`; danh sách phiên lấy từ bảng `refresh_tokens` | Sau MVP |
-| 20 | Đánh giá, Blog CMS & SEO | `reviews`, `blog` | `/reviews`, `/blog/posts` | SEO render phía `fe/` (Next.js metadata); BE cung cấp dữ liệu | Sau MVP |
-| 21 | Rate Limiting & GDPR | `ThrottlerModule` + `HttpThrottlerGuard` (`common/guards/`, toàn cục) + `privacy` | `/users/me/export-data`, `DELETE /users/me` | Xuất dữ liệu cá nhân qua hàng đợi, xóa tài khoản cascade + xóa file S3 | CP2 (rate limit) / Sau MVP (GDPR) |
-| 22 | Sổ Địa chỉ | `address-book` | `/users/me/addresses` | Ví dụ mẫu 4 tầng tại Mục 1.1 – 1.2 | Sau MVP |
-| 23 | Hủy đơn, Hoàn tiền & Mua lại | `orders` (`RefundsController`, `AdminRefundsController`) | `/orders/:id/cancel`, `/orders/:id/refunds`, `/orders/:id/reorder`, `/admin/refunds/:id` | Gọi `IPaymentGateway.refundTransaction` | Sau MVP |
-| 24 | Newsletter & Liên hệ | `newsletter`, `contact` | `/newsletter/subscribe`, `/contact` | `@Public()` + Throttler chặt (chống spam), email qua hàng đợi `mail` | Sau MVP |
-| 25 | Cộng tác Thiết kế & Phân quyền Nhóm | `collaboration` | `/projects/:id/members`, `/invitations/:token/accept` | Nâng `ProjectOwnerGuard` thành `ProjectAccessGuard` (VIEWER / EDITOR / ADMIN) | Sau MVP |
-| 26 | Banner Slider & Cấu hình Web | `cms` | `/cms/banners`, `/cms/config`, `/admin/cms/*` | `@nestjs/cache-manager`, xóa cache khi Admin cập nhật | Sau MVP |
+| Gói | Phân hệ | Trạng thái | Mã hiện có | Route chính (`/api/...`) | Ghi chú kỹ thuật | Ưu tiên |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | Vòng đời Dự án & Aggregate Root | Có mã | [`be/src/projects/`](../be/src/projects/) | `/projects`, `/projects/:id/snapshots` | State Pattern trong `domain/`, `ProjectOwnerGuard` | CP3 |
+| 2 | Động cơ Toán Hình Học CAD | Có mã | [`shared/src/parametric/`](../shared/src/parametric/) *(thư viện, không phải module)* | — | `projects` gọi để validate kích thước / tái tính dieline khi đổi kích thước | CP2 |
+| 3 | Phòng thu Vector 2D | Có mã | [`fe/src/features/studio/`](../fe/src/features/studio/), [`shared/src/canvas/`](../shared/src/canvas/) | — | BE chỉ validate & lưu `canvasState` (JSON) theo schema trong `@wrapfit/shared` | CP3 |
+| 4 | WebGL 3D & Gập Động Học | Có mã | [`fe/src/features/studio/components/three/`](../fe/src/features/studio/components/three/), [`shared/src/parametric/fold.ts`](../shared/src/parametric/fold.ts) | — | Không có thành phần Backend | CP3 |
+| 5 | FitCheck™ Preflight | Có mã | [`shared/src/fitcheck/`](../shared/src/fitcheck/), [`project-fitcheck.ts`](../be/src/projects/domain/project-fitcheck.ts) | *(chạy nội bộ khi xuất file / đăng Template)* | Chạy lại FitCheck phía server, không tin điểm do client gửi lên; lưu kết quả vào `fitcheckState` | CP3 |
+| 6 | Xuất bản Công nghiệp & Render Đám mây | Có mã | [`be/src/export/`](../be/src/export/) | `/projects/:id/exports`, `/exports/:jobId` | `@Processor('export')` (BullMQ) trong process `worker`. Xuất file cần quyền theo phiên bản thiết kế (tài liệu 03) | CP4 |
+| 7 | Public Showcase & Unboxing | Có mã | [`be/src/public-showcase/`](../be/src/public-showcase/), [`be/src/unboxing/`](../be/src/unboxing/) | `/public/projects/:slug`, `/projects/:id/unboxing`, `/public/unboxing/:slug` | `@Public()`, `@nestjs/throttler` cho like/fork, sinh QR bằng `qrcode`. iFrame nhúng: đề xuất | CP4 |
+| 8 | Xác thực & RBAC | Có mã | [`be/src/auth/`](../be/src/auth/), [`be/src/users/`](../be/src/users/) | `/auth/*`, `/users/me` | Passport Google + JWT cookie; `JwtAuthGuard` (`auth/guards/`, toàn cục), `RolesGuard` (`common/guards/`) | CP2 |
+| 9 | Wishlist & Collections | Có mã | [`be/src/collections/`](../be/src/collections/) (+ like trong `public-showcase`) | `/collections`, `/public/projects/:slug/like` | CRUD gọn 3 lớp | CP3 |
+| 10 | Lưu trữ, Thùng rác 30 ngày & Quota S3 | Có mã | [`be/src/storage/`](../be/src/storage/), [`trash-purge.task.ts`](../be/src/projects/presentation/trash-purge.task.ts) | `/storage/presigned-upload`, `/storage/usage` | `@Cron` 02:00 hằng ngày, bỏ qua dự án đang nằm trong đơn còn hiệu lực; kiểm tra quota theo `subscriptionTier` trước khi cấp pre-signed URL | CP3 |
+| 11 | Quản trị Nền tảng & Audit Log | Một phần | Route admin rải trong [`users`](../be/src/users/users.controller.ts), [`billing`](../be/src/billing/billing.controller.ts), [`analytics`](../be/src/analytics/admin-analytics.controller.ts), [`payments/admin`](../be/src/payments/admin/); giao diện [`fe/src/views/admin/`](../fe/src/views/admin/) | `/users`, `/admin/users/*`, `/admin/analytics/*`, `/admin/bank-transactions` | `@Roles(Role.ADMIN)` từng route. Chưa có module `admin` riêng và chưa có `AuditLogInterceptor` (đề xuất) | Sau MVP |
+| 12 | Bảo mật Tài khoản & Mật khẩu | Có mã | [`be/src/auth/`](../be/src/auth/), [`be/src/mail/`](../be/src/mail/) | `/auth/verify-email`, `/auth/password/forgot`, `/auth/password/reset`, `/auth/logout-all` | Token xác minh / đặt lại mật khẩu lưu dạng băm (đặt lại: hết hạn 30 phút), email đi qua hàng đợi `mail` do worker gửi | CP3 |
+| 13 | Thanh toán & Thuê bao | Một phần | [`be/src/payments/`](../be/src/payments/), [`be/src/billing/`](../be/src/billing/) | `/payments`, `/payments/vnpay/ipn`, `/payments/vnpay/return`, `/webhooks/sepay`, `/billing/*` | Làm khác sơ đồ: VietQR + webhook SePay cho tài khoản thường, VNPay sandbox cho tài khoản demo, ví xu và gói. Webhook xác minh chữ ký và idempotent. Stripe, MoMo: đề xuất | CP4 |
+| 14 | Giỏ hàng, Đặt hàng & Vận chuyển | Một phần | [`be/src/orders/`](../be/src/orders/), [`be/src/print-shops/`](../be/src/print-shops/); giỏ hàng ở `fe/` ([`fe/src/views/cart/`](../fe/src/views/cart/)) | `/orders/sample`, `/orders/sample/bundle`, `/orders/my-orders`, `/orders/:id/status`, `/print-shops` | Đơn in mẫu có mã. Module `cart` phía backend và `shipping` (`IShippingProvider`, GHTK/GHN Adapter): đề xuất | Sau MVP |
+| 15 | Thông báo Đa kênh | Một phần | [`be/src/notifications/`](../be/src/notifications/), [`be/src/events/`](../be/src/events/) | `/notifications` | Thông báo trong app: lắng nghe `project.forked`, `export.completed` bằng `@OnEvent`, lưu và đẩy realtime qua `EventsGateway`. Kênh email cho thông báo và WebPush: đề xuất | CP4 (in-app cơ bản) |
+| 16 | Hỗ trợ Khách hàng & Ticket | Đề xuất | — (trang tĩnh [`fe/src/views/support/`](../fe/src/views/support/)) | `/support/tickets` | Đính kèm ảnh qua pre-signed upload | Sau MVP |
+| 17 | Tìm kiếm, Lọc & Phân trang | Có mã | [`be/src/common/dto/`](../be/src/common/dto/), [`page-cursor.util.ts`](../be/src/common/utils/page-cursor.util.ts) | *(dùng chung)* | Phân trang và lọc có mã. PostgreSQL full-text search / `pg_trgm`: đề xuất | CP3 |
+| 18 | Mã giảm giá & Tiếp thị liên kết | Đề xuất | Chỉ có cột `users.referral_code`, `orders.discount_vnd` (luôn 0) | `/coupons/validate`, `/referrals` | Mã ưu đãi đã bỏ khỏi luồng đặt đơn | Sau MVP |
+| 19 | 2FA TOTP & Phiên thiết bị | Đề xuất | — (chỉ có `POST /auth/logout-all`) | `/auth/2fa/*`, `/users/me/sessions` | `otplib`; danh sách phiên lấy từ bảng `refresh_tokens` | Sau MVP |
+| 20 | Đánh giá, Blog CMS & SEO | Đề xuất | — | `/reviews`, `/blog/posts` | Module [`be/src/reviews/`](../be/src/reviews/) hiện có là **duyệt mẫu theo token**, không phải đánh giá sản phẩm. Blog đã xoá khỏi FE | Sau MVP |
+| 21 | Rate Limiting & GDPR | Một phần | [`http-throttler.guard.ts`](../be/src/common/guards/http-throttler.guard.ts), [`user-removal.ts`](../be/src/users/user-removal.ts), [`invoice-retention.ts`](../be/src/users/invoice-retention.ts) | `DELETE /users/:id` (admin) | Rate limit có mã. Xóa tài khoản do admin làm: xóa hẳn, hoặc ẩn danh hóa khi có lịch sử tài chính. Tự xuất dữ liệu (`/users/me/export-data`) và tự xóa tài khoản: đề xuất | CP2 (rate limit) / Sau MVP (GDPR) |
+| 22 | Sổ Địa chỉ | Đề xuất | — | `/users/me/addresses` | Ví dụ mẫu 4 tầng tại Mục 1.1 – 1.2 | Sau MVP |
+| 23 | Hủy đơn, Hoàn tiền & Mua lại | Đề xuất | — (đổi trạng thái đơn, kể cả hủy, qua `PATCH /orders/:id/status`) | `/orders/:id/cancel`, `/orders/:id/refunds`, `/orders/:id/reorder`, `/admin/refunds/:id` | Gọi `IPaymentGateway.refundTransaction` | Sau MVP |
+| 24 | Newsletter & Liên hệ | Đề xuất | — (form liên hệ chỉ ở `fe/`) | `/newsletter/subscribe`, `/contact` | `@Public()` + Throttler chặt (chống spam), email qua hàng đợi `mail` | Sau MVP |
+| 25 | Cộng tác Thiết kế & Phân quyền Nhóm | Đề xuất | — | `/projects/:id/members`, `/invitations/:token/accept` | Nâng `ProjectOwnerGuard` thành `ProjectAccessGuard` (VIEWER / EDITOR / ADMIN) | Sau MVP |
+| 26 | Banner Slider & Cấu hình Web | Đề xuất | — | `/cms/banners`, `/cms/config`, `/admin/cms/*` | `@nestjs/cache-manager`, xóa cache khi Admin cập nhật | Sau MVP |
 
-Ngoài 26 gói trên, `be/src/` còn các module: `templates` (Thư viện mẫu, IT3-07), `ai` (sinh hoa văn, IT3-09), `mail` (hàng đợi email), `events` (WebSocket), `base` (`GET /api/health`), cùng hạ tầng `config/`, `common/`, `shared/prisma`, `shared/queue`. Module mới cho một gói tạo tại `be/src/<tên-module>/` kèm `index.ts` (tài liệu 07, Mục 1.4).
+Ngoài 26 gói trên, `be/src/` còn các module có mã: [`templates`](../be/src/templates/) (Thư viện mẫu, IT3-07), [`ai`](../be/src/ai/) (hoa văn AI và job ảnh AI), [`library`](../be/src/library/) (thư viện tài sản, ảnh stock), [`analytics`](../be/src/analytics/) (số liệu sản phẩm, báo cáo xu), [`reviews`](../be/src/reviews/) (duyệt mẫu theo token), [`mail`](../be/src/mail/) (hàng đợi email), [`events`](../be/src/events/) (WebSocket), [`base`](../be/src/base/) (`GET /api/health`), cùng hạ tầng `config/`, `common/`, `shared/prisma`, `shared/queue`, `shared/redis`. Module mới cho một gói tạo tại `be/src/<tên-module>/` kèm `index.ts` (tài liệu 07, Mục 1.4).
 
 ---
 
-> 🎯 **Kết luận nghiệm thu v7.1**: Hệ thống Class Diagram WrapFit bao quát **26 gói phân hệ** và **28 luồng nghiệp vụ tuần tự**, nay được hiện thực hóa trên **NestJS**: mỗi gói phân hệ ánh xạ thành một NestJS Module, Clean Architecture được đảm bảo bằng Dependency Injection với injection token, bảo mật bằng Guards, và các tác vụ nặng (xuất file in CMYK, render, email) chạy bất đồng bộ qua BullMQ — liên kết chặt chẽ giữa công nghệ lõi CAD/3D đặc thù (tham chiếu Pacdora.com) và các tính năng tiêu chuẩn của một nền tảng Web thương mại điện tử & SaaS.
+> 🎯 **Kết luận v7.2**: Tài liệu bao quát **26 gói phân hệ** và **28 luồng nghiệp vụ**. Đến 19/11/2026, 12 gói có mã (1–10, 12, 17), 5 gói làm một phần (11, 13, 14, 15, 21) và 9 gói còn là đề xuất (16, 18–20, 22–26) theo bảng Mục 7. Phần đã có mã chạy trên NestJS: mỗi gói ánh xạ thành một hoặc vài module, `projects` theo Clean Architecture với injection token, bảo mật bằng Guards, và tác vụ nặng (xuất file in, gửi email, ảnh AI) chạy bất đồng bộ qua BullMQ. Sơ đồ của các gói đề xuất là hướng thiết kế cho sau MVP, không mô tả hệ thống hiện tại.

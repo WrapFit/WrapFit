@@ -5,7 +5,10 @@
 > **Slogan**: *"Make Every Present, Present."*  
 > **Phiên bản**: v2.1 (Chuyển Backend sang **NestJS** — tách REST API độc lập khỏi Next.js; bổ sung hàng đợi xuất file BullMQ, Cron dọn thùng rác, Refresh Token)  
 > **v2.2 (09/10/2026)**: Mã nguồn `be/` tổ chức lại theo skeleton *nestjs-project-structure*: module nằm thẳng dưới `src/`, hạ tầng ở `common/` + `shared/`, cấu hình lồng nhau có kiểu, barrel `index.ts` (Mục 1.3 – 1.5).  
-> *v2.0: Bổ sung Quản lý Lưu trữ Project, Chia sẻ Public 3D, Thư viện Template & Tiện ích Người dùng*
+> *v2.0: Bổ sung Quản lý Lưu trữ Project, Chia sẻ Public 3D, Thư viện Template & Tiện ích Người dùng*  
+> **v2.3 (19/11/2026)**: Đối chiếu với `develop` tại fb720a9. Cập nhật sơ đồ kiến trúc (Next.js 15, worker có ba hàng đợi `export`, `mail`, `ai-image`), luồng xuất file ở Mục 3.1, nhánh "đơn đang giữ dự án" ở Mục 3.2, điều kiện chạy nhiều instance API ở Mục 1.6, và thông số in ở Mục 2.5, 2.7 theo [prepress](../shared/src/print/prepress.ts).
+>
+> **Cách đọc tài liệu này.** Mục 1.1–1.6 và Mục 3.1–3.2 mô tả hệ thống đang chạy (có mã trên `develop`). Use case ở Mục 2, lược đồ ở Mục 4.1, bảng endpoint ở Mục 4.2 và WBS ở Mục 5–6 là **lịch sử thiết kế** của CP2–CP4: giữ để đối chiếu phân công, không phải mô tả hiện trạng. Hiện trạng CSDL xem [`schema.prisma`](../be/prisma/schema.prisma) và tài liệu 02, API xem tài liệu 03.
 
 ---
 
@@ -16,6 +19,7 @@
    - 1.3. Cấu trúc thư mục Backend NestJS (`be/`)
    - 1.4. Quy ước module & phụ thuộc (barrel `index.ts`, không vòng import)
    - 1.5. Cấu hình & biến môi trường (`ConfigService` có kiểu)
+   - 1.6. Điều kiện khi chạy nhiều instance API
 2. [Hệ Thống Use Cases Toàn Diện (Detailed Use Cases Specifications)](#2-hệ-thống-use-cases-toàn-diện)
    - 2.1. Phân hệ 1: Quản trị Tài khoản, Xác thực & Brand Kit (Auth & Identity)
    - 2.2. Phân hệ 2: Quản lý Dự án, Lưu trữ & Lịch sử Phiên bản (Project Lifecycle, Archive & Versioning)
@@ -52,9 +56,9 @@ Hệ thống được thiết kế theo mô hình **Modular Monorepo (npm worksp
 
 | Workspace | Công nghệ | Phụ trách | Vai trò |
 | :--- | :--- | :--- | :--- |
-| `fe/` | **Next.js 14 App Router** + Three.js / R3F | **IT 1** | Giao diện, Studio 2D/3D, trang Public 3D. Chỉ hiển thị & gọi API, **không truy cập CSDL trực tiếp**. |
-| `be/` | **NestJS 11** + Prisma + PostgreSQL + Redis | **IT 3** | REST API (toàn bộ nghiệp vụ, xác thực, phân quyền, lưu trữ, tác vụ định kỳ) và process **worker** xử lý hàng đợi (xuất file in, gửi email). |
-| `shared/` | TypeScript thuần — package **`@wrapfit/shared`** | **IT 2** | Kiểu dữ liệu dùng chung + thuật toán Parametric / FitCheck / Exporter, được cả `fe` và `be` import. |
+| `fe/` | **Next.js 15 App Router** (15.5.27) + Three.js / R3F | **IT 1** | Giao diện, Studio 2D/3D, trang Public 3D. Chỉ hiển thị & gọi API, **không truy cập CSDL trực tiếp**. |
+| `be/` | **NestJS 11** + Prisma + PostgreSQL + Redis | **IT 3** | REST API (toàn bộ nghiệp vụ, xác thực, phân quyền, lưu trữ, tác vụ định kỳ) và process **worker** xử lý ba hàng đợi: `export` (xuất file in), `mail` (gửi email), `ai-image` (ảnh AI). |
+| `shared/` | TypeScript thuần — package **`@wrapfit/shared`** | **IT 2** | Kiểu dữ liệu dùng chung + thuật toán Parametric / FitCheck / thông số in (prepress) / bảng giá, được cả `fe` và `be` import. Phần dựng file in chạy ở `be/src/export/rendering/`. |
 
 ```mermaid
 graph TD
@@ -72,21 +76,22 @@ graph TD
     subgraph CoreLayer ["TẦNG 2: THUẬT TOÁN HÌNH HỌC & VẬT LÝ IN ẤN (IT 2)"]
         ParametricEngine[Parametric Dieline Engine: L, W, H, t]
         FitCheckEngine[FitCheck™ Physics Validator]
-        PDFService[Vector Exporter: PDF CMYK, SVG, DXF]
+        PDFService[Prepress: thông số in, lề, bleed, DPI]
         SnapshotEngine[Project State Serialization & Fork Validator]
         SharedTypes[Single Source of Truth: @wrapfit/shared]
     end
 
     subgraph BackendLayer ["TẦNG 3: BACKEND NESTJS & HẠ TẦNG CLOUD (IT 3)"]
         API[API process — dist/app.js: Controllers, Guards, Pipes]
-        Worker[Worker process — dist/worker.js: ExportProcessor, MailProcessor]
+        Worker[Worker process — dist/worker.js: ExportProcessor, MailProcessor, AiImageProcessor]
         Auth[AuthModule: JWT cookie + Google OAuth 2.0]
         DB[(PostgreSQL + Prisma ORM)]
-        Queue[(Redis: hàng đợi BullMQ export & mail)]
+        Queue[(Redis: hàng đợi BullMQ export, mail & ai-image)]
         Cron[Scheduler: thùng rác 30 ngày, dọn file, đối soát export]
         Realtime[EventsGateway: Socket.IO /api/socket.io]
         Storage[Cloudflare R2 / AWS S3 Assets Storage]
-        AIEngine[AI Theme & Pattern Generator]
+        AIEngine[AI Theme & Pattern Generator + job ảnh AI]
+        Payments[Payments: VietQR/SePay, VNPay sandbox, đơn in mẫu]
         QRService[Dynamic QR Code Generator]
         SocialGraph[Public Projects, Likes & Fork Tracking]
     end
@@ -96,7 +101,10 @@ graph TD
     API -->|Đẩy job| Queue
     Queue -->|Nhận job| Worker
     BackendLayer -->|Tái sử dụng FitCheck, Fork & dieline| CoreLayer
+    Worker -->|File in, ảnh AI| Storage
 ```
+
+> Nút `MockupStudio` (ảnh mockup mạng xã hội) và `SnapshotEngine` (kiểm fork) là thành phần của thiết kế ban đầu. Snapshot có mã trong `be/src/projects/`; mockup mạng xã hội chưa có màn riêng.
 
 ### 1.1. Ngăn xếp công nghệ Backend NestJS
 
@@ -109,7 +117,7 @@ graph TD
 | Validation | `class-validator`, `class-transformer`, `ValidationPipe` toàn cục | `whitelist: true, forbidNonWhitelisted: true, transform: true` |
 | Tài liệu API | `@nestjs/swagger` | OpenAPI tại `/api/docs` — IT 1 dùng để tra cứu / sinh client có kiểu |
 | Cấu hình | `@nestjs/config` + `class-validator`, `ConfigService` có kiểu của `CommonModule` | Kiểm tra `.env` khi khởi động (thiếu biến là dừng ngay), gom thành cấu hình lồng nhau theo `NODE_ENV` — Mục 1.5 |
-| Hàng đợi bất đồng bộ | `@nestjs/bullmq` + Redis | Hàng đợi `export` (PDF CMYK / SVG / DXF) và `mail`; chỉ process `worker` xử lý job |
+| Hàng đợi bất đồng bộ | `@nestjs/bullmq` + Redis | Hàng đợi `export` (PDF in, SVG, DXF, gói bàn giao nhà in), `mail` và `ai-image`; chỉ process `worker` xử lý job |
 | Tác vụ định kỳ | `@nestjs/schedule` | Xóa vĩnh viễn dự án trong thùng rác quá 30 ngày, dọn file mồ côi trên storage, đối soát export bị kẹt, dọn token hết hạn — chỉ chạy trong process API |
 | Sự kiện nội bộ | `@nestjs/event-emitter` | `project.forked`, `export.completed` |
 | Realtime | `@nestjs/websockets` + Socket.IO | `EventsGateway` (namespace `events`, path `/api/socket.io`), xác thực bằng cookie ngay lúc handshake |
@@ -123,7 +131,7 @@ graph TD
 ### 1.2. Nguyên tắc giao tiếp Frontend (Next.js) ↔ Backend (NestJS)
 
 1. **Next.js không truy cập CSDL**: Không dùng Server Actions / Route Handlers để đọc ghi Prisma. Mọi nghiệp vụ đều đi qua REST API của NestJS (nguồn sự thật duy nhất).
-2. **Proxy cùng domain (khuyến nghị)**: IT 1 cấu hình `rewrites` trong `next.config.js` chuyển `/api/:path*` → `http://be:8080/api/:path*` (Backend chạy cổng 8080; cổng 3000 dành cho Next.js, dải quanh 4000 thường bị Hyper-V/WSL giữ trên Windows). Nhờ vậy Cookie HttpOnly là **same-origin** (không cần `SameSite=None`/CORS phức tạp), Google OAuth callback `https://wrapfit.vn/api/auth/google/callback` hoạt động trực tiếp, và toàn bộ đường dẫn `/api/...` trong tài liệu được giữ nguyên.
+2. **Proxy cùng domain (khuyến nghị)**: IT 1 cấu hình `rewrites` trong `next.config.mjs` (đích lấy từ `BACKEND_INTERNAL_URL` lúc build) chuyển `/api/:path*` → `http://be:8080/api/:path*` (Backend chạy cổng 8080; cổng 3000 dành cho Next.js, dải quanh 4000 thường bị Hyper-V/WSL giữ trên Windows). Nhờ vậy Cookie HttpOnly là **same-origin** (không cần `SameSite=None`/CORS phức tạp), Google OAuth callback `https://wrapfit.vn/api/auth/google/callback` hoạt động trực tiếp, và toàn bộ đường dẫn `/api/...` trong tài liệu được giữ nguyên.
    - *Phương án thay thế khi deploy tách domain `api.wrapfit.vn`*: đặt cookie `Domain=.wrapfit.vn; SameSite=Lax; Secure` và bật CORS `credentials: true` cho `https://wrapfit.vn` (biến `CORS_ORIGINS`).
 3. **Server Component gọi API**: Khi render phía server (RSC), Next.js phải chuyển tiếp cookie của người dùng: `fetch(API_URL + '/projects', { headers: { cookie: cookies().toString() } })`.
 4. **Hợp đồng dữ liệu**: DTO request/response của NestJS `implements` interface tương ứng trong `@wrapfit/shared` (ví dụ `CanvasStateDto implements CanvasState`, `UpdateBrandKitDto implements BrandKit`) để không lệch pha giữa 3 tầng. Swagger `/api/docs` là hợp đồng HTTP luôn khớp code.
@@ -238,6 +246,18 @@ export class StorageService {
 - `ConfigModule.forRoot({ validate: validateEnv, load: [configuration] })` chạy ở cả API (`app.module.ts`) và worker (`worker.ts`): thiếu `DATABASE_URL` hay secret JWT ngắn hơn 32 ký tự thì process dừng ngay khi khởi động.
 - **Thêm một biến môi trường**: (1) khai báo + giá trị mặc định trong `config/env.validation.ts`; (2) đặt vào đúng nhóm trong `config/envs/default.ts` (chuỗi `'true'|'false'` đổi thành boolean tại đây); (3) nếu production cần giá trị mặc định khác thì ghi đè trong `config/envs/production.ts`; (4) thêm vào `be/.env.example` và bảng biến môi trường của `be/README.md`.
 - Chỉ `config/` được đọc `process.env`. Logger là ngoại lệ có chủ đích: nó được tạo trước khi `.env` được nạp nên đọc `LOG_FORMAT` trực tiếp.
+
+### 1.6. Điều kiện khi chạy nhiều instance API
+
+Thiết kế hiện tại đúng với **một process API và một process worker** (cấu hình của `docker-compose.prod.yml`). Ba thành phần đang giữ trạng thái trong bộ nhớ của từng process API:
+
+| Thành phần | Trạng thái giữ trong bộ nhớ | Việc cần làm trước khi chạy từ hai instance API |
+| :--- | :--- | :--- |
+| Rate limit (`HttpThrottlerGuard`, `be/src/common/guards/`) | Bộ đếm request của `@nestjs/throttler` | Chuyển bộ đếm sang Redis, nếu không mỗi instance đếm riêng và giới hạn thực tế nhân lên theo số instance |
+| Socket.IO (`EventsGateway`, `be/src/common/adapters/socket-io.adapter.ts`) | Danh sách socket đang mở | Dùng Redis adapter cho Socket.IO. Thông báo từ worker đã đi qua kênh Redis `wrapfit:notifications`, mỗi instance tự đẩy tới socket của mình |
+| Cầu chì chi phí AI (`be/src/ai/ai-cost.guard.ts`) | Tổng chi phí AI trong tháng, cache 5 phút | Đọc thẳng tổng từ DB, nếu không các instance có thể cùng vượt ngân sách `AI_MONTHLY_BUDGET_USD` |
+
+Trạng thái: có mã trên `develop` cho cấu hình một instance. Ba việc trên chưa làm, chỉ cần khi quyết định chạy nhiều instance API.
 
 ---
 
@@ -407,13 +427,13 @@ export class StorageService {
 ---
 
 ### 2.5. Phân hệ 5: Phòng thu Thiết kế 2D Dieline Đa Lớp (2D Vector Canvas Studio)
-*(Chi tiết kỹ thuật: Bố cục đa panel, quản lý nét cắt `#E53E3E`, nét cấn `#3182CE` dashed, vùng an toàn $\ge 3\text{mm}$, tràn lề $\ge 2\text{mm}$, typographic layout - xem chi tiết tại Mục 2.4 bản v1.0)*
+*(Chi tiết kỹ thuật: Bố cục đa panel, quản lý nét cắt `#E53E3E`, nét cấn `#3182CE` dashed, nội dung cách nét cắt 5 mm và cách nếp gấp 3 mm, nền chạm nét cắt tràn $\ge 2\text{mm}$ (`BleedBox` của PDF là 3 mm), typographic layout - xem chi tiết tại Mục 2.4 bản v1.0)*
 
 ### 2.6. Phân hệ 6: Mô phỏng Gập & Vật liệu 3D Thời Gian Thực (3D Folding & Material Physics)
 *(Chi tiết kỹ thuật: Khung cảnh Three.js/R3F, gập động học 0% - 100%, shaders vật liệu giấy Kraft thô mộc, Ivory trắng ngà và ép kim ánh vàng `#D4AF37` - xem chi tiết tại Mục 2.5 bản v1.0)*
 
 ### 2.7. Phân hệ 7: Động cơ Thẩm định Vật lý & In ấn FitCheck™ (Physics & Preflight Engine)
-*(Chi tiết kỹ thuật: Quét va chạm AABB, phát hiện lỗi Safe Margin, Bleed, DPI raster $\ge 200$, bảo vệ Glue Tab không mực, tính điểm sẵn sàng in ấn 0-100% - xem chi tiết tại Mục 2.6 bản v1.0)*
+*(Chi tiết kỹ thuật: Quét va chạm AABB, phát hiện lỗi Safe Margin, Bleed (thiếu lề là cảnh báo; cách dưới 1 mm hoặc tràn ra ngoài mặt là lỗi chặn xuất), DPI ảnh raster tính ở kích thước in (từ 150 đến dưới 300 là cảnh báo, dưới 150 là lỗi chặn), bảo vệ Glue Tab không mực, tính điểm sẵn sàng in ấn 0-100% - xem chi tiết tại Mục 2.6 bản v1.0)*
 
 ### 2.8. Phân hệ 8: Độc Đáo Phục Vụ Marketing & Viral Growth (Marketing & Viral Engine)
 *(Chi tiết kỹ thuật: Interactive 3D Virtual Unboxing qua mã QR in đáy hộp, Social Photorealistic Mockup Studio xuất ảnh 4K cho Instagram/Shopee, AI Gift Matcher - xem chi tiết tại Mục 2.7 bản v1.0)*
@@ -471,17 +491,26 @@ sequenceDiagram
 
     User->>FE: Bấm "Xuất file in ấn chất lượng cao"
     FE->>BE: POST /api/projects/:id/exports { fileType: "PDF_CMYK" }
-    BE->>BE: Chạy lại FitCheck phía server, tạo ExportJob (PENDING), đẩy job vào hàng đợi "export"
-    BE-->>FE: 202 Accepted { jobId }
-    Worker->>Core: exportLayeredPDF(dieline, elements)
-    Core-->>Worker: Buffer PDF đa lớp chuẩn công nghiệp
-    Worker->>Cloud: Tải file PDF lên Cloudflare R2 / S3
+    note over BE: Một transaction, khóa dòng dự án (FOR UPDATE)
+    BE->>Core: (1) Chạy lại FitCheck phía server trên thiết kế đang khóa
+    Core-->>BE: Kết quả FitCheck (lưu vào dự án)
+    alt Còn lỗi mức error
+        BE-->>FE: 422 + fitCheck
+    else Không có quyền cho phiên bản này
+        note over BE: (2) Kiểm quyền theo phiên bản: đơn đã trả tiền, chưa hủy, đúng phiên bản thiết kế, hoặc quyền mở khóa cũ còn hạn
+        BE-->>FE: 402 ORDER_PAYMENT_REQUIRED
+    else Đủ điều kiện
+        BE->>BE: (3) Tạo ExportJob kèm bản sao thiết kế (design) và projectVersion, đẩy job vào hàng đợi "export"
+        BE-->>FE: 202 Accepted { jobId, status, fitCheck }
+    end
+    Worker->>Worker: (4) Dựng file in từ thiết kế lưu trong job (be/src/export/rendering), không đọc lại dự án
+    Worker->>Cloud: Tải file lên bucket riêng tư của R2 / S3
     Worker->>Worker: ExportJob = COMPLETED & tự động tạo Snapshot (UC-07)
-    loop Polling mỗi 2 giây
+    loop (5) FE hỏi trạng thái định kỳ
         FE->>BE: GET /api/exports/:jobId
     end
     BE-->>FE: { status: COMPLETED, downloadUrl } (pre-signed URL hết hạn sau 15 phút)
-    FE->>User: Tải file PDF & Xem hướng dẫn chuyển xưởng in
+    FE->>User: Tải file in & Xem hướng dẫn chuyển xưởng in
 ```
 
 ---
@@ -500,6 +529,10 @@ flowchart TD
 
     Action -- "Xóa vào thùng rác" --> Trash["Cập nhật status: DELETED<br>Lưu trữ trong Thùng Rác 30 ngày"]
     Trash --> EmptyTrash["Cron NestJS 02:00 hằng ngày xóa dự án quá 30 ngày<br>hoặc người dùng bấm Xóa vĩnh viễn"]
+    EmptyTrash --> HeldByOrder{"Có đơn PENDING_PAYMENT, PAID<br>hoặc IN_PRODUCTION đang giữ dự án?"}
+    HeldByOrder -- "Có, người dùng bấm Xóa vĩnh viễn" --> Blocked["409 PROJECT_IN_ACTIVE_ORDER<br>Dự án ở lại thùng rác"]
+    HeldByOrder -- "Có, cron dọn thùng rác" --> Skipped["Bỏ qua dự án này, thử lại ở lần chạy sau"]
+    HeldByOrder -- "Không" --> Purged["Xóa vĩnh viễn dự án và file trên S3/R2"]
     Trash --> UndoTrash["Khôi phục về trạng thái Hoạt Động"]
 
     Action -- "Tổ chức Bộ sưu tập" --> Folder["Tạo / Kéo dự án vào Collection<br>Ví dụ: Bộ Quà Tết Bính Ngọ"]
@@ -561,6 +594,8 @@ flowchart TD
 ---
 
 ## 4. MỞ RỘNG MÔ HÌNH CƠ SỞ DỮ LIỆU & HỢP ĐỒNG DỮ LIỆU
+
+> **Lịch sử thiết kế.** Mục 4.1 và 4.2 ghi lại lược đồ và danh sách endpoint của bản v2.1 (CP2–CP3). CSDL hiện có 32 bảng, nhiều hơn lược đồ dưới đây (thanh toán, đơn in, xu, ảnh AI, duyệt mẫu, thông báo...). Seed hiện có 11 cấu trúc hộp, không còn 4. Xuất file hiện cần quyền theo phiên bản (Mục 3.1). Hiện trạng: [`schema.prisma`](../be/prisma/schema.prisma), tài liệu 02 (CSDL) và 03 (API).
 
 ### 4.1. Lược đồ Prisma PostgreSQL mở rộng (Schema v2.1)
 
@@ -977,6 +1012,8 @@ model AiGeneration {
 ## 5. MA TRẬN PHÂN CHIA NHIỆM VỤ IT CHI TIẾT (WBS)
 
 Đội ngũ IT triển khai End-to-End được phân bổ cụ thể theo 3 mốc Checkpoint môn EXE101:
+
+> **Lịch sử thiết kế.** Bảng WBS dưới đây là phân công ban đầu cho CP2–CP4, giữ nguyên để đối chiếu mốc và người phụ trách. Đường dẫn file mục tiêu là dự kiến lúc lập kế hoạch, một số không còn hoặc chưa từng có. Ví dụ `shared/src/exporter/` đã bỏ: thông số in nằm ở [`shared/src/print/prepress.ts`](../shared/src/print/prepress.ts), phần dựng file in nằm ở [`be/src/export/rendering/`](../be/src/export/rendering/). Cấu trúc thư mục hiện tại xem tài liệu 09.
 
 ---
 
