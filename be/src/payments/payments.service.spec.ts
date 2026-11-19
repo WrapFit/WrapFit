@@ -40,11 +40,14 @@ describe('PaymentsService', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it('refuses to simulate a VietQR payment of a real account: 403 SIMULATION_DEMO_ONLY, nothing confirmed (docs/25 item 6)', async () => {
+  it('refuses to simulate a VietQR payment of a real account to the real bank account: 403 SIMULATION_DEMO_ONLY, nothing confirmed (docs/25 item 6)', async () => {
     const payment = { findUniqueOrThrow: jest.fn(), update: jest.fn() };
     const tx = { $queryRaw: jest.fn().mockResolvedValue([{ provider: 'VIETQR', is_demo: false }]), payment };
     const service = serviceWith(
-      { 'payments.simulation': true, 'payments.vietqr': null },
+      {
+        'payments.simulation': true,
+        'payments.vietqr': { bankBin: '970436', accountNo: '0123456789', accountName: 'WRAPFIT' },
+      },
       { $transaction: (run: (db: typeof tx) => unknown) => run(tx) } as unknown as PrismaService,
     );
 
@@ -61,6 +64,8 @@ describe('PaymentsService', () => {
     expect(() => assertMaySimulate('VNPAY', true)).not.toThrow();
     expect(() => assertMaySimulate('VNPAY', false)).not.toThrow();
     expect(() => assertMaySimulate('VIETQR', false)).toThrow(HttpException);
+    // Sample account (no VIETQR_*): no real money can arrive, so any account may simulate.
+    expect(() => assertMaySimulate('VIETQR', false, true)).not.toThrow();
   });
 
   it('answers 503 VNPAY_NOT_CONFIGURED to a demo account when VNPay is missing and simulation is off, creating nothing', async () => {

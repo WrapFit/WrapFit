@@ -1,4 +1,7 @@
+import { ENTITLEMENTS, XU_ALLOWANCE, XU_PATTERN_COST } from "@wrapfit/shared";
+import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
 import type {
+  AiUsage,
   Collection,
   ExportJob,
   HealthDetails,
@@ -9,6 +12,9 @@ import type {
   SampleOrder,
   StorageUsage,
 } from "@/types/api";
+
+/** The studio's own paper stocks (step 3), so demo projects name papers the studio offers. */
+const paper = (theme: "ivory" | "kraft" | "duplex" | "rigid") => ({ ...(PAPER_STOCKS.find((stock) => stock.theme === theme) ?? PAPER_STOCKS[0]).spec });
 
 export const DEMO_USER: SafeUser = {
   id: "demo-user-id",
@@ -142,7 +148,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
     collection: null,
     dimensions: { length: 85, width: 85, height: 110, paperThickness: 0.38 },
-    materialSpec: { type: "ivory", gsm: 350, caliper: 0.38, finish: "matte" },
+    materialSpec: paper("ivory"),
     color: "#6366F1",
     fitcheckScore: 100,
     thumbnailUrl: null,
@@ -164,7 +170,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "sleeve-drawer", name: "Hộp Bao Diêm (Khay Rút)" },
     collection: null,
     dimensions: { length: 120, width: 80, height: 35, paperThickness: 0.35 },
-    materialSpec: { type: "kraft", gsm: 300, caliper: 0.35, finish: "raw" },
+    materialSpec: paper("kraft"),
     color: "#334155",
     fitcheckScore: 96,
     thumbnailUrl: null,
@@ -186,7 +192,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "lid-base", name: "Hộp Âm Dương (Nắp Rời)" },
     collection: null,
     dimensions: { length: 220, width: 160, height: 70, paperThickness: 0.45 },
-    materialSpec: { type: "ivory", gsm: 350, caliper: 0.45, finish: "glossy" },
+    materialSpec: paper("rigid"),
     color: "#991B1B",
     fitcheckScore: 98,
     thumbnailUrl: null,
@@ -208,7 +214,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "pillow", name: "Hộp Gối Cánh Cung" },
     collection: null,
     dimensions: { length: 160, width: 105, height: 35, paperThickness: 0.32 },
-    materialSpec: { type: "duplex", gsm: 280, caliper: 0.32, finish: "matte" },
+    materialSpec: paper("duplex"),
     color: "#0369A1",
     fitcheckScore: 94,
     thumbnailUrl: null,
@@ -230,7 +236,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
     collection: null,
     dimensions: { length: 110, width: 70, height: 160, paperThickness: 0.42 },
-    materialSpec: { type: "kraft", gsm: 350, caliper: 0.42, finish: "raw" },
+    materialSpec: paper("kraft"),
     color: "#451A03",
     fitcheckScore: 97,
     thumbnailUrl: null,
@@ -252,7 +258,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "sleeve-drawer", name: "Hộp Bao Diêm (Khay Rút)" },
     collection: null,
     dimensions: { length: 150, width: 150, height: 40, paperThickness: 0.38 },
-    materialSpec: { type: "ivory", gsm: 350, caliper: 0.38, finish: "matte" },
+    materialSpec: paper("ivory"),
     color: "#581C87",
     fitcheckScore: 99,
     thumbnailUrl: null,
@@ -274,7 +280,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "lid-base", name: "Hộp Âm Dương (Nắp Rời)" },
     collection: null,
     dimensions: { length: 240, width: 240, height: 65, paperThickness: 0.45 },
-    materialSpec: { type: "ivory", gsm: 350, caliper: 0.45, finish: "glossy" },
+    materialSpec: paper("rigid"),
     color: "#831843",
     fitcheckScore: 96,
     thumbnailUrl: null,
@@ -296,7 +302,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "sticker-label", name: "Tem Nhãn & Đai Giấy (Sticker / Decal)" },
     collection: null,
     dimensions: { length: 280, width: 60, height: 2, paperThickness: 0.18 },
-    materialSpec: { type: "kraft", gsm: 250, caliper: 0.18, finish: "raw" },
+    materialSpec: paper("kraft"),
     color: "#A16207",
     fitcheckScore: 100,
     thumbnailUrl: null,
@@ -318,7 +324,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
     collection: null,
     dimensions: { length: 90, width: 90, height: 160, paperThickness: 0.4 },
-    materialSpec: { type: "ivory", gsm: 350, caliper: 0.4, finish: "matte" },
+    materialSpec: paper("ivory"),
     color: "#15803D",
     fitcheckScore: 95,
     thumbnailUrl: null,
@@ -340,7 +346,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "lid-base", name: "Hộp Âm Dương (Nắp Rời)" },
     collection: null,
     dimensions: { length: 180, width: 130, height: 60, paperThickness: 0.42 },
-    materialSpec: { type: "ivory", gsm: 350, caliper: 0.42, finish: "glossy" },
+    materialSpec: paper("rigid"),
     color: "#BE185D",
     fitcheckScore: 98,
     thumbnailUrl: null,
@@ -362,7 +368,7 @@ export const DEMO_PROJECTS: ProjectSummary[] = [
     template: { id: "pillow", name: "Hộp Gối Cánh Cung" },
     collection: null,
     dimensions: { length: 120, width: 80, height: 25, paperThickness: 0.3 },
-    materialSpec: { type: "duplex", gsm: 280, caliper: 0.3, finish: "matte" },
+    materialSpec: paper("duplex"),
     color: "#EA580C",
     fitcheckScore: 82,
     thumbnailUrl: null,
@@ -390,7 +396,7 @@ export function getDemoProjectDetail(id: string): ProjectDetail {
       elements: [],
       backgroundPattern: null,
       backgroundTheme: null,
-      materialTheme: summary.materialSpec.type === "kraft" ? "kraft" : "ivory",
+      materialTheme: PAPER_STOCKS.find((stock) => stock.spec.type === summary.materialSpec.type && stock.spec.gsm === summary.materialSpec.gsm)?.theme ?? "ivory",
     },
     fitcheckState: {
       score: summary.fitcheckScore ?? 100,
@@ -425,8 +431,20 @@ export const DEMO_COLLECTIONS: Collection[] = [
 export const DEMO_STORAGE_USAGE: StorageUsage = {
   tier: "FREE",
   usedBytes: 15728640,
-  quotaBytes: 52428800,
+  // The quota of the Free plan, as the server reports it.
+  quotaBytes: ENTITLEMENTS.FREE.storage.bytes,
   fileCount: 4,
+};
+
+/** Xu wallet of the demo account: the Free plan's allowance, as `GET /ai/usage` answers it. */
+export const DEMO_AI_USAGE: AiUsage = {
+  aiEnabled: true,
+  budgetReached: false,
+  patternCost: { fast: XU_PATTERN_COST.fast, premium: XU_PATTERN_COST.premium },
+  xu: {
+    balance: XU_ALLOWANCE.FREE,
+    allowance: { perPeriod: XU_ALLOWANCE.FREE, periodKey: "demo", resetsAt: new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)).toISOString() },
+  },
 };
 
 export const DEMO_PRINT_SHOPS: PrintShop[] = [
@@ -496,7 +514,7 @@ export const DEMO_ORDERS: SampleOrder[] = [
     recipientName: "Nguyễn Hoài An",
     phone: "0901234567",
     shippingAddress: "Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh",
-    notes: "Mẫu thử hộp nến thơm giấy Ivory 350 GSM cán mờ",
+    notes: "Mẫu thử hộp nến thơm giấy Ivory 300 GSM cán mờ",
     totalVnd: 49000,
     sampleFeeVnd: 49000,
     status: "in_production",

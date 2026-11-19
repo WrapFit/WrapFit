@@ -54,7 +54,7 @@ export class MockTransferService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException({ code: 'NOT_VIETQR', message: 'Chỉ giả lập chuyển khoản cho thanh toán VietQR' });
     }
     // A mock transfer marks the payment paid through the real webhook: same rule as the simulate button (docs/25 item 6).
-    assertMaySimulate(payment.provider, payment.user.isDemo);
+    assertMaySimulate(payment.provider, payment.user.isDemo, this.payments.usesSampleAccount);
 
     const amount = scenario === 'underpaid' ? Math.max(1000, payment.amountVnd - 10_000) : payment.amountVnd;
     const content = scenario === 'no_reference' ? 'CHUYEN TIEN WRAPFIT' : `${payment.reference} CHUYEN TIEN WRAPFIT`;

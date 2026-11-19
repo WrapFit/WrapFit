@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowRight, FileText, Layers, Timer, X } from "lucide-react";
 import { ROUTES } from "@/constants";
 import type { BoxStructureOption, BoxSizePreset } from "@/features/studio/utils/boxStructures";
+import { PAPER_STOCKS } from "@/features/studio/utils/paperStocks";
 import { formatDimensions } from "@/features/templates/labels";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
@@ -33,12 +34,13 @@ const FOLD_STOPS = [
   { label: "Đóng", value: 1 },
 ] as const;
 
-/** Paper themes of the 3D box, with the colour of a real sheet as swatch. */
-const MATERIALS = [
-  { id: "ivory", label: "Ivory", color: "#FAF8F5" },
-  { id: "kraft", label: "Kraft", color: "#D1A980" },
-  { id: "forest", label: "Forest", color: "#1A362B" },
-] as const;
+/** The papers of the studio (step 3), with their real caliper: the 3D box and the size are those of that paper. */
+const MATERIALS = PAPER_STOCKS.map((stock) => ({
+  id: stock.theme,
+  label: stock.name,
+  color: stock.swatch.outside,
+  caliper: stock.spec.caliper,
+}));
 
 interface BoxQuickPreviewModalProps {
   isOpen: boolean;
@@ -148,7 +150,9 @@ export function BoxQuickPreviewModal({
     onClose();
   };
 
-  const studioUrl = `${ROUTES.editorDemo}?structure=${structure.id}&l=${currentPreset.dims.length}&w=${currentPreset.dims.width}&d=${currentPreset.dims.height}`;
+  const paper = MATERIALS.find((mat) => mat.id === theme) ?? MATERIALS[0];
+  const dims = { ...currentPreset.dims, paperThickness: paper.caliper };
+  const studioUrl = `${ROUTES.editorDemo}?structure=${structure.id}&l=${dims.length}&w=${dims.width}&d=${dims.height}`;
   const foldPercent = Math.round(foldProgress * 100);
 
   return (
@@ -177,12 +181,15 @@ export function BoxQuickPreviewModal({
           {/* The 3D stage draws its own structure chip (top left) and "Mở nắp" button (top right). */}
           <div className="size-full">
             <InteractiveFoldingBox3D
-              dimensions={currentPreset.dims}
+              dimensions={dims}
               foldProgress={foldProgress}
               boxType={structure.id}
               theme={theme}
               autoRotate={autoRotate}
               environment="studio"
+              showHud={false}
+              showCups={false}
+              enableMacroZoom={false}
               showStatusBar={false}
               minHeight={false}
               frameless={true}
@@ -197,7 +204,7 @@ export function BoxQuickPreviewModal({
                 <Layers className="size-4 text-fpt-orange-ink" aria-hidden />
                 Độ gập
                 <span className="tabular-nums text-fpt-orange-ink">{foldPercent}%</span>
-                <span className="hidden font-medium tabular-nums text-fg-muted sm:inline">· {formatDimensions(currentPreset.dims)}</span>
+                <span className="hidden font-medium tabular-nums text-fg-muted sm:inline">· {formatDimensions(dims)}</span>
               </label>
               <div role="group" aria-label="Mức gập nhanh" className="flex rounded-full bg-surface-sunken p-0.5">
                 {FOLD_STOPS.map((stop) => {
@@ -249,7 +256,7 @@ export function BoxQuickPreviewModal({
             <section aria-labelledby="quick-preview-size">
               <div className="flex items-baseline justify-between gap-2">
                 <h3 id="quick-preview-size" className="text-label text-fg">Kích thước chuẩn</h3>
-                <span className="text-label-sm tabular-nums text-fpt-orange-ink">{formatDimensions(currentPreset.dims)}</span>
+                <span className="text-label-sm tabular-nums text-fpt-orange-ink">{formatDimensions(dims)}</span>
               </div>
               <div role="radiogroup" aria-labelledby="quick-preview-size" className="mt-2.5 grid grid-cols-3 gap-2">
                 {presets.map((preset) => {
@@ -271,7 +278,7 @@ export function BoxQuickPreviewModal({
                       <span className={cn("text-label leading-tight", isActive ? "text-accent" : "text-fg")}>{preset.label}</span>
                       <span className={cn("line-clamp-1 text-caption font-medium", isActive ? "text-accent" : "text-fg")}>{preset.name}</span>
                       <span className="text-caption tabular-nums text-fg-muted">
-                        {preset.dims.length} × {preset.dims.width} mm
+                        {preset.dims.length}×{preset.dims.width}×{preset.dims.height}
                       </span>
                     </button>
                   );
@@ -313,16 +320,20 @@ export function BoxQuickPreviewModal({
               <div className="flex items-start gap-2.5 rounded-control bg-surface-sunken/70 p-3">
                 <FileText className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden />
                 <div className="min-w-0">
-                  <dt className="text-caption text-fg-muted">Định lượng khuyên dùng</dt>
+                  <dt className="text-caption text-fg-muted">Giấy khuyên dùng</dt>
                   <dd className="mt-0.5 text-body-sm font-semibold text-fg">{structure.recommendedPaper}</dd>
+                  <dd className="mt-0.5 text-caption tabular-nums text-fg-muted">
+                    Đang xem: {paper.label} · dày {paper.caliper.toLocaleString("vi-VN")} mm
+                  </dd>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 rounded-control bg-surface-sunken/70 p-3">
                 <Timer className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden />
                 <div className="min-w-0">
-                  <dt className="text-caption text-fg-muted">Thời gian gập hộp</dt>
+                  <dt className="text-caption text-fg-muted">Độ khó gấp</dt>
                   <dd className="mt-0.5 text-body-sm font-semibold tabular-nums text-fg">
-                    {structure.foldTimeSec} giây · {structure.foldDifficulty}
+                    {structure.foldDifficulty}
+                    {structure.foldTimeSec ? ` · khoảng ${structure.foldTimeSec} giây` : ""}
                   </dd>
                 </div>
               </div>
@@ -339,7 +350,7 @@ export function BoxQuickPreviewModal({
               }}
               className={buttonClass({ variant: "brand", size: "lg", block: true })}
             >
-              <span>Mở trong Studio 3D</span>
+              <span>Thiết kế</span>
               <ArrowRight className="size-4" />
             </Link>
             <div className="flex items-center justify-between gap-3 text-caption">
@@ -348,10 +359,17 @@ export function BoxQuickPreviewModal({
                 onClick={onClose}
                 className="inline-flex min-h-6 items-center gap-1 font-semibold text-fg-muted transition-colors hover:text-fpt-orange-ink"
               >
-                Xem 30+ mẫu thiết kế có sẵn
+                Xem mẫu thiết kế có sẵn
                 <ArrowRight className="size-3.5" aria-hidden />
               </Link>
-              <span className="tabular-nums text-fg-muted">Bản vẽ khuôn</span>
+              <Link
+                href={`/structures/${structure.id}`}
+                onClick={onClose}
+                className="inline-flex min-h-6 items-center gap-1 font-semibold text-fg-muted transition-colors hover:text-fpt-orange-ink"
+              >
+                Bản vẽ khuôn
+                <ArrowRight className="size-3.5" aria-hidden />
+              </Link>
             </div>
           </div>
         </div>
