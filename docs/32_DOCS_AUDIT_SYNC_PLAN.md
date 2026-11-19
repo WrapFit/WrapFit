@@ -1,6 +1,6 @@
 # 32. Kế hoạch đồng bộ tài liệu sau audit docs
 
-> Ngày lập: 2026-11-19 · Cập nhật: 2026-11-19, đã chốt Q1–Q5 · Nhánh gốc: `develop` (09ca9d4) · Nhánh tích hợp: `docs/sync-after-audit` · Trạng thái: **chưa bắt đầu**
+> Ngày lập: 2026-11-19 · Cập nhật: 2026-11-19, đã chốt Q1–Q5 · Nhánh gốc: `develop` (09ca9d4) · Nhánh tích hợp: `docs/sync-after-audit` · Trạng thái: **đang thực hiện (S0 xong, luồng A–F)**
 > Phạm vi gồm bốn phần:
 > - 34 file Markdown trong `docs/` và 9 ảnh của [14](assets/14/).
 > - Kịch bản FE `fe/scripts/e2e-scenario.mjs` (theo Q3).
@@ -30,7 +30,7 @@ Khi lập plan (2026-11-19, commit 09ca9d4), đã kiểm lại các phát hiện
 - **Script FE.** `fe/scripts/e2e-scenario.mjs` hỏng ở bốn bước:
   - **Bước 7** (dòng 727–736) chờ "Có watermark" và tải PDF A4 miễn phí.
   - **Bước 16** (dòng 944–986) chờ "Cần 1 lượt xuất", bấm "Mua 1 lượt" và đọc `balance`.
-  - **Bước 17** cũng hỏng. Tài khoản mới tạo không phải demo, nên thanh toán đi VietQR. Nút giả lập bị từ chối với `SIMULATION_DEMO_ONLY` (`assertMaySimulate` trong `be/src/payments/payments.service.ts`).
+  - **Bước 17** cũng hỏng. Tài khoản mới tạo không phải demo, nên thanh toán đi VietQR. Khi máy chủ có tài khoản VietQR thật, nút giả lập bị từ chối với `SIMULATION_DEMO_ONLY` (`assertMaySimulate` trong `be/src/payments/payments.service.ts`). Từ `develop` fb720a9, máy chủ không có `VIETQR_*` cho mọi tài khoản giả lập (xem §2).
   - **Bước 18** kỳ vọng `PDF_A4_PRINT >= 1`.
 
   Phần đầu script còn trỏ tới docs/12 §7 và docs/17 §5. Admin bật được cờ demo cho tài khoản qua `PATCH /api/users/:id` với `{ isDemo: true }`.
@@ -87,7 +87,7 @@ Mọi session viết các giá trị dưới đây **giống nhau** ở mọi fi
 | Quyền xuất | Có quyền khi có đơn đã trả tiền, chưa hủy, đúng phiên bản thiết kế, hoặc khi quyền mở khóa cũ còn hạn. Đổi tên giữ quyền. Sửa thiết kế tạo phiên bản mới, phiên bản đó cần quyền mới. `GET …/exports/access` → `{ unlocked, unlockExpiresAt }` | [Service](../be/src/export/export.service.ts) |
 | Job xuất | API khóa bản thiết kế, chạy FitCheck và lưu thiết kế cùng job. Worker dựng file từ thiết kế đã lưu, có nhánh tương thích cho job cũ có `design = NULL` | [Xử lý job](../be/src/export/export.processor.ts) |
 | Tạo thanh toán | Body có `termsVersion` = `PAYMENT_TERMS_VERSION` (hiện là `2026-11-12`). Thêm `orderId` khi `SAMPLE_ORDER`, `xu` khi `XU_CUSTOM` (100–50.000 xu, bội số của 10). Gói `EXPORT_*` → `400 EXPORT_PACK_DISCONTINUED` | [DTO](../be/src/payments/dto/create-payment.dto.ts) · [Điều khoản](../shared/src/billing/terms.ts) · [Xu](../shared/src/billing/xu.ts) |
-| Cổng thanh toán | Tài khoản demo (`users.is_demo`) dùng VNPay sandbox. Tài khoản thường dùng VietQR/SePay. Chỉ tài khoản demo được giả lập thanh toán, và chỉ khi máy chủ bật `PAYMENT_SIMULATION=true` | [Chọn cổng](../be/src/payments/payments.service.ts) · [Cờ giả lập](../be/src/billing/billing.service.ts) |
+| Cổng thanh toán | Tài khoản demo (`users.is_demo`) dùng VNPay sandbox. Tài khoản thường dùng VietQR/SePay. Giả lập thanh toán chỉ mở khi máy chủ bật `PAYMENT_SIMULATION=true`. Khi đó tài khoản demo luôn được giả lập. Tài khoản thường chỉ được giả lập khi máy chủ chưa cấu hình `VIETQR_*` (QR dùng tài khoản mẫu "WRAPFIT MO PHONG", không thể nhận tiền thật). Có tài khoản VietQR thật thì tài khoản thường giả lập → `403 SIMULATION_DEMO_ONLY` | [Chọn cổng và `assertMaySimulate`](../be/src/payments/payments.service.ts) · [Cờ giả lập](../be/src/billing/billing.service.ts) |
 | Mã đơn in | `WF-<năm>-<6 chữ số>` | [Test](../be/src/orders/orders.service.spec.ts) |
 | Thông số in | Nội dung cách nét cắt 5 mm, cách nếp gấp 3 mm. Nền chạm nét cắt tràn ≥ 2 mm. `BleedBox` của PDF là 3 mm | [Prepress](../shared/src/print/prepress.ts) |
 | Mức vi phạm lề | Thiếu lề (`CUT_OVERLAP`, `CREASE_OVERLAP`) là cảnh báo. Cách dưới 1 mm hoặc tràn ra ngoài mặt thì thành lỗi chặn xuất | [Validator](../shared/src/fitcheck/validator.ts) |
@@ -818,3 +818,4 @@ Plan này chỉ chuẩn bị chỗ ghi kết quả. Các việc dưới đây c�
 |---|---|---|---|---|---|
 | 2026-11-19 | Lập plan | 09ca9d4 (chưa commit) | 104 dòng (95 khi không tính bản audit) | 0 | Đã kiểm lại các phát hiện chính của audit với mã |
 | 2026-11-19 | Chốt Q1–Q5 | chưa commit | — | 0 | Xóa kế hoạch đã xong và đánh số lại; xóa 26/27/27a/31; sửa script FE trong đợt; làm song song. Script §4.3 xem trước: 682 chỗ trong 290 file giữ lại, 25 dòng cần sửa tay |
+| 2026-11-19 | S0 · Chuẩn bị (làm lại) | `docs/sync-after-audit` (3a5c2d5, đã gộp `develop` fb720a9) | 95 dòng (trừ 32 và bản audit) | 0 | Bỏ nhánh `docs/sync-a`–`f` của lần chạy trước theo quyết định chủ dự án, làm lại sáu luồng. `develop` mới chỉ đổi luật giả lập thanh toán (đã sửa §2, dòng "Cổng thanh toán"); các phát hiện khác ở §1 giữ nguyên. Script §4.3 xem trước (trước khi gỡ file): 791 chỗ, 25 dòng cần sửa tay, trong đó có `.agents/skills/insforge-backend-flow/SKILL.md`, `fe/.agents/skills/insforge-backend-flow/SKILL.md` và `be/test/e2e/auth.e2e-spec.ts` |
