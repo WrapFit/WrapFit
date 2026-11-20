@@ -80,4 +80,4 @@ Tài sản đã nhập có thể ẩn khỏi studio bằng công tắc "Hiện �
 2. Đếm màu: ≤ 4 màu, mỗi vai trò một mã.
 3. Với ảnh raster: cạnh dài ≥ 591 px. Thử nhập một file nhỏ hơn ngưỡng (ví dụ 500 px) một lần để thấy thông báo `LIBRARY_FILE_REFUSED`.
 4. Nhập vào `/admin/library`, mở studio, đặt lên hộp, thử "Theo bảng màu" với 2–3 bảng màu.
-5. Kiểm file in: lưu thiết kế thử thành dự án, mở bước 6 (Đặt in). File in chỉ mở khi phiên bản thiết kế có đơn in đã thanh toán, nếu chưa thì máy chủ trả `402 ORDER_PAYMENT_REQUIRED` (xem [03 · Thiết kế API](03_API_DESIGN.md)). Sau khi xuất, mở PDF xem màu và nét đúng như màn hình. Nếu chưa có đơn in đã thanh toán, dùng ảnh 3D và khuôn 2D ở bước 6 để so màu, rồi kiểm PDF ở lần đặt in thật.
+5. Kiểm file in: lưu thiết kế thử thành dự án, mở bước 6 (Đặt in). File in chỉ mở khi phiên bản thiết kế có đơn in đã thanh toán, nếu chưa thì máy chủ trả `402 ORDER_PAYMENT_REQUIRED` (xem [03 · Thiết kế API](03_API_DESIGN.md#xuất-file-in)). Sau khi xuất, mở PDF xem màu và nét đúng như màn hình. Nếu chưa có đơn in đã thanh toán, dùng ảnh 3D và khuôn 2D ở bước 6 để so màu, rồi kiểm PDF ở lần đặt in thật.

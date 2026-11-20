@@ -200,7 +200,7 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 - **Chỉ chạy một API và một worker.** Throttler, cầu chì chi phí AI và Socket.IO giữ trạng thái trong bộ nhớ từng
   process. Trước khi chạy từ hai process API trở lên, phải làm lại ba phần đó: lưu trạng thái throttler trong Redis, dùng
   Redis adapter cho Socket.IO, cho cầu chì AI đọc thẳng CSDL. Việc này đang hoãn, theo dõi ở
-  [28 · Việc còn treo](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) và [07 · Blueprint hệ thống](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).
+  [28 · Việc còn treo](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) và [07 · Blueprint hệ thống](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md#16-điều-kiện-khi-chạy-nhiều-instance-api).
 - **Đăng xuất xóa cookie của cả tên miền.** Logout gửi `Clear-Site-Data: "cookies"`, xóa cookie của cả tên miền đăng ký,
   kể cả subdomain khác. Kiểm không có ứng dụng nào khác dùng chung tên miền với cookie cần giữ.
 - **Tên cookie cũ.** Ở production, cookie đăng nhập mang tiền tố `__Secure-`. Bản hiện tại vẫn đọc và xóa tên cookie cũ
@@ -515,20 +515,29 @@ Các lệnh chạy trên VPS, trong `~/WrapFit`, với `COMPOSE` đặt như ở
 
 Ảnh chụp ở 375 × 812 (`M`) và 1440 × 900 (`Xp`), nằm trong `fe/.page-shots/` (git bỏ qua thư mục này: chép sang thư mục
 slide khi cần). Các ảnh cũ dưới đây chụp ngày 2026-10-30, trước khi studio đổi sang 6 bước và trước khi bỏ luồng mua lượt
-xuất, nên đều phải chụp lại. Ảnh chụp bằng kịch bản FE `fe/scripts/e2e-scenario.mjs`, đang được viết lại theo luồng đặt
-in mẫu. Cột "Ảnh mới" điền khi chụp xong.
+xuất, nên đều phải chụp lại. Ảnh `e2e/*` chụp bằng kịch bản FE `fe/scripts/e2e-scenario.mjs`, đã viết lại theo luồng đặt
+in mẫu (commit c622f67) và chạy đạt ở cả `M` lẫn `Xp` trên máy local ngày 2026-11-19. Ảnh `s8-*` chụp bằng
+`npm --workspace=fe run shots`, chưa chụp lại.
 
 | Nội dung | Ảnh cũ (bỏ) | Vì sao chụp lại | Ảnh mới | Trạng thái |
 |---|---|---|---|---|
-| Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` | Số bước của kịch bản FE đổi | — | Chờ kiểm thực tế (dev FE) · chờ luồng D |
-| Studio 3D có nhãn mặt, hũ nến 80 × 80 × 95 có logo | `s8-studio-3d-labels-demo_wrapfit_vn-{M,Xp}-0.png` | Giao diện studio cũ, trước khi đổi sang 6 bước | — | Chờ kiểm thực tế (dev FE) · chờ luồng D |
-| Thẻ file in ở bước Đặt in, trước khi thanh toán: nút "Thanh toán" | `e2e/{M,Xp}-07-*` | Ảnh cũ là luồng file miễn phí trước khi thanh toán | — | Chờ kiểm thực tế (dev FE) · chờ luồng D |
-| Giỏ in mẫu, thanh toán 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` | Tài khoản demo giờ trả qua VNPay sandbox, không qua VietQR | — | Chờ kiểm thực tế (dev FE) · chờ luồng D |
-| Thẻ file in sau khi thanh toán: "Xuất file in ngay", file tải về | `e2e/{M,Xp}-16-*` | Ảnh cũ là luồng mua lượt xuất | — | Chờ kiểm thực tế (dev FE) · chờ luồng D |
-| `CheckoutDialog` gói Pro từ `/pricing` | `s8-checkout-vietqr-*` | Ảnh cũ là gói lượt xuất đã ngừng bán | — | Chờ kiểm thực tế (dev FE) · chờ luồng D |
+| Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` | Số bước của kịch bản FE đổi | `e2e/{M,Xp}-18-dashboard-stats.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19). Ảnh `s8-*`: chờ kiểm thực tế (dev FE) |
+| Studio 3D có nhãn mặt, hũ nến 80 × 80 × 95 có logo | `s8-studio-3d-labels-demo_wrapfit_vn-{M,Xp}-0.png` | Giao diện studio cũ, trước khi đổi sang 6 bước | — | Chờ kiểm thực tế (dev FE): kịch bản FE không chụp cảnh này, chụp bằng `shots` |
+| Thẻ file in ở bước Đặt in, trước khi thanh toán: nút "Thanh toán" | `e2e/{M,Xp}-07-*` | Ảnh cũ là luồng file miễn phí trước khi thanh toán | `e2e/{M,Xp}-07-export-blocked.png`, `e2e/{M,Xp}-07-fitcheck-fixed.png`, `e2e/{M,Xp}-07-export-locked.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19) |
+| Giỏ in mẫu, thanh toán 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` | Tài khoản demo giờ trả qua VNPay sandbox, không qua VietQR | `e2e/{M,Xp}-16-cart.png`, `e2e/{M,Xp}-16-checkout.png`, `e2e/{M,Xp}-16-checkout-paid.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19). Máy local chưa cấu hình VNPay, nên ảnh thanh toán là nút "Giả lập đã thanh toán" |
+| Thẻ file in sau khi thanh toán: "Xuất file in ngay", file tải về | `e2e/{M,Xp}-16-*` | Ảnh cũ là luồng mua lượt xuất | `e2e/{M,Xp}-16-export-svg.png`, `e2e/{M,Xp}-16-export-pdf_cmyk.png`, `e2e/{M,Xp}-16-export-dxf.png`; phiên bản mới bị khóa lại: `e2e/{M,Xp}-17-new-version-locked.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19) |
+| `CheckoutDialog` gói Pro từ `/pricing` | `s8-checkout-vietqr-*` | Ảnh cũ là gói lượt xuất đã ngừng bán | — | Chờ kiểm thực tế (dev FE): kịch bản FE không mở `/pricing`, chụp bằng `shots` |
 
 Chụp lại trên bản deploy: kịch bản FE cần Mailpit (chỉ có ở local) cho các bước tạo tài khoản, nên trên production chạy
 bằng tài khoản có sẵn: `node fe/scripts/e2e-scenario.mjs --base-url=https://wrap-fit.vercel.app --user=<email>
---password=<mật khẩu> --steps=…`. Danh sách bước cần chạy ghi lại khi kịch bản FE mới xong. Ảnh từng trang:
+--password=<mật khẩu> --steps=…`. Chưa thử trên production, nên chưa có danh sách bước chạy được ở đó. Ảnh từng trang:
 `npm --workspace=fe run shots -- --routes=<file>` với `roles: ["demo@wrapfit.vn"]` và `SHOT_PASSWORD` trong môi trường
 (không ghi vào file).
+
+Điều kiện để chạy đủ kịch bản FE trên máy local (mặc định `--steps=1-14,16-18`, cỡ `M` và `Xp`, khoảng 15 phút mỗi cỡ):
+
+- Docker chạy Postgres, Redis, SeaweedFS và Mailpit.
+- `be/.env` có `PAYMENT_SIMULATION=true`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` và `SEED_DEMO_PASSWORD`. Bước 16 dùng tài khoản admin để bật cờ demo cho tài khoản thử.
+- API và worker chạy bằng `nest start`, không dùng `--watch`: một tác vụ bảo trì chạy mỗi giờ chạm vào file được theo dõi, làm API khởi động lại giữa lượt chạy.
+- FE dev chạy ở cổng 3000 với `BACKEND_INTERNAL_URL=http://localhost:8080`, để CORS giữ origin mặc định.
+- Tài khoản thử đã có đơn trả tiền nên khi dọn sẽ được ẩn danh hóa (`ANONYMIZED`), không bị xóa. Mỗi lượt chạy đủ để lại 2 đơn trong CSDL local.

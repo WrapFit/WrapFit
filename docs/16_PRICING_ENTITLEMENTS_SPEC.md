@@ -6,7 +6,7 @@
 > - Xu Wrap (giá, hạn mức mỗi kỳ, trừ và hoàn xu): [19 · Xu Wrap](19_XU_WRAP_SPEC.md).
 > - Quyền xuất file in và đơn in: [03 · Xuất file in](03_API_DESIGN.md#xuất-file-in), [03 · Đơn in mẫu](03_API_DESIGN.md#đơn-in-mẫu).
 > - Tạo thanh toán, cổng và giả lập: [03 · Gói, xu và thanh toán](03_API_DESIGN.md#gói-xu-và-thanh-toán).
-> - Cấu hình cổng thanh toán khi deploy (`VIETQR_*`, `SEPAY_*`, `VNPAY_*`, `PAYMENT_SIMULATION`): [18 · Runbook deploy](18_PATH2_DEPLOY_RUNBOOK.md).
+> - Cấu hình cổng thanh toán khi deploy (`VIETQR_*`, `SEPAY_*`, `VNPAY_*`, `PAYMENT_SIMULATION`): [18 · Runbook deploy](18_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps).
 >
 > **Nguồn quyết định kinh doanh**: chiến lược định giá (4 gói Free · Lượt xuất · Pro · Business). Con số giá và hạn mức nằm ở `shared/src/billing/`; khi đổi chỉ sửa ở đó.
 > **Không thuộc phạm vi tài liệu này**: chợ in ấn và gói đối tác xưởng in, chợ mẫu cao cấp.
@@ -74,7 +74,7 @@ Pro không tự gia hạn: hết 30 ngày thì về gói thấp hơn. Mua thêm 
 | Xu Wrap | Gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ; `XU_CUSTOM` 100–50.000 xu, bội số của 10, 100đ / xu, không thưởng; hạn 12 tháng | [19](19_XU_WRAP_SPEC.md) |
 | Lượt xuất còn dư | Đổi một lần sang xu theo số tiền đã trả (`db:convert-export-credits --apply`, chạy tay trước deploy). Thanh toán gói lượt xuất cũ xác nhận muộn được cấp xu, không cấp lượt | [19 · D5](19_XU_WRAP_SPEC.md#2-quyết-định) |
 | Tạo thanh toán | `{ purpose, termsVersion }` (+ `orderId` cho `SAMPLE_ORDER`, `xu` cho `XU_CUSTOM`); `termsVersion` = `PAYMENT_TERMS_VERSION` (`2026-11-12`) | [03 · Gói, xu và thanh toán](03_API_DESIGN.md#gói-xu-và-thanh-toán) |
-| Cổng thanh toán | Tài khoản demo (`users.is_demo`): VNPay sandbox. Tài khoản thường: VietQR, SePay báo tiền về. Giả lập chỉ khi máy chủ bật `PAYMENT_SIMULATION=true`; khi đó tài khoản demo luôn được giả lập, tài khoản thường chỉ khi chưa cấu hình `VIETQR_*`, có tài khoản thật thì `403 SIMULATION_DEMO_ONLY` | [03 · Cổng thanh toán và giả lập](03_API_DESIGN.md#cổng-thanh-toán-và-giả-lập), [18](18_PATH2_DEPLOY_RUNBOOK.md) |
+| Cổng thanh toán | Tài khoản demo (`users.is_demo`): VNPay sandbox. Tài khoản thường: VietQR, SePay báo tiền về. Giả lập chỉ khi máy chủ bật `PAYMENT_SIMULATION=true`; khi đó tài khoản demo luôn được giả lập, tài khoản thường chỉ khi chưa cấu hình `VIETQR_*`, có tài khoản thật thì `403 SIMULATION_DEMO_ONLY` | [03 · Cổng thanh toán và giả lập](03_API_DESIGN.md#cổng-thanh-toán-và-giả-lập), [18](18_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps) |
 | Đối soát | Khớp tiền tự động; lệch tiền, thiếu mã, hết hạn, đơn đã hủy → admin gán tay hoặc bỏ qua | [03 · Đối soát chuyển khoản](03_API_DESIGN.md#đối-soát-chuyển-khoản) |
 | Hóa đơn VAT | Chỉ lưu thông tin `{ company, taxCode, email }` (`/billing/details`) và chụp vào thanh toán. Chưa xuất hóa đơn điện tử | Phần C, Mục 7.1 |
 

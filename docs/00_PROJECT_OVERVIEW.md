@@ -50,7 +50,7 @@ Trạng thái: có mã trên `develop`. Điểm vào được đối chiếu b�
 - Đổi tên dự án vẫn giữ quyền tải file.
 - Sửa thiết kế sau khi thanh toán tạo phiên bản mới. Phiên bản mới cần một đơn in mới.
 - Gói Pro không tự mở file in cho dự án mới. Mọi file in đều đi qua giỏ in.
-- Thiếu quyền, máy chủ trả `402 ORDER_PAYMENT_REQUIRED`. Chi tiết API ở [03 · Thiết kế API](03_API_DESIGN.md).
+- Thiếu quyền, máy chủ trả `402 ORDER_PAYMENT_REQUIRED`. Chi tiết API ở [03 · Thiết kế API](03_API_DESIGN.md#xuất-file-in).
 
 Trạng thái: có mã trên `develop`. Đã kiểm bằng E2E backend (`export.e2e-spec.ts`, 19/11/2026).
 

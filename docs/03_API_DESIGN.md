@@ -441,4 +441,4 @@ E2E: `storage`, `unused-files`.
 
 ## 3. Endpoints chưa triển khai
 
-Đối chiếu ngày 2026-11-19: mọi route trong controller đã nằm ở bảng mục 2, không còn route nào "sắp triển khai" trong mục này. Các route theo kế hoạch nhưng chưa có mã (hóa đơn, workspace, dùng thử) nằm ở [16 · Đề xuất còn chờ](16_PRICING_ENTITLEMENTS_SPEC.md) và [07, Mục 4.2 – 4.3](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).
+Đối chiếu ngày 2026-11-19: mọi route trong controller đã nằm ở bảng mục 2, không còn route nào "sắp triển khai" trong mục này. Các route theo kế hoạch nhưng chưa có mã (hóa đơn, workspace, dùng thử) nằm ở [16 · Đề xuất còn chờ](16_PRICING_ENTITLEMENTS_SPEC.md#phần-c-đề-xuất-còn-chờ) và [07, Mục 4.2 – 4.3](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).

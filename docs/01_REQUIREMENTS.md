@@ -58,11 +58,11 @@
   - Gói Pro không tự mở file in cho dự án mới.
   - Studio đọc quyền qua `GET …/exports/access` → `{ unlocked, unlockExpiresAt }`.
 
-  Chi tiết API ở [03 · Thiết kế API](03_API_DESIGN.md).
+  Chi tiết API ở [03 · Thiết kế API](03_API_DESIGN.md#xuất-file-in).
   *Trạng thái: đã kiểm bằng E2E (`export.e2e-spec.ts`, 19/11/2026).*
 - **FR-10 (Đơn in)**: Người dùng thêm thiết kế vào giỏ in, đặt một đơn gồm 1–20 thiết kế, mỗi thiết kế 1–10 bản. Mỗi dòng hàng giữ phiên bản dự án lúc đặt. Mã đơn có dạng `WF-<năm>-<6 chữ số>`. Đơn đi qua các trạng thái chờ thanh toán → đã thanh toán → đang in → đang giao → đã giao, hoặc bị hủy trước khi in. Chỉ ADMIN và PRINT_SHOP đổi được trạng thái. Đơn `PENDING_PAYMENT`, `PAID` hoặc `IN_PRODUCTION` giữ thiết kế: xóa vĩnh viễn dự án đó → `409 PROJECT_IN_ACTIVE_ORDER`.
   *Trạng thái: đã kiểm bằng E2E (`orders.e2e-spec.ts`, `projects.e2e-spec.ts`, 19/11/2026).*
-- **FR-11 (Thanh toán)**: Mỗi lần tạo thanh toán gửi `termsVersion` (hiện là `2026-11-12`). Tài khoản demo dùng VNPay sandbox. Tài khoản thường dùng VietQR/SePay. Gói lượt xuất cũ đã ngừng bán: tạo mới → `400 EXPORT_PACK_DISCONTINUED`.
+- **FR-11 (Thanh toán)**: Mỗi lần tạo thanh toán gửi `termsVersion` (hiện là `2026-11-12`). Tài khoản demo dùng VNPay sandbox. Tài khoản thường dùng VietQR/SePay. Gói lượt xuất cũ đã ngừng bán: tạo mới → `400 EXPORT_PACK_DISCONTINUED`. Luật giả lập thanh toán ở [03 · Cổng thanh toán và giả lập](03_API_DESIGN.md#cổng-thanh-toán-và-giả-lập).
   *Trạng thái: đã kiểm bằng E2E (`payments.e2e-spec.ts`, `vnpay.e2e-spec.ts`, `sepay-webhook.e2e-spec.ts`, 19/11/2026). Thanh toán với cổng thật: chờ kiểm thực tế (người giữ tài khoản ngân hàng và VNPay).*
 - **FR-12 (Ví xu)**: Người dùng nạp xu theo gói hoặc theo số tùy chọn từ 100 đến 50.000 xu, bội số của 10 (giá niêm yết, không thưởng). Xu dùng cho hoa văn AI và ảnh AI (tạo ảnh, xóa nền, tăng độ phân giải). Thiếu xu → `402`, không tạo job. Bấm hai lần cùng một yêu cầu chỉ trừ xu một lần. Job lỗi do nhà cung cấp hoặc bị từ chối nội dung thì hoàn xu đúng một lần. Lịch sử ví xem ở `/dashboard/wallet`. Quy tắc giá chi tiết ở [19 · Xu Wrap](19_XU_WRAP_SPEC.md).
   *Trạng thái: đã kiểm bằng E2E (`ai-images.e2e-spec.ts`, 19/11/2026) và test unit cho nạp tùy chọn (`payments.service.spec.ts`, 19/11/2026).*
