@@ -7,6 +7,7 @@ import { ROUTES } from "@/constants";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { cn } from "@/utils/helpers";
 import { buttonClass } from "@/components/ui";
+import { FlowStepClip } from "./FlowStepClip";
 
 export interface FlowStepModalProps {
   isOpen: boolean;
@@ -20,19 +21,20 @@ export interface FlowStep {
   /** Name of the step, as in the step bar of the studio. */
   name: string;
   title: string;
-  imageSrc: string;
+  /** Clip of this step cut from the studio demo video: `${clip}.mp4`, with `${clip}.webp` as its still on the home card. */
+  clip: string;
   imageAlt: string;
   targetHref: string;
   ctaLabel: string;
 }
 
-/** The six steps of the studio, in its order; each image is a screenshot of that step. */
+/** The six steps of the studio, in its order; each clip is that step in the studio demo video. */
 export const FLOW_STEPS: FlowStep[] = [
   {
     number: "01",
     name: "Chọn kiểu hộp",
     title: "Bước 01: Chọn kiểu hộp, xem trước dạng 3D và khuôn bế",
-    imageSrc: "/branding/studio-step-1.webp",
+    clip: "/videos/flow/step-1",
     imageAlt: "Bước Kiểu hộp của Studio WrapFit: lưới các kiểu hộp và khung xem trước 3D",
     targetHref: `${ROUTES.editorDemo}?step=1`,
     ctaLabel: "Chọn kiểu hộp",
@@ -41,7 +43,7 @@ export const FLOW_STEPS: FlowStep[] = [
     number: "02",
     name: "Nhập kích thước",
     title: "Bước 02: Nhập kích thước món quà, hộp tự may đo theo milimét",
-    imageSrc: "/branding/studio-step-2.webp",
+    clip: "/videos/flow/step-2",
     imageAlt: "Bước Kích thước của Studio WrapFit: thanh trượt dài, rộng, cao và hộp 3D có đường kích thước",
     targetHref: `${ROUTES.editorDemo}?step=2`,
     ctaLabel: "Nhập kích thước",
@@ -50,7 +52,7 @@ export const FLOW_STEPS: FlowStep[] = [
     number: "03",
     name: "Chọn giấy",
     title: "Bước 03: Chọn giấy, cán màng và gia công",
-    imageSrc: "/branding/studio-step-3.webp",
+    clip: "/videos/flow/step-3",
     imageAlt: "Bước Giấy của Studio WrapFit: hộp 3D và bảng chọn loại giấy, độ dày, cán màng",
     targetHref: `${ROUTES.editorDemo}?step=3`,
     ctaLabel: "Chọn giấy",
@@ -59,7 +61,7 @@ export const FLOW_STEPS: FlowStep[] = [
     number: "04",
     name: "Thiết kế",
     title: "Bước 04: Thiết kế trên khuôn bế 2D, xem hộp gập 3D",
-    imageSrc: "/branding/studio-step-4.webp",
+    clip: "/videos/flow/step-4",
     imageAlt: "Bước Thiết kế của Studio WrapFit: thư viện mẫu bên trái, khuôn bế 2D đã áp mẫu ở giữa",
     targetHref: `${ROUTES.editorDemo}?step=4`,
     ctaLabel: "Mở Studio",
@@ -68,7 +70,7 @@ export const FLOW_STEPS: FlowStep[] = [
     number: "05",
     name: "Quà & mở hộp",
     title: "Bước 05: Bối cảnh 3D, lời chúc và mã QR mở hộp",
-    imageSrc: "/branding/studio-step-5.webp",
+    clip: "/videos/flow/step-5",
     imageAlt: "Bước Quà & mở hộp của Studio WrapFit: hộp 3D trên bàn và nút tạo lời chúc, mã QR",
     targetHref: `${ROUTES.editorDemo}?step=5`,
     ctaLabel: "Tạo lời chúc",
@@ -77,7 +79,7 @@ export const FLOW_STEPS: FlowStep[] = [
     number: "06",
     name: "Đặt in",
     title: "Bước 06: FitCheck™, báo giá, đặt in và xuất file in",
-    imageSrc: "/branding/studio-step-6.webp",
+    clip: "/videos/flow/step-6",
     imageAlt: "Bước Đặt in của Studio WrapFit: khuôn bế 1:1, FitCheck và báo giá in theo số lượng",
     targetHref: `${ROUTES.editorDemo}?step=6`,
     ctaLabel: "Xem báo giá",
@@ -164,14 +166,14 @@ export function FlowStepModal({
           </h3>
         </div>
 
-        {/* ================= VISUAL SHOWCASE: CLEAN FULL WEBSITE SCREENSHOT ================= */}
+        {/* ================= VISUAL SHOWCASE: CLIP OF THE STEP FROM THE STUDIO DEMO ================= */}
         <div className="flex-1 overflow-y-auto px-5 pb-4 sm:px-7 flex flex-col justify-center">
           <div className="relative w-full rounded-2xl border border-line/80 bg-surface-sunken/30 shadow-soft-8 overflow-hidden flex items-center justify-center">
-            <img
-              src={current.imageSrc}
-              alt={current.imageAlt}
-              className="w-full h-auto max-h-[66vh] object-contain block select-none mx-auto"
-              loading="eager"
+            <FlowStepClip
+              key={current.clip}
+              clip={current.clip}
+              label={current.imageAlt}
+              className="mx-auto aspect-video h-auto max-h-[66vh] w-full object-contain"
             />
           </div>
         </div>
