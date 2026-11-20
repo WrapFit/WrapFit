@@ -40,7 +40,7 @@ function detail(project: MockProject): ProjectDetail {
 function summary(project: MockProject): ProjectSummary {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { version, formulaVersion, latestFormulaVersion, allowFork, forkedFromId, canvasState, fitcheckState, ...rest } = detail(project);
-  return rest;
+  return { ...rest, hasFitcheckErrors: fitcheckState?.isValidForProduction === false };
 }
 
 const EMPTY_CANVAS: CanvasState = { elements: [] } as unknown as CanvasState;

@@ -667,6 +667,10 @@ function scenario(size, browser, report) {
       const { dimensions } = await projectOf(await state.owner.api(), state.projectId);
       const size = [dimensions.length, dimensions.width, dimensions.height].join(' × ');
       if (size !== '120 × 80 × 60') throw new Error(`the new project is ${size} mm`);
+      const projectDrawer = await page.eval('innerWidth < 1280');
+      if (projectDrawer) await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Dự án"]' });
+      await page.waitSelector('button[aria-current="page"][disabled][aria-label^="Đang mở:"]');
+      if (projectDrawer) await page.click({ selector: 'button[aria-label="Đóng thư viện dự án"]' });
       await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Thiết kế"]' });
       await page.settle();
       await page.upload('input[type="file"][accept*="image"]', pngFile());

@@ -122,6 +122,7 @@ import { Step5Model3DWithEnvironments } from "@/features/studio/components/Step5
 import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExport";
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
 import { WorkspaceNav, type StudioStep } from "@/features/studio/components/WorkspaceNav";
+import { StudioProjectLibrary } from "@/features/studio/components/StudioProjectLibrary";
 import type { DimensionAxis } from "@/features/studio/components/three/guides";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useStudioHeartbeat";
@@ -222,18 +223,14 @@ function loadDemoDraft(): DemoDraft | null {
   }
 }
 
-function saveDemoDraft(draft: DemoDraft) {
-  try {
-    localStorage.setItem(DEMO_DRAFT_KEY, JSON.stringify(draft));
-  } catch {
-    // Storage full or blocked: the demo still works, only without the draft.
-  }
+async function saveDemoDraft(draft: DemoDraft) {
+  localStorage.setItem(DEMO_DRAFT_KEY, JSON.stringify(draft));
   // Uploaded images and fonts are blob: URLs of this tab: their files go to IndexedDB, under the URL the draft keeps.
   const urls = [
     ...(draft.canvasState?.elements ?? []).map((el) => el.content),
     ...(draft.canvasState?.customFonts ?? []).map((f) => f.url),
   ];
-  void syncDemoAssets(urls).catch(() => undefined);
+  await syncDemoAssets(urls);
 }
 
 function readStoredDemoDraft(): string | null {
@@ -617,24 +614,23 @@ export function StudioWorkspace({
     };
   }, [demoDraft]);
 
+  const persistDraft = useCallback(() => saveDemoDraft({
+    title: payload.title,
+    occasion: occasion as DemoDraft["occasion"],
+    dimensions: payload.dimensions,
+    materialSpec: payload.materialSpec,
+    canvasState: payload.canvasState as DemoDraft["canvasState"],
+    structure: { id: boxType },
+    step: currentStep,
+  }), [payload, occasion, boxType, currentStep]);
   // Demo: keep the design (and its step) in this browser, a moment after the last change.
   useEffect(() => {
     if (!isDemo || !demoAssetsReady) return;
-    const timer = window.setTimeout(
-      () =>
-        saveDemoDraft({
-          title: payload.title,
-          occasion: occasion as DemoDraft["occasion"],
-          dimensions: payload.dimensions,
-          materialSpec: payload.materialSpec,
-          canvasState: payload.canvasState as DemoDraft["canvasState"],
-          structure: { id: boxType },
-          step: currentStep,
-        }),
-      400
-    );
+    const timer = window.setTimeout(() => {
+      if (!demoSavedRef.current) void persistDraft().catch(() => undefined);
+    }, 400);
     return () => window.clearTimeout(timer);
-  }, [isDemo, demoAssetsReady, payload, occasion, boxType, currentStep]);
+  }, [isDemo, demoAssetsReady, persistDraft]);
   const renderPreview = () => renderThumbnail(pieces, elements, activeMaterial);
   const sync = useProjectSync({
     project,
@@ -1243,8 +1239,11 @@ export function StudioWorkspace({
   const queryClient = useQueryClient();
   const { status: authStatus } = useAuth();
   const [savingProject, setSavingProject] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const navigating = useRef(false);
   /** POST /projects with the demo design; images uploaded in the demo (blob: URLs) go to WrapFit storage first. */
-  const createProjectFromDemo = async () => {
+  const createProjectFromDemo = async (requireAllImages = false) => {
     // The API refuses blob: URLs; only the uploads that fail are left out.
     const uploaded = new Map<string, string | null>();
     for (const url of new Set(elements.filter((el) => el.content.startsWith("blob:")).map((el) => el.content))) {
@@ -1257,13 +1256,20 @@ export function StudioWorkspace({
       }
     }
     const local = [...uploaded.values()].filter((v) => v === null);
+    if (requireAllImages && local.length) throw new Error("Chưa lưu được ảnh của bản nháp. Hãy thử lại.");
     const savedElements = remapDraftElements(elements, uploaded);
+    const savedFonts = await Promise.all(customFonts.map(async (font) => {
+      if (!font.url.startsWith("blob:")) return font;
+      const blob = await (await fetch(font.url)).blob();
+      const { fileUrl } = await uploadFileToStorage(blob, "FONT");
+      return { ...font, url: fileUrl };
+    }));
     const created = await createProject({
       templateId: boxType,
       title: payload.title,
       dimensions,
       materialSpec: payload.materialSpec,
-      canvasState: { ...payload.canvasState, elements: savedElements },
+      canvasState: { ...payload.canvasState, elements: savedElements, customFonts: savedFonts },
       occasion: (occasion as never) ?? undefined,
     });
     queryClient.setQueryData(queryKeys.projects.detail(created.id), created);
@@ -1327,10 +1333,10 @@ export function StudioWorkspace({
   // "Thiết kế hộp mới" starts again from step 1. A guest keeps the draft in this browser only.
   const demoSavedRef = useRef(false);
   const demoTouchedRef = useRef(false);
-  const openingDimensions = useRef(dimensions);
+  const openingDesign = useRef(payload);
   useEffect(() => {
-    if (isDemo && (currentStep > 1 || elements.length > 0 || boxType !== initialStructure || dimensions !== openingDimensions.current)) demoTouchedRef.current = true;
-  }, [isDemo, currentStep, elements.length, boxType, initialStructure, dimensions]);
+    if (isDemo && (currentStep > 1 || elements.length > 0 || boxType !== initialStructure || payload !== openingDesign.current)) demoTouchedRef.current = true;
+  }, [isDemo, currentStep, elements.length, boxType, initialStructure, payload]);
   const leaveDemoRef = useRef<() => void>(() => undefined);
   leaveDemoRef.current = () => {
     if (!isDemo || demoSavedRef.current || !demoTouchedRef.current || authStatus !== "authenticated" || invalidReason) return;
@@ -1355,6 +1361,33 @@ export function StudioWorkspace({
       }, 0);
     };
   }, []);
+
+  async function navigateFromLibrary(href: string) {
+    if (navigating.current || savingProject) return;
+    navigating.current = true;
+    setLeaving(true);
+    try {
+      if (uploading || fontBusy) throw new Error("Đang tải tệp lên. Hãy đợi tải xong rồi chuyển dự án.");
+      if (isDemo) {
+        if (!demoAssetsReady) throw new Error("Đang mở ảnh bản nháp. Hãy thử lại sau giây lát.");
+        if (authStatus === "authenticated" && demoTouchedRef.current) {
+          if (invalidReason) throw new Error(invalidReason);
+          await createProjectFromDemo(true);
+          demoSavedRef.current = true;
+          clearDemoDraft();
+        } else {
+          await persistDraft();
+        }
+      } else if (!readOnly && !(await sync.flush())) {
+        throw new Error(invalidReason ?? "Kiểm tra kết nối và trạng thái lưu rồi thử lại.");
+      }
+      router.push(href);
+    } catch (error) {
+      navigating.current = false;
+      setLeaving(false);
+      toast.error(error, "Chưa lưu được thay đổi để chuyển trang");
+    }
+  }
 
   // A saved project autosaves; this button saves now, at any step, whatever FitCheck says (only the print file is sold).
   const saveNow = async () => {
@@ -1417,7 +1450,7 @@ export function StudioWorkspace({
   );
 
   return (
-    <div className={`${landingFontVariables} flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas font-landing-body text-fg`}>
+    <div inert={leaving || undefined} aria-busy={leaving} className={`${landingFontVariables} flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas font-landing-body text-fg`}>
       <header className="z-30 shrink-0 border-b border-line bg-surface-raised">
         <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -1608,7 +1641,7 @@ export function StudioWorkspace({
 
       <ProductTour id={STUDIO_INTRO_TOUR_ID} steps={STUDIO_INTRO_TOUR} autoStart={false} force={tourContinued} />
       <div className="flex min-h-0 flex-1 flex-col-reverse lg:flex-row">
-        <WorkspaceNav current={currentStep} onSelect={navigateToStep}
+        <WorkspaceNav current={currentStep} onSelect={navigateToStep} libraryOpen={libraryOpen} onProjects={() => setLibraryOpen(true)}
           onCopilot={presenting || readOnly ? undefined : () => window.dispatchEvent(new CustomEvent("wrapfit_toggle_copilot"))} />
         <main className="flex min-h-0 min-w-0 flex-1" inert={readOnly || undefined}>
         {currentStep <= 4 && (
@@ -2261,6 +2294,10 @@ export function StudioWorkspace({
           />
         )}
         </main>
+        <StudioProjectLibrary currentId={project?.id} structures={structures}
+          draft={isDemo ? { title: payload.title, structure: boxType, dimensions, material: payload.materialSpec.type } : undefined}
+          busy={leaving || savingProject} overlayOpen={libraryOpen} onCloseOverlay={() => setLibraryOpen(false)}
+          onNavigate={(href) => void navigateFromLibrary(href)} />
       </div>
 
       {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}

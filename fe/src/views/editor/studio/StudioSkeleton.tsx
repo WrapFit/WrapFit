@@ -15,15 +15,19 @@ export function StudioSkeleton({ label = "Đang mở Studio 3D…" }: { label?: 
         <Skeleton className="h-9 w-20 rounded-full" />
       </header>
       <div className="flex flex-1 flex-col-reverse lg:flex-row" aria-hidden>
-        <div className="h-14 bg-fg lg:h-auto lg:w-24" />
+        <div className="h-14 bg-fg lg:h-auto lg:w-[72px]" />
         <div className="flex min-w-0 flex-1 flex-col lg:flex-row">
           <div className="flex-1 bg-canvas" />
-          <div className="flex flex-1 flex-col gap-4 bg-surface-raised p-5 lg:w-[360px] lg:flex-none xl:w-[392px]">
+          <div className="flex flex-1 flex-col gap-4 bg-surface-raised p-5 lg:order-first lg:w-[360px] lg:flex-none xl:w-[392px]">
             <Skeleton className="h-6 w-32" />
             <Skeleton className="h-20 w-full rounded-panel" />
             <Skeleton className="h-10 w-48 rounded-full" />
             <Skeleton className="h-32 w-full rounded-panel" />
           </div>
+        </div>
+        <div className="hidden border-l border-line bg-surface-raised p-4 xl:block xl:w-[300px] 2xl:w-[340px]">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="mt-4 h-11 w-full" />
         </div>
       </div>
     </div>

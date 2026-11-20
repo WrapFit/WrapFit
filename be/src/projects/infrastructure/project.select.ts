@@ -13,6 +13,7 @@ export const summarySelect = {
   dimensions: true,
   materialSpec: true,
   fitcheckScore: true,
+  fitcheckState: true,
   thumbnailKey: true,
   tags: true,
   occasion: true,
@@ -32,7 +33,6 @@ export const detailSelect = {
   allowFork: true,
   forkedFromId: true,
   canvasState: true,
-  fitcheckState: true,
 } satisfies Prisma.PackagingProjectSelect;
 
 export const snapshotSummarySelect = {
@@ -50,14 +50,18 @@ type SnapshotRow = Prisma.ProjectSnapshotGetPayload<{ select: typeof snapshotSum
 
 // JSON columns are only written through validated DTOs, so their shape is trusted when read back.
 // Stored keys of uploads are returned as URLs (thumbnail, preview, canvas images).
-export const toSummary = ({ thumbnailKey, ...row }: SummaryRow) =>
-  ({ ...row, thumbnailUrl: assetUrl(thumbnailKey) }) as unknown as ProjectSummary;
+export const toSummary = ({ thumbnailKey, fitcheckState, ...row }: SummaryRow) => ({
+  ...row,
+  hasFitcheckErrors: (fitcheckState as ProjectDetail['fitcheckState'])?.isValidForProduction === false,
+  thumbnailUrl: assetUrl(thumbnailKey),
+}) as unknown as ProjectSummary;
 export const toDetail = (row: DetailRow) => {
   const { template, ...summary } = toSummary(row) as unknown as DetailRow;
   return {
     ...summary,
     template: { id: template.id, name: template.name },
     latestFormulaVersion: template.formulaVersion,
+    fitcheckState: row.fitcheckState,
     canvasState: toClientCanvas(row.canvasState as never),
   } as unknown as ProjectDetail;
 };

@@ -155,7 +155,7 @@ export function WorkspaceInspector({ title, children }: { title: string; childre
   const [collapsed, setCollapsed] = React.useState(false);
   const bodyId = React.useId();
   return (
-    <aside aria-label={title} className={cn("flex min-h-0 min-w-0 flex-col border-t border-line bg-surface-raised lg:w-[360px] lg:flex-none lg:border-l lg:border-t-0 xl:w-[392px]", collapsed ? "flex-none" : "flex-[1_1_55%]")}>
+    <aside data-tour="studio-inspector" aria-label={title} className={cn("flex min-h-0 min-w-0 flex-col border-t border-line bg-surface-raised lg:order-first lg:w-[360px] lg:flex-none lg:border-r lg:border-t-0 xl:w-[392px]", collapsed ? "flex-none" : "flex-[1_1_55%]")}>
       <h2 className="shrink-0 border-b border-line font-landing-heading text-title text-fg">
         <span className="hidden px-5 py-4 lg:block">{title}</span>
         <button type="button" aria-expanded={!collapsed} aria-controls={bodyId}

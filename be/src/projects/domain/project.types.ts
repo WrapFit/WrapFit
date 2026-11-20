@@ -24,6 +24,7 @@ export interface ProjectSummary {
   materialSpec: MaterialSpecification;
   /** Print readiness 0-100 from the last server-side FitCheck; null until the design is checked. */
   fitcheckScore: number | null;
+  hasFitcheckErrors?: boolean;
   thumbnailUrl: string | null;
   tags: string[];
   /** Template hub filters (UC-12), set when the project is shared with the community. */

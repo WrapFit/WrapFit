@@ -563,7 +563,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       }
     };
     const look = new THREE.Vector3();
-    let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; toDistance: number; t: number; duration: number } | null = null;
+    let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; distanceFactor: number; t: number; duration: number } | null = null;
     let visible = true;
     let hoverPoint: THREE.Vector2 | null = null;
     let dragging = false;
@@ -631,7 +631,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         from: offset.clone().normalize(),
         to: dir.clone(),
         fromDistance: offset.length(),
-        toDistance: framingDistance(fit.radius) * distanceFactor,
+        distanceFactor,
         t: 0,
         duration: reducedMotion ? 0.001 : duration,
       };
@@ -645,7 +645,12 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       renderer.setSize(width, height, false);
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
+      // Preserve the user's zoom relative to the available frame when a workspace panel opens.
+      const previousDistance = framingDistance(fit.radius);
       camera.aspect = width / height;
+      const ratio = framingDistance(fit.radius) / previousDistance;
+      camera.position.sub(controls.target).multiplyScalar(ratio).add(controls.target);
+      if (tween) tween.fromDistance *= ratio;
       camera.updateProjectionMatrix();
       dirty = true;
     };
@@ -782,7 +787,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         const e = easeInOutCubic(tween.t);
         const turn = new THREE.Quaternion().setFromUnitVectors(tween.from, tween.to);
         const dir = tween.from.clone().applyQuaternion(new THREE.Quaternion().slerp(turn, e));
-        const distance = tween.fromDistance + (tween.toDistance - tween.fromDistance) * e;
+        const distance = THREE.MathUtils.lerp(tween.fromDistance, base * tween.distanceFactor, e);
         camera.position.copy(controls.target).addScaledVector(dir, distance);
         fit.shownRadius = fit.radius;
         if (tween.t >= 1) tween = null;

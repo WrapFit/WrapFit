@@ -26,6 +26,7 @@ export type ModalPlacement =
   | "responsive"
   /** Full-height panel from the right edge. */
   | "sheet-right"
+  | "sheet-bottom"
   /** Full-height panel from the left edge (navigation). */
   | "sheet-left";
 
@@ -50,6 +51,7 @@ const LAYER: Record<ModalPlacement, string> = {
   center: "flex items-center justify-center p-4",
   responsive: "flex items-end justify-center p-3 sm:items-center sm:p-4",
   "sheet-right": "",
+  "sheet-bottom": "",
   "sheet-left": "",
 };
 
@@ -57,6 +59,7 @@ const PANEL: Record<ModalPlacement, string> = {
   center: "relative w-full max-h-[calc(100dvh-2rem)] overflow-y-auto",
   responsive: "relative w-full max-h-[calc(100dvh-1.5rem)] overflow-y-auto",
   "sheet-right": "absolute inset-y-0 right-0 flex h-full w-full flex-col",
+  "sheet-bottom": "absolute inset-x-0 bottom-0 flex h-[85dvh] flex-col rounded-t-sheet",
   "sheet-left": "absolute inset-y-0 left-0 flex h-full w-full flex-col",
 };
 
@@ -91,6 +94,8 @@ export function ModalLayer({
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       if (placement === "sheet-right" || placement === "sheet-left") {
         animate(panel, { translateX: [placement === "sheet-right" ? "100%" : "-100%", "0%"], duration: 420, ease: "outExpo" });
+      } else if (placement === "sheet-bottom") {
+        animate(panel, { translateY: ["100%", "0%"], duration: 340, ease: "outExpo" });
       } else {
         animate(panel, { opacity: [0, 1], translateY: [placement === "responsive" ? 24 : 0, 0], scale: [0.97, 1], duration: 340, ease: "outBack" });
       }
