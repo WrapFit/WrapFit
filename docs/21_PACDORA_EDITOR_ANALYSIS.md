@@ -181,6 +181,16 @@ Mã chính: [Preview3DCard](../fe/src/features/studio/components/three/Preview3D
 
 Giới hạn của S2: thẻ nằm đè lên góc phải trên của khuôn. Người dùng có thể thu gọn thẻ hoặc kéo khuôn sang chỗ khác. Thẻ chưa tự né khuôn khi khuôn vừa khít khung.
 
+**S3 xong ngày 20/11/2026 (chưa commit).**
+
+- **Đường đo theo ngữ cảnh trên khuôn 2D.** Khi rê chuột hoặc đặt con trỏ vào ô **Dài**, **Rộng** hoặc **Cao** ở bước 1–2 mà đang xem **Khuôn 2D**, mỗi cạnh tấm có độ dài đó hiện một đường đo cùng màu với trục, kèm nhãn như "C 60,4". Ví dụ với hộp 120 × 80 × 60 mm, ô **Cao** đánh dấu bốn mặt thân hộp. Đường có viền trắng để đọc được trên mọi hình in. Ở chế độ **Hộp 3D**, trục tương ứng đã sáng từ trước.
+- **Cách nhận cạnh.** Công thức khuôn không gắn trục cho từng cạnh, nên một cạnh được coi là khớp khi lệch so với số đo không quá hai lần độ dày giấy cộng 0,6 mm (công thức cộng thêm độ dày giấy). Nếu hai số đo bằng nhau, cả hai trục đánh dấu cùng các cạnh.
+- **Độ phân giải thích ứng.** Khi kéo để xoay hộp 3D, canvas vẽ ở nửa mật độ điểm ảnh, không thấp hơn 1 điểm ảnh cho mỗi pixel CSS. Thả tay thì vẽ lại sắc nét. Cuộn chuột và bấm không kéo không đổi độ phân giải. Trên màn hình tỉ lệ 1,25, canvas rộng 1545 px còn 1236 px trong lúc kéo. Màn hình tỉ lệ 1 không đổi.
+
+Mã chính: prop `measure` của [DielineCanvas2D](../fe/src/features/studio/components/canvas/DielineCanvas2D.tsx), vòng lặp vẽ trong [InteractiveFoldingBox3D](../fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx).
+
+Chưa đo số khung hình mỗi giây trước và sau khi hạ độ phân giải.
+
 ## 7. Giới hạn của khảo sát
 
 - Mã Pacdora đã được rút gọn. Các kết luận về mô hình gập, chọn mặt và hoàn thiện in đọc từ tên thuộc tính và đoạn mã, chưa chạy riêng từng hàm. Đồ thị REA của `pacdora-3d` chỉ đầy đủ một phần vì chạm giới hạn phân tích bí danh.
