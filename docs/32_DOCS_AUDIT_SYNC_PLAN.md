@@ -1,6 +1,6 @@
 # 32. Kế hoạch đồng bộ tài liệu sau audit docs
 
-> Ngày lập: 2026-11-19 · Cập nhật: 2026-11-19, đã chốt Q1–Q5 · Nhánh gốc: `develop` (09ca9d4) · Nhánh tích hợp: `docs/sync-after-audit` · Trạng thái: **đang thực hiện (S0 xong, luồng A–F)**
+> Ngày lập: 2026-11-19 · Cập nhật: 2026-11-19, đã chốt Q1–Q5 · Nhánh gốc: `develop` (09ca9d4) · Nhánh tích hợp: `docs/sync-after-audit` · Trạng thái: **S0–S10 xong, chờ chủ dự án đối chiếu với bản audit**
 > Phạm vi gồm bốn phần:
 > - 34 file Markdown trong `docs/` và 9 ảnh của [14](assets/14/).
 > - Kịch bản FE `fe/scripts/e2e-scenario.mjs` (theo Q3).
@@ -826,3 +826,4 @@ Plan này chỉ chuẩn bị chỗ ghi kết quả. Các việc dưới đây c�
 | 2026-11-19 | S8 · Luồng E | 81edc03 | 28: 6 dòng lịch sử hoặc mã lỗi hiện hành | 0 | 13 §6.1 kiểm lại từ mã, chưa chạy `shots`/`stitch:parity`. Thêm 28 mục 15–23 |
 | 2026-11-19 | S9 · Luồng F | e3a2ef3 | 0 | 0 | Chưa chạy thử 18 §6 lượt A; lệnh migrate và đổi lượt xuất ở 18 §2.3 chờ người deploy chạy lần đầu |
 | 2026-11-20 | S10 · Gộp và điền kết quả | (commit này) | 64 dòng trong file giữ lại, đều có nhãn hoặc là mã lỗi hiện hành | 0 | Gộp A, B, C, E, F, D không xung đột. Đổi liên kết tạm thành liên kết tới mục. Điền kết quả luồng D vào 04, 18 §9, 28 #14. Kiểm §4.1: nội dung của từng file đã có ở file nhận |
+| 2026-11-20 | S10 · Gỡ file, đánh số lại, kiểm | aa47f4b (commit cuối còn file), c0feb50, 8f8b6d2, 417c30a | 64 dòng, đều có nhãn hoặc là mã lỗi hiện hành; script FE: 0 | 0 | Chủ dự án xác nhận lại trước khi xóa 26/27/27a/31. Script §4.3 `--write`: 664 chỗ; sửa tay 4 chỗ trỏ tới 10; 50 nhãn liên kết số cũ sửa bằng regex riêng. `--check` trên worktree sạch: 1 ngoại lệ có chủ ý, `CONVERSION_REF = 'docs/25-item-7:…'` trong `be/prisma/scripts/convert-export-credits.ts` là `ref_id` đã lưu trong CSDL, đổi sẽ làm script đổi lượt xuất chạy hai lần. Shared build, BE lint, FE `tsc --noEmit`, `tokens:check` đạt; unit BE 1180/1180 (77 bộ). `npm --workspace=fe run lint` không chạy được vì FE chưa cấu hình ESLint (18 mục 17). Mục lục 08 có 27 anchor lệch tiêu đề từ trước đợt này, chưa sửa |
