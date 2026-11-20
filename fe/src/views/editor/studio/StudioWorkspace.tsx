@@ -42,6 +42,7 @@ import { Button, buttonClass, ContextMenu, ProductTour, startTour, useTourContin
 import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID } from "@/features/studio/studioTour";
 import { workspacePanes, workspaceStage, WorkspaceInspector, ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
+import { Preview3DCard } from "@/features/studio/components/three/Preview3DCard";
 import { cn } from "@/utils/helpers";
 import {
   artPaletteOf,
@@ -1109,6 +1110,8 @@ export function StudioWorkspace({
   // A click on a face of the 3D box opens a menu at the pointer (docs/21 S1): design that face on the dieline, upload
   // an image onto it, open or close the lid, change the size. The face stays lit on the box while the menu is open.
   const [faceMenu, setFaceMenu] = useState<FaceHit | null>(null);
+  /** Panel under the pointer on the dieline, lit on the 3D preview card. */
+  const [hoverPanelId, setHoverPanelId] = useState<string | null>(null);
   const faceOf = useCallback(
     (panelId: string) => {
       for (const piece of pieces) {
@@ -1834,6 +1837,7 @@ export function StudioWorkspace({
                     backgroundPatternSvg={backgroundPatternSvg}
                     activePanelId={activePanelId}
                     onSelectPanel={selectPanel}
+                    onHoverPanel={setHoverPanelId}
                     showRulers={showRulers}
                     flaggedElementIds={flaggedElementIds}
                     textComposerOpen={textComposerOpen}
@@ -1878,6 +1882,28 @@ export function StudioWorkspace({
                         widthClassName="w-64"
                       />
                     )}
+                  </div>
+                )}
+                {/* The folded box beside the dieline while designing (docs/21 S2); tablets and up only, see Preview3DCard. */}
+                {artView === "2d" && (
+                  <div className="absolute right-3 top-3 z-20">
+                  <Preview3DCard
+                    dimensions={dimensions}
+                    boxType={boxType}
+                    theme={activeMaterial}
+                    elements={elements}
+                    formulaVersion={project?.formulaVersion}
+                    backgroundPatternSvg={backgroundPatternSvg}
+                    foldProgress={foldProgress}
+                    onFoldChange={(value) => {
+                      setFoldProgress(value);
+                      if (value < 0.9) setLidOpen(false);
+                    }}
+                    lidOpen={lidOpen}
+                    highlightPanelId={hoverPanelId}
+                    onFaceClick={readOnly ? undefined : designFace}
+                    onExpand={() => setArtView("3d")}
+                  />
                   </div>
                 )}
               </div>

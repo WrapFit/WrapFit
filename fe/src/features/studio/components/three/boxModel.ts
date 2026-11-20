@@ -921,7 +921,8 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   const highlight = (panelId: string | null) => {
     if (panelId === lit) return;
     printedOf.get(lit ?? "")?.forEach((material) => (material.emissiveIntensity = 0));
-    printedOf.get(panelId ?? "")?.forEach((material) => (material.emissiveIntensity = 0.14));
+    // Strong enough to read on the small preview card and on ivory paper (docs/21 S2), still letting the artwork show.
+    printedOf.get(panelId ?? "")?.forEach((material) => (material.emissiveIntensity = 0.26));
     lit = panelId;
   };
 

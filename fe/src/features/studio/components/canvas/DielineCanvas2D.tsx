@@ -132,6 +132,8 @@ interface DielineCanvas2DProps {
   backgroundPatternSvg?: string | null;
   activePanelId?: string;
   onSelectPanel?: (panelId: string) => void;
+  /** The panel under the pointer, null when it leaves the panels (the page lights that face on its 3D preview). */
+  onHoverPanel?: (panelId: string | null) => void;
   showRulers?: boolean;
   /** Elements FitCheck flags (margin, bleed, glue…): drawn with a red badge. */
   flaggedElementIds?: ReadonlySet<string>;
@@ -214,6 +216,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   backgroundPatternSvg,
   activePanelId = "panel_front",
   onSelectPanel,
+  onHoverPanel,
   showRulers = true,
   flaggedElementIds,
   variant = "card",
@@ -285,6 +288,11 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   const uid = useId().replace(/:/g, "");
   const [hoveredPanelId, setHoveredPanelId] = useState<string | null>(null);
+  const onHoverPanelRef = useRef(onHoverPanel);
+  onHoverPanelRef.current = onHoverPanel;
+  useEffect(() => onHoverPanelRef.current?.(hoveredPanelId), [hoveredPanelId]);
+  // A dieline that goes away (another piece, the 3D view) leaves nothing lit.
+  useEffect(() => () => onHoverPanelRef.current?.(null), []);
   const sheet = useMemo(() => sheetPath(dieline), [dieline]);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cursorMm, setCursorMm] = useState<{ x: number; y: number } | null>(null);
