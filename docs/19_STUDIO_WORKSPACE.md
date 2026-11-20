@@ -31,9 +31,9 @@ Studio trên desktop đặt thanh công cụ và bảng thông số bên trái, 
 
 ## 4. Kiểm tra trước khi in và bảo toàn bản thiết kế
 
-**Đổi dự án.** Thư viện hiển thị các dự án đang thiết kế theo lần sửa gần nhất, tìm theo tên hoặc thẻ và lọc theo kiểu hộp. Mỗi lần cuộn đến cuối tải tiếp 12 dự án. Viền cam đánh dấu dự án đang mở. Chấm đỏ lấy từ trường `hasFitcheckErrors` của `GET /projects`, được tính từ báo cáo máy chủ đã lưu. Thư viện có nút thử lại khi tải lỗi. **Dự án mới** mở trang chọn mẫu, **Xem tất cả** mở trang quản lý dự án.
+**Đổi dự án.** Thư viện hiển thị các dự án đang thiết kế theo lần sửa gần nhất, tìm theo tên hoặc thẻ và lọc theo kiểu hộp. Mỗi lần cuộn đến cuối tải tiếp 12 dự án. Viền cam đánh dấu dự án đang mở. Chấm đỏ lấy từ trường `hasFitcheckErrors` của `GET /projects`. Backend không tải báo cáo FitCheck của từng dự án trong danh sách. Một truy vấn phụ lọc trường `isValidForProduction` của báo cáo đã lưu ngay trong Postgres và chỉ trả mã các dự án có lỗi. Thư viện có nút thử lại khi tải lỗi. **Dự án mới** mở trang chọn mẫu, **Xem tất cả** mở trang quản lý dự án.
 
-Khi chọn dự án khác, Studio chờ `useProjectSync.flush()` hoàn tất rồi mới điều hướng. Nếu lưu lỗi, Studio giữ dự án trên màn hình để người dùng thử lại. Người đang xem dự án trong thùng rác vẫn mở được dự án khác. Với bản demo, khách thấy thẻ **Bản nháp** và liên kết đăng nhập quay lại demo. Người đã đăng nhập thấy cả bản nháp lẫn thư viện. Studio lưu bản demo đang sửa thành dự án khi chuyển sang dự án khác.
+Khi chọn dự án khác, Studio chờ `useProjectSync.flush()` hoàn tất rồi mới điều hướng. Nếu lưu lỗi, Studio giữ dự án trên màn hình để người dùng thử lại. Người đang xem dự án trong thùng rác vẫn mở được dự án khác. Với bản demo, khách thấy thẻ **Bản nháp** và liên kết đăng nhập quay lại demo. Người đã đăng nhập thấy cả bản nháp lẫn thư viện. Studio lưu bản demo đang sửa thành dự án khi chuyển sang dự án khác. Khi API không trả lời, ứng dụng dùng tài khoản demo thay thế. Lúc đó thư viện hiện các dự án mẫu như dashboard, và bản demo đang sửa chỉ được lưu trong trình duyệt trước khi chuyển. Tài khoản thật không bao giờ thấy dự án mẫu: lỗi tải danh sách hiện nút **Thử lại**.
 
 **Kích thước.** Bảng đặt in xét lỗi kích thước cùng với báo cáo FitCheck. Nếu quy cách chưa hợp lệ, **Sửa kích thước** đưa người dùng về đúng bảng nhập. Ví dụ, hộp gối rộng 80 mm và cao 60 mm vượt giới hạn chiều cao bằng nửa chiều rộng. Trong ca đã thử, nút tự sửa đưa chiều cao về 40 mm.
 
@@ -53,7 +53,7 @@ Khi chọn dự án khác, Studio chờ `useProjectSync.flush()` hoàn tất r�
 
 Điểm vào để đọc mã là [StudioWorkspace](../fe/src/views/editor/studio/StudioWorkspace.tsx). Các bảng công cụ nằm trong [thư mục components của Studio](../fe/src/features/studio/components).
 
-Đợt bổ sung dùng [StudioProjectLibrary](../fe/src/features/studio/components/StudioProjectLibrary.tsx) cho cả cột desktop, ngăn trượt và bảng trên điện thoại. Thư viện dùng chung truy vấn và ô xem trước với dashboard. [Bộ ánh xạ dự án](../be/src/projects/infrastructure/project.select.ts) trả cờ lỗi FitCheck trong danh sách và báo cáo đầy đủ khi mở chi tiết. Camera tính lại khoảng cách theo kích thước canvas khi đóng hoặc mở cột.
+Đợt bổ sung dùng [StudioProjectLibrary](../fe/src/features/studio/components/StudioProjectLibrary.tsx) cho cả cột desktop, ngăn trượt và bảng trên điện thoại. Thư viện dùng chung truy vấn và ô xem trước với dashboard. [Repository dự án](../be/src/projects/infrastructure/prisma-project.repository.ts) lấy cờ lỗi FitCheck cho danh sách. [Bộ ánh xạ dự án](../be/src/projects/infrastructure/project.select.ts) trả báo cáo đầy đủ khi mở chi tiết. Camera tính lại khoảng cách theo kích thước canvas khi đóng hoặc mở cột.
 
 ## 6. Kết quả xác minh
 
@@ -67,6 +67,8 @@ Khi chọn dự án khác, Studio chờ `useProjectSync.flush()` hoàn tất r�
 Các thao tác tài khoản, dự án và quyền xuất ở trên được kiểm tra với chế độ demo cục bộ. Thanh toán thật và chuỗi xử lý xuất file qua backend/worker production chưa được kiểm thử trong đợt này. Kịch bản E2E toàn hệ thống đã được cập nhật bộ chọn giao diện và kiểm tra cú pháp. Kết quả ở bảng là các ca đã chạy trực tiếp.
 
 Trong đợt thư viện, Chrome đã kiểm tra các chiều rộng 320, 375, 768, 1024, 1280, 1440 và 1536 px. Ca thử với API mô phỏng có 26 dự án đang thiết kế và một dự án trong thùng rác. Đã kiểm tra tải ba trang, tìm kiếm và lọc, chuyển qua cả bốn công cụ, đóng thư viện bằng phím Escape, ghi nhớ trạng thái thu gọn, lưu bản nháp trước khi chuyển, giữ dự án khi lưu lỗi và chuyển thành công sau khi thử lại. Cũng đã thử danh sách rỗng, lỗi tải danh sách và đường dẫn đăng nhập của khách. Build frontend, build backend, kiểm tra token và 1.180 unit test backend đều đạt.
+
+Đợt sửa sau review ngày 20/11/2026 kiểm tra với backend và Postgres cục bộ. Kịch bản E2E bước 1–4 đạt ở 375 × 812 và 1440 × 900, gồm dự án vừa lưu được đánh dấu đang mở trong ngăn trượt và trong cột thư viện. Truy vấn cờ lỗi FitCheck được thử trên Postgres với một báo cáo lỗi tạm trong transaction rồi rollback. Khi tắt API, thư viện hiện 8 dự án mẫu, và chuyển từ bản demo đã sửa sang dự án mẫu không gọi API tạo dự án. Chưa chạy lại build production frontend trong đợt này. Chuyển giữa hai dự án đã lưu với backend thật cũng chưa được kiểm tra.
 
 Để chạy lại các kiểm tra nhanh, dùng các lệnh sau tại thư mục gốc của repository.
 

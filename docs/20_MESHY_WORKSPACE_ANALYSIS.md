@@ -1,6 +1,6 @@
 # 20 — Phân tích bố cục workspace Meshy và đối chiếu với Studio WrapFit
 
-Ngày phân tích **20/11/2026** · Nhánh **`codex/meshy-workspace`** · Nối tiếp [19 — Hợp nhất workspace thiết kế](19_STUDIO_WORKSPACE.md).
+Ngày phân tích **20/11/2026** · Nhánh **`codex/meshy-workspace`** · Nối tiếp [19 — Hợp nhất workspace thiết kế](19_STUDIO_WORKSPACE.md) · Kế hoạch mục 5 đã triển khai trong **`2fc1cb1`**, kết quả ở mục 5.7.
 
 ## 1. Phạm vi và cách làm
 
@@ -69,7 +69,7 @@ Phần thông số cuộn trong bảng, chân bảng luôn hiện.
 
 ## 3. Đối chiếu với Studio WrapFit
 
-Studio hiện tại đo tại `/editor/demo` trên dev server cổng 3107, viewport 1547 × 784 CSS px.
+Bảng dưới mô tả Studio **trước** đợt đổi bố cục (commit `2ad2b9c`), đo tại `/editor/demo` trên dev server cổng 3107, viewport 1547 × 784 CSS px. Bố cục sau khi đổi ở mục 5.
 
 | Hạng mục | Meshy | WrapFit hiện tại | Khoảng cách |
 | --- | --- | --- | --- |
@@ -92,7 +92,9 @@ Studio hiện tại đo tại `/editor/demo` trên dev server cổng 3107, viewp
 3. **Thanh thao tác nổi giữa đáy canvas.** Gom các thao tác hiện ở dòng dưới thành hai nhóm pill. Nhóm xem: góc nhìn, Mở nắp, Gấp thử, zoom. Nhóm chuyển công cụ: Quà tặng, Đặt in. Mỗi nút có tooltip gồm tên và một câu mô tả. Việc này đảo nguyên tắc "không nổi trên model" của commit `85c541f`, nên cần đồng ý trước.
 4. **Gọn header và rail.** Thu rail về khoảng 68–72 px. Chuyển trạng thái lưu, tài khoản và trợ lý Gói xuống đáy rail. Header còn một dòng mỏng cho tên dự án và Lưu, hoặc bỏ hẳn để canvas thêm 64 px.
 5. **Bảng thông số theo mẫu nhãn và điều khiển.** Nhãn 12 px kèm icon (i), điều khiển phân đoạn và công tắc gọn 28 px, tuỳ chọn trả phí đánh dấu thống nhất. Áp cho Kích thước, Giấy & gia công và Tuỳ chọn hộp.
-6. **Thư viện bên phải (tuỳ chọn, làm sau).** Cột hiện dự án gần đây, mốc phiên bản và ảnh đã tải lên, có tìm kiếm và lọc. Cần API danh sách và thumbnail thật, nên tách thành đợt riêng.
+6. **Thư viện bên phải.** Cột hiện dự án gần đây, có tìm kiếm và lọc. Mốc phiên bản và ảnh đã tải lên chưa đưa vào cột.
+
+**Trạng thái.** Đã làm mục 6 theo kế hoạch ở mục 5, và phần thu rail về 72 px của mục 4. Các mục 1, 2, 3, 5 và phần header của mục 4 chưa làm.
 
 ### Quyết định
 
@@ -104,12 +106,13 @@ Studio hiện tại đo tại `/editor/demo` trên dev server cổng 3107, viewp
 
 ### 5.1 Khả thi
 
-Làm được mà không cần sửa backend:
+Gần như toàn bộ việc nằm ở frontend. Backend chỉ thêm một trường cho chấm đỏ FitCheck, xem gạch đầu dòng cuối.
 
 - `GET /projects` đã hỗ trợ đủ cho cột dự án. Có tìm theo tên hoặc tag (`q`), sắp xếp theo `updatedAt`, lọc theo kiểu hộp, thư mục và trạng thái, và phân trang. Hook `useProjectList` trong `fe/src/features/dashboard/useProjects.ts` đã gọi sẵn API này.
 - Ảnh xem trước không cần file ảnh. `ProjectTile` trong `fe/src/features/dashboard/components/ProjectCard.tsx` vẽ khuôn hộp từ kiểu hộp, kích thước và loại giấy của `ProjectSummary`. Dự án chưa có `thumbnailUrl` vẫn có hình.
 - Đổi dự án không làm mất thay đổi. `useProjectSync` tự lưu sau một khoảng chờ ngắn, gửi nốt thay đổi còn chờ khi rời editor, và cảnh báo `beforeunload` khi còn thay đổi chưa lưu.
 - Bảng thông số dùng chung `WorkspaceInspector` ở cả bốn công cụ: Hộp & giấy, Thiết kế (`StudioWorkspace.tsx`), Quà tặng (`Step5Model3DWithEnvironments.tsx`), Đặt in (`Step6ReviewExport.tsx`). Chỉ cần sửa một chỗ trong `studioUi.tsx` để chuyển bảng sang trái.
+- `ProjectSummary` chỉ có `fitcheckScore`, chưa đủ để biết dự án có lỗi. Điểm bằng 100 trừ 30 cho mỗi lỗi và 10 cho mỗi cảnh báo, nên 70 điểm có thể là một lỗi hoặc ba cảnh báo. Danh sách vì vậy cần thêm trường `hasFitcheckErrors`.
 
 ### 5.2 Bố cục mới trên máy tính
 
@@ -120,7 +123,7 @@ Thứ tự từ trái sang phải: rail công cụ, bảng thông số, canvas, 
 | Rail | 96 px | 72 px, icon và nhãn nhỏ như Meshy |
 | Bảng thông số | Bên phải, 360 px (392 px từ `xl`) | Bên trái canvas, cùng độ rộng |
 | Canvas | Phần còn lại | Phần còn lại |
-| Dự án của tôi | Không có | Bên phải, 300 px từ `xl` (1280 px), 340 px từ `2xl` (1536 px). Có nút thu gọn. |
+| Dự án của tôi | Không có | Bên phải, 300 px từ `xl` (1280 px), 340 px từ `2xl` (1536 px). Có nút thu gọn. Khi thu gọn còn một dải 44 px có nút mở lại. |
 
 Canvas còn lại theo chiều rộng màn hình: khoảng 516 px ở 1280 px, 676 px ở 1440 px, 732 px ở 1536 px, 1116 px ở 1920 px. Từ 1024 đến 1279 px, cột dự án luôn hiện sẽ làm canvas còn dưới 300 px. Ở khoảng này cột dự án mặc định thu gọn và mở thành ngăn trượt phủ lên canvas.
 
@@ -143,6 +146,7 @@ Canvas còn lại theo chiều rộng màn hình: khoảng 516 px ở 1280 px, 6
 | Đã đăng nhập ở `/editor/demo` | Danh sách dự án như bình thường. Bản nháp demo nằm trên cùng, gắn nhãn "Bản nháp" |
 | Dự án đang mở nằm trong thùng rác | Danh sách vẫn hiện để người dùng chuyển sang dự án khác |
 | Lỗi tải danh sách | Thông báo lỗi và nút **Thử lại** |
+| API không trả lời, ứng dụng dùng tài khoản demo thay thế | Các dự án mẫu như trên dashboard. Khi chuyển dự án, bản demo đang sửa chỉ được lưu trong trình duyệt |
 
 ### 5.5 Điện thoại và máy tính bảng dưới 1024 px
 
@@ -154,9 +158,25 @@ Bố cục hiện tại được giữ: canvas ở trên, bảng thông số ở
 | --- | --- | --- |
 | S1 | Đặt `WorkspaceInspector` sang trái canvas từ `lg` (đổi thứ tự và viền). Thu rail về 72 px. Cập nhật màn hình chờ `StudioSkeleton` và vị trí các bước hướng dẫn trong `studioTour.ts`. | `studioUi.tsx`, `WorkspaceNav.tsx`, `StudioSkeleton.tsx`, `studioTour.ts` |
 | S2 | Tạo component `StudioProjectLibrary`: tìm kiếm, lọc, lưới 2 cột, tải thêm, đủ các trạng thái ở mục 5.4. Dùng lại `useProjectList` và `ProjectTile`. | `fe/src/features/studio/components/StudioProjectLibrary.tsx` (mới) |
-| S3 | Gắn cột vào `StudioWorkspace` cho cả bốn công cụ. Thêm nút thu gọn (nhớ lựa chọn trong `localStorage`) và ngăn trượt cho khoảng 1024–1279 px. Đổi dự án qua `flush()` của `useProjectSync`. | `StudioWorkspace.tsx`, `useProjectSync.ts` |
+| S3 | Gắn cột vào `StudioWorkspace` cho cả bốn công cụ. Thêm nút thu gọn (nhớ lựa chọn trong `localStorage`) và ngăn trượt cho khoảng 1024–1279 px. Đổi dự án qua `flush()` có sẵn của `useProjectSync`. | `StudioWorkspace.tsx` |
 | S4 | Thêm mục **Dự án** vào rail đáy trên điện thoại, mở sheet danh sách. | `WorkspaceNav.tsx`, `StudioWorkspace.tsx` |
 | S5 | Kiểm tra theo mục 6. Cập nhật kịch bản E2E nếu bộ chọn đổi. Cập nhật doc 19. | `fe/scripts/e2e-scenario.mjs`, `docs/19_STUDIO_WORKSPACE.md` |
+
+### 5.7 Kết quả thực hiện
+
+S1–S5 được triển khai trong commit `2fc1cb1`. Ngoài các tệp ở bảng trên, đợt này còn sửa:
+
+- **Backend**: `GET /projects` trả thêm `hasFitcheckErrors` (`project.types.ts`, `project.select.ts`, `prisma-project.repository.ts`).
+- **Thư viện dùng chung**: `ProjectTile` có dạng thu nhỏ (`compact`). `useProjectList` nhận thêm `enabled` và `accountOnly`; khi bật `accountOnly`, `listProjects` không thay danh sách lỗi bằng dự án mẫu. `ModalLayer` có thêm kiểu `sheet-bottom` cho điện thoại.
+- **Phiên đăng nhập**: `useMe` trả `null` khi API báo 401, không dùng tài khoản demo thay thế nữa.
+- **Khung xem 3D**: `InteractiveFoldingBox3D` giữ mức zoom khi cột dự án đóng hoặc mở.
+
+Sau review cùng ngày có hai sửa đổi:
+
+- Khi API không trả lời, cột dự án hiện dự án mẫu thay vì báo lỗi, như ở mục 5.4.
+- Danh sách không tải báo cáo FitCheck đầy đủ của từng dự án. Một truy vấn phụ lọc `isValidForProduction` ngay trong Postgres và chỉ trả mã các dự án có lỗi.
+
+Kết quả kiểm tra ở [doc 19, mục 6](19_STUDIO_WORKSPACE.md#6-kết-quả-xác-minh). Còn hai việc chưa kiểm tra: build production frontend sau các sửa đổi, và chuyển giữa hai dự án đã lưu với backend thật.
 
 ## 6. Kiểm chứng sau khi sửa
 
