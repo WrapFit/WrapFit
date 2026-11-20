@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { OrderStatus, Prisma, Role } from '@prisma/client';
+import { OrderStatus, Prisma, PrintShop, PrintShopStatus, Role } from '@prisma/client';
 import type { PrismaService } from '../shared/prisma';
 import { PrintShopsService } from '../print-shops';
 import { canTransition, roleMaySet } from './order-status';
@@ -11,7 +11,54 @@ const PROJECT = {
   templateId: 'tuck-top',
   dimensions: { length: 80, width: 80, height: 95, paperThickness: 0.4 },
   version: 3,
+  formulaVersion: 3,
 };
+
+const NOW = new Date('2026-10-30T03:00:00Z');
+
+function shopRow(over: Partial<PrintShop> & Pick<PrintShop, 'id' | 'name' | 'provinceCode' | 'latitude' | 'longitude'>): PrintShop {
+  return {
+    legalName: null,
+    taxCode: null,
+    city: over.name,
+    address: 'x',
+    sheetLabel: 'B1 · 1020 × 720 mm',
+    maxSheetWidthMm: 1020,
+    maxSheetHeightMm: 720,
+    services: [],
+    methods: ['digital'],
+    papers: ['ivory'],
+    finishes: [],
+    windowPatching: false,
+    minQuantity: 1,
+    maxQuantity: 20000,
+    leadTimeLabel: '3–5 ngày',
+    leadTimeDays: 3,
+    sampleLeadTimeDays: 2,
+    dailyCapacity: 10,
+    serviceProvinces: [],
+    status: PrintShopStatus.ACTIVE,
+    pausedUntil: null,
+    probationUntil: null,
+    rating: 4.8,
+    completedOrders: 500,
+    contactEmail: 'shop@example.vn',
+    phone: '028 0000 0000',
+    zalo: null,
+    platformFeeBps: 1500,
+    createdAt: NOW,
+    updatedAt: NOW,
+    ...over,
+  };
+}
+
+/** Like the partners the migration seeds (20261120000100_print_partners); Hà Thành on a 10 % contract. */
+const SHOPS: PrintShop[] = [
+  shopRow({ id: 'ps-sg-01', name: 'In Bao Bì Sài Gòn Xanh', provinceCode: 'ho-chi-minh', latitude: 10.807, longitude: 106.618, rating: 4.9, completedOrders: 1420, sampleLeadTimeDays: 1 }),
+  shopRow({ id: 'ps-hn-02', name: 'Hộp Giấy Hà Thành', provinceCode: 'ha-noi', latitude: 21.0, longitude: 105.873, platformFeeBps: 1000 }),
+  shopRow({ id: 'ps-dn-03', name: 'Kraft Đà Nẵng CNC', provinceCode: 'da-nang', latitude: 16.073, longitude: 108.15, maxSheetWidthMm: 720, maxSheetHeightMm: 520, maxQuantity: 1000, rating: 4.7, completedOrders: 560 }),
+  shopRow({ id: 'ps-ct-04', name: 'Xưởng In Mộc Cần Thơ', provinceCode: 'can-tho', latitude: 10.09, longitude: 105.72, status: PrintShopStatus.REVIEW }),
+];
 
 /** The row Prisma would return for `order.create({ data, include: { items } })`. */
 function rowFrom(data: Prisma.OrderCreateInput) {
@@ -21,7 +68,14 @@ function rowFrom(data: Prisma.OrderCreateInput) {
     id: '0192f0a0-0000-7000-8000-000000000001',
     orderCode: data.orderCode,
     userId: (data.user.connect as { id: string }).id,
-    printShopId: data.printShopId,
+    printShopId: (data.printShop.connect as { id: string }).id,
+    printShop: SHOPS.find((s) => s.id === (data.printShop.connect as { id: string }).id) ?? null,
+    recipientProvince: data.recipientProvince ?? null,
+    platformFeeBps: data.platformFeeBps ?? 1500,
+    platformFeeVnd: data.platformFeeVnd ?? 0,
+    shopPayableVnd: data.shopPayableVnd ?? 0,
+    discountVnd: 0,
+    promoCode: null,
     recipientName: data.recipientName,
     recipientPhone: data.recipientPhone,
     shippingAddress: data.shippingAddress,
@@ -56,7 +110,9 @@ function rowFrom(data: Prisma.OrderCreateInput) {
 describe('OrdersService', () => {
   let prisma: {
     packagingProject: { findMany: jest.Mock };
-    order: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock; findUniqueOrThrow: jest.Mock };
+    order: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock; findUniqueOrThrow: jest.Mock; groupBy: jest.Mock };
+    printShop: { findMany: jest.Mock; findUnique: jest.Mock };
+    ledgerEntry: { createMany: jest.Mock };
     orderStatusHistory: { create: jest.Mock };
     printShopMember: { findUnique: jest.Mock };
     $transaction: jest.Mock;
@@ -76,13 +132,21 @@ describe('OrdersService', () => {
         findFirst: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         findUniqueOrThrow: jest.fn(),
+        groupBy: jest.fn().mockResolvedValue([]),
       },
+      printShop: {
+        findMany: jest.fn(async ({ where }: { where?: { status?: { not?: PrintShopStatus } } } = {}) =>
+          SHOPS.filter((s) => !where?.status?.not || s.status !== where.status.not),
+        ),
+        findUnique: jest.fn(async ({ where }: { where: { id: string } }) => SHOPS.find((s) => s.id === where.id) ?? null),
+      },
+      ledgerEntry: { createMany: jest.fn() },
       orderStatusHistory: { create: jest.fn() },
       printShopMember: { findUnique: jest.fn().mockResolvedValue({ printShopId: 'ps-sg-01' }) },
       $transaction: jest.fn(),
     };
     prisma.$transaction.mockImplementation((run: (tx: typeof prisma) => unknown) => run(prisma));
-    service = new OrdersService(prisma as unknown as PrismaService, new PrintShopsService());
+    service = new OrdersService(prisma as unknown as PrismaService, new PrintShopsService(prisma as unknown as PrismaService));
   });
 
   describe('createSampleOrder', () => {
@@ -169,6 +233,53 @@ describe('OrdersService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('sends an order without a chosen shop to the recommended one near the recipient', async () => {
+      const order = await service.createSampleOrder('user-1', { ...base, phone: '0912345678', recipientProvince: 'ha-noi' });
+      expect(order.printShopId).toBe('ps-hn-02');
+      expect(order.recipientProvince).toBe('ha-noi');
+    });
+
+    it("fixes the platform fee at the shop's contract rate when ordered (docs/19 BR-A3)", async () => {
+      await service.createSampleOrder('user-1', { ...base, phone: '0912345678', quantity: 2 });
+      // Sài Gòn Xanh, 15 % of 74.000 = 11.100
+      expect(prisma.order.create.mock.calls[0][0].data).toMatchObject({
+        totalVnd: 74_000,
+        platformFeeBps: 1500,
+        platformFeeVnd: 11_100,
+        shopPayableVnd: 62_900,
+      });
+
+      await service.createSampleOrder('user-1', { ...base, phone: '0912345678', printShopId: 'ps-hn-02' });
+      // Hà Thành, 10 % of 49.000 = 4.900
+      expect(prisma.order.create.mock.calls[1][0].data).toMatchObject({ platformFeeBps: 1000, platformFeeVnd: 4_900, shopPayableVnd: 44_100 });
+    });
+
+    it('keeps the platform fee out of the customer view', async () => {
+      const order = await service.createSampleOrder('user-1', { ...base, phone: '0912345678' });
+      expect(order).not.toHaveProperty('platformFeeVnd');
+      expect(order).not.toHaveProperty('shopPayableVnd');
+    });
+
+    it('hides the shop phone until the shop has taken the order (docs/19 G.4)', async () => {
+      const order = await service.createSampleOrder('user-1', { ...base, phone: '0912345678' });
+      expect(order.partnerShop.contactPhone).toBe('');
+    });
+
+    it('rejects a shop whose sheet is too small for the dieline', async () => {
+      prisma.packagingProject.findMany.mockResolvedValue([{ ...PROJECT, dimensions: { length: 300, width: 200, height: 150, paperThickness: 0.4 } }]);
+      await expect(
+        service.createSampleOrder('user-1', { ...base, phone: '0912345678', printShopId: 'ps-dn-03' }),
+      ).rejects.toMatchObject({ response: { code: 'PRINT_SHOP_UNAVAILABLE', reasons: ['sheet_size'] } });
+    });
+
+    it('answers NO_PRINT_SHOP with the reasons when no shop can print the order', async () => {
+      prisma.printShop.findMany.mockResolvedValueOnce(SHOPS.map((s) => ({ ...s, status: PrintShopStatus.PAUSED })));
+      await expect(service.createSampleOrder('user-1', { ...base, phone: '0912345678' })).rejects.toMatchObject({
+        response: { code: 'NO_PRINT_SHOP', excluded: expect.arrayContaining([expect.objectContaining({ id: 'ps-sg-01', reasons: ['not_active'] })]) },
+      });
+      expect(prisma.order.create).not.toHaveBeenCalled();
+    });
+
     it('draws a new order code when the first one is taken', async () => {
       const taken = new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
         code: 'P2002',
@@ -219,7 +330,7 @@ describe('OrdersService', () => {
         ...rowFrom({
           orderCode: 'WF-2026-0001',
           user: { connect: { id: 'user-1' } },
-          printShopId: 'ps-sg-01',
+          printShop: { connect: { id: 'ps-sg-01' } },
           recipientName: 'Chị Linh',
           recipientPhone: '0912345678',
           shippingAddress: 'x',
@@ -266,6 +377,47 @@ describe('OrdersService', () => {
     it("hides another shop's order from a print shop account", async () => {
       prisma.order.findFirst.mockResolvedValueOnce(null);
       await expect(service.changeStatus('order-1', shopStaff, { status: OrderStatus.SHIPPED })).rejects.toThrow(NotFoundException);
+    });
+
+    it('posts the payment to the ledger when the order is paid, with a key that stops a second post', async () => {
+      prisma.order.findUniqueOrThrow.mockImplementationOnce(async () => ({
+        ...(await prisma.order.findUniqueOrThrow.getMockImplementation()!()),
+        status: OrderStatus.PAID,
+        paymentId: 'pay-1',
+        platformFeeVnd: 7_400,
+        shopPayableVnd: 41_600,
+      }));
+      await service.markPaid('order-1', 'pay-1', prisma as unknown as Prisma.TransactionClient);
+      expect(prisma.ledgerEntry.createMany).toHaveBeenCalledWith({
+        data: [expect.objectContaining({ key: expect.stringMatching(/:CUSTOMER_PAYMENT$/), type: 'CUSTOMER_PAYMENT', amountVnd: 49_000, paymentId: 'pay-1', printShopId: 'ps-sg-01' })],
+        skipDuplicates: true,
+      });
+    });
+
+    it('books the platform fee and the shop share on delivery', async () => {
+      prisma.order.findFirst.mockResolvedValueOnce({ status: OrderStatus.SHIPPED });
+      prisma.order.findUniqueOrThrow.mockImplementationOnce(async () => ({
+        ...(await prisma.order.findUniqueOrThrow.getMockImplementation()!()),
+        status: OrderStatus.DELIVERED,
+        platformFeeVnd: 7_400,
+        shopPayableVnd: 41_600,
+      }));
+      const order = await service.changeStatus('order-1', shopStaff, { status: OrderStatus.DELIVERED });
+      expect(prisma.ledgerEntry.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({ type: 'PLATFORM_FEE', amountVnd: 7_400 }),
+          expect.objectContaining({ type: 'SHOP_PAYABLE', amountVnd: 41_600 }),
+        ],
+        skipDuplicates: true,
+      });
+      // Staff see the split; the shop's phone is shown once the shop works on the order.
+      expect(order).toMatchObject({ platformFeeVnd: 7_400, shopPayableVnd: 41_600 });
+    });
+
+    it('posts nothing to the ledger for a step without money', async () => {
+      prisma.order.findFirst.mockResolvedValueOnce({ status: OrderStatus.PAID });
+      await service.changeStatus('order-1', shopStaff, { status: OrderStatus.IN_PRODUCTION });
+      expect(prisma.ledgerEntry.createMany).not.toHaveBeenCalled();
     });
 
     it('keeps payment and cancelling away from print shop accounts', async () => {

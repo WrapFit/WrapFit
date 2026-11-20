@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { PrintShopsController } from './print-shops.controller';
+import { AdminPrintShopsController, PrintShopsController } from './print-shops.controller';
 import { PrintShopsService } from './print-shops.service';
 
 @Module({
-  controllers: [PrintShopsController],
+  controllers: [PrintShopsController, AdminPrintShopsController],
   providers: [PrintShopsService],
   exports: [PrintShopsService],
 })
