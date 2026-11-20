@@ -1392,9 +1392,9 @@
     "semantic_hash": ""
   },
   "be/src/projects/domain/dieline-geometry.spec.ts": {
-    "mtime": 1795198145.6557968,
-    "seen": 1795198478.8618724,
-    "ast_hash": "0b8f9c2ca3ee7a63fddff8e89b7db6bc",
+    "mtime": 1795200424.2213128,
+    "seen": 1795200818.3449728,
+    "ast_hash": "44f85b1c8ab011febc09bb0231f6e7e1",
     "semantic_hash": ""
   },
   "be/src/projects/domain/fitcheck.spec.ts": {
@@ -3966,9 +3966,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/canvas/DielineCanvas2D.tsx": {
-    "mtime": 1795191225.104792,
-    "seen": 1795191319.4643123,
-    "ast_hash": "f8ae7813799de60c69d098ef4aed372f",
+    "mtime": 1795199858.4453645,
+    "seen": 1795200818.4029946,
+    "ast_hash": "cda3bdc045a3277599ea811a1d2d26e2",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/canvas/boxText.ts": {
@@ -4086,9 +4086,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/boxModel.ts": {
-    "mtime": 1795198204.8578546,
-    "seen": 1795198478.966018,
-    "ast_hash": "7ffc62f1ce63ba23f9c922d058e53e93",
+    "mtime": 1795200466.3414364,
+    "seen": 1795200818.4060724,
+    "ast_hash": "01d9fd34b2bc369e10c32a4b91d0e222",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/guides.ts": {
@@ -4812,9 +4812,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/StudioWorkspace.tsx": {
-    "mtime": 1795191144.2906747,
-    "seen": 1795191319.485187,
-    "ast_hash": "ac3baff6b0a3790f1736f3b5294b18f7",
+    "mtime": 1795199880.4429927,
+    "seen": 1795200818.4229429,
+    "ast_hash": "feee565a9544e4381db8cccb332d4f3d",
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/index.tsx": {
@@ -5142,9 +5142,9 @@
     "semantic_hash": ""
   },
   "shared/src/parametric/sleeve-drawer.ts": {
-    "mtime": 1791786743.788999,
-    "seen": 1794852246.2652166,
-    "ast_hash": "84125aa4208d4cd9c8a3429660b17b9e",
+    "mtime": 1795200339.2651072,
+    "seen": 1795200818.4307213,
+    "ast_hash": "4a302fd7d9ac8f9d6788fe6e3ec6ba75",
     "semantic_hash": ""
   },
   "shared/src/parametric/sleeve-drawer.v1.ts": {
@@ -5160,15 +5160,15 @@
     "semantic_hash": ""
   },
   "shared/src/parametric/tray.ts": {
-    "mtime": 1791786743.7817829,
-    "seen": 1794852246.2652192,
-    "ast_hash": "ef015fe901b784691f2837a8ceabd578",
+    "mtime": 1795200328.4418323,
+    "seen": 1795200818.4309108,
+    "ast_hash": "0412fbed44be6abf89a00ead1d96a6dd",
     "semantic_hash": ""
   },
   "shared/src/parametric/tuck-top.ts": {
-    "mtime": 1795198131.0274677,
-    "seen": 1795198479.010679,
-    "ast_hash": "228174810bd7a0e060edf639b8c03b54",
+    "mtime": 1795200327.4468625,
+    "seen": 1795200818.430912,
+    "ast_hash": "a913f061a76c7a23b9bbd73390d212f6",
     "semantic_hash": ""
   },
   "shared/src/parametric/tuck-top.v1.ts": {
@@ -5220,9 +5220,9 @@
     "semantic_hash": ""
   },
   "shared/src/types/dieline.ts": {
-    "mtime": 1795198111.411663,
-    "seen": 1795198479.0135558,
-    "ast_hash": "33e214b797e539540a489cba5fcbc273",
+    "mtime": 1795200314.8844671,
+    "seen": 1795200818.4374404,
+    "ast_hash": "3507ef548a6c1feea80163e2cb03b48e",
     "semantic_hash": ""
   },
   "shared/src/types/fitcheck.ts": {
@@ -7356,9 +7356,9 @@
     "semantic_hash": ""
   },
   "shared/src/parametric/gable.ts": {
-    "mtime": 1794715430.2900524,
-    "seen": 1794852246.265206,
-    "ast_hash": "989dba8e22a66f9c27db6a5fb2128e2d",
+    "mtime": 1795200358.7682817,
+    "seen": 1795200818.4298375,
+    "ast_hash": "23797118a4ff8353b7a52dcd2ac64d95",
     "semantic_hash": ""
   },
   "shared/src/parametric/insert.ts": {
@@ -7368,9 +7368,9 @@
     "semantic_hash": ""
   },
   "shared/src/parametric/mailer.ts": {
-    "mtime": 1794715430.2910488,
-    "seen": 1794852246.2652097,
-    "ast_hash": "0d4716e5137f039e2b89f74c3eda9c7b",
+    "mtime": 1795200368.272456,
+    "seen": 1795200818.4301498,
+    "ast_hash": "1dfb3c910b52f02caa982240a0c41078",
     "semantic_hash": ""
   },
   "shared/src/parametric/openings.ts": {
@@ -14838,9 +14838,9 @@
     "semantic_hash": ""
   },
   "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
-    "mtime": 1795198422.6353464,
-    "seen": 1795198479.030103,
-    "ast_hash": "e53b88fd7995421497b4902b3482e4ad",
+    "mtime": 1795200773.6372316,
+    "seen": 1795200818.451259,
+    "ast_hash": "f81649c5c944ac541047f60fbbfc0a27",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/Preview3DCard.tsx": {
@@ -14853,6 +14853,12 @@
     "mtime": 1795196840.3737729,
     "seen": 1795196951.0845983,
     "ast_hash": "88556c7d7cad25de3347dc4bebb5d90a",
+    "semantic_hash": ""
+  },
+  "shared/src/parametric/flaps.ts": {
+    "mtime": 1795200314.6324654,
+    "seen": 1795200818.429605,
+    "ast_hash": "47c75eade0d4d2286ae02e14b3873692",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {
