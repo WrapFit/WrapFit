@@ -75,6 +75,18 @@ export interface PanelFace {
 }
 
 /**
+ * A flap of the sheet that is not a face of the box (docs/21 S6): a tuck flap, a dust flap, the glue flap or a flap of a
+ * crash-lock bottom. Only the 3D model folds them. They are kept out of `panels`, so artwork, FitCheck and the print
+ * file ignore them; their cut and crease lines are in `segments` as before. `outline` is the flap on the sheet, inside
+ * `bounds`; `fold` hinges it on its parent panel exactly like a panel's.
+ */
+export interface FlapFace extends PanelFace {
+  kind: "tuck" | "dust" | "glue" | "lock";
+  fold: NonNullable<PanelFace["fold"]>;
+  outline: Point2D[];
+}
+
+/**
  * A hole cut inside a panel (docs-old/23 S17, S18): a display window (backed by a PET film), the hand hole of a handle,
  * the string hole of a hang tag or the hole a cup hangs in (cup carrier). A
  * rounded rectangle on the sheet; whatever is printed there is cut away.
@@ -100,6 +112,8 @@ export interface DielineGeometry {
     height: number; // Total flat paper sheet height
   };
   panels: PanelFace[];
+  /** Flaps the 3D model folds with the panels (docs/21 S6); formulas that do not list them leave the flaps out of 3D. */
+  flaps?: FlapFace[];
   segments: DielineSegment[];
   /**
    * Glue flaps and glue tabs (bounding rectangles on the sheet): their printed side is glued, so it must stay free of

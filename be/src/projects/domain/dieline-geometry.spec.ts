@@ -284,6 +284,58 @@ describe('formula version 3', () => {
     }
   });
 
+  it.each(
+    SIZES.flatMap((size) =>
+      (['tuck', 'lock'] as const).map((bottomType) => [size, bottomType] as const),
+    ),
+  )(
+    'tuck-top %p (%s bottom): its flaps sit off the panels and fold inside the closed box',
+    (size, bottomType) => {
+      const [geometry] = generateDielinePieces(
+        'tuck-top',
+        { ...box(size), bottomType },
+        3,
+      ).map((p) => p.geometry);
+      const flaps = geometry.flaps ?? [];
+      expect(flaps.length).toBeGreaterThanOrEqual(6);
+      const ids = new Set(geometry.panels.map((p) => p.id));
+      for (const flap of flaps) {
+        expect([flap.id, ids.has(flap.fold.parent)]).toEqual([flap.id, true]);
+        for (const panel of geometry.panels)
+          expect([flap.id, panel.id, overlaps(flap.bounds, panel.bounds)]).toEqual([
+            flap.id,
+            panel.id,
+            false,
+          ]);
+      }
+      // Closed: every flap point lies within the box the panels make (a flap lies along a wall, under a lid…).
+      const frame = boxFrameOf(geometry)!;
+      const folded = panelTransforms(
+        { ...geometry, panels: [...geometry.panels, ...flaps] },
+        1,
+      );
+      const closed = foldedSize(geometry)!;
+      const panelPoints = Object.values(foldedCorners(geometry, 1))
+        .flat()
+        .map((p) => transformPoint(frame, p));
+      const min = [0, 1, 2].map((i) => Math.min(...panelPoints.map((p) => p[i])));
+      const max = [0, 1, 2].map((i) => Math.max(...panelPoints.map((p) => p[i])));
+      for (const flap of flaps) {
+        for (const { x, y } of flap.outline) {
+          const p = transformPoint(
+            multiply(frame, folded[flap.id]),
+            [x, y, 0],
+          );
+          for (const i of [0, 1, 2]) {
+            expect(p[i]).toBeGreaterThanOrEqual(min[i] - 0.01);
+            expect(p[i]).toBeLessThanOrEqual(max[i] + 0.01);
+          }
+        }
+      }
+      expect(closed).toEqual(foldedSize({ ...geometry, flaps: undefined })!);
+    },
+  );
+
   it('keeps the panel ids of version 2, so canvas elements stay on their panels', () => {
     for (const structure of STRUCTURES) {
       const ids = (version: number) =>

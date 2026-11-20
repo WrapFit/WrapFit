@@ -750,11 +750,42 @@ function stagedProgress(structure: string, progress: number, open: number) {
       return clamp01(progress / 0.45);
     }
     if (structure !== "tuck-top") return progress;
-    if (panel.id === "panel_top_lid") return mix(clamp01((progress - 0.55) / 0.45), -0.32, open);
-    if (panel.id === "panel_bottom") return clamp01((progress - 0.45) / 0.45);
-    return clamp01(progress / 0.6);
+    // The order a packer closes it (docs/21 S6): glue flap and walls, bottom dust flaps, bottom and its tuck, top dust
+    // flaps, lid and its tuck. Each step starts before the last ends, so the slider never stalls. Open, the lid swings
+    // back and its tuck flap lies flat.
+    const stage = (from: number, to: number) => clamp01((progress - from) / (to - from));
+    switch (panel.id) {
+      case "flap_glue":
+        return stage(0, 0.3);
+      case "flap_dust_bottom_left":
+      case "flap_dust_bottom_right":
+      case "flap_lock_left":
+      case "flap_lock_right":
+        return stage(0.3, 0.45);
+      case "flap_lock_front":
+        return stage(0.38, 0.52);
+      case "panel_bottom":
+        return stage(0.42, 0.62);
+      case "flap_tuck_bottom":
+        return stage(0.5, 0.64);
+      case "flap_dust_top_left":
+      case "flap_dust_top_right":
+        return stage(0.6, 0.74);
+      case "panel_top_lid":
+        return mix(stage(0.7, 0.94), -0.32, open);
+      case "flap_tuck_top":
+        return mix(stage(0.8, 0.97), 0, open);
+      default:
+        return stage(0, 0.35);
+    }
   };
 }
+
+/**
+ * How far a folded flap sits inside the panel it lies against, in paper thicknesses (docs/21 S6): past that panel's
+ * inside face, so the two never fight for the same pixels.
+ */
+const FLAP_INSET = 1.3;
 
 const toMatrix = (m: Mat4) => new THREE.Matrix4().fromArray(m);
 
@@ -768,10 +799,17 @@ function foldedPiece(
   paperCore: THREE.Material,
   initialThickness: number,
   disposables: { dispose(): void }[],
-  initialElevation = 0
+  initialElevation = 0,
+  /** Plain paper of the flaps (docs/21 S6): they carry no artwork. */
+  flapPaper?: { outside: THREE.Material; inside: THREE.Material }
 ) {
   const group = new THREE.Group();
   const frame = boxFrameOf(geometry)!;
+  // Flaps fold with the panels when the formulas list them and the model has paper for them.
+  const flaps = flapPaper ? (geometry.flaps ?? []) : [];
+  const flapIds = new Set(flaps.map((flap) => flap.id));
+  const parts: PanelFace[] = [...geometry.panels, ...flaps];
+  const folding: DielineGeometry = { ...geometry, panels: parts };
   // Rotation only: the shift to the ground is recomputed for each fold state.
   const rotation: Mat4 = [...frame.slice(0, 12), 0, 0, 0, 1];
   const lastMatrices: Record<string, Mat4> = {};
@@ -779,18 +817,19 @@ function foldedPiece(
   let currentElevation = initialElevation;
   let lastProgressOf: ((panel: PanelFace) => number) | null = null;
 
-  const meshes = geometry.panels.map((panel) => {
+  const meshes = parts.map((panel) => {
+    const isFlap = flapIds.has(panel.id);
     const shape = panelGeometry(panel.bounds, panel.outline, geometry.openings?.filter((o) => o.panelId === panel.id));
     const isCarrierBase = panel.id === "carrier_base";
-    const isBasePanel = isCarrierBase || panel.id.endsWith("_base") || panel.id.endsWith("_bottom");
-    const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
-    if (isBasePanel) {
+    const isBasePanel = !isFlap && (isCarrierBase || panel.id.endsWith("_base") || panel.id.endsWith("_bottom"));
+    const printed = isFlap && flapPaper ? flapPaper.outside : makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
+    if (isBasePanel && printed instanceof THREE.MeshPhysicalMaterial) {
       printed.polygonOffset = false;
     }
     const front = new THREE.Mesh(shape, printed);
     // For cup-carrier base or open trays, the upper surface facing into the tray displays the paper inside texture/color,
     // ensuring the bottom is completely visible, solid, and seamless from both above and below without reference errors.
-    const backMaterial = insideOf(panel.id);
+    const backMaterial = isFlap && flapPaper ? flapPaper.inside : insideOf(panel.id);
     if (isBasePanel && "polygonOffset" in backMaterial) {
       (backMaterial as THREE.MeshStandardMaterial).polygonOffset = false;
     }
@@ -822,13 +861,14 @@ function foldedPiece(
       object.matrixAutoUpdate = false;
       group.add(object);
     }
-    disposables.push(shape, printed, outline);
-    return { panel, front, back, rim, edge };
+    // The flaps' paper is shared by all of them and disposed with the model.
+    disposables.push(shape, outline, ...(isFlap ? [] : [printed]));
+    return { panel, front, back, rim, edge, isFlap };
   });
 
   const update = (progressOf: (panel: PanelFace) => number) => {
     lastProgressOf = progressOf;
-    const transforms = panelTransforms(geometry, progressOf);
+    const transforms = panelTransforms(folding, progressOf);
     const placed = meshes.map(({ panel }) => multiply(rotation, transforms[panel.id]));
     const corners = meshes.flatMap(({ panel }, i) => {
       const { x, y, width, height } = panel.bounds;
@@ -849,10 +889,17 @@ function foldedPiece(
       0, 0, 1, 0,
       -(min[0] + max[0]) / 2, -min[1] + BOX_GROUND_CLEARANCE, -(min[2] + max[2]) / 2, 1
     ];
-    meshes.forEach(({ front, back, rim, edge, panel }, i) => {
+    meshes.forEach(({ front, back, rim, edge, panel, isFlap }, i) => {
       const mat = multiply(shift, placed[i]);
       lastMatrices[panel.id] = mat;
       const matrix = toMatrix(mat);
+      if (isFlap) {
+        // A folding flap slides inside the panel it comes to lie against (none while it is flat on the sheet).
+        const inset = clamp01(Math.abs(progressOf(panel))) * FLAP_INSET * currentVisualThickness;
+        matrix.elements[12] += matrix.elements[8] * inset;
+        matrix.elements[13] += matrix.elements[9] * inset;
+        matrix.elements[14] += matrix.elements[10] * inset;
+      }
 
       // Front face stays precisely at outer fold crease (z = 0)
       front.matrix.copy(matrix);
@@ -1240,6 +1287,26 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   });
   disposables.push(paperCore, ...(coreMap ? [coreMap] : []));
 
+  // Tuck, dust and glue flaps (docs/21 S6): bare paper on both sides, one material each for every flap of the box.
+  const flapOutsideMap = plainPaperTexture(options.theme, "outside", paper.outside);
+  const flapInsideMap = plainPaperTexture(options.theme, "inside", paper.inside);
+  const flapOutside = new THREE.MeshPhysicalMaterial({
+    ...finish,
+    color: flapOutsideMap ? "#FFFFFF" : paper.outside,
+    map: flapOutsideMap,
+    side: THREE.FrontSide,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+  });
+  const flapInside = inside.clone() as THREE.MeshStandardMaterial;
+  if (flapInsideMap) {
+    flapInside.color = new THREE.Color("#FFFFFF");
+    flapInside.emissiveIntensity = 0.15;
+    flapInside.map = flapInsideMap;
+  }
+  disposables.push(flapOutside, flapInside, ...[flapOutsideMap, flapInsideMap].filter((map): map is THREE.CanvasTexture => map !== null));
+
   const folded = foldable.map((piece) =>
     foldedPiece(
       piece.geometry,
@@ -1250,7 +1317,8 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
       paperCore,
       dimensions.paperThickness,
       disposables,
-      structure === "cup-carrier" ? carrierElevation : 0
+      structure === "cup-carrier" ? carrierElevation : 0,
+      { outside: flapOutside, inside: flapInside }
     )
   );
   folded.forEach((piece) => group.add(piece.group));
