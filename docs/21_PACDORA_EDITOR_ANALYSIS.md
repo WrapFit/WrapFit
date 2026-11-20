@@ -212,6 +212,22 @@ Giới hạn của S4:
 - UV định hình trên nền đậm khá khó thấy. Chưa so sánh với ảnh chụp hộp thật.
 - Hệ số tăng phản chiếu và hệ số nổi được chỉnh bằng mắt trên một hộp đỏ với giấy ivory, chưa thử trên giấy kraft hay giấy forest.
 
+**S5 xong ngày 21/11/2026 (chưa commit).** Mỗi loại giấy có hạt và lõi riêng, vẽ bằng canvas lúc chạy. Không dùng ảnh giấy của ai.
+
+- **Hạt giấy theo mm.** Mỗi mặt giấy (ngoài và trong) của sáu loại có một ô hạt 40 mm: sợi ngắn, đốm tái chế và mảng mây nhạt. Ô hạt neo theo tọa độ tấm phôi nên hai mặt kề nhau khớp nhau qua nếp gấp. Ví dụ: kraft có sợi nâu đậm nhạt; mặt sau xám của duplex và carton bồi có đốm như giấy tái chế; giấy tráng phủ gần như trơn; gold_foil mặt ngoài không có hạt.
+- **Mực thấm vào kraft.** Trên kraft, hạt được nhân chồng lên hình in ở mức 0,55, nên sợi giấy hiện xuyên qua màu in.
+- **Mặt trong không in.** Trước đây mặt trong dùng chung một màu trơn. Giờ mỗi tấm có vật liệu riêng với ô hạt lặp theo kích thước tấm.
+- **Vân sợi nổi đúng tỉ lệ.** Bản đồ sợi giấy chung trước đây lặp 4 lần trên mọi mặt, nên mặt dài có sợi bị kéo giãn. Giờ mỗi mặt lặp một lần cho mỗi 30 mm. Bản sao dùng chung ảnh nên GPU chỉ giữ một bản.
+- **Lõi giấy ở mép cắt.** Mép cắt có tọa độ UV và ảnh các lớp giấy theo độ dày, tính từ mặt in: duplex là lớp tráng trắng trên lõi xám; carton bồi là giấy bọc, greyboard rồi giấy lót; forest và gold_foil có lớp mặt màu trên lõi kem. Mép chỉ dày khoảng 1,3 mm trên màn hình, nên phải nhìn gần mới thấy.
+
+Mã chính: [paperLook](../fe/src/features/studio/components/three/paperLook.ts) và [boxModel](../fe/src/features/studio/components/three/boxModel.ts).
+
+Giới hạn của S5:
+
+- **Chưa có giấy sóng.** Bảng giá (`QuotePaper`) chỉ có ivory, kraft, duplex và rigid, nên chưa có mép giấy sóng E. Muốn thêm giấy sóng thì phải sửa cả báo giá, thông số vật liệu và mô hình 3D.
+- Hạt sinh ngẫu nhiên mỗi lần tải trang, nên hai lần mở hộp có hạt hơi khác nhau.
+- Chỉ so bằng mắt trên hộp đỏ phủ kín. Chưa thử hộp để trống nhiều giấy mộc.
+
 ## 7. Giới hạn của khảo sát
 
 - Mã Pacdora đã được rút gọn. Các kết luận về mô hình gập, chọn mặt và hoàn thiện in đọc từ tên thuộc tính và đoạn mã, chưa chạy riêng từng hàm. Đồ thị REA của `pacdora-3d` chỉ đầy đủ một phần vì chạm giới hạn phân tích bí danh.
