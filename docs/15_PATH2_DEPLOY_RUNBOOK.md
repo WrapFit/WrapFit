@@ -173,10 +173,12 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
      echo "Truy vấn thành công: $(wc -l < ~/orphan-pattern-ops.txt) khoản chờ hoàn"
    else
      echo "TRUY VẤN LỖI: dừng lại, sửa lỗi rồi chạy lại bước này" >&2
+     false
    fi
    ```
 
-   Lệnh chỉ tạo `~/orphan-pattern-ops.txt` khi `psql` chạy thành công. Thấy "TRUY VẤN LỖI", hoặc không có file này, thì
+   Lệnh chỉ tạo `~/orphan-pattern-ops.txt` khi `psql` chạy thành công. Khi lỗi, khối lệnh trả mã khác 0 (`false`, không
+   dùng `exit` để khỏi đóng phiên SSH), nên script tự động gọi khối này cũng dừng được. Thấy "TRUY VẤN LỖI", hoặc không có file này, thì
    **chưa** khởi động bản mới: đọc lỗi `psql` ngay phía trên, sửa (thường là sai tên container hoặc CSDL), rồi chạy lại
    bước 6a.
 
@@ -417,7 +419,7 @@ Giấy → Thiết kế → Quà & mở hộp → Đặt in**.
 |---|---|---|
 | 1 | Đăng nhập tài khoản demo | Vào `/dashboard`, thấy tên "Chị Linh (demo)" |
 | 2 | `/editor/new` (chuyển sang `/editor/demo`) → bước Kiểu hộp: hộp nắp gài → bước Kích thước: 80 × 80 × 95, quà 350 g → bước Giấy: Ivory 300 → bấm "Lưu dự án" trên thanh trên cùng | Bước Kích thước báo "Đáy khóa tự động (FEFCO 0215)". Sau khi lưu, địa chỉ đổi sang `/editor/<id>`. Chưa lưu thì bước Đặt in chỉ có nút "Lưu dự án để thanh toán" |
-| 3 | Bước Thiết kế: thiết kế mới bắt đầu với canvas trống, nên trước hết bấm "Tải lên" trên thanh công cụ bên trái (phím U) và chọn một file PNG logo chuẩn bị sẵn trên máy; logo hiện trên một mặt hộp. Kéo logo sát mép cắt, rồi dùng Auto-Fix (nút "Tự sửa lề nhanh" trong danh sách lỗi FitCheck) | Logo hiện trên canvas. FitCheck báo lỗi lề; sau Auto-Fix chỉ logo dời, FitCheck không còn lỗi |
+| 3 | Bước Thiết kế (canvas của thiết kế mới trống): bấm "Tải lên" trên thanh công cụ → trong bảng vừa mở, bấm "Tải ảnh hoặc logo lên" (phím U mở thẳng hộp chọn file) → chọn một file PNG logo chuẩn bị sẵn trên máy → kéo logo sát mép cắt → bấm "FitCheck" trên thanh công cụ → "1-Click: Tự Động Sửa Lỗi Nếp Gấp & Tràn Lề" | Logo hiện trên canvas. FitCheck báo lỗi lề; sau khi bấm nút sửa, chỉ logo dời, FitCheck không còn lỗi. Nút "Tự sửa lề nhanh" là nút tương tự ở bước Đặt in, không có ở bước này |
 | 4 | Bước Quà & mở hộp: gập hộp 0 → 100 %, xoay 360°. Bấm "Tạo lời chúc & mã QR", nhập tên người nhận và lời chúc, chọn hiệu ứng, bấm "Tạo mã QR". Nếu muốn mã QR có trên file in, bấm thêm "Đặt mã lên hộp" trong cùng hộp thoại, trước khi sang bước Đặt in | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D. Mã QR hiện trong hộp thoại và quét được (kiểm ở bước 9). Chỉ sau "Đặt mã lên hộp" thì nút mới đổi thành "Sửa lời chúc & mã QR" và bước này ghi "Đã in mã QR trên mặt đáy hộp" |
 | 5 | Bước Đặt in, trước khi thanh toán | Thẻ file in ghi "mở sau khi bạn thanh toán đơn in ở giỏ hàng", nút "Thanh toán". Không có file in nào tải được trước khi thanh toán |
 | 6 | "Thanh toán" → giỏ `/cart` → điền người nhận → "Đặt in mẫu · 49.000đ" → đọc hết điều khoản, đánh dấu đồng ý → "Đồng ý & thanh toán" → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox | Quay về `/payments/vnpay-return` báo thành công; đơn `PAID` trong `/dashboard/orders` |
