@@ -24,7 +24,14 @@ export const HERO = {
   slogan: "Mỗi món quà, trọn vẹn tâm ý.",
   title: "Mỗi món quà,",
   highlight: "Trọn vẹn tâm ý.",
+  lead: "Nhập kích thước món quà, WrapFit dựng khuôn bế vừa khít đến từng milimét, gập thử thành hộp 3D và xuất file in chuẩn xưởng.",
   cta: { label: "Tất cả mẫu hộp", href: ROUTES.templates },
+  /** Figures of the studio demo (≈ 3 phút, in từ 1 hộp, PDF CMYK 300 DPI). */
+  stats: [
+    { value: "≈ 3 phút", label: "thiết kế xong một hộp" },
+    { value: "Từ 1 hộp", label: "in mẫu trước khi in số lượng" },
+    { value: "300 DPI", label: "PDF CMYK tách lớp" },
+  ],
 };
 
 export const HERO_FEATURES: { icon: LucideIcon; label: string; href: string }[] = [
@@ -41,15 +48,29 @@ export interface IndustryTile {
   tag?: string;
   image: string;
   href: string;
+  /** Box of the hero stage for this industry. */
+  box?: IndustryBox;
 }
 
-/** Bento under the hero: the first tile is the big one. */
+/** Template box of an industry on the hero stage: its size, structure, paper and finish, and the pattern of its print. */
+export interface IndustryBox {
+  /** Inner length × width × height, mm. */
+  mm: [number, number, number];
+  /** What it is sized for. */
+  holds: string;
+  structure: string;
+  paper: string;
+  finish: string;
+  pattern: "stripes" | "arcs" | "checker" | "dots" | "grid";
+}
+
+/** Industries of the hero stage, each with the box its photo shows. */
 export const INDUSTRY_TILES: IndustryTile[] = [
-  { title: "Mỹ phẩm & chăm sóc cá nhân", image: PHOTOS.cosmetics.src, href: byIndustry("COSMETICS") },
-  { title: "Nến thơm", image: PHOTOS.candle.src, href: byIndustry("CANDLES") },
-  { title: "Bánh ngọt & socola", image: PHOTOS.chocolate.src, href: byIndustry("BAKERY") },
-  { title: "Trang sức", image: PHOTOS.jewelry.src, href: byIndustry("JEWELRY") },
-  { title: "Trà & nông sản", image: PHOTOS.teaSet.src, href: byIndustry("TEA_AGRI") },
+  { title: "Mỹ phẩm & chăm sóc cá nhân", image: PHOTOS.cosmetics.src, href: byIndustry("COSMETICS"), box: { mm: [45, 45, 130], holds: "chai serum 30 ml", structure: "Hộp nắp gài đứng", paper: "Ivory 350 GSM", finish: "Cán màng mờ · ép kim logo", pattern: "stripes" } },
+  { title: "Nến thơm", image: PHOTOS.candle.src, href: byIndustry("CANDLES"), box: { mm: [95, 95, 105], holds: "hũ nến 200 g", structure: "Hộp nắp gài vuông", paper: "Kraft 300 GSM", finish: "Dập nổi logo · để mộc", pattern: "arcs" } },
+  { title: "Bánh ngọt & socola", image: PHOTOS.chocolate.src, href: byIndustry("BAKERY"), box: { mm: [150, 150, 40], holds: "khay 9 viên socola", structure: "Hộp nắp gài dẹt", paper: "Duplex 350 GSM", finish: "Cán màng bóng · in 4 màu", pattern: "checker" } },
+  { title: "Trang sức", image: PHOTOS.jewelry.src, href: byIndustry("JEWELRY"), box: { mm: [80, 80, 45], holds: "nhẫn, dây chuyền", structure: "Hộp nắp gài mini", paper: "Giấy mỹ thuật 300 GSM", finish: "Cán màng nhung · ép kim vàng hồng", pattern: "dots" } },
+  { title: "Trà & nông sản", image: PHOTOS.teaSet.src, href: byIndustry("TEA_AGRI"), box: { mm: [180, 120, 90], holds: "bộ ấm 4 chén", structure: "Hộp nắp gài dài", paper: "Kraft mộc 300 GSM", finish: "Ép kim vàng · in 1 màu", pattern: "grid" } },
 ];
 
 export const STRUCTURES_SECTION = {

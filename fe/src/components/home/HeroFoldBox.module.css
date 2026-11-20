@@ -1,0 +1,578 @@
+/*
+ * The hero stage of the home page: a tuck-end box net lying on a cutting mat folds itself into the box, printed side
+ * out. Pure CSS 3D (no WebGL): every face is a div hinged on the edge it shares with its neighbour, with its kraft
+ * inside on the +z side (what you see while the net is flat) and the print on the back.
+ *
+ * Sizes are in em so the whole stage scales with its font-size. L × W × H of the box: --box-l, --box-w, --box-h,
+ * set per industry by HeroFoldBox and morphed while the lid is up.
+ */
+
+/* Registered so the box can grow or shrink smoothly from one industry to the next. */
+@property --box-l { syntax: "<length>"; inherits: true; initial-value: 170px; }
+@property --box-w { syntax: "<length>"; inherits: true; initial-value: 115px; }
+@property --box-h { syntax: "<length>"; inherits: true; initial-value: 110px; }
+
+.stage {
+  --box-l: 17em;
+  --box-w: 11.5em;
+  --box-h: 11em;
+  --ease-fold: cubic-bezier(0.65, 0, 0.35, 1);
+  --kraft: #e3c9a4;
+  --kraft-dark: #c9a273;
+  --crease: rgba(49, 130, 206, 0.75);
+  --cut: rgba(229, 62, 62, 0.75);
+
+  position: relative;
+  width: 100%;
+  aspect-ratio: 6 / 5;
+  font-size: clamp(8px, 2.6vw, 11px);
+  perspective: 1500px;
+  perspective-origin: 50% 20%;
+  touch-action: pan-y;
+  user-select: none;
+  transition:
+    --box-l 0.75s var(--ease-fold),
+    --box-w 0.75s var(--ease-fold),
+    --box-h 0.75s var(--ease-fold);
+}
+
+@media (min-width: 1024px) {
+  .stage {
+    font-size: clamp(9px, 1.02vw, 15px);
+  }
+}
+
+/* Pointer tilt, in screen space. */
+.tilt {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  /* One track the size of the stage: the mat is wider than the stage and must overflow evenly, not stretch the track. */
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  place-items: center;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--px, 0deg)) rotateY(var(--py, 0deg));
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The table: seen from above while the net is flat, then from the side once the box stands. */
+.scene {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+  /* The flat net is about twice as tall as the box (lid and tuck above the back): smaller, and lowered to centre it. */
+  transform: scale(0.6) translateY(7em) rotateX(28deg);
+  transition: transform 1.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.folded .scene {
+  transform: scale(1) translateY(3em) rotateX(60deg);
+}
+
+/* Self-healing cutting mat with a millimetre grid. */
+.mat {
+  grid-area: 1 / 1;
+  width: 56em;
+  height: 44em;
+  border-radius: 2.4em;
+  transform: translateZ(-2px);
+  background-color: #fbfcfe;
+  background-image:
+    linear-gradient(rgba(0, 92, 169, 0.13) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 92, 169, 0.13) 1px, transparent 1px),
+    linear-gradient(rgba(0, 92, 169, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 92, 169, 0.05) 1px, transparent 1px);
+  background-size: 5em 5em, 5em 5em, 1em 1em, 1em 1em;
+  background-position: center;
+  box-shadow:
+    0 0 0 1px rgba(0, 92, 169, 0.12),
+    0 3em 6em -2em rgba(29, 41, 61, 0.25);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, black 55%, transparent 78%);
+}
+
+/* Turns the box a little to show two walls, and sways it once standing. */
+.turntable {
+  grid-area: 1 / 1;
+  transform-style: preserve-3d;
+  transform: rotateZ(-28deg);
+}
+
+.folded .turntable {
+  animation: sway 9s ease-in-out 2.4s infinite alternate;
+}
+
+@keyframes sway {
+  from { transform: rotateZ(-28deg); }
+  to { transform: rotateZ(-6deg); }
+}
+
+.box {
+  position: relative;
+  width: var(--box-l);
+  height: var(--box-w);
+  transform-style: preserve-3d;
+}
+
+.face {
+  position: absolute;
+  transform-style: preserve-3d;
+  transition: transform 0.95s var(--ease-fold);
+}
+
+.base { inset: 0; }
+
+.front {
+  left: 0;
+  top: 100%;
+  width: var(--box-l);
+  height: var(--box-h);
+  transform-origin: top center;
+}
+
+.back {
+  left: 0;
+  bottom: 100%;
+  width: var(--box-l);
+  height: var(--box-h);
+  transform-origin: bottom center;
+}
+
+.left {
+  right: 100%;
+  top: 0;
+  width: var(--box-h);
+  height: var(--box-w);
+  transform-origin: right center;
+}
+
+.right {
+  left: 100%;
+  top: 0;
+  width: var(--box-h);
+  height: var(--box-w);
+  transform-origin: left center;
+}
+
+.lid {
+  left: 0;
+  bottom: 100%;
+  width: var(--box-l);
+  height: var(--box-w);
+  transform-origin: bottom center;
+}
+
+.tuck {
+  left: 0;
+  bottom: 100%;
+  width: var(--box-l);
+  height: min(2.4em, calc(var(--box-h) * 0.4));
+  transform-origin: bottom center;
+}
+
+.folded .left { transform: rotateY(90deg); transition-delay: 0.15s; }
+.folded .right { transform: rotateY(-90deg); transition-delay: 0.15s; }
+.folded .front { transform: rotateX(90deg); transition-delay: 0.45s; }
+.folded .back { transform: rotateX(-90deg); transition-delay: 0.6s; }
+.folded .lid { transform: rotateX(-90deg); transition-delay: 1.05s; }
+.folded .tuck { transform: rotateX(-90deg); transition-delay: 1.35s; }
+
+/* Lid lifted while the print changes. */
+.folded.ajar .lid { transform: rotateX(-28deg); transition-delay: 0s; transition-duration: 0.5s; }
+.folded.ajar .tuck { transform: rotateX(-20deg); transition-delay: 0s; transition-duration: 0.5s; }
+
+/* Unfolding goes the other way round: tuck and lid first, walls last. */
+.stage:not(.folded) .tuck { transition-delay: 0s; }
+.stage:not(.folded) .lid { transition-delay: 0.15s; }
+.stage:not(.folded) .back,
+.stage:not(.folded) .front { transition-delay: 0.45s; }
+.stage:not(.folded) .left,
+.stage:not(.folded) .right { transition-delay: 0.75s; }
+
+/* Inside of the board: kraft, cut outline in red, crease on the hinge in dashed blue. */
+.in,
+.out {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.in {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.25), transparent 60%),
+    var(--kraft);
+  box-shadow: inset 0 0 0 1px var(--cut);
+}
+
+.in::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 0 dashed var(--crease);
+}
+
+.front > .in::after { border-top-width: 1.5px; }
+.back > .in::after { border-bottom-width: 1.5px; }
+.left > .in::after { border-right-width: 1.5px; }
+.right > .in::after { border-left-width: 1.5px; }
+.lid > .in::after { border-bottom-width: 1.5px; }
+.tuck > .in::after { border-bottom-width: 1.5px; }
+.base > .in { box-shadow: inset 0 0 0 1px var(--crease); }
+
+/* Shade on the walls while they rise, so the fold reads. */
+.in::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(60, 40, 20, 0);
+  transition: background 0.95s var(--ease-fold);
+}
+
+.folded .in::before { background: rgba(60, 40, 20, 0.22); }
+
+/* Print side. Each wall is turned so its picture stands upright once folded. */
+.out {
+  transform: rotateX(180deg);
+  color: #fff;
+}
+
+.left > .out,
+.right > .out {
+  transform: rotateY(180deg);
+}
+
+.base > .out { background: var(--kraft-dark); }
+
+/* Print layers: one per industry, cross-faded. */
+.print {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.print[data-on="true"] { opacity: 1; }
+
+/* Template print: the industry colour under a light pattern of its own. */
+.print::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.9;
+}
+
+.print[data-pattern="stripes"]::before {
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0 0.45em, transparent 0.45em 1.3em);
+}
+
+.print[data-pattern="arcs"]::before {
+  background: repeating-radial-gradient(circle at 0 100%, rgba(255, 255, 255, 0.14) 0 0.22em, transparent 0.22em 1.1em);
+}
+
+.print[data-pattern="checker"]::before {
+  background: conic-gradient(rgba(255, 255, 255, 0.1) 25%, transparent 0 50%, rgba(255, 255, 255, 0.1) 0 75%, transparent 0) 0 0 / 2.4em 2.4em;
+}
+
+.print[data-pattern="dots"]::before {
+  background: radial-gradient(rgba(255, 255, 255, 0.28) 0.12em, transparent 0.16em) 0 0 / 1.1em 1.1em;
+}
+
+.print[data-pattern="grid"]::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px) 0 0 / 1.6em 1.6em,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px) 0 0 / 1.6em 1.6em;
+}
+
+/* Faces whose print sizes itself to the face (front wall, lid): container units below are a share of that face. */
+.fit {
+  container-type: size;
+}
+
+/* Brand label on the front wall: the place for the customer's logo and name. Stacked on a wall about as tall as it
+ * is wide, side by side on a low wall (chocolate, tea), and without its second line on a narrow one (serum). */
+.tplLabel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: min(1em, 10cqh, 8cqw);
+}
+
+.tplLabel > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4em;
+  width: 80%;
+  max-height: 86%;
+  padding: 0.75em 0.6em;
+  border-radius: 0.6em;
+  background: rgba(255, 253, 248, 0.94);
+  outline: 1px dashed rgba(255, 255, 255, 0.7);
+  outline-offset: 0.3em;
+  color: #1d293d;
+  text-align: center;
+  overflow: hidden;
+}
+
+.tplLabel img {
+  flex: none;
+  width: 2.2em;
+  height: 2.2em;
+}
+
+.tplLabel p {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  min-width: 0;
+  margin: 0;
+}
+
+.tplLabel strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 1.05em;
+  font-weight: 800;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.tplLabel span {
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.6;
+}
+
+@container (min-aspect-ratio: 2 / 1) {
+  .tplLabel {
+    font-size: min(1em, 20cqh, 4.6cqw);
+  }
+
+  .tplLabel > div {
+    flex-direction: row;
+    gap: 0.7em;
+    width: auto;
+    max-width: 88%;
+    padding: 0.45em 0.9em 0.45em 0.6em;
+    text-align: left;
+  }
+
+  .tplLabel img {
+    width: 2em;
+    height: 2em;
+  }
+
+  .tplLabel strong {
+    -webkit-line-clamp: 1;
+    white-space: nowrap;
+  }
+}
+
+@container (max-width: 8em) {
+  .tplLabel span {
+    display: none;
+  }
+}
+
+/* Feature cards change with the industry. */
+.swap {
+  animation: swap 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes swap {
+  from { opacity: 0; transform: translateY(0.4rem); }
+}
+
+.sideMark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.sideMark span {
+  transform: rotate(-90deg);
+  font-weight: 800;
+  letter-spacing: 0.45em;
+  font-size: min(1.05em, calc(var(--box-w) / 11));
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+/* Logo and slogan on the lid; the slogan wraps on two even lines, and drops on a lid too small to read it. */
+.lidMark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.45em;
+  padding: 0 8%;
+  text-align: center;
+  font-size: min(1em, 7cqw, 11cqh);
+}
+
+.lidMark img {
+  width: 3em;
+  height: 3em;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.lidMark span {
+  max-width: 100%;
+  font-weight: 700;
+  font-size: 1.05em;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+@container (max-width: 9em) {
+  .lidMark span {
+    display: none;
+  }
+}
+
+/* Shadow of the standing box on the mat. */
+.shadow {
+  position: absolute;
+  inset: -1.5em;
+  border-radius: 2em;
+  background: radial-gradient(closest-side, rgba(29, 41, 61, 0.35), transparent);
+  transform: translateZ(-1px);
+  opacity: 0;
+  transition: opacity 1s ease 0.6s;
+}
+
+.folded .shadow { opacity: 1; }
+
+/* CAD dimension lines on the mat, drawn once the box stands. */
+.dim {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #005ca9;
+  font-weight: 700;
+  font-size: 1.05em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.folded .dim { opacity: 1; transition-delay: 1.9s; }
+
+.dim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border: 0 solid #005ca9;
+}
+
+.dim span {
+  position: relative;
+  padding: 0 0.5em;
+  background: #fbfcfe;
+  border-radius: 0.4em;
+}
+
+.dimL {
+  left: 0;
+  top: calc(100% + 2em);
+  width: var(--box-l);
+  height: 1.6em;
+}
+
+.dimL::before {
+  height: 100%;
+  border-left-width: 1.5px;
+  border-right-width: 1.5px;
+  background: linear-gradient(#005ca9, #005ca9) center / 100% 1.5px no-repeat;
+}
+
+.dimW {
+  left: calc(100% + 2em);
+  top: 0;
+  width: 1.6em;
+  height: var(--box-w);
+}
+
+.dimW::before {
+  width: 100%;
+  border-top-width: 1.5px;
+  border-bottom-width: 1.5px;
+  background: linear-gradient(#005ca9, #005ca9) center / 1.5px 100% no-repeat;
+}
+
+.dimW span { transform: rotate(90deg); }
+
+/* Floating spec cards around the stage. */
+.chip {
+  position: absolute;
+  opacity: 0;
+  translate: 0 0.8em;
+  transition: opacity 0.6s ease, translate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.folded .chip { opacity: 1; translate: 0 0; }
+
+.chip > * { animation: bob 5s ease-in-out infinite alternate; }
+
+/* The spec card is read, not decor: it does not bob, it only slides in when the box changes. */
+.chip > .swap { animation: swap 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-0.6em); }
+}
+
+/* Time left before the next industry, under the active one. */
+.progress {
+  animation: progress 4.5s linear forwards;
+}
+
+.progress[data-paused="true"] {
+  animation: none;
+  transform: scaleX(1);
+}
+
+@keyframes progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Text column of the hero: each block rises in turn on the first paint. */
+.rise {
+  animation: rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(1.25rem); }
+}
+
+/* Faint millimetre grid behind the whole hero, fading out at the edges. */
+.heroGrid {
+  background-image:
+    linear-gradient(rgba(0, 92, 169, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 92, 169, 0.06) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .folded .turntable,
+  .chip > *,
+  .rise {
+    animation: none;
+  }
+}
