@@ -2070,9 +2070,9 @@
     "semantic_hash": ""
   },
   "fe/scripts/e2e-scenario.mjs": {
-    "mtime": 1795100084.114843,
-    "seen": 1795140625.2947187,
-    "ast_hash": "a3029126e3fde4c4ef0095f7fe6f3db0",
+    "mtime": 1795145022.895485,
+    "seen": 1795147533.1833336,
+    "ast_hash": "40094d96736783bcd4e3e632b0830df3",
     "semantic_hash": ""
   },
   "fe/scripts/export-design-tokens.mjs": {
@@ -2100,9 +2100,9 @@
     "semantic_hash": ""
   },
   "fe/scripts/page-shots.routes.json": {
-    "mtime": 1794938069.0642784,
-    "seen": 1794989058.3936925,
-    "ast_hash": "6f9ad07772c53c9ced57cf0b3c860d43",
+    "mtime": 1795145110.2534335,
+    "seen": 1795147533.1846364,
+    "ast_hash": "01436d1675463ea9f1c21f5323237938",
     "semantic_hash": ""
   },
   "fe/scripts/process-box-mascot.mjs": {
@@ -5574,15 +5574,15 @@
     "semantic_hash": ""
   },
   "docs/03_API_DESIGN.md": {
-    "mtime": 1795140364.3008845,
-    "seen": 1795140625.4474044,
-    "ast_hash": "389faaef8dacf750f5b4f7206888d972",
+    "mtime": 1795145102.1562421,
+    "seen": 1795147533.4270368,
+    "ast_hash": "5a3e791ed4960fb617988e4d6836f67c",
     "semantic_hash": ""
   },
   "docs/04_PROGRESS.md": {
-    "mtime": 1795140364.3013897,
-    "seen": 1795140625.4474063,
-    "ast_hash": "4c085cdf8d0e728e687162cbf8988a1b",
+    "mtime": 1795147455.3286905,
+    "seen": 1795147533.42704,
+    "ast_hash": "b46064259f8aec2065cee30393185615",
     "semantic_hash": ""
   },
   "docs/05_PACKAGING_GUIDELINES_AND_SUPPORT.md": {
@@ -5604,9 +5604,9 @@
     "semantic_hash": ""
   },
   "docs/08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md": {
-    "mtime": 1795095336.3716953,
-    "seen": 1795140625.4474132,
-    "ast_hash": "7d29f1232f2b3a7b3ef27efdf0319926",
+    "mtime": 1795145138.817934,
+    "seen": 1795147533.4282126,
+    "ast_hash": "4a03d6c094f7bbe73dc2efd498e29839",
     "semantic_hash": ""
   },
   "docs/09_PROJECT_DIRECTORY_AND_FILE_ARCHITECTURE.md": {
@@ -5874,9 +5874,9 @@
     "semantic_hash": ""
   },
   "be/prisma/assets/demo-candle-logo.svg": {
-    "mtime": 1793363006.6666977,
-    "seen": 1794852246.2654085,
-    "ast_hash": "73dc134ac1de937ef9436f540f109517",
+    "mtime": 1795145110.257636,
+    "seen": 1795147533.4624665,
+    "ast_hash": "6ad9cd06f62ddac68dbf1af529fee13d",
     "semantic_hash": ""
   },
   "be/src/export/rendering/library/mascots/goi-cheer.webp": {
@@ -14646,9 +14646,9 @@
     "semantic_hash": ""
   },
   "docs/15_PATH2_DEPLOY_RUNBOOK.md": {
-    "mtime": 1795140364.3349018,
-    "seen": 1795140625.4474292,
-    "ast_hash": "4a71523b48edc889c357329cc89f000a",
+    "mtime": 1795147455.3266704,
+    "seen": 1795147533.4303284,
+    "ast_hash": "b74c2fc771c72b8f542a8e44d06d0ab9",
     "semantic_hash": ""
   },
   "docs/16_XU_WRAP_SPEC.md": {
@@ -14664,21 +14664,21 @@
     "semantic_hash": ""
   },
   "docs/18_VIEC_CON_TREO_SAU_AUDIT_BE.md": {
-    "mtime": 1795140364.344916,
-    "seen": 1795140625.4474359,
-    "ast_hash": "9041f23eb7b3d2a24600072d458e5b41",
+    "mtime": 1795147455.3281875,
+    "seen": 1795147533.4308784,
+    "ast_hash": "9df4edf7ad6c5d2c729f941ad7f28433",
     "semantic_hash": ""
   },
   "docs/32_DOCS_AUDIT_SYNC_PLAN.md": {
-    "mtime": 1795140230.210922,
-    "seen": 1795140625.4474373,
-    "ast_hash": "d6131f53c894429256a05ced0092daf5",
+    "mtime": 1795147468.7814095,
+    "seen": 1795147533.430881,
+    "ast_hash": "8113273d63b4d3503bd5e5f41fac13fd",
     "semantic_hash": ""
   },
   "docs/README.md": {
-    "mtime": 1795054924.652922,
-    "seen": 1795140625.4474394,
-    "ast_hash": "dd79657b7d04797379738c6f48c898b5",
+    "mtime": 1795141545.636627,
+    "seen": 1795147533.4308841,
+    "ast_hash": "1cd4f966a261f11470d383c7bc6ed45c",
     "semantic_hash": ""
   },
   "docs/assets/12/3d-v3.png": {
