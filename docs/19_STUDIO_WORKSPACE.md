@@ -25,7 +25,7 @@ Studio trên desktop đặt thanh công cụ và bảng thông số bên trái, 
 
 - **Trên máy tính**, thanh điều hướng rộng 72 px. Bảng thông số nằm ngay bên phải thanh này và cuộn độc lập. Từ 1280 px, cột **Dự án của tôi** rộng 300 px, tăng lên 340 px từ 1536 px. Nút thu gọn dành thêm chiều rộng cho canvas và trình duyệt nhớ lựa chọn qua lần tải lại. Từ 1024 đến 1279 px, nút **Dự án** mở ngăn trượt từ phải.
 - **Trên điện thoại và máy tính bảng dưới 1024 px**, thanh công cụ chuyển xuống đáy màn hình. Bảng chỉnh sửa nằm dưới vùng xem trước. Chạm tiêu đề bảng để thu gọn và dành thêm chỗ cho hộp. Từ thanh đáy, **Dự án** mở thư viện từ dưới lên, còn **Gói** mở trợ lý.
-- **Trong vùng 3D**, dùng một thanh điều khiển góc nhìn để tránh hai bộ nút chồng lên mô hình. Người dùng vẫn có thể xoay hộp, xem các mặt và điều chỉnh mức gấp. Vùng 2D hỗ trợ chọn mảnh phôi của hộp nhiều phần và thiết kế mặt trong hoặc mặt ngoài.
+- **Trong vùng 3D**, dùng một thanh điều khiển góc nhìn để tránh hai bộ nút chồng lên mô hình. Người dùng vẫn có thể xoay hộp, xem các mặt và điều chỉnh mức gấp. Bấm một mặt hộp mở menu tại điểm bấm để thiết kế mặt đó trên khuôn 2D, tải ảnh lên mặt đó, mở nắp hoặc đổi kích thước (xem [tài liệu 21, mục Tiến độ](21_PACDORA_EDITOR_ANALYSIS.md#tiến-độ)). Vùng 2D hỗ trợ chọn mảnh phôi của hộp nhiều phần và thiết kế mặt trong hoặc mặt ngoài.
 - **Khi mở Studio**, giao diện chờ phản ánh bố cục mới. Hướng dẫn giới thiệu công cụ, canvas và điểm vào đặt in. Người dùng có thể gọi lại hướng dẫn từ thanh đầu trên desktop.
 - **Liên kết và bản nháp cũ** vẫn dùng `?step=1` đến `?step=6` theo bảng trên. Khi URL không chỉ định bước, dự án đã lưu mở ở **Thiết kế**, bản nháp demo mở lại công cụ đã lưu và phiên demo mới bắt đầu ở **Hộp & giấy**.
 
