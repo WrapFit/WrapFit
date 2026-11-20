@@ -7,7 +7,7 @@ import type { BoxDimensions, BoxStructureType, MaterialType } from "@wrapfit/sha
 import { mediaUp } from "@/assets/styles/tokens";
 import { Button, buttonClass, Input, ModalLayer, Select, Skeleton } from "@/components/ui";
 import { ROUTES } from "@/constants";
-import { useAuth } from "@/features/auth";
+import { isDemoUser, useAuth } from "@/features/auth";
 import { ProjectTile } from "@/features/dashboard/components/ProjectCard";
 import { formatRelative } from "@/features/dashboard/format";
 import { PROJECTS_PAGE_SIZE, useProjectList } from "@/features/dashboard/useProjects";
@@ -43,12 +43,14 @@ function Retry({ onRetry }: { onRetry(): void }) {
 
 interface ResultProps {
   query: ProjectListQuery;
+  /** False for the demo account given when the API is down: the list falls back to the demo projects. */
+  accountOnly: boolean;
   currentId?: string;
   onOpen(project: ProjectSummary): void;
   seen: ReadonlySet<string>;
 }
 
-function ResultTiles({ result, query, currentId, onOpen, seen }: ResultProps & { result: ReturnType<typeof useProjectList> }) {
+function ResultTiles({ result, query, accountOnly, currentId, onOpen, seen }: ResultProps & { result: ReturnType<typeof useProjectList> }) {
   if (result.isError) return <Retry onRetry={() => void result.refetch()} />;
   if (!result.data) return <LoadingTiles />;
   const { items, meta } = result.data;
@@ -67,7 +69,7 @@ function ResultTiles({ result, query, currentId, onOpen, seen }: ResultProps & {
         <time dateTime={project.updatedAt} className="block text-caption text-fg-muted">{formatRelative(project.updatedAt)}</time>
       </button>;
     })}
-    {meta.page < meta.totalPages && <NextPage query={{ ...query, page: meta.page + 1 }} currentId={currentId} onOpen={onOpen} seen={shown} />}
+    {meta.page < meta.totalPages && <NextPage query={{ ...query, page: meta.page + 1 }} accountOnly={accountOnly} currentId={currentId} onOpen={onOpen} seen={shown} />}
   </>;
 }
 
@@ -75,7 +77,7 @@ function NextPage(props: ResultProps) {
   const { ref, inView } = useInView<HTMLDivElement>();
   const [requested, setRequested] = useState(false);
   const enabled = inView || requested;
-  const result = useProjectList(props.query, { accountOnly: true, enabled });
+  const result = useProjectList(props.query, { accountOnly: props.accountOnly, enabled });
   return enabled ? <ResultTiles {...props} result={result} /> : (
     <div ref={ref} className="col-span-full text-center">
       <Button variant="ghost" onClick={() => setRequested(true)}>Tải thêm dự án</Button>
@@ -86,7 +88,10 @@ function NextPage(props: ResultProps) {
 const COLLAPSED_KEY = "wrapfit:studio-projects-collapsed";
 
 export function StudioProjectLibrary({ currentId, structures, draft, onNavigate, overlayOpen, onCloseOverlay, busy }: LibraryProps) {
-  const { status, refresh } = useAuth();
+  const { status, refresh, user } = useAuth();
+  // A real account never sees the demo projects, even when its list fails; the stand-in demo account sees them as the
+  // dashboard does.
+  const accountOnly = !isDemoUser(user);
   const id = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const restoreToggleFocus = useRef(false);
@@ -121,7 +126,7 @@ export function StudioProjectLibrary({ currentId, structures, draft, onNavigate,
   const query: ProjectListQuery = { status: "ACTIVE", sortBy: "updatedAt", order: "desc", limit: PROJECTS_PAGE_SIZE, page: 1, q: q || undefined, templateId: structure || undefined };
   const visible = wide ? !collapsed : overlayOpen;
   const signedIn = status === "authenticated";
-  const first = useProjectList(query, { accountOnly: true, enabled: signedIn && visible });
+  const first = useProjectList(query, { accountOnly, enabled: signedIn && visible });
   function linkTo(href: string) {
     return { href, prefetch: false, onNavigate(event: { preventDefault(): void }) { event.preventDefault(); onNavigate(href); } };
   }
@@ -158,7 +163,7 @@ export function StudioProjectLibrary({ currentId, structures, draft, onNavigate,
       {signedIn && <>
         <h3 className="mb-3 flex items-center gap-1.5 text-label-sm text-fg-muted"><Clock3 className="size-4" aria-hidden />Gần đây</h3>
         <div className="grid grid-cols-2 gap-2">
-          <ResultTiles result={first} query={query} currentId={currentId} seen={new Set()} onOpen={(project) => onNavigate(`/editor/${encodeURIComponent(project.id)}`)} />
+          <ResultTiles result={first} query={query} accountOnly={accountOnly} currentId={currentId} seen={new Set()} onOpen={(project) => onNavigate(`/editor/${encodeURIComponent(project.id)}`)} />
         </div>
         {!first.isError && first.data?.meta.total === 0 && <p className="text-body-sm text-fg-muted">{q || structure ? "Không có dự án khớp với bộ lọc." : "Chưa có dự án. Chọn Dự án mới để bắt đầu từ một mẫu hộp."}</p>}
       </>}

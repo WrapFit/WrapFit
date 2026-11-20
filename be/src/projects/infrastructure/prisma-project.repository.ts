@@ -114,7 +114,18 @@ export class PrismaProjectRepository implements IProjectRepository {
       }),
       this.prisma.packagingProject.count({ where }),
     ]);
-    return { items: rows.map(toSummary), total };
+    // Only the ids of the page whose last FitCheck found errors, read from the JSON in the database.
+    const failing = rows.length
+      ? await this.prisma.packagingProject.findMany({
+          where: {
+            id: { in: rows.map((row) => row.id) },
+            fitcheckState: { path: ['isValidForProduction'], equals: false },
+          },
+          select: { id: true },
+        })
+      : [];
+    const failingIds = new Set(failing.map((row) => row.id));
+    return { items: rows.map((row) => toSummary(row, failingIds.has(row.id))), total };
   }
 
   async create(project: NewProject): Promise<ProjectDetail> {

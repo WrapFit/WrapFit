@@ -6,7 +6,7 @@ import { useCtrlWheelZoom } from "@/hooks/dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useAuth } from "@/features/auth";
+import { isDemoUser, useAuth } from "@/features/auth";
 import { queryKeys } from "@/hooks/data";
 import { landingFontVariables } from "@/assets/fonts/landing";
 import { LandingLogo } from "@/components/layout/LandingLogo";
@@ -1237,7 +1237,7 @@ export function StudioWorkspace({
   // (POST /projects) and lands on /editor/<id>, where it autosaves and the print file can be bought and exported.
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { status: authStatus } = useAuth();
+  const { status: authStatus, user: authUser } = useAuth();
   const [savingProject, setSavingProject] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -1370,7 +1370,8 @@ export function StudioWorkspace({
       if (uploading || fontBusy) throw new Error("Đang tải tệp lên. Hãy đợi tải xong rồi chuyển dự án.");
       if (isDemo) {
         if (!demoAssetsReady) throw new Error("Đang mở ảnh bản nháp. Hãy thử lại sau giây lát.");
-        if (authStatus === "authenticated" && demoTouchedRef.current) {
+        // The stand-in demo account (API down) cannot create a project: the draft stays in this browser.
+        if (authStatus === "authenticated" && !isDemoUser(authUser) && demoTouchedRef.current) {
           if (invalidReason) throw new Error(invalidReason);
           await createProjectFromDemo(true);
           demoSavedRef.current = true;
