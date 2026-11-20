@@ -191,6 +191,27 @@ Mã chính: prop `measure` của [DielineCanvas2D](../fe/src/features/studio/com
 
 Chưa đo số khung hình mỗi giây trước và sau khi hạ độ phân giải.
 
+**S4 xong ngày 20/11/2026 (chưa commit).** Hoàn thiện in trên hộp 3D không còn là ánh sáng vẽ sẵn vào ảnh màu. Mỗi mặt có phần tử hoàn thiện vẽ thêm hai ảnh mặt nạ ở nửa độ phân giải của ảnh màu, rồi đưa vào vật liệu vật lý của mặt đó.
+
+| Hoàn thiện | Ảnh màu | Bản đồ vật liệu | Kết quả khi xoay hộp |
+| --- | --- | --- | --- |
+| Ép kim vàng, bạc, vàng hồng | Màu kim loại phẳng trong hình phần tử | Kim loại 1, độ nhám 0,2–0,24 | Phản chiếu căn phòng, sắc đổi theo góc nhìn |
+| UV định hình | Giữ nguyên hình in | Lớp phủ bóng 1, độ nhám lớp phủ 0,08 | Vùng phủ bóng bắt sáng riêng |
+| Dập nổi, dập chìm | Giữ nguyên hình in | Bản đồ cao độ quanh màu xám giữa, làm mềm mép 0,5 mm | Mép phần tử có vệt sáng và bóng như giấy bị ép |
+
+- Ảnh mặt nạ bề mặt gộp lớp phủ bóng (kênh R), độ nhám (G) và kim loại (B), đúng kênh mà three.js đọc. Quanh phần tử là giá trị của chính tờ giấy, nên phần giấy trơn trông như cũ.
+- Phần tử in thường nằm trên vùng ép kim sẽ che vùng đó, theo đúng thứ tự in.
+- Môi trường của sân khấu chỉ sáng 0,55, hợp với giấy nhưng làm ép kim xỉn màu ô liu. Một đoạn shader nhỏ chèn qua `onBeforeCompile` nhân phản chiếu môi trường lên 2,6 lần, chỉ ở nơi bản đồ kim loại cao. Giấy chủ đề **gold_foil** vốn là kim loại toàn tờ nên không được tăng.
+- Hệ số nổi là 30. Ở hệ số 3, dập nổi không thấy được vì three.js ước lượng độ nổi theo độ thay đổi trên mỗi điểm ảnh màn hình.
+
+Mã chính: `FinishMaps`, `paintMap` và `applyFinishMaps` trong [boxModel](../fe/src/features/studio/components/three/boxModel.ts).
+
+Giới hạn của S4:
+
+- Mặt có dập nổi mất vân sợi giấy, vì bản đồ cao độ thay bản đồ vân sợi ở mặt đó. Mặt có ép kim hoặc UV mất độ nhám thay đổi theo vân sợi.
+- UV định hình trên nền đậm khá khó thấy. Chưa so sánh với ảnh chụp hộp thật.
+- Hệ số tăng phản chiếu và hệ số nổi được chỉnh bằng mắt trên một hộp đỏ với giấy ivory, chưa thử trên giấy kraft hay giấy forest.
+
 ## 7. Giới hạn của khảo sát
 
 - Mã Pacdora đã được rút gọn. Các kết luận về mô hình gập, chọn mặt và hoàn thiện in đọc từ tên thuộc tính và đoạn mã, chưa chạy riêng từng hàm. Đồ thị REA của `pacdora-3d` chỉ đầy đủ một phần vì chạm giới hạn phân tích bí danh.
