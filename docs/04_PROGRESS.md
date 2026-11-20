@@ -69,23 +69,23 @@ Ngày 19/11/2026, đợt đồng bộ tài liệu (plan 32) gỡ các kế hoạ
 
 | Số cũ | Tên file (bỏ đuôi `.md`) | Commit cuối còn file | Nội dung đã chuyển tới |
 |---|---|---|---|
-| 10 | `10_DB_HARDENING_DESIGN` | COMMIT_CUOI | Quyết định khóa ngoại và giữ file dùng chung: [02](02_DATABASE_DESIGN.md). Đăng ký và xác minh email: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md) §3 |
-| 12 | `12_FE_BE_INTEGRATION_PLAN` | COMMIT_CUOI | Kết quả T1–T12 của phiên S12 và các mục còn mở: [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md). Tiến độ S1–S11: bảng trên |
-| 17 | `17_PATH2_MVP_PLAN` | COMMIT_CUOI | Deploy và bấm giờ hai lượt trên 4G: [18](18_PATH2_DEPLOY_RUNBOOK.md) |
-| 20 | `20_XU_WRAP_FE_HANDOFF` | COMMIT_CUOI | Luồng FE của job ảnh: [06](06_FE_INTEGRATION_GUIDE.md). Quy tắc giá: [19](19_XU_WRAP_SPEC.md). Lỗi API: [03](03_API_DESIGN.md) |
-| 21 | `21_PAYMENT_GATEWAYS_PLAN` | COMMIT_CUOI | Các trường hợp đối soát: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Việc người giữ tài khoản cần kiểm: [18](18_PATH2_DEPLOY_RUNBOOK.md) |
-| 22 | `22_INTERACTIVE_TOURS_PLAN` | COMMIT_CUOI | Kết quả S1–S5: bảng trên. Khoảng trống chưa kiểm: [13](13_UI_VIEWPORT_AUDIT.md) |
-| 23 | `23_STUDIO_EDITOR_PRO_PLAN` | COMMIT_CUOI | Chức năng editor: [01](01_REQUIREMENTS.md). Cấu trúc canvas và bảng review: [02](02_DATABASE_DESIGN.md). Duyệt mẫu theo phiên bản: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Nhập tài sản: [24](24_LIBRARY_CONTENT_GUIDE.md). Câu hỏi cho xưởng và nội dung nhãn: [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) |
-| 25 | `25_BACKEND_AUDIT_FIX_PLAN` | COMMIT_CUOI | Thay đổi API: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Đổi lượt xuất cũ sang xu và truy vấn kiểm trước hoàn xu: [18](18_PATH2_DEPLOY_RUNBOOK.md). Điều kiện khi chạy nhiều API: [07](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md), [18](18_PATH2_DEPLOY_RUNBOOK.md). Mục hoãn: [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) |
-| 29 | `29_BACKEND_CODE_REVIEW` | COMMIT_CUOI | Tóm tắt bảy phát hiện và commit sửa: bảng "Review backend 18/11/2026" ở trên |
-| 30 | `30_BACKEND_REVIEW_FIX_PLAN` | COMMIT_CUOI | Thứ tự migration và job cũ: [18](18_PATH2_DEPLOY_RUNBOOK.md). Quy tắc giữ phông, giữ phiên bản xuất, giữ thiết kế của đơn: [02](02_DATABASE_DESIGN.md), [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Kết quả test: bảng trên |
+| 10 | `10_DB_HARDENING_DESIGN` | aa47f4b | Quyết định khóa ngoại và giữ file dùng chung: [02](02_DATABASE_DESIGN.md). Đăng ký và xác minh email: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md) §3 |
+| 12 | `12_FE_BE_INTEGRATION_PLAN` | aa47f4b | Kết quả T1–T12 của phiên S12 và các mục còn mở: [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md). Tiến độ S1–S11: bảng trên |
+| 17 | `17_PATH2_MVP_PLAN` | aa47f4b | Deploy và bấm giờ hai lượt trên 4G: [18](18_PATH2_DEPLOY_RUNBOOK.md) |
+| 20 | `20_XU_WRAP_FE_HANDOFF` | aa47f4b | Luồng FE của job ảnh: [06](06_FE_INTEGRATION_GUIDE.md). Quy tắc giá: [19](19_XU_WRAP_SPEC.md). Lỗi API: [03](03_API_DESIGN.md) |
+| 21 | `21_PAYMENT_GATEWAYS_PLAN` | aa47f4b | Các trường hợp đối soát: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Việc người giữ tài khoản cần kiểm: [18](18_PATH2_DEPLOY_RUNBOOK.md) |
+| 22 | `22_INTERACTIVE_TOURS_PLAN` | aa47f4b | Kết quả S1–S5: bảng trên. Khoảng trống chưa kiểm: [13](13_UI_VIEWPORT_AUDIT.md) |
+| 23 | `23_STUDIO_EDITOR_PRO_PLAN` | aa47f4b | Chức năng editor: [01](01_REQUIREMENTS.md). Cấu trúc canvas và bảng review: [02](02_DATABASE_DESIGN.md). Duyệt mẫu theo phiên bản: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Nhập tài sản: [24](24_LIBRARY_CONTENT_GUIDE.md). Câu hỏi cho xưởng và nội dung nhãn: [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) |
+| 25 | `25_BACKEND_AUDIT_FIX_PLAN` | aa47f4b | Thay đổi API: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Đổi lượt xuất cũ sang xu và truy vấn kiểm trước hoàn xu: [18](18_PATH2_DEPLOY_RUNBOOK.md). Điều kiện khi chạy nhiều API: [07](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md), [18](18_PATH2_DEPLOY_RUNBOOK.md). Mục hoãn: [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) |
+| 29 | `29_BACKEND_CODE_REVIEW` | aa47f4b | Tóm tắt bảy phát hiện và commit sửa: bảng "Review backend 18/11/2026" ở trên |
+| 30 | `30_BACKEND_REVIEW_FIX_PLAN` | aa47f4b | Thứ tự migration và job cũ: [18](18_PATH2_DEPLOY_RUNBOOK.md). Quy tắc giữ phông, giữ phiên bản xuất, giữ thiết kế của đơn: [02](02_DATABASE_DESIGN.md), [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Kết quả test: bảng trên |
 | 26, 27, 27a, 31 | Kịch bản video quảng bá, clip demo Studio, prompt và tài liệu pitching | — | Chưa từng vào Git, đã xóa theo quyết định ngày 2026-11-19. Không chuyển nội dung |
 
 Tra lại một file đã gỡ bằng commit ở cột thứ ba, ví dụ:
 
 ```powershell
 $name = '25_BACKEND_AUDIT_FIX_PLAN'
-git show "COMMIT_CUOI:docs/$name.md"
+git show "aa47f4b:docs/$name.md"
 ```
 
 Hai quy ước về tham chiếu cũ:
