@@ -1,32 +1,32 @@
-# Graph Report - WrapFit  (2026-11-19)
+# Graph Report - WrapFit  (2026-11-20)
 
 ## Corpus Check
-- 2303 files · ~1,490,548 words
+- 2293 files · ~1,459,985 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 187 file(s) not represented in the graph (top: .css 114, .woff2 26, .ttf 18)
 
 ## Summary
-- 20890 nodes · 62958 edges · 580 communities (332 shown, 248 thin omitted)
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 5982 edges (avg confidence: 0.86)
+- 20581 nodes · 62972 edges · 531 communities (322 shown, 209 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 5718 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `520c5e79`
+- Built from commit: `8f8b6d21`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- DielineCanvas2D.tsx
+- elementVisuals.tsx
 - SystemConfigService
 - ConfigService
-- public-projects.service.ts
+- 5.3. Phân bổ IT 3: Backend NestJS, Data Infrastructure & Cloud Lead (11 Tasks)
 - bank-transactions.service.ts
 - types/api/index.ts
-- OffersPage.jsx
+- MovieMatchmakerWidget.jsx
 - ref_react
-- CanvasElement
-- .seedMovies
-- ai-pattern.service.ts
+- StudioWorkspace.tsx
+- authService.js
+- claude-pattern.generator.ts
 - workspace/index.ts
 - ReviewsService
 - GrantCreditsDto
@@ -37,16 +37,17 @@
 - projects.service.ts
 - MovieRepository
 - be/package.json
-- src/constants/index.ts
+- BlueprintIntro.tsx
+- uuid
 - dashboard/index.ts
-- notifications.service.ts
+- 2. Chi tiết
 - public-project/index.tsx
 - ref_lucide_react
 - collections.service.ts
 - MovieService
 - ApiResponse
 - OrbitBookingPage.jsx
-- Promotion
+- resolveMediaUrl
 - admin/routes/index.jsx
 - AppException
 - DashboardPage.jsx
@@ -55,15 +56,15 @@
 - templates.service.ts
 - PackagingSpecSheet.tsx
 - org.springframework.web.bind.annotation.GetMapping
-- uuid
+- list
 - AdminCinemaRoomPage.jsx
-- MyHrPage.jsx
+- notblank
 - SupportModerationViolation
 - SupportTicket
-- request-context.ts
+- renderers.ts
 - db
 - fe/package.json
-- Toast/index.ts
+- bank-transactions/index.tsx
 - MissionCompletionResponse
 - platform.ts
 - mail.processor.ts
@@ -71,10 +72,10 @@
 - .upsertTemplate
 - project-spec.dto.ts
 - ShowtimeRadarService
-- placement.ts
-- VodStreamCookieSupport.java
+- templates.service.ts
+- jakarta.servlet.http.HttpServletRequest
 - S3MediaUploadService.java
-- Country
+- DiscoverMatchService
 - DiscoverMatchItemResponse
 - payments.service.ts
 - mock-api/pattern/procedural-pattern.generator.ts
@@ -87,13 +88,13 @@
 - MissionCampaign
 - sync.mjs
 - contracts.ts
-- SafeUser
+- useToast
 - lombok.Getter
-- Payment
+- MovieRepository
 - NasaAiAssistantWidget.jsx
-- templates.ts
+- art.ts
 - configuration.ts
-- src/index.ts
+- registry.ts
 - MissionsPage.jsx
 - PayrollService
 - src/common/index.ts
@@ -108,13 +109,14 @@
 - StompAuthChannelInterceptorTest
 - currentUser
 - Ticket
-- cart/index.tsx
+- PrintShopsService
 - DesignStats.tsx
 - AdminMissionTemplateResponse
 - AdminCreateUserResponse
 - StaffMissionControlService
 - ref_node_fs
 - MissionService
+- segmentWriter
 - emailTemplateUtils.js
 - HrService
 - SupportAiService
@@ -122,9 +124,9 @@
 - StorageService
 - DiscoverConfigResponse
 - Hardening Controls
-- SupportContentModerationService
-- CreateSnapshotDto
-- legal/index.tsx
+- review/index.tsx
+- MovieMediaResponse
+- OrbitMemberResponse
 - VietQRWebhookTransaction
 - .getBoardingPass
 - UserNotification
@@ -134,14 +136,14 @@
 - e2e
 - @nestjs/common
 - Combo
-- validator.ts
+- barcode.ts
 - org.springframework.transaction.annotation.Transactional
 - SupportTicketMessage
 - Refund
 - 🔌 THIẾT KẾ RESTFUL APIs CHI TIẾT (FULL-SYSTEM API SPECIFICATION)
 - Builder
 - PromotionController
-- cn
+- Permission
 - MissionEventPayload
 - useAuthContext
 - ConfigPage.jsx
@@ -149,15 +151,15 @@
 - nowIso
 - .createPromotion
 - PurchaseHistoryResponse
-- InteractiveFoldingBox3D.tsx
+- cup-carrier.ts
 - BookingResponse
-- org.slf4j.Logger
+- org.springframework.jdbc.core.JdbcTemplate
 - .upsertOption
 - IFixAction
 - SupportController
 - ui-fixtures.mjs
 - Seat
-- LibraryPanel.tsx
+- Upcoming.jsx
 - mock-api/index.ts
 - Component & Hook Usage Guide
 - VoucherCatalogResponse
@@ -192,17 +194,17 @@
 - UserMatchmakerHistory
 - CinemaRequest
 - PaymentTransaction
-- DiscoverScorer
+- .matches
 - WalletPage.jsx
 - PublicPromotionResponse
 - SeatStatus
 - DiscoverCuratedSuggestion
-- extract-admin-sidebar.mjs
+- MovieReviewsSection.jsx
 - CinemaAuthBackground.jsx
 - Git Workflow and Versioning
 - Optimization Patterns
-- boxModel.ts
-- 20. Xu Wrap: bàn giao cho frontend
+- insert-flat-dieline.spec.ts
+- aiUsage
 - SearchResultItem
 - CheckInTicketResponse
 - SupportAiContextService
@@ -223,14 +225,14 @@
 - WebSocketHandshakeAuthInterceptor.java
 - 11 — Hướng dẫn tích hợp Frontend ↔ Backend
 - SupportAiConversationMessage
-- PermissionResponse
+- 15 — Runbook deploy và demo bản Path 2
 - CI/CD and Automation
 - Constraint-Driven Development
 - Deprecation and Migration
 - 2. HỆ THỐNG USE CASES TOÀN DIỆN
 - CancelBookingResponse
-- quote.ts
-- .checkAndCreditVietQRTopUp
+- ActorResponse
+- effects-spelling.spec.ts
 - package.json
 - Documentation and ADRs
 - Incremental Implementation
@@ -246,15 +248,15 @@
 - PackagingAudioEngine
 - compilerOptions
 - intro-blueprint.ts
-- .sendChatMessage
+- PaymentIntentResult
 - UserBadge
 - UpdateMovieRequest
-- docs/04_PROGRESS.md
-- XuHistoryQueryDto
+- WalletController
+- UpdateProjectDto
 - frontend
 - scripts
 - compilerOptions
-- render-dielines.mjs
+- store.ts
 - RefundStatusResponse
 - StaffGateEvent
 - Cinema
@@ -266,7 +268,7 @@
 - CHECKLIST.md
 - .match
 - ShowtimeSeatMapResponse
-- ProfilePage.jsx
+- ShowtimeRadarProvider.jsx
 - PushSubscription
 - 2.1. Movies API
 - Step5Model3DWithEnvironments.tsx
@@ -275,59 +277,59 @@
 - AdminDiscoverQuizConfigResponse
 - 🎬 THDPV Movie Theater - Production-Ready Authentication System
 - MissionBoard.jsx
-- 4. Hướng dẫn A–Z
+- gable-window-dieline.spec.ts
 - MovieReviewSummaryResponse
 - VietQRGenerateResponse
-- 2. Chi tiết
+- 10 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch
 - mountScrollWorld
 - MovieTheaterBackendApplication.java
 - CinemaResponse
 - CinemaRoomResponse
-- behavior.mjs
+- 13 — Design System WrapFit
 - Doubt-Driven Development
 - Process
 - visual-parity.mjs
 - StitchRuntime
 - AdminReviewVibeTagResponse
-- print-rendering.spec.ts
+- export.processor.ts
 - HrSelfServiceController.java
 - SupportLiveSupportService
-- 18 — Runbook deploy bản demo Path 2 (CP4)
+- MovieActorRequest
 - EmailTemplateService
 - Using Agent Skills
 - caddy
-- 15 — Design System WrapFit
+- CreateProjectDto
 - scripts
 - jsx.mjs
 - 🎬 NasaFilm
 - createStitchScope.ts
-- ActorAvatarEnrichmentService
-- org.springframework.transaction.annotation.Transactional
+- 6. Các luồng và session
+- org.junit.jupiter.api.Test
 - AuditLog
 - HealthController
 - Spec-Driven Development
 - ProjectsController
 - backend
-- 11 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch
-- WRAPFIT PLATFORM — BẢN PHÂN TÍCH KIẾN TRÚC & GIẢI PHÁP AN TOÀN DỮ LIỆU
+- build-library-icons.mjs
+- 1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG
 - WalletSummaryResponse
 - SupportAiSession
 - 🎁 WrapFit Platform — Make Every Present, Present.
-- ShowtimeRadarAlert
+- 11 — Rà soát giao diện theo kích thước màn hình (Phase 7)
 - Source-Driven Development
 - postgres
 - with
 - WalletTopUpIntentResponse
 - BookingService
 - Refinement & Evaluation Criteria
-- GifWriter
+- particles.ts
 - services
-- 3. Xử Lý Sự Cố In Ấn Thường Gặp (Printing & Die-Cutting Troubleshooting)
-- 23. Studio bước 4 "Thiết kế": nâng lên mức trình chỉnh sửa chuyên nghiệp (ngang Canva, sâu như Pacdora)
+- Artwork
+- editor.ts
 - RevenueSeriesResponse
 - ActorSummaryResponse
 - SeatType
-- CURRENT_FORMULA_VERSION
+- .validate
 - 📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION)
 - EmailTemplate
 - .renderDefault
@@ -338,15 +340,15 @@
 - 🎬 TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW) - THDPV Movie Theater
 - ⚙️ 2. Yêu cầu Chức năng (Functional Requirements)
 - ToastViewport.jsx
-- 12 — Kế hoạch nối Frontend ↔ Backend
-- 2. Endpoints đã triển khai
-- MojibakeUtils
+- MovieReviewStatsResponse
+- docs/README.md
+- Kế hoạch thực hiện cho từng file
 - shared/package.json
 - .ensureDefaultTemplates
 - args
 - worker
 - healthcheck
-- StageApi
+- pillow.ts
 - PromotionValidateResponse
 - SeatLocked
 - .seedMovies
@@ -360,32 +362,32 @@
 - docker-compose.prod.yml
 - .resolveReport
 - ShowtimeSchedulingEngine
-- RolePermission
+- AdminReviewService
 - DiscoverQuizAdminService
 - SeatLockSyncResponse
 - AdminBookingQueryService
 - jest
-- 13 — Rà soát giao diện theo kích thước màn hình (Phase 7)
-- 27. Clip demo Studio 6 bước (khoảng 54 giây) chạy cùng lời thuyết trình
+- Chuẩn file cho người vẽ nội dung thư viện
+- ReviewModerationMessage
 - ReviewVibeTag
-- BookingCombo
+- WorkerHeartbeat
 - frontend
 - redis
 - UpdateProfileRequest
 - THIET KE CO SO DU LIEU (DATABASE DESIGN) - NASAFILM
 - SeatTypeResponse
 - PreShowNotification
-- docs/04_PROGRESS.md
+- intro-minimal.ts
 - Authentication System Setup Guide
 - seatGapUtils.js
 - 📝 2. Bảng Theo dõi Tiến độ Chi tiết
-- BookingSeat
-- PayrollPeriod
+- ReviewTextModerationUtil
+- SceneSet
 - AI Packaging Copilot ("Gói" / BeBoxy) Skill
 - tsconfig.build.json
 - redis
 - AI Packaging Copilot ("Gói" / BeBoxy) Skill
-- constants/index.js
+- src/index.js
 - BookingStatus
 - CounterCreateCustomerResponse
 - EmailTemplateResponse
@@ -394,7 +396,7 @@
 - Packaging 3D Folding Simulation Skill
 - WrapFit Packaging Design System & Heuristic Review
 - tsconfig.worker.json
-- 1. Yêu Cầu Chức Năng (Functional Requirements)
+- 1. Sơ Đồ Thực Thể Quan Hệ (ERD Diagram)
 - EmailTemplateBlockCompiler
 - .generateQR
 - Fluid Mobile Gestures & iOS Touch Ergonomics Skill
@@ -404,8 +406,8 @@
 - .activateAccount
 - AbstractPostgresIntegrationTest.java
 - billing/plans.ts
-- org.springframework.data.domain.Pageable
-- P1 · Ưu tiên trước khi nhận đơn thật
+- next.config.mjs
+- GEMINI.md
 - IOrderAggregate
 - IProjectArchivalService
 - IProjectState
@@ -418,7 +420,7 @@
 - Ponytail
 - R3F Packaging Stage Orchestration Skill
 - Scroll Storytelling & 3D Hero Experience Skill
-- 🎁 TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW) — WrapFit Platform
+- @stomp/stompjs
 - FitCheck™ Packaging Validation Skill
 - R3F Packaging Stage Orchestration Skill
 - Scroll Storytelling & 3D Hero Experience Skill
@@ -426,9 +428,8 @@
 - vite.config.js
 - 📦 What's Been Built
 - 4.2. Movie Catalog
+- .export
 - 4.5. Booking & Payment
-- ShowtimeRadarFavoriteMatcher
-- 4. Các phase
 - AttendanceStatus
 - IAdminDashboardFacade
 - IBannerManagerService
@@ -471,17 +472,12 @@
 - ISupportTicketAggregate
 - IWebConfigService
 - idea-refine.sh
-- be/deploy.sh
 - docker-entrypoint.sh
 - CLAUDE.md
 - routes.generated.ts
 - types/fontkit.d.ts
 - RefundStatus
-- 27a. Prompt dán vào Claude chat để dựng clip demo
-- MonthPicker.tsx
-- WrapFit Platform — AI Agent Development Guidelines
 - IAuthorizationGuard
-- Chuẩn file cho người vẽ nội dung thư viện
 - 🎯 Key Features
 - Troubleshooting
 - Deployment
@@ -505,205 +501,202 @@
 - vercel.json
 - com.thdpv:movie-theater-backend
 - 3. THIẾT KẾ TOÀN BỘ LUỒNG TƯƠNG TÁC HỆ THỐNG
-- ForgotPasswordRequest
-- MovieUuidListRequest
 - .resolve
 - IAuthProvider
-- GenreRequest
-- .getVodStatusBatch
 - .updateStatus
 - AdminUserController
-- SupportSatisfactionRequest
-- .validate
 - autoprefixer@^10.4.16
 - axios
-- stompSocketService.js
 - class-variance-authority@^0.7.0
 - IOrderCancellationService
+- 💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)
 - clsx@^2.0.0
 - @gsap/react@^2.1.2
 - hls.js
 - html5-qrcode@^2.3.8
-- @stripe/react-stripe-js
 - @tanstack/react-query@^5.90.2
 - IRateLimiterService
 
 ## God Nodes (most connected - your core abstractions)
 1. `ApiResponse` - 369 edges
 2. `AppException` - 354 edges
-3. `cn()` - 331 edges
+3. `cn()` - 334 edges
 4. `@nestjs/common` - 193 edges
 5. `User` - 179 edges
 6. `next` - 173 edges
 7. `ErrorCode` - 164 edges
-8. `Movie` - 141 edges
-9. `UserRepository` - 139 edges
-10. `request()` - 138 edges
+8. `PrismaService` - 149 edges
+9. `Movie` - 141 edges
+10. `UserRepository` - 139 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `4.2 Trang Ví xu (S6) — `/dashboard/wallet`` --references--> `XuHistoryQueryDto`  [INFERRED]
-  docs/21_PAYMENT_GATEWAYS_PLAN.md → be/src/billing/dto/xu-history-query.dto.ts
-- `1.2. Frontend: gần như chưa nối` --references--> `ApiError`  [INFERRED]
-  docs/12_FE_BE_INTEGRATION_PLAN.md → fe/src/services/api/index.ts
+- `4.4 Cầu chì chi phí toàn hệ thống` --references--> `AiCostGuard`  [INFERRED]
+  docs/14_PRICING_ENTITLEMENTS_SPEC.md → be/src/ai/ai-cost.guard.ts
+- `4. Trước khi deploy` --references--> `AiImageReconcileTask`  [INFERRED]
+  docs/18_VIEC_CON_TREO_SAU_AUDIT_BE.md → be/src/ai/image/ai-image-reconcile.task.ts
+- `UC-01: Đăng ký & Đăng nhập Tài khoản Đa phương thức` --references--> `GoogleStrategy`  [INFERRED]
+  docs/07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md → be/src/auth/strategies/google.strategy.ts
 - `1. Nguyên tắc kỹ thuật` --references--> `BillingService`  [INFERRED]
-  docs/16_PRICING_ENTITLEMENTS_SPEC.md → be/src/billing/billing.service.ts
-- `1.1. Ánh xạ Clean Architecture sang NestJS` --references--> `PrismaService`  [INFERRED]
-  docs/08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md → be/src/shared/prisma/prisma.service.ts
-- `S4 — Đơn in lưu PostgreSQL (độc lập)` --references--> `OrdersService`  [INFERRED]
-  docs/17_PATH2_MVP_PLAN.md → be/src/orders/orders.service.ts
+  docs/14_PRICING_ENTITLEMENTS_SPEC.md → be/src/billing/billing.service.ts
+- `3.1. Biến thêm từ Path 2` --references--> `OriginGuard`  [INFERRED]
+  docs/15_PATH2_DEPLOY_RUNBOOK.md → be/src/common/guards/origin.guard.ts
 
 ## Import Cycles
-- 2-file cycle: `NasaFilm/movie-theater-fe/src/features/admin/components/panels/ComboCatalogSection.jsx -> NasaFilm/movie-theater-fe/src/features/admin/pages/AdminCombosPage.jsx -> NasaFilm/movie-theater-fe/src/features/admin/components/panels/ComboCatalogSection.jsx`
 - 2-file cycle: `fe/src/components/workspace/AdminShell.tsx -> fe/src/components/workspace/WorkspaceShell.tsx -> fe/src/components/workspace/AdminShell.tsx`
+- 2-file cycle: `NasaFilm/movie-theater-fe/src/features/admin/components/panels/ComboCatalogSection.jsx -> NasaFilm/movie-theater-fe/src/features/admin/pages/AdminCombosPage.jsx -> NasaFilm/movie-theater-fe/src/features/admin/components/panels/ComboCatalogSection.jsx`
 - 4-file cycle: `fe/src/components/workspace/WorkspaceShell.tsx -> fe/src/features/dashboard/index.ts -> fe/src/features/dashboard/components/DesignStats.tsx -> fe/src/components/workspace/index.ts -> fe/src/components/workspace/WorkspaceShell.tsx`
 - 5-file cycle: `fe/src/components/workspace/AdminShell.tsx -> fe/src/components/workspace/WorkspaceShell.tsx -> fe/src/features/dashboard/index.ts -> fe/src/features/dashboard/components/DesignStats.tsx -> fe/src/components/workspace/index.ts -> fe/src/components/workspace/AdminShell.tsx`
 - 5-file cycle: `fe/src/components/workspace/AdminShell.tsx -> fe/src/features/admin/index.ts -> fe/src/features/admin/accounts/AccountDetailDrawer.tsx -> fe/src/features/admin/accounts/DemoFlagToggle.tsx -> fe/src/components/workspace/index.ts -> fe/src/components/workspace/AdminShell.tsx`
 
-## Communities (580 total, 248 thin omitted)
+## Communities (531 total, 209 thin omitted)
 
-### Community 0 - "DielineCanvas2D.tsx"
-Cohesion: 0.05
-Nodes (86): boxFontCss(), boxFontFamily(), cssFont(), cssFontFamily(), faceAttributes(), families, layoutBoxText(), measureInBrowser() (+78 more)
+### Community 0 - "elementVisuals.tsx"
+Cohesion: 0.12
+Nodes (37): curvedChars(), drawImageOnCanvas(), FramedImage(), imageSizeOf(), loadSize(), sizes, useImageSize(), useImageSizes() (+29 more)
 
 ### Community 1 - "SystemConfigService"
-Cohesion: 0.07
-Nodes (4): SystemConfigEntry, SystemConfigRepository, SystemConfigService, TypeReference<>
+Cohesion: 0.05
+Nodes (11): SystemConfigEntry, SystemConfigRepository, SystemConfigService, TypeReference<>, ImageVerdict, RELATED, SENSITIVE, UNKNOWN (+3 more)
 
 ### Community 2 - "ConfigService"
 Cohesion: 0.02
-Nodes (90): Cấu trúc thư mục, Gọi API từ frontend (Next.js), Luồng token, Xác thực bằng HttpOnly Cookie, Đăng nhập bằng Google — cách lấy Client ID, AccountRecoveryService, AuthTokenErrorCode, TOKEN_ERRORS (+82 more)
+Nodes (91): Cấu trúc thư mục, Luồng token, AccountRecoveryService, AuthTokenErrorCode, TOKEN_ERRORS, tokenError(), AUTH_EMAIL_MIN_INTERVAL_MS, AUTH_EMAILS_PER_DAY (+83 more)
 
-### Community 3 - "public-projects.service.ts"
-Cohesion: 0.05
-Nodes (23): OptionalAuth(), EXPORT_COMPLETED, ExportCompletedEvent, EDITOR_TAB_HEADER, PROJECT_FORKED, PROJECT_SAVED, ProjectForkedEvent, ProjectSavedEvent (+15 more)
+### Community 3 - "5.3. Phân bổ IT 3: Backend NestJS, Data Infrastructure & Cloud Lead (11 Tasks)"
+Cohesion: 0.02
+Nodes (43): AiController, AiPatternService, lockDebit(), GeneratePatternDto, JwtAuthGuard, IS_PUBLIC_KEY, OPTIONAL_AUTH_KEY, OptionalAuth() (+35 more)
 
 ### Community 4 - "bank-transactions.service.ts"
 Cohesion: 0.05
-Nodes (20): encodePageCursor(), olderThan(), PageCursor, parsePageCursor(), BankTransactionsController, BANK_TX_MAX_LIMIT, BankTransactionsQueryDto, ResolveBankTransactionDto (+12 more)
+Nodes (21): encodePageCursor(), olderThan(), PageCursor, parsePageCursor(), BankTransactionsController, BANK_TX_MAX_LIMIT, BankTransactionsQueryDto, ResolveBankTransactionDto (+13 more)
 
 ### Community 5 - "types/api/index.ts"
 Cohesion: 0.01
-Nodes (295): 13. Những chỗ `apiClient` cũ lệch backend (đã sửa), 4.1. Lược đồ Prisma PostgreSQL mở rộng (Schema v2.1), 9.3. Nhật ký bàn giao, Phase 0 — Nền móng (tuần tự, chặn mọi phase sau), 10. Việc còn mở và gợi ý, 2. Khái niệm cần nắm, 4.2 `POST /ai/images`: tạo ảnh (trừ xu, đưa vào hàng đợi), 1. Hiện trạng (2026-11-13) (+287 more)
+Nodes (312): 7.1. Trình tự ở bước Đặt in, 4.1. Lược đồ Prisma PostgreSQL mở rộng (Schema v2.1), getHealthDetails(), getUser(), createAiImages(), generateAiPattern(), getAiImageCatalog(), getAiImageJob() (+304 more)
 
-### Community 6 - "OffersPage.jsx"
-Cohesion: 0.04
-Nodes (21): CinemasPage(), extractCity(), FALLBACK_IMAGES, formatShowtimeDate(), formatShowtimeLabel(), groupShowtimesByMovie(), ROOM_TYPE_LABELS, SLOGANS (+13 more)
+### Community 6 - "MovieMatchmakerWidget.jsx"
+Cohesion: 0.05
+Nodes (60): ComingSoon(), DomeGallery, fillDomeItems(), Hero(), toDomeItems(), formatDuration(), HeroMovieDetailPanel(), HomeArrivalFade() (+52 more)
 
 ### Community 7 - "ref_react"
-Cohesion: 0.02
-Nodes (231): 3. Thành phần, metadata, Page(), metadata, Page(), metadata, Page(), RouteError() (+223 more)
+Cohesion: 0.01
+Nodes (430): 3. Thành phần, getHealth(), metadata, Page(), metadata, Page(), metadata, Page() (+422 more)
 
-### Community 8 - "CanvasElement"
-Cohesion: 0.06
-Nodes (82): 10. Nhật ký bàn giao, 3. Quyết định, 4. Mô hình dữ liệu mới, Giai đoạn 1 — Nền tảng và sửa 3 lỗi chính (~1,5 tuần), DEFAULT_DIELINE_LAYERS, DielineCanvas2D(), DielineCanvas2DProps, DielineLayerLegend() (+74 more)
+### Community 8 - "StudioWorkspace.tsx"
+Cohesion: 0.01
+Nodes (422): buildPrintLayout(), Edge, num(), PIECE_GAP_MM, placedCurve(), PlacedPiece, Point, PrintLayout (+414 more)
 
-### Community 9 - ".seedMovies"
-Cohesion: 0.09
-Nodes (4): TypeReference<List<MovieJsonData>>, ActorRequest, Actor, MovieActor
+### Community 9 - "authService.js"
+Cohesion: 0.03
+Nodes (81): AdminUserService, parseSpringPage(), AuthService, authService, buildAuthResponse(), isPublicApiRequest(), mapBackendRoles(), onRefreshed() (+73 more)
 
-### Community 10 - "ai-pattern.service.ts"
-Cohesion: 0.02
-Nodes (116): 5. Tech Stack & Architecture, AiController, AiCostGuard, MonthSpend, vietnamMonthStart(), AI_PATTERN_GENERATOR, lockDebit(), ORPHANED_PATTERN_DEBIT_AFTER_MS (+108 more)
+### Community 10 - "claude-pattern.generator.ts"
+Cohesion: 0.10
+Nodes (31): ClaudeGeneratorOptions, ClaudePatternGenerator, color, DESIGN_SCHEMA, hasServerFallback(), num, opacity, PatternGenerationError (+23 more)
 
 ### Community 11 - "workspace/index.ts"
 Cohesion: 0.02
-Nodes (270): listBankTransactions(), getAnalyticsSummary(), StudioEvent, listStaffOrders(), updateOrderStatus(), getBillingDetails(), getXuReport(), saveBillingDetails() (+262 more)
+Nodes (201): createLibraryAsset(), listLibraryLicenses(), manageLibraryAssets(), updateLibraryAsset(), getXuReport(), metadata, metadata, metadata (+193 more)
 
 ### Community 12 - "ReviewsService"
 Cohesion: 0.07
-Nodes (12): ApproveDto, COMMENT_MAX_LENGTH, CreateCommentDto, GuestCommentDto, ResolveCommentDto, REVIEWER_NAME_MAX_LENGTH, PublicReviewController, ReviewsController (+4 more)
+Nodes (10): ApproveDto, CreateCommentDto, GuestCommentDto, ResolveCommentDto, PublicReviewController, ReviewsController, approvalOf(), newToken() (+2 more)
 
 ### Community 13 - "GrantCreditsDto"
-Cohesion: 0.06
-Nodes (5): AdminCreditsController, BillingController, BillingDetails, BillingDetailsDto, GrantCreditsDto
+Cohesion: 0.05
+Nodes (8): AdminCreditsController, BillingController, BillingService, BillingDetails, BillingDetailsDto, GrantCreditsDto, XuHistoryQueryDto, XuHistoryType
 
 ### Community 14 - "Movie"
 Cohesion: 0.02
-Nodes (46): AuditLogRepository, AuditLogService, AwsMovieOverrideSeeder, TypeReference<List<AwsOverride>>, AwsOverride, ActorJsonData, CinemaJsonData, DataSeeder (+38 more)
+Nodes (51): MojibakeUtils, AwsMovieOverrideSeeder, TypeReference<List<AwsOverride>>, AwsOverride, ActorJsonData, CinemaJsonData, DataSeeder, TypeReference<List<Map<String, String>>> (+43 more)
 
 ### Community 15 - "User"
 Cohesion: 0.01
-Nodes (53): **Phía Backend (Spring Boot Server)**, GoogleLoginRequest, JwtResponse, LoginRequest, TokenRefreshRequest, VerifyRequest, UserSession, PermissionRepository (+45 more)
+Nodes (55): **Phía Backend (Spring Boot Server)**, GoogleLoginRequest, JwtResponse, LoginRequest, TokenRefreshRequest, VerifyRequest, UserSession, PermissionRepository (+47 more)
 
 ### Community 16 - "ai-image.service.ts"
 Cohesion: 0.02
-Nodes (105): Biến môi trường, AiPatternService, AI_IMAGE_JOB_OPTIONS, AI_IMAGE_QUEUE, AiImageJobData, BLOCKED_PREFIX, MAX_ACTIVE_AI_IMAGE_JOBS, MAX_PROVIDER_IMAGE_BYTES (+97 more)
+Nodes (107): Biến môi trường, AI_PATTERN_GENERATOR, AI_IMAGE_JOB_OPTIONS, AI_IMAGE_QUEUE, AiImageJobData, BLOCKED_PREFIX, MAX_ACTIVE_AI_IMAGE_JOBS, MAX_PROVIDER_IMAGE_BYTES (+99 more)
 
 ### Community 17 - "ElementInspector.tsx"
-Cohesion: 0.09
-Nodes (38): takesImageTools(), ANCHOR_H, ANCHOR_V, AnchorField(), baseCrop(), BasicInspector(), CMYK_INKS, ColorField() (+30 more)
+Cohesion: 0.06
+Nodes (52): takesImageTools(), ANCHOR_H, ANCHOR_V, AnchorField(), baseCrop(), BasicInspector(), CMYK_INKS, ColorField() (+44 more)
 
 ### Community 18 - "projects.service.ts"
 Cohesion: 0.02
-Nodes (122): fitCheckWith(), main(), needsUpgrade(), UpgradeCandidate, upgradeSnapshotName(), noOrderHoldsDesign(), IProjectEvents, PROJECT_EVENTS (+114 more)
+Nodes (100): paginate(), toSkipTake(), PROJECT_SAVED, noOrderHoldsDesign(), IProjectEvents, PROJECT_EVENTS, ProjectSource, IProjectFiles (+92 more)
 
 ### Community 19 - "MovieRepository"
 Cohesion: 0.02
-Nodes (35): ShowtimeRequest, SyncSeatLockRequest, ShowtimeResponse, Showtime, ShowtimeStatus, CANCELLED, DRAFT, FINISHED (+27 more)
+Nodes (37): ConfirmBookingRequest, ShowtimeRequest, SyncSeatLockRequest, ShowtimeResponse, Showtime, ShowtimeStatus, CANCELLED, DRAFT (+29 more)
 
 ### Community 20 - "be/package.json"
 Cohesion: 0.02
-Nodes (130): dependencies, @anthropic-ai/sdk@^0.131.0, bcryptjs@^3.0.2, bullmq@^6.3.11, class-transformer@^0.5.1, class-validator@^0.14.2, cookie@^1.1.1, cookie-parser@^1.4.7 (+122 more)
+Nodes (136): dependencies, @anthropic-ai/sdk@^0.131.0, @aws-sdk/client-s3@^3.1145.0, @aws-sdk/s3-request-presigner@^3.1145.0, bcryptjs@^3.0.2, bullmq@^6.3.11, cache-manager@^7.2.9, class-transformer@^0.5.1 (+128 more)
 
-### Community 21 - "src/constants/index.ts"
-Cohesion: 0.03
-Nodes (137): 9.1. Danh sách phiên, 9.2. Quy trình mỗi phiên, 9. Chia phiên làm việc và bàn giao, googleSignInUrl(), login(), AdminLayout(), LoginPage(), metadata (+129 more)
+### Community 21 - "BlueprintIntro.tsx"
+Cohesion: 0.24
+Nodes (8): MARK_H, MARK_ORANGE, MARK_PIECES, MARK_W, WrapFitMark(), WrapFitMarkProps, BlueprintIntro(), BlueprintIntroProps
 
 ### Community 23 - "dashboard/index.ts"
-Cohesion: 0.04
-Nodes (102): requestPasswordReset(), createCollection(), deleteCollection(), getCollection(), listCollections(), updateCollection(), changeProjectStatus(), deleteProjectPermanently() (+94 more)
-
-### Community 24 - "notifications.service.ts"
 Cohesion: 0.03
-Nodes (43): ioredis@^6.0.0, AI sinh hoa văn, API hiện có, Chạy nhanh (local), Chạy test, Chạy toàn bộ bằng Docker, Lưu trữ file (S3 / Cloudflare R2), Lưu ý khi triển khai production (+35 more)
+Nodes (141): createCollection(), deleteCollection(), listCollections(), updateCollection(), deleteProjectPermanently(), duplicateProject(), listProjects(), getStorageUsage() (+133 more)
+
+### Community 24 - "2. Chi tiết"
+Cohesion: 0.08
+Nodes (23): Db, INVOICE_RETENTION_YEARS, invoiceRetentionCutoff(), scrubExpiredInvoiceData(), InvoiceRetentionTask, ANONYMIZED_NAME, 18. Việc còn treo sau audit backend, 1. Danh sách (+15 more)
 
 ### Community 25 - "public-project/index.tsx"
-Cohesion: 0.02
-Nodes (192): 14. Kiểu dữ liệu TypeScript, getCurrentUser(), forkPublicProject(), getPublicProject(), getPublicUnboxing(), likePublicProject(), unlikePublicProject(), getTemplate() (+184 more)
+Cohesion: 0.04
+Nodes (89): forkPublicProject(), getPublicProject(), getPublicUnboxing(), likePublicProject(), unlikePublicProject(), generateMetadata(), PageProps, PublicProjectPage() (+81 more)
 
 ### Community 26 - "ref_lucide_react"
 Cohesion: 0.03
-Nodes (145): adminDiscoverService, AdminPromotionService, adminPromotionService, AdminUserService, adminUserService, parseSpringPage(), ActionMenu(), adminDropdownMenuClass (+137 more)
+Nodes (223): adminDiscoverService, AdminPromotionService, adminPromotionService, adminUserService, hrService, ActionMenu(), adminDropdownMenuClass, adminDropdownPortalMenuClass (+215 more)
 
 ### Community 27 - "collections.service.ts"
 Cohesion: 0.06
 Nodes (9): CollectionsController, CollectionRow, collectionSelect, CollectionsService, CollectionView, MAX_COLLECTIONS_PER_USER, toView(), CreateCollectionDto (+1 more)
 
 ### Community 28 - "MovieService"
-Cohesion: 0.02
-Nodes (205): queryClient, ComingSoon(), calcWatchProgress(), ContinueWatching(), formatMeta(), formatRemaining(), ExclusiveCollection(), FavoriteIconButton() (+197 more)
+Cohesion: 0.03
+Nodes (145): calcWatchProgress(), ContinueWatching(), formatMeta(), formatRemaining(), ExclusiveCollection(), FavoriteIconButton(), formatDurationShort(), MovieCard() (+137 more)
 
 ### Community 29 - "ApiResponse"
 Cohesion: 0.03
-Nodes (17): AuthController, AdminComboController, ShowtimeController, CinemaController, ApiResponse, AdminDiscoverController, AdminMissionController, MovieController (+9 more)
+Nodes (30): AuthController, ForgotPasswordRequest, AdminComboController, ActorContext, CancellationRefundController, ShowtimeController, ShowtimeSeatController, CancelBookingRequest (+22 more)
 
 ### Community 30 - "OrbitBookingPage.jsx"
 Cohesion: 0.03
-Nodes (95): FavoriteButton(), OrbitActiveRoomsPanel(), OrbitBookingHeader(), OrbitBookingTimers, OrbitChatBox(), OrbitCheckoutActions(), OrbitMemberPanel(), OrbitSharePanel() (+87 more)
+Nodes (89): vitest@^4.1.10, OrbitActiveRoomsPanel(), OrbitBookingHeader(), OrbitBookingTimers, OrbitChatBox(), OrbitCheckoutActions(), OrbitMemberPanel(), OrbitSharePanel() (+81 more)
+
+### Community 31 - "resolveMediaUrl"
+Cohesion: 0.05
+Nodes (73): AdminMovieDetailPage(), pickPosterRaw(), AdminMovieFormPage(), AmfTagPicker(), mapDetailToFormData(), FilterDropdown(), MoviesPage(), formatDateDisplay() (+65 more)
 
 ### Community 32 - "admin/routes/index.jsx"
-Cohesion: 0.04
-Nodes (83): AdminLayout(), AdminSidebar, AdminCombosPage(), AdminCinemaDetailPage, AdminCinemaRoomPage, AdminComboRevenuePage, AdminCombosPage, AdminHomeRoute (+75 more)
+Cohesion: 0.05
+Nodes (51): AdminCombosPage(), AdminCinemaDetailPage, AdminCinemaRoomPage, AdminComboRevenuePage, AdminCombosPage, AdminHomeRoute, AdminMovieDetailPage, AdminMovieFormPage (+43 more)
 
 ### Community 33 - "AppException"
 Cohesion: 0.02
-Nodes (117): PaymentStatus, COMPLETED, FAILED, PARTIALLY_REFUNDED, PENDING, REFUNDED, BookingComboRepository, BookingRepository (+109 more)
+Nodes (109): AutoShowtimeRequest, AuditLogRepository, AuditLogService, ComboService, PromotionLifecycleService, VoucherRedemptionService, MemberTierUtils, CinemaService (+101 more)
 
 ### Community 34 - "DashboardPage.jsx"
-Cohesion: 0.09
-Nodes (42): @testing-library/react@^16.3.2, vitest@^4.1.10, AdminDatePicker(), AdminDateTimePicker(), AdminMonthCalendar(), AdminMonthSelector(), MONTHS, AdminTimePicker() (+34 more)
+Cohesion: 0.10
+Nodes (40): @testing-library/react@^16.3.2, AdminDatePicker(), AdminDateTimePicker(), AdminMonthCalendar(), AdminMonthSelector(), MONTHS, AdminTimePicker(), formatTime() (+32 more)
 
 ### Community 35 - "set-password/index.tsx"
-Cohesion: 0.05
-Nodes (75): resendVerificationEmail(), resetPassword(), verifyEmail(), metadata, metadata, CompleteSignupRoute(), metadata, metadata (+67 more)
+Cohesion: 0.03
+Nodes (132): googleSignInUrl(), login(), register(), resendVerificationEmail(), resetPassword(), verifyEmail(), metadata, LoginPage() (+124 more)
 
 ### Community 36 - "ShowtimesPage.jsx"
-Cohesion: 0.04
-Nodes (116): FilterDropdown(), MoviesPage(), ShowtimeCard(), ShowtimeDetailDrawer(), getPosterSrc(), ShowtimesAutoModal(), STEPS, toMinutes() (+108 more)
+Cohesion: 0.06
+Nodes (75): VARIANT_MAP, ShowtimeCard(), ShowtimeDetailDrawer(), getPosterSrc(), ShowtimesAutoModal(), STEPS, toMinutes(), getPosterSrc() (+67 more)
 
 ### Community 37 - "templates.service.ts"
-Cohesion: 0.02
-Nodes (54): @nestjs/cache-manager@^3.1.3, paginate(), Paginated, PaginationQueryDto, toSkipTake(), CreateLibraryAssetDto, QueryLibraryDto, UpdateLibraryAssetDto (+46 more)
+Cohesion: 0.03
+Nodes (33): lockForTransaction(), CreateLibraryAssetDto, QueryLibraryDto, UpdateLibraryAssetDto, SearchStockPhotosDto, LibraryController, InspectedLibraryFile, inspectLibraryFile() (+25 more)
 
 ### Community 38 - "PackagingSpecSheet.tsx"
 Cohesion: 0.24
@@ -711,107 +704,111 @@ Nodes (14): BOX, COS30, DIELINE, Dim(), faceMatrix(), FrontArt(), HEADING, IsoBo
 
 ### Community 39 - "org.springframework.web.bind.annotation.GetMapping"
 Cohesion: 0.08
-Nodes (34): AdminDashboardController, AdminPromotionController, ComboController, ShowtimeSeatController, StaffBookingController, StaffCustomerController, AdminSystemConfigController, SystemConfigController (+26 more)
+Nodes (22): AdminDashboardController, AdminPromotionController, BookingController, ComboController, StaffBookingController, SystemConfigController, DiscoverController, HrCatalogController (+14 more)
 
-### Community 40 - "uuid"
+### Community 40 - "list"
 Cohesion: 0.02
-Nodes (23): AutoShowtimeRequest, AutoShowtimeSaveRequest, BookingNativeRepository, PromotionRepository, VoucherRedemptionService, MemberTierUtils, CinemaRepository, SeatTypeRepository (+15 more)
+Nodes (30): BookingNativeRepository, ComboPrice, LockedSeat, SeatGapState, ComboRepository, PromotionRepository, SeatLockedRepository, CinemaRepository (+22 more)
 
 ### Community 41 - "AdminCinemaRoomPage.jsx"
 Cohesion: 0.05
 Nodes (102): AdminCinemaRoomPage(), deriveLayoutDimensions(), FALLBACK_SEAT_TYPES, ROOM_TYPES, SEAT_TYPE_CONFIGS, TEMPLATE_PRESETS, OrbitSeatMapSection(), AISLE_LABEL (+94 more)
 
-### Community 42 - "MyHrPage.jsx"
-Cohesion: 0.05
-Nodes (100): hrService, adminDropdownPortalMenuClass, adminSelectTriggerClass, getAdminDropdownItemClass(), AdminSelectDropdown(), AdminTableShell(), StatusBadge(), VARIANT_MAP (+92 more)
+### Community 42 - "notblank"
+Cohesion: 0.06
+Nodes (3): AdjustmentType, BONUS, DEDUCTION
 
 ### Community 43 - "SupportModerationViolation"
 Cohesion: 0.09
 Nodes (5): SupportModerationViolation, Penalty, PenaltyResult, SupportChatPenaltyService, SupportChatPenaltyServiceTest
 
 ### Community 44 - "SupportTicket"
-Cohesion: 0.06
-Nodes (8): SupportLiveRequestCreateRequest, SupportTicketCreateRequest, SupportTicket, SupportTicketMessageRepository, SupportLiveEvent, SupportTicketDeletedEvent, SupportTicketEvent, SupportTicketService
+Cohesion: 0.07
+Nodes (7): SupportLiveRequestCreateRequest, SupportTicketCreateRequest, SupportTicket, SupportLiveAgent, SupportLiveAvailability, SupportLiveEvent, SupportLiveSupportService
 
-### Community 45 - "request-context.ts"
-Cohesion: 0.09
-Nodes (15): rxjs@^7.8.2, currentRequestId(), REQUEST_ID_HEADER, RequestContext, requestIdMiddleware(), runWithRequestId(), storage, AllExceptionsFilter (+7 more)
+### Community 45 - "renderers.ts"
+Cohesion: 0.07
+Nodes (50): fontkit, artSvg(), artVectors(), ascii(), barcodeVectors(), blurredMask(), centreOf(), CMYK_INFO (+42 more)
 
 ### Community 46 - "db"
-Cohesion: 0.17
-Nodes (37): putBillingDetails(), changeStatus(), changeVisibility(), collectionView(), create(), createCollection(), createSnapshot(), deleteCollection() (+29 more)
+Cohesion: 0.18
+Nodes (36): putBillingDetails(), changeStatus(), changeVisibility(), collectionView(), create(), createCollection(), createSnapshot(), deleteCollection() (+28 more)
 
 ### Community 47 - "fe/package.json"
-Cohesion: 0.04
-Nodes (74): dependencies, animejs@^4.5.0, @chenglou/pretext@^0.0.9, clsx@^2.1.1, fabric@^7.4.0, fflate@^0.8.3, fontkit@^2.0.4, gsap@^3.12.5 (+66 more)
+Cohesion: 0.03
+Nodes (87): dependencies, animejs@^4.5.0, @chenglou/pretext@^0.0.9, clsx@^2.1.1, fabric@^7.4.0, fflate@^0.8.3, fontkit@^2.0.4, gsap@^3.12.5 (+79 more)
 
-### Community 48 - "Toast/index.ts"
-Cohesion: 0.05
-Nodes (72): getMyProfile(), updateMyBrandKit(), updateMyProfile(), metadata, mediaUp(), reducedMotion(), slide(), ToastApi (+64 more)
+### Community 48 - "bank-transactions/index.tsx"
+Cohesion: 0.10
+Nodes (39): BANK_TX_KEY, BankTransaction, BankTransactionPage, BankTxPayment, BankTxStatus, BankTxUnmatchedReason, listBankTransactions(), previewBankTxPayment() (+31 more)
 
 ### Community 49 - "MissionCompletionResponse"
 Cohesion: 0.02
 Nodes (9): MissionBadgeResponse, MissionBoardResponse, MissionBoardSummaryResponse, MissionCampaignResponse, MissionCompletionResponse, MissionItemResponse, MissionProgressResponse, MissionTierResponse (+1 more)
 
 ### Community 50 - "platform.ts"
-Cohesion: 0.17
-Nodes (22): bankPaymentOf(), ownPayment(), paymentView(), settle(), simulateConfirm(), simulateTransfer(), analytics(), deleteUser() (+14 more)
+Cohesion: 0.14
+Nodes (28): bankPaymentOf(), grantCredits(), priceOf(), updateStatus(), analytics(), deleteUser(), gallery(), getJob() (+20 more)
 
 ### Community 51 - "mail.processor.ts"
-Cohesion: 0.09
-Nodes (26): rawAuthToken(), QUEUE_ADD_TIMEOUT_MS, TimeoutError, withTimeout(), ACCOUNT_EXISTS_JOB, ACCOUNT_EXISTS_WINDOW_MS, AccountExistsJobData, AUTH_EMAIL_JOB (+18 more)
+Cohesion: 0.05
+Nodes (36): rxjs@^7.8.2, currentRequestId(), REQUEST_ID_HEADER, RequestContext, runWithRequestId(), storage, AllExceptionsFilter, NormalizedError (+28 more)
 
 ### Community 52 - "billing.ts"
-Cohesion: 0.11
-Nodes (30): activeSubscription(), balanceOf(), billingMe(), createPayment(), ensureAllowance(), exportAccess(), getBillingDetails(), isLive() (+22 more)
+Cohesion: 0.10
+Nodes (33): activeSubscription(), balanceOf(), billingMe(), createPayment(), ensureAllowance(), exportAccess(), isLive(), listPayments() (+25 more)
 
 ### Community 53 - ".upsertTemplate"
 Cohesion: 0.05
 Nodes (14): AdminMissionTemplateRequest, DuplicateMissionTemplateRequest, MissionTemplate, MissionConditionType, GENRE_WINDOW, HYBRID_THEATER_VOD, MATCHMAKER_QUIZ, ORBIT_ROOM_JOIN (+6 more)
 
 ### Community 54 - "project-spec.dto.ts"
-Cohesion: 0.05
-Nodes (37): CreateProjectDto, ANCHOR_H, ANCHOR_V, BoxDimensionsDto, CanvasElementDto, CanvasElementStyleDto, CanvasStateDto, CellsDto (+29 more)
+Cohesion: 0.11
+Nodes (30): ANCHOR_H, ANCHOR_V, BoxDimensionsDto, CanvasElementDto, CanvasElementStyleDto, CanvasStateDto, CellsDto, ColorSwapDto (+22 more)
 
 ### Community 55 - "ShowtimeRadarService"
-Cohesion: 0.09
-Nodes (7): ShowtimeRadarPreference, FavoriteSignals, RadarContext, ScoredSuggestion, ShowtimeRadarService, ShowtimeAvailabilityRow, ShowtimeRadarGenreCodec
+Cohesion: 0.05
+Nodes (11): ShowtimeRadarAlert, ShowtimeRadarPreference, ShowtimeRadarPreferenceRepository, FavoriteSignals, RadarContext, ScoredSuggestion, ShowtimeRadarService, ShowtimeAvailabilityRow (+3 more)
 
-### Community 56 - "placement.ts"
-Cohesion: 0.06
-Nodes (58): Edge, num(), PIECE_GAP_MM, placedCurve(), PlacedPiece, Point, PrintLayout, same() (+50 more)
+### Community 56 - "templates.service.ts"
+Cohesion: 0.07
+Nodes (14): Paginated, MIN_COMMUNITY_FITCHECK_SCORE, QueryHubDto, TemplatesController, communityCard(), CommunityCard, communityCardSelect, CommunityRow (+6 more)
+
+### Community 57 - "jakarta.servlet.http.HttpServletRequest"
+Cohesion: 0.07
+Nodes (8): MediaProxyController, ImageProxyService, MediaS3Service, StreamHeadMeta, MediaProxyRateLimiter, VodStreamCookieSupport, MediaS3ServiceTest, VodStreamCookieSupportTest
 
 ### Community 58 - "S3MediaUploadService.java"
-Cohesion: 0.03
-Nodes (20): AwsS3Config, MediaProxyController, S3AdminController, PartETag, S3MultipartAbortRequest, S3MultipartCompleteRequest, S3MultipartCompleteResponse, S3MultipartInitiateRequest (+12 more)
+Cohesion: 0.04
+Nodes (14): AwsS3Config, S3AdminController, PartETag, S3MultipartAbortRequest, S3MultipartCompleteRequest, S3MultipartCompleteResponse, S3MultipartInitiateRequest, S3MultipartInitiateResponse (+6 more)
 
-### Community 59 - "Country"
-Cohesion: 0.09
-Nodes (4): TypeReference<List<Map<String, String>>>, CountryRequest, Country, MovieCountry
+### Community 59 - "DiscoverMatchService"
+Cohesion: 0.08
+Nodes (5): DiscoverMatchService, FavoriteMovieResponse, FavoriteService, UserFavorite, UserFavoriteRepository
 
 ### Community 61 - "payments.service.ts"
 Cohesion: 0.02
-Nodes (79): XuHistoryQueryDto, XuHistoryType, ADVISORY_LOCK, lockForTransaction(), CreatePaymentDto, PaymentsController, assertMaySimulate(), ConfirmPaidOptions (+71 more)
+Nodes (86): OrdersModule, CreatePaymentDto, PaymentsController, PaymentsModule, assertMaySimulate(), ConfirmPaidOptions, EXPORT_PACK_DISCONTINUED, exportPackDiscontinued() (+78 more)
 
 ### Community 62 - "mock-api/pattern/procedural-pattern.generator.ts"
 Cohesion: 0.13
 Nodes (23): aiPattern(), artwork(), assertValidDesign(), HEX_COLOR, InvalidPatternError, n(), renderPatternSvg(), renderShapes() (+15 more)
 
 ### Community 64 - "print-renderers.ts"
-Cohesion: 0.03
-Nodes (138): dimensions, layoutOf(), shadow, square, fontkit, renderPrintPackage(), renderProofJpeg(), dimensions (+130 more)
+Cohesion: 0.06
+Nodes (69): renderPrintPackage(), renderProofJpeg(), dimensions, layoutOf(), artSvg(), artVectors(), barcodeVectors(), centreOf() (+61 more)
 
 ### Community 65 - "tour.tsx"
-Cohesion: 0.06
-Nodes (50): 1. Hiện trạng, 22. Hướng dẫn tương tác: làm thật trong tour, chuyển luồng, chữ hành động cam đậm, 2. Quyết định (sau 2 vòng hỏi đáp, 2026-11-11), 3.1 Dùng thật phần tô sáng (D1), 3.2 Dòng gợi ý (D2), 3.3 Bỏ dở khi chuyển luồng (D3, D4, D5), 3.4 Chữ hành động cam đậm (D6), 3. Thiết kế lõi (`tour.tsx`) (+42 more)
+Cohesion: 0.04
+Nodes (56): metadata, RootLayout(), beVietnam, bigShoulders, cormorant, fontVariables, inter, jakarta (+48 more)
 
 ### Community 66 - "HrDirectory"
-Cohesion: 0.05
-Nodes (29): HrAttendanceAdminController, HrScheduleController, HrSelfServiceController, AttendanceUpdateRequest, ShiftActionRequest, ShiftAssignmentBulkRequest, ShiftAssignmentCreateRequest, AttendanceResponse (+21 more)
+Cohesion: 0.04
+Nodes (38): HrAttendanceAdminController, HrScheduleController, HrSelfServiceController, AttendanceUpdateRequest, ShiftActionRequest, ShiftAssignmentBulkRequest, ShiftAssignmentCreateRequest, SwapCreateRequest (+30 more)
 
 ### Community 67 - "e2e-scenario.mjs"
-Cohesion: 0.08
-Nodes (35): addText(), args, backendDown, baseUrl, Browser, CHROME_CANDIDATES, downloadJob(), exportFile() (+27 more)
+Cohesion: 0.07
+Nodes (40): 16. Danh mục đầy đủ endpoint (đối chiếu với code), 8.1. Thông báo (chuông ở header), S3. Luồng A · 06 · Tích hợp FE–BE (P1), addText(), args, backendDown, baseUrl, Browser (+32 more)
 
 ### Community 68 - "a11y-audit.mjs"
 Cohesion: 0.15
@@ -823,59 +820,59 @@ Nodes (8): AdminMissionCampaignRequest, AdminMissionCampaignResponse, MissionCam
 
 ### Community 70 - "sync.mjs"
 Cohesion: 0.07
-Nodes (48): decodeEntities(), EXTENSIONS, readIndex(), sha1(), vendorRemoteImages(), vendorFonts(), createOutputGuard(), hash() (+40 more)
+Nodes (51): decodeEntities(), EXTENSIONS, readIndex(), sha1(), vendorRemoteImages(), vendorFonts(), createOutputGuard(), hash() (+43 more)
 
 ### Community 71 - "contracts.ts"
-Cohesion: 0.04
-Nodes (62): AccountDeletionScheduledEvent, AssetFileMetadata, AuditLogEntry, AuthCredentials, AuthResult, AuthTokens, BlogPostEntity, BookmarkTargetType (+54 more)
+Cohesion: 0.03
+Nodes (65): AccountDeletionScheduledEvent, AssetFileMetadata, AuditLogEntry, AuthCredentials, AuthResult, AuthTokens, BlogPostEntity, BookmarkTargetType (+57 more)
 
-### Community 72 - "SafeUser"
-Cohesion: 0.06
-Nodes (71): setUserDemo(), deleteUser(), getHealthDetails(), getUser(), GrantCreditsRequest, grantUserCredits(), listUsers(), updateUser() (+63 more)
+### Community 72 - "useToast"
+Cohesion: 0.03
+Nodes (145): setUserDemo(), deleteUser(), GrantCreditsRequest, grantUserCredits(), listUsers(), updateUser(), requestPasswordReset(), metadata (+137 more)
 
 ### Community 73 - "lombok.Getter"
-Cohesion: 0.16
-Nodes (11): EmployeeProfile, ShiftDefinition, ShiftDefinitionRepository, OrbitComboItem, SendOrbitMessageRequest, UpdateOrbitMemberCombosRequest, TypeReference<List<OrbitComboItem>>, UpdateShowtimeRadarRequest (+3 more)
+Cohesion: 0.21
+Nodes (9): AutoShowtimeSaveRequest, OrbitComboItem, SendOrbitMessageRequest, UpdateOrbitMemberCombosRequest, OrbitRoomMessageResponse, UpdateShowtimeRadarRequest, ShowtimeRadarPreferenceResponse, ShowtimeRadarScanResponse (+1 more)
 
-### Community 74 - "Payment"
-Cohesion: 0.05
-Nodes (3): Payment, GatewayChargeResult, UnsupportedPaymentGatewayService
+### Community 74 - "MovieRepository"
+Cohesion: 0.03
+Nodes (33): BookingCombo, BookingSeat, Payment, PaymentStatus, COMPLETED, FAILED, PARTIALLY_REFUNDED, PENDING (+25 more)
 
 ### Community 75 - "NasaAiAssistantWidget.jsx"
 Cohesion: 0.05
-Nodes (68): CATEGORY_FILTER_OPTIONS, CATEGORY_META, formatAbsoluteDateTime(), formatMessageTime(), formatRelativeTime(), getCategoryMeta(), getInitials(), getStatusMeta() (+60 more)
+Nodes (64): CATEGORY_FILTER_OPTIONS, CATEGORY_META, formatAbsoluteDateTime(), formatMessageTime(), formatRelativeTime(), getCategoryMeta(), getInitials(), getStatusMeta() (+56 more)
 
-### Community 76 - "templates.ts"
-Cohesion: 0.02
-Nodes (119): gift, pieces, beVietnam, bigShoulders, cormorant, fontVariables, inter, jakarta (+111 more)
+### Community 76 - "art.ts"
+Cohesion: 0.09
+Nodes (29): ArtDesign, ArtPalette, artToSvg(), cellNoise(), CHAR_WIDTH, circle(), DESIGN_MAP, DesignFn (+21 more)
 
 ### Community 77 - "configuration.ts"
-Cohesion: 0.05
-Nodes (39): @nestjs/config@^4.0.0, CommonModule, OriginGuard, SAFE_METHODS, allowedOrigins(), isAllowedOrigin(), parseCorsOrigins(), Config (+31 more)
+Cohesion: 0.04
+Nodes (49): @nestjs/config@^4.0.0, AI sinh hoa văn, API hiện có, Chạy nhanh (local), Chạy test, Chạy toàn bộ bằng Docker, Gọi API từ frontend (Next.js), Lưu trữ file (S3 / Cloudflare R2) (+41 more)
 
-### Community 78 - "src/index.ts"
-Cohesion: 0.05
-Nodes (72): nextConfig, securityHeaders, AiPatternPanelProps, GiftPreset, ExportPurchaseCardProps, LibraryPanelProps, PanelNavigatorProps, IBoxStructureGenerator (+64 more)
+### Community 78 - "registry.ts"
+Cohesion: 0.13
+Nodes (26): AiPatternPanelProps, PanelNavigatorProps, DEFAULT_CELLS, MAX_CELLS, generateLidBaseDielineV1(), generateMailerDieline(), MAILER_INNER_CLEARANCE_MM, mailerSizesOf() (+18 more)
 
 ### Community 79 - "MissionsPage.jsx"
 Cohesion: 0.06
-Nodes (49): AdminMissionService, adminMissionService, buildTemplatePayload(), getMissionPreset(), MISSION_CAMPAIGN_STATUSES, MISSION_CONDITION_TYPES, MISSION_PRESETS, MISSION_RECURRENCE_TYPES (+41 more)
+Nodes (51): AdminMissionService, adminMissionService, buildTemplatePayload(), getMissionPreset(), MISSION_CAMPAIGN_STATUSES, MISSION_CONDITION_TYPES, MISSION_PRESETS, MISSION_RECURRENCE_TYPES (+43 more)
 
 ### Community 80 - "PayrollService"
 Cohesion: 0.06
-Nodes (27): HrEmployeeProfileController, HrPayrollController, AdjustmentRequest, EmployeeProfileRequest, HolidayRequest, PayrollPeriodCreateRequest, AdjustmentResponse, EmployeeProfileResponse (+19 more)
+Nodes (27): HrPayrollController, AdjustmentRequest, HolidayRequest, PayrollPeriodCreateRequest, AdjustmentResponse, HolidayResponse, PayrollPeriodResponse, PayslipResponse (+19 more)
 
 ### Community 81 - "src/common/index.ts"
 Cohesion: 0.02
-Nodes (81): ASPECT_RATIOS, XuReportQueryDto, IsAccountPassword(), normalizeEmail(), Check, GRANT_LIMIT_XU, XU_HISTORY_MAX_LIMIT, XU_HISTORY_TYPES (+73 more)
+Nodes (77): @nestjs/cache-manager@^3.1.3, ASPECT_RATIOS, AdminAnalyticsController, XuReportQueryDto, vietnamMonthOf(), vietnamMonthRange(), XuReportService, OneTimeTokenDto (+69 more)
 
 ### Community 83 - "MissionService"
 Cohesion: 0.02
-Nodes (32): BookingActivityMessage, SeatMapUpdateEvent, BookingActivityEvent, SeatMapUpdatedEvent, RealtimeEventPublisher, SeatMapEventPublisher, SeatMapWatchRegistry, CatalogCacheEvictor (+24 more)
+Nodes (32): BookingActivityMessage, SeatMapUpdateEvent, BookingActivityEvent, SeatMapUpdatedEvent, RealtimeEventPublisher, SeatMapWatchRegistry, RequestLoggingFilter, CatalogCacheEvictor (+24 more)
 
 ### Community 84 - "sceneSet.ts"
-Cohesion: 0.11
-Nodes (24): SurfaceKind, buildProps(), createBirthdaySceneSet(), createChristmasSceneSet(), createKraftWoodSceneSet(), createModernStudioSceneSet(), createSceneSet(), createTetSceneSet() (+16 more)
+Cohesion: 0.18
+Nodes (19): SurfaceKind, buildProps(), createBirthdaySceneSet(), createChristmasSceneSet(), createKraftWoodSceneSet(), createModernStudioSceneSet(), createSceneSet(), createTetSceneSet() (+11 more)
 
 ### Community 85 - "AdminMissionAnalyticsResponse"
 Cohesion: 0.03
@@ -887,39 +884,43 @@ Nodes (54): environment, AI_IMAGE_CONCURRENCY, AI_IMAGE_MODELS, AI_IMAGE_PROVIDE
 
 ### Community 87 - "reviews.ts"
 Cohesion: 0.24
-Nodes (19): addComment(), approvalOf(), approve(), byToken(), closeLink(), getState(), guestComment(), MockComment (+11 more)
+Nodes (18): addComment(), approvalOf(), approve(), byToken(), closeLink(), getState(), guestComment(), MockComment (+10 more)
 
 ### Community 88 - "src/index.ts"
 Cohesion: 0.01
-Nodes (225): Dự án: quy tắc chính (IT3-03), Phase 8 — Rà soát và sửa công thức hộp (thêm 2026-10-11), 1. Kịch bản, getExportAccess(), metadata, Page(), AuthShowcase(), AuthShowcaseProps (+217 more)
+Nodes (257): fitCheckWith(), main(), needsUpgrade(), UpgradeCandidate, upgradeSnapshotName(), DIMENSIONS, ensureProject(), LOGO_FILE (+249 more)
 
 ### Community 89 - "dependencies"
 Cohesion: 0.06
 Nodes (31): dependencies, framer-motion@^10.16.16, @hookform/resolvers@^3.3.4, lucide-react@^0.396.0, postcss@^8.4.31, qrcode@^1.5.4, @radix-ui/react-dialog@^1.1.1, @radix-ui/react-dropdown-menu@^2.0.5 (+23 more)
 
 ### Community 91 - "currentUser"
-Cohesion: 0.16
-Nodes (18): findByEmail(), login(), logout(), me(), publicUser(), recordUpload(), register(), storageUsage() (+10 more)
+Cohesion: 0.23
+Nodes (14): findByEmail(), login(), logout(), me(), publicUser(), recordUpload(), register(), storageUsage() (+6 more)
 
-### Community 93 - "cart/index.tsx"
-Cohesion: 0.12
-Nodes (25): createSampleBundle(), listPrintShops(), listProjects(), metadata, Page(), ProjectThumb(), CartItem, MAX_QUANTITY (+17 more)
+### Community 93 - "PrintShopsService"
+Cohesion: 0.08
+Nodes (15): PrintShopsController, PrintShopsModule, PARTNERS, PrintShopPartner, PrintShopsService, 2.2. Cấu trúc hộp, mẫu và dự án, 2.4. AI: hoa văn và ảnh, 2.5. Duyệt mẫu (+7 more)
 
 ### Community 94 - "DesignStats.tsx"
-Cohesion: 0.09
-Nodes (18): cache-manager@^7.2.9, AnalyticsController, AnalyticsService, GLOBAL_SUMMARY_TTL_MS, ANALYTICS_TIME_ZONE, boxTypesOf(), countsByDay(), creationTimeOf() (+10 more)
+Cohesion: 0.08
+Nodes (20): AnalyticsController, AnalyticsService, GLOBAL_SUMMARY_TTL_MS, ANALYTICS_TIME_ZONE, boxTypesOf(), countsByDay(), creationTimeOf(), mean() (+12 more)
 
 ### Community 97 - "StaffMissionControlService"
 Cohesion: 0.15
 Nodes (3): StaffComboStatItem, StaffMissionControlRepository, StaffMissionControlService
 
 ### Community 98 - "ref_node_fs"
-Cohesion: 0.09
+Cohesion: 0.06
 Nodes (24): [tool, file, ...extra], maxIndex, perFile, ROOT, RULES, totals, walk(), alias() (+16 more)
 
 ### Community 99 - "MissionService"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (5): UserMission, ExplorerProgress, GenreEvent, HybridProgress, TypeReference<HybridProgress>
+
+### Community 100 - "segmentWriter"
+Cohesion: 0.12
+Nodes (27): bellyBandSizesOf(), FLAT_STRUCTURES, generateBellyBandDieline(), generateFoldedCardDieline(), generateHangTagDieline(), SHEET_ONLY_STRUCTURES, TAG_HOLE, GABLE_HAND_HOLE (+19 more)
 
 ### Community 101 - "emailTemplateUtils.js"
 Cohesion: 0.09
@@ -931,23 +932,19 @@ Nodes (6): ChatCompletionRequest, ChoiceButton, SupportAiMessage, SupportAiResul
 
 ### Community 104 - "formatVnd"
 Cohesion: 0.02
-Nodes (182): BANK_TX_KEY, BankTransaction, BankTransactionPage, BankTxPayment, BankTxStatus, previewBankTxPayment(), resolveBankTransaction(), ResolveBankTransactionRequest (+174 more)
+Nodes (243): 2.4 Mục 4: lỗi nhập ảnh kho (S), listProjectExports(), createSampleBundle(), demoFallback(), getOrder(), listMyOrders(), listStaffOrders(), updateOrderStatus() (+235 more)
 
 ### Community 105 - "StorageService"
 Cohesion: 0.02
-Nodes (77): 0. Backend Code Layout (`be/src/`), 1. Relational Database Schema (PostgreSQL), 2. Asset Storage Strategy (S3 / Cloud Storage), 3. Real-time Synchronization Protocol, WrapFit Backend & Data Flow Skill (InsForge Architecture), @aws-sdk/s3-request-presigner@^3.1145.0, ExportModule, ExportWorkerModule (+69 more)
+Nodes (65): ProjectFile, UploadPurpose, canvasKeys(), LikeState, PublicRow, publicSelect, isFirstView(), VIEW_DEDUP_SECONDS (+57 more)
 
 ### Community 107 - "Hardening Controls"
 Cohesion: 0.05
 Nodes (42): Broken Access Control, Broken Authentication, Cross-Site Scripting (XSS), Data Classification, Dependency Audit Triage, Destructive Operations on Derived Paths, File Upload Safety, Hardening Patterns (+34 more)
 
-### Community 108 - "SupportContentModerationService"
-Cohesion: 0.13
-Nodes (7): ImageVerdict, RELATED, SENSITIVE, UNKNOWN, UNRELATED, SupportContentModerationService, SupportContentModerationServiceTest
-
-### Community 110 - "legal/index.tsx"
-Cohesion: 0.07
-Nodes (21): metadata, Page(), metadata, Page(), metadata, Page(), metadata, Page() (+13 more)
+### Community 108 - "review/index.tsx"
+Cohesion: 0.16
+Nodes (27): 8.2. Duyệt mẫu theo link (khách, xưởng in), 8. Chia sẻ, remix, thả tim, addGuestReviewComment(), addReviewComment(), approveReview(), base(), closeReviewLink(), deleteReviewComment() (+19 more)
 
 ### Community 113 - "UserNotification"
 Cohesion: 0.08
@@ -962,60 +959,56 @@ Cohesion: 0.05
 Nodes (41): env, name, needs, runs-on, services, steps, CORS_ORIGINS, DATABASE_URL (+33 more)
 
 ### Community 118 - "@nestjs/common"
-Cohesion: 0.02
-Nodes (127): CONVERSION_REF, ConversionReport, ConvertedLot, convertExportCredits(), ExportLotRow, main(), plan(), unexpiredExportLots() (+119 more)
+Cohesion: 0.03
+Nodes (106): CONVERSION_REF, ConversionReport, ConvertedLot, convertExportCredits(), ExportLotRow, main(), plan(), unexpiredExportLots() (+98 more)
 
 ### Community 119 - "Combo"
 Cohesion: 0.07
 Nodes (3): ComboRequest, ComboResponse, Combo
 
-### Community 120 - "validator.ts"
-Cohesion: 0.04
-Nodes (78): of(), tuck, codes(), dimensions, tuckTop, tuck(), 5.1. Tạo, liệt kê, mở, 5.2. `canvasState` (+70 more)
+### Community 120 - "barcode.ts"
+Cohesion: 0.23
+Nodes (11): BarcodeArt, barcodeArt(), ean13CheckDigit(), ean13Modules(), G_CODES, L_CODES, MIN_BARCODE_MM, PARITY (+3 more)
 
 ### Community 121 - "org.springframework.transaction.annotation.Transactional"
 Cohesion: 0.03
-Nodes (30): CreateOrbitRoomRequest, UpdateOrbitMemberSeatsRequest, OrbitCheckoutPrepareResponse, OrbitMemberResponse, OrbitRoomResponse, OrbitMember, OrbitRoom, OrbitRoomStatus (+22 more)
+Nodes (30): GapSeat, SeatGapValidationService, SeatMapEventPublisher, CreateOrbitRoomRequest, UpdateOrbitMemberSeatsRequest, OrbitRoomResponse, OrbitMember, OrbitRoom (+22 more)
+
+### Community 122 - "SupportTicketMessage"
+Cohesion: 0.07
+Nodes (6): SupportTicketMessageResponse, SupportTicketMessage, SupportTicketMessageRepository, SupportTicketDeletedEvent, SupportTicketEvent, SupportTicketService
 
 ### Community 124 - "🔌 THIẾT KẾ RESTFUL APIs CHI TIẾT (FULL-SYSTEM API SPECIFICATION)"
 Cohesion: 0.05
 Nodes (43): **1.1. Đăng nhập (Login)**, **1.2. Đăng ký (Register)**, **1.3. Làm mới Token (Refresh Token)**, **1.4. Yêu cầu Quên mật khẩu (Forgot Password)**, **1.5. Đặt lại Mật khẩu (Reset Password)**, **1.6. Lấy thông tin cá nhân (Get Personal Profile)**, **1.7. Cập nhật thông tin cá nhân (Update Personal Profile)**, **1.8. Đổi mật khẩu (Change Password)** (+35 more)
 
-### Community 127 - "cn"
-Cohesion: 0.02
-Nodes (132): getXuHistory(), metadata, Page(), Breakpoint, BREAKPOINTS, ColorToken, contrastRatio(), GRID (+124 more)
-
 ### Community 128 - "MissionEventPayload"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (9): MissionEventPayload, MissionProgressEvent, MissionEventType, DISCOVER_QUIZ_COMPLETED, ORBIT_ROOM_JOINED, REVIEW_WITH_VIBE_TAG_CREATED, THEATER_BOOKING_CONFIRMED, VOD_FIRST_PLAY (+1 more)
 
 ### Community 129 - "useAuthContext"
 Cohesion: 0.04
-Nodes (91): App(), AuthPageLoader(), ErrorBoundary, NotFoundPage(), LocationDisplay(), mockUseAuthContext, renderPage(), LoginPage (+83 more)
+Nodes (92): App(), AuthPageLoader(), ErrorBoundary, NotFoundPage(), LocationDisplay(), mockUseAuthContext, renderPage(), LoginPage (+84 more)
 
 ### Community 130 - "ConfigPage.jsx"
-Cohesion: 0.11
-Nodes (35): ConfigField(), ConfigPage(), ConfigSection(), ConfigSlider(), ConfigSwitch(), ConfigTypeList(), emptyTypeEntry(), formatVnd() (+27 more)
-
-### Community 131 - "MovieService"
-Cohesion: 0.07
-Nodes (8): MovieService, clampPercent(), guessContentType(), putBlobWithProgress(), runWithConcurrency(), uploadMediaToS3(), uploadMultipart(), uploadSinglePut()
+Cohesion: 0.10
+Nodes (36): ConfigField(), ConfigPage(), ConfigSection(), ConfigSlider(), ConfigSwitch(), ConfigTypeList(), emptyTypeEntry(), formatVnd() (+28 more)
 
 ### Community 132 - "nowIso"
-Cohesion: 0.19
-Nodes (23): grantCredits(), grantLot(), spendXu(), createBundle(), createSample(), getOrder(), Line, mine() (+15 more)
+Cohesion: 0.21
+Nodes (21): grantLot(), spendXu(), list(), markAllRead(), markRead(), mine(), MockNotification, notificationRoutes (+13 more)
 
-### Community 135 - "InteractiveFoldingBox3D.tsx"
-Cohesion: 0.09
-Nodes (26): BoxEnvironment, BoxModel, foldablePieces(), AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, DimensionAxis, DimensionGuides (+18 more)
+### Community 135 - "cup-carrier.ts"
+Cohesion: 0.10
+Nodes (22): createCup350ml(), getSharedCupTexture(), PlacedCarrierCups, placedCarrierCups(), STANDARD_350ML_HEIGHT, STANDARD_350ML_RADIUS_BOTTOM, STANDARD_350ML_RADIUS_TOP, STANDARD_350ML_Y_SEAT (+14 more)
 
 ### Community 136 - "BookingResponse"
 Cohesion: 0.07
 Nodes (4): BookingResponse, ComboLine, SeatLine, TicketLine
 
-### Community 137 - "org.slf4j.Logger"
-Cohesion: 0.02
-Nodes (32): RequestLoggingFilter, BookingIntegritySchemaMigrationConfig, BookingIntegritySchemaMigrator, CacheConfig, CloudinaryConfig, FeatureSchemaMigrationConfig, FeatureSchemaMigrator, GoogleAuthConfig (+24 more)
+### Community 137 - "org.springframework.jdbc.core.JdbcTemplate"
+Cohesion: 0.05
+Nodes (15): BookingIntegritySchemaMigrationConfig, BookingIntegritySchemaMigrator, CacheConfig, CloudinaryConfig, FeatureSchemaMigrationConfig, FeatureSchemaMigrator, GoogleAuthConfig, MovieReviewSchemaMigrationConfig (+7 more)
 
 ### Community 138 - ".upsertOption"
 Cohesion: 0.09
@@ -1026,28 +1019,32 @@ Cohesion: 0.20
 Nodes (3): ICaptchaVerifier, IFixAction, IReorderService
 
 ### Community 140 - "SupportController"
-Cohesion: 0.10
-Nodes (8): SupportAiMessageRequest, SupportAiRequest, SupportAiResponse, SupportAiStatusResponse, SupportController, SupportLiveController, SupportTicketMessageRequest, SupportActionRateLimiter
+Cohesion: 0.09
+Nodes (9): SupportAiMessageRequest, SupportAiRequest, SupportAiResponse, SupportAiStatusResponse, SupportController, SupportLiveController, SupportSatisfactionRequest, SupportTicketMessageRequest (+1 more)
 
 ### Community 141 - "ui-fixtures.mjs"
 Cohesion: 0.10
 Nodes (21): Context, AppSession, backendEnv(), FIXTURES_FILE, readFixtures(), seedAdmin(), SHOTS_DIR, admin (+13 more)
 
-### Community 143 - "LibraryPanel.tsx"
-Cohesion: 0.16
-Nodes (21): importStockPhoto(), listLibraryAssets(), searchStockPhotos(), ALL_FONTS, assetItem(), designFiles(), ItemGrid(), KIT_PAPER (+13 more)
+### Community 143 - "Upcoming.jsx"
+Cohesion: 0.21
+Nodes (21): MovieReminderButton(), getEmbedUrl(), TrailerModal(), formatShowtimeLabel(), ShowtimeRadarWidget, Upcoming(), RemindersPage(), buildReminderEntry() (+13 more)
 
 ### Community 144 - "mock-api/index.ts"
 Cohesion: 0.10
-Nodes (28): accountRoutes, billingRoutes, list(), markAllRead(), markRead(), mine(), MockNotification, notificationRoutes (+20 more)
+Nodes (26): accountRoutes, billingRoutes, createBundle(), createSample(), getOrder(), Line, mine(), NEXT (+18 more)
 
 ### Community 145 - "Component & Hook Usage Guide"
 Cohesion: 0.05
 Nodes (37): 📚 Additional Resources, 🔌 API Service, Auth Context Type, AuthCard, 🔐 Authentication Hooks, AuthInput, AuthLayout, authService (+29 more)
 
 ### Community 152 - "DashboardPage.jsx"
-Cohesion: 0.09
-Nodes (34): AdminDashboardService, adminDashboardService, AdminComboRevenuePage(), AreaChart(), CHART_COLORS, DonutChart(), formatMoney(), formatMoneyFull() (+26 more)
+Cohesion: 0.08
+Nodes (26): AdminDashboardService, adminDashboardService, AdminComboRevenuePage(), AreaChart(), CHART_COLORS, DonutChart(), formatMoney(), formatMoneyFull() (+18 more)
+
+### Community 153 - "MovieListResponse"
+Cohesion: 0.07
+Nodes (3): DiscoverScorer, ScoreResult, MovieListResponse
 
 ### Community 156 - "ImpositionCanvas2D.tsx"
 Cohesion: 0.17
@@ -1057,13 +1054,9 @@ Nodes (19): ImpositionCanvas2D(), ImpositionCanvas2DProps, DEFAULT_PRINTER_MARKS
 Cohesion: 0.08
 Nodes (26): paletteTheme(), radiusTheme(), semanticColorTheme(), semanticColorVariables(), spacingTheme(), typeScaleTheme(), APP_TOKENS_ATTRIBUTE, CssInJs (+18 more)
 
-### Community 162 - "MovieDetailResponse"
-Cohesion: 0.03
-Nodes (4): ActorResponse, MovieDetailResponse, MovieMediaResponse, MovieControllerTest
-
 ### Community 163 - "svgRecolor.ts"
 Cohesion: 0.21
-Nodes (17): SvgColors(), isSvgText(), pending, ready, recoloredSrc(), svgColorsOfUrl(), svgTextOf(), texts (+9 more)
+Nodes (18): SvgColors(), imageKey(), isSvgText(), pending, ready, recoloredSrc(), svgColorsOfUrl(), svgTextOf() (+10 more)
 
 ### Community 165 - "Code Review and Quality"
 Cohesion: 0.07
@@ -1090,32 +1083,20 @@ Cohesion: 0.06
 Nodes (30): build, container_name, depends_on, env_file, environment, restart, context, dockerfile (+22 more)
 
 ### Community 173 - "home/routes/index.jsx"
-Cohesion: 0.05
-Nodes (50): capabilities, containerVariants, itemVariants, journey, principles, teamMembers, CatalogBrowsePage(), CountriesBrowsePage() (+42 more)
-
-### Community 176 - "CinemaRequest"
-Cohesion: 0.10
-Nodes (5): CinemaRequest, CinemaStatus, ACTIVE, DISABLED, MAINTENANCE
-
-### Community 177 - "PaymentTransaction"
-Cohesion: 0.11
-Nodes (3): PaymentTransaction, PaymentIntentInput, PaymentIntentResult
-
-### Community 178 - "DiscoverScorer"
-Cohesion: 0.18
-Nodes (4): DiscoverScorer, ScoreResult, ShowtimeRadarGenreMatcher, ShowtimeRadarGenreMatcherTest
+Cohesion: 0.03
+Nodes (58): capabilities, containerVariants, itemVariants, journey, principles, teamMembers, CinemasPage(), extractCity() (+50 more)
 
 ### Community 179 - "WalletPage.jsx"
-Cohesion: 0.08
-Nodes (38): MovieReminderButton(), getEmbedUrl(), TrailerModal(), formatShowtimeLabel(), ShowtimeRadarWidget, Upcoming(), RemindersPage(), FALLBACK_QUICK_AMOUNTS (+30 more)
+Cohesion: 0.13
+Nodes (17): FALLBACK_QUICK_AMOUNTS, formatBookingRef(), formatMoney(), MethodCard(), stripePromise, StripeTopUpForm(), TX_FILTERS, txLabel() (+9 more)
 
 ### Community 181 - "SeatStatus"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (6): UpdateSeatRequest, SeatResponse, SeatStatus, ACTIVE, DISABLED, MAINTENANCE
 
-### Community 183 - "extract-admin-sidebar.mjs"
-Cohesion: 0.33
-Nodes (4): original, sidebarBody, sidebarEnd, sidebarStart
+### Community 183 - "MovieReviewsSection.jsx"
+Cohesion: 0.13
+Nodes (15): MovieReviewPagination(), formatReviewDate(), MovieReviewsSection(), RATING_LABELS, REVIEW_SORT_OPTIONS, StarRating(), buildCollapsedVibeTagList(), loadReviewVibeTags() (+7 more)
 
 ### Community 184 - "CinemaAuthBackground.jsx"
 Cohesion: 0.15
@@ -1129,13 +1110,13 @@ Nodes (26): 1. Commit Early, Commit Often, 2. Atomic Commits, 3. Descriptive Mes
 Cohesion: 0.07
 Nodes (25): Connection Pool Exhaustion, Large Bundle Size, Missing Caching (Backend), Missing Image Optimization (Frontend), N+1 Queries (Backend), Optimization Patterns, Queries That Ignore Their Index, Unbounded Data Fetching (+17 more)
 
-### Community 187 - "boxModel.ts"
-Cohesion: 0.04
-Nodes (77): carrier(), closed(), Bounds, cases, SIZES, STRUCTURES, VERSIONS, Bounds (+69 more)
+### Community 187 - "insert-flat-dieline.spec.ts"
+Cohesion: 0.09
+Nodes (38): carrier(), closed(), Bounds, cases, SIZES, STRUCTURES, VERSIONS, closed() (+30 more)
 
-### Community 188 - "20. Xu Wrap: bàn giao cho frontend"
-Cohesion: 0.08
-Nodes (25): 11. Checklist trước khi merge (phía FE), 1. Tóm tắt thay đổi, 20. Xu Wrap: bàn giao cho frontend, 3. Bảng giá, 4.11 Admin, 4.1 `GET /ai/models`: catalog ảnh AI, 4.3 `GET /ai/images/jobs/:id`: theo dõi một job, 4.4 `GET /ai/images?before&limit`: "Ảnh AI của tôi" (+17 more)
+### Community 188 - "aiUsage"
+Cohesion: 0.50
+Nodes (5): 11.1. Hoa văn AI, 11.2. Ảnh AI cho mặt hộp, 11.3. Ví xu và lịch sử, 11. AI: xu Wrap, ảnh AI và hoa văn, aiUsage()
 
 ### Community 189 - "SearchResultItem"
 Cohesion: 0.13
@@ -1150,7 +1131,7 @@ Cohesion: 0.08
 Nodes (25): Accessibility, Code Quality, Common Rationalizations, Documentation, Error Budget Release Gate, Error Reporting, Feature Flag Strategy, Infrastructure (+17 more)
 
 ### Community 196 - "tokens.mjs"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (23): postcss-selector-parser@^6.1.4, bodyBackground(), buildScreenCss(), HTML_CLASS_RULES, scopeSelectorList(), scopeStyles(), buildTokenTheme(), cssVariablesFor() (+15 more)
 
 ### Community 197 - "steps"
@@ -1178,16 +1159,20 @@ Cohesion: 0.10
 Nodes (21): args, baseUrl, CHROME_CANDIDATES, chromePath, evaluate(), fixtures, loadRoutes(), openChrome() (+13 more)
 
 ### Community 204 - "PermissionName"
-Cohesion: 0.04
-Nodes (25): Permission, UserPermission, PermissionName, CINEMA_WRITE, COMBO_WRITE, COUNTER_BOOKING_CREATE, COUNTER_COMBO_CREATE, COUNTER_CUSTOMER_CREATE (+17 more)
+Cohesion: 0.08
+Nodes (23): PermissionName, CINEMA_WRITE, COMBO_WRITE, COUNTER_BOOKING_CREATE, COUNTER_COMBO_CREATE, COUNTER_CUSTOMER_CREATE, COUNTER_REFUND_PROCESS, COUNTER_VOUCHER_APPLY (+15 more)
 
 ### Community 206 - "WebSocketHandshakeAuthInterceptor.java"
 Cohesion: 0.11
 Nodes (3): WebSocketConfig, WebSocketHandshakeAuthInterceptor, WebSocketHandshakeAuthInterceptorTest
 
 ### Community 207 - "11 — Hướng dẫn tích hợp Frontend ↔ Backend"
-Cohesion: 0.10
-Nodes (21): 10. Mở hộp 3D qua QR, 11. AI sinh hoa văn, 11 — Hướng dẫn tích hợp Frontend ↔ Backend, 12. Hồ sơ, Brand Kit, bộ sưu tập, 15. Chạy và kiểm thử local, 16. Danh mục đầy đủ endpoint (đối chiếu với code), 1. Kết nối và phiên đăng nhập, 2. Định dạng lỗi và mã lỗi (+13 more)
+Cohesion: 0.08
+Nodes (25): 06 — Hướng dẫn tích hợp Frontend ↔ Backend, 10. Mở hộp 3D qua QR, 12. Hồ sơ, Brand Kit, bộ sưu tập, 13. Những chỗ `apiClient` cũ lệch backend (đã sửa), 15. Chạy và kiểm thử local, 1. Kết nối và phiên đăng nhập, 2. Định dạng lỗi và mã lỗi, 3.1. Các trang FE cần có (+17 more)
+
+### Community 209 - "15 — Runbook deploy và demo bản Path 2"
+Cohesion: 0.09
+Nodes (23): 0. Trạng thái, 15 — Runbook deploy và demo bản Path 2, 1. Kiến trúc bản demo, 2.1. Điều kiện, 2.2. Kiểm `.env` trên VPS, 2.3. Trình tự deploy lần này, 2.4. Giới hạn vận hành cần biết, 2. Trước khi deploy (+15 more)
 
 ### Community 210 - "CI/CD and Automation"
 Cohesion: 0.08
@@ -1205,9 +1190,9 @@ Nodes (23): Adapter Pattern, Code Is a Liability, Common Rationalizations, Compu
 Cohesion: 0.08
 Nodes (24): 2.1. Phân hệ 1: Quản trị Tài khoản, Xác thực & Brand Kit (Auth & Identity), 2.2. Phân hệ 2: Quản lý Dự án, Lưu trữ & Lịch sử Phiên bản (Project Lifecycle, Archive & Versioning), 2.3. Phân hệ 3: Chia sẻ Công Khai, Nhúng 3D & Cộng Đồng Remix (Public Showcase, 3D Embed & Fork), 2.4. Phân hệ 4: Thư Viện Mẫu Bao Bì Chuẩn Hóa & Cộng Đồng (Curated & Community Template Hub), 2.5. Phân hệ 5: Phòng thu Thiết kế 2D Dieline Đa Lớp (2D Vector Canvas Studio), 2.6. Phân hệ 6: Mô phỏng Gập & Vật liệu 3D Thời Gian Thực (3D Folding & Material Physics), 2.7. Phân hệ 7: Động cơ Thẩm định Vật lý & In ấn FitCheck™ (Physics & Preflight Engine), 2.8. Phân hệ 8: Độc Đáo Phục Vụ Marketing & Viral Growth (Marketing & Viral Engine) (+16 more)
 
-### Community 216 - "quote.ts"
-Cohesion: 0.11
-Nodes (20): decimal(), FINISHING_LABELS, priceWith(), PrintMethod, Quote, QUOTE_GROUP_LABELS, QUOTE_LADDER, QuoteCostKind (+12 more)
+### Community 217 - "effects-spelling.spec.ts"
+Cohesion: 0.12
+Nodes (14): dimensions, layoutOf(), shadow, square, shadowLayers(), BEFORE_NH_CH, CAN_CLOSE, CLOSED (+6 more)
 
 ### Community 218 - "package.json"
 Cohesion: 0.09
@@ -1221,9 +1206,13 @@ Nodes (22): ADR Lifecycle, ADR Template, API Documentation, Architecture Decisio
 Cohesion: 0.09
 Nodes (22): Common Rationalizations, Contract-First Slicing, Implementation Rules, Increment Checklist, Incremental Implementation, Overview, Red Flags, Risk-First Slicing (+14 more)
 
+### Community 222 - "DiscoverHistoryService"
+Cohesion: 0.11
+Nodes (4): AdminDiscoverAnalyticsResponse, DiscoverDistributionItemResponse, UserMatchmakerHistoryRepository, DiscoverHistoryService
+
 ### Community 223 - "movie-theater-fe/package.json"
 Cohesion: 0.11
-Nodes (18): animejs@^4.5.0, gsap@^3.15.0, react@^19.2.6, react-dom@^19.2.6, @stomp/stompjs@^7.3.0, sweetalert2@^11.26.25, three@^0.185.1, animejs (+10 more)
+Nodes (18): animejs@^4.5.0, gsap@^3.15.0, react@^19.2.6, react-dom@^19.2.6, sockjs-client@^1.6.1, @stripe/stripe-js@^3.5.0, three@^0.185.1, animejs (+10 more)
 
 ### Community 224 - "Code Simplification"
 Cohesion: 0.09
@@ -1238,8 +1227,8 @@ Cohesion: 0.14
 Nodes (22): environment, COOKIE_SECURE, CORS_ORIGINS, DATABASE_URL, FRONTEND_URL, GOOGLE_CALLBACK_URL, MAIL_FROM, REDIS_URL (+14 more)
 
 ### Community 229 - "CounterPOSPage.jsx"
-Cohesion: 0.04
-Nodes (62): StaffMissionService, staffMissionService, playCheckInBeep(), speakCheckInText(), formatStatusLabel(), StaffCheckInSessionHistory(), formatShowtimeParts(), staffFilterShape() (+54 more)
+Cohesion: 0.07
+Nodes (49): sweetalert2@^11.26.25, StaffMissionService, staffMissionService, playCheckInBeep(), speakCheckInText(), formatStatusLabel(), StaffCheckInSessionHistory(), formatShowtimeParts() (+41 more)
 
 ### Community 230 - "PackagingAudioEngine"
 Cohesion: 0.16
@@ -1250,16 +1239,12 @@ Cohesion: 0.10
 Nodes (20): compilerOptions, allowSyntheticDefaultImports, baseUrl, declaration, emitDecoratorMetadata, esModuleInterop, experimentalDecorators, forceConsistentCasingInFileNames (+12 more)
 
 ### Community 232 - "intro-blueprint.ts"
-Cohesion: 0.10
-Nodes (16): activate3DMode(), activateFlatMode(), activateUnboxMode(), applyFoldState(), flashExportNotification(), setFoldPercent(), updateBoxTransform(), updateTitle() (+8 more)
+Cohesion: 0.20
+Nodes (3): playFeedbackClick(), switchStage(), updateButtonStates()
 
-### Community 236 - "docs/04_PROGRESS.md"
-Cohesion: 0.29
-Nodes (7): 14 — Rà soát công thức hộp (Phase 8), 1. Cách kiểm, 2. Quy ước kích thước và công thức bản 3, 4. Ảnh phôi, 5. Test, 6. Xuất thật bằng worker (8.6), 7. Dự án đã tạo bằng công thức cũ (8.10, D + B)
-
-### Community 237 - "XuHistoryQueryDto"
-Cohesion: 0.14
-Nodes (14): 10. Việc còn lại của chủ dự án, 1. Bối cảnh, 21. Cổng thanh toán thật: SePay, VNPay sandbox và trang Ví xu, 2. Quyết định (sau 2 vòng hỏi đáp, 2026-11-10), 4.1 Checkout (S5) — `fe/src/features/payments/CheckoutDialog.tsx`, 4.2 Trang Ví xu (S6) — `/dashboard/wallet`, 4.3 Trang admin đối soát (S4), 4. Thiết kế frontend (+6 more)
+### Community 236 - "WalletController"
+Cohesion: 0.24
+Nodes (3): WalletController, WalletAmountRequest, WalletTopUpConfirmRequest
 
 ### Community 238 - "frontend"
 Cohesion: 0.17
@@ -1273,9 +1258,9 @@ Nodes (26): scripts, build, db:backfill-events, db:convert-export-credits, db:de
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+11 more)
 
-### Community 241 - "render-dielines.mjs"
-Cohesion: 0.12
-Nodes (12): hash, args, CHROME, esc(), n(), outDir, pieceSvg(), require (+4 more)
+### Community 241 - "store.ts"
+Cohesion: 0.17
+Nodes (15): bankTx(), DEMO_USER_ID, getSessionUserId(), iso(), MockEvent, MockLot, MockPayment, MockSnapshot (+7 more)
 
 ### Community 245 - "Interview Me"
 Cohesion: 0.11
@@ -1297,17 +1282,17 @@ Nodes (5): 6. MA TRẬN TUÂN THỦ NGUYÊN TẮC SOLID, IAddressBookService, IN
 Cohesion: 0.08
 Nodes (24): 10. Build / Smoke Test, 1.1 Login, 1.2 Register, 1.3 Forgot / Reset Password, 1.4 Protected Route, 1. Auth Module, 2. User / Profile Module, 3. Home / Public Movies Module (+16 more)
 
-### Community 253 - "ProfilePage.jsx"
-Cohesion: 0.03
-Nodes (75): AuthService, authService, buildAuthResponse(), isPublicApiRequest(), mapBackendRoles(), onRefreshed(), PUBLIC_API_PREFIXES, refreshSubscribers (+67 more)
+### Community 253 - "ShowtimeRadarProvider.jsx"
+Cohesion: 0.05
+Nodes (59): FavoriteButton(), ChipGroup(), COLLAPSED_SECTIONS, FilterSection(), MovieFilterPanel(), SearchableChipGrid(), ProfilePreferenceBanner(), ProfilePreferencesTab() (+51 more)
 
 ### Community 255 - "2.1. Movies API"
 Cohesion: 0.09
 Nodes (21): 1.1. Dang nhap, 1.2. Gia han access token, 1.3. Dang ky, 1.4. Quen mat khau, 1.5. Dat lai mat khau, 1. Authentication API, 2.0. User Profile API, 2.1.1. Response wrapper (+13 more)
 
 ### Community 256 - "Step5Model3DWithEnvironments.tsx"
-Cohesion: 0.16
-Nodes (25): Step5Model3DWithEnvironments(), Step5Model3DWithEnvironmentsProps, STRUCTURE_NAMES, Backdrop, BACKDROPS, SCENE_IDS, sceneForOccasion(), SceneId (+17 more)
+Cohesion: 0.11
+Nodes (24): Backdrop, CLIP_SECONDS, FilmApi, filmPose(), MAX_CLIP_BYTES, paintFrame(), recordGif(), recordVideo() (+16 more)
 
 ### Community 257 - "ReOrder: Keep Your Regulars Ordering Direct"
 Cohesion: 0.11
@@ -1325,21 +1310,25 @@ Nodes (22): 🔌 API Integration, 🎁 Bonus Features, 📝 Code Quality, Common
 Cohesion: 0.20
 Nodes (20): fadeUp(), formatMissionReward(), getRowState(), MissionBoard(), MissionIcon(), MissionRow(), MissionSkeleton(), sortMissions() (+12 more)
 
-### Community 262 - "4. Hướng dẫn A–Z"
-Cohesion: 0.10
-Nodes (19): 26. Video giới thiệu WrapFit (45–60 giây) làm bằng Higgsfield, 2.1. Ảnh nhân vật (K0), 2.2. Keyframe (ảnh khung đầu của từng shot), 2.3. Prompt video, 2. Prompt, 3. Cài logo WrapFit, 4. Hướng dẫn A–Z, 5. Ước tính credit nếu phải trả tiền (+11 more)
+### Community 262 - "gable-window-dieline.spec.ts"
+Cohesion: 0.17
+Nodes (11): Bounds, box(), gable(), SIZES, expectClean(), overlaps(), num(), outlinePaths() (+3 more)
 
-### Community 265 - "2. Chi tiết"
-Cohesion: 0.12
-Nodes (15): 1. Danh sách, 28. Việc còn treo sau audit backend, 2.10 Mục 10: Pexels thật (S), 2.11 Mục 11: kiểm trên trình duyệt (S), 2.2 Mục 2: gói "Lượt xuất" còn được quảng cáo (S), 2.3 Mục 3: runbook demo (S), 2.5 Mục 5: phông tải lên thiếu ký tự (N), 2.6 Mục 6: phân trang lịch sử xu (N) (+7 more)
+### Community 265 - "10 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch"
+Cohesion: 0.13
+Nodes (15): 0. Hiện trạng ngày 2026-11-19, 10 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch, 1. Trạng thái sau lượt 2 (2026-10-08, đo tại commit cũ), 2. Đánh giá kiến trúc frontend (trước lượt 2), 3.1. Trang (`src/views/**/index.tsx` + `src/app/**/page.tsx`), 3.2. Token theo screen, 3.3. CSS, 3.4. Behavior (+7 more)
 
 ### Community 266 - "mountScrollWorld"
 Cohesion: 0.17
 Nodes (17): SCENE_CONFIG, SCENE_STILLS, ScrollWorldWrapper(), ctaBtns(), el(), esc(), injectCSS(), mountScrollWorld() (+9 more)
 
-### Community 270 - "behavior.mjs"
-Cohesion: 0.18
-Nodes (13): @babel/generator@^7.29.8, @babel/parser@^7.29.9, @babel/traverse@^7.29.8, buildBehaviorModule(), collectWindowNames(), indent(), isolateScript(), PARSE_OPTIONS (+5 more)
+### Community 268 - "CinemaResponse"
+Cohesion: 0.11
+Nodes (5): CinemaResponse, CinemaStatus, ACTIVE, DISABLED, MAINTENANCE
+
+### Community 270 - "13 — Design System WrapFit"
+Cohesion: 0.13
+Nodes (14): 13 — Design System WrapFit, 1. Định hướng, 2.0 Quản trị token, 2.1 Màu, 2.2 Chữ, 2.3 Khoảng cách, lưới, breakpoint, icon, 2. Token — ba tầng, 4.1 Kiểm tra tự động — `npm --workspace=fe run a11y` (+6 more)
 
 ### Community 271 - "Doubt-Driven Development"
 Cohesion: 0.12
@@ -1350,32 +1339,28 @@ Cohesion: 0.12
 Nodes (15): 1. Define "working" before instrumenting, 2. Pick the right signal for each question, 3. Structured logging, 4. Metrics, 5. Distributed tracing, 6. Alerting, 7. Verify the telemetry itself, Common Rationalizations (+7 more)
 
 ### Community 273 - "visual-parity.mjs"
-Cohesion: 0.14
-Nodes (16): pixelmatch@^5.3.0, pngjs@^7.0.0, readManifest(), chrome, CHROME_CANDIDATES, filters, main(), options (+8 more)
+Cohesion: 0.15
+Nodes (15): pixelmatch@^5.3.0, pngjs@^7.0.0, chrome, CHROME_CANDIDATES, filters, main(), options, outDir (+7 more)
 
 ### Community 274 - "StitchRuntime"
-Cohesion: 0.18
-Nodes (10): metadata, metadata, metadata, StitchBehaviorScreen, StitchRuntime(), StitchRuntimeProps, EditorPage(), Step3StudioPage() (+2 more)
+Cohesion: 0.16
+Nodes (11): metadata, metadata, metadata, stitchBehaviors, StitchBehaviorScreen, StitchRuntime(), StitchRuntimeProps, EditorPage() (+3 more)
 
 ### Community 275 - "AdminReviewVibeTagResponse"
 Cohesion: 0.06
 Nodes (4): CreateReviewVibeTagRequest, UpdateReviewVibeTagRequest, AdminReviewVibeTagResponse, ReviewVibeTagDefinition
 
-### Community 276 - "print-rendering.spec.ts"
+### Community 276 - "export.processor.ts"
 Cohesion: 0.02
-Nodes (66): @aws-sdk/client-s3@^3.1145.0, DIMENSIONS, LOGO_FILE, MATERIAL, AnalyticsModule, ProductEventInput, ProductEventsService, STUDIO_HEARTBEAT_MIN_GAP_MS (+58 more)
+Nodes (88): ioredis@^6.0.0, WebSocket, AnalyticsModule, ProductEventInput, ProductEventsService, STUDIO_HEARTBEAT_MIN_GAP_MS, BaseModule, orderPaymentRequired() (+80 more)
 
 ### Community 277 - "HrSelfServiceController.java"
 Cohesion: 0.07
-Nodes (23): HrRequestAdminController, LeaveRequestCreateRequest, ReviewDecisionRequest, SwapCreateRequest, LeaveRequestResponse, Party, ShiftSwapRequestResponse, LeaveRequest (+15 more)
+Nodes (19): HrEmployeeProfileController, HrRequestAdminController, EmployeeProfileRequest, LeaveRequestCreateRequest, ReviewDecisionRequest, EmployeeProfileResponse, LeaveRequestResponse, StaffDirectoryResponse (+11 more)
 
 ### Community 278 - "SupportLiveSupportService"
-Cohesion: 0.11
-Nodes (8): StompTopicAuthorizationService, AgentPresence, SupportAgentPresenceService, SupportAgentPresenceSocketListener, SupportLiveAgent, SupportLiveAvailability, SupportLiveSupportService, StompTopicAuthorizationServiceTest
-
-### Community 279 - "18 — Runbook deploy bản demo Path 2 (CP4)"
 Cohesion: 0.13
-Nodes (15): 18 — Runbook deploy bản demo Path 2 (CP4), 1. Kiến trúc bản demo, 2. Trước khi deploy, 3.1. Mới từ Path 2, 3.2. Tài khoản demo (`be/prisma/seed-demo.ts`), 3.3. Cloudflare R2 (còn thiếu từ 2026-10-30), 3.4. Webhook SePay (tiền thật, docs/21), 3.5. VNPay sandbox cho tài khoản demo (docs/21) (+7 more)
+Nodes (5): StompTopicAuthorizationService, AgentPresence, SupportAgentPresenceService, SupportAgentPresenceSocketListener, StompTopicAuthorizationServiceTest
 
 ### Community 280 - "EmailTemplateService"
 Cohesion: 0.20
@@ -1389,17 +1374,13 @@ Nodes (14): 1. Surface Assumptions, 2. Manage Confusion Actively, 3. Push Back W
 Cohesion: 0.13
 Nodes (15): condition, container_name, depends_on, environment, image, networks, ports, restart (+7 more)
 
-### Community 283 - "15 — Design System WrapFit"
-Cohesion: 0.13
-Nodes (14): 15 — Design System WrapFit, 1. Định hướng, 2.0 Quản trị token, 2.1 Màu, 2.2 Chữ, 2.3 Khoảng cách, lưới, breakpoint, icon, 2. Token — ba tầng, 4.1 Kiểm tra tự động — `npm --workspace=fe run a11y` (+6 more)
-
 ### Community 284 - "scripts"
 Cohesion: 0.13
 Nodes (15): scripts, a11y, build, build:shared, demo, dev, dev:webpack, lint (+7 more)
 
 ### Community 285 - "jsx.mjs"
 Cohesion: 0.20
-Nodes (16): ATTRIBUTE_NAMES, attributeName(), attributeValue(), bodyToJsx(), element(), BOOLEAN_ATTRIBUTES, camel(), isPreformatted() (+8 more)
+Nodes (14): ATTRIBUTE_NAMES, attributeName(), attributeValue(), element(), BOOLEAN_ATTRIBUTES, camel(), isPreformatted(), NUMERIC_ATTRIBUTES (+6 more)
 
 ### Community 286 - "🎬 NasaFilm"
 Cohesion: 0.10
@@ -1407,35 +1388,43 @@ Nodes (20): 📝, 1. ▶️ Chạy backend, 2. 🎨 Chạy frontend, ☕ Backend
 
 ### Community 287 - "createStitchScope.ts"
 Cohesion: 0.13
-Nodes (15): stitchBehaviors, createStitchScope(), ListenerRecord, StitchScopeHandle, bindInlineHandlers(), mountStitchBehavior(), createThreeCompat(), LEGACY_GEOMETRY_ALIASES (+7 more)
+Nodes (15): createStitchScope(), ListenerRecord, StitchScopeHandle, defineStitchBehavior(), bindInlineHandlers(), mountStitchBehavior(), createThreeCompat(), LEGACY_GEOMETRY_ALIASES (+7 more)
 
-### Community 289 - "org.springframework.transaction.annotation.Transactional"
-Cohesion: 0.05
-Nodes (9): ComboRepository, ComboService, UserMatchmakerHistoryRepository, DiscoverHistoryService, UserBadgeRepository, MissionService, PushSubscriptionRepository, UserNotificationService (+1 more)
+### Community 288 - "6. Các luồng và session"
+Cohesion: 0.14
+Nodes (14): 6.1 Thứ tự, 6.2 File của từng luồng, 6.3 Quy ước chung, 6. Các luồng và session, S0. Chuẩn bị, S10. Gộp, gỡ file, đánh số lại · theo Q1, Q2, Q6–Q8, S1. Luồng A · 02 · Thiết kế CSDL (P1), S2. Luồng A · 03 · Thiết kế API (P1) (+6 more)
+
+### Community 289 - "org.junit.jupiter.api.Test"
+Cohesion: 0.04
+Nodes (13): MissionScoreService, ReviewVibeTagDefinitionRepository, TypeReference<List<String>>, SystemConfigServiceTest, MissionScoreServiceTest, VodControllerTest, ReviewVibeTagServiceTest, ReviewVibeTagUtilTest (+5 more)
 
 ### Community 292 - "Spec-Driven Development"
 Cohesion: 0.14
 Nodes (13): Common Rationalizations, Keeping the Spec Alive, Overview, Phase 0: Scope Check, Phase 1: Specify, Phase 2: Plan, Phase 3: Tasks, Phase 4: Implement (+5 more)
 
 ### Community 293 - "ProjectsController"
-Cohesion: 0.02
-Nodes (39): JwtAuthGuard, HttpThrottlerGuard, RolesGuard, QueryProjectsDto, RecordProjectEventDto, ProjectsController, UpdateBrandKitDto, UpdateProfileDto (+31 more)
+Cohesion: 0.05
+Nodes (7): ChangeStatusDto, FormulaUpgradeDto, ProjectsController, UpdateBrandKitDto, UpdateProfileDto, UsersController, Patch
 
 ### Community 294 - "backend"
 Cohesion: 0.14
 Nodes (14): container_name, depends_on, mem_limit, mem_reservation, networks, ports, restart, postgres (+6 more)
 
-### Community 295 - "11 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch"
-Cohesion: 0.14
-Nodes (14): 11 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch, 1. Trạng thái hiện tại, 2. Đánh giá kiến trúc frontend (trước lượt 2), 3.1. Trang (`src/views/**/index.tsx` + `src/app/**/page.tsx`), 3.2. Token theo screen, 3.3. CSS, 3.4. Behavior, 3.5. Kiểm tra hồi quy (+6 more)
+### Community 295 - "build-library-icons.mjs"
+Cohesion: 0.23
+Nodes (12): arcToCubics(), elementToPath(), ellipse(), entries, here, ICONS, lucideDir, missing (+4 more)
 
-### Community 296 - "WRAPFIT PLATFORM — BẢN PHÂN TÍCH KIẾN TRÚC & GIẢI PHÁP AN TOÀN DỮ LIỆU"
-Cohesion: 0.14
-Nodes (13): 1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG, 1. ĐỐI CHIẾU & HỌC HỎI TỪ MÃ NGUỒN `NasaFilm`, 2. DANH MỤC API KEYS & BIẾN MÔI TRƯỜNG (.ENV) CHUẨN PRODUCTION, 2. RỦI RO LỖI HỆ THỐNG, CRASH CODE & TRANH CHẤP THANH TOÁN, 3. LỰA CHỌN 3RD-PARTY SERVICES PHÙ HỢP NHẤT, 3. RỦI RO BẢO MẬT & XÂY DỰNG NIỀM TIN CHO NGƯỜI DÙNG (COMPLIANCE), 4. CHIẾN LƯỢC PHÂN LOẠI & LƯU TRỮ DỮ LIỆU (KHÔNG LƯU HẾT VÀO DB), 5. GIẢI QUYẾT TRIỆT ĐỂ 3 NHÓM RỦI RO LỚN (+5 more)
+### Community 296 - "1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG"
+Cohesion: 0.25
+Nodes (8): 1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG, 2. RỦI RO LỖI HỆ THỐNG, CRASH CODE & TRANH CHẤP THANH TOÁN, 3. RỦI RO BẢO MẬT & XÂY DỰNG NIỀM TIN CHO NGƯỜI DÙNG (COMPLIANCE), 5. GIẢI QUYẾT TRIỆT ĐỂ 3 NHÓM RỦI RO LỚN, A. Khai tử biến RAM `SAMPLE_ORDERS` — đã xong, B. Sao lưu CSDL, C. Sao lưu file thiết kế của khách hàng — **Đề xuất**, Giải pháp:
 
 ### Community 299 - "🎁 WrapFit Platform — Make Every Present, Present."
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (14): 1. 📐 Parametric Dieline Engine (Động cơ Tham số hóa Bản vẽ Bế), 2. 🧊 3D Fold Simulation (Mô phỏng Gập hộp 3D bằng Three.js & GSAP), 3. 🛡️ FitCheck™ Engine (Kiểm duyệt Rủi ro In ấn & Gập), 4. 🖨️ Production-Ready Vector Export, 📌 Bối cảnh & Nỗi đau thị trường (The Problem), Cách 1: Khởi chạy toàn bộ hệ thống bằng Docker (Khuyên dùng) 🐳, Cách 2: Khởi chạy thủ công qua Node.js (Local Development), 🛠️ Công Nghệ Phát Triển (Tech Stack) (+6 more)
+
+### Community 300 - "11 — Rà soát giao diện theo kích thước màn hình (Phase 7)"
+Cohesion: 0.15
+Nodes (13): 11 — Rà soát giao diện theo kích thước màn hình (Phase 7), 1. Cách chạy, 2.1. Tổng hợp, 2.2. Bảng route × kích thước (lượt cuối), 2.3. Mốc `stitch:parity` (1280 px, 2026-10-11), 2. Kết quả, 3. Lỗi tìm thấy và cách sửa, 4. Chuyển phiên sau (+5 more)
 
 ### Community 301 - "Source-Driven Development"
 Cohesion: 0.15
@@ -1450,40 +1439,36 @@ Cohesion: 0.11
 Nodes (17): name, runs-on, steps, jobs, deploy, name, on, push (+9 more)
 
 ### Community 305 - "BookingService"
-Cohesion: 0.01
-Nodes (31): CounterBookingConfirmRequest, ComboItem, ConfirmBookingRequest, ConfirmOnlineBookingRequest, VodPlayResponse, VodStatusResponse, Booking, ComboPrice (+23 more)
+Cohesion: 0.02
+Nodes (12): CounterBookingConfirmRequest, ComboItem, ConfirmOnlineBookingRequest, VodPlayResponse, VodStatusResponse, Booking, BookingService, ResolvedCombo (+4 more)
 
 ### Community 306 - "Refinement & Evaluation Criteria"
 Cohesion: 0.17
 Nodes (11): 1. User Value, 2. Feasibility, 3. Differentiation, Assumption Audit, Core Evaluation Dimensions, Decision Framework, Might Be True (Nice to Have), Must Be True (Dealbreakers) (+3 more)
 
-### Community 307 - "GifWriter"
-Cohesion: 0.23
-Nodes (7): buildGifPalette(), encodeGif(), GifPalette, GifWriter, indexFrame(), key15(), lzwEncode()
+### Community 307 - "particles.ts"
+Cohesion: 0.17
+Nodes (6): draw(), EFFECTS, EffectSpec, FIREWORK_SHELLS_MS, Particle, Shape
 
 ### Community 308 - "services"
 Cohesion: 0.17
 Nodes (12): ports, POSTGRES_PASSWORD, ports, environment, ports, ports, services, backend (+4 more)
 
-### Community 309 - "3. Xử Lý Sự Cố In Ấn Thường Gặp (Printing & Die-Cutting Troubleshooting)"
-Cohesion: 0.17
-Nodes (11): 1. Thuật Ngữ Tiêu Chuẩn Trong Ngành Bao Bì (Packaging Lexicon), 2. Bảng Ma Trận Chọn Chất Liệu Giấy (Material Selection Matrix), 3. Xử Lý Sự Cố In Ấn Thường Gặp (Printing & Die-Cutting Troubleshooting), 4. Kịch Bản Chatbot Tư Vấn (WrapFit AI Assistant Script), 📦 HƯỚNG DẪN BAO BÌ & KỊCH BẢN HỖ TRỢ KHÁCH HÀNG (PACKAGING GUIDELINES & SUPPORT), 💬 Kịch bản A: Tư vấn kích thước & loại hộp, 💬 Kịch bản B: Khách hàng hỏi cách đem file đi in, ⚠️ Sự cố 1: "Hộp gập xong bị bung đáy khi để quà nặng" (+3 more)
+### Community 309 - "Artwork"
+Cohesion: 0.05
+Nodes (39): 1. Domain Knowledge & Packaging Physics, 2. UI/UX Craftsmanship & Brand System (pack.ly + Pacdora, FPT accents), 3. Brand Mascot as AI Packaging Copilot ("Gói" / BeBoxy), 4. 3-Stage User Journey & Physical 3D Packaging Model, 5. Tech Stack & Architecture, 6. MANDATORY 2-TIER AGENT EXECUTION PROTOCOL (AUTOMATIC PER TURN), WrapFit Platform — AI Agent Development Guidelines, Artwork (+31 more)
 
-### Community 310 - "23. Studio bước 4 "Thiết kế": nâng lên mức trình chỉnh sửa chuyên nghiệp (ngang Canva, sâu như Pacdora)"
-Cohesion: 0.13
-Nodes (15): 23. Studio bước 4 "Thiết kế": nâng lên mức trình chỉnh sửa chuyên nghiệp (ngang Canva, sâu như Pacdora), 2.1. Thao tác chỉnh sửa (mức Canva), 2.2. Đặc thù bao bì (mức Pacdora), 2. Đối chiếu Canva / Pacdora, 5. Bố cục giao diện bước 4, 6. Giai đoạn và phiên, 7. Kịch bản nghiệm thu, 8. Rủi ro (+7 more)
+### Community 310 - "editor.ts"
+Cohesion: 0.36
+Nodes (8): activate3DMode(), activateFlatMode(), activateUnboxMode(), applyFoldState(), flashExportNotification(), setFoldPercent(), updateBoxTransform(), updateTitle()
 
 ### Community 311 - "RevenueSeriesResponse"
 Cohesion: 0.05
 Nodes (19): AdminDashboardResponse, CinemaStat, GenreStat, MovieStat, RoomStat, ComboRevenueItem, ComboRevenueResponse, DailyRevenueItem (+11 more)
 
-### Community 314 - "CURRENT_FORMULA_VERSION"
-Cohesion: 0.21
-Nodes (10): boxTemplates, designTemplates, dimensionParams, sheetParams, ensureProject(), seedDemo(), uploadLogo(), main() (+2 more)
-
 ### Community 315 - "📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION)"
-Cohesion: 0.12
-Nodes (14): 1. TỔNG QUAN CẤU TRÚC MONOREPO CẤP CAO (HIGH-LEVEL OVERVIEW), 2. BẢN ĐỒ CÂY THƯ MỤC CHI TIẾT (COMPLETE DIRECTORY TREE), 3. PHÂN VÙNG DỮ LIỆU & QUY TẮC PHỤ THUỘC (IMPORT BOUNDARIES), 4. CHI TIẾT TÍCH HỢP DỊCH VỤ BÊN THỨ BA (3RD-PARTY INTEGRATIONS), 5. QUY ƯỚC ĐẶT TÊN TỆP TIN CHUẨN (NAMING CONVENTIONS), 📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION), Chạy cùng backend, Cấu trúc thư mục `fe/`: (+6 more)
+Cohesion: 0.25
+Nodes (8): 1. TỔNG QUAN CẤU TRÚC MONOREPO CẤP CAO (HIGH-LEVEL OVERVIEW), 2. BẢN ĐỒ CÂY THƯ MỤC CHI TIẾT (COMPLETE DIRECTORY TREE), 3. PHÂN VÙNG DỮ LIỆU & QUY TẮC PHỤ THUỘC (IMPORT BOUNDARIES), 4.1. Dịch vụ đang dùng, 4.2. Đề xuất, chưa có mã, 4. CHI TIẾT TÍCH HỢP DỊCH VỤ BÊN THỨ BA (3RD-PARTY INTEGRATIONS), 5. QUY ƯỚC ĐẶT TÊN TỆP TIN CHUẨN (NAMING CONVENTIONS), 📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION)
 
 ### Community 319 - "compilerOptions"
 Cohesion: 0.17
@@ -1505,17 +1490,13 @@ Nodes (15): 👥 1. Các Vai trò trong Hệ thống (Actors & Roles), ⚙️ 2.
 Cohesion: 0.26
 Nodes (12): handleActionClick(), LoadingSpinner(), TOAST_STYLES, ToastViewport(), clearToastTimer(), dismissToast(), emitToastChange(), runToastAction() (+4 more)
 
-### Community 326 - "12 — Kế hoạch nối Frontend ↔ Backend"
-Cohesion: 0.17
-Nodes (12): 12 — Kế hoạch nối Frontend ↔ Backend, 1.1. Backend: sẵn sàng, 1.2. Frontend: gần như chưa nối, 1.3. Lỗi tích hợp tìm thấy khi đọc code (ngoài bảng `06` §13), 1. Hiện trạng, 2. Quyết định đã chốt, 3. Bản đồ màn hình ↔ API, 5. Ma trận sở hữu file (+4 more)
+### Community 327 - "docs/README.md"
+Cohesion: 0.04
+Nodes (49): deploy.sh script, boxTemplates, designTemplates, dimensionParams, sheetParams, seedDemo(), main(), prisma (+41 more)
 
-### Community 327 - "2. Endpoints đã triển khai"
-Cohesion: 0.14
-Nodes (14): 1. Quy ước chung, 2. Endpoints đã triển khai, 3. Endpoints sắp triển khai (theo WBS IT 3), AI sinh hoa văn (IT3-09), Bộ sưu tập (IT3-05), Chia sẻ công khai, Remix & thả tim (IT3-06), Dự án: vòng đời, nhân bản & phiên bản (IT3-04), Mở hộp 3D & QR (IT3-10) (+6 more)
-
-### Community 328 - "MojibakeUtils"
-Cohesion: 0.18
-Nodes (3): MojibakeUtils, TypeReference<List<Map<String, String>>>, TypeReference<List<String>>
+### Community 328 - "Kế hoạch thực hiện cho từng file"
+Cohesion: 0.20
+Nodes (10): 1. Sửa hợp đồng dữ liệu và các luồng có thể làm tích hợp sai, 2. Đồng bộ tài liệu sản phẩm, kiến trúc và hướng dẫn sử dụng, 3. Chuyển kết quả và việc còn mở ra khỏi các kế hoạch cũ, 4. Sửa runbook và tài liệu dùng trước người xem, 5. Chốt tiến độ, lưu trữ và kiểm lại liên kết, Kế hoạch thực hiện cho từng file, Những file nên giữ và phần cần gộp, Những luồng tài liệu đang mô tả sai hoặc thiếu (+2 more)
 
 ### Community 329 - "shared/package.json"
 Cohesion: 0.20
@@ -1533,13 +1514,13 @@ Nodes (10): condition, backend, depends_on, worker, command, container_name, dep
 Cohesion: 0.49
 Nodes (10): healthcheck, interval, retries, start_period, test, timeout, healthcheck, healthcheck (+2 more)
 
-### Community 337 - ".seedMovies"
-Cohesion: 0.08
-Nodes (3): MovieMediaRequest, MovieMedia, MovieMediaRepository
+### Community 334 - "pillow.ts"
+Cohesion: 0.22
+Nodes (8): pillowModel(), Cấu trúc thư mục `shared/`:, Phiên bản công thức, Quy ước kích thước (từ bản 3), 📐 @wrapfit/shared — Core Packaging Math & Types, generatePillowBoxDieline(), PillowShape, pillowShapeOf()
 
 ### Community 339 - "ShiftDefinitionService"
-Cohesion: 0.18
-Nodes (5): ShiftConfigRequest, ShiftDefinitionResponse, PermissionInfo, ShiftPermissionCatalogResponse, ShiftDefinitionService
+Cohesion: 0.15
+Nodes (7): ShiftConfigRequest, ShiftDefinitionResponse, PermissionInfo, ShiftPermissionCatalogResponse, ShiftDefinition, ShiftDefinitionRepository, ShiftDefinitionService
 
 ### Community 340 - "Ideation Frameworks Reference"
 Cohesion: 0.22
@@ -1573,13 +1554,9 @@ Nodes (4): AutoShowtimePreviewResponse, CandidateSlot, ShowtimeSchedulingEngine,
 Cohesion: 0.18
 Nodes (11): jest, collectCoverageFrom, coverageDirectory, maxWorkers, moduleFileExtensions, rootDir, testEnvironment, testRegex (+3 more)
 
-### Community 353 - "13 — Rà soát giao diện theo kích thước màn hình (Phase 7)"
-Cohesion: 0.22
-Nodes (9): 13 — Rà soát giao diện theo kích thước màn hình (Phase 7), 1. Cách chạy, 2.1. Tổng hợp, 2.2. Bảng route × kích thước (lượt cuối), 2.3. Mốc `stitch:parity` (1280 px, 2026-10-11), 2. Kết quả, 3. Lỗi tìm thấy và cách sửa, 4. Chuyển phiên sau (+1 more)
-
-### Community 354 - "27. Clip demo Studio 6 bước (khoảng 54 giây) chạy cùng lời thuyết trình"
-Cohesion: 0.15
-Nodes (12): 10. Bàn giao, 11. Việc chưa kiểm chứng, 1. Phong cách lấy từ hai clip mẫu, 27. Clip demo Studio 6 bước (khoảng 54 giây) chạy cùng lời thuyết trình, 2. Higgsfield: dùng được gì từ đây, 3. Chỗ script và footage chưa khớp, 4. Script đề xuất (ba chỗ sửa in đậm), 5. Timeline (+4 more)
+### Community 353 - "Chuẩn file cho người vẽ nội dung thư viện"
+Cohesion: 0.25
+Nodes (8): 1. Định dạng, 2. SVG an toàn, 3. Để đổi màu được trong studio, 4. Tên, nhóm, thẻ, ngành, 5. Giấy phép và ghi nguồn, 6. Mục tiêu nội dung, 7. Kiểm trước khi nhập, Chuẩn file cho người vẽ nội dung thư viện
 
 ### Community 355 - "ReviewVibeTag"
 Cohesion: 0.15
@@ -1597,6 +1574,10 @@ Nodes (8): command, container_name, image, networks, ports, restart, volumes, re
 Cohesion: 0.17
 Nodes (11): 1.1. He quan tri co so du lieu, 1.2. Nguyen tac mo hinh du lieu, 1. Tong quan thiet ke, 3.1. ERD muc tieu, 3. Target Schema, 5.1. Luong dat ve, 5.2. Luong quan ly phim, 5. Luong du lieu nghiep vu chinh (+3 more)
 
+### Community 363 - "intro-minimal.ts"
+Cohesion: 0.38
+Nodes (4): animate(), switchStage(), updateButtonStates(), updateHinges()
+
 ### Community 364 - "Authentication System Setup Guide"
 Cohesion: 0.17
 Nodes (10): 1. Protect Routes, 2. Access Auth State, 3. Show Notifications, 4. Make API Calls, Authentication System Setup Guide, Error Handling, Frontend Integration Points, Performance Tips (+2 more)
@@ -1608,10 +1589,6 @@ Nodes (9): deriveSeatGapState(), isActiveHoldOrSelection(), isAvailable(), isCou
 ### Community 366 - "📝 2. Bảng Theo dõi Tiến độ Chi tiết"
 Cohesion: 0.20
 Nodes (9): 🚦 1. Tổng quan Trạng thái Hiện tại, 📝 2. Bảng Theo dõi Tiến độ Chi tiết, **Giai đoạn 1: Xây dựng Nền tảng Xác thực (Authentication Base)**, **Giai đoạn 2: Kết nối & Hoàn thiện Xác thực (Integration Phase)**, **Giai đoạn 3: Phân hệ Nghiệp vụ Rạp phim (Core Cinema System - Kế hoạch)**, **Phía Backend (Server)**, **Phía Frontend (Client)**, **Phía Frontend (React Client)** (+1 more)
-
-### Community 368 - "PayrollPeriod"
-Cohesion: 0.24
-Nodes (7): PayrollPeriod, PayrollPeriodStatus, APPROVED, GENERATED, OPEN, PAID, PayrollPeriodRepository
 
 ### Community 369 - "AI Packaging Copilot ("Gói" / BeBoxy) Skill"
 Cohesion: 0.29
@@ -1629,13 +1606,17 @@ Nodes (7): REDISCLI_AUTH, test, command, environment, healthcheck, ports, redis
 Cohesion: 0.29
 Nodes (6): 1. Copilot Architecture & Dynamic Island System, 2. Gift-to-Packaging Dimension Heuristics, 3. Proactive FitCheck™ Watchdog Rules, 4. Anime.js Spring Motion Integration, AI Packaging Copilot ("Gói" / BeBoxy) Skill, Component State Model:
 
-### Community 373 - "constants/index.js"
-Cohesion: 0.29
+### Community 373 - "src/index.js"
+Cohesion: 0.10
 Nodes (6): ANIMATION, API, MESSAGES, ROUTES, TOKEN, VALIDATION
 
 ### Community 374 - "BookingStatus"
 Cohesion: 0.18
 Nodes (10): BookingStatus, BOOKED, CANCELLED, CANCELLING, CONFIRMED, PAID, PENDING_PAYMENT, REFUND_PENDING (+2 more)
+
+### Community 375 - "CounterCreateCustomerResponse"
+Cohesion: 0.09
+Nodes (3): StaffCustomerController, CounterCreateCustomerRequest, CounterCreateCustomerResponse
 
 ### Community 378 - "Fluid Mobile Gestures & iOS Touch Ergonomics Skill"
 Cohesion: 0.33
@@ -1653,9 +1634,9 @@ Nodes (5): 1. Design Tokens & Palette, 2. Anti-AI-Slop & Craftsmanship Rules, 3.
 Cohesion: 0.33
 Nodes (5): compilerOptions, outDir, tsBuildInfoFile, extends, ./tsconfig.build.json
 
-### Community 382 - "1. Yêu Cầu Chức Năng (Functional Requirements)"
-Cohesion: 0.33
-Nodes (5): 1.1. Phân Hệ Thiết Kế Bao Bì (Frontend - IT 1 & IT 2), 1.2. Phân Hệ Xuất File & Backend (Backend - IT 3 & IT 2), 1. Yêu Cầu Chức Năng (Functional Requirements), 2. Yêu Cầu Phi Chức Năng (Non-Functional Requirements), 📋 ĐẶC TẢ YÊU CẦU HỆ THỐNG (REQUIREMENTS SPECIFICATION)
+### Community 382 - "1. Sơ Đồ Thực Thể Quan Hệ (ERD Diagram)"
+Cohesion: 0.40
+Nodes (5): 1.1. Người dùng, dự án và file, 1.2. Thanh toán, ví xu, quyền xuất và đơn in, 1.3. Ảnh AI, duyệt mẫu, sự kiện và thông báo, 1.4. Quan hệ phiên bản giữa dự án, đơn và job xuất, 1. Sơ Đồ Thực Thể Quan Hệ (ERD Diagram)
 
 ### Community 385 - "Fluid Mobile Gestures & iOS Touch Ergonomics Skill"
 Cohesion: 0.33
@@ -1676,14 +1657,6 @@ Nodes (24): ART, Band(), BellyBand(), Block, COS, Cup(), CupCarrier(), Disc() (+
 ### Community 393 - "billing/plans.ts"
 Cohesion: 0.28
 Nodes (7): ExportMode, PLAN_ORDER, ResolvePlanInput, SubscriptionPlan, SubscriptionStatus, SubscriptionTier, SubscriptionTierType
-
-### Community 394 - "org.springframework.data.domain.Pageable"
-Cohesion: 0.07
-Nodes (5): BookingController, ActorContext, CancellationRefundController, CancelBookingRequest, StaffDirectoryResponse
-
-### Community 395 - "P1 · Ưu tiên trước khi nhận đơn thật"
-Cohesion: 0.18
-Nodes (11): 1. File in có thể khác phiên bản đã qua FitCheck và được thanh toán, 29. Review backend WrapFit, 2. Tác vụ dọn storage có thể xóa phông chữ đang dùng, 3. Hai thanh toán Pro thành công có thể chỉ cộng một kỳ, 4. Xóa dự án có thể làm mất thiết kế của đơn đang in, 5. Khôi phục snapshot có thể làm mất lần autosave vừa thành công, 6. Giao lại một job xuất đã hoàn tất làm ghi file và lịch sử hai lần, 7. Thư viện AI bỏ sót ảnh ở ranh giới giữa hai trang (+3 more)
 
 ### Community 401 - "FitCheck™ Packaging Validation Skill"
 Cohesion: 0.40
@@ -1712,10 +1685,6 @@ Nodes (4): 1. WebGL Context Sharing & Memory Safety, 2. Dynamic 2D Canvas to 3D 
 ### Community 407 - "Scroll Storytelling & 3D Hero Experience Skill"
 Cohesion: 0.40
 Nodes (4): 1. The 4-Phase Storytelling Architecture, 2. GSAP ScrollTrigger Integration Pattern, 3. Performance Best Practices, Scroll Storytelling & 3D Hero Experience Skill
-
-### Community 408 - "🎁 TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW) — WrapFit Platform"
-Cohesion: 0.40
-Nodes (4): 1. Triết Lý & Nguồn Cảm Hứng, 2. Luồng Trải Nghiệm Khách Hàng (4 Giai Đoạn), 3. Kiến Trúc Phân Lớp Toàn Diện, 🎁 TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW) — WrapFit Platform
 
 ### Community 409 - "FitCheck™ Packaging Validation Skill"
 Cohesion: 0.40
@@ -1748,10 +1717,6 @@ Nodes (9): 4.2. Movie Catalog, `actors`, `countries`, `genres`, `movie_actors`, 
 ### Community 417 - "4.5. Booking & Payment"
 Cohesion: 0.22
 Nodes (9): 4.5. Booking & Payment, `booking_combos`, `booking_seats`, `bookings`, `combos`, `payments`, `promotions`, `tickets` (+1 more)
-
-### Community 419 - "4. Các phase"
-Cohesion: 0.25
-Nodes (8): 4. Các phase, Phase 1 — Tài khoản và phiên (Agent A), Phase 2 — Dashboard, dự án, bộ sưu tập, hồ sơ (Agent B), Phase 3 — Studio editor (Agent C, chia 2 đợt vì cùng sửa `views/editor/studio`), Phase 4 — Trang công khai và Thư viện mẫu (Agent D), Phase 5 — Quản trị tài khoản (Agent E), Phase 6 — Tích hợp, kiểm thử, tài liệu (agent chính), Phase 7 — Rà soát giao diện theo kích thước màn hình (thêm 2026-10-11)
 
 ### Community 420 - "AttendanceStatus"
 Cohesion: 0.29
@@ -1800,22 +1765,6 @@ Nodes (8): scripts, build, dev, lint, preview, test, test:coverage, test:run
 ### Community 469 - "RefundStatus"
 Cohesion: 0.29
 Nodes (6): RefundStatus, COMPLETED, FAILED, PENDING, PROCESSING, REJECTED
-
-### Community 470 - "27a. Prompt dán vào Claude chat để dựng clip demo"
-Cohesion: 0.20
-Nodes (9): 1. Cách làm (bắt buộc), 27a. Prompt dán vào Claude chat để dựng clip demo, 2. Nguồn đã có trên Higgsfield, 3. Script người thuyết trình (clip phải theo đúng thứ tự này), 4. Timeline, 5. Phong cách, 6. Cảnh AI tùy chọn A1 (1,5–2 giây, nối cuối B5), 7. Bàn giao (+1 more)
-
-### Community 471 - "MonthPicker.tsx"
-Cohesion: 0.46
-Nodes (6): format(), MonthPicker(), MonthPickerProps, MONTHS, parse(), shift()
-
-### Community 472 - "WrapFit Platform — AI Agent Development Guidelines"
-Cohesion: 0.29
-Nodes (6): 1. Domain Knowledge & Packaging Physics, 2. UI/UX Craftsmanship & Brand System (pack.ly + Pacdora, FPT accents), 3. Brand Mascot as AI Packaging Copilot ("Gói" / BeBoxy), 4. 3-Stage User Journey & Physical 3D Packaging Model, 6. MANDATORY 2-TIER AGENT EXECUTION PROTOCOL (AUTOMATIC PER TURN), WrapFit Platform — AI Agent Development Guidelines
-
-### Community 476 - "Chuẩn file cho người vẽ nội dung thư viện"
-Cohesion: 0.25
-Nodes (7): 1. Định dạng, 2. SVG an toàn, 3. Để đổi màu được trong studio, 4. Tên, thẻ, ngành, 5. Giấy phép, 6. Kiểm trước khi nhập, Chuẩn file cho người vẽ nội dung thư viện
 
 ### Community 499 - "🎯 Key Features"
 Cohesion: 0.33
@@ -1882,32 +1831,32 @@ Cohesion: 0.40
 Nodes (5): 3.1. Luồng hành trình người dùng xuyên suốt (Core User Journey), 3.2. Luồng quản lý lưu trữ, nhân bản & lịch sử phiên bản dự án, 3.3. Luồng chia sẻ công khai, xem 3D không cần đăng nhập & 1-Click Remix, 3.4. Luồng khám phá & áp dụng mẫu từ Thư viện Template (Template Discovery Flow), 3. THIẾT KẾ TOÀN BỘ LUỒNG TƯƠNG TÁC HỆ THỐNG
 
 ### Community 558 - "AdminUserController"
-Cohesion: 0.12
-Nodes (5): AdminUserController, UpdateRoleRequest, UpdateScoreRequest, UpdateStatusRequest, UpdateUserPermissionsRequest
+Cohesion: 0.07
+Nodes (6): AdminUserController, PermissionResponse, UpdateRoleRequest, UpdateScoreRequest, UpdateStatusRequest, UpdateUserPermissionsRequest
 
-### Community 564 - "stompSocketService.js"
-Cohesion: 0.17
-Nodes (10): sockjs-client@^1.6.1, appendAccessTokenQuery(), buildConnectHeaders(), loadSockJS(), resolveApiBaseUrl(), resolveWsHttpUrl(), shouldUseSockJsTransport(), StompSocketService (+2 more)
+### Community 569 - "💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)"
+Cohesion: 0.03
+Nodes (74): 0. Backend Code Layout (`be/src/`), 1. Relational Database Schema (PostgreSQL), 2. Asset Storage Strategy (S3 / Cloud Storage), 3. Real-time Synchronization Protocol, WrapFit Backend & Data Flow Skill (InsForge Architecture), AiModule, AiImageWorkerModule, AuthModule (+66 more)
 
 ## Knowledge Gaps
-- **237 isolated node(s):** `RFC-9562`, `RELATED`, `SENSITIVE`, `UNKNOWN`, `UNRELATED` (+232 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 6642 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **248 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **237 isolated node(s):** `com.thdpv:movie-theater-backend`, `PENDING_PAYMENT`, `PAID`, `BOOKED`, `CONFIRMED` (+232 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 6401 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **209 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `5. BẢNG TRA CỨU CÁC DESIGN PATTERNS ÁP DỤNG` connect `ConfigService` to `IAddressBookService`, `ProjectsController`, `types/api/index.ts`, `ICommand`, `StorageService`, `IAuthProvider`, `IFixAction`, `SupportTicket`, `request-context.ts`, `IProjectArchivalService`, `CanvasElement`, `print-rendering.spec.ts`, `@nestjs/common`, `dashboard/index.ts`, `notifications.service.ts`?**
-  _High betweenness centrality (0.309) - this node is a cross-community bridge._
-- **What connects `RFC-9562`, `RELATED`, `SENSITIVE` to the rest of the system?**
+- **Why does `SupportTicket` connect `SupportTicket` to `AppException`, `ConfigService`, `org.junit.jupiter.api.Test`, `list`, `SupportTicketResponse`, `MissionService`, `uuid`?**
+  _High betweenness centrality (0.398) - this node is a cross-community bridge._
+- **What connects `com.thdpv:movie-theater-backend`, `PENDING_PAYMENT`, `PAID` to the rest of the system?**
   _237 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `DielineCanvas2D.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.050615901455767075 - nodes in this community are weakly interconnected._
-- **Why does `SupportTicket` connect `SupportTicket` to `org.springframework.transaction.annotation.Transactional`, `ConfigService`, `AppException`, `uuid`, `org.slf4j.Logger`, `org.springframework.data.domain.Pageable`, `SupportTicketResponse`, `jakarta.persistence.Entity`?**
-  _High betweenness centrality (0.308) - this node is a cross-community bridge._
+- **Should `elementVisuals.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.11666666666666667 - nodes in this community are weakly interconnected._
+- **Why does `5. BẢNG TRA CỨU CÁC DESIGN PATTERNS ÁP DỤNG` connect `ConfigService` to `5.3. Phân bổ IT 3: Backend NestJS, Data Infrastructure & Cloud Lead (11 Tasks)`, `ICommand`, `StudioWorkspace.tsx`, `IAuthProvider`, `IFixAction`, `SupportTicket`, `IProjectArchivalService`, `mail.processor.ts`, `export.processor.ts`, `@nestjs/common`, `dashboard/index.ts`, `IAddressBookService`, `💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)`, `src/index.ts`?**
+  _High betweenness centrality (0.395) - this node is a cross-community bridge._
 - **Should `SystemConfigService` be split into smaller, more focused modules?**
-  _Cohesion score 0.06966618287373004 - nodes in this community are weakly interconnected._
-- **Why does `CanvasElement` connect `CanvasElement` to `DielineCanvas2D.tsx`, `Step5Model3DWithEnvironments.tsx`, `ConfigService`, `types/api/index.ts`, `InteractiveFoldingBox3D.tsx`, `2. Chi tiết`, `ai-pattern.service.ts`, `LibraryPanel.tsx`, `ElementInspector.tsx`, `projects.service.ts`, `print-rendering.spec.ts`, `public-project/index.tsx`, `ImpositionCanvas2D.tsx`, `svgRecolor.ts`, `.validate`, `project-spec.dto.ts`, `placement.ts`, `CURRENT_FORMULA_VERSION`, `boxModel.ts`, `print-renderers.ts`, `contracts.ts`, `templates.ts`, `src/index.ts`, `src/index.ts`, `validator.ts`?**
-  _High betweenness centrality (0.170) - this node is a cross-community bridge._
+  _Cohesion score 0.046202531645569624 - nodes in this community are weakly interconnected._
+- **Why does `CanvasElement` connect `StudioWorkspace.tsx` to `print-renderers.ts`, `elementVisuals.tsx`, `ConfigService`, `svgRecolor.ts`, `.export`, `types/api/index.ts`, `gable-window-dieline.spec.ts`, `contracts.ts`, `registry.ts`, `11 — Hướng dẫn tích hợp Frontend ↔ Backend`, `💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)`, `ElementInspector.tsx`, `projects.service.ts`, `project-spec.dto.ts`, `src/index.ts`, `effects-spelling.spec.ts`, `insert-flat-dieline.spec.ts`, `ImpositionCanvas2D.tsx`?**
+  _High betweenness centrality (0.207) - this node is a cross-community bridge._
 - **Should `ConfigService` be split into smaller, more focused modules?**
-  _Cohesion score 0.01991967871485944 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.02077205882352941 - nodes in this community are weakly interconnected._
