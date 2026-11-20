@@ -44,7 +44,7 @@ const streams = (pdf: Buffer) => {
   return out.join('\n');
 };
 
-describe('drop shadow and blend modes (docs/23 S22)', () => {
+describe('drop shadow and blend modes (docs-old/23 S22)', () => {
   it('keeps the shadow safe and splits it in fading layers that add up to its opacity', () => {
     expect(shadowOf({ shadow: { ...shadow, blur: 99, x: -99, opacity: 3 } })).toEqual({ ...shadow, blur: 10, x: -20, opacity: 1 });
     expect(shadowOf({ shadow: { ...shadow, color: 'red' } })).toBeNull();
@@ -92,7 +92,7 @@ describe('drop shadow and blend modes (docs/23 S22)', () => {
   });
 });
 
-describe('Vietnamese spell check (docs/23 S22)', () => {
+describe('Vietnamese spell check (docs-old/23 S22)', () => {
   it('accepts written Vietnamese, with its hard spellings', () => {
     const words =
       'Cảm ơn bạn chúc mừng năm mới Tết an khang thịnh vượng nghiêng khuya quyển giường gìn gì giữa Nguyễn chuyện huỳnh oách thuở khuỷu xoẹt ngoằn ngoèo người yêu kẹo bánh mì nhé ạ ừ quà gỗ ước đẹp kỹ quý ghế ngủ khoẻ hoà thuý kê';

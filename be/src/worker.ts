@@ -27,7 +27,7 @@ import { RedisModule } from './shared/redis';
     RedisModule, // publishes notification pushes to the API process (NotificationsService)
     StorageModule,
     queueRootModule('worker'),
-    BillingCoreModule, // refunds the xu of a failed AI job (docs/19)
+    BillingCoreModule, // refunds the xu of a failed AI job (docs/16)
     ExportWorkerModule,
     MailWorkerModule,
     AiImageWorkerModule,

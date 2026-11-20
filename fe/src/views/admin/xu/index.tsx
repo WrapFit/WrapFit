@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/admin/xu`: Xu Wrap of one month (`GET /admin/analytics/xu`, docs/19 S5). Spent xu are valued at the money paid for
+ * `/admin/xu`: Xu Wrap of one month (`GET /admin/analytics/xu`, docs/16 S5). Spent xu are valued at the money paid for
  * their lot (allowance and gift xu are worth 0đ), so the revenue is what WrapFit actually earned; the provider cost of
  * the month gives the gross margin.
  */

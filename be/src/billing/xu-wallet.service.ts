@@ -45,7 +45,7 @@ export interface XuHistoryEntry {
 export const XU_HISTORY_MAX_LIMIT = 100;
 
 /**
- * Filter groups of "Lịch sử xu" (docs/21 §4.2): `grant` = plan allowance and purchased lots, `spend` = every spend
+ * Filter groups of "Lịch sử xu" (docs-old/21 §4.2): `grant` = plan allowance and purchased lots, `spend` = every spend
  * except an administrator's adjustment, `adjust` = lots given by an administrator and ADMIN_ADJUSTMENT debits.
  */
 export const XU_HISTORY_TYPES = ['grant', 'spend', 'adjust'] as const;
@@ -78,7 +78,7 @@ interface SpendRow {
 }
 
 /**
- * The xu wallet (docs/19): the XU ledger of CreditsService plus the plan allowance. The allowance of a period is
+ * The xu wallet (docs/16): the XU ledger of CreditsService plus the plan allowance. The allowance of a period is
  * granted lazily, the first time the wallet is read or spent in that period (no cron), and lives until the end of the
  * next period: unspent xu roll over once. Spending takes the lot that expires first, so last period's leftover goes
  * before this period's allowance and both go before a purchased pack.
@@ -129,7 +129,7 @@ export class XuWalletService {
     return this.credits.debit(userId, { ...input, kind: 'XU' }, tx);
   }
 
-  /** Gives back the xu of one spend, once (docs/19 D3: the job failed on our side). Returns how many came back. */
+  /** Gives back the xu of one spend, once (docs/16 D3: the job failed on our side). Returns how many came back. */
   refund(operationId: string, tx?: Prisma.TransactionClient): Promise<number> {
     return this.credits.refund(operationId, tx);
   }

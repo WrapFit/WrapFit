@@ -60,7 +60,7 @@ export interface DielineLayers {
   bleed: boolean;
   safeMargin: boolean;
   dimensions: boolean;
-  /** 5 mm grid on the sheet; moved layers snap to it (docs/23 S12). */
+  /** 5 mm grid on the sheet; moved layers snap to it (docs-old/23 S12). */
   grid: boolean;
 }
 
@@ -126,7 +126,7 @@ interface DielineCanvas2DProps {
   onElementsChange?: (elements: CanvasElement[]) => void;
   selectedElementId?: string | null;
   onSelectElement?: (id: string | null) => void;
-  /** Every selected layer (docs/23 S12); `selectedElementId` alone when omitted. */
+  /** Every selected layer (docs-old/23 S12); `selectedElementId` alone when omitted. */
   selectedIds?: string[];
   onSelectIds?: (ids: string[]) => void;
   backgroundPatternSvg?: string | null;
@@ -143,14 +143,14 @@ interface DielineCanvas2DProps {
   /** Opens the "Thêm chữ" composer from outside (a tool dock); uncontrolled when omitted. */
   textComposerOpen?: boolean;
   onTextComposerOpenChange?: (open: boolean) => void;
-  /** Side of the sheet on screen: the outside (default) or the inside (docs/23 S5). */
+  /** Side of the sheet on screen: the outside (default) or the inside (docs-old/23 S5). */
   side?: PrintSide;
   className?: string;
   /** Extra specifications or widgets rendered inline on the header bar */
   headerExtra?: React.ReactNode;
 }
 
-/** What the pointer is doing (docs/23 S8, S12). Points are SVG coordinates (mm, padding included). */
+/** What the pointer is doing (docs-old/23 S8, S12). Points are SVG coordinates (mm, padding included). */
 type DragState =
   | {
       mode: "move";
@@ -302,7 +302,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
     [elements]
   );
   const fontsVersion = useBoxFonts(elements, artFonts);
-  // Re-renders once the sizes of cropped photos are known (docs/23 S10).
+  // Re-renders once the sizes of cropped photos are known (docs-old/23 S10).
   const imagesVersion = useImageSizes(elements);
 
   const { width: totalW, height: totalH } = dieline.totalBoundingBox;
@@ -351,7 +351,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   const selectedEl = elements.find((e) => e.id === selectedElementId && !isBackground(e));
   // Every selected layer: a click selects one layer (or its group), Shift + click adds / removes, a drag on the empty
-  // sheet selects what the rectangle touches (docs/23 S12).
+  // sheet selects what the rectangle touches (docs-old/23 S12).
   const selection = selectedIds ?? (selectedElementId ? [selectedElementId] : []);
   const select = (ids: string[], primary?: string | null) => {
     onSelectIds?.(ids);
@@ -563,7 +563,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
       } else {
         setSnapHits([]);
       }
-      // The layers keep their faces (docs/23 D5): what leaves the face + bleed is cut, FitCheck flags it.
+      // The layers keep their faces (docs-old/23 D5): what leaves the face + bleed is cut, FitCheck flags it.
       const next = elements.map((item) => {
         const from = dragState.starts[item.id];
         return from ? { ...item, x: round1(from.x + dx), y: round1(from.y + dy) } : item;
@@ -1344,7 +1344,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             />
           )}
 
-          {/* Windows and hand holes: cut out, nothing printed there remains (FitCheck UNDER_OPENING, docs/23 S17) */}
+          {/* Windows and hand holes: cut out, nothing printed there remains (FitCheck UNDER_OPENING, docs-old/23 S17) */}
           {dieline.openings?.map((opening, index) => (
             <g key={`opening_${index}`} className="pointer-events-none">
               <rect
@@ -1553,7 +1553,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             );
           })}
 
-          {/* Layer 4: the design, in paint order (docs/23 D3). Each element is cut to its face + bleed (D5), then turned
+          {/* Layer 4: the design, in paint order (docs-old/23 D3). Each element is cut to its face + bleed (D5), then turned
               and mirrored around its centre like the print files. Backgrounds are not grabbed: clicks reach the face. */}
           <defs>
             {dieline.panels.map((panel) => {
@@ -1602,7 +1602,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             ) : el.type === "barcode" ? null : el.type === "image" || el.type === "logo" || el.type === "pattern" ? (
               <FramedImage el={el} x={elX} y={elY} />
             ) : (
-              // Same lines, font, face, spacing, outline and curve as the print files (docs/12 Phase 9, docs/23 S9).
+              // Same lines, font, face, spacing, outline and curve as the print files (docs-old/12 Phase 9, docs-old/23 S9).
               <TextVisual el={el} x={elX} y={elY} fontsVersion={fontsVersion + imagesVersion} />
             );
 
@@ -1651,7 +1651,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   />
                 )}
 
-                {/* Content: cut to the printable box of its face; drop shadow and blend mode (docs/23 S22) */}
+                {/* Content: cut to the printable box of its face; drop shadow and blend mode (docs-old/23 S22) */}
                 <g clipPath={`url(#${uid}-${background ? "face" : "sheet"}-${targetPanel.id})`} style={blend ? { mixBlendMode: blend } : undefined}>
                   {shadow && (
                     <defs>

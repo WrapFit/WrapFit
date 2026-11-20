@@ -29,7 +29,7 @@ const DELETE_ATTEMPTS = 3;
  * A deletion hands the shared files to another project without locking it. When that project is deleted at the same
  * moment (by hand, or by the other path), the hand-over fails on stored_files_project_id_fkey and the transaction rolls
  * back; two deletions handing files to each other's project may also deadlock. A new transaction reads the projects
- * and their heirs again (docs/30 review round 4).
+ * and their heirs again (docs-old/30 review round 4).
  */
 function heirChangedMeanwhile(error: unknown): boolean {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
@@ -191,7 +191,7 @@ export class PrismaProjectRepository implements IProjectRepository {
 
   private deleteOnce(projectId: string): Promise<PermanentDeletion> {
     return this.prisma.$transaction(async (tx) => {
-      // Lock first (docs/30 item 4). The lock waits for a checkout writing an order line of this project (its foreign
+      // Lock first (docs-old/30 item 4). The lock waits for a checkout writing an order line of this project (its foreign
       // key check holds the row) and for a restore from another tab. The statements below start after it, so they see
       // what those committed: a check inside the DELETE itself would read the database as it was before the wait.
       const [row] = await tx.$queryRaw<{ status: string }[]>`
@@ -267,7 +267,7 @@ export class PrismaProjectRepository implements IProjectRepository {
 
   /**
    * In the deleting transaction, with the projects locked: hands the files other projects still show over to them,
-   * then lists the keys of the files that go with these projects (docs/30 review round 3).
+   * then lists the keys of the files that go with these projects (docs-old/30 review round 3).
    */
   private async releaseFiles(tx: Prisma.TransactionClient, projectIds: string[]): Promise<string[]> {
     await this.storage.detachSharedFiles(projectIds, tx);

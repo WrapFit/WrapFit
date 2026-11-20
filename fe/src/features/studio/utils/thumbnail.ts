@@ -90,7 +90,7 @@ export async function renderThumbnail(
         const src = await recoloredSrc(el.content, el.style?.colorMap);
         const href = src.startsWith("data:") ? src : await inlineImage(new URL(src, location.href).href);
         images.set(key, href);
-        // Natural size of the file, for cropped and filled photos (docs/23 S10).
+        // Natural size of the file, for cropped and filled photos (docs-old/23 S10).
         if (href) {
           const img = new Image();
           img.src = href;

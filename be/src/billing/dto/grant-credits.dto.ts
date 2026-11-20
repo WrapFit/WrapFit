@@ -8,7 +8,7 @@ import { trim } from '../../common';
 export const GRANT_LIMIT_XU = 100_000;
 
 export class GrantCreditsDto {
-  /** Only xu: export credits are no longer granted, sold or spent (docs/25 item 7). Kept for older admin clients. */
+  /** Only xu: export credits are no longer granted, sold or spent (docs-old/25 item 7). Kept for older admin clients. */
   @ApiPropertyOptional({ enum: [CreditKind.XU], default: CreditKind.XU, description: 'Xu Wrap (export credits: 400)' })
   @IsOptional()
   @IsIn([CreditKind.XU], { message: 'Lượt xuất đã ngừng: chỉ cấp được xu Wrap' })

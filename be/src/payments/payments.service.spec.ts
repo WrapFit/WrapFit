@@ -40,7 +40,7 @@ describe('PaymentsService', () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it('refuses to simulate a VietQR payment of a real account to the real bank account: 403 SIMULATION_DEMO_ONLY, nothing confirmed (docs/25 item 6)', async () => {
+  it('refuses to simulate a VietQR payment of a real account to the real bank account: 403 SIMULATION_DEMO_ONLY, nothing confirmed (docs-old/25 item 6)', async () => {
     const payment = { findUniqueOrThrow: jest.fn(), update: jest.fn() };
     const tx = { $queryRaw: jest.fn().mockResolvedValue([{ provider: 'VIETQR', is_demo: false }]), payment };
     const service = serviceWith(
@@ -238,7 +238,7 @@ describe('PaymentsService', () => {
     await expect(missing.service.confirmPaid(missing.tx, 'p3', { via: 'ADMIN' })).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('confirmPaid of a Pro payment takes the per-user lock before it reads the subscription (docs/30 item 3)', async () => {
+  it('confirmPaid of a Pro payment takes the per-user lock before it reads the subscription (docs-old/30 item 3)', async () => {
     const pendingPro = { ...pendingXu, purpose: 'PRO_MONTH', amountVnd: 99_000, metadata: { periodDays: 30 } };
     const { tx, rawTx, service } = confirmFixture(pendingPro);
     const calls: string[] = [];
@@ -264,7 +264,7 @@ describe('PaymentsService', () => {
     expect(calls).toEqual([expect.stringMatching(/^lock SELECT pg_advisory_xact_lock\(\?::int, hashtext\(\?\)\) 4802,u1$/), 'findFirst', 'create']);
   });
 
-  describe('confirmPaid of a sample order (docs/25 item 2)', () => {
+  describe('confirmPaid of a sample order (docs-old/25 item 2)', () => {
     const pendingOrder = { ...pendingXu, purpose: 'SAMPLE_ORDER', provider: 'VIETQR', amountVnd: 49_000, metadata: { orderId: 'o1' } };
     const orderFixture = (lockPayable: jest.Mock) => {
       const fixture = confirmFixture(pendingOrder);
@@ -340,7 +340,7 @@ describe('PaymentsService', () => {
     expect(view.provider).toBe(provider);
   });
 
-  it('create() keeps the VAT invoice details of the moment with the payment (docs/28 Q4)', async () => {
+  it('create() keeps the VAT invoice details of the moment with the payment (docs/18 Q4)', async () => {
     const billingDetails = { company: 'Shop Nến', taxCode: '0312345678', email: 'ketoan@shop.vn' };
     const created = jest.fn(({ data }) => Promise.resolve({ ...pendingXu, ...data }));
     const prisma = {

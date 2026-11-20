@@ -1,4 +1,4 @@
-/* ds-artwork: vector illustration of a folded box. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: vector illustration of a folded box. Raw colours and sizes here are allowed (docs/13_DESIGN_SYSTEM.md §2). */
 import React from "react";
 import { LandingLogo } from "@/components/layout/LandingLogo";
 import { cn } from "@/utils/helpers";

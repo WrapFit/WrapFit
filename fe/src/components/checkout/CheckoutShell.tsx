@@ -16,7 +16,7 @@ import { cn } from "@/utils/helpers";
 
 export type PaidTier = Extract<SubscriptionTier, "STARTER">;
 
-/** What can be bought online: Pro (Business is on request, docs/17 M4; export packs are no longer sold, docs/25 item 7). */
+/** What can be bought online: Pro (Business is on request, docs-old/17 M4; export packs are no longer sold, docs-old/25 item 7). */
 const PAID: PaidTier[] = ["STARTER"];
 
 interface CheckoutSelection {

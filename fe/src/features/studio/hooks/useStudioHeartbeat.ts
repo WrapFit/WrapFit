@@ -16,7 +16,7 @@ import { recordProjectEvent } from "@/api/analytics";
 const ACTIVITY_EVENTS = ["pointerdown", "pointermove", "keydown", "wheel"] as const;
 
 /**
- * Sends the active studio time of a saved project every minute (docs/17 S7, decision M8): the "box creation time" of
+ * Sends the active studio time of a saved project every minute (docs-old/17 S7, decision M8): the "box creation time" of
  * the dashboard. Time between two actions counts only when they are at most 2 minutes apart, and only while the tab
  * is visible, so a studio left open over lunch adds nothing. Demo projects (no id) send nothing. Analytics never
  * interrupts the user: a failed heartbeat is dropped.

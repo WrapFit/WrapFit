@@ -31,7 +31,7 @@ When generating code or designing interfaces for WrapFit, you MUST adhere to phy
 
 ## 2. UI/UX Craftsmanship & Brand System (pack.ly + Pacdora, FPT accents)
 
-WrapFit targets handmade boutique owners, artisan crafters, and thoughtful gift givers. The interface follows **pack.ly** on marketing pages (slate ink, FPT orange call to action with blue and green accents, white cards with 32–48 px corners, big bold headings) and **pacdora.com** in the template library and workspace (grey tiles, black hairlines, hard offset shadow on hover). Avoid generic "AI templates". Full rules: `docs/15_DESIGN_SYSTEM.md`; live catalogue: `/design-system`.
+WrapFit targets handmade boutique owners, artisan crafters, and thoughtful gift givers. The interface follows **pack.ly** on marketing pages (slate ink, FPT orange call to action with blue and green accents, white cards with 32–48 px corners, big bold headings) and **pacdora.com** in the template library and workspace (grey tiles, black hairlines, hard offset shadow on hover). Avoid generic "AI templates". Full rules: `docs/13_DESIGN_SYSTEM.md`; live catalogue: `/design-system`.
 
 - **Tokens** (single source `fe/src/assets/styles/tokens.ts`, three tiers):
   - *Semantic* (use in components): `fg` #1D293D, `fg-muted` #53647D, `canvas` #F1F5F9, `surface-raised` #FFFFFF, `surface-sunken` #E9EFF5, `line` #CAD5E2, `line-strong` #7C8BA1 (input borders), `action` #F26522 (FPT orange) with `action-fg` #FFFFFF (primary button), `accent` #B93F0A (selected controls), `focus` #2563EB, and `success` / `warning` / `danger` / `info` each with `-fg` and `-bg`.

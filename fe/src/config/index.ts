@@ -9,7 +9,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 /**
  * A build without a backend: every page runs on example data and print files are built in the browser. Vercel sets
  * NEXT_PUBLIC_VERCEL_ENV on every build, so a Vercel build is offline unless BACKEND_INTERNAL_URL pointed its `/api`
- * rewrite at a real backend when it was built (NEXT_PUBLIC_BACKEND_PROXY, set by next.config.mjs; docs/18 §5).
+ * rewrite at a real backend when it was built (NEXT_PUBLIC_BACKEND_PROXY, set by next.config.mjs; docs/15 §5).
  * NEXT_PUBLIC_OFFLINE_DEMO=1 turns it on anywhere.
  */
 export const OFFLINE_DEMO =

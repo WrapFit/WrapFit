@@ -29,7 +29,7 @@ export class AiUploadToolParams {
   tool: AiImageTool;
 }
 
-/** An image the user uploaded, as the canvas shows it (its URL) or its storage key (docs/23 S20). */
+/** An image the user uploaded, as the canvas shows it (its URL) or its storage key (docs-old/23 S20). */
 export class AiUploadToolDto extends AiImageToolDto {
   @ApiProperty({ description: 'URL or storage key of one of my uploaded images (PNG, JPEG, WebP)' })
   @IsString()

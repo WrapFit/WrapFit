@@ -1,4 +1,4 @@
-/** Notification inbox of the offline demo, like `be/src/notifications` (docs/25 S8). */
+/** Notification inbox of the offline demo, like `be/src/notifications` (docs-old/25 S8). */
 
 import type { AppNotification } from "@/types/api";
 import { currentUser, cursorPage, notFound, type Handler } from "../http";

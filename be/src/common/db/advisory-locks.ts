@@ -8,7 +8,7 @@ import type { Prisma } from '@prisma/client';
 export const ADVISORY_LOCK = {
   /** StorageService.reserveUpload: the quota check and the pending row of an upload. */
   STORAGE_QUOTA: 4801,
-  /** PaymentsService (Pro payment): reading and extending the subscription of a user (docs/30 item 3). */
+  /** PaymentsService (Pro payment): reading and extending the subscription of a user (docs-old/30 item 3). */
   SUBSCRIPTION: 4802,
 } as const;
 

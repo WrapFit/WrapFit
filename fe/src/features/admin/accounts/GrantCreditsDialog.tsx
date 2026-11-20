@@ -42,7 +42,7 @@ export function GrantCreditsDialog({ user, onClose }: GrantCreditsDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (quantity <= 0) return;
-    // Only xu: export credits are no longer granted (docs/25 item 7).
+    // Only xu: export credits are no longer granted (docs-old/25 item 7).
     mutation.mutate({
       kind: 'XU',
       quantity,

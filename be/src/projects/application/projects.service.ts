@@ -249,7 +249,7 @@ export class ProjectsService {
   }
 
   /**
-   * Studio events of the analytics dashboard (docs/17 S7): Auto-Fix repairs and active-time heartbeats. Ownership is
+   * Studio events of the analytics dashboard (docs-old/17 S7): Auto-Fix repairs and active-time heartbeats. Ownership is
    * checked before by ProjectOwnerGuard.
    */
   async recordEvent(projectId: string, userId: string, dto: RecordProjectEventDto): Promise<void> {
@@ -260,7 +260,7 @@ export class ProjectsService {
     }
   }
 
-  /** Analytics dashboard: every new project counts as a box created (docs/17 S7). */
+  /** Analytics dashboard: every new project counts as a box created (docs-old/17 S7). */
   private recordCreated(projectId: string, userId: string, templateId: string, source: ProjectSource): Promise<void> {
     return this.events.record('PROJECT_CREATED', { userId, projectId, payload: { templateId, source } });
   }
@@ -309,7 +309,7 @@ export class ProjectsService {
   async remove(projectId: string): Promise<void> {
     const project = await this.findOne(projectId);
     if (!canDeletePermanently(project.status)) throw notInTrash();
-    // An order that still needs the design keeps it (docs/30 item 4): checked first so nothing is touched, and again
+    // An order that still needs the design keeps it (docs-old/30 item 4): checked first so nothing is touched, and again
     // with the project row locked, in case an order or a restore committed in between. No object is deleted then.
     const holding = await this.projects.findOrderHoldingDesign(projectId);
     if (holding) throw projectInActiveOrder(holding);
@@ -370,7 +370,7 @@ function assertOwnFileContents(
 }
 
 /**
- * Decision Q3 (docs/25 S3): only a different canvas, dimensions or material gives the project a new `version`, which
+ * Decision Q3 (docs-old/25 S3): only a different canvas, dimensions or material gives the project a new `version`, which
  * paid print files and a client's print approval are tied to. The editor sends all three with every save (a rename
  * too), so a field is a change only when its value differs from the saved one; an equal field is dropped and not
  * written again. Comparing with the project read before the write is safe: every content write increases `version`

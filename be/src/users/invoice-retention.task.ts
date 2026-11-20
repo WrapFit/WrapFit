@@ -5,7 +5,7 @@ import { scrubExpiredInvoiceData } from './invoice-retention';
 
 /**
  * Every day at 03:30 (Vietnam time), removes the personal data of deleted accounts from accounting records whose legal
- * retention is over (scrubExpiredInvoiceData, docs/28 Q4). Records only cross the line on 1 January, so most runs
+ * retention is over (scrubExpiredInvoiceData, docs/18 Q4). Records only cross the line on 1 January, so most runs
  * change nothing. Running it twice, or on several instances at once, is harmless.
  */
 @Injectable()

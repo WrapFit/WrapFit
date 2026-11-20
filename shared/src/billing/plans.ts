@@ -1,5 +1,5 @@
 /**
- * Plans of WrapFit (docs/16 §2, docs/17 S1). The enum values of `users.subscription_tier` stay as they are; only the
+ * Plans of WrapFit (docs/14 §2, docs-old/17 S1). The enum values of `users.subscription_tier` stay as they are; only the
  * display names changed. `users.subscription_tier` is a cache of the effective plan: the backend recomputes it with
  * `resolvePlan` from the `subscriptions` and `credit_lots` tables (PlanService.sync).
  */
@@ -19,7 +19,7 @@ export const PLAN_LABELS: Record<SubscriptionTier, string> = {
 
 /** Plans sold as a subscription. Business is shown on the pricing page only ("Liên hệ"), it cannot be bought yet. */
 export type SubscriptionPlan = "STARTER" | "PRO_BUSINESS";
-/** MVP lifecycle (docs/17 M4): a paid period is ACTIVE until `currentPeriodEnd`, then EXPIRED. No renewal, no grace. */
+/** MVP lifecycle (docs-old/17 M4): a paid period is ACTIVE until `currentPeriodEnd`, then EXPIRED. No renewal, no grace. */
 export type SubscriptionStatus = "ACTIVE" | "EXPIRED";
 
 export interface ResolvePlanInput {

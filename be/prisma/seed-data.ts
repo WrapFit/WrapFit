@@ -11,7 +11,7 @@ const dimensionParams = {
   paperThickness: { unit: 'mm', min: 0.2, max: 1.5 },
 };
 
-/** Hang tags and folded cards: L wide × H tall, W unused (docs/23 S18). */
+/** Hang tags and folded cards: L wide × H tall, W unused (docs-old/23 S18). */
 const sheetParams = {
   length: { unit: 'mm', min: 30, max: 300 },
   width: { unit: 'mm', min: 1, max: 600 },

@@ -1,5 +1,5 @@
 /**
- * Reconciliation of bank transfers (`be/src/payments/admin`, docs/21 §3.5) and the demo flag of a user. Role ADMIN
+ * Reconciliation of bank transfers (`be/src/payments/admin`, docs-old/21 §3.5) and the demo flag of a user. Role ADMIN
  * only. Types are local: the shared API types belong to the checkout work.
  */
 

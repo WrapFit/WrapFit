@@ -6,7 +6,7 @@ import { ProjectOwnerGuard } from '../projects';
 import { ApproveDto, CreateCommentDto, GuestCommentDto, ResolveCommentDto } from './dto/review.dto';
 import { ReviewsService } from './reviews.service';
 
-/** The owner's side of the design review (docs/23 S23): the link, the comments, the approval. */
+/** The owner's side of the design review (docs-old/23 S23): the link, the comments, the approval. */
 @ApiTags('reviews')
 @ApiCookieAuth(ACCESS_COOKIE)
 @UseGuards(ProjectOwnerGuard)
@@ -55,7 +55,7 @@ export class ReviewsController {
   }
 }
 
-/** The reviewer's side: anyone with the secret link, no account (docs/23 S23). */
+/** The reviewer's side: anyone with the secret link, no account (docs-old/23 S23). */
 @ApiTags('reviews')
 @Public()
 @Controller('review/:token')

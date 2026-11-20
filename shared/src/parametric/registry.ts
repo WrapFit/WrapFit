@@ -29,7 +29,7 @@ import { generateTuckTopDielineV2 } from "./tuck-top.v2";
  * 3: L × W × H is the inside of the box and the paper thickness is added; cut lines for the pillow, lid & base and
  *    sleeve boxes; corner glue tabs on their trays; the sleeve wraps around W × H so the drawer slides along L; panel
  *    hinges for the 3D model. Summaries for the studio: FORMULA_CHANGES.
- *    New structures join the current version (docs/23 S16: mailer, S17: gable, S18: insert and the flat products,
+ *    New structures join the current version (docs-old/23 S16: mailer, S17: gable, S18: insert and the flat products,
  *    then the cup carrier of the beverage trade):
  *    no older project uses them, so
  *    nothing moves. So do new options that are off by default (S17: `window` on tuck-top and lid-base).

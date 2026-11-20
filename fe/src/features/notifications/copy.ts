@@ -1,4 +1,4 @@
-/** Wording and links of the notification inbox (docs/25 S8). Pure functions: no React, no API. */
+/** Wording and links of the notification inbox (docs-old/25 S8). Pure functions: no React, no API. */
 
 import { ROUTES } from "@/constants";
 import type { AppNotification } from "@/types/api";

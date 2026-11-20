@@ -1,5 +1,5 @@
 /**
- * What the checkout remembers across the redirect to VNPay (docs/21 §4.1): the payment and the page to come back to.
+ * What the checkout remembers across the redirect to VNPay (docs-old/21 §4.1): the payment and the page to come back to.
  * `sessionStorage` lives only in this tab, which is also where VNPay returns. Every access is wrapped: the storage can
  * throw (private window, blocked site data) and the return page then falls back to the wallet.
  */

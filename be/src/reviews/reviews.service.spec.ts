@@ -4,7 +4,7 @@ import { approvalOf, MAX_COMMENTS_PER_PROJECT, ReviewsService } from './reviews.
 const TOKEN = 'abcdefghijklmnopqrstuvwx';
 const at = new Date('2026-11-15T08:00:00Z');
 
-describe('ReviewsService (docs/23 S23)', () => {
+describe('ReviewsService (docs-old/23 S23)', () => {
   let prisma: {
     packagingProject: { findUniqueOrThrow: jest.Mock };
     projectReview: { findUnique: jest.Mock; upsert: jest.Mock; updateMany: jest.Mock; update: jest.Mock };

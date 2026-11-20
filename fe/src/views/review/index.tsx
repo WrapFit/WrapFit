@@ -40,7 +40,7 @@ export function ApprovalBadge({ approval, className }: { approval: ReviewApprova
 }
 
 /**
- * The review page of a design (docs/23 S23): the box in 3D as it was last saved, the comments, a form to add one
+ * The review page of a design (docs-old/23 S23): the box in 3D as it was last saved, the comments, a form to add one
  * (optionally about one face), and "Duyệt in" for the version shown. No account: the reviewer types a name.
  */
 export default function ReviewView({ token }: { token: string }) {

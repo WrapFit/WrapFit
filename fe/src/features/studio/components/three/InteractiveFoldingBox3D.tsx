@@ -79,7 +79,7 @@ interface InteractiveFoldingBox3DProps {
    */
   sceneSet?: boolean;
   sceneProps?: boolean;
-  /** Filled with the scripted clip of the stage (folding-box video and GIF, docs/23 S19). */
+  /** Filled with the scripted clip of the stage (folding-box video and GIF, docs-old/23 S19). */
   filmRef?: React.MutableRefObject<FilmApi | null>;
   /**
    * Names of the faces (Nắp, Đáy, Mặt trước…) on the model, with a toggle in the dock: on by default once the box is
@@ -567,7 +567,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     let visible = true;
     let hoverPoint: THREE.Vector2 | null = null;
     let dragging = false;
-    /** The clip recorder has the stage (docs/23 S19): the loop leaves the camera and the fold alone. */
+    /** The clip recorder has the stage (docs-old/23 S19): the loop leaves the camera and the fold alone. */
     let filming = false;
 
     const framingDistance = (radius: number) => {
@@ -1258,7 +1258,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       {guides && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           {DIMENSION_AXES.map((axis) => {
-            // An empty label hides the measure (the width of a flat tag or card, docs/23 S18).
+            // An empty label hides the measure (the width of a flat tag or card, docs-old/23 S18).
             if (!guides.labels[axis]) return null;
             const active = guides.active === axis;
             return (

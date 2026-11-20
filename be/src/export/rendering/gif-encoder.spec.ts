@@ -64,7 +64,7 @@ function frame(width: number, height: number, t: number): Uint8ClampedArray {
   return pixels;
 }
 
-describe('GIF encoder (docs/23 S19)', () => {
+describe('GIF encoder (docs-old/23 S19)', () => {
   it('LZW round-trips long runs, noise and table resets', () => {
     const runs = new Uint8Array(20_000).fill(7);
     const noise = Uint8Array.from({ length: 60_000 }, (_, i) => (i * 2654435761) % 251);

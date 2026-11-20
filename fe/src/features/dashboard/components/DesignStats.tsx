@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * "Số liệu thiết kế" on `/dashboard` (docs/17 S7): boxes created per day, the mix of box structures, FitCheck errors
+ * "Số liệu thiết kế" on `/dashboard` (docs-old/17 S7): boxes created per day, the mix of box structures, FitCheck errors
  * stopped before printing and the active time it takes to make a box, from `GET /analytics/summary`.
  * Charts follow the dataviz rules: one hue (FPT orange) for one measure, bars ≤ 24 px with a 4 px rounded end and a
  * 2 px gap, hairline grid, values in text colours, a hover / keyboard readout and a table view.

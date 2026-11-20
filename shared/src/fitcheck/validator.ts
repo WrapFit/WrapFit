@@ -31,7 +31,7 @@ import { overlapsOpening } from "../parametric/openings";
 import { contrastRatio, turnFromUpright, uprightRotationOf } from "./reading";
 import { misspelledWords } from "../text/vi-spell";
 
-/** Smallest text size worth printing (docs/23 S21): below it most readers cannot read it. */
+/** Smallest text size worth printing (docs-old/23 S21): below it most readers cannot read it. */
 export const MIN_TEXT_PT = 6;
 /** Text against the solid colour under it needs at least this contrast (WCAG, large text). */
 export const MIN_TEXT_CONTRAST = 3;
@@ -276,7 +276,7 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
 
   // Pexels terms §5: a stock photo may not be sold on its own ("Standalone": unaltered, or only cropped, filtered,
   // recoloured or resized), printed on a product included; combined with other elements into a new work it may
-  // (docs/28 Q3). A box printed with stock photos needs one element of the user's own: text, a logo, a pattern or an
+  // (docs/18 Q3). A box printed with stock photos needs one element of the user's own: text, a logo, a pattern or an
   // image that is not a stock photo. A shape or a barcode alone adds no creative work.
   const printed = elements.filter((element) => !element.hidden);
   const stock = printed.filter((element) => element.source === "pexels");
@@ -296,12 +296,12 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
     });
   }
 
-  // Inside elements sit on the mirrored dieline (docs/23 S5).
+  // Inside elements sit on the mirrored dieline (docs-old/23 S5).
   let inside: DielinePiece[] | null = null;
   const piecesFor = (element: CanvasElement) => (element.side === "inside" ? (inside ??= insidePieces(pieces)) : pieces);
 
   for (const element of elements) {
-    // Hidden layers do not print (docs/23 S1).
+    // Hidden layers do not print (docs-old/23 S1).
     if (element.hidden) continue;
     const label = labelOf(element);
     const found = locate(piecesFor(element), element.panelId);
@@ -459,7 +459,7 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
       }
     }
 
-    // 6. Reading direction, size, contrast and creases of a text (docs/23 S21).
+    // 6. Reading direction, size, contrast and creases of a text (docs-old/23 S21).
     if (element.type === "text" && element.content.trim()) {
       const upright = element.side === "inside" ? null : uprightRotationOf(geometry, panel.id);
       const turn = upright === null ? 0 : turnFromUpright(element.rotation || 0, upright);
@@ -552,7 +552,7 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
       }
     }
 
-    // 7. Foil blocks hold lines from MIN_FOIL_LINE_MM and texts from MIN_FOIL_TEXT_PT (docs/23 S6, Q1).
+    // 7. Foil blocks hold lines from MIN_FOIL_LINE_MM and texts from MIN_FOIL_TEXT_PT (docs-old/23 S6, Q1).
     if (element.finish && FINISH_SPOTS[element.finish]?.metallic) {
       const finishName = FINISH_SPOTS[element.finish].label;
       const sizePt = element.type === "text" ? fontSizeMmOf(element) / PT_TO_MM : null;
@@ -597,7 +597,7 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
       }
     }
 
-    // 8. Screen colours CMYK cannot print as bright (docs/23 S7): a note, the design still prints.
+    // 8. Screen colours CMYK cannot print as bright (docs-old/23 S7): a note, the design still prints.
     const inks = [element.style?.color, element.style?.fillColor, element.style?.strokeColor].filter(
       (color): color is string => !!color && (element.type === "text" || element.type === "shape")
     );
@@ -615,7 +615,7 @@ export function checkBox(pieces: DielinePiece[], elements: CanvasElement[]): Fit
       });
     }
 
-    // 9. Small text in a rich black the user typed: four plates must register on thin strokes (docs/23 S7).
+    // 9. Small text in a rich black the user typed: four plates must register on thin strokes (docs-old/23 S7).
     const typed = element.type === "text" ? element.style?.cmyk : undefined;
     if (typed && typed[3] >= 90 && typed[0] + typed[1] + typed[2] > 20) {
       const sizePt = fontSizeMmOf(element) / PT_TO_MM;
@@ -682,7 +682,7 @@ export function autoFixElements(pieces: DielinePiece[], elements: CanvasElement[
     const margins = marginsOf(envelopeOf(element), panel);
 
     if (element.hidden) return element;
-    // Text that would stand upside down on the folded box is turned the right way up (docs/23 S21).
+    // Text that would stand upside down on the folded box is turned the right way up (docs-old/23 S21).
     const upright = element.type === "text" && element.side !== "inside" ? uprightRotationOf(geometry, panel.id) : null;
     if (upright !== null && turnFromUpright(element.rotation || 0, upright) > 135) {
       element = { ...element, rotation: ((element.rotation || 0) + 180) % 360 };

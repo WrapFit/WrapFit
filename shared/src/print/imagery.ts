@@ -1,5 +1,5 @@
 /**
- * Photos and logos in their frame (docs/23 S10), one model for the editor, the 3D box, the thumbnail and the print files:
+ * Photos and logos in their frame (docs-old/23 S10), one model for the editor, the 3D box, the thumbnail and the print files:
  * - `crop`: the part of the source image used (fractions 0..1), the whole image when omitted;
  * - `fit`: "fit" shows all of it inside the box (letterbox, the default), "fill" / "tile" cover the box (cut to it);
  * - `mask`: the shape of the frame (rounded corners, circle, arch), cut out of the box;

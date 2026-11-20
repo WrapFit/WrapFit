@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: library art is printed artwork; its colours come from the art itself (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: library art is printed artwork; its colours come from the art itself (docs/13_DESIGN_SYSTEM.md §2). */
 
 import React from "react";
 import QRCode from "qrcode";

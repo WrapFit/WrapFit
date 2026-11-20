@@ -24,7 +24,7 @@ const ORPHANED_PATTERN_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const ORPHAN_BATCH = 100;
 
 /**
- * Pattern & palette generator (IT3-09), paid with xu (docs/19 S3, flow of docs/16 §4.3). Uses Claude when configured
+ * Pattern & palette generator (IT3-09), paid with xu (docs/16 S3, flow of docs/14 §4.3). Uses Claude when configured
  * and the monthly cost fuse of WrapFit (AiCostGuard) is not blown; each AI call costs XU_PATTERN_COST[quality] xu,
  * debited before the call and refunded when it fails. The built-in procedural generator (free, unlimited) answers
  * when AI is off, the budget is spent or the call fails, so the user always gets a pattern.

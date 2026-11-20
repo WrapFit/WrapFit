@@ -3,7 +3,7 @@ import type { CreditKind } from '@prisma/client';
 
 /**
  * 402: the user has fewer credits of `kind` than the operation needs (`cost`). `balance` lets the client offer a
- * pack: export credits, or xu (docs/19).
+ * pack: export credits, or xu (docs/16).
  */
 export function insufficientCredits(balance: number, kind: CreditKind = 'EXPORT', cost = 1): HttpException {
   const message = kind === 'XU' ? `Cần ${cost} xu, bạn còn ${balance} xu` : 'Bạn đã hết lượt xuất file';

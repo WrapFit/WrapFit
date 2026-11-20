@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Lists hard-coded design values in className strings (raw hex colours, arbitrary radii, arbitrary font sizes, text
-// below the 11 px floor) so they are replaced by tokens (docs/15_DESIGN_SYSTEM.md §2).
+// below the 11 px floor) so they are replaced by tokens (docs/13_DESIGN_SYSTEM.md §2).
 //
 // Allowed on purpose, reported apart and never counted against --max:
 //   - a file whose first lines hold a `ds-artwork: <reason>` comment (illustrations, logo, sticker art);
@@ -61,7 +61,7 @@ const maxIndex = process.argv.indexOf("--max");
 if (maxIndex > 0) {
   const max = Number(process.argv[maxIndex + 1]);
   if (open > max) {
-    console.error(`Hard-coded design values: ${open} > ${max}. Use tokens, or mark artwork with ds-artwork / ds-allow and a reason (docs/15_DESIGN_SYSTEM.md §2).`);
+    console.error(`Hard-coded design values: ${open} > ${max}. Use tokens, or mark artwork with ds-artwork / ds-allow and a reason (docs/13_DESIGN_SYSTEM.md §2).`);
     process.exit(1);
   }
 }

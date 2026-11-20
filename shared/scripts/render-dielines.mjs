@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Draws the dieline pieces of every box structure at 4 sizes (wide, tall, flat, smallest) as one SVG per structure and
- * formula version, then turns each into a PNG with headless Chrome. Used for the formula audit (docs/14).
+ * formula version, then turns each into a PNG with headless Chrome. Used for the formula audit (docs/12).
  *
  *   npm run build:shared
  *   node shared/scripts/render-dielines.mjs <out dir> [--versions=1,2,3] [--t=0.42]

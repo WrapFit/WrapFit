@@ -75,7 +75,7 @@ export function isAllowedMediaUrl(url: string): boolean {
 
 interface CanvasLike {
   elements?: { type: string; content: string; style?: { fontUrl?: string } }[];
-  /** Fonts uploaded for the design (docs/23 S13). */
+  /** Fonts uploaded for the design (docs-old/23 S13). */
   customFonts?: { family: string; url: string }[];
 }
 
@@ -86,7 +86,7 @@ const mapFileContents = <T extends CanvasLike>(canvas: T, map: (content: string)
     elements: canvas.elements.map((element) => {
       let next = element;
       if (FILE_ELEMENT_TYPES.has(element.type) && typeof element.content === 'string') next = { ...next, content: map(element.content) };
-      // A text set in an uploaded font points at its file (docs/23 S13).
+      // A text set in an uploaded font points at its file (docs-old/23 S13).
       if (typeof element.style?.fontUrl === 'string') next = { ...next, style: { ...element.style, fontUrl: map(element.style.fontUrl) } };
       return next;
     }),

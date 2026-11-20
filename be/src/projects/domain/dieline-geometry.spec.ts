@@ -25,7 +25,7 @@ const SIZES: [number, number, number][] = [
 const VERSIONS = [1, 2, 3];
 const T = 0.42; // 300 GSM × 0.0014
 const EPSILON = 1e-6;
-/** Allowed gap between the inside of a folded box and the size the user typed, mm (docs/12 Phase 8). */
+/** Allowed gap between the inside of a folded box and the size the user typed, mm (docs-old/12 Phase 8). */
 const FIT = 0.5;
 
 const box = (

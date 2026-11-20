@@ -1,4 +1,4 @@
-/* ds-artwork: photo backdrops of the 3D stage and its mockups (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: photo backdrops of the 3D stage and its mockups (docs/13_DESIGN_SYSTEM.md §2). */
 
 /**
  * Scenes of the 3D stage, kept apart from the WebGL code so pages can show them (thumbnails, pickers) without loading

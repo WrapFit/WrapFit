@@ -157,7 +157,7 @@ describe('print layout', () => {
   });
 });
 
-describe('layers of the design (docs/23)', () => {
+describe('layers of the design (docs-old/23)', () => {
   const square = { id: 's', type: 'shape' as const, panelId: 'front', x: 5, y: 5, width: 20, height: 20, rotation: 0, content: '', shape: { kind: 'rect' as const }, style: { fillColor: '#112233' } };
 
   it('prints every kind in the order of the layers, backgrounds first', () => {
@@ -202,7 +202,7 @@ describe('layers of the design (docs/23)', () => {
   });
 });
 
-describe('inside print, finishes and print colours (docs/23 phase 2)', () => {
+describe('inside print, finishes and print colours (docs-old/23 phase 2)', () => {
   const square = { id: 's', type: 'shape' as const, panelId: 'front', x: 5, y: 5, width: 20, height: 20, rotation: 0, content: '', shape: { kind: 'rect' as const }, style: { fillColor: '#112233' } };
 
   it('mirrors a path around the middle of the sheet (H takes x, V takes y)', () => {
@@ -266,7 +266,7 @@ describe('inside print, finishes and print colours (docs/23 phase 2)', () => {
   });
 });
 
-describe('editing tools (docs/23 phase 3)', () => {
+describe('editing tools (docs-old/23 phase 3)', () => {
   const box = (id: string, x: number, y: number, extra: Partial<CanvasElement> = {}): CanvasElement => ({
     id,
     type: 'shape',
@@ -387,7 +387,7 @@ describe('editing tools (docs/23 phase 3)', () => {
   });
 });
 
-describe('uploaded fonts (docs/23 S13)', () => {
+describe('uploaded fonts (docs-old/23 S13)', () => {
   const fontFile = (path: string) => readFileSync(require.resolve(path));
   const playfair = '@expo-google-fonts/playfair-display/400Regular/PlayfairDisplay_400Regular.ttf';
 

@@ -1,5 +1,5 @@
 /**
- * AI paid with xu (`be/src/ai`, docs/19): patterns and images for box faces. Without an API key the backend answers
+ * AI paid with xu (`be/src/ai`, docs/16): patterns and images for box faces. Without an API key the backend answers
  * with a free procedural pattern.
  */
 
@@ -63,7 +63,7 @@ export function listAiImages(params: { before?: string; limit?: number } = {}): 
   return request(`/ai/images${qs ? `?${qs}` : ""}`);
 }
 
-/** The same tools on an image of the canvas the user uploaded (its URL), docs/23 S20. */
+/** The same tools on an image of the canvas the user uploaded (its URL), docs-old/23 S20. */
 export function runAiUploadTool(content: string, tool: AiImageTool, clientRequestId?: string): Promise<AiImageJobStarted> {
   return request(`/ai/images/uploads/${tool}`, { method: "POST", json: { content, clientRequestId } });
 }

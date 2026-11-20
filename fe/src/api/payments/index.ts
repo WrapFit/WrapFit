@@ -1,4 +1,4 @@
-/** Plan summary (`be/src/billing`) and VietQR payments (`be/src/payments`, docs/17 S5). */
+/** Plan summary (`be/src/billing`) and VietQR payments (`be/src/payments`, docs-old/17 S5). */
 
 import { request } from "@/services/api";
 import type {

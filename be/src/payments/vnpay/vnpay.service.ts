@@ -21,7 +21,7 @@ export interface VnpayReturnResult {
 }
 
 /**
- * VNPay sandbox confirmation (docs/21 §3.4): the IPN (server to server) and the return page both confirm the payment
+ * VNPay sandbox confirmation (docs-old/21 §3.4): the IPN (server to server) and the return page both confirm the payment
  * through `PaymentsService.confirmPaid`, which locks the row, so whichever comes second finds it PAID and grants
  * nothing more.
  */
@@ -56,7 +56,7 @@ export class VnpayService {
 
   private async confirmFromIpn(tx: Prisma.TransactionClient, params: Record<string, string>): Promise<VnpayIpnResponse> {
     const payment = await this.lockByReference(tx, params.vnp_TxnRef);
-    // A VietQR payment is never confirmed from VNPay: real accounts do not get benefits from the sandbox (docs/21 §6).
+    // A VietQR payment is never confirmed from VNPay: real accounts do not get benefits from the sandbox (docs-old/21 §6).
     if (!payment || payment.provider !== PaymentProvider.VNPAY) return { RspCode: '01', Message: 'Order not found' };
     if (vnpayAmountOf(params) !== vnpayAmount(payment.amountVnd)) return { RspCode: '04', Message: 'Invalid amount' };
     if (payment.status === PaymentStatus.PAID) return { RspCode: '02', Message: 'Order already confirmed' };

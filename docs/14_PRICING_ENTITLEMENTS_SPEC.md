@@ -1,41 +1,204 @@
 # 💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)
 
-> **Dành cho**: IT 3 (backend, CSDL), IT 1 (frontend), IT 2 (`@wrapfit/shared`, watermark trong file in).
-> **Trạng thái (2026-10-30)**: **một phần P1 đã triển khai** cho bản demo CP4 Path 2 (docs/17 S1–S8, nhánh `feat/path2-mvp`), xem bảng "Đã triển khai" ngay dưới. Phần còn lại vẫn là đặc tả cho bản phát hành thương mại. Mỗi mục ghi rõ phần nào đã có trong code, phần nào phải sửa, phần nào làm mới.
-> **Nguồn quyết định kinh doanh**: chiến lược định giá (4 gói Free · Lượt xuất · Pro · Business, credit AI, quy tắc nghiệp vụ). Con số giá và hạn mức có thể đổi; khi đổi chỉ sửa **một file** (`shared/src/billing/entitlements.ts`, Mục 3).
-> **Không thuộc phạm vi tài liệu này**: chợ in ấn và gói đối tác xưởng in, chợ mẫu cao cấp (sẽ có tài liệu riêng). Bảng hạn mức đã chừa khóa `print.discountPercent` cho chúng.
-
-### Đã triển khai (Path 2, docs/17)
-
-| Mục | Đã có trong code | Còn lại / làm gọn so với đặc tả |
-| :--- | :--- | :--- |
-| 2, 3.2 Gói, giá, hạn mức | `shared/src/billing/` (`resolvePlan`, `requiredPlanFor`, `ENTITLEMENTS`, `EXPORT_PACKS`, `PRO_MONTH`); trang giá đọc giá từ shared; `storage.bytes` nối vào hạn mức dung lượng | Hạn mức `projects.max`, `collections.max`, `snapshots.maxManualPerProject` chưa nối vào service; ghi đè theo tài khoản (3.3) chưa có |
-| 4 Credit AI | **Thay bằng xu Wrap** ([docs/19](19_XU_WRAP_SPEC.md)): lô `credit_lots` kind `XU`, allowance mỗi kỳ, gói nạp `XU_*`, hoa văn 1 / 65 xu, ảnh AI, `AI_MONTHLY_BUDGET_USD` + `AiCostGuard`. `DAILY_AI_LIMIT` và cổng `403` premium đã bỏ | Mục 4 dưới đây là đặc tả cũ, giữ để tham khảo; số liệu đúng ở docs/19 §2–§3 |
-| 5.1–5.4 Lượt xuất, mở khóa, hoàn lượt, watermark | `credit_lots` / `credit_debits` (sổ cái), `export_unlocks` 7 ngày theo `(project, version)`, `402 EXPORT_CREDIT_REQUIRED` / `INSUFFICIENT_CREDITS`, hoàn lượt khi job lỗi lần cuối, watermark ở tai dán của PDF A4 | 5.5 giữ file in theo gói chưa làm |
-| 6 Schema | Migration `20261030000100_billing_core` (`payments`, `credit_lots`, `credit_debits`, `export_unlocks`, `subscriptions`), `20261030000500_payments` (FK đơn in) | Bảng `invoices`, `coupons`, `referrals`, workspace (6.4) chưa có |
-| 7.1 Vòng đời gói | Pro 30 ngày qua `subscriptions` (`ACTIVE` / `EXPIRED`), gia hạn nối thêm 30 ngày, `PlanService.sync` lười | Dùng thử, `PAST_DUE`, ân hạn, nhắc gia hạn, hạ gói (7.2) chưa làm |
-| 8.2 Endpoint | `GET /billing/me`, `POST /admin/users/:id/credits`, `POST /payments`, `GET /payments/:id`, `POST /payments/:id/simulate-confirm`, `GET /projects/:id/exports/access` (docs/03) | Webhook ngân hàng, MoMo / thẻ, hóa đơn, hoàn tiền chưa làm (M1) |
-| Thanh toán | VietQR EMVCo tự dựng, hạn 15 phút, xác nhận **mô phỏng** khi `PAYMENT_SIMULATION=true` (docs/17 M5, M6) | Xác nhận thật qua webhook ngân hàng |
-
----
+> **Dành cho**: IT 3 (backend, CSDL), IT 1 (frontend), IT 2 (`@wrapfit/shared`).
+> **Trạng thái (đối chiếu 2026-11-19)**: tài liệu chia làm ba phần. **Phần A** mô tả những gì đang chạy trong code. **Phần B** giữ đặc tả gói lượt xuất và watermark đã bị thay thế ở CP4, chỉ để tra lịch sử. **Phần C** là đặc tả cho bản phát hành thương mại, chưa có mã (dùng thử, hóa đơn, workspace…).
+> **Tra cứu nhanh**:
+> - Xu Wrap (giá, hạn mức mỗi kỳ, trừ và hoàn xu): [16 · Xu Wrap](16_XU_WRAP_SPEC.md).
+> - Quyền xuất file in và đơn in: [03 · Xuất file in](03_API_DESIGN.md#xuất-file-in), [03 · Đơn in mẫu](03_API_DESIGN.md#đơn-in-mẫu).
+> - Tạo thanh toán, cổng và giả lập: [03 · Gói, xu và thanh toán](03_API_DESIGN.md#gói-xu-và-thanh-toán).
+> - Cấu hình cổng thanh toán khi deploy (`VIETQR_*`, `SEPAY_*`, `VNPAY_*`, `PAYMENT_SIMULATION`): [15 · Runbook deploy](15_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps).
+>
+> **Nguồn quyết định kinh doanh**: chiến lược định giá (4 gói Free · Lượt xuất · Pro · Business). Con số giá và hạn mức nằm ở `shared/src/billing/`; khi đổi chỉ sửa ở đó.
+> **Không thuộc phạm vi tài liệu này**: chợ in ấn và gói đối tác xưởng in, chợ mẫu cao cấp.
 
 ## Mục lục
 
-1. [Nguyên tắc kỹ thuật](#1-nguyên-tắc-kỹ-thuật)
-2. [Gói và ánh xạ enum hiện có](#2-gói-và-ánh-xạ-enum-hiện-có)
-3. [Bảng hạn mức (entitlements)](#3-bảng-hạn-mức-entitlements)
-4. [Credit AI](#4-credit-ai)
-5. [Lượt xuất file và watermark](#5-lượt-xuất-file-và-watermark)
-6. [Schema Prisma](#6-schema-prisma)
-7. [Quy tắc nghiệp vụ → hiện thực](#7-quy-tắc-nghiệp-vụ--hiện-thực)
-8. [API mới và thay đổi, mã lỗi](#8-api-mới-và-thay-đổi-mã-lỗi)
-9. [Điểm chèn kiểm tra trong backend](#9-điểm-chèn-kiểm-tra-trong-backend)
-10. [Cron và sự kiện](#10-cron-và-sự-kiện)
-11. [Frontend](#11-frontend)
-12. [Lộ trình triển khai và kiểm thử](#12-lộ-trình-triển-khai-và-kiểm-thử)
-13. [Câu hỏi mở cho nhóm Kinh tế](#13-câu-hỏi-mở-cho-nhóm-kinh-tế)
+- [Phần A. Đang áp dụng](#phần-a-đang-áp-dụng)
+  - [A.1 Mua Pro nhận gì](#a1-mua-pro-nhận-gì)
+  - [A.2 Gói và cách có gói](#a2-gói-và-cách-có-gói)
+  - [A.3 Hạn mức đang được kiểm](#a3-hạn-mức-đang-được-kiểm)
+  - [A.4 File in, xu và thanh toán](#a4-file-in-xu-và-thanh-toán)
+  - [A.5 Schema và API đang dùng](#a5-schema-và-api-đang-dùng)
+- [Phần B. Đã thay thế ở CP4](#phần-b-đã-thay-thế-ở-cp4)
+  - [4. Credit AI](#4-credit-ai) · [5. Lượt xuất file và watermark](#5-lượt-xuất-file-và-watermark) · [7.3 Xuất file](#73-xuất-file)
+- [Phần C. Đề xuất còn chờ](#phần-c-đề-xuất-còn-chờ)
+  - [1. Nguyên tắc kỹ thuật](#1-nguyên-tắc-kỹ-thuật) · [2. Gói và ánh xạ enum](#2-gói-và-ánh-xạ-enum-hiện-có) · [3. Bảng hạn mức](#3-bảng-hạn-mức-entitlements) · [6. Schema Prisma](#6-schema-prisma) · [7. Quy tắc nghiệp vụ](#7-quy-tắc-nghiệp-vụ--hiện-thực) · [8. API và mã lỗi](#8-api-mới-và-thay-đổi-mã-lỗi) · [9. Điểm chèn kiểm tra](#9-điểm-chèn-kiểm-tra-trong-backend) · [10. Cron và sự kiện](#10-cron-và-sự-kiện) · [11. Frontend](#11-frontend) · [12. Lộ trình](#12-lộ-trình-triển-khai-và-kiểm-thử) · [13. Câu hỏi mở](#13-câu-hỏi-mở-cho-nhóm-kinh-tế)
+
+Số mục 1–13 giữ nguyên như bản đặc tả gốc để các tham chiếu cũ ("Mục 6.4", "§5.2") vẫn tra được.
 
 ---
+
+## Phần A. Đang áp dụng
+
+Mọi nội dung trong phần này: **có mã trên `develop`**; đã kiểm bằng E2E backend ngày 2026-11-19 (318/318, gồm `billing`, `payments`, `export`, `orders`, `ai-images`).
+
+### A.1 Mua Pro nhận gì
+
+**Mua Pro (`PRO_MONTH`, 99.000đ cho 30 ngày) nhận đúng hai quyền lợi đang được backend kiểm:**
+
+1. **Dung lượng lưu trữ 2 GB** (Free 100 MB).
+2. **1.000 xu Wrap mỗi kỳ 30 ngày** (Free 50 xu mỗi tháng), tính từ ngày bắt đầu kỳ Pro; xu chưa dùng giữ thêm một kỳ. Xu dùng cho ảnh AI, hoa văn AI và công cụ ảnh ([16 · §2.1](16_XU_WRAP_SPEC.md#21-quy-tắc-cấp-trừ-và-hoàn-xu)).
+
+Pro không tự gia hạn: hết 30 ngày thì về gói thấp hơn. Mua thêm một lần Pro khi kỳ còn hạn thì kỳ mới nối tiếp ngày hết hạn cũ.
+
+**Mua Pro có tự mở file in cho dự án mới không? Không.** File in của một phiên bản thiết kế chỉ mở khi có một **đơn in mẫu đã trả tiền** giữ đúng phiên bản đó (hoặc một lần mở khóa cũ của đúng phiên bản còn hạn). Pro, xu và lượt xuất còn dư đều không mở file in. Xem [03 · Xuất file in](03_API_DESIGN.md#xuất-file-in).
+
+### A.2 Gói và cách có gói
+
+| Enum | Tên hiển thị | Cách có gói | Giá |
+| :--- | :--- | :--- | :--- |
+| `FREE` | Miễn phí | Mặc định | 0đ |
+| `PAY_PER_EXPORT` | Lượt xuất | Còn ít nhất một lô lượt xuất **đã mua** còn hạn. Gói lượt xuất đã ngừng bán từ 2026-11-16, nên gói này chỉ còn với người mua trước đó, tới khi lô hết hạn | Không bán mới (`400 EXPORT_PACK_DISCONTINUED`) |
+| `STARTER` | Pro | Thuê bao `STARTER` `ACTIVE` (mua `PRO_MONTH`) | 99.000đ / 30 ngày |
+| `PRO_BUSINESS` | Business | Chỉ cấp tay (seed, admin). Trang giá hiển thị 299.000đ / tháng nhưng chưa có mục thanh toán | Chưa bán |
+
+- `users.subscription_tier` là bộ nhớ đệm; `PlanService.sync` tính lại từ `subscriptions` và `credit_lots` sau mỗi thanh toán và trước khi đọc quyền lợi, nên kỳ Pro hết hạn có hiệu lực ngay ở request kế tiếp, không cần cron.
+- Ưu tiên: thuê bao còn hiệu lực > lô lượt xuất đã mua còn hạn > Free (`resolvePlan` trong `shared/src/billing/plans.ts`). Tài khoản được cấp tay `STARTER` / `PRO_BUSINESS` mà không có thuê bao giữ nguyên gói.
+
+### A.3 Hạn mức đang được kiểm
+
+| Quyền lợi | Free | Lượt xuất | Pro | Business | Kiểm ở đâu |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Dung lượng lưu trữ | 100 MB | 500 MB | 2 GB | 20 GB | `StorageService` (`STORAGE_QUOTA_BYTES` lấy từ `ENTITLEMENTS`) |
+| Xu Wrap mỗi kỳ | 50 | 100 | 1.000 | 3.500 | `XuWalletService` (`XU_ALLOWANCE`) |
+
+- Các khóa khác trong `ENTITLEMENTS` của `shared` (`projects.max`, `snapshots.maxManualPerProject`, `collections.max`, `export.mode`, `export.unlockDays`) **chưa được backend đọc** để chặn. Hiện mọi gói cùng giới hạn cố định: 50 mốc thủ công mỗi dự án, 100 thư mục mỗi người. `export.mode` không còn quyết định xuất file (xem A.4); `export.unlockDays` chỉ còn ý nghĩa với các lần mở khóa cũ.
+- Giới hạn tần suất (xuất 10 / phút, AI 5 / phút, upload 30 / phút) giống nhau ở mọi gói.
+
+### A.4 File in, xu và thanh toán
+
+| Chủ đề | Quy tắc hiện hành | Tra cứu |
+| :--- | :--- | :--- |
+| File in | Mở khi có đơn in đã trả, chưa hủy, giữ đúng phiên bản thiết kế; hoặc lần mở khóa cũ còn hạn. Đổi tên giữ quyền, sửa thiết kế cần đơn mới. Mọi file đều sạch, không còn PDF watermark | [03 · Xuất file in](03_API_DESIGN.md#xuất-file-in) |
+| Đơn in mẫu | 49.000đ hộp đầu, 25.000đ mỗi hộp thêm, 1–10 hộp mỗi thiết kế, nhiều thiết kế một đơn, mã `WF-<năm>-<6 chữ số>` | [03 · Đơn in mẫu](03_API_DESIGN.md#đơn-in-mẫu) |
+| Xu Wrap | Gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ; `XU_CUSTOM` 100–50.000 xu, bội số của 10, 100đ / xu, không thưởng; hạn 12 tháng | [16](16_XU_WRAP_SPEC.md) |
+| Lượt xuất còn dư | Đổi một lần sang xu theo số tiền đã trả (`db:convert-export-credits --apply`, chạy tay trước deploy). Thanh toán gói lượt xuất cũ xác nhận muộn được cấp xu, không cấp lượt | [16 · D5](16_XU_WRAP_SPEC.md#2-quyết-định) |
+| Tạo thanh toán | `{ purpose, termsVersion }` (+ `orderId` cho `SAMPLE_ORDER`, `xu` cho `XU_CUSTOM`); `termsVersion` = `PAYMENT_TERMS_VERSION` (`2026-11-12`) | [03 · Gói, xu và thanh toán](03_API_DESIGN.md#gói-xu-và-thanh-toán) |
+| Cổng thanh toán | Tài khoản demo (`users.is_demo`): VNPay sandbox. Tài khoản thường: VietQR, SePay báo tiền về. Giả lập chỉ khi máy chủ bật `PAYMENT_SIMULATION=true`; khi đó tài khoản demo luôn được giả lập, tài khoản thường chỉ khi chưa cấu hình `VIETQR_*`, có tài khoản thật thì `403 SIMULATION_DEMO_ONLY` | [03 · Cổng thanh toán và giả lập](03_API_DESIGN.md#cổng-thanh-toán-và-giả-lập), [15](15_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps) |
+| Đối soát | Khớp tiền tự động; lệch tiền, thiếu mã, hết hạn, đơn đã hủy → admin gán tay hoặc bỏ qua | [03 · Đối soát chuyển khoản](03_API_DESIGN.md#đối-soát-chuyển-khoản) |
+| Hóa đơn VAT | Chỉ lưu thông tin `{ company, taxCode, email }` (`/billing/details`) và chụp vào thanh toán. Chưa xuất hóa đơn điện tử | Phần C, Mục 7.1 |
+
+### A.5 Schema và API đang dùng
+
+- **Bảng**: `payments`, `bank_transactions`, `credit_lots`, `credit_debits`, `export_unlocks`, `subscriptions`, `orders`, `order_items`. Mô tả ở [02 · mục 2.6, 2.7](02_DATABASE_DESIGN.md#26-thanh-toán-ví-quyền-xuất-và-thuê-bao). Các bảng `invoices`, `coupons`, `referrals`, `entitlement_overrides`, workspace của Phần C chưa có. Bảng `social_mockups` cũ đã xóa (migration `20261117000100_drop_social_mockups`).
+- **Endpoint**: `GET /billing/me`, `GET` · `PUT /billing/details`, `GET /billing/xu/history`, `POST /admin/users/:id/credits` (chỉ xu), `POST` · `GET /payments`, `GET /payments/:id`, `POST /payments/:id/simulate-confirm` · `/simulate-transfer`, webhook SePay, VNPay IPN / return, đối soát admin, `GET /projects/:id/exports/access`. Hợp đồng ở [03 · mục 2](03_API_DESIGN.md#2-endpoints-đã-triển-khai).
+- **Mã lỗi đang dùng**: `402 ORDER_PAYMENT_REQUIRED`, `402 INSUFFICIENT_CREDITS { kind: "XU" }`, `400 EXPORT_PACK_DISCONTINUED`, `403 SIMULATION_DEMO_ONLY`, `409 PAYMENT_EXPIRED`, `409 ORDER_NOT_PAYABLE`, `403 STORAGE_QUOTA_EXCEEDED` (ảnh AI). Các mã `PLAN_FEATURE_REQUIRED`, `PLAN_LIMIT_REACHED`, `EXPORT_CREDIT_REQUIRED`… ở Mục 8.1 chưa dùng hoặc đã bỏ.
+
+---
+
+## Phần B. Đã thay thế ở CP4
+
+> **Đã thay thế (CP4, trước 2026-11-17).** Phần dưới mô tả gói lượt xuất, PDF A4 có watermark và cách cấp credit AI cũ. Gói lượt xuất đã ngừng bán (`400 EXPORT_PACK_DISCONTINUED`), `useCredit` và `EXPORT_CREDIT_REQUIRED` đã bỏ, mọi file in đều sạch, credit AI đã thành xu Wrap. Thanh toán giả lập cũ (mọi tài khoản tự xác nhận khi bật `PAYMENT_SIMULATION`) đã thay bằng quy tắc theo loại tài khoản ở Phần A. Luồng hiện hành: [03 · Xuất file](03_API_DESIGN.md#xuất-file-in), [16 · Xu Wrap](16_XU_WRAP_SPEC.md). Giữ phần này để tra lịch sử, không dùng để làm.
+
+## 4. Credit AI
+
+> **Đã thay bằng xu Wrap (2026-10-31).** Credit AI được làm thành đồng xu chung cho mọi tác vụ AI: xem [docs/16](16_XU_WRAP_SPEC.md) (quyết định §2, bảng giá §3, thiết kế §4). Các con số dưới đây (20 / 50 / 300 credit, premium 25 credit, `AI_PACKS`, không cộng dồn) **không còn đúng**: hạn mức là Free 50, Lượt xuất 100, Pro 1.000, Business 3.500 xu, dồn tối đa một kỳ; hoa văn premium 65 xu.
+
+### 4.1 Chất lượng, model và giá credit
+
+| `quality` (DTO) | Model | Chi phí ước tính / lượt | Credit | Ai được dùng |
+| :--- | :--- | :--- | :--- | :--- |
+| `procedural` | Không gọi AI (`ProceduralPatternGenerator`, đã có) | 0đ | 0 | Mọi gói, không giới hạn |
+| `fast` (mặc định) | `AI_MODEL_FAST`, mặc định `claude-haiku-5-5` | ~50đ | 1 | Mọi gói |
+| `premium` | `AI_MODEL_PREMIUM`, mặc định `claude-opus-5-5` | ~1.000–2.500đ | 25 | `ai.premium = true` |
+
+Hằng số trong shared: `AI_CREDIT_COST = { procedural: 0, fast: 1, premium: 25 }`. Chi phí ước tính lấy theo giá $0,10 / $0,50 (Haiku 5.5) và $4 / $20 (Opus 5.5) mỗi 1 triệu token vào / ra; đối chiếu lại bằng cột `input_tokens`, `output_tokens` của `ai_generations` sau khi chạy thật.
+
+### 4.2 Cấp credit theo chu kỳ (lười, không cần cron)
+
+- Khi người dùng gọi AI hoặc xem số dư, `CreditsService.ensureAllowance(userId, 'AI')` tạo lô `source = PLAN_ALLOWANCE` cho **chu kỳ hiện tại** nếu chưa có. Unique `(user_id, kind, source, period_key)` chặn cấp hai lần.
+- `period_key`:
+  - Free, Lượt xuất: tháng dương lịch theo giờ Việt Nam, ví dụ `2026-11`.
+  - Pro, Business: `<subscriptionId>:<số thứ tự tháng kể từ ngày bắt đầu>` (gói năm vẫn cấp từng tháng).
+- Lô allowance hết hạn ở cuối chu kỳ: credit tháng **không cộng dồn**.
+- Gói mua thêm (`AI_PACKS`): lô `source = PURCHASE`, hết hạn sau 12 tháng.
+- Trừ theo thứ tự: lô sắp hết hạn trước (`expires_at asc nulls last, created_at asc`).
+
+### 4.3 Luồng `POST /api/ai/pattern`
+
+```text
+1. Throttle 5 / phút (giữ nguyên @Throttle).
+2. quality = dto.quality ?? 'fast'.
+   - 'procedural' → sinh thuật toán, không đụng credit, trả kết quả.
+   - 'premium' mà !ent.ai.premium → 403 PLAN_FEATURE_REQUIRED { feature: 'ai.premium', requiredPlan: 'PAY_PER_EXPORT' }.
+3. Chưa cấu hình AI (ANTHROPIC_API_KEY trống) hoặc đã chạm ngân sách tháng (AI_MONTHLY_BUDGET_USD) → sinh thuật toán, không trừ.
+4. Transaction: ensureAllowance + debit(cost, reason AI_GENERATION) → thiếu → 402 INSUFFICIENT_CREDITS { kind: 'AI', balance, cost }.
+5. Gọi model. Lỗi hoặc AI từ chối → refund(operationId), sinh thuật toán (đúng hành vi "luôn có kết quả" hiện nay), source = 'procedural'.
+6. Thành công → ghi ai_generations { quality, credits: cost, model, tokens, debit_operation_id }.
+7. Trả thêm usage: { balance, allowanceRemaining, resetsAt }.
+```
+
+Bỏ cửa sổ 24 giờ `DAILY_AI_LIMIT`. Trần chống lạm dụng còn lại là throttle 5 lượt / phút.
+
+### 4.4 Cầu chì chi phí toàn hệ thống
+
+`AI_MONTHLY_BUDGET_USD` (biến môi trường mới, trống = không giới hạn). `AiCostGuard` cộng chi phí ước tính tháng hiện tại từ `ai_generations` (token × bảng giá model trong `be/src/ai/ai-pricing.ts`), cache 5 phút. Vượt ngân sách → mọi request tự chuyển sang thuật toán, ghi log `error` để admin biết. Không trừ credit của người dùng trong lúc này.
+
+---
+
+## 5. Lượt xuất file và watermark
+
+### 5.1 Khái niệm "mở khóa bản thiết kế"
+
+- **1 lượt xuất = 1 bản thiết kế đã khóa**: cặp `(project_id, variant_id, project_version)`. `packaging_projects.version` đã tăng mỗi khi nội dung đổi, nên dùng luôn làm số phiên bản.
+- Một lần mở khóa (`export_unlocks`) cho xuất **cả 4 định dạng không watermark** của đúng bản đó, trong `export.unlockDays` (7) ngày. Sửa thiết kế → `version` tăng → bản mới cần lượt mới.
+- Pro và Business (`UNLIMITED`) không tạo dòng mở khóa.
+
+### 5.2 Luồng `POST /api/projects/:id/exports`
+
+Body mới: `{ fileType, variantId?, useCredit? }`. Các bước 1–3 đã có trong [export.service.ts](../be/src/export/export.service.ts).
+
+```text
+1. Storage chưa cấu hình → 503; dự án ở thùng rác → 409.            (đã có)
+2. FitCheck lại trên server, lỗi mức error → 422.                    (đã có)
+3. ent = entitlements(chủ dự án).
+4. ent.export.mode = UNLIMITED → watermarked = false.
+5. Ngược lại, tìm unlock còn hạn của (project, variant, version):
+   - có → watermarked = false.
+   - không có, fileType = PDF_A4_PRINT, useCredit != true → watermarked = true (miễn phí, mọi gói).
+   - không có, còn lại:
+       * useCredit != true → 402 EXPORT_CREDIT_REQUIRED { balance }   (FE hỏi "Dùng 1 lượt? Còn N lượt")
+       * useCredit = true → transaction: debit 1 EXPORT + tạo export_unlocks; hết lượt → 402 INSUFFICIENT_CREDITS.
+6. Tạo export_jobs { watermarked, unlock_id }, đẩy vào hàng đợi với priority = ent.export.priority ? 1 : undefined.
+7. Trả 202 { jobId, status, fitCheck, watermarked, charged: boolean, exportCredits: { balance } }.
+```
+
+Gói Free cũng gửi được `useCredit: true` nếu đã mua lượt: khi đó người dùng thực chất đã ở gói Lượt xuất.
+
+### 5.3 Hoàn lượt khi xuất lỗi
+
+Trong `ExportProcessor`, lần thử **cuối cùng** thất bại (job thành `FAILED`): nếu job có `unlock_id` và unlock đó **chưa có job nào `COMPLETED`** → `CreditsService.refund(debit_operation_id)` và đánh dấu `export_unlocks.refunded_at`. Worker cần `BillingCoreModule` (Mục 9.1).
+
+### 5.4 Watermark (IT 2 + IT 3)
+
+- Chỉ áp cho job có `watermarked = true` (luôn là `PDF_A4_PRINT`).
+- Nội dung: `Thiết kế bằng WrapFit · wrapfit.vn`, Inter 6 pt, màu `#7C8BA1`, nằm trên lớp Artwork.
+- Vị trí: hàm mới `watermarkPlacement(pieces)` trong `shared/src/print/`:
+  - Ưu tiên vùng **tai dán** (`DielineGeometry.glueAreas`, đã có ở hộp gối, bao diêm, khay): khi dán hộp lại thì chữ bị khuất, thiết kế không hỏng nhưng file chưa sạch để bán.
+  - Cấu trúc không có tai dán (tem nhãn): dải dưới cùng của mặt lớn nhất, bên trong vùng an toàn 3 mm.
+- Watermark **không** được FitCheck tính là vi phạm (nó không phải `CanvasElement`).
+
+### 5.5 Giữ file in
+
+`ExportRetentionTask` (02:30 hằng ngày): với chủ dự án có `export.fileRetentionDays` khác `null`, xóa file `EXPORT` quá hạn khỏi bucket và CSDL, ghi `export_jobs.file_deleted_at`. `GET /api/exports/:jobId` của job đó trả `410 EXPORT_FILE_EXPIRED`. Bản thiết kế vẫn còn nên xuất lại được (theo luồng 5.2, unlock đã hết hạn thì tốn lượt mới).
+
+---
+
+### 7.3 Xuất file
+
+Đã đặc tả ở Mục 5. Tóm tắt quy tắc để kiểm thử:
+
+- 1 lượt = 1 `(project, variant, version)`, xuất lại mọi định dạng trong 7 ngày không tốn thêm.
+- Job `FAILED` ở lần thử cuối → hoàn lượt nếu unlock chưa có bản nào thành công.
+- Lô lượt mua hết hạn sau 12 tháng, không chuyển nhượng (`credit_lots.user_id` không đổi được qua API).
+- FitCheck có lỗi mức error → không xuất ở mọi gói (giữ nguyên).
+- Free / Lượt xuất: file in giữ 90 ngày; Pro / Business: giữ khi gói còn hiệu lực. Hết gói → áp hạn 90 ngày tính từ ngày hết gói.
+
+---
+
+## Phần C. Đề xuất còn chờ
+
+> **Đề xuất, chưa có mã** (trừ chỗ ghi khác). Đây là đặc tả cho bản phát hành thương mại: dùng thử Pro, gia hạn và ân hạn, hạ gói, hóa đơn điện tử, mã giảm giá, affiliate, ưu đãi giáo dục, workspace và ghế Business, biến thể kích thước, thống kê mở hộp, iframe nhúng, nhiều Brand Kit, giới hạn phiên. Những phần đã chạy được tóm tắt ở [Phần A](#phần-a-đang-áp-dụng); khi hai phần mâu thuẫn, Phần A đúng với code. Các dòng còn nhắc lượt xuất, `useCredit` hay watermark trong Phần C đều có nhãn *(đã thay thế ở CP4)*.
 
 ## 1. Nguyên tắc kỹ thuật
 
@@ -92,8 +255,8 @@ Người dùng chỉ có **một** subscription còn hiệu lực tại một th
 | `trash.retentionDays` | ngày | 30 | 30 | 30 | 90 | `TrashPurgeTask` | 🔧 (cứng 30) |
 | `collections.max` | thư mục | 3 | 10 | 100 | `null` | `CollectionsService.create` | 🔧 (`MAX_COLLECTIONS_PER_USER = 100`) |
 | `sizeVariants.maxPerProject` | biến thể kích thước | 0 | 0 | 5 | `null` | `VariantsService.create` | 🆕 Phase 3 |
-| `export.mode` | `FREE_A4` \| `CREDIT` \| `UNLIMITED` | `FREE_A4` | `CREDIT` | `UNLIMITED` | `UNLIMITED` | `ExportService.request` (Mục 5) | 🆕 |
-| `export.unlockDays` | ngày tải lại miễn phí cùng một bản | — | 7 | — | — | `ExportService.request` | 🆕 |
+| `export.mode` *(đã thay thế ở CP4, xem Phần B)* | `FREE_A4` \| `CREDIT` \| `UNLIMITED` | `FREE_A4` | `CREDIT` | `UNLIMITED` | `UNLIMITED` | `ExportService.request` (Mục 5) | 🆕 |
+| `export.unlockDays` *(đã thay thế ở CP4, xem Phần B)* | ngày tải lại miễn phí cùng một bản | — | 7 | — | — | `ExportService.request` | 🆕 |
 | `export.priority` | ưu tiên hàng đợi | `false` | `false` | `false` | `true` | `ExportService.request` (BullMQ `priority`) | 🆕 |
 | `export.fileRetentionDays` | ngày giữ file in đã xuất | 90 | 90 | `null` | `null` | `ExportRetentionTask` | 🆕 |
 | `ai.monthlyCredits` | credit AI cấp mỗi chu kỳ | 20 | 50 | 300 | 1.000 (cả nhóm) | `CreditsService` (cấp khi dùng lần đầu trong chu kỳ) | 🆕 (thay `DAILY_AI_LIMIT`) |
@@ -110,7 +273,7 @@ Người dùng chỉ có **một** subscription còn hiệu lực tại một th
 | `unboxing.analytics` | `NONE` \| `TOTAL` \| `DETAILED` | `NONE` | `NONE` | `TOTAL` | `DETAILED` | `GET /projects/:id/unboxing/stats` | 🆕 |
 | `mockups.maxPerMonth` | ảnh mockup / tháng | 10 | 20 | 30 | `null` | `MockupsService.create` | 🆕 |
 | `mockups.maxWidthPx` | độ phân giải | 2048 | 2048 | 4096 | 4096 | `MockupsService.create` | 🆕 |
-| `mockups.watermark` | dấu WrapFit trên mockup | `true` | `false` | `false` | `false` | Studio (render phía client) | 🆕 |
+| `mockups.watermark` | dấu WrapFit trên mockup (ảnh mockup, không phải file in) | `true` | `false` | `false` | `false` | Studio (render phía client) | 🆕 |
 | `team.seatsIncluded` | ghế có sẵn | 1 | 1 | 1 | 3 | `WorkspacesService.invite` | 🆕 Phase 3 |
 | `team.collaboration` | bình luận, duyệt thiết kế | `false` | `false` | `false` | `true` | `CommentsService` | 🆕 Phase 3 |
 | `community.commercialUse` | dùng thương mại bản Remix | `false` | `false` | `true` | `true` | Ghi `fork_license` lúc Remix | 🆕 |
@@ -207,6 +370,7 @@ export const SUBSCRIPTION_PRICES = {
 } as const;
 export const EXTRA_SEAT_PRICE = { MONTH: 59_000 } as const; // giá năm: câu hỏi mở 3
 
+// Đã thay thế ở CP4: gói lượt xuất ngừng bán (Phần B).
 export const EXPORT_PACKS = [
   { id: 'export-1', credits: 1, price: 19_000 },
   { id: 'export-5', credits: 5, price: 79_000 },
@@ -240,103 +404,9 @@ Kiểm và ghi nằm trong **cùng một transaction** (như `assertQuota` của
 
 ---
 
-## 4. Credit AI
-
-> **Đã thay bằng xu Wrap (2026-10-31).** Credit AI được làm thành đồng xu chung cho mọi tác vụ AI: xem [docs/19](19_XU_WRAP_SPEC.md) (quyết định §2, bảng giá §3, thiết kế §4). Các con số dưới đây (20 / 50 / 300 credit, premium 25 credit, `AI_PACKS`, không cộng dồn) **không còn đúng**: hạn mức là Free 50, Lượt xuất 100, Pro 1.000, Business 3.500 xu, dồn tối đa một kỳ; hoa văn premium 65 xu.
-
-### 4.1 Chất lượng, model và giá credit
-
-| `quality` (DTO) | Model | Chi phí ước tính / lượt | Credit | Ai được dùng |
-| :--- | :--- | :--- | :--- | :--- |
-| `procedural` | Không gọi AI (`ProceduralPatternGenerator`, đã có) | 0đ | 0 | Mọi gói, không giới hạn |
-| `fast` (mặc định) | `AI_MODEL_FAST`, mặc định `claude-haiku-5-5` | ~50đ | 1 | Mọi gói |
-| `premium` | `AI_MODEL_PREMIUM`, mặc định `claude-opus-5-5` | ~1.000–2.500đ | 25 | `ai.premium = true` |
-
-Hằng số trong shared: `AI_CREDIT_COST = { procedural: 0, fast: 1, premium: 25 }`. Chi phí ước tính lấy theo giá $0,10 / $0,50 (Haiku 5.5) và $4 / $20 (Opus 5.5) mỗi 1 triệu token vào / ra; đối chiếu lại bằng cột `input_tokens`, `output_tokens` của `ai_generations` sau khi chạy thật.
-
-### 4.2 Cấp credit theo chu kỳ (lười, không cần cron)
-
-- Khi người dùng gọi AI hoặc xem số dư, `CreditsService.ensureAllowance(userId, 'AI')` tạo lô `source = PLAN_ALLOWANCE` cho **chu kỳ hiện tại** nếu chưa có. Unique `(user_id, kind, source, period_key)` chặn cấp hai lần.
-- `period_key`:
-  - Free, Lượt xuất: tháng dương lịch theo giờ Việt Nam, ví dụ `2026-11`.
-  - Pro, Business: `<subscriptionId>:<số thứ tự tháng kể từ ngày bắt đầu>` (gói năm vẫn cấp từng tháng).
-- Lô allowance hết hạn ở cuối chu kỳ: credit tháng **không cộng dồn**.
-- Gói mua thêm (`AI_PACKS`): lô `source = PURCHASE`, hết hạn sau 12 tháng.
-- Trừ theo thứ tự: lô sắp hết hạn trước (`expires_at asc nulls last, created_at asc`).
-
-### 4.3 Luồng `POST /api/ai/pattern`
-
-```text
-1. Throttle 5 / phút (giữ nguyên @Throttle).
-2. quality = dto.quality ?? 'fast'.
-   - 'procedural' → sinh thuật toán, không đụng credit, trả kết quả.
-   - 'premium' mà !ent.ai.premium → 403 PLAN_FEATURE_REQUIRED { feature: 'ai.premium', requiredPlan: 'PAY_PER_EXPORT' }.
-3. Chưa cấu hình AI (ANTHROPIC_API_KEY trống) hoặc đã chạm ngân sách tháng (AI_MONTHLY_BUDGET_USD) → sinh thuật toán, không trừ.
-4. Transaction: ensureAllowance + debit(cost, reason AI_GENERATION) → thiếu → 402 INSUFFICIENT_CREDITS { kind: 'AI', balance, cost }.
-5. Gọi model. Lỗi hoặc AI từ chối → refund(operationId), sinh thuật toán (đúng hành vi "luôn có kết quả" hiện nay), source = 'procedural'.
-6. Thành công → ghi ai_generations { quality, credits: cost, model, tokens, debit_operation_id }.
-7. Trả thêm usage: { balance, allowanceRemaining, resetsAt }.
-```
-
-Bỏ cửa sổ 24 giờ `DAILY_AI_LIMIT`. Trần chống lạm dụng còn lại là throttle 5 lượt / phút.
-
-### 4.4 Cầu chì chi phí toàn hệ thống
-
-`AI_MONTHLY_BUDGET_USD` (biến môi trường mới, trống = không giới hạn). `AiCostGuard` cộng chi phí ước tính tháng hiện tại từ `ai_generations` (token × bảng giá model trong `be/src/ai/ai-pricing.ts`), cache 5 phút. Vượt ngân sách → mọi request tự chuyển sang thuật toán, ghi log `error` để admin biết. Không trừ credit của người dùng trong lúc này.
-
----
-
-## 5. Lượt xuất file và watermark
-
-### 5.1 Khái niệm "mở khóa bản thiết kế"
-
-- **1 lượt xuất = 1 bản thiết kế đã khóa**: cặp `(project_id, variant_id, project_version)`. `packaging_projects.version` đã tăng mỗi khi nội dung đổi, nên dùng luôn làm số phiên bản.
-- Một lần mở khóa (`export_unlocks`) cho xuất **cả 4 định dạng không watermark** của đúng bản đó, trong `export.unlockDays` (7) ngày. Sửa thiết kế → `version` tăng → bản mới cần lượt mới.
-- Pro và Business (`UNLIMITED`) không tạo dòng mở khóa.
-
-### 5.2 Luồng `POST /api/projects/:id/exports`
-
-Body mới: `{ fileType, variantId?, useCredit? }`. Các bước 1–3 đã có trong [export.service.ts](../be/src/export/export.service.ts).
-
-```text
-1. Storage chưa cấu hình → 503; dự án ở thùng rác → 409.            (đã có)
-2. FitCheck lại trên server, lỗi mức error → 422.                    (đã có)
-3. ent = entitlements(chủ dự án).
-4. ent.export.mode = UNLIMITED → watermarked = false.
-5. Ngược lại, tìm unlock còn hạn của (project, variant, version):
-   - có → watermarked = false.
-   - không có, fileType = PDF_A4_PRINT, useCredit != true → watermarked = true (miễn phí, mọi gói).
-   - không có, còn lại:
-       * useCredit != true → 402 EXPORT_CREDIT_REQUIRED { balance }   (FE hỏi "Dùng 1 lượt? Còn N lượt")
-       * useCredit = true → transaction: debit 1 EXPORT + tạo export_unlocks; hết lượt → 402 INSUFFICIENT_CREDITS.
-6. Tạo export_jobs { watermarked, unlock_id }, đẩy vào hàng đợi với priority = ent.export.priority ? 1 : undefined.
-7. Trả 202 { jobId, status, fitCheck, watermarked, charged: boolean, exportCredits: { balance } }.
-```
-
-Gói Free cũng gửi được `useCredit: true` nếu đã mua lượt: khi đó người dùng thực chất đã ở gói Lượt xuất.
-
-### 5.3 Hoàn lượt khi xuất lỗi
-
-Trong `ExportProcessor`, lần thử **cuối cùng** thất bại (job thành `FAILED`): nếu job có `unlock_id` và unlock đó **chưa có job nào `COMPLETED`** → `CreditsService.refund(debit_operation_id)` và đánh dấu `export_unlocks.refunded_at`. Worker cần `BillingCoreModule` (Mục 9.1).
-
-### 5.4 Watermark (IT 2 + IT 3)
-
-- Chỉ áp cho job có `watermarked = true` (luôn là `PDF_A4_PRINT`).
-- Nội dung: `Thiết kế bằng WrapFit · wrapfit.vn`, Inter 6 pt, màu `#7C8BA1`, nằm trên lớp Artwork.
-- Vị trí: hàm mới `watermarkPlacement(pieces)` trong `shared/src/print/`:
-  - Ưu tiên vùng **tai dán** (`DielineGeometry.glueAreas`, đã có ở hộp gối, bao diêm, khay): khi dán hộp lại thì chữ bị khuất, thiết kế không hỏng nhưng file chưa sạch để bán.
-  - Cấu trúc không có tai dán (tem nhãn): dải dưới cùng của mặt lớn nhất, bên trong vùng an toàn 3 mm.
-- Watermark **không** được FitCheck tính là vi phạm (nó không phải `CanvasElement`).
-
-### 5.5 Giữ file in
-
-`ExportRetentionTask` (02:30 hằng ngày): với chủ dự án có `export.fileRetentionDays` khác `null`, xóa file `EXPORT` quá hạn khỏi bucket và CSDL, ghi `export_jobs.file_deleted_at`. `GET /api/exports/:jobId` của job đó trả `410 EXPORT_FILE_EXPIRED`. Bản thiết kế vẫn còn nên xuất lại được (theo luồng 5.2, unlock đã hết hạn thì tốn lượt mới).
-
----
-
 ## 6. Schema Prisma
 
-Theo quy ước [`02`](02_DATABASE_DESIGN.md) và [`10`](10_DB_HARDENING_DESIGN.md): `uuid(7)`, `timestamptz(3)`, tên snake_case, index cho mọi khóa ngoại, CHECK chỉ nằm trong migration. Tiền là `Int` đơn vị **đồng** (không có số lẻ).
+Theo quy ước [`02`](02_DATABASE_DESIGN.md) và [02 · Quy ước bắt buộc](02_DATABASE_DESIGN.md#quy-ước-bắt-buộc): `uuid(7)`, `timestamptz(3)`, tên snake_case, index cho mọi khóa ngoại, CHECK chỉ nằm trong migration. Tiền là `Int` đơn vị **đồng** (không có số lẻ).
 
 ### 6.1 Enum mới và enum thay đổi
 
@@ -373,7 +443,7 @@ enum PaymentStatus {
 
 enum PaymentProductType {
   SUBSCRIPTION
-  EXPORT_PACK
+  EXPORT_PACK // đã thay thế ở CP4: ngừng bán (Phần B)
   AI_PACK
   EXTRA_SEATS
 }
@@ -741,7 +811,7 @@ model BrandKit {
 | `packaging_projects` | `hidden_at timestamptz` | Admin ẩn khỏi thư viện cộng đồng |
 | `packaging_projects` | `fork_license text` | `PERSONAL` \| `COMMERCIAL`: chụp lúc Remix theo `community.commercialUse` của người Remix |
 | `unboxing_experiences` | `hide_branding boolean default false` | Người dùng chọn ẩn logo; chỉ có tác dụng khi gói lúc xem cho phép |
-| `export_jobs` | `watermarked boolean default false`, `unlock_id uuid`, `file_deleted_at timestamptz` | Mục 5 |
+| `export_jobs` | `watermarked boolean default false`, `unlock_id uuid`, `file_deleted_at timestamptz` | Mục 5 *(đã thay thế ở CP4, xem Phần B)*: `watermarked` và `unlock_id` có trong schema nhưng job mới luôn `false` / `null`; `file_deleted_at` chưa có |
 | `ai_generations` | `quality "AiQuality" default 'PREMIUM'`, `credits int default 0`, `debit_operation_id uuid` | Mục 4; dòng cũ là Opus nên mặc định `PREMIUM`, `credits = 0` |
 
 **CHECK trong migration** (theo quy ước `chk_*`):
@@ -864,7 +934,7 @@ stateDiagram-v2
 | Hủy | `POST /billing/subscription/cancel` → `cancel_at_period_end = true`. Dùng hết kỳ đã trả rồi `CANCELED`. `resume` trước hạn để bỏ hủy. |
 | Ân hạn | Hết `current_period_end` chưa trả → `PAST_DUE`, `grace_ends_at = end + GRACE_DAYS`, quyền lợi giữ nguyên. Hết ân hạn → `EXPIRED` → `syncPlan` (về `PAY_PER_EXPORT` nếu còn lô lượt mua, nếu không về `FREE`). |
 | Gói mùa (`QUARTER`) | Như gói tháng nhưng thời hạn 3 tháng; nhắc gia hạn đề xuất gói tháng hoặc gói năm. |
-| Hoàn tiền thuê bao | `POST /billing/payments/:id/refund-request`, admin duyệt. Tự kiểm điều kiện: `paidAt` ≤ 7 ngày **và** không có `export_jobs` `COMPLETED`, `watermarked = false` của chủ tài khoản kể từ `paidAt`. Duyệt → `payments.REFUNDED`, subscription `CANCELED` ngay, `syncPlan`, hoa hồng `CLAWED_BACK`. |
+| Hoàn tiền thuê bao | `POST /billing/payments/:id/refund-request`, admin duyệt. Tự kiểm điều kiện: `paidAt` ≤ 7 ngày **và** không có `export_jobs` `COMPLETED` (file sạch; điều kiện `watermarked = false` cũ đã thay thế ở CP4) của chủ tài khoản kể từ `paidAt`. Duyệt → `payments.REFUNDED`, subscription `CANCELED` ngay, `syncPlan`, hoa hồng `CLAWED_BACK`. |
 | Hoàn tiền gói lượt / credit | Chỉ khi lô chưa dùng (`remaining = amount`) và trong 7 ngày. Lô bị xóa remaining về 0 cùng transaction. |
 | Hóa đơn | Tạo `invoices` khi `SUCCEEDED`. Giá niêm yết đã gồm VAT: `subtotal = round(total / (1 + VAT_RATE))`, `vat_amount = total - subtotal`. Có `taxCode` → xuất hóa đơn công ty. Gửi email qua `MailModule` (đã có). |
 
@@ -888,15 +958,7 @@ stateDiagram-v2
 | Credit | Lô đã cấp dùng đến hết hạn của lô | Không thu hồi. |
 | Tài khoản Free không hoạt động 12 tháng | Email báo trước 30 ngày, rồi đặt `dormant_at`; ảnh có thể chuyển lớp lưu trữ lạnh. **Không xóa**, trang QR vẫn chạy | `DormantAccountTask` hằng tháng, dựa vào `last_active_at`. |
 
-### 7.3 Xuất file
-
-Đã đặc tả ở Mục 5. Tóm tắt quy tắc để kiểm thử:
-
-- 1 lượt = 1 `(project, variant, version)`, xuất lại mọi định dạng trong 7 ngày không tốn thêm.
-- Job `FAILED` ở lần thử cuối → hoàn lượt nếu unlock chưa có bản nào thành công.
-- Lô lượt mua hết hạn sau 12 tháng, không chuyển nhượng (`credit_lots.user_id` không đổi được qua API).
-- FitCheck có lỗi mức error → không xuất ở mọi gói (giữ nguyên).
-- Free / Lượt xuất: file in giữ 90 ngày; Pro / Business: giữ khi gói còn hiệu lực. Hết gói → áp hạn 90 ngày tính từ ngày hết gói.
+> Mục 7.3 (Xuất file) đã chuyển sang [Phần B](#73-xuất-file): quy tắc đó đã bị thay thế ở CP4.
 
 ### 7.4 Cộng đồng, Remix, bản quyền
 
@@ -944,7 +1006,7 @@ Bộ lọc lỗi hiện tại đã cho phép trường bổ sung ngoài `statusC
 | 403 | `PLAN_FEATURE_REQUIRED` | `feature`, `requiredPlan` | Tính năng gói hiện tại không có (AI Cao cấp, iframe, font riêng...) |
 | 403 | `PLAN_LIMIT_REACHED` | `limitKey`, `limit`, `used`, `requiredPlan` | Đã chạm hạn mức đếm được (dự án, thư mục, mốc, mở hộp, mockup) |
 | 403 | `STORAGE_QUOTA_EXCEEDED` | `usedBytes`, `quotaBytes`, `requiredPlan` | Thay message hiện tại của `assertQuota`, giữ status 403 |
-| 402 | `EXPORT_CREDIT_REQUIRED` | `balance` | Cần xác nhận dùng 1 lượt (`useCredit: true`) |
+| 402 | `EXPORT_CREDIT_REQUIRED` | `balance` | Cần xác nhận dùng 1 lượt (`useCredit: true`) *(đã thay thế ở CP4, xem Phần B)* |
 | 402 | `INSUFFICIENT_CREDITS` | `kind`, `balance`, `cost`, `packs` | Hết lượt xuất hoặc credit AI |
 | 409 | `PROJECT_LOCKED_BY_PLAN` | `limit` | Sửa dự án bị khóa sau hạ gói |
 | 410 | `EXPORT_FILE_EXPIRED` | — | Tải file in đã quá hạn giữ |
@@ -960,7 +1022,7 @@ Bộ lọc lỗi hiện tại đã cho phép trường bổ sung ngoài `statusC
 | `GET` | `/api/billing/plans` | Public | Giá, gói lượt, gói credit, bảng quyền lợi (từ shared) |
 | `GET` | `/api/billing/me` | Đã đăng nhập | `{ plan, subscription, entitlements, usage: { projects, collections, storageBytes, aiCredits: { balance, allowanceRemaining, resetsAt }, exportCredits: { balance, nextExpiry }, unboxings, mockupsThisMonth } }` |
 | `POST` | `/api/billing/trial` | Đã đăng nhập | Bắt đầu dùng thử Pro 7 ngày |
-| `POST` | `/api/billing/checkout` | Đã đăng nhập | `{ product: { type: 'SUBSCRIPTION', plan, period, seats? } \| { type: 'EXPORT_PACK' \| 'AI_PACK', packId }, couponCode?, provider, invoice?: { buyerName, companyName?, taxCode?, address? } }` → `{ paymentId, amount, listAmount, discountAmount, expiresAt, vietqr?: { bankBin, accountNo, accountName, transferContent, amount }, redirectUrl? }` |
+| `POST` | `/api/billing/checkout` | Đã đăng nhập | `{ product: { type: 'SUBSCRIPTION', plan, period, seats? } \| { type: 'EXPORT_PACK' \| 'AI_PACK', packId } *(đã thay thế ở CP4, xem Phần B)*, couponCode?, provider, invoice?: { buyerName, companyName?, taxCode?, address? } }` → `{ paymentId, amount, listAmount, discountAmount, expiresAt, vietqr?: { bankBin, accountNo, accountName, transferContent, amount }, redirectUrl? }` |
 | `GET` | `/api/billing/payments/:id` | Chủ payment | Trạng thái thanh toán |
 | `POST` | `/api/billing/webhooks/:provider` | Public (chữ ký) | Webhook cổng thanh toán, luôn `200` khi chữ ký đúng |
 | `POST` | `/api/billing/subscription/change` | Đã đăng nhập | `{ plan, period }`: nâng → trả checkout có phần bù; hạ → ghi `pending_plan` |
@@ -989,8 +1051,8 @@ Phase 3: `/api/workspaces`, `/api/workspaces/:id/members`, `/api/workspaces/:id/
 
 | Endpoint | Thay đổi |
 | :--- | :--- |
-| `POST /api/projects/:id/exports` | Body thêm `variantId?`, `useCredit?`; response thêm `watermarked`, `charged`, `exportCredits`; lỗi `402` (Mục 5.2) |
-| `GET /api/exports/:jobId` | Thêm `watermarked`; `410 EXPORT_FILE_EXPIRED` |
+| `POST /api/projects/:id/exports` | Body thêm `variantId?`, `useCredit?`; response thêm `watermarked`, `charged`, `exportCredits`; lỗi `402` (Mục 5.2) *(đã thay thế ở CP4, xem Phần B)* |
+| `GET /api/exports/:jobId` | Thêm `watermarked`; `410 EXPORT_FILE_EXPIRED` *(đã thay thế ở CP4, xem Phần B)* |
 | `POST /api/ai/pattern` | Body thêm `quality?: 'procedural' \| 'fast' \| 'premium'` (mặc định `fast`); `usage` đổi thành `{ balance, cost, allowanceRemaining, resetsAt }`; `402` thay cho `429` khi hết lượt |
 | `GET /api/ai/usage` | Giữ `{ tier, aiEnabled }`, thêm `{ balance, allowanceRemaining, resetsAt, costs }`; bỏ `used` / `limit` theo 24 giờ sau một bản phát hành |
 | `GET /api/storage/usage` | Không đổi hình dạng; `quotaBytes` lấy từ entitlements |
@@ -1017,7 +1079,7 @@ Phase 3: `/api/workspaces`, `/api/workspaces/:id/members`, `/api/workspaces/:id/
 | `be/src/billing/` | `BillingModule` (API): `billing.controller.ts`, `webhooks.controller.ts`, `admin-billing.controller.ts`; `subscriptions.service.ts`, `checkout.service.ts`, `payments.service.ts`, `invoices.service.ts`, `coupons.service.ts`; `gateways/` (port `PAYMENT_GATEWAYS`, adapter `vietqr`, `momo`, `card`); `tasks/` (Mục 10) | Không import module tính năng nào. Báo thay đổi gói qua sự kiện `plan.changed` (`be/src/common/events/billing.events.ts`). |
 | `be/src/billing/core/` | `BillingCoreModule` (không controller, không cron): `EntitlementsService`, `CreditsService`, `syncPlan()` | Được `ExportModule`, `ExportWorkerModule`, `AiModule`, `StorageModule`, `ProjectsModule`, `CollectionsModule`, `UnboxingModule`, `UsersModule`, `AuthModule` import qua `../billing`. |
 | `be/src/affiliate/` | `AffiliateModule`: đăng ký đối tác, ghi nhận giới thiệu, hoa hồng | Nghe `payment.succeeded`, `payment.refunded`. |
-| `be/src/mockups/` | `MockupsModule` (bảng `social_mockups` cũ đã xóa ở docs/25 mục 9: làm tính năng này thì tạo bảng mới) | |
+| `be/src/mockups/` | `MockupsModule` (bảng `social_mockups` cũ đã xóa bằng migration `20261117000100_drop_social_mockups`: làm tính năng này thì tạo bảng mới) | |
 
 `EntitlementsService.for(ownerId)`: đọc `users.subscription_tier` + `entitlement_overrides` còn hạn → `resolveEntitlements()`; cache trong bộ nhớ 30 giây theo `userId`, xóa cache khi nhận `plan.changed`. Hàm tiện ích: `assertFeature(ownerId, key)`, `assertLimit(ownerId, key, used)`.
 
@@ -1033,10 +1095,10 @@ Phase 3: `/api/workspaces`, `/api/workspaces/:id/members`, `/api/workspaces/:id/
 | [`be/src/ai/ai-pattern.service.ts`](../be/src/ai/ai-pattern.service.ts) | Xóa `DAILY_AI_LIMIT`; luồng Mục 4.3; `quota()` → số dư credit |
 | `be/src/ai/ai.module.ts`, `pattern/claude-pattern.generator.ts` | Hai generator (fast, premium) với model riêng; thêm `be/src/ai/ai-pricing.ts`, `ai-cost.guard.ts` |
 | `be/src/ai/dto/generate-pattern.dto.ts` | Thêm `quality` |
-| [`be/src/export/export.service.ts`](../be/src/export/export.service.ts) | `request()` theo Mục 5.2; `view()` thêm `watermarked`, xử lý `file_deleted_at` |
-| [`be/src/export/export.processor.ts`](../be/src/export/export.processor.ts) | Truyền `watermarked` cho renderer; hoàn lượt ở lần thử cuối thất bại (Mục 5.3) |
-| `be/src/export/rendering/print-renderers.ts` | Vẽ watermark ở PDF A4 (`watermarkPlacement` của shared) |
-| `be/src/export/dto/create-export.dto.ts` | Thêm `variantId?`, `useCredit?` |
+| [`be/src/export/export.service.ts`](../be/src/export/export.service.ts) | `request()` theo Mục 5.2; `view()` thêm `watermarked`, xử lý `file_deleted_at` *(đã thay thế ở CP4, xem Phần B)* |
+| [`be/src/export/export.processor.ts`](../be/src/export/export.processor.ts) | Truyền `watermarked` cho renderer; hoàn lượt ở lần thử cuối thất bại (Mục 5.3) *(đã thay thế ở CP4, xem Phần B)* |
+| `be/src/export/rendering/print-renderers.ts` | Vẽ watermark ở PDF A4 (`watermarkPlacement` của shared) *(đã thay thế ở CP4, xem Phần B)* |
+| `be/src/export/dto/create-export.dto.ts` | Thêm `variantId?`, `useCredit?` *(đã thay thế ở CP4, xem Phần B)* |
 | [`be/src/projects/application/projects.service.ts`](../be/src/projects/application/projects.service.ts) | `create`, `copy`, `changeStatus` (khôi phục): kiểm `projects.max`; `create` đặt `allowFork` theo gói; `update` từ chối dự án có `locked_at`; listener `plan.changed` khóa / mở khóa; `fork` ghi `fork_license` |
 | `be/src/projects/domain/*` | `canEdit(status)` → `canEdit(project)` tính cả `locked_at` |
 | [`be/src/projects/application/snapshots.service.ts`](../be/src/projects/application/snapshots.service.ts) | `MAX_SNAPSHOTS_PER_PROJECT` → `ent.snapshots.maxManualPerProject` của chủ dự án |
@@ -1085,7 +1147,7 @@ Cron chỉ chạy trong process API (`@nestjs/schedule`), giờ Việt Nam.
 | `/checkout/step-1..3` | Gọi `POST /billing/checkout`, hiện mã VietQR, nghe `billing.payment` qua Socket.IO, dự phòng hỏi trạng thái 5 giây; nhập coupon; thông tin hóa đơn gửi thật |
 | `/dashboard/billing` | Gói hiện tại, ngày hết hạn, nút gia hạn / nâng / hạ / hủy, đồng hồ dung lượng, credit AI, lượt xuất, lịch sử hóa đơn |
 | Bộ xử lý lỗi API (`fe/src/services/api`) | Ánh xạ `PLAN_FEATURE_REQUIRED`, `PLAN_LIMIT_REACHED`, `STORAGE_QUOTA_EXCEEDED`, `INSUFFICIENT_CREDITS` sang một `UpgradeDialog` dùng chung (dùng `Dialog` của `@/components/ui`), nút "Nâng lên {requiredPlan}" hoặc "Mua thêm" |
-| `ExportDialog` | Hiện "Bản này cần 1 lượt (còn N lượt)" và gửi `useCredit: true` sau khi người dùng xác nhận; ghi chú watermark cho PDF A4 miễn phí; Business hiện nhãn "Ưu tiên" |
+| `ExportDialog` | Hiện "Bản này cần 1 lượt (còn N lượt)" và gửi `useCredit: true` sau khi người dùng xác nhận; ghi chú watermark cho PDF A4 miễn phí; Business hiện nhãn "Ưu tiên" *(đã thay thế ở CP4, xem Phần B)* |
 | `AiPatternPanel` | Chọn chất lượng Thuật toán / Nhanh / Cao cấp kèm số credit; hiện số dư và ngày cấp lại |
 | Thẻ dự án, studio | Nhãn "Chỉ đọc theo gói" cho dự án `locked_at`, nút đổi dự án được mở |
 | `UnboxingDialog` | Khóa hiệu ứng / nhạc / ẩn logo theo gói; xem thống kê |
@@ -1099,17 +1161,17 @@ Cron chỉ chạy trong process API (`@nestjs/schedule`), giờ Việt Nam.
 
 | Phase | Phạm vi | Đủ để |
 | :--- | :--- | :--- |
-| **P1 — Thu tiền được** | Shared `billing/` (Mục 3.2), migration 1–3, `BillingCoreModule`, subscription + payment + invoice, VietQR checkout + webhook, credit ledger, gating xuất file + watermark, credit AI + tách model, hạn mức dự án / thư mục / mốc / dung lượng, admin cấp gói tay, `UpgradeDialog`, `PlanSyncTask`, `RenewalReminderTask`, `PaymentExpiryTask` | Mở bán Lượt xuất, Pro, Business (một người dùng) |
+| **P1 — Thu tiền được** | Shared `billing/` (Mục 3.2), migration 1–3, `BillingCoreModule`, subscription + payment + invoice, VietQR checkout + webhook, credit ledger, gating xuất file + watermark *(đã thay thế ở CP4, xem Phần B)*, credit AI + tách model, hạn mức dự án / thư mục / mốc / dung lượng, admin cấp gói tay, `UpgradeDialog`, `PlanSyncTask`, `RenewalReminderTask`, `PaymentExpiryTask` | Mở bán Lượt xuất, Pro, Business (một người dùng) |
 | **P2 — Đủ quy tắc** | Khóa dự án khi hạ gói, giữ file in theo gói, thùng rác theo gói, gating mở hộp + thống kê + ẩn logo, iframe, upload font / nhạc, mockup, coupon, ưu đãi giáo dục, dùng thử, hoàn tiền, affiliate, kiểm duyệt nội dung, giới hạn phiên, cầu chì chi phí AI, MoMo / thẻ | Đủ mục 7 |
 | **P3 — Business nhóm** | Workspace, ghế, bình luận / duyệt, nhiều Brand Kit, biến thể kích thước, hàng đợi ưu tiên, thương hiệu riêng trang mở hộp, thống kê chi tiết + CSV, giảm giá đơn in (khi đơn in lưu CSDL) | Bán Business cho nhóm |
 
 **Kiểm thử bắt buộc** (unit `*.spec.ts` cạnh file, e2e trong `be/test/e2e/`):
 
 - [ ] `resolvePlan`, `resolveEntitlements` (ghi đè sâu, ghi đè hết hạn), `requiredPlanFor`. *(Path 2 S1: `resolvePlan`, `requiredPlanFor` có test; chưa có ghi đè)*
-- [x] Hai request xuất song song với 1 lượt: đúng một request bị trừ, request còn lại `402`. *(Path 2 S1 / S2)*
-- [x] Xuất lại định dạng khác cùng `version` trong 7 ngày không trừ lượt; sau khi sửa thiết kế thì trừ. *(Path 2 S1 / S2)*
-- [x] Job xuất thất bại 3 lần → lượt được hoàn; job thành công rồi job khác lỗi → không hoàn. *(Path 2 S1 / S2)*
-- [x] PDF A4 của Free có chữ watermark trên lớp Artwork, nằm trong `glueAreas`; FitCheck không báo lỗi vì watermark. *(Path 2 S1 / S2)*
+- [x] Hai request xuất song song với 1 lượt: đúng một request bị trừ, request còn lại `402`. *(Path 2 S1 / S2)* *(đã thay thế ở CP4, xem Phần B)*
+- [x] Xuất lại định dạng khác cùng `version` trong 7 ngày không trừ lượt; sau khi sửa thiết kế thì trừ. *(Path 2 S1 / S2)* *(đã thay thế ở CP4, xem Phần B)*
+- [x] Job xuất thất bại 3 lần → lượt được hoàn; job thành công rồi job khác lỗi → không hoàn. *(Path 2 S1 / S2)* *(đã thay thế ở CP4, xem Phần B)*
+- [x] PDF A4 của Free có chữ watermark trên lớp Artwork, nằm trong `glueAreas`; FitCheck không báo lỗi vì watermark. *(Path 2 S1 / S2)* *(đã thay thế ở CP4, xem Phần B)*
 - [ ] AI lỗi → credit được hoàn, kết quả `procedural`; Free gọi `premium` → `403`. *(Path 2 S3: Free + `premium` → `403` có test; chưa có credit AI)*
 - [ ] Webhook gửi 2 lần cùng `providerRef` → kích hoạt 1 lần; sai chữ ký → `401`; lệch số tiền → `payment.unmatched`.
 - [ ] Vòng đời: dùng thử → hết hạn → Free; Pro → hết kỳ → `PAST_DUE` (quyền lợi giữ) → hết ân hạn → `EXPIRED`.
@@ -1131,5 +1193,5 @@ Các câu trả lời chỉ đổi con số trong `shared/src/billing/` hoặc m
 5. **Cổng thanh toán**: dịch vụ đối soát VietQR nào (ví dụ Casso, SePay), có cần thẻ quốc tế ở P1 không?
 6. **Ưu đãi giáo dục** khi sinh viên không có email `.edu.vn` (FPT dùng `@fpt.edu.vn` thì được): có chấp nhận thẻ sinh viên duyệt tay không?
 7. **Tài khoản hiện có vượt hạn mức Free khi ra mắt**: báo trước 14 ngày rồi khóa, hay miễn trừ vĩnh viễn cho người dùng sớm (early adopter)?
-8. **Chữ watermark** và vị trí (tai dán) có được chấp nhận về mặt trải nghiệm không?
+8. **Chữ watermark** và vị trí (tai dán) có được chấp nhận về mặt trải nghiệm không? *(đã thay thế ở CP4, xem Phần B)*
 9. **Số điện thoại**: có thu thập để chống lạm dụng dùng thử và affiliate không (cần cập nhật chính sách bảo mật `/legal/privacy`)?

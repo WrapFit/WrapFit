@@ -1,5 +1,5 @@
 /**
- * Which way is up on each face once the box is folded (docs/23 S21), worked out from the hinges of the dieline
+ * Which way is up on each face once the box is folded (docs-old/23 S21), worked out from the hinges of the dieline
  * (fold.ts) rather than written in every generator: text on a wall reads with its top towards the sky, text on the
  * top of the box reads from the front (its top towards the back), text on a sloped roof reads up the slope. The bottom
  * of the box and pieces without hinges have no reading direction.

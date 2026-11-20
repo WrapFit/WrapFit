@@ -64,7 +64,7 @@ export interface PrintLayout {
   /** Cut and crease lines joined end to end: die makers need unbroken cut lines. */
   strokes: Stroke[];
   /**
-   * The inside of the sheet (docs/23 S5), when the design prints there: the same sheet mirrored left to right, as the
+   * The inside of the sheet (docs-old/23 S5), when the design prints there: the same sheet mirrored left to right, as the
    * press sees the back of the paper, with the elements of `side: "inside"`. Printed as its own page.
    */
   inside?: PrintLayout;
@@ -175,7 +175,7 @@ export function buildPrintLayout(input: {
   formulaVersion: number;
   dimensions: BoxDimensions;
   elements: CanvasElement[];
-  /** Side of the sheet to lay out (docs/23 S5); the outside when omitted. */
+  /** Side of the sheet to lay out (docs-old/23 S5); the outside when omitted. */
   side?: PrintSide;
 }): PrintLayout {
   const pieces: PlacedPiece[] = [];

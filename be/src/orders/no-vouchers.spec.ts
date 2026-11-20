@@ -7,7 +7,7 @@ import { CreateSampleOrderDto } from './dto/create-sample-order.dto';
 import { ORDER_NOT_PAYABLE, OrdersService, sampleFeeVnd } from './orders.service';
 
 /**
- * Vouchers were removed (docs/25 item 1): no code lowers the price of an order, no order is created PAID, and an order
+ * Vouchers were removed (docs-old/25 item 1): no code lowers the price of an order, no order is created PAID, and an order
  * becomes PAID only through a payment that finds it still PENDING_PAYMENT under a row lock.
  */
 describe('sample orders without vouchers', () => {

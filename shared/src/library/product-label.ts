@@ -1,5 +1,5 @@
 /**
- * "Khối thông tin nhãn hàng hóa" (docs/23 S21, Q2): a fill-in text block with the fields a Vietnamese product label
+ * "Khối thông tin nhãn hàng hóa" (docs-old/23 S21, Q2): a fill-in text block with the fields a Vietnamese product label
  * usually carries. Only a starting point: which fields a product needs depends on its kind, so the studio shows the
  * disclaimer next to it and the seller stays responsible for what the label says.
  */

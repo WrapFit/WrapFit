@@ -4,7 +4,7 @@
  * `/dashboard/billing`: plan, quotas, payment and history, in the pacdora.com workspace style. The plan comes from
  * `GET /auth/me` (subscriptionTier), the Pro period from `GET /billing/me`, the quotas from `GET /storage/usage` and
  * `GET /ai/usage`, the sample-print orders from `GET /orders/my-orders`. Pro is paid here with the VietQR checkout
- * (docs/17 S5; export packs are no longer sold, docs/25 item 7); cancelling still goes to the billing team.
+ * (docs-old/17 S5; export packs are no longer sold, docs-old/25 item 7); cancelling still goes to the billing team.
  */
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

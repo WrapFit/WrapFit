@@ -5,7 +5,7 @@ import { UNFINISHED_EXPORT } from './export.constants';
 
 /**
  * Marks an export FAILED when it is still in one of `from`, and recomputes the file refs of its project in the same
- * transaction: the files only its frozen design kept alive (docs/30 item 1) are released at once, not at a next save
+ * transaction: the files only its frozen design kept alive (docs-old/30 item 1) are released at once, not at a next save
  * that may never come. Every path to FAILED goes through here: the worker's last attempt, a refused queue, and
  * ExportReconcileTask. Returns whether the row changed.
  */

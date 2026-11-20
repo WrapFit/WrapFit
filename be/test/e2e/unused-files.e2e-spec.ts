@@ -93,7 +93,7 @@ describe('Unused files (e2e)', () => {
     expect(await alive(onCanvas)).toBe(true);
   });
 
-  // docs/30 item 2: fonts used to be missing from project_file_refs, so the maintenance deleted them after a day.
+  // docs-old/30 item 2: fonts used to be missing from project_file_refs, so the maintenance deleted them after a day.
   describe('uploaded fonts', () => {
     const text = (id: string, fontUrl: string) => ({
       id, type: 'text', panelId: 'front', x: 1, y: 1, width: 40, height: 10, rotation: 0, content: 'Chữ', style: { fontSize: 12, fontUrl },

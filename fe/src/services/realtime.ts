@@ -3,7 +3,7 @@ import { API_BASE_URL, OFFLINE_DEMO } from "@/config";
 
 /**
  * Id of this browser tab, sent with project saves (`X-WF-Tab`) and echoed in `project.saved` so the tab that saved
- * ignores its own save (docs/28 Q5). Module state, not sessionStorage: a duplicated tab copies sessionStorage.
+ * ignores its own save (docs/18 Q5). Module state, not sessionStorage: a duplicated tab copies sessionStorage.
  */
 export const TAB_ID: string =
   typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"

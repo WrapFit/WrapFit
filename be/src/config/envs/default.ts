@@ -55,7 +55,7 @@ export const config = (env: EnvironmentVariables) => ({
     /** Encrypted database dumps, written by the backup job. Empty = none. */
     backupBucket: env.STORAGE_BACKUP_BUCKET,
   },
-  /** Stock photos of the studio through the backend (docs/23 D10): the key never reaches the browser. */
+  /** Stock photos of the studio through the backend (docs-old/23 D10): the key never reaches the browser. */
   stock: {
     pexelsKey: env.PEXELS_API_KEY,
     enabled: env.PEXELS_API_KEY !== '',
@@ -69,7 +69,7 @@ export const config = (env: EnvironmentVariables) => ({
     models: { fast: env.AI_MODEL_FAST, premium: env.AI_MODEL_PREMIUM },
     timeoutMs: env.AI_TIMEOUT_MS,
     monthlyBudgetUsd: env.AI_MONTHLY_BUDGET_USD ? Number(env.AI_MONTHLY_BUDGET_USD) : null,
-    /** AI images paid with xu (docs/19). `enabled` false = the routes answer 503 and the studio hides the panel. */
+    /** AI images paid with xu (docs/16). `enabled` false = the routes answer 503 and the studio hides the panel. */
     image: {
       provider: env.AI_IMAGE_PROVIDER as 'fal' | 'fake',
       falKey: env.FAL_KEY,
@@ -91,9 +91,9 @@ export const config = (env: EnvironmentVariables) => ({
     vietqr: env.VIETQR_BANK_BIN
       ? { bankBin: env.VIETQR_BANK_BIN, accountNo: env.VIETQR_ACCOUNT_NO, accountName: env.VIETQR_ACCOUNT_NAME }
       : null,
-    /** SePay bank webhook (docs/21 §3.3). `webhookApiKey` null = every webhook is rejected. */
+    /** SePay bank webhook (docs-old/21 §3.3). `webhookApiKey` null = every webhook is rejected. */
     sepay: { webhookApiKey: env.SEPAY_WEBHOOK_API_KEY || null },
-    /** VNPay sandbox for demo accounts (docs/21 §3.4). `tmnCode` / `hashSecret` empty = not configured. */
+    /** VNPay sandbox for demo accounts (docs-old/21 §3.4). `tmnCode` / `hashSecret` empty = not configured. */
     vnpay: {
       tmnCode: env.VNPAY_TMN_CODE,
       hashSecret: env.VNPAY_HASH_SECRET,

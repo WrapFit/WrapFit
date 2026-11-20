@@ -28,7 +28,7 @@ interface FormulaUpgradeProps {
 }
 
 /**
- * Banner of a project whose dieline uses older formulas than its box structure (docs/12 Phase 8, 8.10b), with a
+ * Banner of a project whose dieline uses older formulas than its box structure (docs-old/12 Phase 8, 8.10b), with a
  * confirmation before the upgrade. Projects in the trash do not show it (the studio is read-only there).
  */
 export function FormulaUpgrade({ project, replace, onUpgraded }: FormulaUpgradeProps) {

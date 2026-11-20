@@ -16,7 +16,7 @@ export const UPLOAD_RULES: Record<UploadPurpose, { types: Record<string, string>
   IMAGE: { types: IMAGE_TYPES, maxBytes: 15 * MB },
   THUMBNAIL: { types: IMAGE_TYPES, maxBytes: 2 * MB },
   AVATAR: { types: IMAGE_TYPES, maxBytes: 2 * MB },
-  // Fonts of the user's designs (docs/23 S13): checked for the Vietnamese letters by POST /storage/fonts/inspect.
+  // Fonts of the user's designs (docs-old/23 S13): checked for the Vietnamese letters by POST /storage/fonts/inspect.
   FONT: { types: { 'font/ttf': 'ttf', 'font/otf': 'otf', 'font/woff': 'woff', 'font/woff2': 'woff2' }, maxBytes: 10 * MB },
 };
 

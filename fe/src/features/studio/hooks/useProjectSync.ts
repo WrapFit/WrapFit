@@ -49,7 +49,7 @@ interface ProjectSyncOptions {
   renderThumbnail: () => Promise<Blob>;
   /**
    * Another tab of this user saved the project and this one has nothing unsaved: load the saved project (remount the
-   * editor). With unsaved changes the conflict banner shows instead (docs/28 Q5).
+   * editor). With unsaved changes the conflict banner shows instead (docs/18 Q5).
    */
   onOtherTabSave?: () => void;
 }
@@ -97,7 +97,7 @@ const isVersionConflict = (err: unknown): err is ApiError =>
   err instanceof ApiError && err.status === 409 && err.code === "PROJECT_VERSION_CONFLICT";
 
 /**
- * Autosave of a project (docs/12 Phase 3a): debounced PATCH with the version last loaded or saved (optimistic
+ * Autosave of a project (docs-old/12 Phase 3a): debounced PATCH with the version last loaded or saved (optimistic
  * concurrency), one save at a time, a final save when leaving the editor, and a thumbnail at most once a minute.
  */
 export function useProjectSync({ project, payload, invalidReason, renderThumbnail, onOtherTabSave }: ProjectSyncOptions): ProjectSync {
@@ -260,7 +260,7 @@ export function useProjectSync({ project, payload, invalidReason, renderThumbnai
     };
   }, [projectId, enqueue, save, uploadThumbnail]);
 
-  // Saves of the other editor tabs of this user, pushed by the API's WebSocket gateway (docs/28 Q5). They are loaded
+  // Saves of the other editor tabs of this user, pushed by the API's WebSocket gateway (docs/18 Q5). They are loaded
   // once they settle, and only when the user sees this tab (a hidden tab waits until it is shown). Without the push
   // (no socket) the next save of this tab still answers 409 for a newer design.
   useEffect(() => {

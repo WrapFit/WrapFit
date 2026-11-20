@@ -76,7 +76,7 @@ export function materialLabel({ materialSpec }: Pick<ProjectSummary, "materialSp
 
 export type FitCheckTone = "pass" | "warn" | "fail" | "unchecked";
 
-/** ≥ 90 is what the community library asks for (docs/12, Phase 3b); below 70 the file is unlikely to print well. */
+/** ≥ 90 is what the community library asks for (docs-old/12, Phase 3b); below 70 the file is unlikely to print well. */
 export function fitCheckTone(score: number | null): FitCheckTone {
   if (score === null) return "unchecked";
   if (score >= 90) return "pass";

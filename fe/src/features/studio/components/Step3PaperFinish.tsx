@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: paper swatches draw the colour of real paper stocks (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: paper swatches draw the colour of real paper stocks (docs/13_DESIGN_SYSTEM.md §2). */
 
 import {
   artPaletteOf,

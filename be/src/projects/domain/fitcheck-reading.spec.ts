@@ -28,7 +28,7 @@ const text = (id: string, panelId: string, extra: Partial<CanvasElement> = {}, s
 const of = (elements: CanvasElement[], id: string, code: string) =>
   checkBox(tuck, elements).violations.find((v) => v.elementId === id && v.code === code);
 
-describe('FitCheck: reading direction, size, contrast, creases (docs/23 S21)', () => {
+describe('FitCheck: reading direction, size, contrast, creases (docs-old/23 S21)', () => {
   it('scenario 16: a text on the tuck-top lid as drawn reads upside down from the front, and the fix turns it 180°', () => {
     expect(uprightRotationOf(tuck[0].geometry, 'panel_top_lid')).toBe(180);
     const lid = text('lid', 'panel_top_lid');

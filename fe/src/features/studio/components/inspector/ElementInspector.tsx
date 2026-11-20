@@ -58,10 +58,10 @@ import { buttonClass, NumberStepper } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 import { useImageSize } from "../canvas/elementVisuals";
 
-/** Fonts uploaded for the design (docs/23 S13), offered in the font menu after the built-in ones. */
+/** Fonts uploaded for the design (docs-old/23 S13), offered in the font menu after the built-in ones. */
 export const CustomFontsContext = createContext<CustomFont[]>([]);
 
-/** Colours already used in the design, offered as swatches in every colour field (docs/23 S11). */
+/** Colours already used in the design, offered as swatches in every colour field (docs-old/23 S11). */
 export const DesignColorsContext = createContext<string[]>([]);
 
 /** The colours of a design: texts, fills, borders and gradient stops, most used first. */
@@ -293,7 +293,7 @@ interface InspectorProps {
   onChange(element: CanvasElement): void;
   /** Applies the font of this text to every text of the design. */
   onApplyFontToAll?(fontFamily: string): void;
-  /** Picks another file for this photo, keeping its frame (docs/23 S10). */
+  /** Picks another file for this photo, keeping its frame (docs-old/23 S10). */
   onReplaceImage?(elementId: string): void;
 }
 
@@ -349,7 +349,7 @@ function CommonControls({ element, onChange }: InspectorProps) {
 }
 
 /**
- * "Đổ bóng" and "Hòa trộn" (docs/23 S22): a drop shadow (colour, opacity, blur, offset in mm) and a blend mode, the
+ * "Đổ bóng" and "Hòa trộn" (docs-old/23 S22): a drop shadow (colour, opacity, blur, offset in mm) and a blend mode, the
  * same on the 2D sheet, the 3D box and in the print files (print/effects.ts).
  */
 function EffectsField({ element, onChange }: Pick<InspectorProps, "element" | "onChange">) {
@@ -401,7 +401,7 @@ const ANCHOR_H ={ left: "Trái", center: "Giữa", right: "Phải", stretch: "Gi
 const ANCHOR_V = { top: "Trên", middle: "Giữa", bottom: "Dưới", stretch: "Giãn theo mặt" } as const;
 
 /**
- * "Neo khi đổi kích thước" (docs/23 S20): where the element stays on its face when the box is resized. Automatic
+ * "Neo khi đổi kích thước" (docs-old/23 S20): where the element stays on its face when the box is resized. Automatic
  * (no anchor) follows the third of the face the element sits in.
  */
 function AnchorField({ element, onChange }: Pick<InspectorProps, "element" | "onChange">) {
@@ -436,19 +436,19 @@ function AnchorField({ element, onChange }: Pick<InspectorProps, "element" | "on
   );
 }
 
-/** Settings of one text (docs/23 S4): font, size, weight, slant, underline, alignment, line height, case, colour. */
+/** Settings of one text (docs-old/23 S4): font, size, weight, slant, underline, alignment, line height, case, colour. */
 export function TextInspector({ element, onChange, onApplyFontToAll }: InspectorProps) {
   const style = element.style ?? {};
   const font = printFontOf(style.fontFamily);
   const set = (patch: Partial<CanvasElementStyle>) => onChange({ ...element, style: { ...style, ...patch } });
   const customFonts = useContext(CustomFontsContext);
-  // An uploaded font is one face: no bold / italic switches (docs/23 S13).
+  // An uploaded font is one face: no bold / italic switches (docs-old/23 S13).
   const uploaded = !!style.fontUrl;
   const bold = !uploaded && style.fontWeight !== 400;
   const italic = !uploaded && style.fontStyle === "italic";
   const underline = style.textDecoration === "underline";
   const align = style.textAlign ?? "center";
-  // docs/23 S22: words that are not possible Vietnamese syllables (a note, never blocking).
+  // docs-old/23 S22: words that are not possible Vietnamese syllables (a note, never blocking).
   const typos = misspelledWords(element.content);
   return (
     <div className="space-y-4">
@@ -751,7 +751,7 @@ function cropFrom(element: CanvasElement, size: { width: number; height: number 
   return { x: Math.round(clamp(cx, width) * 1000) / 1000, y: Math.round(clamp(cy, height) * 1000) / 1000, width: Math.round(width * 1000) / 1000, height: Math.round(height * 1000) / 1000 };
 }
 
-/** Settings of a photo or logo file: frame, crop, fill, adjustments, replacement (docs/23 S10). */
+/** Settings of a photo or logo file: frame, crop, fill, adjustments, replacement (docs-old/23 S10). */
 export function ImageInspector({ element, onChange, onReplaceImage }: InspectorProps) {
   const size = useImageSize(element.content);
   const filters = element.style?.filters ?? {};
@@ -824,12 +824,12 @@ export function ImageInspector({ element, onChange, onReplaceImage }: InspectorP
   );
 }
 
-/** A new text with a ready-made style (heading, subheading, body), centred on the face (docs/23 S9). */
+/** A new text with a ready-made style (heading, subheading, body), centred on the face (docs-old/23 S9). */
 export const TEXT_PRESETS: { id: string; label: string; content: string; style: CanvasElementStyle }[] = [
   { id: "heading", label: "Tiêu đề", content: "Tiêu đề", style: { fontSize: 28, fontWeight: 700 } },
   { id: "subheading", label: "Tiêu đề phụ", content: "Tiêu đề phụ", style: { fontSize: 16, fontWeight: 700, letterSpacing: 60, textTransform: "uppercase" } },
   { id: "body", label: "Đoạn văn", content: "Thêm đoạn văn của bạn", style: { fontSize: 10, fontWeight: 400 } },
-  // docs/23 S21: fill-in fields of a product label, 7 pt (FitCheck asks ≥ 6 pt); the rail shows the disclaimer.
+  // docs-old/23 S21: fill-in fields of a product label, 7 pt (FitCheck asks ≥ 6 pt); the rail shows the disclaimer.
   { id: "product-label", label: "Khối thông tin nhãn hàng hóa", content: PRODUCT_LABEL_LINES.join("\n"), style: { fontSize: 7, fontWeight: 400 } },
 ];
 

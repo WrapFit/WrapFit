@@ -10,7 +10,7 @@ import { signUp, uploadPng } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * Design review links (docs/23 S23, audit findings 20 and 21): the three public endpoints a reviewer uses without an
+ * Design review links (docs-old/23 S23, audit findings 20 and 21): the three public endpoints a reviewer uses without an
  * account, and the owner side they meet. Users use the `@e2e.test` domain and are removed afterwards.
  */
 describe('Design review links (e2e)', () => {

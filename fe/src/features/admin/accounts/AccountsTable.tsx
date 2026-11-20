@@ -230,7 +230,7 @@ function AccountRow({ user, isSelf, busy, onOpen, onChangeRole, onToggleLock, on
   );
 }
 
-/** `anonymized`: deleted by an admin but kept for its payments and orders (docs/25 item 3). */
+/** `anonymized`: deleted by an admin but kept for its payments and orders (docs-old/25 item 3). */
 export function ActiveBadge({ active, anonymized = false }: { active: boolean; anonymized?: boolean }) {
   if (anonymized) {
     return (

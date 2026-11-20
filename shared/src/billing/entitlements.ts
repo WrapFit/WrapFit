@@ -1,5 +1,5 @@
 /**
- * Limits per plan (docs/16 §3.1), only the keys Path 2 enforces (docs/17 S1). `null` = unlimited.
+ * Limits per plan (docs/14 §3.1), only the keys Path 2 enforces (docs-old/17 S1). `null` = unlimited.
  * The backend checks them (EntitlementsService.of), the frontend only shows them.
  */
 import { PLAN_ORDER, type SubscriptionTier } from "./plans";
@@ -25,7 +25,7 @@ export interface Entitlements {
 
 export const ENTITLEMENTS: Record<SubscriptionTier, Entitlements> = {
   FREE: {
-    // A free account that bought or received credits may still spend them (docs/16 §5.2), hence `unlockDays`.
+    // A free account that bought or received credits may still spend them (docs/14 §5.2), hence `unlockDays`.
     export: { mode: "FREE_A4", unlockDays: 7 },
     storage: { bytes: 100 * MB },
     projects: { max: 10 },

@@ -8,8 +8,8 @@ import {
 } from "@wrapfit/shared";
 import type { SubscriptionTier } from "@/types/api";
 
-// Display layer over @wrapfit/shared/billing (docs/17 S6): names, prices and storage come from shared, the same numbers
-// the backend charges and enforces, xu per period included (XU_ALLOWANCE, docs/19).
+// Display layer over @wrapfit/shared/billing (docs-old/17 S6): names, prices and storage come from shared, the same numbers
+// the backend charges and enforces, xu per period included (XU_ALLOWANCE, docs/16).
 
 export interface PlanPrice {
   /** VNĐ per month (Pro, Business). 0 for Free and for PAY_PER_EXPORT (its packs are no longer sold). */
@@ -25,7 +25,7 @@ export interface Plan {
   /** Xu Wrap granted each period (calendar month, or 30-day period of a paid plan); unspent xu roll over once. */
   xuPerPeriod: number;
   badge?: string;
-  /** Not sold online yet: the pricing page shows a "Liên hệ" button (docs/17 M4). */
+  /** Not sold online yet: the pricing page shows a "Liên hệ" button (docs-old/17 M4). */
   contactOnly?: boolean;
 }
 
@@ -42,7 +42,7 @@ export const PLANS: Record<SubscriptionTier, Plan> = {
     xuPerPeriod: XU_ALLOWANCE.FREE,
     badge: "Bắt đầu miễn phí",
   },
-  // Export packs are no longer sold (docs/25 item 7): kept for the accounts that bought one, until it expires.
+  // Export packs are no longer sold (docs-old/25 item 7): kept for the accounts that bought one, until it expires.
   PAY_PER_EXPORT: {
     tier: "PAY_PER_EXPORT",
     name: PLAN_LABELS.PAY_PER_EXPORT,
@@ -95,7 +95,7 @@ export function formatQuota(bytes: number): string {
 const proXu = `${PLANS.STARTER.xuPerPeriod.toLocaleString("vi-VN")} xu Wrap`;
 
 /**
- * What Pro gives, the one source of its benefit copy (docs/28 Q1): only what the backend grants, a larger storage quota
+ * What Pro gives, the one source of its benefit copy (docs/18 Q1): only what the backend grants, a larger storage quota
  * (STORAGE_QUOTA_BYTES) and the xu allowance of each 30-day period (XuWalletService.ensureAllowance). Pro does not
  * unlock print files: a design's print file opens with its paid sample order, on every plan (ExportService).
  */

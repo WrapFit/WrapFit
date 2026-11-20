@@ -1,6 +1,6 @@
 import { xuForExportCredits } from './export-credit-conversion';
 
-describe('xuForExportCredits (docs/25 item 7)', () => {
+describe('xuForExportCredits (docs-old/25 item 7)', () => {
   it('gives the price paid back in xu at the list price (100đ a xu)', () => {
     expect(xuForExportCredits(1, 1, 19_000)).toEqual({ xu: 190, valueVnd: 19_000 });
     expect(xuForExportCredits(5, 5, 79_000)).toEqual({ xu: 790, valueVnd: 79_000 });

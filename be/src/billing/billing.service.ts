@@ -15,7 +15,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export interface BillingSummary {
   tier: SubscriptionTier;
   entitlements: Entitlements;
-  /** Xu Wrap for every AI task (docs/19). */
+  /** Xu Wrap for every AI task (docs/16). */
   xu: XuWalletView;
   subscription: {
     plan: SubscriptionTier;
@@ -25,7 +25,7 @@ export interface BillingSummary {
   } | null;
   /** PAYMENT_SIMULATION and (a demo account or the sample VietQR account): the checkout shows "Giả lập đã thanh toán". */
   paymentSimulation: boolean;
-  /** Demo account (users.is_demo): the wallet shows VNPay sandbox instead of VietQR (docs/21 S5). */
+  /** Demo account (users.is_demo): the wallet shows VNPay sandbox instead of VietQR (docs-old/21 S5). */
   isDemo: boolean;
 }
 
@@ -75,7 +75,7 @@ export class BillingService {
       entitlements: ENTITLEMENTS[tier],
       xu,
       subscription,
-      // With a real VietQR account only a demo account may simulate a payment (docs/25 item 6); with the sample account
+      // With a real VietQR account only a demo account may simulate a payment (docs-old/25 item 6); with the sample account
       // no money can arrive, so every account is offered the button (assertMaySimulate).
       paymentSimulation: Boolean(this.config.get('payments.simulation')) && (user.isDemo || this.config.get('payments.vietqr') === null),
       isDemo: user.isDemo,

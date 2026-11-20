@@ -11,7 +11,7 @@ import { queryKeys } from "@/hooks/data";
 import type { AiImageJob, AiImageTool } from "@/types/api";
 import { newRequestId } from "./AiImagePanel";
 
-/** The tools offered on a photo of the canvas (docs/23 S20); vectorizing stays in the AI panel. */
+/** The tools offered on a photo of the canvas (docs-old/23 S20); vectorizing stays in the AI panel. */
 const TOOLS: { tool: Extract<AiImageTool, "remove-bg" | "upscale">; label: string; icon: typeof Eraser; done: string }[] = [
   { tool: "remove-bg", label: "Xóa nền", icon: Eraser, done: "Đã xóa nền ảnh" },
   { tool: "upscale", label: "Tăng độ phân giải", icon: Sparkles, done: "Đã tăng độ phân giải" },
@@ -29,7 +29,7 @@ export const takesImageTools = (element: CanvasElement) =>
   !element.content.startsWith("data:image/svg");
 
 /**
- * "Công cụ AI" of an image (docs/23 S20): background removal and upscaling, paid in xu, run on the image itself (an
+ * "Công cụ AI" of an image (docs-old/23 S20): background removal and upscaling, paid in xu, run on the image itself (an
  * upload or an AI image). The result replaces the image in its frame; Ctrl+Z brings the old one back.
  */
 export function ImageAiTools({ element, onChange, lowDpi }: { element: CanvasElement; onChange(element: CanvasElement): void; lowDpi: boolean }) {

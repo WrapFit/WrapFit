@@ -1,5 +1,5 @@
 /**
- * Response of GET /api/analytics/summary (docs/17 S7): the "Số liệu thiết kế" block of the dashboard.
+ * Response of GET /api/analytics/summary (docs-old/17 S7): the "Số liệu thiết kế" block of the dashboard.
  * Both scopes return only counts and durations; "global" never names a user or a project (decision M7).
  */
 

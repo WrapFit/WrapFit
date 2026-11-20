@@ -4,7 +4,7 @@ import { ANONYMIZED_NAME } from './user-removal';
 /**
  * Accounting documents used to keep the books (payments, sample orders, the VAT invoice details) are kept at least 10
  * years from the end of the accounting year they belong to: Luật Kế toán 2015 art. 41, Nghị định 174/2016/NĐ-CP art. 13
- * (docs/28 Q4). WrapFit's accounting year is the calendar year.
+ * (docs/18 Q4). WrapFit's accounting year is the calendar year.
  */
 export const INVOICE_RETENTION_YEARS = 10;
 

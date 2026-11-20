@@ -32,7 +32,7 @@ const PAYMENTS: PaymentMethodId[] = ["vietqr", "bank", "momo", "napas"];
 
 /**
  * Top of /pricing, in the VisualSpark layout (3D-illustrated pastel cards): the plans on sale of
- * @wrapfit/shared/billing (Miễn phí, Pro, Business on request; the export packs are no longer sold, docs/25 item 7),
+ * @wrapfit/shared/billing (Miễn phí, Pro, Business on request; the export packs are no longer sold, docs-old/25 item 7),
  * payment methods and the refund rule. A signed-in visitor pays Pro right here with the VietQR checkout; a guest goes
  * through /checkout (sign-in).
  */

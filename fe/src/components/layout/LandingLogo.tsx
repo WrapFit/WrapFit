@@ -1,4 +1,4 @@
-/* ds-artwork: logo lockup: its sizes and gradient colours are part of the mark. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: logo lockup: its sizes and gradient colours are part of the mark. Raw colours and sizes here are allowed (docs/13_DESIGN_SYSTEM.md §2). */
 "use client";
 
 import Link from "next/link";

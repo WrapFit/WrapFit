@@ -10,7 +10,7 @@ import { ANALYTICS_TIME_ZONE, boxTypesOf, countsByDay, creationTimeOf, periodOf 
 export const GLOBAL_SUMMARY_TTL_MS = 60_000;
 
 /**
- * Numbers of the "Số liệu thiết kế" block of the dashboard (docs/17 S7, decisions M7–M9), from `product_events` and
+ * Numbers of the "Số liệu thiết kế" block of the dashboard (docs-old/17 S7, decisions M7–M9), from `product_events` and
  * the FitCheck score of `packaging_projects`. "me" is never cached: the dashboard shows the export the user just made
  * (demo step 7). Only aggregates leave this service; no query returns an id or a name.
  */

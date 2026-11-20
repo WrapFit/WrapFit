@@ -10,10 +10,10 @@ import { caliperOf, type CanvasElement, checkBox, generateDielinePieces } from '
 // failing seed stops the backend container from starting.
 
 /**
- * Demo account of the CP4 live demo (docs/17 S8, §5): a verified MAKER on the Free plan with the candle jar project of
+ * Demo account of the CP4 live demo (docs-old/17 S8, §5): a verified MAKER on the Free plan with the candle jar project of
  * the script, its logo already on the front panel. Created only when SEED_DEMO_PASSWORD is set. Runs on every start of
  * the backend container, so every step is idempotent: the project and the logo are made once. It no longer gets export
- * credits (docs/25 item 7): the print file opens through a paid print order, AI tasks use the xu of the plan.
+ * credits (docs-old/25 item 7): the print file opens through a paid print order, AI tasks use the xu of the plan.
  */
 
 const PROJECT_TITLE = 'Hũ nến thơm Mộc An';
@@ -37,7 +37,7 @@ export async function seedDemo(prisma: PrismaClient): Promise<void> {
   }
   const user = await prisma.user.upsert({
     where: { email },
-    // Demo accounts pay through VNPay sandbox, never SePay (docs/21 D3); an existing demo account gets the flag too.
+    // Demo accounts pay through VNPay sandbox, never SePay (docs-old/21 D3); an existing demo account gets the flag too.
     update: { isDemo: true },
     create: {
       email,

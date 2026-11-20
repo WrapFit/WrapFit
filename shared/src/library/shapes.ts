@@ -1,5 +1,5 @@
 /**
- * Vector shapes of the "Hình khối" rail (elements of type "shape", docs/23 S4). A shape is drawn as VectorArt at the
+ * Vector shapes of the "Hình khối" rail (elements of type "shape", docs-old/23 S4). A shape is drawn as VectorArt at the
  * size of its element, like the library art, so the editor, the 3D box, the thumbnail and the print files draw the
  * same paths (absolute M L C Z only, no arcs; lines at least MIN_LINE_MM).
  */
@@ -135,7 +135,7 @@ export function shapeArt(element: Pick<CanvasElement, "type" | "width" | "height
     default:
       return null;
   }
-  // A fill typed in CMYK prints with that ink (docs/23 S7).
+  // A fill typed in CMYK prints with that ink (docs-old/23 S7).
   const cmyk = style.cmyk;
   // A gradient replaces the plain fill (2 to 8 stops), the first stop stands for it where gradients are not drawn.
   const gradient = style.gradient && style.gradient.stops.length >= 2 ? { angle: style.gradient.angle ?? 0, stops: style.gradient.stops } : undefined;

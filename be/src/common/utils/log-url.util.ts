@@ -1,4 +1,4 @@
-/** Public design review links (`/api/review/<token>`, docs/23 S23): the token is the only secret of the link. */
+/** Public design review links (`/api/review/<token>`, docs-old/23 S23): the token is the only secret of the link. */
 const REVIEW_TOKEN = /(\/api\/review\/)([^/?#]{0,4})[^/?#]*/;
 
 /**

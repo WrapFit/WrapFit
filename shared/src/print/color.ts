@@ -1,5 +1,5 @@
 /**
- * Screen colours and print colours (docs/23 S7). Screens show RGB; presses print CMYK, whose gamut is smaller: very
+ * Screen colours and print colours (docs-old/23 S7). Screens show RGB; presses print CMYK, whose gamut is smaller: very
  * saturated greens, blues and violets print visibly duller. WrapFit has no ICC profile in the browser, so the check is
  * a heuristic on hue, saturation and brightness, worded as "may print duller", never as a blocking error.
  */

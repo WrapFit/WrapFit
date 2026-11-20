@@ -20,7 +20,7 @@ interface MonthSpend {
 }
 
 /**
- * System-wide cost fuse of AI (docs/16 §4.4, docs/19): sums the estimated cost of this month's `ai_generations`
+ * System-wide cost fuse of AI (docs/14 §4.4, docs/16): sums the estimated cost of this month's `ai_generations`
  * (patterns) and `ai_image_jobs` and reports when it reaches AI_MONTHLY_BUDGET_USD. Patterns then fall back to the
  * free procedural generator and AI images answer 503 (no xu spent) until the next month. The sum is cached 5 minutes
  * per process; costs added in this process count at once, others (a second API instance) at the next refresh.

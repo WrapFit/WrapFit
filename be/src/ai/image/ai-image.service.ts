@@ -119,7 +119,7 @@ const unavailable = (message: string) =>
   new ServiceUnavailableException({ code: 'AI_IMAGE_UNAVAILABLE', message });
 
 /**
- * AI images paid with xu (docs/19 S2), API side. A request is checked (model, storage, cost fuse, prompt) before any xu
+ * AI images paid with xu (docs/16 S2), API side. A request is checked (model, storage, cost fuse, prompt) before any xu
  * is spent; the debit and the job row are written in one transaction, then the job goes to the `ai-image` queue that
  * AiImageProcessor runs in the worker. A job that fails on our side gives its xu back (AiImageRefunds).
  */
@@ -241,7 +241,7 @@ export class AiImageService {
   }
 
   /**
-   * The same tools on an image the user uploaded (docs/23 S20): the studio offers them on any image of the canvas.
+   * The same tools on an image the user uploaded (docs-old/23 S20): the studio offers them on any image of the canvas.
    * `content` is the URL the canvas shows or the storage key; only the user's own raster uploads qualify.
    */
   async runToolOnUpload(
@@ -304,7 +304,7 @@ export class AiImageService {
   /** "Ảnh AI của tôi": the images still kept, newest first. `nextBefore` continues the list. */
   async gallery(userId: string, { before, limit = 30 }: AiGalleryQueryDto) {
     // Paged by (createdAt, id): the images of one job are saved with createMany at the same instant, so a cursor of
-    // createdAt alone skipped those left after a page boundary (docs/30 item 7).
+    // createdAt alone skipped those left after a page boundary (docs-old/30 item 7).
     const rows = await this.prisma.aiImageOutput.findMany({
       where: { job: { userId }, ...olderThan(before) },
       select: { ...OUTPUT_SELECT, job: { select: { id: true, kind: true, modelKey: true, prompt: true } } },

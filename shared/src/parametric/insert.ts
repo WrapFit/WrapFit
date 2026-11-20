@@ -1,5 +1,5 @@
 /**
- * Parametric Dieline Engine — Divider insert (Khay chia ngăn), formula version 3 (docs/23 S18).
+ * Parametric Dieline Engine — Divider insert (Khay chia ngăn), formula version 3 (docs-old/23 S18).
  * Owned by IT 2 (Packaging Math)
  *
  * Two pieces: an open tray (tray.ts, the base of the lid & base box) and a set of slotted partitions that cross like

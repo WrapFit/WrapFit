@@ -246,7 +246,7 @@ export function ShareDialog({ project, score, patch, onClose }: ShareDialogProps
         </section>
       )}
 
-      {/* docs/23 S23: a secret review link, whatever the visibility (a private design stays private). */}
+      {/* docs-old/23 S23: a secret review link, whatever the visibility (a private design stays private). */}
       <section aria-labelledby="share-review" className="mt-5 space-y-2 border-t border-landing-line pt-5">
         <h3 id="share-review" className="text-sm font-semibold text-landing-ink">
           Duyệt mẫu với khách / xưởng in

@@ -16,7 +16,7 @@ export interface ProjectForkedEvent {
 
 /**
  * A project was saved through PATCH /projects/:id (design, name, tags...; a thumbnail alone does not count). The
- * WebSocket gateway tells the owner's other editor tabs, which load the save (docs/28 Q5).
+ * WebSocket gateway tells the owner's other editor tabs, which load the save (docs/18 Q5).
  */
 export const PROJECT_SAVED = 'project.saved';
 

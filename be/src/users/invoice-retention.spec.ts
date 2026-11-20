@@ -1,6 +1,6 @@
 import { INVOICE_RETENTION_YEARS, invoiceRetentionCutoff, scrubExpiredInvoiceData } from './invoice-retention';
 
-describe('invoice retention (docs/28 Q4)', () => {
+describe('invoice retention (docs/18 Q4)', () => {
   it('keeps a record of year Y until 31/12/(Y + 10), Vietnam time', () => {
     expect(INVOICE_RETENTION_YEARS).toBe(10);
     // 1/1/2037 00:00 in Vietnam is 31/12/2036 17:00 UTC: records of 2026 become scrubbable.

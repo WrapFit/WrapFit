@@ -207,7 +207,7 @@ export class UsersService {
   }
 
   /**
-   * Admin deletion (docs/25 item 3). A user without financial history (`hasFinancialHistory`) is deleted with their
+   * Admin deletion (docs-old/25 item 3). A user without financial history (`hasFinancialHistory`) is deleted with their
    * projects and files as before; a user with it is anonymized instead (`anonymizeUser`), so payments, orders and
    * credits keep their owner. One transaction either way; bucket objects go after the commit. Deleting an anonymized
    * user again changes nothing and answers ANONYMIZED.

@@ -10,7 +10,7 @@ This skill guides the agent in crafting high-craft, tactile, and intentional use
 
 ## 1. Design Tokens & Palette
 
-Read `fe/src/assets/styles/tokens.ts` (semantic colours, type scale, spacing, radii, breakpoints, changelog) and `docs/15_DESIGN_SYSTEM.md` before styling anything. Live catalogue: `/design-system`.
+Read `fe/src/assets/styles/tokens.ts` (semantic colours, type scale, spacing, radii, breakpoints, changelog) and `docs/13_DESIGN_SYSTEM.md` before styling anything. Live catalogue: `/design-system`.
 
 ### Semantic colours (use these in components)
 ```

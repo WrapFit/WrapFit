@@ -27,7 +27,7 @@ export type SepayOutcome =
   | { result: 'UNMATCHED'; reason: BankTxUnmatchedReason; paymentId: string | null };
 
 /**
- * SePay bank webhook (docs/21 §3.3). SePay posts every transaction of the linked account; this stores each incoming
+ * SePay bank webhook (docs-old/21 §3.3). SePay posts every transaction of the linked account; this stores each incoming
  * one in `bank_transactions` (the `external_id` unique key makes a replay a no-op) and, when the transfer content has
  * a WF reference whose VietQR payment is still PENDING and the amount is exactly right, confirms that payment in the
  * same transaction. Anything else is stored UNMATCHED with a reason, for an admin to reconcile.
@@ -63,7 +63,7 @@ export class SepayWebhookService implements OnModuleInit {
 
   /**
    * Handles one authorized webhook body. Money that is not "in" is skipped without a row (the table is the log of
-   * incoming money; IGNORED is reserved for an admin's decision, docs/21 §3.5). Throws SepayPayloadError for a body
+   * incoming money; IGNORED is reserved for an admin's decision, docs-old/21 §3.5). Throws SepayPayloadError for a body
    * that cannot be stored; a database error propagates, so SePay retries.
    */
   async handle(body: unknown): Promise<SepayOutcome> {
@@ -128,7 +128,7 @@ export class SepayWebhookService implements OnModuleInit {
 
     if (references.length === 0) return unmatched(BankTxUnmatchedReason.NO_REFERENCE, null);
 
-    // A VNPay payment's reference is never matched here: demo accounts never take the real-money path (docs/21 §6).
+    // A VNPay payment's reference is never matched here: demo accounts never take the real-money path (docs-old/21 §6).
     const candidates = await tx.payment.findMany({
       where: { reference: { in: references }, provider: PaymentProvider.VIETQR },
       select: { id: true, reference: true },

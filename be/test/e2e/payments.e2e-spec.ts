@@ -15,8 +15,8 @@ import { deleteUsers } from './helpers/cleanup';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * VietQR payments (docs/17 S5) against a real PostgreSQL: create, poll, expire, and the simulated confirmation that
- * grants xu, 30 days of Pro or pays a sample order, once. Export packs are no longer sold (docs/25 item 7). e2e-env.ts turns PAYMENT_SIMULATION on; the last
+ * VietQR payments (docs-old/17 S5) against a real PostgreSQL: create, poll, expire, and the simulated confirmation that
+ * grants xu, 30 days of Pro or pays a sample order, once. Export packs are no longer sold (docs-old/25 item 7). e2e-env.ts turns PAYMENT_SIMULATION on; the last
  * test boots a second app with it off. Needs `docker compose up -d postgres redis`.
  */
 describe('Payments API (e2e)', () => {
@@ -43,7 +43,7 @@ describe('Payments API (e2e)', () => {
   const confirm = (user: Account, id: string) => as(user).post(`/api/payments/${id}/simulate-confirm`);
   const setDemo = (user: Account, isDemo: boolean) => prisma.user.update({ where: { id: user.id }, data: { isDemo } });
   /**
-   * A VietQR payment its account may simulate: only a demo account may (docs/25 item 6), and a demo account pays
+   * A VietQR payment its account may simulate: only a demo account may (docs-old/25 item 6), and a demo account pays
    * through VNPay, so the payment is made as a real account and the account is flagged demo afterwards.
    */
   const payToSimulate = async (user: Account, body: Record<string, unknown>) => {
@@ -127,7 +127,7 @@ describe('Payments API (e2e)', () => {
       .expect(404);
   });
 
-  it('refuses a new payment for every export pack: 400 EXPORT_PACK_DISCONTINUED, nothing created (docs/25 item 7)', async () => {
+  it('refuses a new payment for every export pack: 400 EXPORT_PACK_DISCONTINUED, nothing created (docs-old/25 item 7)', async () => {
     const user = await register('nopack');
     for (const purpose of ['EXPORT_1', 'EXPORT_5', 'EXPORT_15']) {
       const res = await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, purpose }).expect(400);
@@ -236,7 +236,7 @@ describe('Payments API (e2e)', () => {
     expect(subs[0].paymentId).toBe(second.id);
   });
 
-  // docs/30 item 3: each confirmation only locks its own payment; the subscription is now read under a per-user lock.
+  // docs-old/30 item 3: each confirmation only locks its own payment; the subscription is now read under a per-user lock.
   describe('two Pro payments confirmed at the same time', () => {
     const confirmBoth = async (user: Account) => {
       const [a, b] = [await payToSimulate(user, { purpose: 'PRO_MONTH' }), await payToSimulate(user, { purpose: 'PRO_MONTH' })];
@@ -339,7 +339,7 @@ describe('Payments API (e2e)', () => {
     expect((await exportSvg().expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
   });
 
-  // With a real VIETQR_* account only demo accounts may simulate (unit test of assertMaySimulate, docs/25 item 6).
+  // With a real VIETQR_* account only demo accounts may simulate (unit test of assertMaySimulate, docs-old/25 item 6).
   it('lets any account simulate a VietQR payment to the sample account, by the button or by a mock bank transfer', async () => {
     const real = await register('real');
     expect((await as(real).get('/api/billing/me').expect(200)).body.paymentSimulation).toBe(true);

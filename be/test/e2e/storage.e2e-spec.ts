@@ -324,7 +324,7 @@ describe('Storage (e2e)', () => {
       .send({ canvasState: { elements: [{ ...image, content: shared }, { ...image, id: 'img-2', content: inProject }] } })
       .expect(400);
 
-    // No payment, order or purchased credit: a hard delete (docs/25 item 3), answered 200 with its result.
+    // No payment, order or purchased credit: a hard delete (docs-old/25 item 3), answered 200 with its result.
     expect((await as(admin).delete(`/api/users/${miaId}`).expect(200)).body).toEqual({ id: miaId, result: 'DELETED' });
 
     expect((await fetch(avatar)).status).toBe(404);

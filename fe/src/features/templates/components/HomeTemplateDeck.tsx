@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: paper and ink colours of the Stitch home deck (Playfair look), drawn like printed cards. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: paper and ink colours of the Stitch home deck (Playfair look), drawn like printed cards. Raw colours and sizes here are allowed (docs/13_DESIGN_SYSTEM.md §2). */
 
 import Link from "next/link";
 import React, { useRef, useState } from "react";

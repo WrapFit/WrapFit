@@ -39,7 +39,7 @@ function glyphPath(commands: { command: string; args: number[] }[], point: Glyph
 }
 
 /**
- * Where each glyph of a curved line sits (docs/23 S9): the line is bent on a circle so that its length is kept and its
+ * Where each glyph of a curved line sits (docs-old/23 S9): the line is bent on a circle so that its length is kept and its
  * ends turn by `curveDeg` in total. Positive curves arch up (text on top of the circle), negative ones bow down.
  * `advances` are the glyph widths (spacing included), mm; (cx, baseline) is the middle of the straight line.
  * Returns the centre of each glyph on the baseline and its turn in degrees.

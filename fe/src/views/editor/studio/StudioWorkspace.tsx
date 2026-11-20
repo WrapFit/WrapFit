@@ -476,7 +476,7 @@ export function StudioWorkspace({
 
   // Step 4 stage: the flat dieline to edit, or the folded box to check it; the dock's text tool opens the composer
   const [artView, setArtView] = useState<"2d" | "3d">("2d");
-  // Side of the sheet being designed (docs/23 S5): the inside is edited on the dieline mirrored, as seen from inside.
+  // Side of the sheet being designed (docs-old/23 S5): the inside is edited on the dieline mirrored, as seen from inside.
   const [editSide, setEditSide] = useState<PrintSide>("outside");
   const [foldProgress, setFoldProgress] = useState<number>(1);
   const [lidOpen, setLidOpen] = useState<boolean>(false);
@@ -519,7 +519,7 @@ export function StudioWorkspace({
   const updateElement = useCallback((element: CanvasElement) => setElements((prev) => prev.map((el) => (el.id === element.id ? element : el))), []);
   /** Copied layer (Ctrl+C), pasted with Ctrl+V on the face that receives new elements. */
   const clipboard = useRef<CanvasElement | null>(null);
-  // Fonts uploaded for this design (docs/23 S13), saved with the canvas.
+  // Fonts uploaded for this design (docs-old/23 S13), saved with the canvas.
   const [customFonts, setCustomFonts] = useState<CustomFont[]>(() => (project ?? demoSource)?.canvasState?.customFonts ?? []);
 
   // Undo / redo of the artwork. Changes closer than HISTORY_GAP_MS to the previous one (a drag, a resize) make one step.
@@ -573,8 +573,8 @@ export function StudioWorkspace({
   );
   const editPieces = useMemo(() => (editSide === "inside" ? insidePieces(pieces) : pieces), [editSide, pieces]);
   const dieline = (editPieces[pieceIndex] ?? editPieces[0]).geometry;
-  // Backgrounds follow their faces when the size, the structure or the formulas change (docs/23 D4); the other
-  // elements keep their place on their face by their anchor (docs/23 S20).
+  // Backgrounds follow their faces when the size, the structure or the formulas change (docs-old/23 D4); the other
+  // elements keep their place on their face by their anchor (docs-old/23 S20).
   const fittedPieces = useRef(pieces);
   useEffect(() => {
     if (fittedPieces.current === pieces) return;
@@ -666,7 +666,7 @@ export function StudioWorkspace({
     payload,
     invalidReason,
     renderThumbnail: renderPreview,
-    // Another tab saved this project and this one has nothing unsaved: open its save here (docs/28 Q5).
+    // Another tab saved this project and this one has nothing unsaved: open its save here (docs/18 Q5).
     onOtherTabSave: onReload
       ? () => {
           toast.show({ title: "Đã cập nhật từ tab khác", description: "Thiết kế vừa được lưu ở tab hoặc cửa sổ khác của bạn." });
@@ -712,7 +712,7 @@ export function StudioWorkspace({
     setElements((prev) => autoFixElements(pieces, prev));
   }, [pieces, elements, project?.id]);
 
-  /** The one-click fix of one FitCheck violation (docs/23 S21: turn a text upright). */
+  /** The one-click fix of one FitCheck violation (docs-old/23 S21: turn a text upright). */
   const handleFixViolation = useCallback((violation: { elementId?: string; fix?: { rotation: number } }) => {
     const { elementId, fix } = violation;
     if (!elementId || !fix) return;
@@ -852,7 +852,7 @@ export function StudioWorkspace({
     [placementPanel, project, toast, handleAddElement]
   );
 
-  // "Thay ảnh, giữ khung" (docs/23 S10): another file in the same box, crop reset, DPI of the new file.
+  // "Thay ảnh, giữ khung" (docs-old/23 S10): another file in the same box, crop reset, DPI of the new file.
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const replaceTarget = useRef<string | null>(null);
   const requestReplaceImage = useCallback((elementId: string) => {
@@ -937,7 +937,7 @@ export function StudioWorkspace({
     },
     [placementPanel, brandFonts, handleAddElement]
   );
-  /** A ready-made text combo (docs/23 S14): its lines stacked and centred on the face, grouped to move as one. */
+  /** A ready-made text combo (docs-old/23 S14): its lines stacked and centred on the face, grouped to move as one. */
   const addTextCombo = useCallback(
     (comboId: string) => {
       const combo = TEXT_COMBOS.find((c) => c.id === comboId);
@@ -974,7 +974,7 @@ export function StudioWorkspace({
   );
   const designColors = useMemo(() => designColorsOf(elements), [elements]);
 
-  // Fonts uploaded for this design (docs/23 S13, D11): checked for the Vietnamese letters in the browser, then by the
+  // Fonts uploaded for this design (docs-old/23 S13, D11): checked for the Vietnamese letters in the browser, then by the
   // API after the upload; kept in the canvas so the design keeps them.
   useEffect(() => {
     customFonts.forEach((font) => void registerCustomFont(font));
@@ -1041,7 +1041,7 @@ export function StudioWorkspace({
     [project, toast, applyCustomFont]
   );
 
-  // AI image (docs/19 S4): as large as the safe area of the face allows, with the image's proportions, centred. Same
+  // AI image (docs/16 S4): as large as the safe area of the face allows, with the image's proportions, centred. Same
   // element and DPI as an uploaded image, so FitCheck judges it the same way; the file is already in WrapFit storage.
   const handlePlaceAiImage = useCallback(
     (output: AiImageOutput): { dpi: number } | null => {
@@ -1749,7 +1749,7 @@ export function StudioWorkspace({
                     panel={placementPanel}
                     geometry={dieline}
                     onAddElement={(element: CanvasElement) => {
-                      // A background replaces the one of its face, under the artwork (docs/23 D4).
+                      // A background replaces the one of its face, under the artwork (docs-old/23 D4).
                       if (element.type === "pattern") handleInsertPattern(element);
                       else handleAddElement(element);
                     }}
@@ -2143,7 +2143,7 @@ export function StudioWorkspace({
                 </div>
               )}
 
-              {/* Toolbar of the selection (docs/23 S8): exact place, size and turn, align, group */}
+              {/* Toolbar of the selection (docs-old/23 S8): exact place, size and turn, align, group */}
               {artView === "2d" && !readOnly && selectedIds.length > 0 && (
                 <SelectionToolbar
                   elements={elements}

@@ -16,7 +16,7 @@ export const userSelect = {
   referralCode: true,
   isActive: true,
   isDemo: true,
-  anonymizedAt: true, // Not null: deleted by an admin and anonymized (docs/25 item 3)
+  anonymizedAt: true, // Not null: deleted by an admin and anonymized (docs-old/25 item 3)
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;

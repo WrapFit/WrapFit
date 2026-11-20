@@ -13,7 +13,7 @@ import { deleteUsers } from './helpers/cleanup';
 const KEY = process.env.SEPAY_WEBHOOK_API_KEY!;
 
 /**
- * Admin reconciliation of bank transfers (docs/21 §3.5) against a real PostgreSQL: the list and its filter, assigning
+ * Admin reconciliation of bank transfers (docs-old/21 §3.5) against a real PostgreSQL: the list and its filter, assigning
  * a late transfer to an expired payment, the refusals (underpaid, already paid, handled twice), ignoring with a note,
  * and the demo flag that decides a payment's provider. Needs `docker compose up -d postgres redis`.
  */

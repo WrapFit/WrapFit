@@ -10,7 +10,7 @@
  *   npm --workspace=fe run shots -- --routes --only=projects --table          # also print the route × size table
  *
  * Options:
- *   --sizes=M,T,L,X,X+,W      viewport codes of docs/12 Phase 7 (default X+,W; all six with --routes), or --widths=1440x900,375x812
+ *   --sizes=M,T,L,X,X+,W      viewport codes of docs-old/12 Phase 7 (default X+,W; all six with --routes), or --widths=1440x900,375x812
  *   --routes[=file]           audit routes (default scripts/page-shots.routes.json); --group=, --only=<name part>,
  *                             --role=guest|maker|admin filter them. Placeholders like {projects.public.slug} come from
  *                             fe/.page-shots/fixtures.json (node fe/scripts/ui-fixtures.mjs)
@@ -52,7 +52,7 @@ const baseUrl = String(option('base-url', 'http://localhost:3000')).replace(/\/+
 const shotsPerPage = Number(option('shots', '2'));
 const printTable = Boolean(option('table', false));
 
-/** Viewport matrix of docs/12 Phase 7. */
+/** Viewport matrix of docs-old/12 Phase 7. */
 const SIZES = {
   M: { width: 375, height: 812, mobile: true },
   T: { width: 768, height: 1024 },
@@ -444,7 +444,7 @@ const ROLE_ACCOUNTS = {
     if (!fixtures?.maker) throw new Error('Role maker needs fixtures: run node fe/scripts/ui-fixtures.mjs');
     return fixtures.maker;
   },
-  // A demo account (users.is_demo, pays through VNPay sandbox, docs/21): set the flag in the database or with the admin API.
+  // A demo account (users.is_demo, pays through VNPay sandbox, docs-old/21): set the flag in the database or with the admin API.
   demo: () => {
     if (!process.env.SHOT_DEMO_EMAIL) throw new Error('Role demo needs SHOT_DEMO_EMAIL and SHOT_DEMO_PASSWORD (an account with is_demo = true)');
     return { email: process.env.SHOT_DEMO_EMAIL, password: process.env.SHOT_DEMO_PASSWORD };

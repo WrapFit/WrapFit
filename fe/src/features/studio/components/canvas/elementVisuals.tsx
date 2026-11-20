@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * How texts and photos look on screen (docs/23 S9, S10), the same model as the print files: letter spacing, outline and
+ * How texts and photos look on screen (docs-old/23 S9, S10), the same model as the print files: letter spacing, outline and
  * curved texts; crop, fill, frame mask and photo adjustments. Used by the 2D canvas (SVG) and the 3D box (canvas 2D).
  */
 import React, { useEffect, useState } from "react";
@@ -49,7 +49,7 @@ function loadSize(url: string): Promise<void> {
 }
 
 /**
- * Loads the sizes of the cropped / filled photos and the recoloured SVG logos (docs/23 S14); the number changes once
+ * Loads the sizes of the cropped / filled photos and the recoloured SVG logos (docs-old/23 S14); the number changes once
  * they are known (re-render).
  */
 export function useImageSizes(elements: CanvasElement[]): number {
@@ -143,7 +143,7 @@ export function curvedChars(box: TextBoxLayout, text: string, cx: number, baseli
 /** A text element drawn in SVG at (x, y): the lines of the print files, its face, spacing, outline, curve, underline. */
 export function TextVisual({ el, x, y, ink = "#1C1917", fontsVersion }: { el: CanvasElement; x: number; y: number; ink?: string; fontsVersion?: number }) {
   const box = layoutBoxText(el);
-  // An uploaded font is one face (docs/23 S13): drawn as it is, never synthesised bold or italic.
+  // An uploaded font is one face (docs-old/23 S13): drawn as it is, never synthesised bold or italic.
   const face = box.fontUrl ? { fontWeight: 400 as const, fontStyle: "normal" as const } : faceAttributes(box.font, box.face);
   const outline = box.stroke
     ? { stroke: box.stroke.color, strokeWidth: box.stroke.widthMm * 2, strokeLinejoin: "round" as const, paintOrder: "stroke" }

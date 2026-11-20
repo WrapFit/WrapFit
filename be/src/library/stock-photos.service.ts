@@ -100,7 +100,7 @@ const tooLarge = () =>
 const normalizeQuery = (q?: string) => (q ?? '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi');
 
 /**
- * Stock photos of the studio (docs/23 S15, D10): searched on Pexels through the backend, so the API key never
+ * Stock photos of the studio (docs-old/23 S15, D10): searched on Pexels through the backend, so the API key never
  * reaches the browser, and copied into the user's files when placed, so the print files keep working whatever
  * happens to the outside link. Pexels' licence allows commercial use without credit; the credit is still shown.
  */

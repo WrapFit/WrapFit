@@ -163,7 +163,7 @@ describe('AiImageService', () => {
     expect(xuWallet.spend.mock.calls[0][1]).toMatchObject({ quantity: 20, reason: 'AI_TOOL' });
   });
 
-  describe('tools on an uploaded image (docs/23 S20)', () => {
+  describe('tools on an uploaded image (docs-old/23 S20)', () => {
     const key = 'users/user-1/image/photo.png';
     let storedFile: { findFirst: jest.Mock };
     let getObject: jest.Mock;

@@ -3,7 +3,7 @@ import { ConfigService } from '../../common';
 import { buildPayUrl, verifyQuery, vnpayIp, type VerifiedQuery } from './vnpay';
 
 /**
- * VNPay settings and the two operations that need them (docs/21 §3.4). Depends on nothing but the config, so
+ * VNPay settings and the two operations that need them (docs-old/21 §3.4). Depends on nothing but the config, so
  * `PaymentsService` (which hands out the pay URL) and `VnpayService` (which confirms from the IPN) can both use it.
  */
 @Injectable()

@@ -65,7 +65,7 @@ export function createProject(data: CreateProjectRequest): Promise<ProjectDetail
  * when another tab saved since. 409 without code: the project is in the trash.
  */
 export function updateProject(id: string, data: UpdateProjectRequest): Promise<ProjectDetail> {
-  // The tab id comes back in the `project.saved` push, so this tab ignores its own save (docs/28 Q5).
+  // The tab id comes back in the `project.saved` push, so this tab ignores its own save (docs/18 Q5).
   return request(`/projects/${id}`, { method: "PATCH", json: data, headers: { "X-WF-Tab": TAB_ID } });
 }
 

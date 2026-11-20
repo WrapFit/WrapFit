@@ -1,4 +1,4 @@
-// Stock photos through the backend (docs/23 S15, D10): the key stays on the server, placed photos are copied.
+// Stock photos through the backend (docs-old/23 S15, D10): the key stays on the server, placed photos are copied.
 import {
   BadGatewayException,
   ForbiddenException,

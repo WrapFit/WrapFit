@@ -34,7 +34,7 @@ export const ROLE_TONES: Record<Role, { badge: string; dot: string; avatar: stri
 /** Shown on the controls of the signed-in admin's own row; the API refuses these changes too (400). */
 export const SELF_EDIT_HINT = "Không thể tự sửa tài khoản của mình";
 
-/** Name shown for an account an admin deleted but kept for its payments and orders (docs/25 item 3). */
+/** Name shown for an account an admin deleted but kept for its payments and orders (docs-old/25 item 3). */
 export const ANONYMIZED_LABEL = "Tài khoản đã xoá";
 
 export function displayName(user: SafeUser): string {

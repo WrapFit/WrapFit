@@ -2,7 +2,7 @@
 
 /**
  * `/checkout/step-3?plan=`: what the upgrade changes, from the current quotas of the account (`GET /auth/me`,
- * `GET /storage/usage`) to the ones of the chosen plan, then the VietQR checkout of Pro (docs/17 S5).
+ * `GET /storage/usage`) to the ones of the chosen plan, then the VietQR checkout of Pro (docs-old/17 S5).
  */
 
 import { ArrowRight, Clock, QrCode } from 'lucide-react';

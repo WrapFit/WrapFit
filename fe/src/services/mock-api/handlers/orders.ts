@@ -53,7 +53,7 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
   if (!recipientName) errors.push("Cần tên người nhận.");
   if (!phone) errors.push("Cần số điện thoại người nhận.");
   if (!shippingAddress) errors.push("Cần địa chỉ giao hàng.");
-  // Vouchers were removed (docs/25 item 1): like the API's ValidationPipe, a body that still sends a code gets 400.
+  // Vouchers were removed (docs-old/25 item 1): like the API's ValidationPipe, a body that still sends a code gets 400.
   if ("promoCode" in body) errors.push("property promoCode should not exist");
   if (errors.length) throw badRequest(errors);
 

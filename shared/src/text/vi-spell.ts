@@ -1,5 +1,5 @@
 /**
- * Vietnamese spell check (docs/23 S22) without a dictionary: every written Vietnamese syllable follows a small grammar
+ * Vietnamese spell check (docs-old/23 S22) without a dictionary: every written Vietnamese syllable follows a small grammar
  * (onset, rhyme, one tone mark, spelling rules of c/k, g/gh, ng/ngh, and the stop endings that take only the sắc or
  * nặng tone). A syllable outside that grammar is almost always a typo: "chúcc", "Têt" (no) – but "đep", "tiê", "nghă",
  * "cảmm", "thnàh" are caught.

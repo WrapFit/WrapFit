@@ -216,7 +216,7 @@ const SERVER_WORDED_CODES: ReadonlySet<ApiErrorCode> = new Set([
   "PROMPT_REJECTED",
   "AI_IMAGE_UNAVAILABLE",
   "AI_IMAGE_BUSY",
-  // Names the print order that still needs the design (docs/30 item 4).
+  // Names the print order that still needs the design (docs-old/30 item 4).
   "PROJECT_IN_ACTIVE_ORDER",
 ]);
 

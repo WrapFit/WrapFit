@@ -1,7 +1,8 @@
 # 📦 HƯỚNG DẪN BAO BÌ & KỊCH BẢN HỖ TRỢ KHÁCH HÀNG (PACKAGING GUIDELINES & SUPPORT)
 
 > **Dự án**: WrapFit Platform (EXE101 — FPT University)  
-> **Tài liệu tham chiếu**: Dành cho Khách hàng cá nhân, Chủ shop Handmade, và Bộ phận Kỹ thuật / CSKH WrapFit Bot.
+> **Tài liệu tham chiếu**: Dành cho Khách hàng cá nhân, Chủ shop Handmade, và Bộ phận Kỹ thuật / CSKH WrapFit.  
+> **Cập nhật**: 2026-11-19. Mọi thông số in lấy từ [prepress.ts](../shared/src/print/prepress.ts) và [validator.ts](../shared/src/fitcheck/validator.ts).
 
 ---
 
@@ -11,12 +12,16 @@ Khi tư vấn hoặc kiểm tra file thiết kế của khách hàng, đội ng�
 
 | Thuật ngữ | Tiếng Anh | Định nghĩa kỹ thuật | Tiêu chuẩn WrapFit |
 | :--- | :--- | :--- | :--- |
-| **Nét Cắt** | Cut Line | Đường cắt đứt rời chu vi bên ngoài của tấm bìa bằng dao bế cơ học. | Màu đỏ `#E53E3E`, nét liền (solid), stroke $0.5\text{pt}$. |
-| **Nét Cấn / Gấp** | Crease / Score Line | Đường ấn lõm tạo nếp gấp để thợ dễ dàng gập hộp mà không làm nứt sớ giấy. | Màu xanh dương `#3182CE`, nét đứt (dashed `4,4`), stroke $0.5\text{pt}$. |
-| **Vùng Tràn Lề** | Bleed Margin | Phần màu nền/hoa văn phải phủ tràn ra ngoài nét cắt để tránh viền trắng khi máy bế lệch $1\text{mm}$. | Bắt buộc $\ge 2.0\text{mm}$ tính từ nét cắt ra ngoài. |
-| **Lề An Toàn** | Safe Area / Inner Margin | Vùng tối thiểu cách nét cắt và nếp cấn; chữ hoặc logo không được nằm ngoài vùng này. | Bắt buộc $\ge 3.0\text{mm}$ bên trong nếp cấn/nét cắt. |
-| **Độ Dày Giấy** | Caliper / Paper Thickness ($t$) | Chiều dày thực tế của tấm giấy tính bằng milimet (công thức $t = \text{GSM} \times 0.0014\text{ mm}$). | $0.35\text{mm} - 0.55\text{mm}$ (tương ứng $250 - 400\text{ GSM}$). |
+| **Nét Cắt** | Cut Line | Đường cắt đứt rời chu vi bên ngoài của tấm bìa bằng dao bế cơ học. | Màu đỏ `#E53E3E`, nét liền (solid). Trong file in là màu pha `CutContour`, nét $0.25\text{mm}$. |
+| **Nét Cấn / Gấp** | Crease / Score Line | Đường ấn lõm tạo nếp gấp để thợ dễ dàng gập hộp mà không làm nứt sớ giấy. | Màu xanh dương `#3182CE`, nét đứt (dashed `4,4`). Trong file in là màu pha `Crease`, nét $0.25\text{mm}$. |
+| **Vùng Tràn Lề** | Bleed Margin | Phần màu nền/hoa văn phải phủ tràn ra ngoài nét cắt để tránh viền trắng khi máy bế lệch $1\text{mm}$. | Nền chạm nét cắt phải tràn ra ngoài $\ge 2\text{mm}$. Thiếu là cảnh báo, chưa chặn xuất. |
+| **Khung Tràn Lề của PDF** | BleedBox | Khung trong file PDF cho nhà in biết vùng được phép in tràn quanh phôi. | Rộng hơn phôi $3\text{mm}$ mỗi phía. Đây là khung của file, không phải yêu cầu với thiết kế. |
+| **Lề An Toàn** | Safe Area / Inner Margin | Vùng tối thiểu cách nét cắt và nếp cấn; chữ hoặc logo không được nằm ngoài vùng này. | Cách nét cắt $\ge 5\text{mm}$, cách nếp gấp $\ge 3\text{mm}$. Thiếu lề là cảnh báo. Cách dưới $1\text{mm}$ hoặc tràn ra ngoài mặt là lỗi chặn xuất. |
+| **Độ Phân Giải Ảnh** | Resolution (DPI) | Số điểm ảnh trên mỗi inch, tính ở kích thước in thật trên hộp. | Đạt từ $300\text{ DPI}$. Từ 150 đến dưới 300 là cảnh báo. Dưới $150\text{ DPI}$ là lỗi chặn xuất. |
+| **Độ Dày Giấy** | Caliper / Paper Thickness ($t$) | Chiều dày thực tế của tấm giấy tính bằng milimet (công thức $t = \text{GSM} \times 0.0014\text{ mm}$). | $0.35\text{mm} - 0.56\text{mm}$ (tương ứng $250 - 400\text{ GSM}$). |
 | **Định Lượng Giấy** | GSM ($\text{g/m}^2$) | Khối lượng trên một mét vuông giấy, quyết định độ cứng của hộp. | Tối thiểu $250\text{ GSM}$ cho hộp nhỏ, $350 - 400\text{ GSM}$ cho hộp lớn. |
+
+> **Nền tràn 2 mm và `BleedBox` 3 mm khác nhau.** 2 mm là mức tối thiểu nền phải tràn ra ngoài nét cắt để FitCheck không cảnh báo. 3 mm là khung tràn lề WrapFit ghi vào PDF cho nhà in. Nút "Tự sửa lề nhanh" kéo nền tràn đủ 3 mm, nên nền đã sửa luôn lấp kín `BleedBox`.
 
 ---
 
@@ -38,41 +43,55 @@ Khách hàng thường băn khoăn không biết chọn loại giấy nào cho s
 
 ### ⚠️ Sự cố 1: "Hộp gập xong bị bung đáy khi để quà nặng"
 - **Nguyên nhân**: Sử dụng đáy cài thường thay vì đáy tự khóa (Crash Lock Bottom) cho vật phẩm $> 300\text{g}$.
-- **Giải pháp WrapFit**: Khuyên khách hàng chuyển sang cấu trúc *Hộp nắp gài đáy khóa* hoặc tăng tai gài đáy thêm $3\text{mm}$.
+- **Giải pháp WrapFit**: Ở bước 2 (Kích thước), nhập cân nặng món quà. Hộp nắp gài tự dùng đáy khóa khi quà nặng hơn $300\text{g}$, trừ khi khách chủ động chọn đáy cài thường ([tuck-top.ts](../shared/src/parametric/tuck-top.ts)).
 
 ### ⚠️ Sự cố 2: "Nắp gài quá chật, bị phồng hoặc cong vênh khi đóng"
 - **Nguyên nhân**: Không tính dung sai độ dày giấy ($t$). Khi gập $90^\circ$, bề dày giấy chiếm mất không gian bên trong hộp.
-- **Giải pháp WrapFit**: Công thức toán học của WrapFit tự động cộng thêm $0.5 \times t$ cho mỗi nếp gập liên tiếp ($L_{\text{outside}} = L + 2t$).
+- **Giải pháp WrapFit**: Công thức của WrapFit đặt mọi nếp gấp ở giữa bề dày giấy. Một mặt nằm giữa hai vách được cộng thêm $t$ (mỗi bên nửa độ dày), nên kích thước lòng hộp đúng bằng $L \times W \times H$ khách nhập.
 
 ### ⚠️ Sự cố 3: "Viền trắng xuất hiện quanh mép hộp sau khi cắt"
 - **Nguyên nhân**: File thiết kế không vẽ tràn lề (Bleed) đủ $2\text{mm}$.
-- **Giải pháp WrapFit**: Trình kiểm tra `FitCheck™` sẽ chặn xuất file và hiển thị cảnh báo đỏ nếu ảnh nền kết thúc sát nét cắt.
+- **Giải pháp WrapFit**: FitCheck™ cảnh báo `BLEED_INSUFFICIENT` (mức cảnh báo, không chặn xuất) khi nền chạm nét cắt mà tràn chưa đủ $2\text{mm}$. Khách kéo nền tràn ra ngoài nét cắt 2–3 mm, lùi hẳn vào trong 3 mm, hoặc bấm "Tự sửa lề nhanh".
 
 ### ⚠️ Sự cố 4: "Logo hoặc chữ bị nếp gập đè lên làm mất thẩm mỹ"
-- **Nguyên nhân**: Phần tử đồ họa nằm phạm vào Lề an toàn Safe Margin ($< 3\text{mm}$).
-- **Giải pháp WrapFit**: Drawer cảnh báo FitCheck tự động highlight màu vàng các phần tử vi phạm và cung cấp nút "Tự động căn chỉnh lề an toàn" (Auto Safe Margin Snapping).
+- **Nguyên nhân**: Phần tử đồ họa nằm trong lề an toàn: cách nét cắt dưới $5\text{mm}$ hoặc cách nếp gấp dưới $3\text{mm}$.
+- **Giải pháp WrapFit**: FitCheck™ báo `CUT_OVERLAP` hoặc `CREASE_OVERLAP`. Còn cách từ $1\text{mm}$ trở lên thì chỉ là cảnh báo (màu vàng), vẫn xuất được. Dưới $1\text{mm}$ hoặc tràn ra ngoài mặt thì thành lỗi chặn xuất (màu đỏ). Ở bước 6 (Đặt in), nút **"Tự sửa lề nhanh"** dời và thu nhỏ phần tử vào vùng an toàn; khách cũng có thể bấm "Mở bước Thiết kế để sửa" để tự dời.
 
 ---
 
-## 4. Kịch Bản Chatbot Tư Vấn (WrapFit AI Assistant Script)
+## 4. Kịch Bản Tư Vấn Khách Hàng (Support Script)
 
-Khi người dùng mở trợ lý WrapFit trên Web Studio, bot sẽ tương tác theo các kịch bản sau:
+WrapFit hiện chưa có chatbot trả lời tự do. "Trợ lý Gói" trên giao diện chỉ là linh vật hiện mẹo. Các kịch bản dưới là lời thoại mẫu để CSKH trả lời khách qua chat, email hoặc mạng xã hội, và làm nội dung cho chatbot sau này.
 
 ### 💬 Kịch bản A: Tư vấn kích thước & loại hộp
 - **Người dùng**: *"Mình muốn làm hộp đựng một lọ nước hoa $50\text{ml}$ có kích thước $4.5 \times 4.5 \times 9.5\text{ cm}$, nên chọn kiểu gì?"*
-- **WrapFit Bot**:
+- **CSKH WrapFit**:
   > *"Chào bạn! Với kích thước chai nước hoa $45 \times 45 \times 95\text{ mm}$, trọng lượng khoảng $180\text{g}$:*  
   > *1. **Kích thước hộp lọt lòng đề xuất**: $48 \times 48 \times 98\text{ mm}$ (dư $3\text{mm}$ mỗi chiều để dễ rút chai ra vào).*  
   > *2. **Kiểu hộp tối ưu**: **Hộp nắp gài đáy khóa (Tuck Top Box)** với tai gài ma sát để tránh tuột.*  
   > *3. **Chất liệu giấy**: Giấy Ivory $300\text{ GSM}$ cán màng mờ tạo cảm giác mịn màng sang trọng.*  
-  > *👉 Mình đã áp dụng thông số này lên khung vẽ 2D cho bạn rồi nhé, bạn có thể xem thử mô phỏng 3D ngay bên cạnh!"*
+  > *👉 Bạn mở Studio, chọn "Hộp nắp gài" ở bước 1 (Kiểu hộp), rồi ở bước 2 (Kích thước) chọn đo "Lọt lòng" và nhập $48 \times 48 \times 98$. Hộp 3D bên cạnh cập nhật ngay để bạn xem thử."*
 
-### 💬 Kịch bản B: Khách hàng hỏi cách đem file đi in
+### 💬 Kịch bản B: Khách hàng hỏi cách lấy file đem đi in
 - **Người dùng**: *"Sau khi thiết kế xong thì mình tải file gì và đem ra đâu in được?"*
-- **WrapFit Bot**:
-  > *"Bạn bấm nút **'Xuất bản vẽ' (Export Dieline)** góc trên bên phải nhé:*  
-  > *- Hệ thống sẽ xuất cho bạn file **PDF chuẩn in Vector** với 3 Layer tách biệt:*  
-  > *  🔴 Layer 1: Nét cắt dao bế (CutContour).*  
-  > *  🔵 Layer 2: Nếp cấn gập (Crease).*  
-  > *  🎨 Layer 3: Đồ họa nghệ thuật (Artwork & Bleed).*  
-  > *- Bạn chỉ cần mang file này ra bất kỳ tiệm photocopy/in nhanh kỹ thuật số nào gần nhất, yêu cầu họ in trên giấy Kraft hoặc Ivory định lượng từ 250 - 300 GSM và chạy máy bế theo đường line có sẵn là sẽ có hộp hoàn hảo!"*
+- **CSKH WrapFit**:
+  > *"Bạn mở bước 6 (**Đặt in**) và xem thẻ **Gói File Xuất Xưởng** nhé:*  
+  > *- Thiết kế cần được lưu thành dự án (đăng nhập rồi bấm "Lưu dự án để thanh toán"). Bản dùng thử chưa xuất được file in.*  
+  > *- FitCheck™ không còn **lỗi chặn xuất** (màu đỏ). Cảnh báo màu vàng vẫn cho xuất, nhưng nên sửa để bản in đẹp hơn.*  
+  > *- File in mở sau khi bạn **thanh toán đơn in** của đúng bản thiết kế này: bấm "Thanh toán" để thêm thiết kế vào giỏ in, đặt và trả tiền. Quay lại Studio, thẻ đổi thành "Đã thanh toán" và có nút "Xuất file in ngay".*  
+  > *- Lưu thiết kế luôn miễn phí. Nếu bạn sửa thiết kế sau khi đã thanh toán, bản mới cần một đơn in mới; đổi tên dự án thì không ảnh hưởng.*  
+  > *- Bạn chọn loại file: **PDF CMYK** cho xưởng in (lớp `CutContour`, `Crease`, `Artwork` tách riêng), **PDF in A4/A3** có dấu xén để tự in, **SVG** cho máy cắt Cricut/laser, **DXF** cho máy bế CNC, hoặc **gói nhà in (ZIP)** gồm đủ các file trên.*  
+  > *- Mang file PDF CMYK tới xưởng in, yêu cầu in trên giấy Kraft hoặc Ivory định lượng từ 250 - 300 GSM và chạy máy bế theo đường `CutContour` có sẵn."*
+
+### 💬 Kịch bản C: Khách hỏi về cảnh báo FitCheck và vì sao chưa tải được file
+Dùng bảng dưới để trả lời nhanh. Cột cuối là việc khách cần làm tiếp.
+
+| Khách gặp | FitCheck / máy chủ báo | Còn xuất được không | Việc cần làm tiếp |
+| :--- | :--- | :--- | :--- |
+| Logo cách nét cắt $4\text{mm}$ | Cảnh báo `CUT_OVERLAP` "Quá sát nét cắt" (cần ≥ 5 mm) | Có | Dời logo vào trong thêm **ít nhất 1 mm** (cách nét cắt ≥ 5 mm), hoặc bấm "Tự sửa lề nhanh". |
+| Logo cách nét cắt dưới $1\text{mm}$, hoặc tràn ra ngoài mặt | Lỗi `CUT_OVERLAP` (chặn xuất) | Không | Bắt buộc dời logo vào trong, cách nét cắt ≥ 5 mm. Với nếp gấp, cách ≥ 3 mm. |
+| Ảnh $200\text{ DPI}$ ở kích thước in | Cảnh báo `LOW_DPI` "có thể bị mờ nhòe" | Có | Nên thay ảnh gốc chất lượng cao hơn, hoặc thu nhỏ ảnh trên hộp cho tới khi đạt 300 DPI. |
+| Ảnh dưới $150\text{ DPI}$ | Lỗi `LOW_DPI` "chắc chắn sẽ vỡ hạt" (chặn xuất) | Không | Phải thay ảnh khác, hoặc thu nhỏ ảnh cho tới khi đạt ít nhất 150 DPI (nên 300 DPI). |
+| Thiết kế đạt FitCheck nhưng chưa thanh toán | Thẻ "Cần đặt in"; máy chủ trả `402 ORDER_PAYMENT_REQUIRED` | Chưa | Bấm "Thanh toán" ở bước 6 để thêm thiết kế vào giỏ in, đặt in và trả tiền, rồi quay lại bấm "Xuất file in ngay". |
+
+Ghi chú cho CSKH: máy chủ chạy lại FitCheck mỗi lần xuất file, nên lỗi chặn xuất luôn được kiểm trước khi kiểm thanh toán. Còn lỗi thì máy chủ trả `422`, kể cả khi đơn in đã trả tiền.

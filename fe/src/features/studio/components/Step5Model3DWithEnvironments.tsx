@@ -84,7 +84,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const [saving, setSaving] = useState<MockupFormat["id"] | "all" | null>(null);
   const capture = useRef<CaptureFn | null>(null);
   const film = useRef<FilmApi | null>(null);
-  /** Clip being made (docs/23 S19): its kind and how far it is. */
+  /** Clip being made (docs-old/23 S19): its kind and how far it is. */
   const [filming, setFilming] = useState<{ kind: "video" | "gif"; done: number } | null>(null);
   const [clip, setClip] = useState<{ url: string; kind: "video" | "gif"; name: string; bytes: number } | null>(null);
   const [playClip, setPlayClip] = useState(false);

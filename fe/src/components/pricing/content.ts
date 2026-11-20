@@ -96,7 +96,7 @@ const perTier = (value: (tier: SaleTier) => string) =>
 export const COMPARISON: ComparisonRow[] = [
   { feature: "Studio, 4 cấu trúc hộp, hộp gấp 3D", values: sameForAll("Có") },
   { feature: "FitCheck™ và Auto-Fix", values: sameForAll("Có") },
-  // Print files open with the paid sample order of the design on every plan (docs/28 Q1): no plan unlocks them.
+  // Print files open with the paid sample order of the design on every plan (docs/18 Q1): no plan unlocks them.
   { feature: "File in: PDF A4, PDF CMYK 4 lớp cho xưởng, SVG, DXF", values: sameForAll("Khi thanh toán đơn in mẫu") },
   { feature: "Lưu trữ", values: perTier((tier) => formatQuota(PLANS[tier].storageBytes)) },
   { feature: "Xu Wrap mỗi kỳ (ảnh, hoa văn AI)", values: perTier((tier) => xu(PLANS[tier].xuPerPeriod)) },

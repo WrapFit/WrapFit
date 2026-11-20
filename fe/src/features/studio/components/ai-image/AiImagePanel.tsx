@@ -18,7 +18,7 @@ import { panelLabel } from "@/features/studio/utils/dieline";
 
 const MAX_PROMPT = 500;
 const POLL_MS = 2_000;
-/** Below this the print looks soft (FitCheck warns under 300 DPI, refuses under 150): suggest an upscale (docs/19 S4). */
+/** Below this the print looks soft (FitCheck warns under 300 DPI, refuses under 150): suggest an upscale (docs/16 S4). */
 const UPSCALE_HINT_DPI = 200;
 const GALLERY_PAGE = 12;
 const SUGGESTIONS = ["Hoa đào màu nước, nền kem", "Lá monstera, phong cách tối giản", "Họa tiết gốm Bát Tràng xanh lam"];
@@ -49,7 +49,7 @@ interface AiImagePanelProps {
   onPlace: (output: AiImageOutput) => { dpi: number } | null;
 }
 
-/** "Ảnh AI" of the studio (docs/19 S4): a prompt, a model priced in xu, images drawn for the face in use. */
+/** "Ảnh AI" of the studio (docs/16 S4): a prompt, a model priced in xu, images drawn for the face in use. */
 export function AiImagePanel({ projectId, panel, onPlace }: AiImagePanelProps) {
   const toast = useToast();
   const queryClient = useQueryClient();

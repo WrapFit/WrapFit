@@ -1,4 +1,4 @@
-/* ds-artwork: the tabletop and props of the 3D photo sets draw real materials (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: the tabletop and props of the 3D photo sets draw real materials (docs/13_DESIGN_SYSTEM.md §2). */
 import * as THREE from "three";
 import { BACKDROPS, type SceneId, type SurfaceKind } from "./backdrops";
 import { STUDIO_PALETTES, type StudioPalette, type StudioPaletteId } from "./studioPalettes";

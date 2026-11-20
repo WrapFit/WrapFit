@@ -27,7 +27,7 @@ export function useReview(projectId: string | null) {
 }
 
 /**
- * The review link of a design (docs/23 S23): create, copy, replace or turn off the secret link a customer or a print
+ * The review link of a design (docs-old/23 S23): create, copy, replace or turn off the secret link a customer or a print
  * shop opens to comment and approve for print. Used by the share dialog and the review panel.
  */
 export function ReviewLinkSection({ projectId }: { projectId: string }) {
@@ -90,7 +90,7 @@ export function ReviewLinkSection({ projectId }: { projectId: string }) {
 }
 
 /**
- * "Duyệt mẫu" in step 6 (docs/23 S23): whether the design is approved for print, the link, and the comments of the
+ * "Duyệt mẫu" in step 6 (docs-old/23 S23): whether the design is approved for print, the link, and the comments of the
  * reviewers, which the owner resolves, deletes or answers.
  */
 export function ReviewPanel({ projectId, pieces }: { projectId: string; pieces: DielinePiece[] }) {

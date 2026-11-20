@@ -1,9 +1,34 @@
-# 11 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch
+# 10 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch
 
 > Cập nhật: 2026-10-08 · Branch `test-model` · Stitch project `15490463943889996451`
 > Lượt 1: audit. Lượt 2: chuẩn hoá kiến trúc và sửa toàn bộ lỗi sửa được trong code.
+> Đối chiếu lại: 2026-11-19 trên `develop` (fb720a9), đợt đồng bộ docs sau audit. Mọi tỷ lệ lệch trong file là **số đo tại
+> commit cũ**, chưa đo lại.
 
-## 1. Trạng thái hiện tại
+## 0. Hiện trạng ngày 2026-11-19
+
+Từ 2026-10-13 (commit `d6b622e`, `ea807d8`, `0f0f0a5`, `97665e9` trên `develop`), phần lớn màn Stitch đã được viết lại
+bằng tay. `fe/stitch/screens.json` hiện có 42 screen:
+
+| Status | Số screen | Route |
+|---|---|---|
+| `converted` | 3 | `/intro/blueprint`, `/intro/minimal`, `/editor` |
+| `manual` | 35 | Trang chủ, dashboard, admin, thanh toán, đăng nhập, 404, `/pricing`, `/team`, `/support`… |
+| `approximation` | 4 | `/editor/step-1` → `/editor/step-4` |
+| `wired` | 0 | — |
+
+Hệ quả:
+
+- `/editor`, `/editor/new` và `/editor/step-1..4` chuyển hướng sang `/editor/demo` (`fe/next.config.mjs`), nên
+  `stitch:parity` bỏ qua `/editor` và thực tế chỉ còn đo **2 màn** `/intro/*`.
+- `fe/src/assets/styles/stitch/screens/` chỉ còn CSS của 3 màn `converted`; `features/stitch/behaviors/` chỉ còn
+  behavior của 3 màn đó.
+- Quy trình sync (§3) và cách bảo vệ file sửa tay vẫn dùng được, vì generator vẫn hỗ trợ `converted` và `wired`.
+  [README FE](../fe/README.md) trỏ về file này cho nguồn Stitch và lệnh `stitch:parity`.
+- Muốn công bố số parity mới: chạy `npm --workspace=fe run stitch:parity` (cần dev server ở `:3000`) và ghi viewport,
+  ngày, commit. Lần đồng bộ này không chạy lại.
+
+## 1. Trạng thái sau lượt 2 (2026-10-08, đo tại commit cũ)
 
 | Hạng mục | Trước | Sau lượt 2 |
 |---|---|---|
@@ -17,13 +42,16 @@
 Đo bằng `npm run stitch:parity` (xem §3.5). Ảnh so sánh: `fe/.visual-parity/<slug>.png` (Stitch | app | diff).
 
 > **Mốc mới (2026-10-11, S9):** từ khi các màn được sửa tay header / sidebar (`e07d23b`, `e509d8f`) và header chung đổi
-> font (S5), ngưỡng 1% không còn áp dụng: số đo từng màn trước / sau S9 ở [`13`](13_UI_VIEWPORT_AUDIT.md) §2.3. So sánh
+> font (S5), ngưỡng 1% không còn áp dụng: số đo từng màn trước / sau S9 ở [`11`](11_UI_VIEWPORT_AUDIT.md) §2.3. So sánh
 > với cột "Sau S9" của bảng đó.
 >
 > **Đo lại ở S8 (2026-10-12, sau khi nối xong FE ↔ BE):** 20 / 22 màn `converted` lệch đúng như cột "Sau S9" (chênh
 > ≤ 0,1 điểm %); `/intro/blueprint` (cảnh 3D tự xoay) và `/` (trang chủ, mascot động) dao động như mọi lần đo.
-> `/editor` và `/editor/export` chuyển hướng sang `/editor/new` từ S6 (`next.config.mjs`, docs/12 R3), nên
-> `stitch:parity` bỏ qua mọi route có redirect thay vì so trang đích với bản Stitch.
+> `/editor` và `/editor/export` chuyển hướng sang `/editor/new` từ S6 của đợt nối FE–BE (`next.config.mjs`), nên
+> `stitch:parity` bỏ qua mọi route có redirect thay vì so trang đích với bản Stitch. (Nay `/editor` chuyển sang
+> `/editor/demo`, `/editor/export` sang `/dashboard/orders`, xem §0.)
+>
+> Các số trong khối này và trong §4 là số đo tại commit cũ (2026-10-08 đến 2026-10-12).
 
 ## 2. Đánh giá kiến trúc frontend (trước lượt 2)
 
@@ -84,7 +112,7 @@ Quy tắc: không sửa file có banner `AUTO-GENERATED`. Muốn đổi, sửa `
 | Status | Generator sinh | Dùng khi |
 |---|---|---|
 | `converted` | view, page, CSS, token, behavior | Màn hình tĩnh, giữ đúng bản Stitch |
-| `wired` | CSS, token, behavior; **không** ghi view / page | View viết tay bằng React và nối API ([`12`](12_FE_BE_INTEGRATION_PLAN.md)), vẫn dùng CSS và token của screen. `stitch:parity` bỏ qua, trừ khi có `--include-wired` |
+| `wired` | CSS, token, behavior; **không** ghi view / page | View viết tay bằng React và nối API (đợt nối FE–BE tháng 10/2026), vẫn dùng CSS và token của screen. `stitch:parity` bỏ qua, trừ khi có `--include-wired`. Ngày 2026-11-19 không còn screen nào ở status này |
 | `approximation`, `manual` | không sinh gì | Trang viết tay không có HTML Stitch; `manual` còn hiện BottomNavBar |
 
 **Component của app bên trong màn `wired`**: CSS của một screen đặt `initial` cho mọi token screen đó không định nghĩa
@@ -124,7 +152,7 @@ Mỗi token mà một screen Stitch định nghĩa trở thành biến CSS (`--s
 ### 3.5. Kiểm tra hồi quy
 `npm run stitch:parity [-- <từ khoá slug>] [--threshold=1]` (cần dev server). Chụp Chrome headless cả HTML Stitch lẫn route app ở viewport của screen, đếm pixel lệch bằng `pixelmatch`, thoát mã 1 nếu vượt ngưỡng.
 
-## 4. Kết quả đo (sau lượt 2)
+## 4. Kết quả đo (sau lượt 2, đo tại commit cũ)
 
 | Route | Lệch | Ghi chú |
 |---|---|---|
@@ -138,26 +166,29 @@ Mỗi token mà một screen Stitch định nghĩa trở thành biến CSS (`--s
 
 ## 5. Việc còn lại
 
+Đối chiếu từng mục với manifest và route ngày 2026-11-19. Mục "bỏ do đổi thiết kế" là việc không còn cần làm, vì màn
+liên quan đã chuyển sang `manual` hoặc đã có route khác (§0).
+
 ### Cần bạn làm / quyết định
-- [ ] **12 trang "companion"** (`/editor/step-1..4`, `/checkout/step-2`, `/auth/2fa`, `/dashboard/orders`, `/dashboard/profile`, `/admin/appraisal`, `/admin/gpu-cluster`, `/admin/ledger`, `/admin/system-config`) vẫn là JSX viết tay theo prompt, không phải bản Stitch. HTML của chúng chỉ tải được khi đăng nhập Google bằng tài khoản sở hữu project. Cách làm: mở từng screen trên Stitch → Export code → lưu vào `fe/stitch/source/<id>.html`, đổi `status` trong `screens.json` thành `converted`, chạy `npm run stitch:sync` và `npm run stitch:parity`.
-- [ ] Trang chủ `/` dùng ảnh nền hero `lh3.googleusercontent.com/...AEtjO1X2Cm…` nay trả HTTP 400 (ảnh hỏng). Cần export lại ảnh từ Stitch.
-- [ ] 8 ảnh khác trong source Stitch trả 403 (cũng hỏng trên Stitch). Export lại nếu cần.
-- [ ] Xoá 22 script debug cũ trong `fe/scripts/*.js` (đã có `scripts/stitch` thay thế; các file này chưa commit nên xoá là mất hẳn).
-- [ ] Chốt màu brand: Stitch dùng Cobalt `#004ac6` cho CTA, token app (`appTheme`) dùng Forest `#122e20`. Hiện mỗi bên giữ màu của mình; nếu muốn một màu chung thì sửa ở Stitch rồi sync lại.
+- [x] **12 trang "companion"** (`/editor/step-1..4`, `/checkout/step-2`, `/auth/2fa`, `/dashboard/orders`, `/dashboard/profile`, `/admin/appraisal`, `/admin/gpu-cluster`, `/admin/ledger`, `/admin/system-config`) vẫn là JSX viết tay theo prompt, không phải bản Stitch. **Bỏ do đổi thiết kế:** 8 màn nay là `manual` (viết tay có chủ đích), `/editor/step-1..4` là `approximation` và chuyển hướng sang `/editor/demo`. Không còn cần export HTML Stitch cho các màn này.
+- [x] Trang chủ `/` dùng ảnh nền hero `lh3.googleusercontent.com/...AEtjO1X2Cm…` nay trả HTTP 400 (ảnh hỏng). **Bỏ do đổi thiết kế:** trang chủ là `manual`, không dùng ảnh đó. URL `lh3` chỉ còn ở `fe/src/views/editor/step-1/index.tsx`, route này chuyển hướng nên không ai mở được.
+- [x] 8 ảnh khác trong source Stitch trả 403 (cũng hỏng trên Stitch). **Bỏ do đổi thiết kế:** các màn chứa ảnh đó đã chuyển sang `manual` hoặc đã thay ảnh (F7, F8, F13 ở [11](11_UI_VIEWPORT_AUDIT.md) §3). Chưa kiểm lại ảnh trong HTML nguồn của 3 màn `converted`.
+- [x] Xoá 22 script debug cũ trong `fe/scripts/*.js`. Có mã trên `develop`: `fe/scripts/` không còn file `.js` nào ở thư mục gốc.
+- [x] Chốt màu brand: Stitch dùng Cobalt `#004ac6` cho CTA, token app (`appTheme`) dùng Forest `#122e20`. **Bỏ do đổi thiết kế:** các màn viết tay dùng token của design system; `fe/src` không còn `#004ac6`.
 
 ### Kỹ thuật, có thể làm tiếp
-- [ ] Giảm font Material Symbols (4 MB, đủ mọi trục) bằng `icon_names=` chỉ gồm icon đang dùng.
-- [ ] Gộp font: Stitch dùng tên family Google, phần app cũ dùng `next/font` (hash). Cùng họ font đang tải hai lần.
+- [ ] Giảm font Material Symbols (4 MB, đủ mọi trục) bằng `icon_names=` chỉ gồm icon đang dùng. Còn mở: file 4 MB vẫn ở `fe/public/stitch/fonts/`, `fonts.css` vẫn khai báo, 7 file trong `fe/src` còn dùng class `material-symbols-outlined`.
+- [ ] Gộp font: Stitch dùng tên family Google, phần app cũ dùng `next/font` (hash). Cùng họ font đang tải hai lần. Chưa kiểm lại ngày 2026-11-19.
 - [x] `/unbox/[slug]`: hiện dữ liệu thật của API (tên người nhận, lời chúc, hiệu ứng); backend tắt thì hiện lỗi (S5, kiểm lại ở S8).
-- [ ] Thêm `loading.tsx` cho các nhóm route (`app/error.tsx`, `ErrorState`, `PageLoader` đã có từ S3); thêm ESLint config (`next lint` hiện chưa cấu hình); thêm job `fe` vào CI chạy `tsc`, `next build`, `stitch:parity`.
-- [ ] Đồng bộ `docs/09` với code thực tế (route group `(auth)`, `dashboard/layout.tsx`, `hooks/`, `stores/` đang chỉ có trên tài liệu).
-- [ ] Nếu muốn layout chung (sidebar admin, navbar dashboard): thống nhất biến thể trên Stitch trước, rồi tách thành `layout.tsx`; làm trước sẽ phá parity từng màn.
-- [ ] Viết lại dần behavior generated sang React/Anime.js (theo AGENTS.md) khi một màn hình cần logic thật; khi đó chuyển screen sang `status: "manual"` để generator không ghi đè.
+- [ ] Thêm `loading.tsx` cho các nhóm route (`app/error.tsx`, `ErrorState`, `PageLoader` đã có từ S3); thêm ESLint config (`next lint` hiện chưa cấu hình); thêm job `fe` vào CI chạy `tsc`, `next build`, `stitch:parity`. Còn mở: chỉ có `loading.tsx` cho `/editor/[id]` và `/templates`; chưa có ESLint config cho FE, script `lint` vẫn là `next lint`; CI chỉ chạy `tokens:check` cho FE. Phần ESLint và CI theo dõi ở [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1.
+- [ ] Đồng bộ `docs/09` với code thực tế (route group `(auth)`, `dashboard/layout.tsx`, `hooks/`, `stores/` đang chỉ có trên tài liệu). Chuyển cho [09](09_PROJECT_DIRECTORY_AND_FILE_ARCHITECTURE.md), file đó đang được đồng bộ trong cùng đợt.
+- [x] Nếu muốn layout chung (sidebar admin, navbar dashboard): thống nhất biến thể trên Stitch trước, rồi tách thành `layout.tsx`. Có mã trên `develop`: `app/(workspace)/layout.tsx` (`WorkspaceShell`, commit `c7d5d4f`) và `app/admin/layout.tsx` (`AdminShell`, commit `50152c0`) giữ header và sidebar khi chuyển trang.
+- [x] Viết lại dần behavior generated sang React/Anime.js (theo AGENTS.md) khi một màn hình cần logic thật; khi đó chuyển screen sang `status: "manual"`. Có mã trên `develop`: chỉ còn behavior của 3 màn `converted`.
 
 ## 6. Lệnh
 
 ```bash
 npm run stitch:sync -w fe        # sinh lại trang, CSS, behavior từ fe/stitch (giữ file đã sửa tay; -- --force để ghi đè)
-npm run stitch:parity -w fe      # so ảnh với Stitch (cần dev server ở :3000)
+npm run stitch:parity -w fe      # so ảnh với Stitch (cần dev server ở :3000); nay chỉ còn 2 màn /intro/* được đo
 npm run build -w fe              # build production
 ```

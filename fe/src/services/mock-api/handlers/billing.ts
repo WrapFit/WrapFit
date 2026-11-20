@@ -1,5 +1,5 @@
 /**
- * Plan, xu wallet, payments and export access of the offline demo (export packs are no longer sold, docs/25 item 7). Payments are VietQR on a sample
+ * Plan, xu wallet, payments and export access of the offline demo (export packs are no longer sold, docs-old/25 item 7). Payments are VietQR on a sample
  * account and are confirmed by the "Giả lập đã thanh toán" button (PAYMENT_SIMULATION), which grants what was bought.
  */
 
@@ -396,7 +396,7 @@ const grantCredits: Handler = ({ params, body }) => {
   if (!user) throw notFound("Không tìm thấy tài khoản.");
   const quantity = Number(body.quantity);
   if (!Number.isInteger(quantity) || quantity === 0) throw badRequest("Số lượng phải là số nguyên khác 0.");
-  // Only xu: export credits are no longer granted (docs/25 item 7).
+  // Only xu: export credits are no longer granted (docs-old/25 item 7).
   if (body.kind !== undefined && body.kind !== "XU") throw badRequest("Lượt xuất đã ngừng: chỉ cấp được xu Wrap");
   const kind = "XU";
   const days = Number(body.expiresInDays);

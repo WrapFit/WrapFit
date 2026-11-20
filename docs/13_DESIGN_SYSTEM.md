@@ -1,11 +1,11 @@
-# 15 — Design System WrapFit
+# 13 — Design System WrapFit
 
-> Cập nhật: 2026-10-15 · Token v1.1.0 · Catalog sống: [`/design-system`](../fe/src/views/design-system/index.tsx)
+> Cập nhật: 2026-11-19 · Token v1.2.0 · Catalog sống: [`/design-system`](../fe/src/views/design-system/index.tsx)
 > Nguồn token duy nhất: [`fe/src/assets/styles/tokens.ts`](../fe/src/assets/styles/tokens.ts) · Thành phần: [`fe/src/components/ui/`](../fe/src/components/ui) · Bản xuất cho công cụ thiết kế: [`fe/design-tokens.json`](../fe/design-tokens.json)
 
 ## 1. Định hướng
 
-- **Trang giới thiệu** (trang chủ, giới thiệu, bảng giá, liên hệ, chờ ra mắt, blog, pháp lý…): bố cục **pack.ly** (mực slate `fg`, nền `canvas`, thẻ trắng bo 32 px, tiêu đề đậm Be Vietnam Pro) với **màu chủ đạo cam FPT** #F26522, phối **xanh dương FPT** #005CA9 và **xanh lá FPT** #6DB33F: nút chính cam, tiêu đề hero chuyển màu xanh dương → cam → xanh lá, chip đang chọn nền cam nhạt.
+- **Trang giới thiệu** (trang chủ, giới thiệu, tính năng, bảng giá, đánh giá, liên hệ, hỗ trợ, pháp lý…; trang chờ ra mắt và blog đã xoá ở v1.2.0): bố cục **pack.ly** (mực slate `fg`, nền `canvas`, thẻ trắng bo 32 px, tiêu đề đậm Be Vietnam Pro) với **màu chủ đạo cam FPT** #F26522, phối **xanh dương FPT** #005CA9 và **xanh lá FPT** #6DB33F: nút chính cam, tiêu đề hero chuyển màu xanh dương → cam → xanh lá, chip đang chọn nền cam nhạt.
 - **Thư viện mẫu, workspace, admin, studio** theo **Pacdora**: ô xám, viền đen mảnh, bóng lệch `shadow-hard-sm` khi hover, nút chính cam như mọi trang.
 - **Mục tiêu tiếp cận: WCAG 2.2 AA**. Ngoại lệ có chủ đích: nút cam chữ trắng (3.2:1) — xem §2.1.
 
@@ -25,7 +25,7 @@
 - **`npm run tokens:check`** (trong `fe/`, chạy trong CI): không cho hex, `rounded-[…]`, `text-[Npx]` trong className, và kiểm tra `design-tokens.json` khớp code. Ngoại lệ phải ghi lý do:
   - cả file: comment `/* ds-artwork: <lý do> */` ở đầu file (minh hoạ, logo, sticker);
   - một dòng: `ds-allow: <lý do>` trên dòng đó hoặc dòng ngay trên.
-  Hiện tại: 0 vi phạm; 59 giá trị được phép, nằm trong 5 file artwork và 3 dòng `ds-allow`.
+  Đo ngày 2026-11-19: 0 vi phạm; 57 giá trị được phép (44 mã hex, 4 bo góc, 9 cỡ chữ), nằm trong 18 file `ds-artwork` và 3 dòng `ds-allow`.
 - File Stitch tự sinh (`AUTO-GENERATED`), `features/stitch/` và các route đã chuyển hướng (`/editor`, `/editor/step-*`) không sửa tay, không kiểm.
 - **Đồng bộ công cụ thiết kế**: `fe/design-tokens.json` theo chuẩn W3C Design Tokens (DTCG). Màu ngữ nghĩa là alias tới dải (`{color.palette.neutral.800}`), hai bộ `light` / `dark` tương ứng hai mode của Figma variables; Tokens Studio nhập trực tiếp. Chiều đồng bộ: code → thiết kế.
 
@@ -52,7 +52,7 @@ Bảng dưới là giá trị sáng / tối; tỉ lệ đo trên `surface-raised
 
 **Nút cam chữ trắng (ngoại lệ)**: 3.2:1 chỉ đạt chuẩn cho chữ lớn (≥ 18.7 px đậm). Nút `brand` giữ chữ semibold và cao ≥ 40 px. Nếu cần đạt AA hoàn toàn: dùng nền `fpt-orange-ink` (#B93F0A, 5.6:1) hoặc chữ `fg` trên nền cam (4.7:1).
 
-**Trạng thái tương tác**: default → hover (`action-hover`, `fpt-orange-dark`, `surface-sunken`) → pressed (`action-pressed`, `fpt-orange-ink`) → focus (vòng `focus` 3 px) → disabled (50 % opacity) → selected (`accent`, `bg-fg` + `fg-inverse`, chip cam nhạt).
+**Trạng thái tương tác**: default → hover (`action-hover`, `fpt-orange-dark`, `surface-sunken`) → pressed (`action-pressed`, `fpt-orange-ink`) → focus (component trong `components/ui` vẽ vòng `focus` 3 px, độ mờ 40 %; phần tử khác dùng viền `focus` 2 px chung trong `globals.css`) → disabled (50 % opacity) → selected (`accent`, `bg-fg` + `fg-inverse`, chip cam nhạt).
 
 **Chế độ tối**: mọi token ngữ nghĩa có giá trị tối, bật bằng `data-theme="dark"` trên bất kỳ phần tử nào (`data-theme="light"` giữ vùng con sáng, ví dụ canvas in). Component trong `components/ui` chỉ dùng token ngữ nghĩa nên tự đổi theme; xem công tắc “Xem ở chế độ tối” trên `/design-system` (axe không lỗi ở theme tối, trừ nút cam). Chưa bật cho toàn site: các trang còn dùng primitive `landing-*` / `library-*` (cố định màu sáng); muốn bật phải chuyển trang sang token ngữ nghĩa trước.
 
@@ -108,14 +108,17 @@ Import từ `@/components/ui`. Mỗi thành phần có ví dụ chạy được 
 | Skeleton, FadeIn, Spinner, LoadingState | `feedback.tsx` | loading sau 300 ms; mascot khi chờ lâu |
 | Avatar, Icon | `avatar.tsx`, `icon.tsx` | chữ cái đầu, chấm trạng thái (`role="img"`); lucide nhận tên Material cũ |
 | Toast, Carousel | `common/Toast`, `landing/Carousel.tsx` | 4 loại, dừng khi hover/focus; nút, vuốt, “mục x / n” |
+| SelectMenu | `select-menu.tsx` | danh sách chọn tự vẽ, dùng chung kiểu với `field-styles.ts` |
+| ProductTour, TourReplayButton | `tour.tsx` | hướng dẫn từng bước trên trang, nhớ đã xem, nút xem lại |
+| VirtualList | `virtual-list.tsx` | chỉ dựng các hàng gần màn hình; danh sách ngắn hiển thị bình thường; `aria-setsize` / `aria-posinset` |
 
 ## 4. Tiếp cận
 
 ### 4.1 Kiểm tra tự động — `npm --workspace=fe run a11y`
 
-Chrome headless + axe-core (luật WCAG 2.0/2.1/2.2 A và AA) trên 14 trang khách, `/design-system` ở cả hai theme, và 7 trang đăng nhập (admin seed của `be/.env`); đo thêm tràn ngang ở 640 px (zoom 200 %) và 320 px (zoom 400 %, 1.4.10). Chuyển động được giảm khi chạy. Logo (`data-logo`) được miễn luật tương phản (ngoại lệ của 1.4.3).
+Chrome headless + axe-core (luật WCAG 2.0/2.1/2.2 A và AA) trên 11 trang khách, `/design-system` ở cả hai theme, và 7 trang đăng nhập (admin seed của `be/.env`); đo thêm tràn ngang ở 640 px (zoom 200 %) và 320 px (zoom 400 %, 1.4.10). Chuyển động được giảm khi chạy. Logo (`data-logo`) được miễn luật tương phản (ngoại lệ của 1.4.3).
 
-Kết quả ngày 2026-10-15:
+Kết quả ngày 2026-10-15 (chưa chạy lại sau v1.2.0):
 - Không trang nào tràn ngang ở 640 px và 320 px.
 - Trước khi đổi lại màu cam: 20/21 trang không lỗi axe.
 - Sau khi đổi lại màu cam: mọi lỗi còn lại chỉ là `color-contrast` của nút/nhãn cam chữ trắng (3.15:1), có trên các trang giới thiệu và trên nút “Bắt đầu” của header dùng chung.
@@ -123,7 +126,7 @@ Kết quả ngày 2026-10-15:
 
 ### 4.2 Trình đọc màn hình (thủ công)
 
-Chưa có người chạy VoiceOver/NVDA. Năm luồng cần thử, ghi kết quả vào docs/13:
+Chưa có người chạy VoiceOver/NVDA. Năm luồng cần thử, ghi kết quả vào docs/11:
 1. Trang chủ → Thư viện mẫu → mở một mẫu.
 2. Đăng ký → xác minh email → đăng nhập.
 3. Dashboard → tạo dự án → đổi tên, chuyển thư mục.

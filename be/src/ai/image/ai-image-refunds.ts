@@ -4,7 +4,7 @@ import { PrismaService } from '../../shared/prisma';
 import { UNFINISHED_AI_IMAGE } from './ai-image.constants';
 
 /**
- * Fails an AI image job and gives its xu back (docs/19 D3), from the API (queue down), the worker (last attempt,
+ * Fails an AI image job and gives its xu back (docs/16 D3), from the API (queue down), the worker (last attempt,
  * refusal by the provider) and AiImageReconcileTask (worker lost). Both happen in one transaction, so a job is FAILED
  * exactly when its xu came back, and only once: a finished job is left alone.
  */

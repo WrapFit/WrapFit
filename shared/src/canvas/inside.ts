@@ -1,5 +1,5 @@
 /**
- * The inside of the sheet (docs/23 S5, D7). Seen from the inside, the flat dieline is the outside one mirrored left to
+ * The inside of the sheet (docs-old/23 S5, D7). Seen from the inside, the flat dieline is the outside one mirrored left to
  * right: elements with `side: "inside"` are placed on that mirrored dieline, in the coordinates of their (mirrored)
  * face, exactly as the user sees them in the editor. The print shop prints the inside as its own page with the same
  * mirrored dieline, so the back of the sheet registers with the cut of the front.

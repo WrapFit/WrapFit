@@ -1,5 +1,5 @@
 /**
- * Active time in the studio (docs/17, decision M8): the "box creation time" of the dashboard counts only the time a
+ * Active time in the studio (docs-old/17, decision M8): the "box creation time" of the dashboard counts only the time a
  * user is working on the design, not the days a project waits in between.
  *
  * The studio sends a heartbeat every minute with the seconds of activity since the previous one. Time between two

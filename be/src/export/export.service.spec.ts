@@ -9,7 +9,7 @@ import { ExportService } from './export.service';
 /**
  * Export gating: an in-memory store stands in for PostgreSQL, so each case reads like the story it tells (no paid
  * order, paid order, edit, old unlock). Row locks and concurrency are covered by the e2e test. The service has no
- * credit ledger and no plan to read (docs/25 item 7): export credits and Pro never unlock an export, and any read of
+ * credit ledger and no plan to read (docs-old/25 item 7): export credits and Pro never unlock an export, and any read of
  * `credit_lots` fails the test.
  */
 describe('ExportService.request gating', () => {
@@ -146,7 +146,7 @@ describe('ExportService.request gating', () => {
     expect((tx.$queryRaw as jest.Mock).mock.calls[0][0].join('?')).toContain('FOR UPDATE');
   });
 
-  it('reads the project once, locked, and checks, unlocks and freezes that same version in the job (docs/30 item 1)', async () => {
+  it('reads the project once, locked, and checks, unlocks and freezes that same version in the job (docs-old/30 item 1)', async () => {
     version = 7;
     payOrder(7);
     await service.request('p-1', 'SVG');
@@ -194,7 +194,7 @@ describe('ExportService.request gating', () => {
     expect(jobs[0].watermarked).toBeUndefined();
   });
 
-  describe('queueing (docs/30 item 6, review round 2)', () => {
+  describe('queueing (docs-old/30 item 6, review round 2)', () => {
     const exportJob = () => tx.exportJob as { updateMany: jest.Mock };
     beforeEach(() => {
       payOrder(1);

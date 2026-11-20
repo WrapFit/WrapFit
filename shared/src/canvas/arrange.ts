@@ -1,5 +1,5 @@
 /**
- * Arranging several layers (docs/23 S8, S12): align, distribute, group, resize and turn with handles, snap to guides.
+ * Arranging several layers (docs-old/23 S8, S12): align, distribute, group, resize and turn with handles, snap to guides.
  * Pure functions on panel coordinates (mm), shared by the canvas, the toolbar and the keyboard shortcuts.
  */
 import { envelopeOf } from "../fitcheck/validator";

@@ -1,5 +1,5 @@
 /**
- * Smart resize (docs/23 S20): when the box changes size, every element keeps its place on its face by its anchor —
+ * Smart resize (docs-old/23 S20): when the box changes size, every element keeps its place on its face by its anchor —
  * a title in the middle of the front stays in the middle, a logo in the top-left corner stays in that corner. An
  * element without an anchor gets the one its position suggests (thirds of the face). Backgrounds are refitted to
  * their faces elsewhere (refitBackgrounds); elements that no longer fit are shrunk back inside the safe area.
@@ -89,7 +89,7 @@ export function withAnchors(pieces: DielinePiece[], elements: CanvasElement[]): 
 }
 
 /**
- * Texts turned to read upright on the folded box (docs/23 S21) where a face reads upside down in the editor (the lid
+ * Texts turned to read upright on the folded box (docs-old/23 S21) where a face reads upside down in the editor (the lid
  * of a tuck-top box, the back wall of a mailer): turned 180° about their centre, so their place does not change.
  */
 export function turnTextsUpright(pieces: DielinePiece[], elements: CanvasElement[]): CanvasElement[] {

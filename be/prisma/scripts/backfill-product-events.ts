@@ -1,4 +1,4 @@
-// Gives the analytics dashboard (docs/17 S7) the projects and print exports made before product events existed:
+// Gives the analytics dashboard (docs-old/17 S7) the projects and print exports made before product events existed:
 // one PROJECT_CREATED per project and one EXPORT_COMPLETED per completed export job, dated like the original rows.
 //
 //   npm --workspace=be run db:backfill-events -- [--dry-run]
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
                jsonb_build_object('templateId', p.template_id, 'source', 'backfill'), p.created_at
         FROM packaging_projects p
         WHERE NOT EXISTS (SELECT 1 FROM product_events e WHERE e.type = 'PROJECT_CREATED' AND e.project_id = p.id)`,
-      // An export job has no watermark flag: every export before billing (docs/17 S2) was a clean file.
+      // An export job has no watermark flag: every export before billing (docs-old/17 S2) was a clean file.
       prisma.$executeRaw`
         INSERT INTO product_events (id, user_id, project_id, type, payload, created_at)
         SELECT gen_random_uuid(), p.user_id, j.project_id, 'EXPORT_COMPLETED',

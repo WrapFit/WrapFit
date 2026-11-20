@@ -10,7 +10,7 @@ export function useStorageUsage() {
   return useQuery({ queryKey: queryKeys.storageUsage, queryFn: getStorageUsage });
 }
 
-/** Price of AI patterns in xu and my xu wallet (docs/19). */
+/** Price of AI patterns in xu and my xu wallet (docs/16). */
 export function useAiUsage() {
   return useQuery({ queryKey: queryKeys.aiUsage, queryFn: getAiUsage });
 }

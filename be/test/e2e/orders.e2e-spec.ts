@@ -10,7 +10,7 @@ import { createPaidOrder } from './helpers/orders';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * Sample print orders stored in PostgreSQL (docs/17, S4): they survive an API restart, only their owner reads them,
+ * Sample print orders stored in PostgreSQL (docs-old/17, S4): they survive an API restart, only their owner reads them,
  * and the status follows the lifecycle (ADMIN, or PRINT_SHOP of the order's shop). Users use the `@e2e.test` domain
  * and are removed afterwards, with their orders.
  */

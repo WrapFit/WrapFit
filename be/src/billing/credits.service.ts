@@ -16,8 +16,8 @@ export interface CreditLotView {
 }
 
 /**
- * Which ledger: export credits (the default; no longer sold or spent, docs/25 item 7, read only by the one-time
- * conversion and PlanService) or xu (docs/19). `now` decides which lots have expired.
+ * Which ledger: export credits (the default; no longer sold or spent, docs-old/25 item 7, read only by the one-time
+ * conversion and PlanService) or xu (docs/16). `now` decides which lots have expired.
  */
 export interface LedgerScope {
   kind?: CreditKind;
@@ -54,7 +54,7 @@ const unexpired = (now: Date): Prisma.CreditLotWhereInput => ({ OR: [{ expiresAt
 const LOT_VIEW = { id: true, source: true, quantity: true, remaining: true, expiresAt: true, createdAt: true } as const;
 
 /**
- * Credit ledgers (docs/16 §1.5, docs/17 M3, docs/19): lots with an expiry, spent by debit rows, one ledger per kind
+ * Credit ledgers (docs/14 §1.5, docs-old/17 M3, docs/16): lots with an expiry, spent by debit rows, one ledger per kind
  * (export credits, xu) that never mix. There is no balance column anywhere: the balance is the sum of `remaining` over
  * the lots not expired, and `remaining` only changes here, inside a transaction that holds the lot rows locked, so two
  * concurrent debits never spend the same credit.

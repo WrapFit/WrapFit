@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Test data for the viewport audit (docs/12 Phase 7): rebuilt the same way every run, removed with --clean.
+ * Test data for the viewport audit (docs-old/12 Phase 7): rebuilt the same way every run, removed with --clean.
  *
  * Usage (backend, worker and Mailpit running; frontend dev server for the /api proxy):
  *   node fe/scripts/ui-fixtures.mjs           # clean, then create
