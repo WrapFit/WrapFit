@@ -13,7 +13,9 @@
  *
  * Needs the frontend, the backend, the worker (mail, exports), Mailpit (http://localhost:8025) and in be/.env:
  *   - PAYMENT_SIMULATION=true on the backend (the checkout's "Giả lập đã thanh toán"). The VNPay sandbox keys are not
- *     needed: step 16 sets the demo flag, and a demo account may always simulate, with or without VIETQR_* configured;
+ *     needed: step 16 sets the demo flag on the account the run made, and a demo account may always simulate, with or
+ *     without VIETQR_* configured. With --user, step 16 changes nothing and stops unless that account is already a demo
+ *     account (users.is_demo);
  *   - SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (steps 13 and 16, and removing the accounts at the end);
  *   - SEED_DEMO_PASSWORD with the seeded demo account (step 8, a second maker).
  *   node fe/scripts/e2e-scenario.mjs                         steps 1–14 and 16–18 at M and X+
@@ -1012,8 +1014,17 @@ function scenario(size, browser, report) {
       await adminApi.signIn(admin.email, admin.password);
       const account = await findAccount(adminApi, user.email);
       if (!account) throw new Error(`the admin cannot find ${user.email}`);
-      await adminApi.request(`/users/${account.id}`, { method: 'PATCH', json: { isDemo: true } });
-      log.notes.push('isDemo set');
+      if (option('user')) {
+        // An account passed with --user is never changed: turning a normal account into a demo one would move its
+        // later payments from VietQR to the VNPay sandbox, and the cleanup does not remove it.
+        if (!account.isDemo) {
+          throw new Error(`${user.email} is not a demo account: step 16 needs one with --user (nothing was changed or ordered)`);
+        }
+        log.notes.push('isDemo already set (--user)');
+      } else {
+        await adminApi.request(`/users/${account.id}`, { method: 'PATCH', json: { isDemo: true } });
+        log.notes.push('isDemo set');
+      }
       await openStudio(page, api);
       const { title, version } = await projectOf(api, state.projectId);
       const before = await api.request(`/projects/${state.projectId}/exports/access`);
