@@ -32,7 +32,13 @@ interface InteractiveFoldingBox3DProps {
   /** Dieline formulas of the project (default: the current ones). */
   formulaVersion?: number;
   backgroundPatternSvg?: string | null;
-  onFlapClick?: (flapName: string) => void;
+  /**
+   * A click (no drag) on a face of the box: the panel, the side of the sheet hit and the pointer, for a menu at that
+   * spot. With a handler the page decides what the click does; without one a click opens or closes the lid.
+   */
+  onFaceClick?: (hit: FaceHit) => void;
+  /** Panel lit on the model while the pointer is not over another face (the face a menu is about). */
+  highlightPanelId?: string | null;
   className?: string;
   autoRotate?: boolean;
   /** Backdrop behind the box; "transparent" shows the page behind the canvas. */
@@ -247,6 +253,14 @@ const approach = (value: number, target: number, rate: number, dt: number) => {
 
 export type CaptureFn = (size?: { width: number; height: number }) => HTMLCanvasElement;
 
+/** Face of the box under a click: panel id as in the dieline, side of the sheet, pointer in viewport pixels. */
+export interface FaceHit {
+  panelId: string;
+  side: "outside" | "inside";
+  clientX: number;
+  clientY: number;
+}
+
 interface StageApi {
   setSceneSet(id: SceneId | null, props: boolean): void;
   setStudioPalette(paletteId: StudioPaletteId): void;
@@ -261,6 +275,8 @@ interface StageApi {
   setAutoRotate(on: boolean): void;
   setRotation(x?: number, y?: number): void;
   goTo(view: ViewName): void;
+  /** Panel lit when the pointer is not over a face (null: none). */
+  setPinnedHighlight(panelId: string | null): void;
   invalidate(): void;
 }
 
@@ -273,7 +289,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   elements,
   formulaVersion,
   backgroundPatternSvg = null,
-  onFlapClick,
+  onFaceClick,
+  highlightPanelId = null,
   className = "",
   autoRotate = false,
   environment = "studio",
@@ -331,8 +348,10 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   /** Preset the camera sits on; null once the user turned the box by hand. */
   const [view, setView] = useState<ViewName | null>("angle");
   const [spinning, setSpinning] = useState(autoRotate);
-  const onFlapClickRef = useRef(onFlapClick);
-  onFlapClickRef.current = onFlapClick;
+  const onFaceClickRef = useRef(onFaceClick);
+  onFaceClickRef.current = onFaceClick;
+  const highlightRef = useRef(highlightPanelId);
+  highlightRef.current = highlightPanelId;
   const structureRef = useRef(boxType);
   structureRef.current = boxType;
   const showDock = viewControls ?? !autoRotate;
@@ -566,6 +585,9 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; distanceFactor: number; t: number; duration: number } | null = null;
     let visible = true;
     let hoverPoint: THREE.Vector2 | null = null;
+    /** Panel lit while no face is under the pointer (`highlightPanelId`); the hovered face lit last. */
+    let pinned: string | null = highlightRef.current;
+    let hovered: string | null = null;
     let dragging = false;
     /** The clip recorder has the stage (docs-old/23 S19): the loop leaves the camera and the fold alone. */
     let filming = false;
@@ -670,10 +692,18 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       const rect = renderer.domElement.getBoundingClientRect();
       return new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     };
-    const pick = (ndc: THREE.Vector2) => {
+    /**
+     * Face under the pointer: the panel (its cut rim counts as the panel) and the side of the sheet. The printed side
+     * and the inside are two meshes of one panel; the inside one draws its back faces only.
+     */
+    const pick = (ndc: THREE.Vector2): { panelId: string; side: FaceHit["side"] } | null => {
       if (!model) return null;
       raycaster.setFromCamera(ndc, camera);
-      return raycaster.intersectObjects(model.group.children, true).find((hit) => hit.object.name)?.object.name ?? null;
+      const hit = raycaster.intersectObjects(model.group.children, true).find((h) => h.object.name);
+      if (!hit) return null;
+      const material = (hit.object as THREE.Mesh).material;
+      const back = !Array.isArray(material) && material?.side === THREE.BackSide;
+      return { panelId: hit.object.name.replace(/_rim$/, ""), side: back ? "inside" : "outside" };
     };
     const onPointerDown = (event: PointerEvent) => {
       downAt = { x: event.clientX, y: event.clientY };
@@ -683,10 +713,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       const moved = Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y);
       downAt = null;
       if (moved > 5) return;
-      const name = pick(toNdc(event));
-      if (!name) return;
-      if (structureRef.current !== "pillow") setOpen((value) => !value);
-      onFlapClickRef.current?.(name);
+      const face = pick(toNdc(event));
+      if (!face) return;
+      const onFace = onFaceClickRef.current;
+      if (onFace) onFace({ ...face, clientX: event.clientX, clientY: event.clientY });
+      else if (structureRef.current !== "pillow") setOpen((value) => !value);
     };
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType !== "mouse") return;
@@ -695,7 +726,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     };
     const onPointerLeave = () => {
       hoverPoint = null;
-      model?.highlight(null);
+      hovered = null;
+      model?.highlight(pinned);
       renderer.domElement.style.cursor = "";
       dirty = true;
     };
@@ -797,9 +829,9 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       if (controls.update()) dirty = true;
 
       if (hoverPoint && !dragging && structureRef.current !== "pillow") {
-        const name = pick(hoverPoint);
-        model.highlight(name);
-        el.style.cursor = name ? "pointer" : "";
+        hovered = pick(hoverPoint)?.panelId ?? null;
+        model.highlight(hovered ?? pinned);
+        el.style.cursor = hovered ? "pointer" : "";
         hoverPoint = null;
       }
 
@@ -859,6 +891,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         model = next;
         root.add(next.group);
         next.update(progress, openness);
+        next.highlight(hovered ?? pinned);
         builtDims = dims;
         // Which way the model lies: the horizontal extent closest to the length carries it.
         const extent = new THREE.Box3().setFromObject(next.group).getSize(new THREE.Vector3());
@@ -917,6 +950,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       },
       goTo(name) {
         startTween(VIEWS[name].dir, VIEWS[name].distance, 0.8);
+      },
+      setPinnedHighlight(panelId) {
+        pinned = panelId;
+        if (!hovered) model?.highlight(pinned);
+        dirty = true;
       },
       invalidate() {
         dirty = true;
@@ -1041,6 +1079,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       if (container.contains(el)) container.removeChild(el);
     };
   }, []);
+
+  useEffect(() => stageRef.current?.setPinnedHighlight(highlightPanelId), [highlightPanelId]);
 
   // Fold targets first: the first box is built already in the state the page asks for.
   useEffect(() => {

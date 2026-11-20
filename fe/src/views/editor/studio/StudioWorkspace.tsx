@@ -25,6 +25,7 @@ import {
   X,
   Box,
   Gift,
+  PenTool,
   LayoutPanelTop,
   PackageOpen,
   ZoomIn,
@@ -37,7 +38,7 @@ import {
   Redo2,
   AlertTriangle,
 } from "lucide-react";
-import { Button, buttonClass, ProductTour, startTour, useTourContinuation } from "@/components/ui";
+import { Button, buttonClass, ContextMenu, ProductTour, startTour, useTourContinuation, type MenuEntry } from "@/components/ui";
 import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID } from "@/features/studio/studioTour";
 import { workspacePanes, workspaceStage, WorkspaceInspector, ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
@@ -99,7 +100,7 @@ import { SelectionToolbar } from "@/features/studio/components/inspector/Selecti
 import { usePresentMode } from "@/features/demo/presentMode";
 import { AiCopilotAssistant } from "@/features/studio/components/copilot/AiCopilotAssistant";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
-import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
+import { BoxMaterialTheme, BoxStructureType, type FaceHit } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
 import { FitCheckDrawer } from "@/features/studio/components/fitcheck/FitCheckDrawer";
 import { DESIGN_RAIL, DesignRail, type DesignRailId } from "@/features/studio/components/DesignRail";
@@ -1105,6 +1106,52 @@ export function StudioWorkspace({
     [openTextComposer, uploading]
   );
 
+  // A click on a face of the 3D box opens a menu at the pointer (docs/21 S1): design that face on the dieline, upload
+  // an image onto it, open or close the lid, change the size. The face stays lit on the box while the menu is open.
+  const [faceMenu, setFaceMenu] = useState<FaceHit | null>(null);
+  const faceOf = useCallback(
+    (panelId: string) => {
+      for (const piece of pieces) {
+        const panel = piece.geometry.panels.find((p) => p.id === panelId);
+        if (panel) return pieces.length > 1 ? `${piece.name} · ${panelLabel(panel.name)}` : panelLabel(panel.name);
+      }
+      return null;
+    },
+    [pieces]
+  );
+  const openFaceMenu = useCallback((hit: FaceHit) => setFaceMenu(faceOf(hit.panelId) ? hit : null), [faceOf]);
+  useEffect(() => setFaceMenu(null), [artView, currentStep, boxType]);
+  /** The face on the dieline, ready for artwork: the design tool, the right side of the sheet, the face selected. */
+  const designFace = (hit: FaceHit) => {
+    if (currentStep !== 4) navigateToStep(4);
+    setArtView("2d");
+    setEditSide(hit.side);
+    setSelectedElementId(null);
+    selectPanel(hit.panelId);
+  };
+  const faceMenuItems = (hit: FaceHit): MenuEntry[] => [
+    { type: "label", id: "face", label: `${faceOf(hit.panelId)} · ${hit.side === "inside" ? "mặt trong" : "mặt ngoài"}` },
+    { id: "design", label: "Thiết kế mặt này", icon: <PenTool aria-hidden />, onSelect: () => designFace(hit) },
+    {
+      id: "upload",
+      label: uploading ? "Đang tải ảnh…" : "Tải ảnh lên mặt này",
+      icon: <ImageUp aria-hidden />,
+      disabled: uploading,
+      onSelect: () => {
+        designFace(hit);
+        setRailPanel("uploads");
+        // Still inside the click: the browser only opens the file picker from a user gesture.
+        imageInputRef.current?.click();
+      },
+    },
+    { type: "separator", id: "sep" },
+    ...(boxType !== "pillow"
+      ? [{ id: "lid", label: lidOpen ? "Đóng nắp" : "Mở nắp", icon: <Gift aria-hidden />, onSelect: () => { setFoldProgress(1); setLidOpen((open) => !open); } }]
+      : []),
+    // Steps 1 and 2 already show the size fields beside the box.
+    ...(currentStep > 2 ? [{ id: "size", label: "Đổi kích thước", icon: <Ruler aria-hidden />, onSelect: () => navigateToStep(2) }] : []),
+  ];
+
   // Keyboard of step 4: tool letters, Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y, never while typing in a field.
   useEffect(() => {
     if (currentStep !== 4 || readOnly) return;
@@ -1812,6 +1859,8 @@ export function StudioWorkspace({
                       backgroundPatternSvg={backgroundPatternSvg}
                       environment="transparent"
                       interactiveOpenState={lidOpen}
+                      onFaceClick={readOnly ? undefined : openFaceMenu}
+                      highlightPanelId={faceMenu?.panelId ?? null}
                       chrome="bar"
                       showHud={false}
                       showStatusBar={false}
@@ -1819,7 +1868,16 @@ export function StudioWorkspace({
                       minHeight={false}
                       className="h-full w-full"
                     />
-
+                    {faceMenu && (
+                      <ContextMenu
+                        label="Thao tác với mặt hộp"
+                        items={faceMenuItems(faceMenu)}
+                        x={faceMenu.clientX}
+                        y={faceMenu.clientY}
+                        onClose={() => setFaceMenu(null)}
+                        widthClassName="w-64"
+                      />
+                    )}
                   </div>
                 )}
               </div>
