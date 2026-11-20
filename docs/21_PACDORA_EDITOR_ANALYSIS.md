@@ -164,10 +164,22 @@ Menu điều khiển được bằng bàn phím (mũi tên, Enter, Escape). Bấ
 
 Mã chính: prop `onFaceClick` và `highlightPanelId` của [InteractiveFoldingBox3D](../fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx), `ContextMenu` trong [dropdown-menu](../fe/src/components/ui/dropdown-menu.tsx) và `faceMenuItems` trong [StudioWorkspace](../fe/src/views/editor/studio/StudioWorkspace.tsx).
 
-Còn lại của S1:
+Mặt trong không được tô sáng. Mặt trong của mọi tấm dùng chung một vật liệu, trừ khi thiết kế có in mặt trong.
 
-- Chiều ngược lại, rê chuột trên khuôn 2D để tô sáng mặt trên hộp 3D, chỉ có tác dụng khi 2D và 3D cùng hiện. Prop `highlightPanelId` đã sẵn sàng. Phần nối dây chuyển sang S2 (thẻ 3D nhỏ).
-- Mặt trong không được tô sáng. Mặt trong của mọi tấm dùng chung một vật liệu, trừ khi thiết kế có in mặt trong.
+**S2 xong ngày 20/11/2026 (chưa commit).** Ở chế độ **Khuôn 2D**, góc phải trên của vùng thiết kế có thẻ **Xem trước 3D** rộng 240 px.
+
+- Hình in hiện trên hộp sau khi người dùng ngừng chỉnh 250 ms. Lúc đang kéo một lớp, hộp không dựng lại, vì mỗi lần dựng phải vẽ lại texture của mọi mặt.
+- Rê chuột lên một mặt trên khuôn 2D thì mặt đó sáng lên trên hộp. Phần tô sáng của S1 dùng lại đúng cơ chế này.
+- Bấm một mặt trên thẻ chọn ngay mặt đó và đúng phía giấy trên khuôn, không qua menu.
+- Thanh **Mở ↔ Gập** của thẻ dùng chung mức gập với chế độ **Hộp 3D**. Nút mở rộng chuyển sang **Hộp 3D**.
+- Nút thu gọn biến thẻ thành nút **Xem trước 3D** và trình duyệt nhớ lựa chọn này. Khi thu gọn, hộp 3D được gỡ hẳn để trả lại ngữ cảnh WebGL.
+- Thẻ chỉ hiện từ 768 px trở lên. Trên điện thoại, vùng thiết kế quá nhỏ để chia sẻ, nên thẻ không được dựng.
+
+Độ sáng khi tô một mặt tăng từ 0,14 lên 0,26 để nhìn rõ trên thẻ nhỏ và trên giấy ivory. Mặt đang thiết kế không được tô sáng thường trực, để màu hình in trên thẻ giữ đúng.
+
+Mã chính: [Preview3DCard](../fe/src/features/studio/components/three/Preview3DCard.tsx), prop `onHoverPanel` của [DielineCanvas2D](../fe/src/features/studio/components/canvas/DielineCanvas2D.tsx).
+
+Giới hạn của S2: thẻ nằm đè lên góc phải trên của khuôn. Người dùng có thể thu gọn thẻ hoặc kéo khuôn sang chỗ khác. Thẻ chưa tự né khuôn khi khuôn vừa khít khung.
 
 ## 7. Giới hạn của khảo sát
 
