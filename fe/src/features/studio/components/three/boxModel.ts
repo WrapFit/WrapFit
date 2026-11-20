@@ -35,6 +35,7 @@ import { elementImageKey, recoloredSrc } from "../../utils/svgRecolor";
 import { drawImageOnCanvas, drawTextOnCanvas } from "../canvas/elementVisuals";
 import { drawArt, elementArt } from "../library/elementArt";
 import { placedCarrierCups, STANDARD_350ML_Y_SEAT } from "./cupModel";
+import { CORE_TILE_MM, fillGrain, GRAIN_TILE_MM, paperCoreTexture, paperGrain, plainPaperTexture } from "./paperLook";
 
 /**
  * 3D model of a box built from its dieline (docs-old/12 Phase 8, H6): every printable panel is a sheet of paper folded on
@@ -236,10 +237,20 @@ interface FinishMaps {
 
 interface PanelTexture {
   texture: THREE.CanvasTexture;
+  /** Sheet size the texture covers (mm): the paper fibres repeat to match it. */
+  size: { width: number; height: number };
   /** Only for a panel with a finished element on this side. */
   finish: FinishMaps | null;
   redraw: () => void;
 }
+
+/** How much of the kraft grain shows through the print (multiplied over it): ink sinks into uncoated kraft. */
+const KRAFT_INK_GRAIN = 0.55;
+/**
+ * Width of one tile of the shared fibre bump and roughness maps on the sheet, mm. They used to repeat four times per
+ * face whatever its size, so a long face had stretched fibres and a small one tiny ones (docs/21 S5).
+ */
+const FIBER_TILE_MM = 30;
 
 /** Roughness of the unprinted inside of the paper (the `inside` material of the model). */
 const INSIDE_ROUGHNESS = 0.92;
@@ -310,6 +321,7 @@ function panelTexture(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   const paper = PAPER[options.theme];
+  const grain = paperGrain(options.theme, side);
   // One side of the sheet, visible layers only, in paint order (docs-old/23 D3).
   const elements = orderElements(options.elements).flatMap((el) => {
     if (el.hidden || sideOf(el) !== side) return [];
@@ -413,6 +425,8 @@ function panelTexture(
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.fillStyle = side === "inside" ? paper.inside : paper.outside;
     ctx.fillRect(0, 0, region.width, region.height);
+    // The paper's own grain (docs/21 S5), in sheet millimetres so every face shows it at the same size.
+    if (grain) fillGrain(ctx, grain, region);
     if (side === "inside") {
       // The back of the panel shows the texture mirrored: draw it mirrored so it reads right from inside the box.
       ctx.translate(region.width, 0);
@@ -448,6 +462,15 @@ function panelTexture(
       ctx.restore();
     }
     if (side === "outside" && options.decoration && MAIN_PANEL.includes(panel.id)) drawDecoration(ctx, panel, options.decoration, options.theme);
+    // Ink sinks into uncoated kraft: its fibres show through the print.
+    if (grain && options.theme === "kraft" && elements.length > 0) {
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = KRAFT_INK_GRAIN;
+      fillGrain(ctx, grain, region);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+    }
     texture.needsUpdate = true;
 
     if (finish) {
@@ -466,7 +489,7 @@ function panelTexture(
     }
   };
   redraw();
-  return { texture, finish, redraw };
+  return { texture, size: { width: region.width, height: region.height }, finish, redraw };
 }
 
 /**
@@ -657,7 +680,10 @@ function panelCutRimGeometry(
   if (segments.length === 0) return null;
 
   const vertices: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
+  // u runs along the edge (one core tile per CORE_TILE_MM), v across the thickness from the printed side (docs/21 S5).
+  let along = 0;
 
   segments.forEach((seg, idx) => {
     const [x1, y1] = seg.from;
@@ -670,6 +696,10 @@ function panelCutRimGeometry(
       x2, y2, 1,
       x1, y1, 1
     );
+    const u0 = along / CORE_TILE_MM;
+    along += Math.hypot(x2 - x1, y2 - y1);
+    const u1 = along / CORE_TILE_MM;
+    uvs.push(u0, 0, u1, 0, u1, 1, u0, 1);
     indices.push(
       base, base + 1, base + 2,
       base, base + 2, base + 3
@@ -678,6 +708,7 @@ function panelCutRimGeometry(
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
@@ -1045,14 +1076,26 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   disposables.push(inside, flapPaper, edges);
   const foil = options.theme === "gold_foil";
   const printedOf = new Map<string, THREE.MeshPhysicalMaterial[]>();
+  /**
+   * The shared fibre map repeated to the face's size, one tile per FIBER_TILE_MM. A clone shares the image, so the
+   * GPU holds it once; only the repeat differs.
+   */
+  const fibresFor = (map: THREE.Texture | null | undefined, panelId: string) => {
+    const size = textures.get(panelId)?.size;
+    if (!map || !size) return map ?? null;
+    const scaled = map.clone();
+    scaled.repeat.set(size.width / FIBER_TILE_MM, size.height / FIBER_TILE_MM);
+    disposables.push(scaled);
+    return scaled;
+  };
   const makePrinted: MakePrinted = (map, side, panelId) => {
     const material = new THREE.MeshPhysicalMaterial({
       ...finish,
       map,
       side,
-      bumpMap: options.surface?.bumpMap ?? null,
+      bumpMap: fibresFor(options.surface?.bumpMap, panelId),
       bumpScale: options.surface?.bumpScale ?? 0,
-      roughnessMap: foil ? null : (options.surface?.roughnessMap ?? null),
+      roughnessMap: foil ? null : fibresFor(options.surface?.roughnessMap, panelId),
       emissive: HOVER_GLOW,
       emissiveIntensity: 0,
       // The edge hairlines sit exactly on the panels: the faces step back a little so the lines win the depth test.
@@ -1149,6 +1192,25 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
         disposables.push(texture.texture, material);
       }
     }
+  } else {
+    // Nothing printed inside: the bare paper with its grain (docs/21 S5), e.g. the flecked grey back of duplex. One
+    // tile image for the whole box, repeated to each face's size.
+    const tile = plainPaperTexture(options.theme, "inside", paper.inside);
+    if (tile) {
+      disposables.push(tile);
+      for (const piece of pieces) {
+        for (const panel of piece.geometry.panels) {
+          const map = tile.clone();
+          map.repeat.set(panel.bounds.width / GRAIN_TILE_MM, panel.bounds.height / GRAIN_TILE_MM);
+          const material = inside.clone() as THREE.MeshStandardMaterial;
+          material.color = new THREE.Color("#FFFFFF");
+          material.emissiveIntensity = 0.15;
+          material.map = map;
+          insideMaterials.set(panel.id, material);
+          disposables.push(map, material);
+        }
+      }
+    }
   }
   const insideOf = (panelId: string) => insideMaterials.get(panelId) ?? inside;
   // Pieces that fold; the partitions of an insert have no hinges and are placed in the tray instead.
@@ -1166,14 +1228,17 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     group.add(carrierCups.group);
   }
 
+  // Cut edges show the paper's layers (docs/21 S5): the coated top of duplex over its grey back, a wrapped greyboard…
+  const coreMap = paperCoreTexture(options.theme);
   const paperCore = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(edgeColor || "#C8BCA8"),
+    color: coreMap ? new THREE.Color("#FFFFFF") : new THREE.Color(edgeColor || "#C8BCA8"),
+    map: coreMap,
     roughness: 0.92,
     metalness: 0,
     side: THREE.DoubleSide,
     polygonOffset: false,
   });
-  disposables.push(paperCore);
+  disposables.push(paperCore, ...(coreMap ? [coreMap] : []));
 
   const folded = foldable.map((piece) =>
     foldedPiece(
