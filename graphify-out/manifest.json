@@ -4086,9 +4086,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/boxModel.ts": {
-    "mtime": 1795190605.2642212,
-    "seen": 1795190917.6569493,
-    "ast_hash": "25e77d77efc5bd70d1b38b3232d9474f",
+    "mtime": 1795191945.494218,
+    "seen": 1795191997.5284526,
+    "ast_hash": "321728a5b869d1ad2455e1708e6047a8",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/guides.ts": {
@@ -14838,9 +14838,9 @@
     "semantic_hash": ""
   },
   "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
-    "mtime": 1795191287.805773,
-    "seen": 1795191319.5056403,
-    "ast_hash": "eb271bd11933d12cd2cff2a182e30d69",
+    "mtime": 1795191966.0638928,
+    "seen": 1795191997.5671737,
+    "ast_hash": "425520ef57a4c37cce9e43691d3dd38a",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/Preview3DCard.tsx": {
