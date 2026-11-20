@@ -13,6 +13,7 @@ import { accountRoutes, recordUpload } from "./handlers/account";
 import { billingRoutes } from "./handlers/billing";
 import { notificationRoutes } from "./handlers/notifications";
 import { orderRoutes } from "./handlers/orders";
+import { printShopRoutes } from "./handlers/printShops";
 import { platformRoutes } from "./handlers/platform";
 import { projectRoutes } from "./handlers/projects";
 import { reviewRoutes } from "./handlers/reviews";
@@ -27,7 +28,7 @@ interface Route {
 }
 
 // Order matters: fixed paths (`/users/me`) before parameters (`/users/:id`).
-const ROUTES: Route[] = [...accountRoutes, ...reviewRoutes, ...projectRoutes, ...billingRoutes, ...orderRoutes, ...notificationRoutes, ...platformRoutes].map(([method, path, handler]) => {
+const ROUTES: Route[] = [...accountRoutes, ...reviewRoutes, ...projectRoutes, ...billingRoutes, ...printShopRoutes, ...orderRoutes, ...notificationRoutes, ...platformRoutes].map(([method, path, handler]) => {
   const keys: string[] = [];
   const pattern = new RegExp(
     `^${path.replace(/:([A-Za-z]+)/g, (_, key: string) => {
