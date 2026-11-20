@@ -45,7 +45,7 @@
 | **Việc còn treo sau audit backend ([18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md)): câu chữ gói Pro, gỡ quảng cáo gói lượt xuất, runbook demo, lỗi nhập ảnh kho, tên cookie trang pháp lý, luật FitCheck, giữ dữ liệu 10 năm theo luật, đồng bộ hai tab** | Toàn đội IT | ✅ Có mã trên `develop` (de2328d, 18/11/2026). ⏳ Các mục còn mở và cách đóng ghi ở [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) | CP4 |
 | **Review backend và đợt sửa 7 lỗi (review `docs-old/29`, kế hoạch `docs-old/30`)** | 👤 **IT 3** | ✅ Đã kiểm bằng test (19/11/2026: **1.180/1.180 unit (77 bộ), 318/318 E2E (24 bộ), backend**). Gộp vào `develop` ở 09ca9d4. Tóm tắt ở bảng ngay dưới | CP4 |
 | **Kịch bản FE end-to-end theo luồng hiện hành (`fe/scripts/e2e-scenario.mjs`): FitCheck chặn → tự sửa → file khóa vì chưa thanh toán → đặt in và thanh toán bằng tài khoản demo → xuất SVG, PDF_CMYK, DXF → đổi tên vẫn giữ quyền → sửa thiết kế thì phiên bản mới bị khóa** | Toàn đội IT | ✅ Đã kiểm bằng E2E (19/11/2026, commit c622f67): chạy đạt ở 375 px và 1440 px với bước mặc định `1-14,16-18`; chạy lại đạt 20/11/2026 với đơn `WF-2026-686400` và `WF-2026-976240` (local) `PAID` 49.000đ; SVG, PDF_CMYK, DXF tải được; đổi tên vẫn giữ quyền; sửa thiết kế thì phiên bản mới nhận `402`. Ảnh mới liệt kê ở [15 §9](15_PATH2_DEPLOY_RUNBOOK.md#9-ảnh-bàn-giao-cho-slide). ⏳ Chưa chạy trên production | CP4 |
-| **Đồng bộ tài liệu sau audit docs (plan 32): gỡ 14 kế hoạch đã xong, đánh số lại tài liệu còn giữ, sửa tham chiếu trong mã** | Toàn đội IT | ✅ Có trên nhánh `docs/sync-after-audit` (19/11/2026). ⏳ Chờ chủ dự án đối chiếu với bản audit rồi gộp vào `develop` | CP4 |
+| **Đồng bộ tài liệu sau audit docs (plan 32): gỡ 14 kế hoạch đã xong, đánh số lại tài liệu còn giữ, sửa tham chiếu trong mã** | Toàn đội IT | ✅ Gộp vào `develop` ở 15feab4 (20/11/2026), sau ba vòng review sửa runbook 15 và kịch bản FE. Plan 32 đã gỡ (bảng dưới). ⏳ Lượt A của [15](15_PATH2_DEPLOY_RUNBOOK.md) chưa diễn tập trên môi trường thử | CP4 |
 
 ### Review backend 18/11/2026 và commit sửa
 
@@ -79,6 +79,7 @@ Ngày 19/11/2026, đợt đồng bộ tài liệu (plan 32) gỡ các kế hoạ
 | 25 | `25_BACKEND_AUDIT_FIX_PLAN` | aa47f4b | Thay đổi API: [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Đổi lượt xuất cũ sang xu và truy vấn kiểm trước hoàn xu: [15](15_PATH2_DEPLOY_RUNBOOK.md). Điều kiện khi chạy nhiều API: [07](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md), [15](15_PATH2_DEPLOY_RUNBOOK.md). Mục hoãn: [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) |
 | 29 | `29_BACKEND_CODE_REVIEW` | aa47f4b | Tóm tắt bảy phát hiện và commit sửa: bảng "Review backend 18/11/2026" ở trên |
 | 30 | `30_BACKEND_REVIEW_FIX_PLAN` | aa47f4b | Thứ tự migration và job cũ: [15](15_PATH2_DEPLOY_RUNBOOK.md). Quy tắc giữ phông, giữ phiên bản xuất, giữ thiết kế của đơn: [02](02_DATABASE_DESIGN.md), [03](03_API_DESIGN.md), [06](06_FE_INTEGRATION_GUIDE.md). Kết quả test: bảng trên |
+| 32 | `32_DOCS_AUDIT_SYNC_PLAN` | 15feab4 | Kế hoạch của chính đợt đồng bộ này. Bảng đổi số ở dưới, kết quả ở dòng "Đồng bộ tài liệu sau audit docs" của bảng tiến độ, việc còn mở ở [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) |
 | 26, 27, 27a, 31 | Kịch bản video quảng bá, clip demo Studio, prompt và tài liệu pitching | — | Chưa từng vào Git, đã xóa theo quyết định ngày 2026-11-19. Không chuyển nội dung |
 
 Tra lại một file đã gỡ bằng commit ở cột thứ ba, ví dụ:
