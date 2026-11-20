@@ -42,6 +42,7 @@ import { sheetPath } from "@/features/studio/utils/dielineOutline";
 import { printFontOf, textBlockHeight } from "@wrapfit/shared";
 import { Checkbox } from "@/components/ui";
 import { useCtrlWheelZoom } from "@/hooks/dom";
+import { AXIS_COLORS, AXIS_LETTER, type DimensionAxis } from "../three/guides";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
 const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
@@ -134,6 +135,12 @@ interface DielineCanvas2DProps {
   onSelectPanel?: (panelId: string) => void;
   /** The panel under the pointer, null when it leaves the panels (the page lights that face on its 3D preview). */
   onHoverPanel?: (panelId: string | null) => void;
+  /**
+   * Box measure being edited or hovered in the size fields (docs/21 S3): a dimension line in its colour on every panel
+   * side that long. The formulas do not tag sides with a measure, so a side matches when it is within `tolerance` mm
+   * of `mm` (the paper thickness the formulas add); two equal measures light the same sides.
+   */
+  measure?: { axis: DimensionAxis; mm: number; tolerance: number } | null;
   showRulers?: boolean;
   /** Elements FitCheck flags (margin, bleed, glue…): drawn with a red badge. */
   flaggedElementIds?: ReadonlySet<string>;
@@ -217,6 +224,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   activePanelId = "panel_front",
   onSelectPanel,
   onHoverPanel,
+  measure = null,
   showRulers = true,
   flaggedElementIds,
   variant = "card",
@@ -1809,6 +1817,64 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 />
               </g>
             )
+          )}
+
+          {/* Measure being edited (docs/21 S3): a dimension line across each panel side of that length, at its middle */}
+          {measure && (
+            <g className="pointer-events-none select-none" style={{ fontFamily: "var(--font-landing-body), Inter, sans-serif" }}>
+              {dieline.panels.flatMap((panel) => {
+                const color = AXIS_COLORS[measure.axis];
+                const near = (length: number) => Math.abs(length - measure.mm) <= measure.tolerance;
+                const { width: pw, height: ph } = panel.bounds;
+                const [px, py] = [panel.bounds.x + padding, panel.bounds.y + padding];
+                const size = Math.min(4, Math.max(2.6, Math.min(pw, ph) / 8));
+                const tick = size * 0.5;
+                const tag = (cx: number, cy: number, length: number) => {
+                  const text = `${AXIS_LETTER[measure.axis]} ${formatMm(length)}`;
+                  const w = text.length * size * 0.6 + size;
+                  return (
+                    <>
+                      <rect x={cx - w / 2} y={cy - size * 0.8} width={w} height={size * 1.6} rx={size * 0.8} fill={color} />
+                      <text x={cx} y={cy + size * 0.36} textAnchor="middle" fontSize={size} fontWeight={700} fill="white">
+                        {text}
+                      </text>
+                    </>
+                  );
+                };
+                // The line with its end ticks, over a white halo so it reads on any artwork.
+                const rule = (key: string, segments: [number, number, number, number][], label: React.ReactNode) => (
+                  <g key={key}>
+                    {[
+                      { stroke: "white", width: 1.4, opacity: 0.85 },
+                      { stroke: color, width: 0.6, opacity: 1 },
+                    ].map((pass) => (
+                      <g key={pass.width} stroke={pass.stroke} strokeWidth={pass.width} strokeOpacity={pass.opacity} strokeLinecap="round">
+                        {segments.map(([x1, y1, x2, y2], i) => (
+                          <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
+                        ))}
+                      </g>
+                    ))}
+                    {label}
+                  </g>
+                );
+                const lines: React.ReactNode[] = [];
+                if (near(pw)) {
+                  const [y, x1, x2] = [py + ph / 2, px + 0.8, px + pw - 0.8];
+                  lines.push(
+                    rule(`${panel.id}-x`, [[x1, y, x2, y], [x1, y - tick, x1, y + tick], [x2, y - tick, x2, y + tick]], tag(px + pw / 2, y, pw))
+                  );
+                }
+                if (near(ph)) {
+                  const [x, y1, y2] = [px + pw / 2, py + 0.8, py + ph - 0.8];
+                  // Both sides match (a square face): the vertical tag steps below the horizontal one.
+                  const tagY = py + ph / 2 + (near(pw) ? size * 2.2 : 0);
+                  lines.push(
+                    rule(`${panel.id}-y`, [[x, y1, x, y2], [x - tick, y1, x + tick, y1], [x - tick, y2, x + tick, y2]], tag(x, tagY, ph))
+                  );
+                }
+                return lines;
+              })}
+            </g>
           )}
 
           {/* Smart guides: the lines the moved layer snapped to */}

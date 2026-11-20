@@ -1838,6 +1838,8 @@ export function StudioWorkspace({
                     activePanelId={activePanelId}
                     onSelectPanel={selectPanel}
                     onHoverPanel={setHoverPanelId}
+                    // The size field in focus or under the pointer (steps 1–2); the formulas add the paper thickness.
+                    measure={activeAxis ? { axis: activeAxis, mm: dimensions[activeAxis], tolerance: 2 * dimensions.paperThickness + 0.6 } : null}
                     showRulers={showRulers}
                     flaggedElementIds={flaggedElementIds}
                     textComposerOpen={textComposerOpen}

@@ -369,7 +369,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // While the box is turned by hand it renders at half density (at least 1 px per CSS px, docs/21 S3): the frames keep
+    // up on large high-density screens, and the sharp frame comes back when the pointer is released (see the loop).
+    const fullRatio = Math.min(window.devicePixelRatio, 2);
+    const movingRatio = Math.max(1, fullRatio * 0.5);
+    renderer.setPixelRatio(fullRatio);
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     // PCF with a blur radius: a soft penumbra instead of the hard edge of PCFSoft.
@@ -767,6 +771,10 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     });
     controls.addEventListener("end", () => {
       dragging = false;
+      if (renderer.getPixelRatio() !== fullRatio) {
+        renderer.setPixelRatio(fullRatio);
+        dirty = true;
+      }
     });
 
     // --- loop: renders only when something moved
@@ -826,7 +834,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         dirty = true;
       }
 
-      if (controls.update()) dirty = true;
+      if (controls.update()) {
+        dirty = true;
+        // A pointer turning the box (not a wheel step, not a click without a move): half density until released.
+        if (dragging && downAt && renderer.getPixelRatio() !== movingRatio) renderer.setPixelRatio(movingRatio);
+      }
 
       if (hoverPoint && !dragging && structureRef.current !== "pillow") {
         hovered = pick(hoverPoint)?.panelId ?? null;
