@@ -240,7 +240,7 @@ describe('StorageService', () => {
     });
   });
 
-  describe('putGeneratedFile when the row cannot be written (docs/30 review round 4)', () => {
+  describe('putGeneratedFile when the row cannot be written (docs-old/30 review round 4)', () => {
     const qr = { userId: 'u-1', projectId: 'p-1', key: 'projects/p-1/unboxing/qr-x.png', purpose: 'QR_CODE' as const, contentType: 'image/png', body: Buffer.from('qr') };
     const commands = (send: jest.SpyInstance) => send.mock.calls.map(([command]) => command.constructor.name);
 
@@ -300,7 +300,7 @@ describe('StorageService', () => {
     expect(build({ 'storage.bucket': '', 'storage.publicUrl': '' }).uploadedKeyOf('https://cdn.wrapfit.vn/users/a.png')).toBeNull();
   });
 
-  describe('inspectFont (docs/23 S13)', () => {
+  describe('inspectFont (docs-old/23 S13)', () => {
     const playfair = readFileSync(require.resolve('@expo-google-fonts/playfair-display/400Regular/PlayfairDisplay_400Regular.ttf'));
     const url = 'https://cdn.wrapfit.vn/users/u-1/font/a.ttf';
     const inspect = (body: Buffer) => {

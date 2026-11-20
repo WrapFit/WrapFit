@@ -6,7 +6,7 @@ import { anonymizedEmail } from './user-removal';
 import { UsersService } from './users.service';
 
 /** The database side (anonymization, the RESTRICT foreign keys) is covered by test/e2e/users-removal.e2e-spec.ts. */
-describe('UsersService removal and anonymized accounts (docs/25 item 3)', () => {
+describe('UsersService removal and anonymized accounts (docs-old/25 item 3)', () => {
   const build = (lockedRow: { anonymized_at: Date | null } | undefined, current: { anonymizedAt: Date | null } | null = null) => {
     const tx = { $queryRaw: jest.fn().mockResolvedValue(lockedRow ? [lockedRow] : []), user: { delete: jest.fn() } };
     const prisma = {

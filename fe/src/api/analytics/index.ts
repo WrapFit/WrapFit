@@ -1,5 +1,5 @@
 /**
- * Analytics dashboard (`be/src/analytics`, docs/17 S7). No demo fallback: the "Số liệu thiết kế" block shows real
+ * Analytics dashboard (`be/src/analytics`, docs-old/17 S7). No demo fallback: the "Số liệu thiết kế" block shows real
  * numbers or an error, never invented ones.
  */
 

@@ -150,7 +150,7 @@ describe('BankTransactionsService.resolve assign', () => {
     expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.bankTransaction.findUniqueOrThrow.mock.invocationCallOrder[0]);
   });
 
-  it('locks the payment row before reading its status (docs/25 item 5)', async () => {
+  it('locks the payment row before reading its status (docs-old/25 item 5)', async () => {
     const { service, tx } = setup();
     await service.resolve('tx-1', { action: 'assign', paymentReference: 'WFAB23CD' }, 'admin-1');
     expect(tx.$queryRaw).toHaveBeenCalledTimes(2);

@@ -3,7 +3,7 @@
  * demo without a backend (fe .../export/offline/printLayout.ts), so both print the same thing.
  *
  * Every placed element carries `order`, its index in paint order: renderers draw all kinds in that order, so the
- * layers the user arranged print the same way (docs/23 D3). Hidden elements and elements of the other side of the
+ * layers the user arranged print the same way (docs-old/23 D3). Hidden elements and elements of the other side of the
  * sheet are left out. `clip` is the printable box of the element's face on the sheet (face + bleed, D5).
  */
 import { elementClipBox, orderElements, sideOf, type Box } from "../canvas/elements";
@@ -34,7 +34,7 @@ export interface PlacedBase {
   /** Printable box of the face on the sheet: the element is cut to it. */
   clip: Box;
   finish: ElementFinish | null;
-  /** Drop shadow and blend mode (docs/23 S22); null = none. */
+  /** Drop shadow and blend mode (docs-old/23 S22); null = none. */
   shadow: ElementShadow | null;
   blend: BlendMode | null;
 }

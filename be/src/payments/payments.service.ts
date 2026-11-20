@@ -55,7 +55,7 @@ export function newPaymentReference(): string {
 /** What the payment buys, snapshotted when it is created (prices may change while it waits). */
 type PaymentMetadata = { credits: number } | { xu: number } | { periodDays: number } | { orderId: string };
 
-/** How a payment was confirmed (docs/21 §3.2). `allowExpired` is for an admin assigning a late transfer. */
+/** How a payment was confirmed (docs-old/21 §3.2). `allowExpired` is for an admin assigning a late transfer. */
 export interface ConfirmPaidOptions {
   via: PaymentConfirmation;
   providerTxnId?: string;
@@ -111,7 +111,7 @@ export interface PaymentHistoryPage {
 
 export const PAYMENT_EXPIRED = 'PAYMENT_EXPIRED';
 
-/** 400 for a new payment of an export pack (EXPORT_1/5/15): no longer sold, no export spends a credit (docs/25 item 7). */
+/** 400 for a new payment of an export pack (EXPORT_1/5/15): no longer sold, no export spends a credit (docs-old/25 item 7). */
 export const EXPORT_PACK_DISCONTINUED = 'EXPORT_PACK_DISCONTINUED';
 const exportPackDiscontinued = () =>
   new BadRequestException({
@@ -125,7 +125,7 @@ const paymentExpired = () =>
   );
 
 /**
- * docs/25 item 6: a VietQR payment to the real bank account of WrapFit is a real transfer (or stands for one: it grants
+ * docs-old/25 item 6: a VietQR payment to the real bank account of WrapFit is a real transfer (or stands for one: it grants
  * xu, Pro, a printed sample order), so only a demo account (`users.is_demo`) may simulate it, by the button or by a mock
  * bank transfer. Without a real account (no VIETQR_*: the QR names the sample account "WRAPFIT MO PHONG"), no money
  * can arrive at all, so every account may simulate: registered, demo or seeded. VNPay sandbox stays open to all.
@@ -147,8 +147,8 @@ export function httpErrorCode(error: unknown): string | undefined {
 }
 
 /**
- * VietQR payments (docs/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
- * grants what it bought in the same transaction: a xu lot (docs/19; also for an old export pack), 30 days of Pro, or
+ * VietQR payments (docs-old/17 S5). A payment is created PENDING with a reference and a 15-minute expiry; once paid it
+ * grants what it bought in the same transaction: a xu lot (docs/16; also for an old export pack), 30 days of Pro, or
  * a sample order moved to PAID.
  * Every path that marks a payment paid (simulate button, SePay webhook, VNPay, admin) goes through `confirmPaid`.
  */
@@ -185,11 +185,11 @@ export class PaymentsService {
   /** `ip` is the customer's address (`req.ip`, which honours TRUST_PROXY): VNPay wants it in the pay URL. */
   async create(userId: string, dto: CreatePaymentDto, ip?: string): Promise<PaymentView> {
     const { amountVnd, metadata } = await this.priceOf(userId, dto);
-    // Demo accounts never take the real-money VietQR path, real accounts never the sandbox (docs/21 §6).
+    // Demo accounts never take the real-money VietQR path, real accounts never the sandbox (docs-old/21 §6).
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { isDemo: true, billingDetails: true } });
     const provider = user.isDemo ? PaymentProvider.VNPAY : PaymentProvider.VIETQR;
     if (provider === PaymentProvider.VNPAY && !this.vnpay.configured) {
-      // The simulate button is the demo fallback (docs/21 D5): while it is on, a demo payment is still created and the
+      // The simulate button is the demo fallback (docs-old/21 D5): while it is on, a demo payment is still created and the
       // checkout shows only that button. With it off (production) there is no way to pay, so say so.
       if (!this.simulation) {
         throw new HttpException(
@@ -232,7 +232,7 @@ export class PaymentsService {
             expiresAt: new Date(Date.now() + PAYMENT_TTL_MS),
             // The payment terms the user accepted for this payment, kept as evidence next to what was bought, and the
             // VAT invoice details of that moment: payments are kept for the legal retention of accounting records,
-            // whatever happens to the account (docs/28 Q4), while the details on the user row change, and go when the
+            // whatever happens to the account (docs/18 Q4), while the details on the user row change, and go when the
             // account is anonymized. InvoiceRetentionTask removes them after the retention.
             metadata: {
               ...metadata,
@@ -321,7 +321,7 @@ export class PaymentsService {
   }
 
   /**
-   * The one place a payment becomes PAID (docs/21 §3.2), for the simulate button, the SePay webhook, VNPay and the
+   * The one place a payment becomes PAID (docs-old/21 §3.2), for the simulate button, the SePay webhook, VNPay and the
    * admin. Locks the payment row, so a webhook and a simulate click arriving together grant once: the second waits,
    * sees PAID and returns it untouched. Runs inside the caller's transaction (the caller may have locked the row
    * already; locking again is a no-op). Throws 404 for an unknown id, 409 PAYMENT_EXPIRED for a payment that is no
@@ -400,7 +400,7 @@ export class PaymentsService {
     const metadata = payment.metadata as PaymentMetadata;
 
     if ('credits' in metadata) {
-      // An export pack payment created before the packs stopped (docs/25 item 7) and confirmed only now (a late
+      // An export pack payment created before the packs stopped (docs-old/25 item 7) and confirmed only now (a late
       // transfer the admin assigns, a webhook in its last minutes): no export credit lot any more, the money becomes
       // xu at the price paid, the rule of the one-time conversion (prisma/scripts/convert-export-credits.ts).
       const { xu, valueVnd } = xuForExportCredits(metadata.credits, metadata.credits, payment.amountVnd);
@@ -418,7 +418,7 @@ export class PaymentsService {
         tx,
       );
     } else if ('xu' in metadata) {
-      // A purchased lot is worth what was paid for it: reports recognize that money as xu are spent (docs/19 D6).
+      // A purchased lot is worth what was paid for it: reports recognize that money as xu are spent (docs/16 D6).
       await this.credits.grant(
         payment.userId,
         {
@@ -433,7 +433,7 @@ export class PaymentsService {
         tx,
       );
     } else if ('periodDays' in metadata) {
-      // One Pro payment of a user at a time (docs/30 item 3). Each transaction only locks its own payment, so two
+      // One Pro payment of a user at a time (docs-old/30 item 3). Each transaction only locks its own payment, so two
       // payments confirmed at once read the same period end and both wrote end + 30 days, or both created a
       // subscription and the second failed on subscriptions_user_id_active_key. The second now waits here and reads
       // what the first committed. Not a lock on the users row: UsersService.remove holds it while it waits for the

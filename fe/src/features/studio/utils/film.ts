@@ -1,9 +1,9 @@
-/* ds-artwork: the folding-box clip paints the scene and a small signature, like the mockups (docs/15 §2, docs/23 S19). */
+/* ds-artwork: the folding-box clip paints the scene and a small signature, like the mockups (docs/13 §2, docs-old/23 S19). */
 import { buildGifPalette, GifWriter } from "@wrapfit/shared";
 import type { Backdrop } from "@/features/studio/components/three/backdrops";
 import { paintScene, paintSignature } from "@/features/studio/utils/mockup";
 
-/** Length of the clip, seconds (docs/23 S19: 6–8 s). */
+/** Length of the clip, seconds (docs-old/23 S19: 6–8 s). */
 export const CLIP_SECONDS = 7;
 /** Largest file worth sharing in a chat or a shop page. */
 export const MAX_CLIP_BYTES = 10 * 1024 * 1024;

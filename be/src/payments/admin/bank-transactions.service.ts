@@ -93,7 +93,7 @@ const notUnmatched = (status: BankTxStatus) =>
   });
 
 /**
- * Admin reconciliation of SePay transfers the webhook could not match (docs/21 §3.5): list `bank_transactions`, assign
+ * Admin reconciliation of SePay transfers the webhook could not match (docs-old/21 §3.5): list `bank_transactions`, assign
  * one to a payment (the payment is confirmed through `confirmPaid`, so it grants what it bought), or ignore it.
  */
 @Injectable()
@@ -166,7 +166,7 @@ export class BankTransactionsService {
       const bankTx = await tx.bankTransaction.findUniqueOrThrow({ where: { id } });
       if (bankTx.status !== BankTxStatus.UNMATCHED) throw notUnmatched(bankTx.status);
 
-      // A VNPay payment is never paid by a bank transfer (docs/21 §6).
+      // A VNPay payment is never paid by a bank transfer (docs-old/21 §6).
       const found = await tx.payment.findFirst({
         where: { reference, provider: PaymentProvider.VIETQR },
         select: { id: true },

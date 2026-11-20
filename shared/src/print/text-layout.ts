@@ -1,5 +1,5 @@
 /**
- * One text model for the editor canvas, the thumbnail and the print files (docs/12 Phase 9), so a text prints with the
+ * One text model for the editor canvas, the thumbnail and the print files (docs-old/12 Phase 9), so a text prints with the
  * font, size, line breaks, alignment and rotation it has on screen.
  *
  * - `style.fontSize` is in points (1 pt = 25.4 / 72 mm).
@@ -16,7 +16,7 @@ import type { CanvasElement } from "../types/project";
 
 export const PT_TO_MM = 25.4 / 72;
 export const DEFAULT_FONT_SIZE_PT = 12;
-/** Weight of the texts that set no `fontWeight` (every text before docs/23). */
+/** Weight of the texts that set no `fontWeight` (every text before docs-old/23). */
 export const TEXT_FONT_WEIGHT = 700;
 export const TEXT_LINE_HEIGHT = 1.2;
 /** Baseline below the centre of a line, as a fraction of the font size (about half the cap height). */
@@ -120,7 +120,7 @@ export interface TextLine {
 export interface TextBoxLayout {
   /** Built-in print font (the fallback when an uploaded font cannot load). */
   font: PrintFontId;
-  /** Uploaded font file the text uses (docs/23 S13), null for the built-in fonts. */
+  /** Uploaded font file the text uses (docs-old/23 S13), null for the built-in fonts. */
   fontUrl: string | null;
   face: TextFace;
   /** Draw a bar under each line (underlineOf). */
@@ -220,7 +220,7 @@ export function layoutTextBox(
   const curve = Math.max(-360, Math.min(360, style?.curve ?? 0));
 
   const words = displayedText(element.content, style).replace(/\r\n?/g, "\n");
-  // A curved text is one line on its arc (docs/23 S9); a straight one wraps inside the box.
+  // A curved text is one line on its arc (docs-old/23 S9); a straight one wraps inside the box.
   const texts = curve
     ? [words.split(/\s+/).filter(Boolean).join(" ")]
     : words.split("\n").flatMap((paragraph) => wrapParagraph(paragraph, fits));

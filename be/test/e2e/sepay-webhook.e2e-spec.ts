@@ -13,7 +13,7 @@ import { deleteUsers } from './helpers/cleanup';
 const KEY = process.env.SEPAY_WEBHOOK_API_KEY!;
 
 /**
- * SePay bank webhook (docs/21 §3.3) against a real PostgreSQL: a transfer with the right reference and amount confirms
+ * SePay bank webhook (docs-old/21 §3.3) against a real PostgreSQL: a transfer with the right reference and amount confirms
  * the payment and grants what it bought, once; every other transfer is stored UNMATCHED with a reason. Needs
  * `docker compose up -d postgres redis`.
  */
@@ -174,7 +174,7 @@ describe('SePay webhook (e2e)', () => {
   it('grants once when the webhook and the simulate button arrive together', async () => {
     const payment = await pay(buyer, { purpose: 'XU_500' });
     const body = transfer(payment.reference, payment.amountVnd);
-    // Only a demo account may simulate a VietQR payment (docs/25 item 6): flagged after paying, as an admin would.
+    // Only a demo account may simulate a VietQR payment (docs-old/25 item 6): flagged after paying, as an admin would.
     await prisma.user.update({ where: { id: buyer.id }, data: { isDemo: true } });
 
     const [webhook, simulated] = await Promise.all([

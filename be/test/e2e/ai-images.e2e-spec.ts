@@ -12,7 +12,7 @@ import { signUp } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * AI images paid with xu (docs/19 S2): the API debits and queues, a real worker context runs the fake provider
+ * AI images paid with xu (docs/16 S2): the API debits and queues, a real worker context runs the fake provider
  * (AI_IMAGE_PROVIDER=fake, test/e2e-env.ts) and stores the images in SeaweedFS.
  * Needs `docker compose up -d postgres redis seaweedfs storage-init`.
  */
@@ -92,7 +92,7 @@ describe('AI images (e2e)', () => {
     await expect(prisma.storedFile.count({ where: { key: { in: keys }, userId: maker.id, purpose: 'IMAGE' } })).resolves.toBe(2);
   });
 
-  it('pages the gallery by (createdAt, id): images of the same instant are all listed across page boundaries (docs/30 item 7)', async () => {
+  it('pages the gallery by (createdAt, id): images of the same instant are all listed across page boundaries (docs-old/30 item 7)', async () => {
     // The images of one job are saved by createMany at one instant; make every image of the user share it.
     await prisma.aiImageOutput.updateMany({ where: { job: { userId: maker.id } }, data: { createdAt: new Date('2026-11-18T08:00:00.000Z') } });
     const total = await prisma.aiImageOutput.count({ where: { job: { userId: maker.id } } });

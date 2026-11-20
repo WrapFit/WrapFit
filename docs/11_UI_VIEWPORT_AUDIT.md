@@ -1,4 +1,4 @@
-# 13 — Rà soát giao diện theo kích thước màn hình (Phase 7)
+# 11 — Rà soát giao diện theo kích thước màn hình (Phase 7)
 
 > Cập nhật: 2026-10-11 · Nhánh `feat/fe-be-integration` · Phiên S9 (Phase 7) của kế hoạch nối FE–BE tháng 10/2026
 > Đối chiếu lại: 2026-11-19 trên `develop` (fb720a9). §1–§5 giữ nguyên số đo của đợt đầu. Phần kiểm lại sau đợt đầu ở §6.
@@ -169,7 +169,7 @@ thay bằng `…`.
 ### 2.3. Mốc `stitch:parity` (1280 px, 2026-10-11)
 
 Đo cả trước (HEAD `fcc477c`, stash thay đổi S9) và sau S9 trong cùng môi trường, như cách S3 đã làm. Ngưỡng 1% của
-docs/11 không còn dùng được: từ `e07d23b`, `e509d8f` các màn có header, sidebar, nav sửa tay, và header chung đổi font
+docs/10 không còn dùng được: từ `e07d23b`, `e509d8f` các màn có header, sidebar, nav sửa tay, và header chung đổi font
 ở S5.
 
 | Màn | Trước S9 | Sau S9 | | Màn | Trước S9 | Sau S9 |
@@ -204,9 +204,9 @@ Mức: **P1** che / cắt nội dung, không bấm được, tràn ngang; **P2**
 | F2 | G1 | P2 | Mega menu, X, X+ | Tiêu đề mục bị cắt "…" không có `title` (5 cột hẹp) | Tiêu đề xuống dòng, mô tả 2 dòng |
 | F3 | G1 | P1 | 16 trang có `MainFooter`, M | Dòng cuối footer nằm dưới `BottomNavBar`, không cuộn ra được | `MainFooter`: `pb-28` dưới `md` |
 | F4 | G1 | P2 | Mọi trang, lần tải đầu | `GET /favicon.ico` 404 (app không khai báo icon) | `metadata.icons` trong `app/layout.tsx` |
-| F5 | G1, G6 | P1 | 404, `/team`, `/pricing`, `/checkout/step-1`, `/checkout/step-3`, `/admin/vault-quotas`, M | Dock / thanh thao tác riêng của màn Stitch (`fixed` hoặc `sticky` + `bottom-*`) nằm dưới `BottomNavBar` (từ `e509d8f` bottom nav hiện cả trên màn Stitch, docs/11 A7 cũ ẩn nó) | `stitch/base.css`: dưới `md` nâng dock lên `bottom: 5.25rem` |
+| F5 | G1, G6 | P1 | 404, `/team`, `/pricing`, `/checkout/step-1`, `/checkout/step-3`, `/admin/vault-quotas`, M | Dock / thanh thao tác riêng của màn Stitch (`fixed` hoặc `sticky` + `bottom-*`) nằm dưới `BottomNavBar` (từ `e509d8f` bottom nav hiện cả trên màn Stitch, docs/10 A7 cũ ẩn nó) | `stitch/base.css`: dưới `md` nâng dock lên `bottom: 5.25rem` |
 | F6 | G1, G6 | P2 | Cùng các màn trên, T → W | Dock nổi che dòng cuối footer ở mọi kích thước | `stitch/base.css`: màn có dock nổi được `padding-bottom: 5.5rem` |
-| F7 | G1, G6 | P2 | 404, `/checkout/step-1`, `/checkout/step-3`, `/team` | Ảnh mascot `/stitch/img/*.png` không có trong `public` (URL Stitch hết hạn khi tải) | Khung giữa của sprite `box-directions` → `public/mascots/goi.webp`; sửa tay 4 view (đã khoá, docs/11 §3) |
+| F7 | G1, G6 | P2 | 404, `/checkout/step-1`, `/checkout/step-3`, `/team` | Ảnh mascot `/stitch/img/*.png` không có trong `public` (URL Stitch hết hạn khi tải) | Khung giữa của sprite `box-directions` → `public/mascots/goi.webp`; sửa tay 4 view (đã khoá, docs/10 §3) |
 | F8 | G2 | P2 | `/auth/login`, `/auth/register`, L → W | Ô ảnh "Luxury Rigid Studio" và mascot của mosaic là URL `lh3.googleusercontent.com` đã chết (403, `ERR_BLOCKED_BY_ORB`); script cũ bỏ sót vì ảnh `loading="lazy"` | `branding/hero-packaging-model.webp`, `mascots/goi.webp` |
 | F9 | G4 | P2 | 8 trang dashboard, mọi kích thước | `DashboardHeaderNav` vẽ avatar thứ hai (header chính đã có): hai avatar trên điện thoại, chiếm chỗ của thanh tab ở 1280–1535 px | `showAvatar` mặc định `false` |
 | F10 | G4 | P3 | `/dashboard/projects` | Chip thư mục tên dài bị cắt "…" không có `title` | `title` = tên thư mục |
@@ -279,7 +279,7 @@ Mức: **P1** che / cắt nội dung, không bấm được, tràn ngang; **P2**
 
 ## 6. Kiểm lại sau đợt đầu (đối chiếu mã ngày 2026-11-19)
 
-Từ sau đợt đầu, giao diện đổi nhiều: phần lớn màn Stitch được viết tay lại ([11](11_STITCH_PARITY_AUDIT.md) §0), dashboard
+Từ sau đợt đầu, giao diện đổi nhiều: phần lớn màn Stitch được viết tay lại ([10](10_STITCH_PARITY_AUDIT.md) §0), dashboard
 và admin dùng khung chung có sidebar (`fe/src/components/workspace/WorkspaceShell.tsx`, sidebar hiện từ `lg`, dưới `lg`
 là một hàng chip điều hướng cuộn ngang), studio đổi thành 6 bước. Lần đồng bộ docs này **không chạy** `shots`: các cột
 dưới chỉ đọc từ mã. Ô nào cần số đo mới ghi "chờ kiểm thực tế" kèm vai trò người kiểm.

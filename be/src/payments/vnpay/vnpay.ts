@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 
 /**
- * VNPay PAY 2.1.0 (docs/21 §3.4), pure functions. Source: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html
+ * VNPay PAY 2.1.0 (docs-old/21 §3.4), pure functions. Source: https://sandbox.vnpayment.vn/apis/docs/thanh-toan-pay/pay.html
  * (checked 2026-11-10) and its official Node sample (vnpay_nodejs):
  *  - `vnp_Amount` = VND × 100, no separator; `vnp_CurrCode` = `VND` only.
  *  - `vnp_CreateDate` / `vnp_ExpireDate` = `yyyyMMddHHmmss` in GMT+7.

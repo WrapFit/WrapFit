@@ -9,7 +9,7 @@ import { signUp } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * Billing core (docs/17 S1): the export credit ledger against a real PostgreSQL (row locks), `GET /billing/me` and the
+ * Billing core (docs-old/17 S1): the export credit ledger against a real PostgreSQL (row locks), `GET /billing/me` and the
  * admin grant. Needs `docker compose up -d postgres redis`.
  */
 describe('Billing core (e2e)', () => {
@@ -149,7 +149,7 @@ describe('Billing core (e2e)', () => {
   });
 
   describe('HTTP', () => {
-    it('GET /billing/me returns the plan, its limits and the xu lots, no export credits (docs/25 item 7)', async () => {
+    it('GET /billing/me returns the plan, its limits and the xu lots, no export credits (docs-old/25 item 7)', async () => {
       const empty = await api().get('/api/billing/me').set('Cookie', maker.cookie).expect(200);
       expect(empty.body).toMatchObject({
         tier: 'FREE',

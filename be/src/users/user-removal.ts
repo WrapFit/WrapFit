@@ -18,7 +18,7 @@ export const userAnonymized = () =>
   new ConflictException({ code: 'USER_ANONYMIZED', message: 'This account was deleted and anonymized' });
 
 /**
- * Financial history (docs/25 item 3): any payment in any status, any order in any status, a purchased credit lot, a
+ * Financial history (docs-old/25 item 3): any payment in any status, any order in any status, a purchased credit lot, a
  * subscription (only created by a payment), or a bank transaction the user resolved as an admin. A user with it is
  * anonymized, never hard-deleted: the foreign keys of these tables are ON DELETE RESTRICT, so a hard delete fails.
  */
@@ -50,7 +50,7 @@ export async function hardDeleteUser(tx: Prisma.TransactionClient, storage: Stor
  * Anonymizes a user with financial history, inside the caller's transaction (the user row is locked). Returns the
  * keys of the objects to delete from the bucket after the commit.
  *
- * Kept, whatever happens to the account (docs/28 Q4): payments with the VAT invoice details they were made with,
+ * Kept, whatever happens to the account (docs/18 Q4): payments with the VAT invoice details they were made with,
  * orders with their recipient name, phone and address (delivered ones included), for the legal retention of accounting
  * records (10 years after the end of their year; InvoiceRetentionTask then removes that personal data), their lines and
  * history, credit lots and debits, export unlocks, subscriptions, bank transactions, AI usage rows (without their prompts), and the designs an order that is not cancelled prints, with

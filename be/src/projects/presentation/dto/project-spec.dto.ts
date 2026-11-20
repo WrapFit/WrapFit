@@ -51,7 +51,7 @@ const ELEMENT_TYPES = Object.keys({ text: true, logo: true, image: true, pattern
 
 export const MAX_CANVAS_ELEMENTS = 300;
 
-/** Grid of a divider insert (docs/23 S18). */
+/** Grid of a divider insert (docs-old/23 S18). */
 export class CellsDto {
   @ApiProperty({ example: 2 })
   @IsInt()
@@ -197,7 +197,7 @@ export class GradientDto implements NonNullable<Style['gradient']> {
   stops: GradientStopDto[];
 }
 
-/** Drop shadow of an element (docs/23 S22): #RRGGBB, opacity 0..1, blur and offset in mm. */
+/** Drop shadow of an element (docs-old/23 S22): #RRGGBB, opacity 0..1, blur and offset in mm. */
 export class ShadowDto {
   @Matches(/^#[0-9a-fA-F]{6}$/, { message: '$property must be a #RRGGBB color' })
   color: string;
@@ -223,7 +223,7 @@ export class ShadowDto {
   y: number;
 }
 
-/** One colour of an SVG logo swapped for another (docs/23 S14). */
+/** One colour of an SVG logo swapped for another (docs-old/23 S14). */
 export class ColorSwapDto {
   @Matches(HEX_COLOR, { message: HEX_COLOR_MESSAGE })
   from: string;
@@ -259,7 +259,7 @@ export class CanvasElementStyleDto implements Style {
   @Matches(FONT_FAMILY, { message: '$property must be a list of font names' })
   fontFamily?: string;
 
-  /** Uploaded font file of the text (docs/23 S13): an upload of WrapFit, checked by ProjectsService. */
+  /** Uploaded font file of the text (docs-old/23 S13): an upload of WrapFit, checked by ProjectsService. */
   @IsOptional()
   @IsString()
   @MaxLength(2048)
@@ -555,7 +555,7 @@ export class CustomFontDto {
 }
 
 export class CanvasStateDto implements CanvasState {
-  @ApiPropertyOptional({ type: [Object], description: 'Fonts uploaded for the design (docs/23 S13)' })
+  @ApiPropertyOptional({ type: [Object], description: 'Fonts uploaded for the design (docs-old/23 S13)' })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)

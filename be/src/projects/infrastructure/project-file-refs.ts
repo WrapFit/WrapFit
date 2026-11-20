@@ -23,7 +23,7 @@ export async function syncProjectFileRefs(tx: Prisma.TransactionClient, projectI
       UNION ALL
       SELECT s.canvas_state FROM project_snapshots s WHERE s.project_id = ${projectId}::uuid
       UNION ALL
-      -- The design an unfinished export renders (docs/30 item 1): its files must outlive a save that drops them.
+      -- The design an unfinished export renders (docs-old/30 item 1): its files must outlive a save that drops them.
       SELECT j.design -> 'canvasState' FROM export_jobs j
       WHERE j.project_id = ${projectId}::uuid AND j.status IN ('PENDING', 'PROCESSING') AND j.design IS NOT NULL
     ),

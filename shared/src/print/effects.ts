@@ -1,5 +1,5 @@
 /**
- * Drop shadow and blend modes of an element (docs/23 S22), the same on screen, on the 3D box and in the print files.
+ * Drop shadow and blend modes of an element (docs-old/23 S22), the same on screen, on the 3D box and in the print files.
  *
  * Blend modes are the separable ones every PDF reader and RIP knows (PDF 1.4 /BM). On screen the shadow is a real
  * gaussian blur; in the print files it stays vector and CMYK: the element's outline, offset, in a few layers that

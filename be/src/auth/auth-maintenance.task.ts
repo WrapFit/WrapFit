@@ -72,7 +72,7 @@ export class AuthMaintenanceTask {
             AND u.created_at < ${accountCutoff}::timestamptz
             AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.user_id = u.id)
             AND NOT EXISTS (SELECT 1 FROM stored_files f WHERE f.user_id = u.id)
-            -- Money records block a hard delete (ON DELETE RESTRICT, docs/25 item 3): such an account is never
+            -- Money records block a hard delete (ON DELETE RESTRICT, docs-old/25 item 3): such an account is never
             -- empty, and an anonymized one stays for its payments and orders.
             AND u.anonymized_at IS NULL
             AND NOT EXISTS (SELECT 1 FROM payments pay WHERE pay.user_id = u.id)

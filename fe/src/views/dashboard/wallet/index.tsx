@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/dashboard/wallet` (docs/21 S6): the xu wallet moved out of billing. Layout of NasaFilm's WalletPage in WrapFit's
+ * `/dashboard/wallet` (docs-old/21 S6): the xu wallet moved out of billing. Layout of NasaFilm's WalletPage in WrapFit's
  * design system: "Nạp xu" in the main column, balance / expiring xu / plan at the side, the ledger history below.
  * Data: `GET /billing/me` (balance, lots, plan) and `GET /billing/xu/history`. Packs are paid in the shared checkout.
  */

@@ -1,5 +1,5 @@
 /**
- * Layers of a design (docs/23 §3–§4): which elements are backgrounds, the paint order, moving layers, duplicating, the
+ * Layers of a design (docs-old/23 §3–§4): which elements are backgrounds, the paint order, moving layers, duplicating, the
  * printable box of a face and refitting the backgrounds when the box size changes. Pure functions, shared by the
  * editor, the 3D box and the print files.
  *
@@ -46,7 +46,7 @@ export function orderElements(elements: CanvasElement[]): CanvasElement[] {
   return [...backgrounds, ...elements.filter((el) => !isBackground(el))];
 }
 
-/** Upgrades a canvas state saved before docs/23: backgrounds under the artwork, current schema version. */
+/** Upgrades a canvas state saved before docs-old/23: backgrounds under the artwork, current schema version. */
 export function normalizeCanvas<T extends Pick<CanvasState, "elements" | "schemaVersion">>(state: T): T {
   const elements = orderElements(state.elements ?? []);
   if (elements === state.elements && state.schemaVersion === CANVAS_SCHEMA_VERSION) return state;
@@ -201,7 +201,7 @@ export function findPanel(
  */
 export function refitBackgrounds(elements: CanvasElement[], pieces: { geometry: DielineGeometry }[]): CanvasElement[] {
   let changed = false;
-  // Inside backgrounds sit on the mirrored dieline: their bleed is on the mirrored cut sides (docs/23 S5).
+  // Inside backgrounds sit on the mirrored dieline: their bleed is on the mirrored cut sides (docs-old/23 S5).
   let inside: { geometry: DielineGeometry }[] | null = null;
   const next = elements.map((el) => {
     if (!isBackground(el)) return el;

@@ -106,13 +106,13 @@ model User {
   referralCode     String?          @unique @map("referral_code")
   referredById     String?          @map("referred_by_id") @db.Uuid
   isActive         Boolean          @default(true) @map("is_active") // Admin khóa tài khoản
-  // Tài khoản demo (docs/21): thanh toán qua VNPay sandbox, không bao giờ qua SePay tiền thật.
+  // Tài khoản demo (docs-old/21): thanh toán qua VNPay sandbox, không bao giờ qua SePay tiền thật.
   isDemo           Boolean          @default(false) @map("is_demo")
   billingDetails   Json?            @map("billing_details") // Thông tin xuất hoá đơn VAT { company, taxCode, email }
   // Tăng mỗi lần đăng xuất mọi thiết bị (đặt lại mật khẩu, logout-all, khóa tài khoản…). Access / refresh token mang
   // số này (claim `sv`): token mang số cũ bị từ chối ngay, không chờ hết hạn.
   sessionVersion   Int              @default(0) @map("session_version")
-  // Admin xóa tài khoản có lịch sử tiền (docs/25 mục 3): dòng ở lại cho payment, đơn, lô xu; mọi thông tin nhận diện bị
+  // Admin xóa tài khoản có lịch sử tiền (docs-old/25 mục 3): dòng ở lại cho payment, đơn, lô xu; mọi thông tin nhận diện bị
   // xóa, email thành deleted-<id>@deleted.invalid. Không đăng nhập, khôi phục mật khẩu hay mở khóa lại được.
   anonymizedAt     DateTime?        @map("anonymized_at") @db.Timestamptz(3)
   createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -267,7 +267,7 @@ model PackagingProject {
   likesCount     Int               @default(0) @map("likes_count")
   version        Int               @default(1) // +1 mỗi lần nội dung thay đổi: chặn lưu đè giữa hai tab (409)
   // Chốt lúc tạo dự án (= boxTemplate.formulaVersion): sửa công thức không làm xê dịch dieline cũ. Chỉ đổi khi chủ dự án
-  // bấm cập nhật công thức hoặc script db:upgrade-formulas (docs/12 Phase 8, 8.10), luôn kèm một mốc để hoàn tác
+  // bấm cập nhật công thức hoặc script db:upgrade-formulas (docs-old/12 Phase 8, 8.10), luôn kèm một mốc để hoàn tác
   formulaVersion Int               @map("formula_version")
   deletedAt      DateTime?         @map("deleted_at") @db.Timestamptz(3) // Thời điểm vào thùng rác
   createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -360,7 +360,7 @@ model ExportJob {
   completedAt    DateTime?      @map("completed_at") @db.Timestamptz(3)
   watermarked    Boolean        @default(false) // PDF A4 miễn phí: in dòng "Thiết kế bằng WrapFit" ở tai dán
   unlockId       String?        @map("unlock_id") @db.Uuid // Lượt xuất đã trả cho job này: hoàn lượt khi job lỗi
-  // Phiên bản và bản thiết kế chốt lúc request (docs/30 mục 1): worker render từ `design`, không đọc dự án hiện tại.
+  // Phiên bản và bản thiết kế chốt lúc request (docs-old/30 mục 1): worker render từ `design`, không đọc dự án hiện tại.
   // `design` = { title, templateId, formulaVersion, dimensions, canvasState } (canvas dạng lưu trữ, chứa key).
   // NULL ở các job tạo trước migration 20261118000200.
   projectVersion Int?           @map("project_version")
@@ -477,7 +477,7 @@ model AiGeneration {
   model            String // vd. claude-opus-5-5 (model thực sự trả lời, kể cả khi fallback)
   inputTokens      Int      @map("input_tokens")
   outputTokens     Int      @map("output_tokens")
-  credits          Int      @default(0) // xu đã trừ cho lượt này (docs/19 S3); 0 = trước khi có xu
+  credits          Int      @default(0) // xu đã trừ cho lượt này (docs/16 S3); 0 = trước khi có xu
   debitOperationId String?  @map("debit_operation_id") @db.Uuid // credit_debits.operation_id của lượt trừ xu
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -499,10 +499,10 @@ enum AiImageJobStatus {
   PENDING
   PROCESSING
   COMPLETED
-  FAILED // Lỗi phía hệ thống: xu đã hoàn (docs/19 D3)
+  FAILED // Lỗi phía hệ thống: xu đã hoàn (docs/16 D3)
 }
 
-// Một yêu cầu ảnh AI trả bằng xu (docs/19): tạo ảnh, hoặc một công cụ chạy trên một ảnh AI. Xu bị trừ cùng transaction
+// Một yêu cầu ảnh AI trả bằng xu (docs/16): tạo ảnh, hoặc một công cụ chạy trên một ảnh AI. Xu bị trừ cùng transaction
 // tạo dòng này; worker (AiImageProcessor) chạy job và hoàn xu đúng một lần khi job thất bại.
 model AiImageJob {
   id                String           @id @default(uuid(7)) @db.Uuid
@@ -515,7 +515,7 @@ model AiImageJob {
   allowText         Boolean          @default(false) @map("allow_text")
   numImages         Int              @default(1) @map("num_images")
   sourceOutputId    String?          @map("source_output_id") @db.Uuid // Công cụ: ảnh AI được xử lý
-  sourceFileId      String?          @map("source_file_id") @db.Uuid // Công cụ: ảnh tải lên được xử lý (docs/23 S20)
+  sourceFileId      String?          @map("source_file_id") @db.Uuid // Công cụ: ảnh tải lên được xử lý (docs-old/23 S20)
   xuCost            Int              @map("xu_cost")
   estCostUsd        Decimal          @map("est_cost_usd") @db.Decimal(10, 4) // Chi phí provider ước tính (cầu chì, báo cáo)
   status            AiImageJobStatus @default(PENDING)
@@ -540,7 +540,7 @@ model AiImageJob {
   @@map("ai_image_jobs")
 }
 
-// Link duyệt mẫu của một dự án (docs/23 S23): khách / xưởng in mở bằng token, không cần tài khoản, góp ý và bấm
+// Link duyệt mẫu của một dự án (docs-old/23 S23): khách / xưởng in mở bằng token, không cần tài khoản, góp ý và bấm
 // "Duyệt in". Duyệt gắn với phiên bản thiết kế lúc bấm: sửa thiết kế sau đó thì mẫu thành "đã sửa sau khi duyệt".
 // Tắt link chỉ xóa token, giữ lại lần duyệt.
 model ProjectReview {
@@ -557,7 +557,7 @@ model ProjectReview {
   @@map("project_reviews")
 }
 
-// Góp ý trên thiết kế (docs/23 S23): của chủ dự án (author_user_id) hoặc của khách qua link duyệt (chỉ có tên).
+// Góp ý trên thiết kế (docs-old/23 S23): của chủ dự án (author_user_id) hoặc của khách qua link duyệt (chỉ có tên).
 // Có thể ghim vào một mặt hộp (panel_id) tại một điểm (x, y mm trên mặt).
 model DesignComment {
   id           String    @id @default(uuid(7)) @db.Uuid
@@ -599,7 +599,7 @@ model AiImageOutput {
 }
 
 // ============================================================================
-// Billing core (docs/16 §6, trimmed by docs/17 S1). Money is an Int in VND. Export credits are a ledger: lots with an
+// Billing core (docs/14 §6, trimmed by docs-old/17 S1). Money is an Int in VND. Export credits are a ledger: lots with an
 // expiry (`credit_lots`) spent by debit rows (`credit_debits`); `users.subscription_tier` is only a cache written by
 // PlanService.sync. CHECK constraints live in migration 20261030000100_billing_core.
 // ============================================================================
@@ -610,7 +610,7 @@ enum PaymentPurpose {
   EXPORT_15 // 15 lượt xuất, 199.000đ
   PRO_MONTH // Pro 30 ngày, 99.000đ
   SAMPLE_ORDER // Đơn in mẫu (số tiền theo đơn)
-  XU_500 // 500 xu Wrap, 50.000đ (docs/19)
+  XU_500 // 500 xu Wrap, 50.000đ (docs/16)
   XU_1050 // 1.050 xu Wrap, 100.000đ
   XU_2200 // 2.200 xu Wrap, 200.000đ
   XU_CUSTOM // Số xu tùy chọn, giá niêm yết (metadata.xu)
@@ -624,7 +624,7 @@ enum PaymentStatus {
 }
 
 enum PaymentProvider {
-  VIETQR // Chuyển khoản VietQR, SePay báo tiền về (docs/21)
+  VIETQR // Chuyển khoản VietQR, SePay báo tiền về (docs-old/21)
   VNPAY // Cổng VNPay sandbox, dành cho tài khoản demo
 }
 
@@ -654,7 +654,7 @@ enum BankTxUnmatchedReason {
 
 enum CreditKind {
   EXPORT // Lượt xuất file sạch
-  XU // Xu Wrap: mọi tác vụ AI (docs/19)
+  XU // Xu Wrap: mọi tác vụ AI (docs/16)
 }
 
 enum CreditSource {
@@ -673,7 +673,7 @@ enum CreditDebitReason {
 
 enum SubscriptionStatus {
   ACTIVE // Trong chu kỳ đã trả
-  EXPIRED // Hết chu kỳ (không gia hạn tự động: docs/17 M4)
+  EXPIRED // Hết chu kỳ (không gia hạn tự động: docs-old/17 M4)
 }
 
 // One payment request (VietQR transfer confirmed by SePay, VNPay sandbox for demo users, or simulated). `reference` is
@@ -694,7 +694,7 @@ model Payment {
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  // Restrict (docs/25 mục 3): xóa user có payment phải đi đường ẩn danh hóa, không cascade mất tiền.
+  // Restrict (docs-old/25 mục 3): xóa user có payment phải đi đường ẩn danh hóa, không cascade mất tiền.
   user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
   creditLots       CreditLot[]
   subscriptions    Subscription[]
@@ -706,7 +706,7 @@ model Payment {
   @@map("payments")
 }
 
-// Every incoming transfer reported by the SePay webhook (docs/21 §3.1). `external_id` is the SePay transaction id, the
+// Every incoming transfer reported by the SePay webhook (docs-old/21 §3.1). `external_id` is the SePay transaction id, the
 // idempotency key: a resend inserts nothing.
 model BankTransaction {
   id                 String                 @id @default(uuid(7)) @db.Uuid
@@ -746,7 +746,7 @@ model CreditLot {
   expiresAt DateTime?    @map("expires_at") @db.Timestamptz(3) // null = không hết hạn (chỉ lô ADMIN)
   paymentId String?      @map("payment_id") @db.Uuid
   periodKey String?      @map("period_key") // Chỉ lô PLAN_ALLOWANCE (CHECK): kỳ được cấp, xem xuAllowancePeriod
-  valueVnd  Int          @default(0) @map("value_vnd") // Tiền thật của cả lô: số tiền đã trả, 0 với xu gói / tặng (docs/19 D6)
+  valueVnd  Int          @default(0) @map("value_vnd") // Tiền thật của cả lô: số tiền đã trả, 0 với xu gói / tặng (docs/16 D6)
   note      String?
   createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -824,7 +824,7 @@ model Subscription {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Đơn in mẫu gửi xưởng đối tác (docs/17, S4). Xưởng in là danh sách tĩnh trong PrintShopsService: lưu id dạng chuỗi.
+// Đơn in mẫu gửi xưởng đối tác (docs-old/17, S4). Xưởng in là danh sách tĩnh trong PrintShopsService: lưu id dạng chuỗi.
 
 enum OrderStatus {
   PENDING_PAYMENT // Đã đặt, chờ thanh toán (VietQR mô phỏng, S5)
@@ -846,7 +846,7 @@ model Order {
   notes           String?
   subtotalVnd     Int         @map("subtotal_vnd")
   shippingVnd     Int         @default(0) @map("shipping_vnd")
-  discountVnd     Int         @default(0) @map("discount_vnd") // Luôn 0: đã bỏ mã ưu đãi (docs/25 mục 1), giữ cột cho tính năng voucher sau này
+  discountVnd     Int         @default(0) @map("discount_vnd") // Luôn 0: đã bỏ mã ưu đãi (docs-old/25 mục 1), giữ cột cho tính năng voucher sau này
   promoCode       String?     @map("promo_code")
   totalVnd        Int         @map("total_vnd") // = subtotal + shipping - discount (CHECK trong migration)
   status          OrderStatus @default(PENDING_PAYMENT)
@@ -858,7 +858,7 @@ model Order {
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User                 @relation(fields: [userId], references: [id], onDelete: Restrict) // docs/25 mục 3
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Restrict) // docs-old/25 mục 3
   payment Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   items   OrderItem[]
   history OrderStatusHistory[]
@@ -919,7 +919,7 @@ model PrintShopMember {
   @@map("print_shop_members")
 }
 
-// Analytics (docs/17 S7): append-only product events behind the dashboard numbers. user_id / project_id become null when
+// Analytics (docs-old/17 S7): append-only product events behind the dashboard numbers. user_id / project_id become null when
 // the user or the project is deleted, so totals of WrapFit stay correct.
 enum ProductEventType {
   PROJECT_CREATED // payload { templateId, source: "new" | "duplicate" | "fork" | "backfill" }
@@ -946,7 +946,7 @@ model ProductEvent {
   @@map("product_events")
 }
 
-// Hộp thư thông báo (docs/25 S8): "có người remix thiết kế của bạn" và "file in đã xong". Chỉ lưu id: tên người remix
+// Hộp thư thông báo (docs-old/25 S8): "có người remix thiết kế của bạn" và "file in đã xong". Chỉ lưu id: tên người remix
 // được đọc lúc hiển thị, nên tài khoản đã xóa hay ẩn danh không còn tên trong hộp thư của ai.
 enum NotificationType {
   PROJECT_REMIXED // project = thiết kế gốc của người nhận; actor = người remix gần nhất; count = số lượt gộp lại

@@ -73,7 +73,7 @@ export const copyId = (el: CanvasElement) => newElementId(el.type);
 const toolButton = buttonClass({ variant: "ghost", size: "icon-sm", shape: "rounded", className: "text-fg-muted hover:text-fg disabled:opacity-40" });
 
 /**
- * Layers of one face (docs/23 S2), top layer first like Canva: select, drag to reorder, show / hide, lock, rename,
+ * Layers of one face (docs-old/23 S2), top layer first like Canva: select, drag to reorder, show / hide, lock, rename,
  * move up or down, duplicate, delete. Backgrounds stay at the bottom: they can be hidden, never moved.
  */
 export function LayersPanel({ elements, onChange, selectedId, onSelect, faces, faceId, onFaceChange, side = "outside", readOnly }: LayersPanelProps) {

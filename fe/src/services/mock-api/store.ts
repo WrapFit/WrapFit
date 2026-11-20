@@ -159,7 +159,7 @@ function seed(): MockDb {
       expiresAt: iso(now + 356 * DAY),
       createdAt: iso(now - 9 * DAY),
     },
-    // An export pack bought before the packs stopped: its 3 credits left became 474 xu (docs/25 item 7).
+    // An export pack bought before the packs stopped: its 3 credits left became 474 xu (docs-old/25 item 7).
     {
       id: "lot-seed-exp005",
       userId: DEMO_USER_ID,

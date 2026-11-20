@@ -1,4 +1,4 @@
-// Recolouring of SVG logos (docs/23 S14): the shared helpers and the print files built from a recoloured logo.
+// Recolouring of SVG logos (docs-old/23 S14): the shared helpers and the print files built from a recoloured logo.
 import { type CanvasElement, cleanColorMap, normalizeSvgColor, paletteColorMap, recolorSvg, svgColorsOf, TEXT_COMBOS, textComboStyle } from '@wrapfit/shared';
 import { imageFileOf, renderSvg } from './print-renderers';
 import { buildPrintLayout, type PrintLayout } from './print-layout';

@@ -326,7 +326,7 @@ describe('Print export (e2e)', () => {
       for (const fileType of ['PDF_A4_PRINT', 'SVG', 'DXF']) {
         expect((await exportOf({ fileType }).expect(402)).body).toMatchObject({ code: 'ORDER_PAYMENT_REQUIRED' });
       }
-      // Export credits left from before (docs/25 item 7) open nothing, and `useCredit` is no longer accepted.
+      // Export credits left from before (docs-old/25 item 7) open nothing, and `useCredit` is no longer accepted.
       await credits.grant(rae.id, { quantity: 2, source: 'ADMIN', expiresAt: null });
       await exportOf({ fileType: 'SVG' }).expect(402);
       await exportOf({ fileType: 'SVG', useCredit: true }).expect(400);
@@ -407,7 +407,7 @@ describe('Print export (e2e)', () => {
     });
 
     it('lets only the owner export or read the access: 404 for others', async () => {
-      // docs/17 asked for 403; ProjectOwnerGuard answers 404 so other users cannot tell the project exists.
+      // docs-old/17 asked for 403; ProjectOwnerGuard answers 404 so other users cannot tell the project exists.
       await exportOf({ fileType: 'SVG' }, quinn).expect(404);
       await as(quinn).get(`/api/projects/${design}/exports/access`).expect(404);
       await api().post(`/api/projects/${design}/exports`).send({ fileType: 'SVG' }).expect(401);
@@ -415,7 +415,7 @@ describe('Print export (e2e)', () => {
     });
   });
 
-  // docs/30 item 1: the job keeps the design checked and paid for; the worker never reads the project as it is now.
+  // docs-old/30 item 1: the job keeps the design checked and paid for; the worker never reads the project as it is now.
   describe('an export prints the version it was requested for', () => {
     let sam: { id: string; cookie: string };
     const dimsA = { length: 120, width: 80, height: 60 };
@@ -474,7 +474,7 @@ describe('Print export (e2e)', () => {
       expect(snapshot.canvasState).toMatchObject({ elements: [expect.objectContaining({ content: 'Bản A' })] });
     });
 
-    // docs/30 item 6, review round 2: the request stops waiting after 3 s, but queue.add goes on and Redis has the job.
+    // docs-old/30 item 6, review round 2: the request stops waiting after 3 s, but queue.add goes on and Redis has the job.
     it('a job Redis took while the request timed out: 202, then the same job renders one file and one notification', async () => {
       const id = await create([text('Hàng đợi chậm')]);
       // The instance ExportService adds to (another module registers the same queue under its own instance).
@@ -556,7 +556,7 @@ describe('Print export (e2e)', () => {
     });
   });
 
-  // docs/30 review round 2: a failed job stops keeping alive the files only its frozen design used.
+  // docs-old/30 review round 2: a failed job stops keeping alive the files only its frozen design used.
   it('a job lost by the queue is failed by the reconcile task, and the image only it kept is released', async () => {
     const tom = await register('tom');
     const image = await uploadPngTo(tom);
@@ -633,7 +633,7 @@ describe('Print export (e2e)', () => {
     expect((await fetch(latest.downloadUrl)).status).toBe(200);
 
     await as(pia).patch(`/api/projects/${projectId}/status`).send({ status: 'DELETED' }).expect(200);
-    // A paid order still needs the design (docs/30 item 4): the project goes once its order is shipped.
+    // A paid order still needs the design (docs-old/30 item 4): the project goes once its order is shipped.
     await as(pia).delete(`/api/projects/${projectId}`).expect(409);
     await prisma.order.updateMany({
       where: { id: { in: orderIds }, items: { some: { projectId } } },

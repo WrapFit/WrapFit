@@ -94,7 +94,7 @@ function NumberCell({ label, unit, value, onCommit, disabled }: { label: string;
 }
 
 /**
- * Toolbar of the selection, over the design (docs/23 S8, S12): the exact place, size and turn of one layer, or
+ * Toolbar of the selection, over the design (docs-old/23 S8, S12): the exact place, size and turn of one layer, or
  * aligning, spacing and grouping several. The full settings stay in the "Lớp" rail.
  */
 export function SelectionToolbar({ elements, selectedIds, onChange, onSelect, faceSize, onOpenSettings }: SelectionToolbarProps) {

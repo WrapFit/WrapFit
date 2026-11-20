@@ -22,7 +22,7 @@ The backend follows [CatsMiaow/nestjs-project-structure](https://github.com/Cats
 ## 1. Relational Database Schema (PostgreSQL)
 
 > The SQL below is the original sketch. The source of truth is `be/prisma/schema.prisma`, and these rules apply to
-> every change (see `docs/02_DATABASE_DESIGN.md` and `docs/10_DB_HARDENING_DESIGN.md`):
+> every change (see `docs/02_DATABASE_DESIGN.md`, section "Quy ước bắt buộc"):
 > - `timestamptz(3)` for every timestamp, `@default(uuid(7))` for primary keys, an index on every foreign key.
 > - CHECK constraints (`chk_*`) live in migrations only; keep them when renaming or retyping a column.
 > - Store object keys (`users/...`), never public URLs: the API builds URLs with `storage/asset-keys.ts`.

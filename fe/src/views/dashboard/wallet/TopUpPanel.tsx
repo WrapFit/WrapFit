@@ -43,7 +43,7 @@ export const VNPAY_METHOD: TopUpMethod = {
   icon: CreditCard,
 };
 
-/** `methods` is the card of the way this account pays: VietQR for real accounts, "VNPay (sandbox)" for demo accounts (docs/21 §4.2). */
+/** `methods` is the card of the way this account pays: VietQR for real accounts, "VNPay (sandbox)" for demo accounts (docs-old/21 §4.2). */
 export interface TopUpPanelProps {
   methods?: TopUpMethod[];
   onBuy(topUp: XuTopUp): void;

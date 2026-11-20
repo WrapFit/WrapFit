@@ -8,7 +8,7 @@
  * Paper thickness t: creases sit on the paper mid-plane, so the base bottom is L + t by W + t, plus 2t along L for the
  * corner tabs glued inside the left and right walls; the walls are H + t/2 high (the bottom adds half a thickness).
  * The lid is sized on the outside of the base (base + t) plus LID_CLEARANCE, then the same allowances.
- * `window: true` (docs/23 S17) cuts a display window in the top of the lid (see openings.ts).
+ * `window: true` (docs-old/23 S17) cuts a display window in the top of the lid (see openings.ts).
  */
 
 import { BoxDimensions, DielineGeometry } from "../types/dieline";

@@ -9,7 +9,7 @@ import { EXPORT_COMPLETED, type ConfigService } from '../common';
 import { ExportProcessor, MAX_ARTWORK_BYTES } from './export.processor';
 
 describe('ExportProcessor', () => {
-  // The design frozen on the job by ExportService.request (docs/30 item 1).
+  // The design frozen on the job by ExportService.request (docs-old/30 item 1).
   const design = {
     title: 'Hộp nến',
     templateId: 'tuck-top',
@@ -139,7 +139,7 @@ describe('ExportProcessor', () => {
     expect(sql.at(-1)).toContain('project_file_refs');
   });
 
-  describe('a job handed out again (docs/30 item 6)', () => {
+  describe('a job handed out again (docs-old/30 item 6)', () => {
     const writes = () => ({
       files: storage.putGeneratedFile.mock.calls.length,
       events: prisma.productEvent.create.mock.calls.length,
@@ -178,7 +178,7 @@ describe('ExportProcessor', () => {
     expect(processor['logger'].warn).toHaveBeenCalledWith(expect.stringContaining('no frozen design'));
   });
 
-  it('renders the A4 PDF clean, even for an old job row flagged watermarked (docs/25 item 7)', async () => {
+  it('renders the A4 PDF clean, even for an old job row flagged watermarked (docs-old/25 item 7)', async () => {
     Object.assign(row, { fileType: 'PDF_A4_PRINT', watermarked: true });
     await processor.process(job(0));
     const [{ body }] = storage.putGeneratedFile.mock.calls[0];

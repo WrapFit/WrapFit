@@ -10,7 +10,7 @@ import { PRO_BENEFITS, formatVnd } from "@/features/pricing";
 import type { Payment, PaymentPurpose } from "@/types/api";
 
 const PACKAGE_NAMES: Record<PaymentPurpose, string> = {
-  // Export packs are no longer sold (docs/25 item 7); an old one confirmed late is paid out in xu.
+  // Export packs are no longer sold (docs-old/25 item 7); an old one confirmed late is paid out in xu.
   EXPORT_1: "gói lượt xuất cũ (đổi sang xu)",
   EXPORT_5: "gói lượt xuất cũ (đổi sang xu)",
   EXPORT_15: "gói lượt xuất cũ (đổi sang xu)",

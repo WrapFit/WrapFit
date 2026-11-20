@@ -50,7 +50,7 @@ const COLUMNS: DataColumn<UseRow>[] = [
 
 const PACKS = (Object.keys(XU_PACKS) as XuPackId[]).map((id) => XU_PACKS[id]);
 
-/** `/pricing`: Xu Wrap, the one currency of every AI task (docs/19): xu per plan, packs, what 1.000 xu buy. */
+/** `/pricing`: Xu Wrap, the one currency of every AI task (docs/16): xu per plan, packs, what 1.000 xu buy. */
 /** `embedded`: inside the pricing tabs (no own heading or section spacing). */
 export function XuWrapSection({ embedded = false }: { embedded?: boolean }) {
   return (

@@ -51,8 +51,17 @@ WrapFit/
 │   ├── 07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md # Use case & WBS
 │   ├── 08_PACDORA_SYSTEM_CLASS_DIAGRAM_SPECIFICATION.md # Class diagram
 │   ├── 09_PROJECT_DIRECTORY_AND_FILE_ARCHITECTURE.md    # Tài liệu này
-│   ├── 10_DB_HARDENING_DESIGN.md           # Quy ước ràng buộc & bảo vệ CSDL
-│   └── 11_STITCH_PARITY_AUDIT.md           # Đồng bộ màn hình Stitch vào FE
+│   ├── 10_STITCH_PARITY_AUDIT.md           # Đồng bộ màn hình Stitch vào FE
+│   ├── 11_UI_VIEWPORT_AUDIT.md             # Rà soát giao diện theo kích thước màn hình
+│   ├── 12_BOX_FORMULA_AUDIT.md             # Rà soát công thức hộp và FitCheck
+│   ├── 13_DESIGN_SYSTEM.md                 # Design system: token, thành phần, quy tắc
+│   ├── 14_PRICING_ENTITLEMENTS_SPEC.md     # Gói, hạn mức, quyền lợi
+│   ├── 15_PATH2_DEPLOY_RUNBOOK.md          # Runbook deploy và demo
+│   ├── 16_XU_WRAP_SPEC.md                  # Xu Wrap: đồng xu cho tác vụ AI
+│   ├── 17_LIBRARY_CONTENT_GUIDE.md         # Hướng dẫn nội dung thư viện
+│   ├── 18_VIEC_CON_TREO_SAU_AUDIT_BE.md    # Việc còn mở sau audit
+│   ├── wrapfit_architecture_security_blueprint.md # Kiến trúc và bảo mật khi deploy
+│   └── assets/12/                          # Ảnh so sánh công thức hộp v1/v3
 │
 ├── fe/                                     # FRONTEND (Next.js 15 App Router + Three.js), theo mẫu react-structure
 │   ├── .agents/                            # Skill riêng cho FE (gsap, img2threejs, impeccable, scroll-world...)

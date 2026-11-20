@@ -12,7 +12,7 @@ import { displayName } from "./accountFormat";
 type DemoUser = SafeUser & { isDemo?: boolean };
 
 /**
- * "Tài khoản demo" switch (`PATCH /users/:id { isDemo }`, docs/21 D3). Demo accounts pay through VNPay sandbox, the others
+ * "Tài khoản demo" switch (`PATCH /users/:id { isDemo }`, docs-old/21 D3). Demo accounts pay through VNPay sandbox, the others
  * through a real bank transfer; the flag counts for the next payment the user creates.
  */
 export function DemoFlagToggle({ user, disabled }: { user: SafeUser; disabled?: boolean }) {

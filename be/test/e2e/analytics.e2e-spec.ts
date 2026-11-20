@@ -11,7 +11,7 @@ import { createPaidOrder } from './helpers/orders';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * Analytics dashboard (docs/17 S7): product events recorded by the API, the worker and the studio, and the summary
+ * Analytics dashboard (docs-old/17 S7): product events recorded by the API, the worker and the studio, and the summary
  * built from them. Needs `docker compose up -d postgres redis seaweedfs storage-init` (the export runs in a worker).
  */
 describe('Analytics (e2e)', () => {
@@ -62,7 +62,7 @@ describe('Analytics (e2e)', () => {
 
     ana = await signUp(app, `ana-${run}@e2e.test`);
     ben = await signUp(app, `ben-${run}@e2e.test`);
-    // Clean SVG exports need Pro or an export credit since docs/17 S2; a tier set by hand is kept without a subscription.
+    // Clean SVG exports need Pro or an export credit since docs-old/17 S2; a tier set by hand is kept without a subscription.
     await prisma.user.update({ where: { id: ana.id }, data: { subscriptionTier: 'STARTER' } });
   });
 

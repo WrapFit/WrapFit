@@ -73,7 +73,7 @@ export const QUOTE_PRICES = {
     "belly-band": 200,
     "sticker-label": 0,
   } as Record<string, number>,
-  /** PET film cut and glued behind each display window (docs/23 S17). */
+  /** PET film cut and glued behind each display window (docs-old/23 S17). */
   windowFilmPerBox: 900,
   /** Finishes: per B1 sheet (laminations, UV) or per box (foil, plus its plate). */
   finishes: {
@@ -166,13 +166,13 @@ export interface QuoteInput {
   quantity: number;
   paper: QuotePaper;
   finishes?: QuoteFinish[];
-  /** The design prints on the inside of the sheet too: a second printing pass (docs/23 S5). */
+  /** The design prints on the inside of the sheet too: a second printing pass (docs-old/23 S5). */
   insidePrint?: boolean;
   /** Force a method (comparisons); otherwise by quantity. */
   method?: PrintMethod;
 }
 
-/** What the last step of each product is, when it is not "Gấp và dán" (docs/23 S16, S18). */
+/** What the last step of each product is, when it is not "Gấp và dán" (docs-old/23 S16, S18). */
 const FINISHING_LABELS: Record<string, string> = {
   mailer: "Gấp hộp (không dùng keo)",
   "cup-carrier": "Gấp khay và dán quai",

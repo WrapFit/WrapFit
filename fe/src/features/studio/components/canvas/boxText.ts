@@ -51,7 +51,7 @@ export function faceAttributes(font: PrintFontId, face: TextFace): { fontWeight:
 export const measureInBrowser: MeasureText = (text, font, fontSizeMm, face = "bold", fontUrl) => {
   if (context === undefined) context = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
   if (!context) return text.length * fontSizeMm * 0.55;
-  // An uploaded font (docs/23 S13) once the page has loaded it; the built-in font until then.
+  // An uploaded font (docs-old/23 S13) once the page has loaded it; the built-in font until then.
   const custom = customFamilyOf(fontUrl);
   context.font = custom ? `${REFERENCE_PX}px "${custom}"` : cssFont(font, face, REFERENCE_PX);
   return (context.measureText(text).width / REFERENCE_PX) * fontSizeMm;
@@ -88,7 +88,7 @@ export function useBoxFonts(elements: CanvasElement[], extra: PrintFontId[] = []
   const key = [...new Set([...used, ...extra.map((font) => `${font}:bold`)])]
     .sort()
     .join(",");
-  // Uploaded fonts of the texts (docs/23 S13): family name from the text's font-family, file from its fontUrl.
+  // Uploaded fonts of the texts (docs-old/23 S13): family name from the text's font-family, file from its fontUrl.
   const customKey = JSON.stringify(
     [
       ...new Map(

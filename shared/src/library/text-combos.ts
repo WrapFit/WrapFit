@@ -1,5 +1,5 @@
 /**
- * Ready-made text combos (docs/23 S14): a few lines set in contrasting fonts and sizes ("Cảm ơn bạn" over a small
+ * Ready-made text combos (docs-old/23 S14): a few lines set in contrasting fonts and sizes ("Cảm ơn bạn" over a small
  * script line, a brand name with its tagline...), inserted as one group of plain text elements the user rewrites.
  */
 import type { CanvasElementStyle } from "../types/project";

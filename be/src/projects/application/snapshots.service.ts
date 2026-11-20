@@ -80,7 +80,7 @@ export class SnapshotsService {
   }
 
   /**
-   * Moves a project to the current formulas of its box structure (docs/12 Phase 8, 8.10b). The current state is saved
+   * Moves a project to the current formulas of its box structure (docs-old/12 Phase 8, 8.10b). The current state is saved
    * first as an automatic snapshot that keeps the old formula version, so restoring it undoes the upgrade. `version`
    * guards against overwriting a newer save, like PATCH; a project already on the current formulas is returned as is.
    */

@@ -23,9 +23,9 @@ export interface ArtShape {
   strokeWidth?: number;
   /** Round line caps and joins (line icons). */
   round?: boolean;
-  /** Fill ink the user typed in CMYK (docs/23 S7): printed as is instead of converting `fill`. */
+  /** Fill ink the user typed in CMYK (docs-old/23 S7): printed as is instead of converting `fill`. */
   cmyk?: [number, number, number, number];
-  /** Linear gradient of the fill, in the coordinates of the element (docs/23 S11); `fill` is its first colour. */
+  /** Linear gradient of the fill, in the coordinates of the element (docs-old/23 S11); `fill` is its first colour. */
   gradient?: { angle: number; stops: { offset: number; color: string }[] };
 }
 
@@ -781,7 +781,7 @@ const DESIGNS: ArtDesign[] = [
     },
   },
   // ---- backgrounds: drawn over the whole element (a panel plus its bleed); motifs that would cross the edge are left out
-  // ---- print marks a box usually needs (docs/23 S14): recycling, origin, dates, handling
+  // ---- print marks a box usually needs (docs-old/23 S14): recycling, origin, dates, handling
   {
     id: "recycle-mark",
     name: "Ký hiệu tái chế",

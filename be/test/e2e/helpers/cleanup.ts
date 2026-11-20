@@ -3,7 +3,7 @@ import type { PrismaService } from '../../../src/shared/prisma';
 
 /**
  * Deletes test accounts at the end of a suite. Payments, orders, credit lots and subscriptions block a hard delete of
- * their user (ON DELETE RESTRICT, docs/25 item 3), as does a bank transaction the user resolved, so they go first.
+ * their user (ON DELETE RESTRICT, docs-old/25 item 3), as does a bank transaction the user resolved, so they go first.
  * Everything else cascades from the user row as before.
  */
 export async function deleteUsers(prisma: PrismaService, where: Prisma.UserWhereInput): Promise<void> {

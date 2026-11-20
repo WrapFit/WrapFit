@@ -70,7 +70,7 @@ export async function getHealthDetails(): Promise<HealthDetails> {
 }
 
 export interface GrantCreditsRequest {
-  /** Only xu: export credits are no longer granted (docs/25 item 7). */
+  /** Only xu: export credits are no longer granted (docs-old/25 item 7). */
   kind?: "XU";
   quantity: number;
   expiresInDays?: number;

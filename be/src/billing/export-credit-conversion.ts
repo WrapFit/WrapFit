@@ -1,7 +1,7 @@
 import { XU_VALUE_VND } from '@wrapfit/shared';
 
 /**
- * Export credits are no longer sold or spent (docs/25 item 7, Q4): money paid for them becomes xu at the price paid.
+ * Export credits are no longer sold or spent (docs-old/25 item 7, Q4): money paid for them becomes xu at the price paid.
  * `credits` of a lot of `lotQuantity` credits bought for `paidVnd` are worth `credits × paidVnd / lotQuantity` đồng,
  * that is that many đồng of xu at the list price (XU_VALUE_VND), rounded up: the customer never loses part of a xu.
  * Integer arithmetic, so 3 credits of a 5-credit pack at 79.000đ give exactly 474 xu. `valueVnd` is what the new xu

@@ -1,7 +1,7 @@
 import type { Tone } from '@/assets/styles/tokens';
 import type { BankTxStatus, BankTxUnmatchedReason } from '@/api/admin/bank-transactions';
 
-/** Why the SePay webhook could not confirm a payment on its own (docs/21 §3.3). */
+/** Why the SePay webhook could not confirm a payment on its own (docs-old/21 §3.3). */
 export const REASON_LABELS: Record<BankTxUnmatchedReason, string> = {
   NO_REFERENCE: 'Không có mã thanh toán',
   NOT_FOUND: 'Không tìm thấy thanh toán',

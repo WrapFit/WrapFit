@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: illustrated mock-ups of the studio and printed boxes beside the login form. Raw colours and sizes here are allowed (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: illustrated mock-ups of the studio and printed boxes beside the login form. Raw colours and sizes here are allowed (docs/13_DESIGN_SYSTEM.md §2). */
 
 import { ChevronLeft, ChevronRight, Hand, PackageCheck, Pause, Play, Sparkles, Star } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";

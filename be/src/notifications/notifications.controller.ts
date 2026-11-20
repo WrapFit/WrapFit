@@ -6,7 +6,7 @@ import { NOTIFICATION_PAGE_DEFAULT } from './notifications.constants';
 import { NotificationsService } from './notifications.service';
 
 /**
- * My notification inbox (docs/25 S8). Signed-in users only, each sees and changes only their own rows. Rate limit: the
+ * My notification inbox (docs-old/25 S8). Signed-in users only, each sees and changes only their own rows. Rate limit: the
  * global one (THROTTLE_LIMIT per minute and IP, 100 by default), like the other reads of the workspace; the frontend
  * polls the unread count about once a minute.
  */

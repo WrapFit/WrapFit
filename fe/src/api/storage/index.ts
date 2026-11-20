@@ -10,7 +10,7 @@ export function presignUpload(data: PresignUploadRequest): Promise<PresignedUplo
   return request("/storage/presigned-upload", { method: "POST", json: data });
 }
 
-/** Checks an uploaded font (docs/23 S13): 422 FONT_NO_VIETNAMESE / FONT_UNREADABLE, else its family name. */
+/** Checks an uploaded font (docs-old/23 S13): 422 FONT_NO_VIETNAMESE / FONT_UNREADABLE, else its family name. */
 export function inspectFont(url: string): Promise<{ url: string; family: string }> {
   return request("/storage/fonts/inspect", { method: "POST", json: { url } });
 }

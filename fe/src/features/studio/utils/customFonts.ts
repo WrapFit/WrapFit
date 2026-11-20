@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Fonts the user uploads for a design (docs/23 S13, D11). In the browser a font is checked before it is uploaded
+ * Fonts the user uploads for a design (docs-old/23 S13, D11). In the browser a font is checked before it is uploaded
  * (it must open and draw every Vietnamese letter), then loaded as a FontFace under its family name, so the editor,
  * the 3D box and the offline print files measure and draw the texts with the very file the print worker uses.
  */

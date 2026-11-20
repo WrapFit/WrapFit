@@ -10,7 +10,7 @@ import { PrismaService } from '../../src/shared/prisma';
 import { signUp } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
-/** AI pattern endpoint (IT3-09, paid with xu since docs/19 S3) with AI disabled (see e2e-env.ts): procedural answers. */
+/** AI pattern endpoint (IT3-09, paid with xu since docs/16 S3) with AI disabled (see e2e-env.ts): procedural answers. */
 describe('AI pattern (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;

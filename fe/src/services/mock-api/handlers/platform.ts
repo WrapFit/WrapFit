@@ -179,7 +179,7 @@ const runTool: Handler = ({ params }) => {
   return { job: jobView(job), balance };
 };
 
-/** Tools on an image of the canvas (docs/23 S20): the offline demo answers with a generated image. */
+/** Tools on an image of the canvas (docs-old/23 S20): the offline demo answers with a generated image. */
 const runUploadTool: Handler = ({ params }) => {
   const user = currentUser();
   const tool = params.tool as AiImageTool;
@@ -273,7 +273,7 @@ const deleteUser: Handler = ({ params }) => {
   db().users = db().users.filter((u) => u.id !== params.id);
   db().projects = db().projects.filter((p) => p.ownerId !== params.id);
   save();
-  // The mock has no payments to keep: always a hard delete (the API may answer ANONYMIZED, docs/25 item 3).
+  // The mock has no payments to keep: always a hard delete (the API may answer ANONYMIZED, docs-old/25 item 3).
   return { id: params.id, result: "DELETED" };
 };
 

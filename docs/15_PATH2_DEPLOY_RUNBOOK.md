@@ -1,4 +1,4 @@
-# 18 — Runbook deploy và demo bản Path 2
+# 15 — Runbook deploy và demo bản Path 2
 
 > Ngày lập: 2026-10-30, trong đợt hoàn thiện MVP Path 2 cho buổi demo CP4. Cập nhật: 2026-11-19, đồng bộ với mã sau
 > audit backend và review backend (luồng đặt in mẫu thay cho mua lượt xuất, hai migration mới, luật giả lập thanh toán).
@@ -200,7 +200,7 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 - **Chỉ chạy một API và một worker.** Throttler, cầu chì chi phí AI và Socket.IO giữ trạng thái trong bộ nhớ từng
   process. Trước khi chạy từ hai process API trở lên, phải làm lại ba phần đó: lưu trạng thái throttler trong Redis, dùng
   Redis adapter cho Socket.IO, cho cầu chì AI đọc thẳng CSDL. Việc này đang hoãn, theo dõi ở
-  [28 · Việc còn treo](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) và [07 · Blueprint hệ thống](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md#16-điều-kiện-khi-chạy-nhiều-instance-api).
+  [18 · Việc còn treo](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) và [07 · Blueprint hệ thống](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md#16-điều-kiện-khi-chạy-nhiều-instance-api).
 - **Đăng xuất xóa cookie của cả tên miền.** Logout gửi `Clear-Site-Data: "cookies"`, xóa cookie của cả tên miền đăng ký,
   kể cả subdomain khác. Kiểm không có ứng dụng nào khác dùng chung tên miền với cookie cần giữ.
 - **Tên cookie cũ.** Ở production, cookie đăng nhập mang tiền tố `__Secure-`. Bản hiện tại vẫn đọc và xóa tên cookie cũ
@@ -225,9 +225,9 @@ production".
 | `VIETQR_BANK_BIN`, `VIETQR_ACCOUNT_NO`, `VIETQR_ACCOUNT_NAME` | trống, hoặc tài khoản ngân hàng thật | Đặt cả ba hoặc để trống cả ba. Trống = tài khoản mẫu, giao diện ghi "Mô phỏng". Có tài khoản thật thì cần thêm webhook SePay (3.4) |
 | `SEED_DEMO_EMAIL` | `demo@wrapfit.vn` (mặc định) | Tài khoản demo, xem 3.2 |
 | `SEED_DEMO_PASSWORD` | mật khẩu riêng, chỉ người demo biết | Trống = không tạo tài khoản demo. Không ghi vào slide, tài liệu, chat |
-| `FAL_KEY` | khóa fal.ai (Xu Wrap, [19](19_XU_WRAP_SPEC.md)) | Truyền vào cả `backend` và `worker`. Trống = tắt ảnh AI (studio báo "đang tắt"), hoa văn và phần còn lại vẫn chạy. Không ghi vào slide, tài liệu, chat |
+| `FAL_KEY` | khóa fal.ai (Xu Wrap, [16](16_XU_WRAP_SPEC.md)) | Truyền vào cả `backend` và `worker`. Trống = tắt ảnh AI (studio báo "đang tắt"), hoa văn và phần còn lại vẫn chạy. Không ghi vào slide, tài liệu, chat |
 | `AI_IMAGE_PROVIDER` | `fal` (mặc định) | `fake` chỉ cho dev / e2e, bị từ chối khi `NODE_ENV=production` |
-| `AI_IMAGE_MODELS` | trống | Trống = các model có `enabled: true`. GPT Image 2 medium chưa đo giá thật ([19](19_XU_WRAP_SPEC.md) §3): bỏ khỏi danh sách nếu muốn chắc biên, vd. `flux2-klein,gpt-image-2-low,seedream-4.5,nano-banana-2,recraft-v3-vector,nano-banana-pro` |
+| `AI_IMAGE_MODELS` | trống | Trống = các model có `enabled: true`. GPT Image 2 medium chưa đo giá thật ([16](16_XU_WRAP_SPEC.md) §3): bỏ khỏi danh sách nếu muốn chắc biên, vd. `flux2-klein,gpt-image-2-low,seedream-4.5,nano-banana-2,recraft-v3-vector,nano-banana-pro` |
 | `AI_IMAGE_TIMEOUT_MS`, `AI_IMAGE_CONCURRENCY` | `180000`, `2` (mặc định) | Worker: thời gian chờ một job ở fal, số job ảnh chạy song song |
 | `USD_VND_RATE` | `26000` (mặc định) | Tỉ giá quy đổi chi phí model trong báo cáo `/admin/xu` |
 | `EXTRA_CORS_ORIGINS` | `https://wrap-fit.vercel.app` | Origin của frontend Vercel, để `OriginGuard` (CSRF) và CORS nhận request được Vercel chuyển tiếp. Nhiều origin: ngăn cách bằng dấu phẩy |
@@ -477,7 +477,7 @@ slide.
 | VPS (nhà cung cấp: IT điền) | backend, worker, PostgreSQL, Redis, Caddy, frontend dự phòng | IT điền (RAM tối thiểu ~2 GB: 4 container Node ≤ 512 MB + Postgres 512 MB) | Không | _điền_ |
 | Vercel | frontend `wrap-fit.vercel.app` | Hobby | Miễn phí; điều khoản Hobby chỉ cho dùng cá nhân, phi thương mại. Bán thật cần Pro (theo thành viên) | 0đ (Hobby) |
 | Cloudflare R2 | ảnh tải lên, QR, file in, bản sao lưu CSDL | Free tier | 10 GB lưu trữ / tháng, 1 triệu thao tác ghi (Class A), 10 triệu thao tác đọc (Class B), không tính phí băng thông ra | _điền_ (dự kiến 0đ) |
-| fal.ai | Ảnh AI cho mặt hộp, phóng to, xóa nền, vector hóa (Xu Wrap, [19](19_XU_WRAP_SPEC.md)) | Trả theo ảnh / MP, nạp trước; cầu chì `AI_MONTHLY_BUDGET_USD` tính cả ảnh | Không | Theo lượt dùng; mỗi ảnh $0.01–0.15 ([19](19_XU_WRAP_SPEC.md) §3), giá bán ≥ 2,5 lần chi phí |
+| fal.ai | Ảnh AI cho mặt hộp, phóng to, xóa nền, vector hóa (Xu Wrap, [16](16_XU_WRAP_SPEC.md)) | Trả theo ảnh / MP, nạp trước; cầu chì `AI_MONTHLY_BUDGET_USD` tính cả ảnh | Không | Theo lượt dùng; mỗi ảnh $0.01–0.15 ([16](16_XU_WRAP_SPEC.md) §3), giá bán ≥ 2,5 lần chi phí |
 | Anthropic Claude API | AI sinh hoa văn (`claude-haiku-5-5`), viết lại mô tả ảnh AI | Trả theo token, cầu chì `AI_MONTHLY_BUDGET_USD` | Không | ≤ `AI_MONTHLY_BUDGET_USD` USD. Ước tính một lượt Haiku 13–34đ (chưa đo bằng token thật) |
 | Email SMTP (dự kiến Resend) | email xác minh, đặt lại mật khẩu | Free | 3.000 email / tháng, 100 email / ngày | _điền_ |
 | Tên miền `wrapfit.vn` | `APP_DOMAIN`, email gửi đi | Nhà đăng ký: IT điền | Không | _điền_ (theo năm / 12) |

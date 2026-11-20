@@ -3,10 +3,10 @@
 > **Dành cho**: IT 3 (backend, CSDL), IT 1 (frontend), IT 2 (`@wrapfit/shared`).
 > **Trạng thái (đối chiếu 2026-11-19)**: tài liệu chia làm ba phần. **Phần A** mô tả những gì đang chạy trong code. **Phần B** giữ đặc tả gói lượt xuất và watermark đã bị thay thế ở CP4, chỉ để tra lịch sử. **Phần C** là đặc tả cho bản phát hành thương mại, chưa có mã (dùng thử, hóa đơn, workspace…).
 > **Tra cứu nhanh**:
-> - Xu Wrap (giá, hạn mức mỗi kỳ, trừ và hoàn xu): [19 · Xu Wrap](19_XU_WRAP_SPEC.md).
+> - Xu Wrap (giá, hạn mức mỗi kỳ, trừ và hoàn xu): [16 · Xu Wrap](16_XU_WRAP_SPEC.md).
 > - Quyền xuất file in và đơn in: [03 · Xuất file in](03_API_DESIGN.md#xuất-file-in), [03 · Đơn in mẫu](03_API_DESIGN.md#đơn-in-mẫu).
 > - Tạo thanh toán, cổng và giả lập: [03 · Gói, xu và thanh toán](03_API_DESIGN.md#gói-xu-và-thanh-toán).
-> - Cấu hình cổng thanh toán khi deploy (`VIETQR_*`, `SEPAY_*`, `VNPAY_*`, `PAYMENT_SIMULATION`): [18 · Runbook deploy](18_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps).
+> - Cấu hình cổng thanh toán khi deploy (`VIETQR_*`, `SEPAY_*`, `VNPAY_*`, `PAYMENT_SIMULATION`): [15 · Runbook deploy](15_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps).
 >
 > **Nguồn quyết định kinh doanh**: chiến lược định giá (4 gói Free · Lượt xuất · Pro · Business). Con số giá và hạn mức nằm ở `shared/src/billing/`; khi đổi chỉ sửa ở đó.
 > **Không thuộc phạm vi tài liệu này**: chợ in ấn và gói đối tác xưởng in, chợ mẫu cao cấp.
@@ -37,7 +37,7 @@ Mọi nội dung trong phần này: **có mã trên `develop`**; đã kiểm b�
 **Mua Pro (`PRO_MONTH`, 99.000đ cho 30 ngày) nhận đúng hai quyền lợi đang được backend kiểm:**
 
 1. **Dung lượng lưu trữ 2 GB** (Free 100 MB).
-2. **1.000 xu Wrap mỗi kỳ 30 ngày** (Free 50 xu mỗi tháng), tính từ ngày bắt đầu kỳ Pro; xu chưa dùng giữ thêm một kỳ. Xu dùng cho ảnh AI, hoa văn AI và công cụ ảnh ([19 · §2.1](19_XU_WRAP_SPEC.md#21-quy-tắc-cấp-trừ-và-hoàn-xu)).
+2. **1.000 xu Wrap mỗi kỳ 30 ngày** (Free 50 xu mỗi tháng), tính từ ngày bắt đầu kỳ Pro; xu chưa dùng giữ thêm một kỳ. Xu dùng cho ảnh AI, hoa văn AI và công cụ ảnh ([16 · §2.1](16_XU_WRAP_SPEC.md#21-quy-tắc-cấp-trừ-và-hoàn-xu)).
 
 Pro không tự gia hạn: hết 30 ngày thì về gói thấp hơn. Mua thêm một lần Pro khi kỳ còn hạn thì kỳ mới nối tiếp ngày hết hạn cũ.
 
@@ -71,10 +71,10 @@ Pro không tự gia hạn: hết 30 ngày thì về gói thấp hơn. Mua thêm 
 | :--- | :--- | :--- |
 | File in | Mở khi có đơn in đã trả, chưa hủy, giữ đúng phiên bản thiết kế; hoặc lần mở khóa cũ còn hạn. Đổi tên giữ quyền, sửa thiết kế cần đơn mới. Mọi file đều sạch, không còn PDF watermark | [03 · Xuất file in](03_API_DESIGN.md#xuất-file-in) |
 | Đơn in mẫu | 49.000đ hộp đầu, 25.000đ mỗi hộp thêm, 1–10 hộp mỗi thiết kế, nhiều thiết kế một đơn, mã `WF-<năm>-<6 chữ số>` | [03 · Đơn in mẫu](03_API_DESIGN.md#đơn-in-mẫu) |
-| Xu Wrap | Gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ; `XU_CUSTOM` 100–50.000 xu, bội số của 10, 100đ / xu, không thưởng; hạn 12 tháng | [19](19_XU_WRAP_SPEC.md) |
-| Lượt xuất còn dư | Đổi một lần sang xu theo số tiền đã trả (`db:convert-export-credits --apply`, chạy tay trước deploy). Thanh toán gói lượt xuất cũ xác nhận muộn được cấp xu, không cấp lượt | [19 · D5](19_XU_WRAP_SPEC.md#2-quyết-định) |
+| Xu Wrap | Gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ; `XU_CUSTOM` 100–50.000 xu, bội số của 10, 100đ / xu, không thưởng; hạn 12 tháng | [16](16_XU_WRAP_SPEC.md) |
+| Lượt xuất còn dư | Đổi một lần sang xu theo số tiền đã trả (`db:convert-export-credits --apply`, chạy tay trước deploy). Thanh toán gói lượt xuất cũ xác nhận muộn được cấp xu, không cấp lượt | [16 · D5](16_XU_WRAP_SPEC.md#2-quyết-định) |
 | Tạo thanh toán | `{ purpose, termsVersion }` (+ `orderId` cho `SAMPLE_ORDER`, `xu` cho `XU_CUSTOM`); `termsVersion` = `PAYMENT_TERMS_VERSION` (`2026-11-12`) | [03 · Gói, xu và thanh toán](03_API_DESIGN.md#gói-xu-và-thanh-toán) |
-| Cổng thanh toán | Tài khoản demo (`users.is_demo`): VNPay sandbox. Tài khoản thường: VietQR, SePay báo tiền về. Giả lập chỉ khi máy chủ bật `PAYMENT_SIMULATION=true`; khi đó tài khoản demo luôn được giả lập, tài khoản thường chỉ khi chưa cấu hình `VIETQR_*`, có tài khoản thật thì `403 SIMULATION_DEMO_ONLY` | [03 · Cổng thanh toán và giả lập](03_API_DESIGN.md#cổng-thanh-toán-và-giả-lập), [18](18_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps) |
+| Cổng thanh toán | Tài khoản demo (`users.is_demo`): VNPay sandbox. Tài khoản thường: VietQR, SePay báo tiền về. Giả lập chỉ khi máy chủ bật `PAYMENT_SIMULATION=true`; khi đó tài khoản demo luôn được giả lập, tài khoản thường chỉ khi chưa cấu hình `VIETQR_*`, có tài khoản thật thì `403 SIMULATION_DEMO_ONLY` | [03 · Cổng thanh toán và giả lập](03_API_DESIGN.md#cổng-thanh-toán-và-giả-lập), [15](15_PATH2_DEPLOY_RUNBOOK.md#3-biến-môi-trường-trên-vps) |
 | Đối soát | Khớp tiền tự động; lệch tiền, thiếu mã, hết hạn, đơn đã hủy → admin gán tay hoặc bỏ qua | [03 · Đối soát chuyển khoản](03_API_DESIGN.md#đối-soát-chuyển-khoản) |
 | Hóa đơn VAT | Chỉ lưu thông tin `{ company, taxCode, email }` (`/billing/details`) và chụp vào thanh toán. Chưa xuất hóa đơn điện tử | Phần C, Mục 7.1 |
 
@@ -88,11 +88,11 @@ Pro không tự gia hạn: hết 30 ngày thì về gói thấp hơn. Mua thêm 
 
 ## Phần B. Đã thay thế ở CP4
 
-> **Đã thay thế (CP4, trước 2026-11-17).** Phần dưới mô tả gói lượt xuất, PDF A4 có watermark và cách cấp credit AI cũ. Gói lượt xuất đã ngừng bán (`400 EXPORT_PACK_DISCONTINUED`), `useCredit` và `EXPORT_CREDIT_REQUIRED` đã bỏ, mọi file in đều sạch, credit AI đã thành xu Wrap. Thanh toán giả lập cũ (mọi tài khoản tự xác nhận khi bật `PAYMENT_SIMULATION`) đã thay bằng quy tắc theo loại tài khoản ở Phần A. Luồng hiện hành: [03 · Xuất file](03_API_DESIGN.md#xuất-file-in), [19 · Xu Wrap](19_XU_WRAP_SPEC.md). Giữ phần này để tra lịch sử, không dùng để làm.
+> **Đã thay thế (CP4, trước 2026-11-17).** Phần dưới mô tả gói lượt xuất, PDF A4 có watermark và cách cấp credit AI cũ. Gói lượt xuất đã ngừng bán (`400 EXPORT_PACK_DISCONTINUED`), `useCredit` và `EXPORT_CREDIT_REQUIRED` đã bỏ, mọi file in đều sạch, credit AI đã thành xu Wrap. Thanh toán giả lập cũ (mọi tài khoản tự xác nhận khi bật `PAYMENT_SIMULATION`) đã thay bằng quy tắc theo loại tài khoản ở Phần A. Luồng hiện hành: [03 · Xuất file](03_API_DESIGN.md#xuất-file-in), [16 · Xu Wrap](16_XU_WRAP_SPEC.md). Giữ phần này để tra lịch sử, không dùng để làm.
 
 ## 4. Credit AI
 
-> **Đã thay bằng xu Wrap (2026-10-31).** Credit AI được làm thành đồng xu chung cho mọi tác vụ AI: xem [docs/19](19_XU_WRAP_SPEC.md) (quyết định §2, bảng giá §3, thiết kế §4). Các con số dưới đây (20 / 50 / 300 credit, premium 25 credit, `AI_PACKS`, không cộng dồn) **không còn đúng**: hạn mức là Free 50, Lượt xuất 100, Pro 1.000, Business 3.500 xu, dồn tối đa một kỳ; hoa văn premium 65 xu.
+> **Đã thay bằng xu Wrap (2026-10-31).** Credit AI được làm thành đồng xu chung cho mọi tác vụ AI: xem [docs/16](16_XU_WRAP_SPEC.md) (quyết định §2, bảng giá §3, thiết kế §4). Các con số dưới đây (20 / 50 / 300 credit, premium 25 credit, `AI_PACKS`, không cộng dồn) **không còn đúng**: hạn mức là Free 50, Lượt xuất 100, Pro 1.000, Business 3.500 xu, dồn tối đa một kỳ; hoa văn premium 65 xu.
 
 ### 4.1 Chất lượng, model và giá credit
 

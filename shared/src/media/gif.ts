@@ -1,5 +1,5 @@
 /**
- * Animated GIF encoder for the folding-box clip (docs/23 S19), small and dependency-free: one global palette built by
+ * Animated GIF encoder for the folding-box clip (docs-old/23 S19), small and dependency-free: one global palette built by
  * median cut, LZW-compressed frames, and pixels that did not change since the previous frame written as transparent,
  * so the still background costs almost nothing after the first frame.
  */

@@ -9,7 +9,7 @@ import { signUp } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * Admin xu report (docs/19 S5) against a real PostgreSQL. The rows are dated in February 2001 (Vietnam time), a month
+ * Admin xu report (docs/16 S5) against a real PostgreSQL. The rows are dated in February 2001 (Vietnam time), a month
  * no other test or dev data uses, so the totals of that month are exactly the rows written here.
  */
 describe('Xu report (e2e)', () => {

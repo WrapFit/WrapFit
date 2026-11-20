@@ -16,7 +16,7 @@ import { FitCheckReport, type FitCheckViolation } from "@wrapfit/shared";
 interface FitCheckDrawerProps {
   report: FitCheckReport;
   onAutoFix?: () => void;
-  /** Applies the one-click fix of one violation (`violation.fix`, e.g. turn a text upright, docs/23 S21). */
+  /** Applies the one-click fix of one violation (`violation.fix`, e.g. turn a text upright, docs-old/23 S21). */
   onFixViolation?: (violation: FitCheckViolation) => void;
   className?: string;
 }

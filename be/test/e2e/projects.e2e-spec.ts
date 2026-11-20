@@ -638,7 +638,7 @@ describe('Projects API (e2e)', () => {
     });
   });
 
-  describe('formula upgrade (docs/12 Phase 8, 8.10)', () => {
+  describe('formula upgrade (docs-old/12 Phase 8, 8.10)', () => {
     let projectId: string;
     const url = () => `/api/projects/${projectId}/formula-upgrade`;
     // A text close to the right side of the front panel: 2.8 mm left in version 1, 3.22 mm with the paper thickness.
@@ -776,7 +776,7 @@ describe('Projects API (e2e)', () => {
     });
   });
 
-  it('backs up the design a restore overwrites, even an autosave that landed during the restore (docs/30 item 5)', async () => {
+  it('backs up the design a restore overwrites, even an autosave that landed during the restore (docs-old/30 item 5)', async () => {
     const text = (content: string) => ({ id: 't', type: 'text', panelId: 'panel_front', x: 10, y: 10, width: 40, height: 10, rotation: 0, content });
     const id = (await as(carol).post('/api/projects').send(newProject({ title: 'Khôi phục', canvasState: { elements: [text('Mốc')] } })).expect(201)).body.id;
     const snapshot = (await as(carol).post(`/api/projects/${id}/snapshots`).send({ name: 'Mốc' }).expect(201)).body;
@@ -810,7 +810,7 @@ describe('Projects API (e2e)', () => {
     expect(await prisma.projectSnapshot.count({ where: { projectId: id, isAutomatic: false } })).toBe(1);
   });
 
-  // docs/30 item 4 (Q2): an order waiting for payment, paid or in production still needs the design.
+  // docs-old/30 item 4 (Q2): an order waiting for payment, paid or in production still needs the design.
   describe.each(['PENDING_PAYMENT', 'PAID', 'IN_PRODUCTION'] as const)('permanent deletion of a design in a %s order', (status) => {
     it('is refused by hand and by the trash purge until the order is shipped', async () => {
       const id = (await as(carol).post('/api/projects').send(newProject({ title: `Hộp đơn ${status}` })).expect(201)).body.id as string;
@@ -849,7 +849,7 @@ describe('Projects API (e2e)', () => {
     });
   });
 
-  // docs/30 item 4, review round 2: a checkout or a restore that commits while the deletion waits for the project row.
+  // docs-old/30 item 4, review round 2: a checkout or a restore that commits while the deletion waits for the project row.
   describe('permanent deletion racing a checkout or a restore', () => {
     const hold = <T>(work: (tx: Prisma.TransactionClient) => Promise<T>) => holdTransaction(prisma, work);
     const untilWaiting = (count: number) => untilLockWaiters(prisma, count);

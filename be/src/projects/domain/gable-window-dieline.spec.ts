@@ -64,7 +64,7 @@ const text = (panelId: string, x: number, y: number, width: number, height: numb
     style: { fontFamily: 'Be Vietnam Pro', fontSize: 24, color: '#1C1917' },
   }) as CanvasElement;
 
-describe('gable box (docs/23 S17)', () => {
+describe('gable box (docs-old/23 S17)', () => {
   it.each(SIZES)('%s × %s × %s: panels never overlap, lines stay on the sheet, the outline is closed', (...size) => {
     const pieces = generateDielinePieces('gable', box(size), 3);
     expect(pieces).toHaveLength(1);
@@ -163,7 +163,7 @@ describe('gable box (docs/23 S17)', () => {
   });
 });
 
-describe('display windows (docs/23 S17)', () => {
+describe('display windows (docs-old/23 S17)', () => {
   it('cuts a window in the front of a tuck-top box, and nothing moves without one', () => {
     const plain = generateDielinePieces('tuck-top', box([100, 60, 150]), 3)[0].geometry;
     const windowed = generateDielinePieces('tuck-top', box([100, 60, 150], { window: true }), 3)[0].geometry;

@@ -1,4 +1,4 @@
-/** Design review of the offline demo (docs/23 S23): the link, comments and "Duyệt in", like `be/src/reviews`. */
+/** Design review of the offline demo (docs-old/23 S23): the link, comments and "Duyệt in", like `be/src/reviews`. */
 
 import type { PublicReview, ReviewApproval, ReviewComment, ReviewState } from "@/types/api";
 import { badRequest, conflict, currentUser, notFound, type Handler } from "../http";

@@ -1,5 +1,5 @@
 /**
- * Parametric Dieline Engine — flat products (docs/23 S18), formula version 3: hang tag, folded card and belly band.
+ * Parametric Dieline Engine — flat products (docs-old/23 S18), formula version 3: hang tag, folded card and belly band.
  * Owned by IT 2 (Packaging Math)
  *
  * Hang tag (Thẻ treo) and folded card (Thiệp gấp đôi) are L wide and H tall (W is not used); their back, or the inside

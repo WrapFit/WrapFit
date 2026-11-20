@@ -72,7 +72,7 @@ export interface ApiErrorBody {
   fitCheck?: FitCheckReport;
   /** 402 INSUFFICIENT_CREDITS: xu left. */
   balance?: number;
-  /** 402 INSUFFICIENT_CREDITS: which ledger is short; only xu since export credits stopped (docs/25 item 7). */
+  /** 402 INSUFFICIENT_CREDITS: which ledger is short; only xu since export credits stopped (docs-old/25 item 7). */
   kind?: "EXPORT" | "XU";
   /** 402 INSUFFICIENT_CREDITS: what the operation costs. */
   cost?: number;
@@ -484,7 +484,7 @@ export interface ExportJob {
   projectId: string;
   fileType: ExportFileType;
   status: ExportStatus;
-  /** Old free A4 PDF with the WrapFit line on a glue flap; every new export is clean (docs/25 item 7). */
+  /** Old free A4 PDF with the WrapFit line on a glue flap; every new export is clean (docs-old/25 item 7). */
   watermarked?: boolean;
   /** Set when FAILED. */
   error: string | null;
@@ -500,7 +500,7 @@ export interface ExportJob {
 // ---------------------------------------------------------------- billing & payments (be/src/billing, be/src/payments)
 
 export type XuPackPurpose = "XU_500" | "XU_1050" | "XU_2200";
-/** Export packs: no longer sold (docs/25 item 7), only on old payments (history, admin reconciliation). */
+/** Export packs: no longer sold (docs-old/25 item 7), only on old payments (history, admin reconciliation). */
 export type ExportPackPurpose = "EXPORT_1" | "EXPORT_5" | "EXPORT_15";
 export type PaymentPurpose = ExportPackPurpose | "PRO_MONTH" | "SAMPLE_ORDER" | XuPackPurpose | "XU_CUSTOM";
 /** What a new payment can buy. */
@@ -513,11 +513,11 @@ export type PaymentConfirmation = "SEPAY_WEBHOOK" | "VNPAY_IPN" | "VNPAY_RETURN"
 export interface BillingSummary {
   tier: SubscriptionTier;
   subscription: { plan: SubscriptionTier; status: "ACTIVE" | "EXPIRED"; currentPeriodStart: string; currentPeriodEnd: string } | null;
-  /** Xu Wrap wallet (docs/19): the allowance of the period is granted when it is read. */
+  /** Xu Wrap wallet (docs/16): the allowance of the period is granted when it is read. */
   xu: XuWallet;
   /** PAYMENT_SIMULATION on the server: the checkout shows "Giả lập đã thanh toán" (CP4 demo). */
   paymentSimulation: boolean;
-  /** Demo account (`users.is_demo`): pays through VNPay sandbox, never through a real bank transfer (docs/21). */
+  /** Demo account (`users.is_demo`): pays through VNPay sandbox, never through a real bank transfer (docs-old/21). */
   isDemo: boolean;
 }
 
@@ -576,7 +576,7 @@ export interface BillingDetails {
   email: string;
 }
 
-/** `GET /payments/vnpay/return?<the vnp_* query VNPay appended>` (docs/21 §3.4). */
+/** `GET /payments/vnpay/return?<the vnp_* query VNPay appended>` (docs-old/21 §3.4). */
 export interface VnpayReturnResult {
   /** success = paid; failed = cancelled or refused by the bank; invalid = bad signature or wrong amount. */
   result: "success" | "failed" | "invalid";
@@ -655,7 +655,7 @@ export interface AiPatternResult {
   usage: { charged: number; balance: number } | null;
 }
 
-/** `GET /ai/usage`: whether AI patterns run, their price in xu and the xu wallet (docs/19). */
+/** `GET /ai/usage`: whether AI patterns run, their price in xu and the xu wallet (docs/16). */
 export interface AiUsage {
   aiEnabled: boolean;
   /** The monthly AI budget of WrapFit is spent: patterns are procedural (free) until next month. */
@@ -783,7 +783,7 @@ export interface XuHistoryPage {
   nextBefore: string | null;
 }
 
-/** `GET /admin/analytics/xu?month=` (admin): xu of one month, valued at the money paid for each lot (docs/19 S5). */
+/** `GET /admin/analytics/xu?month=` (admin): xu of one month, valued at the money paid for each lot (docs/16 S5). */
 export interface XuReport {
   month: string;
   from: string;
@@ -859,7 +859,7 @@ export interface SampleOrder {
   notes?: string | null;
   subtotalVnd?: number;
   shippingVnd?: number;
-  /** Always 0 and null: vouchers were removed (docs/25 item 1); the API keeps the fields for a later voucher feature. */
+  /** Always 0 and null: vouchers were removed (docs-old/25 item 1); the API keeps the fields for a later voucher feature. */
   discountVnd?: number;
   promoCode?: string | null;
   totalVnd?: number;
@@ -984,7 +984,7 @@ export interface CreateLibraryAsset {
 export type UpdateLibraryAsset = Partial<Omit<CreateLibraryAsset, "fileUrl">> & { isActive?: boolean };
 
 // ---------------------------------------------------------------------------------------------------------------
-// Design review (docs/23 S23, be/src/reviews)
+// Design review (docs-old/23 S23, be/src/reviews)
 
 /** A comment on a design: by the owner in the studio, or by a reviewer through the link (a name only). */
 export interface ReviewComment {
@@ -1035,7 +1035,7 @@ export interface NewReviewComment {
   y?: number;
 }
 
-// ─── Notifications (`be/src/notifications`, docs/25 S8) ─────────────────────────────────────────────────────────────
+// ─── Notifications (`be/src/notifications`, docs-old/25 S8) ─────────────────────────────────────────────────────────────
 
 export type NotificationType = "PROJECT_REMIXED" | "EXPORT_COMPLETED";
 

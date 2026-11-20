@@ -14,11 +14,11 @@ export type FitCheckErrorCode =
   | "LINE_TOO_THIN"
   | "BARCODE_UNREADABLE"
   | "EMPTY_DESIGN"
-  /** A screen colour CMYK prints visibly duller (docs/23 S7). */
+  /** A screen colour CMYK prints visibly duller (docs-old/23 S7). */
   | "OUT_OF_GAMUT"
-  /** Artwork on a window or a hand hole: that part is cut away (docs/23 S17). */
+  /** Artwork on a window or a hand hole: that part is cut away (docs-old/23 S17). */
   | "UNDER_OPENING"
-  /** Text that reads upside down (or sideways) once the box is folded (docs/23 S21). */
+  /** Text that reads upside down (or sideways) once the box is folded (docs-old/23 S21). */
   | "READING_DIRECTION"
   /** Text too close in colour to the solid colour under it. */
   | "LOW_CONTRAST"
@@ -26,9 +26,9 @@ export type FitCheckErrorCode =
   | "TEXT_TOO_SMALL"
   /** Text across a crease inside its face. */
   | "TEXT_ON_CREASE"
-  /** Words that are not possible Vietnamese syllables (docs/23 S22): likely typos. */
+  /** Words that are not possible Vietnamese syllables (docs-old/23 S22): likely typos. */
   | "SPELLING"
-  /** Stock photos with nothing of the user's own: the Pexels licence forbids selling them on their own (docs/28 Q3). */
+  /** Stock photos with nothing of the user's own: the Pexels licence forbids selling them on their own (docs/18 Q3). */
   | "STOCK_PHOTO_ALONE";
 
 export type SeverityLevel = "error" | "warning" | "info";

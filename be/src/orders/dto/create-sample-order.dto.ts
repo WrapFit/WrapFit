@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 
 /**
- * There is no voucher field: vouchers were removed (docs/25 item 1). A body that still sends `promoCode` gets 400 from
+ * There is no voucher field: vouchers were removed (docs-old/25 item 1). A body that still sends `promoCode` gets 400 from
  * the global ValidationPipe (forbidNonWhitelisted), so a client never believes a code was applied.
  */
 export class CreateSampleOrderDto {

@@ -72,7 +72,7 @@ export interface SampleOrderResponse {
   subtotalVnd: number;
   shippingVnd: number;
   /**
-   * shortcut: vouchers were removed on 2026-11-16 (docs/25 item 1), so these are always 0 and null. The columns
+   * shortcut: vouchers were removed on 2026-11-16 (docs-old/25 item 1), so these are always 0 and null. The columns
    * orders.discount_vnd and orders.promo_code and these fields stay for a later voucher feature, without a migration.
    */
   discountVnd: number;

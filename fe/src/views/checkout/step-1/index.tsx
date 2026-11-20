@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/checkout/step-1?plan=`: choose Pro (export packs are no longer sold, docs/25 item 7: an old `?plan=PAY_PER_EXPORT`
+ * `/checkout/step-1?plan=`: choose Pro (export packs are no longer sold, docs-old/25 item 7: an old `?plan=PAY_PER_EXPORT`
  * link shows a notice and Pro). Prices and quotas come from features/pricing (a display layer over
  * @wrapfit/shared/billing); the plan in use comes from `GET /auth/me`.
  */

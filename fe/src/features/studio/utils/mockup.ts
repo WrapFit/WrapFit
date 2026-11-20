@@ -1,4 +1,4 @@
-/* ds-artwork: mockup images paint the scene and a small signature (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: mockup images paint the scene and a small signature (docs/13_DESIGN_SYSTEM.md §2). */
 import type { Backdrop } from "@/features/studio/components/three/backdrops";
 
 export interface MockupFormat {

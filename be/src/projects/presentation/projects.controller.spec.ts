@@ -5,7 +5,7 @@ import type { SnapshotsService } from '../application/snapshots.service';
 import type { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectsController } from './projects.controller';
 
-describe('ProjectsController.update: project.saved for the other editor tabs (docs/28 Q5)', () => {
+describe('ProjectsController.update: project.saved for the other editor tabs (docs/18 Q5)', () => {
   const saved = { id: 'p1', version: 4, updatedAt: new Date('2026-11-18T10:00:00Z') };
   const setup = () => {
     const emit = jest.fn();

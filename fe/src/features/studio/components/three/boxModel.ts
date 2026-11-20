@@ -36,7 +36,7 @@ import { drawArt, elementArt } from "../library/elementArt";
 import { placedCarrierCups, STANDARD_350ML_Y_SEAT } from "./cupModel";
 
 /**
- * 3D model of a box built from its dieline (docs/12 Phase 8, H6): every printable panel is a sheet of paper folded on
+ * 3D model of a box built from its dieline (docs-old/12 Phase 8, H6): every printable panel is a sheet of paper folded on
  * the hinges the formulas declare (`PanelFace.fold`, `panelTransforms` of @wrapfit/shared), so the model has exactly
  * the size of the printed box; the pillow box, whose faces do not fold flat, is built from `pillowShapeOf`. Each panel
  * shows the elements placed on it, drawn like the 2D canvas. Flaps and glue tabs are not modelled (they sit inside).
@@ -225,7 +225,7 @@ interface PanelTexture {
 }
 
 /**
- * Draws an element with the look of its print finish (docs/23 S6): the element is drawn on its own layer, then foil
+ * Draws an element with the look of its print finish (docs-old/23 S6): the element is drawn on its own layer, then foil
  * becomes a metal gradient, spot UV a glossy sheen and embossing a light / shadow relief, inside its own shape only.
  */
 function drawFinished(ctx: CanvasRenderingContext2D, el: CanvasElement, draw: (layer: CanvasRenderingContext2D) => void) {
@@ -284,7 +284,7 @@ function panelTexture(
   region: Rect,
   options: BoxModelOptions,
   images: Map<string, HTMLImageElement | null>,
-  /** The inside is seen from inside the box: its elements are drawn mirrored on the back of the panel (docs/23 S5). */
+  /** The inside is seen from inside the box: its elements are drawn mirrored on the back of the panel (docs-old/23 S5). */
   side: PrintSide = "outside",
   /** Faces of the same piece: their images, text and shapes may run over this one (backgrounds stay on their face). */
   piecePanels: PanelFace[] = [panel]
@@ -297,7 +297,7 @@ function panelTexture(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   const paper = PAPER[options.theme];
-  // One side of the sheet, visible layers only, in paint order (docs/23 D3).
+  // One side of the sheet, visible layers only, in paint order (docs-old/23 D3).
   const elements = orderElements(options.elements).flatMap((el) => {
     if (el.hidden || sideOf(el) !== side) return [];
     if (matchesPanel(panel, el.panelId)) return [{ el, dx: 0, dy: 0 }];
@@ -349,9 +349,9 @@ function panelTexture(
           drawArt(target, art); // shapes, library stickers, labels, backgrounds and barcodes: vectors
         } else if (IMAGE_TYPES.has(el.type)) {
           const image = images.get(elementImageKey(el));
-          if (image) drawImageOnCanvas(target, el, image); // crop, fill, frame, adjustments (docs/23 S10)
+          if (image) drawImageOnCanvas(target, el, image); // crop, fill, frame, adjustments (docs-old/23 S10)
         } else if (el.type === "text") {
-          drawTextOnCanvas(target, el, paper.ink); // spacing, outline, curve (docs/23 S9)
+          drawTextOnCanvas(target, el, paper.ink); // spacing, outline, curve (docs-old/23 S9)
         }
       });
       ctx.restore();
@@ -368,7 +368,7 @@ function panelTexture(
 
 /**
  * A panel in sheet coordinates (printed side towards −z, see fold.ts), texture upright: two triangles, or its outline
- * (gable ends) with its windows and hand holes cut out (docs/23 S17).
+ * (gable ends) with its windows and hand holes cut out (docs-old/23 S17).
  */
 function panelGeometry({ x, y, width, height }: Rect, outline?: Point2D[], holes: DielineOpening[] = []): THREE.BufferGeometry {
   if (outline || holes.length > 0) {
@@ -550,7 +550,7 @@ function visualThicknessOf(t: number): number {
  */
 function stagedProgress(structure: string, progress: number, open: number) {
   return (panel: PanelFace) => {
-    // A card opens like a book, a belly band comes off the box (docs/23 S18).
+    // A card opens like a book, a belly band comes off the box (docs-old/23 S18).
     if (structure === "folded-card") return mix(progress, 0.42, open);
     if (structure === "belly-band") return mix(progress, 0.55, open);
     if (structure === "gable") {
@@ -945,7 +945,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     textures.forEach((t) => t.redraw());
     options.onChange?.();
   };
-  // One image per file and colour swaps (recoloured SVG logos, docs/23 S14).
+  // One image per file and colour swaps (recoloured SVG logos, docs-old/23 S14).
   const sources = new Map(options.elements.filter((el) => IMAGE_TYPES.has(el.type) && isFileUrl(el.content)).map((el) => [elementImageKey(el), el] as const));
   for (const [key, el] of sources) {
     void recoloredSrc(el.content, el.style?.colorMap).then((src) => {
@@ -980,7 +980,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     };
   }
 
-  // The inside print (docs/23 S5): a textured copy of the inside paper for each panel, when the design prints there.
+  // The inside print (docs-old/23 S5): a textured copy of the inside paper for each panel, when the design prints there.
   const insideMaterials = new Map<string, THREE.Material>();
   if (printsInside(options.elements)) {
     for (const piece of pieces) {

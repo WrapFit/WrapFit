@@ -28,7 +28,7 @@ shared/
 │   ├── print/text-layout.ts    # Mô hình chữ chung của canvas và file in
 │   ├── core/contracts.ts       # Phác thảo thiết kế, không export, không dùng
 │   └── index.ts                # Entrypoint xuất ra cho fe và be
-├── scripts/render-dielines.mjs # Vẽ phôi 4 cấu trúc × 4 cỡ ra SVG / PNG (docs/14)
+├── scripts/render-dielines.mjs # Vẽ phôi 4 cấu trúc × 4 cỡ ra SVG / PNG (docs/12)
 ├── package.json
 └── tsconfig.json
 ```
@@ -53,4 +53,4 @@ cho box template). Test: `be/src/projects/domain/dieline-geometry.spec.ts`.
 - Hộp gối: mặt cắt là thấu kính dây cung W + t, hai cung cao (H + t) / 2; mỗi mặt rộng bằng một cung; L đo giữa hai
   nếp cong (`pillowShapeOf`).
 
-Chi tiết từng cấu trúc và kết quả rà soát: `docs/14_BOX_FORMULA_AUDIT.md`.
+Chi tiết từng cấu trúc và kết quả rà soát: `docs/12_BOX_FORMULA_AUDIT.md`.

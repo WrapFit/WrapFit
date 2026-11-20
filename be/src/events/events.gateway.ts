@@ -37,7 +37,7 @@ import { PrismaService } from '../shared/prisma';
  *
  * Server -> client events: `notifications.changed` (empty payload) when the user's inbox got a new notification, sent by
  * NotificationsPushBridge; the client refetches the unread count. `project.saved` { projectId, version, updatedAt, tabId }
- * when the user saved a project (PROJECT_SAVED): their other editor tabs load it (docs/28 Q5). It is emitted by the API
+ * when the user saved a project (PROJECT_SAVED): their other editor tabs load it (docs/18 Q5). It is emitted by the API
  * process that took the save, so it only reaches sockets of that process. Socket.IO state is per API process (no Redis
  * adapter): with several API instances, a tab on another instance learns of the save at its next save (409).
  */

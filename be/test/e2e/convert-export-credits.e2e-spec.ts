@@ -13,7 +13,7 @@ import { deleteUsers } from './helpers/cleanup';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * The one-time conversion of export credits to xu (docs/25 item 7, prisma/scripts/convert-export-credits.ts) on a
+ * The one-time conversion of export credits to xu (docs-old/25 item 7, prisma/scripts/convert-export-credits.ts) on a
  * prepared database: purchased credits become xu at the price paid, free ones are emptied, the ledger stays whole and
  * a second run converts nothing. Scoped to the users of this test (`userIds`), so other data is left alone.
  */

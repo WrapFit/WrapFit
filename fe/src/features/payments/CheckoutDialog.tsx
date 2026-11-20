@@ -49,7 +49,7 @@ function successText(payment: Payment): string {
   if (payment.purpose === "PRO_MONTH") return `Gói Pro đã bật: ${PRO_SUMMARY}.`;
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
   if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
-  // An export pack bought before the packs stopped (docs/25 item 7): the server turned it into xu.
+  // An export pack bought before the packs stopped (docs-old/25 item 7): the server turned it into xu.
   return "Thanh toán đã ghi nhận: số tiền được đổi sang xu Wrap trong ví, dùng trong 12 tháng.";
 }
 
@@ -85,7 +85,7 @@ export interface CheckoutDialogProps {
 }
 
 /**
- * Checkout (docs/17 S5, docs/21 §4.1): creates a 15-minute payment and asks the server every 3 seconds until it is paid.
+ * Checkout (docs-old/17 S5, docs-old/21 §4.1): creates a 15-minute payment and asks the server every 3 seconds until it is paid.
  * Real accounts (provider VIETQR) scan a QR and the bank's webhook confirms it; demo accounts (provider VNPAY) open the
  * VNPay sandbox by redirect and come back through `/payments/vnpay-return`. With PAYMENT_SIMULATION on the server
  * (CP4 demo) a button marks either one paid. On success Gói celebrates, and the plan, credits and orders are fetched again.

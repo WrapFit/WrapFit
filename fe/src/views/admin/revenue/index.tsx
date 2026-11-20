@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/admin/revenue`: revenue per product (Pro 30 days, xu packs; export packs are no longer sold, docs/25 item 7). No payment records are read here yet: example
+ * `/admin/revenue`: revenue per product (Pro 30 days, xu packs; export packs are no longer sold, docs-old/25 item 7). No payment records are read here yet: example
  * sales counts multiplied by the prices of @wrapfit/shared/billing.
  */
 

@@ -30,7 +30,7 @@ export function updateLibraryAsset(id: string, input: UpdateLibraryAsset): Promi
   return request<LibraryAsset>(`/library/assets/${id}`, { method: "PATCH", json: input });
 }
 
-/** Stock photos (Pexels) searched through the backend (docs/23 S15, D10); `enabled: false` when it has no key. */
+/** Stock photos (Pexels) searched through the backend (docs-old/23 S15, D10); `enabled: false` when it has no key. */
 export function searchStockPhotos(query: { q?: string; page?: number } = {}): Promise<StockPhotoPage> {
   return request<StockPhotoPage>("/library/stock/photos", { query: { ...query } });
 }

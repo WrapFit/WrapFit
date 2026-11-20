@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * `/admin/bank-transactions`: bank transfers the SePay webhook could not match to a payment (docs/21 §3.5, §4.3).
+ * `/admin/bank-transactions`: bank transfers the SePay webhook could not match to a payment (docs-old/21 §3.5, §4.3).
  * An admin assigns each one to a payment (which confirms it and grants what it bought) or ignores it with a note.
  * Backed by `GET /admin/bank-transactions` and `POST /admin/bank-transactions/:id/resolve`.
  */

@@ -341,7 +341,7 @@ E2E: `unboxing.e2e-spec.ts`.
 
 ### Xu Wrap và ảnh AI
 
-- Mọi tác vụ AI trả bằng **xu Wrap** (1 xu = 100đ): ảnh AI, hoa văn AI, phóng to, xóa nền, vector hóa. Mỗi gói được cộng xu mỗi kỳ (Free 50, Lượt xuất 100, Pro 1.000, Business 3.500), xu chưa dùng giữ thêm một kỳ. Gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ, hoặc `XU_CUSTOM` (100–50.000 xu, bội số của 10, 100đ / xu); xu nạp có hạn 12 tháng. Quy tắc đầy đủ: [19 · Xu Wrap](19_XU_WRAP_SPEC.md).
+- Mọi tác vụ AI trả bằng **xu Wrap** (1 xu = 100đ): ảnh AI, hoa văn AI, phóng to, xóa nền, vector hóa. Mỗi gói được cộng xu mỗi kỳ (Free 50, Lượt xuất 100, Pro 1.000, Business 3.500), xu chưa dùng giữ thêm một kỳ. Gói nạp `XU_500` 50.000đ, `XU_1050` 100.000đ, `XU_2200` 200.000đ, hoặc `XU_CUSTOM` (100–50.000 xu, bội số của 10, 100đ / xu); xu nạp có hạn 12 tháng. Quy tắc đầy đủ: [16 · Xu Wrap](16_XU_WRAP_SPEC.md).
 - **Trừ và hoàn xu.** Xu bị trừ cùng transaction tạo job. Lỗi phía hệ thống (provider lỗi cả hai lần thử, provider từ chối vẽ, hàng đợi hoặc worker sập, job treo quá 10 phút) thì job thành `FAILED` và xu được hoàn **đúng một lần**; `job.error` ghi "Xu đã được hoàn lại". Khách không ưng ảnh thì không hoàn.
 - **Gửi lại cùng `clientRequestId`** (UUID mới cho mỗi lần bấm): trả lại job cũ cùng số dư hiện tại, không trừ xu lần hai, kể cả khi hai request đến cùng lúc.
 - **Lỗi khi tạo job** (trước khi trừ xu, trừ khi ghi khác):
@@ -441,4 +441,4 @@ E2E: `storage`, `unused-files`.
 
 ## 3. Endpoints chưa triển khai
 
-Đối chiếu ngày 2026-11-19: mọi route trong controller đã nằm ở bảng mục 2, không còn route nào "sắp triển khai" trong mục này. Các route theo kế hoạch nhưng chưa có mã (hóa đơn, workspace, dùng thử) nằm ở [16 · Đề xuất còn chờ](16_PRICING_ENTITLEMENTS_SPEC.md#phần-c-đề-xuất-còn-chờ) và [07, Mục 4.2 – 4.3](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).
+Đối chiếu ngày 2026-11-19: mọi route trong controller đã nằm ở bảng mục 2, không còn route nào "sắp triển khai" trong mục này. Các route theo kế hoạch nhưng chưa có mã (hóa đơn, workspace, dùng thử) nằm ở [14 · Đề xuất còn chờ](14_PRICING_ENTITLEMENTS_SPEC.md#phần-c-đề-xuất-còn-chờ) và [07, Mục 4.2 – 4.3](07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md).

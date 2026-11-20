@@ -80,7 +80,7 @@ export class AiImageProcessor extends WorkerHost implements OnApplicationBootstr
         const message = failure instanceof Error ? failure.message : String(failure);
         this.logger.warn(`AI image job ${aiImageJobId} attempt ${job.attemptsMade + 1} failed: ${message}`);
         if (lastAttempt) {
-          // docs/19 D3: nothing was delivered for these xu, they come back.
+          // docs/16 D3: nothing was delivered for these xu, they come back.
           await this.refunds
             .fail(aiImageJobId, message)
             .catch((refundError: Error) => this.logger.error(`Could not refund AI image job ${aiImageJobId}: ${refundError.message}`));
@@ -117,7 +117,7 @@ export class AiImageProcessor extends WorkerHost implements OnApplicationBootstr
     if (tool) {
       let image: Awaited<ReturnType<typeof prepareSource>>;
       if (job.sourceFile) {
-        // An upload of the user (docs/23 S20): its size is read from the file.
+        // An upload of the user (docs-old/23 S20): its size is read from the file.
         const { body, contentType } = await this.storage.getObject(job.sourceFile.key);
         const meta = await sharp(body).metadata();
         if (!meta.width || !meta.height) throw new UnrecoverableError('The uploaded image cannot be read');

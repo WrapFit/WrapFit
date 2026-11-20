@@ -1,4 +1,4 @@
-# 15 — Design System WrapFit
+# 13 — Design System WrapFit
 
 > Cập nhật: 2026-11-19 · Token v1.2.0 · Catalog sống: [`/design-system`](../fe/src/views/design-system/index.tsx)
 > Nguồn token duy nhất: [`fe/src/assets/styles/tokens.ts`](../fe/src/assets/styles/tokens.ts) · Thành phần: [`fe/src/components/ui/`](../fe/src/components/ui) · Bản xuất cho công cụ thiết kế: [`fe/design-tokens.json`](../fe/design-tokens.json)
@@ -126,7 +126,7 @@ Kết quả ngày 2026-10-15 (chưa chạy lại sau v1.2.0):
 
 ### 4.2 Trình đọc màn hình (thủ công)
 
-Chưa có người chạy VoiceOver/NVDA. Năm luồng cần thử, ghi kết quả vào docs/13:
+Chưa có người chạy VoiceOver/NVDA. Năm luồng cần thử, ghi kết quả vào docs/11:
 1. Trang chủ → Thư viện mẫu → mở một mẫu.
 2. Đăng ký → xác minh email → đăng nhập.
 3. Dashboard → tạo dự án → đổi tên, chuyển thư mục.

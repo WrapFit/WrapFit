@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 
 /**
- * VietQR transfer code built locally (docs/17 M5): the EMVCo merchant-presented QR payload with the NAPAS "transfer to
+ * VietQR transfer code built locally (docs-old/17 M5): the EMVCo merchant-presented QR payload with the NAPAS "transfer to
  * account" template, readable by every Vietnamese banking app. No call to img.vietqr.io, so the checkout works on a
  * weak stage network and leaks nothing to a third party.
  */
@@ -26,7 +26,7 @@ export interface VietQrTransfer extends VietQrAccount {
 }
 
 /**
- * Account shown when VIETQR_* is not set (docs/17 Q1). The QR stays scannable, but the account is a placeholder and
+ * Account shown when VIETQR_* is not set (docs-old/17 Q1). The QR stays scannable, but the account is a placeholder and
  * the checkout labels it "Mô phỏng".
  */
 export const SAMPLE_ACCOUNT: VietQrAccount = {

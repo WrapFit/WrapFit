@@ -14,7 +14,7 @@ import { errorMessage, isApiError } from "@/services/api";
 import type { Payment, VnpayReturnResult } from "@/types/api";
 import { AccountFrame, AccountLoading } from "@/views/account/shared";
 
-/** `/payments/vnpay-return?vnp_*`: where VNPay sends the browser back (docs/21 §3.4, §4.1). */
+/** `/payments/vnpay-return?vnp_*`: where VNPay sends the browser back (docs-old/21 §3.4, §4.1). */
 export default function VnpayReturnPage() {
   return (
     <RequireAuth>
@@ -211,7 +211,7 @@ function successText(payment: Payment): string {
   if (payment.purpose === "PRO_MONTH") return `Gói Pro đã bật: ${PRO_SUMMARY}.`;
   if (payment.purpose === "SAMPLE_ORDER") return "Đơn in mẫu đã được thanh toán. Xưởng in sẽ gọi xác nhận trước khi in.";
   if (payment.xu) return `Đã cộng ${payment.xu.toLocaleString("vi-VN")} xu Wrap vào ví, dùng trong 12 tháng.`;
-  // An export pack bought before the packs stopped (docs/25 item 7): the server turned it into xu.
+  // An export pack bought before the packs stopped (docs-old/25 item 7): the server turned it into xu.
   return "Thanh toán đã ghi nhận: số tiền được đổi sang xu Wrap trong ví, dùng trong 12 tháng.";
 }
 

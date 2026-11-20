@@ -17,7 +17,7 @@
  * The lid and the bottom are L × W (they close the L × W opening); their tuck flaps fold into the front panel and are
  * at most half the body height, so the two never overlap; the dust flaps on the side panels fold under them and reach
  * at most half the length, so they never meet. The bottom is a tuck closure, the simple form of the crash-lock bottom.
- * `window: true` (docs/23 S17) cuts a display window in the front panel (see openings.ts); nothing else moves.
+ * `window: true` (docs-old/23 S17) cuts a display window in the front panel (see openings.ts); nothing else moves.
  */
 
 import { BoxDimensions, DielineGeometry, PanelFace, Point2D } from "../types/dieline";

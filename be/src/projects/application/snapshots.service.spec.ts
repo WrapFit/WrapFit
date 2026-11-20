@@ -82,7 +82,7 @@ describe('SnapshotsService', () => {
   it('asks for a backup of the current state before restoring, and re-runs FitCheck on the restored design', async () => {
     await service.restore('project-1', 'snap-1');
     expect(repo.findContent).toHaveBeenCalledWith('project-1', 'snap-1');
-    // Only the name: the repository builds the backup from the locked row (docs/30 item 5).
+    // Only the name: the repository builds the backup from the locked row (docs-old/30 item 5).
     expect(repo.restore).toHaveBeenCalledWith(
       'project-1',
       saved,

@@ -15,7 +15,7 @@ const SECRET = process.env.VNPAY_HASH_SECRET!;
 const TMN_CODE = process.env.VNPAY_TMN_CODE!;
 
 /**
- * VNPay sandbox (docs/21 §3.4) against a real PostgreSQL: a demo account gets a signed pay URL, the IPN and the return
+ * VNPay sandbox (docs-old/21 §3.4) against a real PostgreSQL: a demo account gets a signed pay URL, the IPN and the return
  * page confirm the payment once between them, and every other IPN gets the response code VNPay documents. IPNs are
  * signed here with the test secret of e2e-env.ts. Needs `docker compose up -d postgres redis`.
  */

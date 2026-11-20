@@ -433,7 +433,7 @@ describe('ProjectsService', () => {
     expect(files.deleteObjects).toHaveBeenCalledWith(['thumb.webp']);
   });
 
-  describe('remove of a design an order still needs (docs/30 item 4)', () => {
+  describe('remove of a design an order still needs (docs-old/30 item 4)', () => {
     const inTrash = () => repo.findById.mockResolvedValueOnce(project({ status: 'DELETED' }));
     const refusal = (promise: Promise<unknown>) =>
       promise.then(

@@ -49,7 +49,7 @@ const nextConfig = {
         destination: '/',
         permanent: true,
       },
-      // The studio is /editor/<project id> (docs/12 D1): every older entry point starts a new project. Not permanent,
+      // The studio is /editor/<project id> (docs-old/12 D1): every older entry point starts a new project. Not permanent,
       // so the paths stay free for later pages. The query (e.g. ?template=) is kept.
       ...['/editor', '/editor/new', '/editor/studio', '/editor/step-1', '/editor/step-2', '/editor/step-3', '/editor/step-4'].map(
         (source) => ({ source, destination: '/editor/demo', permanent: false }),

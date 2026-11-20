@@ -1,4 +1,4 @@
-/** Design review: the secret link, comments and the print approval (`be/src/reviews`, docs/23 S23). */
+/** Design review: the secret link, comments and the print approval (`be/src/reviews`, docs-old/23 S23). */
 
 import { request } from "@/services/api";
 import type { NewReviewComment, PublicReview, ReviewApproval, ReviewComment, ReviewState } from "@/types/api";

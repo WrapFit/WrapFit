@@ -29,7 +29,7 @@ const text = (id: string, x: number, y: number, width: number, height: number, e
     ...extra,
   }) as CanvasElement;
 
-describe('smart resize by anchors (docs/23 S20)', () => {
+describe('smart resize by anchors (docs-old/23 S20)', () => {
   const before = tuck(box(90, 90, 110));
   const after = tuck(box(120, 80, 60));
   const front0 = panelOf(before, 'panel_front').bounds;

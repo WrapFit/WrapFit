@@ -23,7 +23,7 @@ export interface NotificationBellProps {
 }
 
 /**
- * Bell of the signed-in header (docs/25 S8): unread badge, and a panel listing my notifications newest first, with
+ * Bell of the signed-in header (docs-old/25 S8): unread badge, and a panel listing my notifications newest first, with
  * "Xem thêm", "Đánh dấu đã đọc tất cả", and loading, error and empty states. Opening an item marks it read. Mount it for
  * a signed-in user only.
  */

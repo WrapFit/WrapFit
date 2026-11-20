@@ -76,7 +76,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
       select: { fileType: true, watermarked: true, design: true, project: { select: { id: true, userId: true } } },
     });
     const { project } = job;
-    // The design frozen by the request (docs/30 item 1), on every attempt: never the project as it is now.
+    // The design frozen by the request (docs-old/30 item 1), on every attempt: never the project as it is now.
     const design = (job.design as unknown as ExportDesign | null) ?? (await this.currentDesign(project.id, exportJobId));
     // Stored keys of uploads -> URLs: the layout and the artwork loader work on URLs.
     const canvasState = toClientCanvas(design.canvasState);
@@ -123,7 +123,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
         data: { status: 'COMPLETED', storageKey, completedAt },
       });
       if (!finished) return false;
-      // Analytics dashboard (docs/17 S7), in the transaction that completes the job: counted once.
+      // Analytics dashboard (docs-old/17 S7), in the transaction that completes the job: counted once.
       await tx.productEvent.create({
         data: {
           type: 'EXPORT_COMPLETED',
@@ -176,7 +176,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
 
   /** Jobs queued before migration 20261118000200 have no frozen design: they render the project as it is now. */
   private async currentDesign(projectId: string, exportJobId: string): Promise<ExportDesign> {
-    this.logger.warn(`Export ${exportJobId} has no frozen design (queued before docs/30 item 1): rendering the current project`);
+    this.logger.warn(`Export ${exportJobId} has no frozen design (queued before docs-old/30 item 1): rendering the current project`);
     const project = await this.prisma.packagingProject.findUniqueOrThrow({
       where: { id: projectId },
       select: { title: true, templateId: true, formulaVersion: true, dimensions: true, canvasState: true },
@@ -196,7 +196,7 @@ export class ExportProcessor extends WorkerHost implements OnApplicationBootstra
   private async loadArtwork(layout: PrintLayout): Promise<Artwork> {
     const artwork: Artwork = new Map();
     let total = 0;
-    // The inside sheet (docs/23 S5) prints its own images too; uploaded fonts (S13) are loaded like images.
+    // The inside sheet (docs-old/23 S5) prints its own images too; uploaded fonts (S13) are loaded like images.
     const fonts = fontUrlsOf([...layout.texts, ...(layout.inside?.texts ?? [])].map((t) => ({ type: 'text' as const, style: t.style })));
     for (const url of [...[...layout.images, ...(layout.inside?.images ?? [])].map((image) => image.url), ...fonts]) {
       if (artwork.has(url)) continue;

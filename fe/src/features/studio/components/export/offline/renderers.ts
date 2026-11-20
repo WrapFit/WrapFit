@@ -114,7 +114,7 @@ export interface PrintAssets {
   fonts: Record<PrintFontId, OutlineFont>;
   /** Every face, by `faceKey` (texts of the design). */
   faces: Record<string, OutlineFont>;
-  /** Fonts the user uploaded (docs/23 S13), by file URL. */
+  /** Fonts the user uploaded (docs-old/23 S13), by file URL. */
   custom: Record<string, OutlineFont>;
   /** Image files by URL, as data URIs (embedded in the SVG) and decoded bitmaps (converted for the PDF). */
   images: Map<string, { dataUri: string | null; bitmap: HTMLImageElement | null }>;
@@ -165,7 +165,7 @@ async function dataUriOf(url: string): Promise<string | null> {
 export async function loadPrintAssets(layout: PrintLayout): Promise<PrintAssets> {
   // Faces the texts use, plus the bold of every family (library art, labels, barcode digits).
   const keys = new Set(PRINT_FONT_IDS.map((id) => faceKey(id, "bold")));
-  // The inside sheet (docs/23 S5) needs its fonts and images too.
+  // The inside sheet (docs-old/23 S5) needs its fonts and images too.
   const sheets = [layout, ...(layout.inside ? [layout.inside] : [])];
   for (const t of sheets.flatMap((sheet) => sheet.texts)) {
     keys.add(faceKey(fontOfPlaced(t), textFaceOfPlaced(t)));
@@ -174,7 +174,7 @@ export async function loadPrintAssets(layout: PrintLayout): Promise<PrintAssets>
   const faces = Object.fromEntries(loaded) as Record<string, OutlineFont>;
   const fonts = Object.fromEntries(PRINT_FONT_IDS.map((id) => [id, faces[faceKey(id, "bold")]])) as Record<PrintFontId, OutlineFont>;
   const images: PrintAssets["images"] = new Map();
-  // One file per URL and colour swaps: recoloured SVG logos (docs/23 S14) print from their recoloured copy.
+  // One file per URL and colour swaps: recoloured SVG logos (docs-old/23 S14) print from their recoloured copy.
   for (const image of sheets.flatMap((sheet) => sheet.images)) {
     const key = imageKey(image.url, image.colorMap);
     if (images.has(key)) continue;
@@ -183,7 +183,7 @@ export async function loadPrintAssets(layout: PrintLayout): Promise<PrintAssets>
     const [dataUri, bitmap] = await Promise.all([dataUriOf(src), loadImage(src)]);
     images.set(key, { dataUri, bitmap });
   }
-  // Uploaded fonts of the texts (docs/23 S13): a font that cannot load prints in its built-in fallback.
+  // Uploaded fonts of the texts (docs-old/23 S13): a font that cannot load prints in its built-in fallback.
   const custom: Record<string, OutlineFont> = {};
   for (const url of fontUrlsOf(sheets.flatMap((sheet) => sheet.texts).map((t) => ({ type: "text" as const, style: t.style })))) {
     try {
@@ -294,7 +294,7 @@ function artVectors(layout: PrintLayout, assets: PrintAssets) {
   }));
 }
 
-/** Everything of the artwork layer in paint order (the order of the layers in the editor, docs/23 D3). */
+/** Everything of the artwork layer in paint order (the order of the layers in the editor, docs-old/23 D3). */
 type DrawItem =
   | { kind: "art"; item: ReturnType<typeof artVectors>[number] }
   | { kind: "image"; item: PrintLayout["images"][number] }
@@ -338,7 +338,7 @@ function artSvg(a: ReturnType<typeof artVectors>[number]): string {
 }
 
 /**
- * An image cut to its crop / fill and adjusted (docs/23 S10), as a PNG data URI and where it lands in its box; null
+ * An image cut to its crop / fill and adjusted (docs-old/23 S10), as a PNG data URI and where it lands in its box; null
  * when the plain file is used (or the browser cannot read its pixels).
  */
 function framedImage(image: PrintLayout["images"][number], assets: PrintAssets): { href: string; draw: ReturnType<typeof imageDraw> } | null {
@@ -370,7 +370,7 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
     if (!clips.has(key)) clips.set(key, { id: `face${clips.size + 1}`, box });
     return clips.get(key)!.id;
   };
-  // Drop shadows (docs/23 S22): one filter per element, in the frame of the element before its mirror.
+  // Drop shadows (docs-old/23 S22): one filter per element, in the frame of the element before its mirror.
   const effectDefs: string[] = [];
   const placed = (b: PlacedBase, content: string) => {
     const { cx, cy } = centreOf(b);
@@ -423,7 +423,7 @@ export function renderSvg(layout: PrintLayout, assets: PrintAssets): string {
       );
     })
     .join("");
-  // Finishes (docs/23 S6): the shapes of each foil / UV / embossed element in the colour of its spot, on their own layer.
+  // Finishes (docs-old/23 S6): the shapes of each foil / UV / embossed element in the colour of its spot, on their own layer.
   const finishSvg = drawList(layout, assets)
     .filter(({ item }) => item.finish)
     .map(({ kind, item }) => {
@@ -568,7 +568,7 @@ export function imageResolutions(layout: PrintLayout, assets: PrintAssets) {
 /** An image of the layout as CMYK pixels for the PDF, or null when it cannot be read (no CORS, broken file). */
 /**
  * The alpha of an image (a full rectangle when it has none), padded by `pad` px and blurred with a gaussian of
- * `sigma` px in the browser: the soft mask of a photo's drop shadow (docs/23 S22). Null without a 2D canvas.
+ * `sigma` px in the browser: the soft mask of a photo's drop shadow (docs-old/23 S22). Null without a 2D canvas.
  */
 function blurredMask(alpha: Uint8Array | null, width: number, height: number, pad: number, sigma: number) {
   if (typeof document === "undefined") return null;
@@ -614,7 +614,7 @@ function prepareImage(image: PrintLayout["images"][number], assets: PrintAssets)
   canvas.height = Math.max(1, height);
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  // Photo adjustments baked into the printed pixels (docs/23 S10), the part of the image the box shows.
+  // Photo adjustments baked into the printed pixels (docs-old/23 S10), the part of the image the box shows.
   ctx.filter = filterCss(image.filters ?? undefined);
   if (bitmap.naturalWidth && bitmap.naturalHeight) ctx.drawImage(bitmap, draw.sx, draw.sy, draw.sw, draw.sh, 0, 0, canvas.width, canvas.height);
   else ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
@@ -766,7 +766,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
   };
   /** Opacity graphics states (/GSa50 = 50 %), declared in the page resources. */
   const alphaStates = new Map<string, number>();
-  /** Blend mode graphics states (/GSbmMultiply), docs/23 S22. */
+  /** Blend mode graphics states (/GSbmMultiply), docs-old/23 S22. */
   const blendStates = new Set<BlendMode>();
   /** Opens an element: clip to its face + bleed, opacity, blend mode. Close with "Q". */
   const openPlaced = (b: PlacedBase) => {
@@ -790,7 +790,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     const turn = turned(b.rotation, cx, cy);
     return (x: number, y: number) => turn((b.flipX ? 2 * cx - x : x) + s.x, (b.flipY ? 2 * cy - y : y) + s.y);
   };
-  /** Vector drop shadow (docs/23 S22): the outlines, offset, in layers that widen and fade (print/effects.ts). */
+  /** Vector drop shadow (docs-old/23 S22): the outlines, offset, in layers that widen and fade (print/effects.ts). */
   const vectorShadow = (b: PlacedBase, outlines: { d: string; fill: boolean; width?: number; dx?: number; dy?: number }[]): string[] => {
     const s = b.shadow;
     if (!s) return [];
@@ -842,7 +842,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
   const tint = (cmyk: string) => `<< /FunctionType 2 /Domain [0 1] /C0 [0 0 0 0] /C1 [${cmyk}] /N 1 >>`;
   const cutFn = add(tint("0 1 0 0"));
   const creaseFn = add(tint("1 0 0 0"));
-  // Spot colours of the finishes (docs/23 D8): Foil_Gold, SpotUV, Emboss…
+  // Spot colours of the finishes (docs-old/23 D8): Foil_Gold, SpotUV, Emboss…
   const finishSpaces = Object.values(FINISH_SPOTS)
     .map((spot) => `/CsF_${spot.name} [/Separation /${spot.name} /DeviceCMYK ${add(tint(spot.cmyk.map((v) => f(v / 100)).join(" ")))} 0 R]`)
     .join(" ");
@@ -862,7 +862,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     for (const shape of a.art.shapes) {
       const path = pathToPdf(shape.d, at);
       if (shape.gradient) {
-        // Linear gradient (docs/23 S11): an axial shading in DeviceCMYK, painted inside the shape.
+        // Linear gradient (docs-old/23 S11): an axial shading in DeviceCMYK, painted inside the shape.
         const line = gradientLine(shape.gradient.angle, a.width, a.height);
         const [x1, y1] = at(line.x1, line.y1);
         const [x2, y2] = at(line.x2, line.y2);
@@ -890,7 +890,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
     content.push("Q");
   };
 
-  /** One sheet on its own page (the outside, then the inside of the sheet, docs/23 S5); returns the page object. */
+  /** One sheet on its own page (the outside, then the inside of the sheet, docs-old/23 S5); returns the page object. */
   const buildPage = (layout: PrintLayout): number => {
   const trim = trimArea(layout);
   content = [];
@@ -931,7 +931,7 @@ export async function renderPdf(layout: PrintLayout, assets: PrintAssets, option
       const [tx, ty] = at(x0, y0);
       // Frame of the photo (rounded, circle, arch): an extra clip in the coordinates of its box.
       const frame = image.mask ? ` ${pathToPdf(image.mask, (x, y) => at(image.x + x, image.y + y))} W n` : "";
-      // Drop shadow (docs/23 S22): a framed photo casts its frame; any other its own alpha, blurred like on screen.
+      // Drop shadow (docs-old/23 S22): a framed photo casts its frame; any other its own alpha, blurred like on screen.
       let shadow: string[] = [];
       if (image.shadow && image.mask) {
         shadow = vectorShadow(image, [{ d: image.mask, fill: true, dx: image.x, dy: image.y }]);

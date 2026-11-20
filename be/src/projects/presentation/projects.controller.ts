@@ -74,7 +74,7 @@ export class ProjectsController {
     @Headers(EDITOR_TAB_HEADER) tab?: string,
   ) {
     const saved = await this.projectsService.update(id, userId, dto);
-    // The owner's other editor tabs load this save (docs/28 Q5). A new thumbnail alone changes nothing they edit.
+    // The owner's other editor tabs load this save (docs/18 Q5). A new thumbnail alone changes nothing they edit.
     if (Object.entries(dto).some(([field, value]) => value !== undefined && field !== 'version' && field !== 'thumbnailUrl')) {
       const event: ProjectSavedEvent = {
         userId,

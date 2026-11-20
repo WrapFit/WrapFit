@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: swatches show the logo's own printed colours (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: swatches show the logo's own printed colours (docs/13_DESIGN_SYSTEM.md §2). */
 
 import React, { useEffect, useState } from "react";
 import { ART_PALETTES, cleanColorMap, paletteColorMap, type CanvasElement } from "@wrapfit/shared";
@@ -7,7 +7,7 @@ import { buttonClass } from "@/components/ui";
 import { svgColorsOfUrl } from "../../utils/svgRecolor";
 
 /**
- * Colours of an SVG logo (docs/23 S14): each colour of the file can be swapped for another, or the whole logo dressed
+ * Colours of an SVG logo (docs-old/23 S14): each colour of the file can be swapped for another, or the whole logo dressed
  * in a palette of the library. Swaps live in `style.colorMap`; the file itself never changes. Hidden for other files.
  */
 export function SvgColors({ element, onChange }: { element: CanvasElement; onChange(element: CanvasElement): void }) {

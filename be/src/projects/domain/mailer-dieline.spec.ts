@@ -42,7 +42,7 @@ const overlaps = (a: Bounds, b: Bounds) =>
   a.y < b.y + b.height - EPSILON &&
   b.y < a.y + a.height - EPSILON;
 
-describe('mailer box (FEFCO 0427, docs/23 S16)', () => {
+describe('mailer box (FEFCO 0427, docs-old/23 S16)', () => {
   it.each(SIZES)(
     '%s × %s × %s: one piece, panels never overlap, every line stays on the sheet',
     (...size) => {

@@ -162,7 +162,7 @@ export const PLANS = {
   title: "Thiết kế miễn phí, trả khi cần file in",
   body: `Thiết kế và báo giá miễn phí; file in mở khi bạn thanh toán đơn in mẫu. Gói ${TIERS.STARTER.name} ${formatVnd(TIERS.STARTER.price.monthly)}/tháng thêm dung lượng và xu Wrap.`,
   cta: { label: "Xem bảng giá", href: "/pricing" },
-  // The plans of /pricing on sale (@wrapfit/shared/billing): Free, Pro, Business (export packs stopped, docs/25 item 7).
+  // The plans of /pricing on sale (@wrapfit/shared/billing): Free, Pro, Business (export packs stopped, docs-old/25 item 7).
   options: [
     { price: formatVnd(0), unit: TIERS.FREE.name, detail: `Thiết kế & báo giá · ${formatQuota(TIERS.FREE.storageBytes)} lưu trữ` },
     { price: formatVnd(TIERS.STARTER.price.monthly), unit: `${TIERS.STARTER.name} · tháng`, detail: PRO_SUMMARY },

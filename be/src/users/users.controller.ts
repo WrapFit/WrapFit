@@ -71,7 +71,7 @@ export class UsersController {
   @HttpCode(200)
   @ApiOperation({
     summary:
-      'Delete a user (admin). result DELETED: the account, its projects and files are gone. result ANONYMIZED: the account had payments, orders or purchased credits; they stay, the account is scrubbed and can never sign in again (docs/25 item 3)',
+      'Delete a user (admin). result DELETED: the account, its projects and files are gone. result ANONYMIZED: the account had payments, orders or purchased credits; they stay, the account is scrubbed and can never sign in again (docs-old/25 item 3)',
   })
   remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser('id') actorId: string) {
     return this.usersService.remove(id, actorId);

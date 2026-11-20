@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Accessibility audit of app pages in headless Chrome (docs/15_DESIGN_SYSTEM.md §4):
+ * Accessibility audit of app pages in headless Chrome (docs/13_DESIGN_SYSTEM.md §4):
  *   - axe-core with the WCAG 2.0/2.1/2.2 A and AA rules;
  *   - reflow: no sideways scroll at 640 px (200 % zoom of a 1280 px screen) and 320 px (400 %, WCAG 1.4.10);
  *   - the same axe run with data-theme="dark" on /design-system (both themes of the components).

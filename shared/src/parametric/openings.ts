@@ -1,5 +1,5 @@
 /**
- * Holes cut inside a panel (docs/23 S17): display windows and hand holes, as rounded rectangles.
+ * Holes cut inside a panel (docs-old/23 S17): display windows and hand holes, as rounded rectangles.
  * Owned by IT 2 (Packaging Math)
  */
 

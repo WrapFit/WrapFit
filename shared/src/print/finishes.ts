@@ -1,5 +1,5 @@
 /**
- * Print finishes of single elements (docs/23 S6, D8): foil, spot UV, embossing. Each one goes to the print file as its
+ * Print finishes of single elements (docs-old/23 S6, D8): foil, spot UV, embossing. Each one goes to the print file as its
  * own spot colour (100 %, overprinted, layer "Finish"), the way print shops make the foil block, the UV screen or the
  * emboss die. `cmyk` is only the alternate colour a viewer shows for the spot; `display` is its colour on screen.
  */
@@ -33,7 +33,7 @@ export const FINISH_SPOTS: Record<ElementFinish, FinishSpot> = {
 export const ELEMENT_FINISHES: ElementFinish[] = ["foil_gold", "foil_silver", "foil_rose", "spot_uv", "emboss", "deboss"];
 
 /**
- * Smallest line and text a foil block holds. Defaults of docs/23 Q1 until the partner print shop gives its own.
+ * Smallest line and text a foil block holds. Defaults of docs-old/23 Q1 until the partner print shop gives its own.
  */
 export const MIN_FOIL_LINE_MM = 0.3;
 export const MIN_FOIL_TEXT_PT = 8;

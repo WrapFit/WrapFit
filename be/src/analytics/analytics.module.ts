@@ -7,7 +7,7 @@ import { ProductEventsService } from './product-events.service';
 import { XuReportService } from './xu-report.service';
 
 /**
- * Analytics dashboard (docs/17 S7) and the admin xu report (docs/19 S5). Simple module: Controller -> Service ->
+ * Analytics dashboard (docs-old/17 S7) and the admin xu report (docs/16 S5). Simple module: Controller -> Service ->
  * PrismaService. Other modules record events through ProductEventsService; this module imports no feature module
  * (the xu report only reads the token prices of `ai`).
  */

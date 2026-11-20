@@ -1,4 +1,4 @@
-# 11 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch
+# 10 — Stitch ↔ Frontend: Audit, kiến trúc và kế hoạch
 
 > Cập nhật: 2026-10-08 · Branch `test-model` · Stitch project `15490463943889996451`
 > Lượt 1: audit. Lượt 2: chuẩn hoá kiến trúc và sửa toàn bộ lỗi sửa được trong code.
@@ -42,7 +42,7 @@ Hệ quả:
 Đo bằng `npm run stitch:parity` (xem §3.5). Ảnh so sánh: `fe/.visual-parity/<slug>.png` (Stitch | app | diff).
 
 > **Mốc mới (2026-10-11, S9):** từ khi các màn được sửa tay header / sidebar (`e07d23b`, `e509d8f`) và header chung đổi
-> font (S5), ngưỡng 1% không còn áp dụng: số đo từng màn trước / sau S9 ở [`13`](13_UI_VIEWPORT_AUDIT.md) §2.3. So sánh
+> font (S5), ngưỡng 1% không còn áp dụng: số đo từng màn trước / sau S9 ở [`11`](11_UI_VIEWPORT_AUDIT.md) §2.3. So sánh
 > với cột "Sau S9" của bảng đó.
 >
 > **Đo lại ở S8 (2026-10-12, sau khi nối xong FE ↔ BE):** 20 / 22 màn `converted` lệch đúng như cột "Sau S9" (chênh
@@ -172,7 +172,7 @@ liên quan đã chuyển sang `manual` hoặc đã có route khác (§0).
 ### Cần bạn làm / quyết định
 - [x] **12 trang "companion"** (`/editor/step-1..4`, `/checkout/step-2`, `/auth/2fa`, `/dashboard/orders`, `/dashboard/profile`, `/admin/appraisal`, `/admin/gpu-cluster`, `/admin/ledger`, `/admin/system-config`) vẫn là JSX viết tay theo prompt, không phải bản Stitch. **Bỏ do đổi thiết kế:** 8 màn nay là `manual` (viết tay có chủ đích), `/editor/step-1..4` là `approximation` và chuyển hướng sang `/editor/demo`. Không còn cần export HTML Stitch cho các màn này.
 - [x] Trang chủ `/` dùng ảnh nền hero `lh3.googleusercontent.com/...AEtjO1X2Cm…` nay trả HTTP 400 (ảnh hỏng). **Bỏ do đổi thiết kế:** trang chủ là `manual`, không dùng ảnh đó. URL `lh3` chỉ còn ở `fe/src/views/editor/step-1/index.tsx`, route này chuyển hướng nên không ai mở được.
-- [x] 8 ảnh khác trong source Stitch trả 403 (cũng hỏng trên Stitch). **Bỏ do đổi thiết kế:** các màn chứa ảnh đó đã chuyển sang `manual` hoặc đã thay ảnh (F7, F8, F13 ở [13](13_UI_VIEWPORT_AUDIT.md) §3). Chưa kiểm lại ảnh trong HTML nguồn của 3 màn `converted`.
+- [x] 8 ảnh khác trong source Stitch trả 403 (cũng hỏng trên Stitch). **Bỏ do đổi thiết kế:** các màn chứa ảnh đó đã chuyển sang `manual` hoặc đã thay ảnh (F7, F8, F13 ở [11](11_UI_VIEWPORT_AUDIT.md) §3). Chưa kiểm lại ảnh trong HTML nguồn của 3 màn `converted`.
 - [x] Xoá 22 script debug cũ trong `fe/scripts/*.js`. Có mã trên `develop`: `fe/scripts/` không còn file `.js` nào ở thư mục gốc.
 - [x] Chốt màu brand: Stitch dùng Cobalt `#004ac6` cho CTA, token app (`appTheme`) dùng Forest `#122e20`. **Bỏ do đổi thiết kế:** các màn viết tay dùng token của design system; `fe/src` không còn `#004ac6`.
 
@@ -180,7 +180,7 @@ liên quan đã chuyển sang `manual` hoặc đã có route khác (§0).
 - [ ] Giảm font Material Symbols (4 MB, đủ mọi trục) bằng `icon_names=` chỉ gồm icon đang dùng. Còn mở: file 4 MB vẫn ở `fe/public/stitch/fonts/`, `fonts.css` vẫn khai báo, 7 file trong `fe/src` còn dùng class `material-symbols-outlined`.
 - [ ] Gộp font: Stitch dùng tên family Google, phần app cũ dùng `next/font` (hash). Cùng họ font đang tải hai lần. Chưa kiểm lại ngày 2026-11-19.
 - [x] `/unbox/[slug]`: hiện dữ liệu thật của API (tên người nhận, lời chúc, hiệu ứng); backend tắt thì hiện lỗi (S5, kiểm lại ở S8).
-- [ ] Thêm `loading.tsx` cho các nhóm route (`app/error.tsx`, `ErrorState`, `PageLoader` đã có từ S3); thêm ESLint config (`next lint` hiện chưa cấu hình); thêm job `fe` vào CI chạy `tsc`, `next build`, `stitch:parity`. Còn mở: chỉ có `loading.tsx` cho `/editor/[id]` và `/templates`; chưa có ESLint config cho FE, script `lint` vẫn là `next lint`; CI chỉ chạy `tokens:check` cho FE. Phần ESLint và CI theo dõi ở [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1.
+- [ ] Thêm `loading.tsx` cho các nhóm route (`app/error.tsx`, `ErrorState`, `PageLoader` đã có từ S3); thêm ESLint config (`next lint` hiện chưa cấu hình); thêm job `fe` vào CI chạy `tsc`, `next build`, `stitch:parity`. Còn mở: chỉ có `loading.tsx` cho `/editor/[id]` và `/templates`; chưa có ESLint config cho FE, script `lint` vẫn là `next lint`; CI chỉ chạy `tokens:check` cho FE. Phần ESLint và CI theo dõi ở [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1.
 - [ ] Đồng bộ `docs/09` với code thực tế (route group `(auth)`, `dashboard/layout.tsx`, `hooks/`, `stores/` đang chỉ có trên tài liệu). Chuyển cho [09](09_PROJECT_DIRECTORY_AND_FILE_ARCHITECTURE.md), file đó đang được đồng bộ trong cùng đợt.
 - [x] Nếu muốn layout chung (sidebar admin, navbar dashboard): thống nhất biến thể trên Stitch trước, rồi tách thành `layout.tsx`. Có mã trên `develop`: `app/(workspace)/layout.tsx` (`WorkspaceShell`, commit `c7d5d4f`) và `app/admin/layout.tsx` (`AdminShell`, commit `50152c0`) giữ header và sidebar khi chuyển trang.
 - [x] Viết lại dần behavior generated sang React/Anime.js (theo AGENTS.md) khi một màn hình cần logic thật; khi đó chuyển screen sang `status: "manual"`. Có mã trên `develop`: chỉ còn behavior của 3 màn `converted`.

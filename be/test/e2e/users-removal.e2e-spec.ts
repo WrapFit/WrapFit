@@ -13,7 +13,7 @@ import { deleteUsers } from './helpers/cleanup';
 import { createPaidOrder, placeSampleOrder } from './helpers/orders';
 
 /**
- * Admin deletion of a user (docs/25 item 3) against a real PostgreSQL and SeaweedFS: a user without financial history
+ * Admin deletion of a user (docs-old/25 item 3) against a real PostgreSQL and SeaweedFS: a user without financial history
  * is deleted with their projects and files; a user with payments or orders is anonymized, so the money records, the
  * order in production and its design stay, and the person can never sign in again while their address registers anew.
  * Needs `docker compose up -d postgres redis seaweedfs storage-init`.
@@ -36,7 +36,7 @@ describe('Admin deletes a user (e2e)', () => {
   const email = (name: string) => `del-${name}-${run}@e2e.test`;
   const pay = async (user: Account, body: Record<string, unknown>) =>
     (await as(user).post('/api/payments').send({ termsVersion: PAYMENT_TERMS_VERSION, ...body }).expect(201)).body;
-  /** Pays a VietQR payment with the simulate button, which only a demo account may press (docs/25 item 6). */
+  /** Pays a VietQR payment with the simulate button, which only a demo account may press (docs-old/25 item 6). */
   const simulatePaid = async (user: Account, paymentId: string) => {
     await prisma.user.update({ where: { id: user.id }, data: { isDemo: true } });
     await as(user).post(`/api/payments/${paymentId}/simulate-confirm`).expect(200);
@@ -273,13 +273,13 @@ describe('Admin deletes a user (e2e)', () => {
       expect(projects.items ?? projects).toHaveLength(0);
       await as(again).get(`/api/orders/${orderId}`).expect(404);
       const billing = (await as(again).get('/api/billing/me').expect(200)).body;
-      // Only the xu of the Free plan for this month: nothing bought by the old account (export credits are gone, docs/25 item 7).
+      // Only the xu of the Free plan for this month: nothing bought by the old account (export credits are gone, docs-old/25 item 7).
       expect(billing).toMatchObject({ tier: 'FREE', xu: { balance: 50 } });
       expect(billing).not.toHaveProperty('exportCredits');
       expect(await prisma.creditLot.count({ where: { userId: again.id, source: 'PURCHASE' } })).toBe(0);
     });
 
-    it('keeps the invoice data 10 years after the end of its year, then removes its personal part (docs/28 Q4)', async () => {
+    it('keeps the invoice data 10 years after the end of its year, then removes its personal part (docs/18 Q4)', async () => {
       // The VAT invoice details of the moment travel with each payment, so anonymizing the account kept them.
       expect((await prisma.payment.findUniqueOrThrow({ where: { id: paidXuId } })).metadata).toMatchObject({
         billingDetails: { company: 'Mộc An', taxCode: '0312345678' },
@@ -320,7 +320,7 @@ describe('Admin deletes a user (e2e)', () => {
     });
   });
 
-  describe('notifications (docs/25 S8)', () => {
+  describe('notifications (docs-old/25 S8)', () => {
     /** A PUBLIC design of `author`, remixed by `remixer`; resolves once the author's notification is stored. */
     const remixed = async (author: Account, remixer: Account, title: string) => {
       const project = (

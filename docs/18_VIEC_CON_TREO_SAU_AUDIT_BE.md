@@ -1,4 +1,4 @@
-# 28. Việc còn treo sau audit backend
+# 18. Việc còn treo sau audit backend
 
 > Ngày lập: 2026-11-18 · Kiểm lại trên `develop` (1c76bdb, đã gộp `fix/be-audit`) · Đối chiếu lại: 2026-11-19 trên `develop` (fb720a9) · Trạng thái: **đang làm**, chủ dự án đã trả lời Q1–Q5 (§3)
 > Nguồn của mục 1–14: các việc nằm ngoài kế hoạch sửa backend sau audit (S0–S8, tháng 11/2026, đã gộp vào `develop`), do các session của kế hoạch đó phát hiện mà không sửa. Phần đã làm của mục 1–14 nằm trong commit `de2328d` trên `develop`.
@@ -13,7 +13,7 @@ Mức: **M** = phải sửa trước khi mở cho khách, **S** = nên sửa, **
 |---|---|---|---|---|---|---|
 | 1 | M | Câu chữ gói Pro hứa "xuất file in sạch không giới hạn", nhưng Pro không mở file in | 9 chỗ trong `fe/src`, xem §2.1 | Q1 | **Xong**, có mã trên `develop` (`fe/src/features/pricing/plans.ts`) | — |
 | 2 | S | Bảng giá, menu và điều khoản vẫn nhắc gói "Lượt xuất" đã ngừng bán | `fe/src/app/pricing/page.tsx:6`, `fe/src/components/layout/navigation.ts:33`, `shared/src/billing/terms.ts` | Q2 | Trang giá và menu: **xong**, có mã trên `develop`. Điều khoản: **còn mở**, `terms.ts` dòng 26, 44, 56 còn chữ "lượt xuất", `PAYMENT_TERMS_VERSION` vẫn `2026-11-12` | Sửa điều khoản ở lần sửa tiếp theo vì lý do khác, cùng lần tăng `PAYMENT_TERMS_VERSION` (Q2) |
-| 3 | S | Kịch bản demo trong runbook deploy vẫn bảo mua 1 lượt xuất | `docs/18_PATH2_DEPLOY_RUNBOOK.md` §3.5, §6, §8, §9 | | Phần chữ: **xong** (runbook đang được đồng bộ tiếp trong đợt docs này). Ảnh chụp lại: **còn mở**, chờ mục 14 | Sau khi mục 14 xong, chạy `e2e-scenario.mjs` và chụp lại ba ảnh đánh dấu "chưa chụp lại" trong runbook. Chờ kiểm thực tế (người deploy hoặc người chạy demo) |
+| 3 | S | Kịch bản demo trong runbook deploy vẫn bảo mua 1 lượt xuất | `docs/15_PATH2_DEPLOY_RUNBOOK.md` §3.5, §6, §8, §9 | | Phần chữ: **xong** (runbook đang được đồng bộ tiếp trong đợt docs này). Ảnh chụp lại: **còn mở**, chờ mục 14 | Sau khi mục 14 xong, chạy `e2e-scenario.mjs` và chụp lại ba ảnh đánh dấu "chưa chụp lại" trong runbook. Chờ kiểm thực tế (người deploy hoặc người chạy demo) |
 | 4 | S | Nhập ảnh kho lỗi gì cũng báo "Kiểm tra kết nối" | `fe/src/features/studio/components/library/LibraryPanel.tsx`, `fe/src/services/api/index.ts` | | **Xong**, có mã trên `develop` | Phần thử với Pexels thật thuộc mục 10 |
 | 5 | N | Chữ dùng phông tải lên thiếu ký tự: file in đổi phông, bản xem trước không cảnh báo | `fe/src/features/studio/utils/customFonts.ts`, `be/src/export/rendering/print-renderers.ts` | | Chưa làm (kiểm 2026-11-19: `customFonts.ts` chỉ kiểm dấu tiếng Việt lúc tải phông lên) | So bản xem trước và PDF với cùng chuỗi có ký tự thiếu. Ghi cách cảnh báo hoặc dùng font thay thế, kèm hai kết quả đối chiếu |
 | 6 | N | Lịch sử xu phân trang chỉ theo `created_at` (cùng lỗi con trỏ đã sửa cho đối soát ngân hàng và lịch sử thanh toán) | `be/src/billing/xu-wallet.service.ts:156` | | Chưa làm | Thử nhiều giao dịch cùng thời điểm ở ranh giới hai trang, kể cả khi lọc theo loại. Sau khi sửa cursor, đọc hết các trang phải thu đủ ID, mỗi ID xuất hiện đúng một lần |
@@ -24,7 +24,7 @@ Mức: **M** = phải sửa trước khi mở cho khách, **S** = nên sửa, **
 | 11 | S | Chưa xem trên trình duyệt: trang admin tài khoản, chuông thông báo | `fe/src/features/admin/accounts/`, `fe/src/features/notifications/` | | Chưa làm. Chờ kiểm thực tế (dev FE) | Thử màn hình tài khoản admin và chuông thông báo bằng đúng vai trò. Ghi kết quả cho danh sách rỗng, có thông báo mới và đánh dấu đã đọc |
 | 12 | N | Ẩn danh hóa user vẫn giữ tên, số điện thoại, địa chỉ người nhận trên đơn đã giao | `be/src/users/user-removal.ts`, `be/src/users/invoice-retention.ts` | Q4 | **Xong** phần chính: có mã trên `develop`, đã kiểm bằng e2e `users-removal` (2026-11-18). **Còn mở** phạm vi dọn dữ liệu: thiết kế của đơn đã in (kèm trang mở hộp, lời chúc) chưa bị xóa khi hết hạn; chưa có kế toán xác nhận căn cứ 10 năm | Chủ dự án chốt có xóa thiết kế khi hết hạn không; kế toán xác nhận bản hợp nhất hiện hành của Luật Kế toán trước khi mở bán |
 | 13 | N | Hai tab cùng mở một dự án ghi đè tên của nhau, không báo xung đột | `be/src/projects/presentation/projects.controller.ts`, `fe/src/features/studio/hooks/useProjectSync.ts` | Q5 | **Xong** phần chính: có mã trên `develop`, đã thử trên trình duyệt 2026-11-18. **Còn mở**: chưa thử khi tab nhận có thay đổi chưa lưu (banner xung đột) và khi tab bị ẩn | Mở hai tab, sửa chưa lưu ở tab B rồi lưu ở tab A: tab B phải hiện banner xung đột. Ẩn tab B, lưu ở tab A, mở lại tab B: tab B tải bản mới. Chờ kiểm thực tế (dev FE) |
-| 14 | S | Bước 7 và 16 của kịch bản e2e còn kiểm luồng lượt xuất cũ (watermark, 402, "Mua 1 lượt") | `fe/scripts/e2e-scenario.mjs:727`, `:945` | | **Xong**, đã kiểm bằng E2E (2026-11-19): kịch bản viết lại theo luồng giỏ in → thanh toán → xuất theo phiên bản (commit c622f67), chạy đạt ở `M` và `Xp` với bước mặc định `1-14,16-18`. Điều kiện chạy ở [runbook §9](18_PATH2_DEPLOY_RUNBOOK.md#9-ảnh-bàn-giao-cho-slide) | Đã đóng |
+| 14 | S | Bước 7 và 16 của kịch bản e2e còn kiểm luồng lượt xuất cũ (watermark, 402, "Mua 1 lượt") | `fe/scripts/e2e-scenario.mjs:727`, `:945` | | **Xong**, đã kiểm bằng E2E (2026-11-19): kịch bản viết lại theo luồng giỏ in → thanh toán → xuất theo phiên bản (commit c622f67), chạy đạt ở `M` và `Xp` với bước mặc định `1-14,16-18`. Điều kiện chạy ở [runbook §9](15_PATH2_DEPLOY_RUNBOOK.md#9-ảnh-bàn-giao-cho-slide) | Đã đóng |
 | 15 | S | FitCheck chưa kiểm chữ tràn khung: phần chữ thừa vẽ ra ngoài khung ở canvas và file in, có thể đè nếp gấp | `shared/src/fitcheck/validator.ts:7` (chú thích "Not checked yet") | | Chưa làm (kiểm 2026-11-19: không có mã `TEXT_OVERFLOW`) | Thêm luật cảnh báo khi chữ cần cao hơn khung quá 0,5 mm, đo bằng cùng hàm đo chữ ở editor và server; kiểm lề bằng khung thật của chữ. Test: chữ vừa, tràn, tràn tới nếp gấp, chữ xoay; điểm editor bằng điểm server sau khi lưu |
 | 16 | S | Server chưa cấu hình Google thì nút Google mở trang JSON `503` thô | `be/src/auth/guards/google-oauth.guard.ts:22`, `fe/src/views/auth/login/index.tsx` | | Chưa làm | Guard chuyển trình duyệt về `/login?error=google_unavailable`, trang đăng nhập hiện câu tiếng Việt. Thử bằng cách để trống `GOOGLE_CLIENT_ID` rồi bấm nút Google |
 | 17 | S | FE chưa có ESLint; CI không kiểm FE ngoài `tokens:check` | `fe/package.json` (`"lint": "next lint"`), `.github/workflows/ci.yml` | | Chưa làm | Thêm `fe/eslint.config.mjs` (bỏ qua file generated), đổi script `lint`, thêm job CI chạy `tsc`, lint, `next build` cho FE. Đóng khi `npm --workspace=fe run lint` thoát 0 và job CI xanh |
@@ -32,7 +32,7 @@ Mức: **M** = phải sửa trước khi mở cho khách, **S** = nên sửa, **
 | 19 | N | Chữ mới thêm từ canvas luôn dùng Cormorant Garamond, không theo bộ font đang chọn | `fe/src/features/studio/components/canvas/DielineCanvas2D.tsx:47` (`NEW_TEXT_STYLE`) | | Một phần: rail "Văn bản" đã dùng phông Brand Kit khi có (có mã trên `develop`). Nút thêm chữ trên canvas: chưa làm | Truyền font đang chọn cho canvas; thêm chữ, lưu, đọc lại qua API và xuất PDF phải cùng font |
 | 20 | S | Chưa kiểm trên trình duyệt: lỗi upload `413`, `403` hết dung lượng, `FILE_NOT_OWNED`; `409` khi đủ 50 mốc; thiếu xu khi tạo hoa văn AI (`402 INSUFFICIENT_CREDITS`, thay cho `429` hết lượt cũ) | `fe/src/features/dashboard/upload.ts`, `features/studio/components/snapshots/`, `ai-pattern/` | | Chưa làm. Chờ kiểm thực tế (dev FE) | Dựng từng ca (giả response bằng CDP khi local không tạo được), chạy ở M và X+, ghi câu báo lỗi thấy được và việc không mất thay đổi đang chờ |
 | 21 | N | Nhãn "Công thức cũ" trên thẻ dự án ở dashboard | `fe/src/features/dashboard/components/ProjectCard.tsx`, `RecentProjectCard.tsx` | | API đã trả `formulaVersion` và `latestFormulaVersion` trong danh sách dự án (có mã trên `develop`, `project.select.ts`). Nhãn FE: chưa làm | Hiện nhãn khi `formulaVersion < latestFormulaVersion` và dự án không ở thùng rác; chụp `/dashboard`, `/dashboard/projects` ở M, L, X, W không tràn tên |
-| 22 | M | File in chưa được mở bằng công cụ xưởng, chưa in thử 1 : 1 và gấp tay | [14](14_BOX_FORMULA_AUDIT.md) §6.1 | | Chờ kiểm thực tế (xưởng in hoặc nhóm thiết kế) | Điền bảng nghiệm thu vật lý ở 14 §6.1 cho 4 cấu trúc, trước khi nhận đơn in thật |
+| 22 | M | File in chưa được mở bằng công cụ xưởng, chưa in thử 1 : 1 và gấp tay | [12](12_BOX_FORMULA_AUDIT.md) §6.1 | | Chờ kiểm thực tế (xưởng in hoặc nhóm thiết kế) | Điền bảng nghiệm thu vật lý ở 14 §6.1 cho 4 cấu trúc, trước khi nhận đơn in thật |
 | 23 | S | `docker-compose.yml` không truyền `PEXELS_API_KEY` vào container backend, nên ảnh kho luôn tắt trên VPS dù `.env` có khóa | `docker-compose.yml` (khối `environment` của backend) | | Chưa làm (kiểm 2026-11-19: file compose không có biến `PEXELS_*`; tìm thấy khi đồng bộ runbook deploy) | Thêm `PEXELS_API_KEY` vào `environment` của backend, deploy lại, rồi thử như mục 10: `GET /library/stock/photos` trả `enabled: true` |
 
 ## 2. Chi tiết
@@ -73,7 +73,7 @@ Việc: sửa hai chỗ đầu. Điều khoản thì chờ Q2.
 
 ### 2.3 Mục 3: runbook demo (S)
 
-`docs/18_PATH2_DEPLOY_RUNBOOK.md`:
+`docs/15_PATH2_DEPLOY_RUNBOOK.md`:
 
 - Dòng 133–134: "mua 1 lượt" qua VNPay rồi "lượt xuất tăng". Bước này giờ trả 400 `EXPORT_PACK_DISCONTINUED`.
 - Dòng 208: kịch bản 6 "Xuất SVG → 402 → Mua 1 lượt".
@@ -145,7 +145,7 @@ Chỉ mới qua build và test, chưa ai mở xem:
 - Trang admin tài khoản với một tài khoản đã ẩn danh hóa: nhãn, các nút bị khóa (phần ẩn danh hóa của đợt sửa backend).
 - Chuông thông báo: trạng thái lỗi, và kết nối WebSocket qua proxy của Next.js dev (hộp thư thông báo của đợt sửa backend). Chuông vẫn gắn ở `fe/src/components/layout/MainHeader.tsx:151` sau khi gộp bản thiết kế lại studio.
 
-Việc: kiểm ở bề rộng desktop bằng `npm --workspace=fe run shots -- --routes` (docs/13) và ở bề rộng điện thoại.
+Việc: kiểm ở bề rộng desktop bằng `npm --workspace=fe run shots -- --routes` (docs/11) và ở bề rộng điện thoại.
 
 ### 2.12 Mục 12 và 13: chờ chủ dự án
 
@@ -184,7 +184,7 @@ Việc: kiểm ở bề rộng desktop bằng `npm --workspace=fe run shots -- -
 
 ## 4. Trước khi deploy
 
-Không phải việc ngoài plan, nhắc lại từ nhật ký của đợt sửa backend để khỏi sót. Các bước chạy lệnh nằm ở [runbook deploy](18_PATH2_DEPLOY_RUNBOOK.md#23-trình-tự-deploy-lần-này); mục dưới chỉ giữ lý do.
+Không phải việc ngoài plan, nhắc lại từ nhật ký của đợt sửa backend để khỏi sót. Các bước chạy lệnh nằm ở [runbook deploy](15_PATH2_DEPLOY_RUNBOOK.md#23-trình-tự-deploy-lần-này); mục dưới chỉ giữ lý do.
 
 1. Đổi số dư lượt xuất cũ sang xu: `npm --workspace=be run db:convert-export-credits` (chạy thử), rồi thêm `-- --apply`. Script chạy bằng `ts-node` từ `be/prisma/scripts/` và cần mã nguồn, mà image backend production không có `src/`, nên không chạy thẳng trong container được. Cách chạy trên VPS (gắn `be/src` chỉ đọc vào container) ở runbook deploy §2.3.
 2. Đếm các lần trừ xu `AI_PATTERN` không có kết quả: lần trừ chưa hoàn, cũ hơn 10 phút, trong 7 ngày gần nhất, không có dòng `ai_generations` mang `debit_operation_id` của nó. Lần chạy đầu của task dọn (`AiImageReconcileTask`, 5 phút/lần) sẽ hoàn xu cho tất cả, nên đếm trước để biết số xu sẽ hoàn. Câu SQL ở runbook deploy.
@@ -213,8 +213,8 @@ mở được chuyển thành mục trong §1.
 | T7 | Chưa kiểm trên trình duyệt lỗi upload, 50 mốc, hết lượt AI | Không có ca nào trong `e2e-scenario.mjs`; hoa văn AI nay tính bằng xu nên ca "hết lượt" thành thiếu xu `402` | Còn mở → mục 20 |
 | T8 | Ô "Tình trạng hệ thống" ở trang admin | `useHealthDetails` (`fe/src/features/admin/useHealth.ts`) dùng ở `AdminShell.tsx` và `fe/src/views/admin/index.tsx` | Đã làm (có mã trên `develop`) |
 | T9 | Nhãn "Công thức cũ" trên thẻ dự án | API danh sách đã trả `formulaVersion`, `latestFormulaVersion` (`project.select.ts`); thẻ dự án ở dashboard chưa có nhãn | Một phần → mục 21 |
-| T10 | Lỗi giao diện P3-1 → P3-6 chưa có phiên sửa | Đã đối chiếu từng mục với route hiện tại | Chuyển sang [13](13_UI_VIEWPORT_AUDIT.md) §6.1 |
-| T11 | File in chưa mở bằng công cụ xưởng, chưa in thử và gấp tay | Không có kết quả nào | Còn mở → mục 22 và [14](14_BOX_FORMULA_AUDIT.md) §6.1 |
+| T10 | Lỗi giao diện P3-1 → P3-6 chưa có phiên sửa | Đã đối chiếu từng mục với route hiện tại | Chuyển sang [11](11_UI_VIEWPORT_AUDIT.md) §6.1 |
+| T11 | File in chưa mở bằng công cụ xưởng, chưa in thử và gấp tay | Không có kết quả nào | Còn mở → mục 22 và [12](12_BOX_FORMULA_AUDIT.md) §6.1 |
 | T12 | Tài liệu chưa cập nhật | Thay bằng đợt đồng bộ docs sau audit (2026-11-19), làm cho toàn bộ `docs/` | Đã bị thay thế |
 
 ## 6. Câu hỏi mở của kế hoạch nâng studio lên trình chỉnh sửa chuyên nghiệp
@@ -225,7 +225,7 @@ lập kế hoạch đều đã chạy theo mặc định; những câu dưới �
 | Câu hỏi | Mặc định đang chạy | Trạng thái 2026-11-19 | Người trả lời |
 |---|---|---|---|
 | Xưởng in đối tác cần nét ép kim và cỡ chữ ép kim tối thiểu bao nhiêu? Tên lớp màu pha họ dùng? | Nét ≥ 0,3 mm, chữ ép kim ≥ 8 pt; lớp `Finish` với màu pha 100 % và overprint (`shared/src/print/finishes.ts`) | Có mã trên `develop`. Chờ kiểm thực tế: chưa xưởng nào xác nhận | Xưởng in |
-| Thông số in khác cần xưởng xác nhận: in mặt trong trên giấy kraft, lề và tràn lề, cách đọc file 4 lớp | In mặt trong cho mọi loại giấy, cảnh báo với kraft; thông số in theo [14](14_BOX_FORMULA_AUDIT.md) §3.1 | Chờ kiểm thực tế | Xưởng in |
+| Thông số in khác cần xưởng xác nhận: in mặt trong trên giấy kraft, lề và tràn lề, cách đọc file 4 lớp | In mặt trong cho mọi loại giấy, cảnh báo với kraft; thông số in theo [12](12_BOX_FORMULA_AUDIT.md) §3.1 | Chờ kiểm thực tế | Xưởng in |
 | Khối thông tin nhãn hàng hóa (`shared/src/library/product-label.ts`): đối chiếu NĐ 43/2017/NĐ-CP và NĐ 111/2021/NĐ-CP | Chỉ là mẫu điền sẵn, ghi "người bán tự chịu trách nhiệm nội dung nhãn" | Có mã trên `develop`. Chờ kiểm thực tế: chưa có người có chuyên môn đối chiếu | Người có chuyên môn pháp lý về nhãn hàng hóa |
 
 Phần chưa thử với dịch vụ thật (theo nhật ký của kế hoạch; chưa tìm thấy bằng chứng kiểm sau đó):

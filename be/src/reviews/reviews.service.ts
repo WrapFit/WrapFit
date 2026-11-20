@@ -62,7 +62,7 @@ export const approvalOf = (review: Pick<ProjectReview, 'approvedAt' | 'approvedB
     : null;
 
 /**
- * Design review (docs/23 S23): a secret link the owner sends to a customer or a print shop, who comment on the design
+ * Design review (docs-old/23 S23): a secret link the owner sends to a customer or a print shop, who comment on the design
  * and approve it for print without an account; the owner reads and resolves the comments in the studio.
  */
 @Injectable()

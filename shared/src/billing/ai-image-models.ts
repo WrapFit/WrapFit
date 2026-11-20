@@ -1,5 +1,5 @@
 /**
- * Text-to-image models WrapFit offers, priced in xu (docs/19 §3). The backend maps each key to a fal.ai endpoint
+ * Text-to-image models WrapFit offers, priced in xu (docs/16 §3). The backend maps each key to a fal.ai endpoint
  * (be/src/ai/image/fal-models.ts); the studio, the pricing page and the API read this catalog for names and prices.
  * `estCostUsd` is what one image costs us at the provider: the margin test keeps every price at
  * `MIN_XU_MARGIN` times that or more at `USD_VND_REFERENCE`.

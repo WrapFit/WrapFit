@@ -53,7 +53,7 @@ export interface PrintLayout {
   arts: PlacedArt[];
   strokes: Stroke[];
   /**
-   * The inside of the sheet (docs/23 S5), when the design prints there: the same sheet mirrored left to right, as the
+   * The inside of the sheet (docs-old/23 S5), when the design prints there: the same sheet mirrored left to right, as the
    * press sees the back of the paper, with the elements of `side: "inside"`. Printed as its own page.
    */
   inside?: PrintLayout;

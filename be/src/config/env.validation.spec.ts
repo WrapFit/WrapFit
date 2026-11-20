@@ -37,7 +37,7 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...both, VNPAY_RETURN_URL: 'not a url' })).toThrow(/VNPAY_RETURN_URL/);
   });
 
-  it('refuses PAYMENT_SIMULATION=true in production with a real VietQR account (docs/25 item 6)', () => {
+  it('refuses PAYMENT_SIMULATION=true in production with a real VietQR account (docs-old/25 item 6)', () => {
     const bank = { VIETQR_BANK_BIN: '970436', VIETQR_ACCOUNT_NO: '0123456789', VIETQR_ACCOUNT_NAME: 'CONG TY WRAPFIT' };
     const production = { ...valid, NODE_ENV: 'production' };
     expect(() => validateEnv({ ...production, ...bank, PAYMENT_SIMULATION: 'true' })).toThrow(
@@ -77,7 +77,7 @@ describe('validateEnv', () => {
     );
   });
 
-  it('ignores variables it does not know, such as those of a removed service left in an old .env (docs/25 item 9)', () => {
+  it('ignores variables it does not know, such as those of a removed service left in an old .env (docs-old/25 item 9)', () => {
     const leftover = { OLD_CDN_CLOUD_NAME: 'wrapfit', OLD_CDN_API_KEY: 'only-half-set' };
     expect(validateEnv({ ...valid, ...leftover }).PORT).toBe(validateEnv(valid).PORT);
     expect(JSON.stringify(configuration({ ...valid, ...leftover }))).not.toContain('only-half-set');

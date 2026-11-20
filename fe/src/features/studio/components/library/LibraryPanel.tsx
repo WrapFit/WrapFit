@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: previews of printed artwork (stickers, labels, palettes) keep their own colours (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: previews of printed artwork (stickers, labels, palettes) keep their own colours (docs/13_DESIGN_SYSTEM.md §2). */
 
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -58,7 +58,7 @@ interface LibraryPanelProps {
   box?: { structure: string; dimensions: BoxDimensions; formulaVersion?: number; title: string };
   /** Replaces the elements of the last kit applied (ids starting with KIT_PREFIX) with these; the user's own stay. */
   onApplyKit?: (elements: CanvasElement[]) => void;
-  /** Elements of the whole design: its images and logos make the "Của tôi" shelf (docs/23 S15). */
+  /** Elements of the whole design: its images and logos make the "Của tôi" shelf (docs-old/23 S15). */
   designElements?: CanvasElement[];
 }
 
@@ -236,7 +236,7 @@ export function LibraryPanel({ panel, geometry, onAddElement, selectedElement, o
   const matches = (item: ShelfItem) => !q.trim() || searchLibrary({ q }).some((found) => found.id === item.id) || item.name.toLowerCase().includes(q.trim().toLowerCase());
   const mine = useMemo(() => designFiles(designElements), [designElements]);
 
-  // Stock photos (docs/23 S15, D10): searched through the backend, copied into the user's files when placed.
+  // Stock photos (docs-old/23 S15, D10): searched through the backend, copied into the user's files when placed.
   const [stockQ, setStockQ] = useState("");
   const [stockPage, setStockPage] = useState(1);
   const [importing, setImporting] = useState<number | null>(null);

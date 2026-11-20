@@ -17,7 +17,7 @@ export interface MaterialSpecification {
 export type CanvasElementType = "text" | "logo" | "image" | "pattern" | "barcode" | "shape";
 
 /**
- * What an element is to its face (docs/23 §4, D4). A background covers its face plus the bleed, sits under the artwork,
+ * What an element is to its face (docs-old/23 §4, D4). A background covers its face plus the bleed, sits under the artwork,
  * cannot be dragged and is refitted when the box size changes. Default: "background" for patterns, "artwork" otherwise.
  */
 export type ElementRole = "artwork" | "background";
@@ -34,7 +34,7 @@ export type ImageMask = "rect" | "rounded" | "circle" | "arch";
 export interface CanvasElementStyle {
   fontFamily?: string;
   /**
-   * File of a font the user uploaded (docs/23 S13): the text measures and prints with it. One face per file (no
+   * File of a font the user uploaded (docs-old/23 S13): the text measures and prints with it. One face per file (no
    * bold / italic variants); `fontFamily` holds its family name for the screen.
    */
   fontUrl?: string;
@@ -46,9 +46,9 @@ export interface CanvasElementStyle {
   fillColor?: string;
   /** 0..1. */
   opacity?: number;
-  /** Drop shadow (docs/23 S22, print/effects.ts): colour, opacity, blur and offset in mm. */
+  /** Drop shadow (docs-old/23 S22, print/effects.ts): colour, opacity, blur and offset in mm. */
   shadow?: { color: string; opacity: number; blur: number; x: number; y: number };
-  /** How the element mixes with what is under it (docs/23 S22); none = normal. */
+  /** How the element mixes with what is under it (docs-old/23 S22); none = normal. */
   blendMode?: "multiply" | "screen" | "overlay" | "darken" | "lighten";
   /** Text weight: 400 regular or 700 bold (the default, the weight the print files have always used). */
   fontWeight?: 400 | 700;
@@ -128,7 +128,7 @@ export const CANVAS_SCHEMA_VERSION = 2;
 export interface CanvasState {
   schemaVersion?: number;
   elements: CanvasElement[];
-  /** Fonts the user uploaded for this design (docs/23 S13), offered in the font menu. */
+  /** Fonts the user uploaded for this design (docs-old/23 S13), offered in the font menu. */
   customFonts?: CustomFont[];
   /** Seamless pattern preset behind the artwork, e.g. "tet"; null = none. */
   backgroundPattern?: string | null;

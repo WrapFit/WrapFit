@@ -1,5 +1,5 @@
 /**
- * Recolouring of SVG logos and imported vector art (docs/23 S14). An SVG's colours are its fills, strokes and
+ * Recolouring of SVG logos and imported vector art (docs-old/23 S14). An SVG's colours are its fills, strokes and
  * gradient stops written as hex, rgb() or a few names; the user maps each to a new colour (`style.colorMap`), and the
  * editor, the 3D box and both print paths rewrite the file the same way before drawing it.
  */

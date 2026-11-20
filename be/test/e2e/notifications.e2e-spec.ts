@@ -15,7 +15,7 @@ import { deleteUsers } from './helpers/cleanup';
 import { createPaidOrder } from './helpers/orders';
 
 /**
- * Notification inbox (docs/25 S8) across modules, against PostgreSQL, Redis and SeaweedFS: a remix in the API and an
+ * Notification inbox (docs-old/25 S8) across modules, against PostgreSQL, Redis and SeaweedFS: a remix in the API and an
  * export in a real worker context both land in the inbox, and the worker's notification reaches an open socket of the
  * API through Redis. Needs `docker compose up -d postgres redis seaweedfs storage-init`.
  */

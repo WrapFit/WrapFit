@@ -14,7 +14,7 @@ import { ClaudePromptRewriter, PlainPromptRewriter, type PromptRewriter } from '
 import { ClaudePatternGenerator } from './pattern/claude-pattern.generator';
 
 /**
- * AI paid with xu (docs/19), API side: the pattern & palette generator (UC: "Sinh hoa văn AI") and AI images, whose
+ * AI paid with xu (docs/16), API side: the pattern & palette generator (UC: "Sinh hoa văn AI") and AI images, whose
  * jobs run in the worker (AiImageWorkerModule). Claude is optional: no key = procedural patterns, prompts as typed.
  */
 @Module({

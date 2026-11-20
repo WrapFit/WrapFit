@@ -45,7 +45,7 @@ export interface NotificationPage {
 }
 
 /**
- * Stored notification inbox (docs/25 S8). Rows are created from internal events in whichever process emits them (the
+ * Stored notification inbox (docs-old/25 S8). Rows are created from internal events in whichever process emits them (the
  * API for remixes, the worker for exports); each creation then publishes the recipient's id on Redis, so the API
  * process can tell that user's open browsers (NotificationsPushBridge). That push is best effort: the row is written
  * first, and the frontend also polls the unread count.
@@ -88,7 +88,7 @@ export class NotificationsService {
 
   /**
    * "Your print file is ready", for the owner of the exported design: one row per finished export job. Written by the
-   * worker in the transaction that completes the job (docs/30 item 6), so a worker that stops right after the commit
+   * worker in the transaction that completes the job (docs-old/30 item 6), so a worker that stops right after the commit
    * cannot lose it and a job run twice cannot add a second one. The live push follows the commit (`push`).
    */
   async recordExportCompleted(tx: Prisma.TransactionClient, event: ExportCompletedEvent): Promise<void> {

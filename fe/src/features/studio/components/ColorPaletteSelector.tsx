@@ -1,5 +1,5 @@
 "use client";
-/* ds-artwork: palette tiles preview printed artwork in its own colours (docs/15_DESIGN_SYSTEM.md §2). */
+/* ds-artwork: palette tiles preview printed artwork in its own colours (docs/13_DESIGN_SYSTEM.md §2). */
 
 import React from "react";
 import { AlertTriangle, Ban, Check, Shuffle, Undo2 } from "lucide-react";

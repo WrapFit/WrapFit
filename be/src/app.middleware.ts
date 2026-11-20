@@ -41,7 +41,7 @@ export function middleware(app: INestApplication): void {
     ),
   );
   app.use(cookieParser());
-  // Webhooks are tiny: refuse a declared body over 64 kB before the 1 MB parser below reads it (docs/21 §3.3).
+  // Webhooks are tiny: refuse a declared body over 64 kB before the 1 MB parser below reads it (docs-old/21 §3.3).
   app.use('/api/webhooks', limitWebhookBody);
   // Canvas states (up to 300 elements) can exceed the 100 kB default. Images go to object storage, not the body.
   (app as NestExpressApplication).useBodyParser('json', { limit: '1mb' });

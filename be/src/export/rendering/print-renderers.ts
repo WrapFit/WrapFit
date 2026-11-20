@@ -140,7 +140,7 @@ function labelPath(text: string, x: number, y: number, sizeMm: number, centred: 
   return outlineText(fontOf(font), text, left, y, sizeMm);
 }
 
-/** Uploaded fonts of a render (docs/23 S13), opened once from the files the worker loaded with the images. */
+/** Uploaded fonts of a render (docs-old/23 S13), opened once from the files the worker loaded with the images. */
 type UploadedFont = ReturnType<typeof createFont>;
 const uploadedFonts = new WeakMap<Artwork, Map<string, UploadedFont | null>>();
 function uploadedFont(artwork: Artwork, url: string | null | undefined): UploadedFont | null {
@@ -252,7 +252,7 @@ function artVectors(layout: PrintLayout) {
   }));
 }
 
-/** Everything of the artwork layer in paint order (the order of the layers in the editor, docs/23 D3). */
+/** Everything of the artwork layer in paint order (the order of the layers in the editor, docs-old/23 D3). */
 type DrawItem =
   | { kind: 'art'; item: ReturnType<typeof artVectors>[number] }
   | { kind: 'image'; item: PrintLayout['images'][number] }
@@ -339,7 +339,7 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), ima
     if (!clips.has(key)) clips.set(key, { id: `face${clips.size + 1}`, box });
     return clips.get(key)!.id;
   };
-  // Drop shadows (docs/23 S22): one filter per element, in the frame of the element before its mirror.
+  // Drop shadows (docs-old/23 S22): one filter per element, in the frame of the element before its mirror.
   const effectDefs: string[] = [];
   const placed = (b: PlacedBase, content: string) => {
     const { cx, cy } = centreOf(b);
@@ -395,7 +395,7 @@ export function renderSvg(layout: PrintLayout, artwork: Artwork = new Map(), ima
       );
     })
     .join('');
-  // Finishes (docs/23 S6): the shapes of each foil / UV / embossed element in the colour of its spot, on their own layer.
+  // Finishes (docs-old/23 S6): the shapes of each foil / UV / embossed element in the colour of its spot, on their own layer.
   const finishSvg = drawList(layout, artwork)
     .filter(({ item }) => item.finish)
     .map(({ kind, item }) => {
@@ -469,7 +469,7 @@ export interface PreparedImage {
 const isSvgFile = (file: { body: Buffer; contentType: string }) =>
   file.contentType.includes('svg') || /^\s*(<\?xml|<svg)/.test(file.body.subarray(0, 256).toString('utf8'));
 
-/** The file an image prints from: an SVG logo with its colours swapped (docs/23 S14), any other file as it is. */
+/** The file an image prints from: an SVG logo with its colours swapped (docs-old/23 S14), any other file as it is. */
 export function imageFileOf<F extends { body: Buffer; contentType: string }>(file: F, image: PrintLayout['images'][number]): F {
   if (!image.colorMap?.length || !isSvgFile(file)) return file;
   return { ...file, body: Buffer.from(recolorSvg(file.body.toString('utf8'), image.colorMap), 'utf8') };
@@ -487,7 +487,7 @@ async function sourceSize(file: { body: Buffer; contentType: string }) {
   }
 }
 
-/** Pixels of the source used and the printed width (mm) of an image in its box (crop and fit, docs/23 S10). */
+/** Pixels of the source used and the printed width (mm) of an image in its box (crop and fit, docs-old/23 S10). */
 const printedOf = (image: PrintLayout['images'][number], source: { width: number; height: number }) => {
   const draw = imageDraw(image, source);
   return { draw, sourceWidth: draw.sw, width: draw.dw };
@@ -551,7 +551,7 @@ export async function prepareImage(
     }
     const { data, info } = await pipeline.toColourspace('srgb').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     if (info.channels !== 4 || data.length !== info.width * info.height * 4) return null;
-    // Photo adjustments baked into the printed pixels, the same formulas as the editor (docs/23 S10).
+    // Photo adjustments baked into the printed pixels, the same formulas as the editor (docs-old/23 S10).
     applyFilters(data, 4, image.filters ?? undefined);
     // Rich black on photos and patterns; logos (often small black lettering) stay on the K plate.
     const { cmyk, alpha } = rgbaToCmyk(data, { richBlack: image.type !== 'logo' });
@@ -590,7 +590,7 @@ export interface PdfRenderOptions {
  * Home Print mode: the sheet centred on A4/A3 with crop marks and a 50 mm ruler, for DIY crafters.
  */
 /**
- * Drop shadow of a photo for the PDF (docs/23 S22): the image's alpha (a full rectangle when it has none), padded and
+ * Drop shadow of a photo for the PDF (docs-old/23 S22): the image's alpha (a full rectangle when it has none), padded and
  * blurred like the screen's gaussian, as the soft mask of a plain CMYK image in the shadow colour. `padMm`: how far
  * the shadow image reaches past the drawn picture on each side.
  */
@@ -702,7 +702,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
     draw();
     doc.restore();
   };
-  /** Blend modes (docs/23 S22): one ExtGState per mode, registered on each page that uses it. */
+  /** Blend modes (docs-old/23 S22): one ExtGState per mode, registered on each page that uses it. */
   const blendStates = new Map<BlendMode, RawRef>();
   const useBlend = (mode: BlendMode) => {
     const name = `GsBM${pdfBlendName(mode)}`;
@@ -781,7 +781,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
         doc.lineCap(shape.round ? 'round' : 'butt').lineJoin(shape.round ? 'round' : 'miter');
         doc.path(shape.d);
         if (shape.gradient) {
-          // Linear gradient in CMYK across the element (docs/23 S11).
+          // Linear gradient in CMYK across the element (docs-old/23 S11).
           const line = gradientLine(shape.gradient.angle, a.width, a.height);
           const gradient = doc.linearGradient(line.x1, line.y1, line.x2, line.y2);
           for (const stop of shape.gradient.stops) gradient.stop(stop.offset, hexToCmyk(stop.color) as unknown as string); // PDFKit takes CMYK arrays; its typings say string
@@ -878,7 +878,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
   doc.path(labelPath(spec.text, spec.x, spec.y, SPEC_LINE_FONT_MM, false)).fill(CMYK_INFO);
   endLayer();
 
-  // Finishes (docs/23 S6, D8): each foil / UV / embossed element in its spot colour, 100 %, overprinted.
+  // Finishes (docs-old/23 S6, D8): each foil / UV / embossed element in its spot colour, 100 %, overprinted.
   const finished = drawList(layout, artwork).filter(({ item }) => item.finish);
   if (finished.length) {
     beginLayer('Finish');
@@ -971,7 +971,7 @@ export async function renderPdf(layout: PrintLayout, artwork: Artwork = new Map(
   };
 
   await drawSheet(layout);
-  // The inside of the sheet (docs/23 S5): its own page, the dieline mirrored as the printer sees the back.
+  // The inside of the sheet (docs-old/23 S5): its own page, the dieline mirrored as the printer sees the back.
   if (layout.inside) {
     doc.addPage({ size: [pageWidth * PT_PER_MM, pageHeight * PT_PER_MM], margin: 0 });
     await drawSheet(layout.inside);

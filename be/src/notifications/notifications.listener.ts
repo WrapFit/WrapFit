@@ -5,7 +5,7 @@ import { NotificationsService } from './notifications.service';
 
 /**
  * Turns internal events into notifications, in the process that emits them: PROJECT_FORKED in the API stores one,
- * EXPORT_COMPLETED in the worker only pushes the one the worker stored with the job (docs/30 item 6). A failure is
+ * EXPORT_COMPLETED in the worker only pushes the one the worker stored with the job (docs-old/30 item 6). A failure is
  * logged and never reaches the request or the job that emitted the event (both are already committed).
  */
 @Injectable()

@@ -169,21 +169,21 @@ services:
       AI_MODEL_PREMIUM: ${AI_MODEL_PREMIUM:-claude-opus-5-5}
       # Monthly AI cost fuse in USD (empty = no limit); once spent, patterns are procedural until next month
       AI_MONTHLY_BUDGET_USD: ${AI_MONTHLY_BUDGET_USD:-}
-      # AI images paid with xu (docs/19): fal.ai with FAL_KEY (empty key = AI images off); AI_IMAGE_MODELS empty = the
+      # AI images paid with xu (docs/16): fal.ai with FAL_KEY (empty key = AI images off); AI_IMAGE_MODELS empty = the
       # models enabled in shared/src/billing/ai-image-models.ts
       AI_IMAGE_PROVIDER: ${AI_IMAGE_PROVIDER:-fal}
       FAL_KEY: ${FAL_KEY:-}
       AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}
       USD_VND_RATE: ${USD_VND_RATE:-26000}
-      # VietQR payments: true only for the CP4 demo ("simulate paid" button, demo accounts only, docs/25 item 6);
+      # VietQR payments: true only for the CP4 demo ("simulate paid" button, demo accounts only, docs-old/25 item 6);
       # empty VIETQR_* = sample account. Refused at startup together with a real VIETQR_* account.
       PAYMENT_SIMULATION: ${PAYMENT_SIMULATION:-false}
       VIETQR_BANK_BIN: ${VIETQR_BANK_BIN:-}
       VIETQR_ACCOUNT_NO: ${VIETQR_ACCOUNT_NO:-}
       VIETQR_ACCOUNT_NAME: ${VIETQR_ACCOUNT_NAME:-}
-      # SePay webhook key (POST /api/webhooks/sepay, docs/21; empty = every webhook is rejected with 401)
+      # SePay webhook key (POST /api/webhooks/sepay, docs-old/21; empty = every webhook is rejected with 401)
       SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY:-}
-      # VNPay sandbox for demo accounts (docs/21): TMN code + hash secret together or both empty; empty return URL =
+      # VNPay sandbox for demo accounts (docs-old/21): TMN code + hash secret together or both empty; empty return URL =
       # ${FRONTEND_URL}/payments/vnpay-return
       VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
       VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
@@ -233,7 +233,7 @@ services:
       AUTH_TOKEN_SECRET: ${AUTH_TOKEN_SECRET:-}
       REDIS_URL: redis://redis:6379
       EXPORT_CONCURRENCY: ${EXPORT_CONCURRENCY:-2}
-      # AI image jobs (docs/19): the worker calls fal.ai and stores the images
+      # AI image jobs (docs/16): the worker calls fal.ai and stores the images
       AI_IMAGE_PROVIDER: ${AI_IMAGE_PROVIDER:-fal}
       FAL_KEY: ${FAL_KEY:-}
       AI_IMAGE_MODELS: ${AI_IMAGE_MODELS:-}

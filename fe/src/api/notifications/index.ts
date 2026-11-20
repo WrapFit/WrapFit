@@ -1,4 +1,4 @@
-/** Notification inbox (`be/src/notifications`, docs/25 S8): the bell of the header. */
+/** Notification inbox (`be/src/notifications`, docs-old/25 S8): the bell of the header. */
 
 import { request } from "@/services/api";
 import type { NotificationPage } from "@/types/api";

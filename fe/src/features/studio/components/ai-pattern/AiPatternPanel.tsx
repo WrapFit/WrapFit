@@ -31,7 +31,7 @@ interface AiPatternPanelProps {
 
 type Quality = NonNullable<GeneratePatternRequest["quality"]>;
 
-/** AI pattern generator (docs/06 §11), paid with xu (docs/19): theme → seamless tile → printed over the selected panel. */
+/** AI pattern generator (docs/06 §11), paid with xu (docs/16): theme → seamless tile → printed over the selected panel. */
 export function AiPatternPanel({ projectId, panel, geometry, colors, onInsert }: AiPatternPanelProps) {
   const toast = useToast();
   const queryClient = useQueryClient();

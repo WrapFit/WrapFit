@@ -9,7 +9,7 @@ import { ART_DESIGNS, ART_PALETTES, artDesignOf, libraryArtContent } from "./art
 import { LIBRARY_ICONS } from "./icons";
 
 export type LibraryCategory = "sticker" | "icon" | "label" | "mark" | "background" | "mascot" | "barcode";
-/** Trades of the makers (docs/23 S14), the industries of the templates; an item without one suits every trade. */
+/** Trades of the makers (docs-old/23 S14), the industries of the templates; an item without one suits every trade. */
 export type LibraryIndustry = "BAKERY" | "CANDLES" | "COSMETICS" | "JEWELRY" | "TEA_AGRI" | "BEVERAGE";
 export type LibraryOccasion = "TET" | "CHRISTMAS" | "WEDDING" | "VALENTINE" | "BIRTHDAY" | "MINIMAL";
 
@@ -138,7 +138,7 @@ const PRESETS: { design: string; occasion: LibraryOccasion; texts: string[]; pal
   { design: "bubble", occasion: "MINIMAL", texts: ["Cảm ơn bạn", "đã ủng hộ tiệm!"], palettes: ["kem-sua", "bien-xanh", "hong-phan"], keywords: ["cảm ơn", "lời nhắn"] },
   { design: "bubble", occasion: "BIRTHDAY", texts: ["Chúc mừng", "sinh nhật nha!"], palettes: ["cam-fpt", "oai-huong"], keywords: ["sinh nhật", "lời nhắn"] },
   { design: "bubble", occasion: "VALENTINE", texts: ["Yêu bạn", "nhiều lắm!"], palettes: ["hong-phan", "son-do"], keywords: ["valentine", "lời nhắn"] },
-  // Trades with few items of their own (docs/23 S14: at least 20 per trade)
+  // Trades with few items of their own (docs-old/23 S14: at least 20 per trade)
   { design: "seal", occasion: "MINIMAL", texts: ["NẾN THƠM", "Handmade", "SÁP ĐẬU NÀNH"], palettes: ["kraft-moc", "kem-sua", "den-sang"], keywords: ["nến thơm", "sáp đậu nành", "handmade"] },
   { design: "label", occasion: "MINIMAL", texts: ["Nến Thơm Oải Hương", "Sáp đậu nành • 40 giờ"], palettes: ["oai-huong", "kraft-moc", "toi-gian"], keywords: ["nến thơm", "oải hương", "nhãn"] },
   { design: "arch", occasion: "MINIMAL", texts: ["Hương Quế", "Nến thủ công"], palettes: ["kraft-moc", "son-do"], keywords: ["nến thơm", "quế", "mùa đông"] },
@@ -164,7 +164,7 @@ const PRESETS: { design: string; occasion: LibraryOccasion; texts: string[]; pal
   { design: "hexagon", occasion: "MINIMAL", texts: ["Matcha", "Uji Nhật Bản"], palettes: ["xanh-matcha", "den-than"], keywords: ["đồ uống", "matcha", "latte"] },
   { design: "arch", occasion: "MINIMAL", texts: ["Nước Ép", "Ép lạnh mỗi sáng"], palettes: ["cam-fpt", "xanh-matcha"], keywords: ["đồ uống", "nước ép", "juice"] },
   { design: "tag", occasion: "MINIMAL", texts: ["Một ly cho bạn", "chúc ngày vui!"], palettes: ["kem-sua", "xanh-matcha"], keywords: ["đồ uống", "thẻ quà", "lời nhắn"] },
-  // Print marks a box usually needs (docs/23 S14)
+  // Print marks a box usually needs (docs-old/23 S14)
   { design: "recycle-mark", occasion: "MINIMAL", texts: ["TÁI CHẾ"], palettes: ["toi-gian", "xanh-reu", "kraft-moc"], keywords: ["tái chế", "recycle", "môi trường", "ký hiệu in"], category: "mark" },
   { design: "recycle-mark", occasion: "MINIMAL", texts: ["RECYCLABLE"], palettes: ["toi-gian", "xanh-reu"], keywords: ["tái chế", "recycle", "ký hiệu in"], category: "mark" },
   { design: "made-in", occasion: "MINIMAL", texts: ["MADE IN", "VIETNAM"], palettes: ["son-do", "toi-gian", "kraft-moc"], keywords: ["xuất xứ", "việt nam", "made in vietnam", "ký hiệu in"], category: "mark" },

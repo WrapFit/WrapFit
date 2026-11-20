@@ -1,11 +1,11 @@
 /**
- * Prices in VND, VAT included (B2C prices), docs/16 §3.2 trimmed to what Path 2 sells (docs/17 S1). The pricing page,
+ * Prices in VND, VAT included (B2C prices), docs/14 §3.2 trimmed to what Path 2 sells (docs-old/17 S1). The pricing page,
  * the checkout and the backend that creates payments all read these numbers.
  */
 import type { XuPackId } from "./xu";
 
 /**
- * Export packs (N export credits) are no longer sold (docs/25 item 7): no export spends a credit since the print file
+ * Export packs (N export credits) are no longer sold (docs-old/25 item 7): no export spends a credit since the print file
  * is sold through the print cart. The ids stay because old payments carry them (payment history, admin reconciliation)
  * and the backend refuses a new payment for them. Prices paid are in each payment row, not here.
  */
@@ -20,7 +20,7 @@ export type PaymentPurpose = ExportPackId | XuPackId | "PRO_MONTH" | "SAMPLE_ORD
 /** Validity of a purchased lot (xu; export credits before they were converted to xu). */
 export const PURCHASED_LOT_VALID_MONTHS = 12;
 
-/** Pro (`STARTER`) for 30 days: more storage and a larger xu allowance. It does not unlock print files (docs/28 Q1). */
+/** Pro (`STARTER`) for 30 days: more storage and a larger xu allowance. It does not unlock print files (docs/18 Q1). */
 export const PRO_MONTH = { plan: "STARTER", priceVnd: 99_000, periodDays: 30 } as const;
 
 /** Business (`PRO_BUSINESS`): price shown on the pricing page with a "Liên hệ" button, not sold online yet. */

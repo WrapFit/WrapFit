@@ -25,7 +25,7 @@ REST API của nền tảng **WrapFit** — thiết kế & đóng gói bao bì q
 | IT3-07 Thư viện mẫu | ✅ Xong: `/api/templates/structures`, `/hub` (Curated + Community, lọc cấu trúc / dịp lễ / ngành hàng / giấy / từ khóa, cache 60 s), `/:id`; tạo dự án từ mẫu (`designTemplateId`); bảng `design_templates` + 6 mẫu seed |
 | IT3-08 Lưu trữ file S3 / R2 | ✅ Xong: pre-signed upload (khóa định dạng + dung lượng), hạn mức theo gói, xóa file khi xóa dự án / dọn thùng rác; SeaweedFS local thay MinIO (chưa có `sharp`) |
 | IT3-09 AI sinh hoa văn | ✅ Xong: `/api/ai/pattern` (Claude + structured outputs, SVG dựng & làm sạch phía server, lặp liền mạch), trả bằng xu Wrap (1 / 65 xu, hoàn khi Claude lỗi), dự phòng sinh hoa văn bằng thuật toán khi chưa có API key |
-| Xu Wrap & ảnh AI (docs/19) | ✅ Xong: ví xu trên sổ cái `credit_lots` (kind `XU`), allowance mỗi kỳ, gói nạp `XU_*`, ảnh AI qua fal.ai (`ai/image/`, hàng đợi `ai-image`, hoàn xu khi lỗi phía hệ thống), báo cáo xu cho admin |
+| Xu Wrap & ảnh AI (docs/16) | ✅ Xong: ví xu trên sổ cái `credit_lots` (kind `XU`), allowance mỗi kỳ, gói nạp `XU_*`, ảnh AI qua fal.ai (`ai/image/`, hàng đợi `ai-image`, hoàn xu khi lỗi phía hệ thống), báo cáo xu cho admin |
 | IT3-10 Mở hộp 3D & QR | ✅ Xong: cấu hình lời chúc / nhạc / hiệu ứng, QR (PNG 1200 px + SVG, sửa lỗi mức H) lưu lên storage và tải trực tiếp, trang công khai `/api/public/unboxing/:slug` |
 | IT3-11 Xuất file in & CI/CD | ✅ Xong: `/api/projects/:id/exports` (FitCheck phía server → BullMQ), process `worker` riêng xuất PDF CMYK / SVG / DXF, thử lại 3 lần, link tải 15 phút, snapshot tự động; CI chạy unit + e2e; deploy VPS qua HTTPS (Caddy) |
 
@@ -69,7 +69,7 @@ src/
   public-showcase/         # trang công khai /p/[slug], Remix (fork), thả tim
   templates/               # Thư viện mẫu Curated & Community (cache 60 s)
   storage/                 # @Global: pre-signed upload lên S3 / R2, hạn mức, xóa file
-  ai/                      # AI trả bằng xu (docs/19): hoa văn SVG (Claude hoặc thuật toán dự phòng), cầu chì chi phí
+  ai/                      # AI trả bằng xu (docs/16): hoa văn SVG (Claude hoặc thuật toán dự phòng), cầu chì chi phí
     image/                 # ảnh AI qua fal.ai: API (trừ xu, xếp hàng) + AiImageProcessor (worker, AiImageWorkerModule),
                            # provider fal / fake, lọc SVG, hoàn xu (AiImageRefunds), dọn job treo mỗi 5 phút
   unboxing/                # trải nghiệm mở hộp 3D + mã QR in đáy hộp
@@ -134,7 +134,7 @@ cp .env.example .env            # điền JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
 docker compose up -d --build
 ```
 
-Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, không còn nạp lượt xuất (docs/25 mục 7); dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/18_PATH2_DEPLOY_RUNBOOK.md`](../docs/18_PATH2_DEPLOY_RUNBOOK.md).
+Container backend tự chạy `prisma migrate deploy` và seed 4 mẫu hộp rồi mới khởi động server. Ở production, admin chỉ được tạo khi đặt `SEED_ADMIN_PASSWORD`; tài khoản demo CP4 chỉ được tạo khi đặt `SEED_DEMO_PASSWORD` (`prisma/seed-demo.ts`: MAKER gói Free đã xác minh email, không còn nạp lượt xuất (docs-old/25 mục 7); dự án "Hũ nến thơm Mộc An" 80 x 80 x 95 mm, 350 g, Ivory 300 GSM, logo SVG ở mặt trước, tạo một lần). Hướng dẫn deploy bản demo: [`docs/15_PATH2_DEPLOY_RUNBOOK.md`](../docs/15_PATH2_DEPLOY_RUNBOOK.md).
 
 Stack gồm: `postgres`, `redis`, `seaweedfs` (+ `storage-init` tạo bucket), `backend` (API), `worker` (cùng image, lệnh `worker`, chỉ chạy hàng đợi xuất file), `frontend`.
 
@@ -177,18 +177,18 @@ Biến môi trường được kiểm tra trong `src/config/env.validation.ts`, 
 | `AI_MODEL` | – | *(trống)* | **Tên cũ** của `AI_MODEL_FAST`, chỉ được đọc khi `AI_MODEL_FAST` không đặt. Sẽ bỏ sau CP4: đổi tên biến trong `.env` của VPS |
 | `AI_MONTHLY_BUDGET_USD` | `ai.monthlyBudgetUsd` | *(trống)* | Cầu chì chi phí AI (USD / tháng dương lịch giờ Việt Nam). Để trống = không giới hạn |
 | `AI_TIMEOUT_MS` | `ai.timeoutMs` | `30000` | Thời gian chờ tối đa mỗi lần gọi Claude |
-| `AI_IMAGE_PROVIDER` | `ai.image.provider` | `fal` | Ai vẽ ảnh AI (docs/19): `fal` = fal.ai bằng `FAL_KEY`; `fake` = ảnh giả sinh tại chỗ, không tốn tiền (dev, e2e). `fake` bị từ chối khi `NODE_ENV=production` |
+| `AI_IMAGE_PROVIDER` | `ai.image.provider` | `fal` | Ai vẽ ảnh AI (docs/16): `fal` = fal.ai bằng `FAL_KEY`; `fake` = ảnh giả sinh tại chỗ, không tốn tiền (dev, e2e). `fake` bị từ chối khi `NODE_ENV=production` |
 | `FAL_KEY` | `ai.image.falKey` | *(trống)* | Khóa fal.ai. Trống với `AI_IMAGE_PROVIDER=fal` = tắt ảnh AI (`503 AI_IMAGE_UNAVAILABLE`, studio ẩn công cụ) |
 | `AI_IMAGE_MODELS` | `ai.image.models` | *(model có `enabled: true`)* | Khóa model ảnh đang bán, cách nhau bằng dấu phẩy (`shared/src/billing/ai-image-models.ts`); bật model chưa chốt giá mà không sửa code |
 | `AI_IMAGE_TIMEOUT_MS` | `ai.image.timeoutMs` | `180000` | Thời gian chờ tối đa một job ảnh ở provider |
-| `PEXELS_API_KEY` | `stock.pexelsKey` | *(trống)* | Khóa API Pexels cho ảnh kho trong studio (docs/23 S15, D10), chỉ nằm ở backend. Trống = tắt ảnh kho (`GET /library/stock/photos` trả `enabled: false`, studio ẩn mục) |
+| `PEXELS_API_KEY` | `stock.pexelsKey` | *(trống)* | Khóa API Pexels cho ảnh kho trong studio (docs-old/23 S15, D10), chỉ nằm ở backend. Trống = tắt ảnh kho (`GET /library/stock/photos` trả `enabled: false`, studio ẩn mục) |
 | `AI_IMAGE_CONCURRENCY` | `ai.image.concurrency` | `2` | Số job ảnh worker chạy cùng lúc |
 | `USD_VND_RATE` | `ai.usdVndRate` | `26000` | Tỉ giá quy đổi chi phí provider sang VNĐ trong báo cáo xu |
-| `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs/17 M6). `false` → route giả lập trả 404 |
+| `PAYMENT_SIMULATION` | `payments.simulation` | `false` | `true` = nút "Giả lập đã thanh toán" và `POST /api/payments/:id/simulate-confirm` (bản demo CP4, docs-old/17 M6). `false` → route giả lập trả 404 |
 | `VIETQR_BANK_BIN` | `payments.vietqr.bankBin` | *(trống)* | BIN NAPAS 6 số của ngân hàng nhận tiền. Ba biến `VIETQR_*` đặt cùng nhau; để trống cả ba = tài khoản mẫu, giao diện ghi "Mô phỏng" |
 | `VIETQR_ACCOUNT_NO` | `payments.vietqr.accountNo` | *(trống)* | Số tài khoản nhận tiền |
 | `VIETQR_ACCOUNT_NAME` | `payments.vietqr.accountName` | *(trống)* | Tên chủ tài khoản, viết hoa không dấu |
-| `SEPAY_WEBHOOK_API_KEY` | `payments.sepay.webhookApiKey` | *(trống)* | Key SePay gửi trong `Authorization: Apikey <key>` tới `POST /api/webhooks/sepay` (16–256 ký tự, không khoảng trắng). Trống = mọi webhook bị `401` (docs/21) |
+| `SEPAY_WEBHOOK_API_KEY` | `payments.sepay.webhookApiKey` | *(trống)* | Key SePay gửi trong `Authorization: Apikey <key>` tới `POST /api/webhooks/sepay` (16–256 ký tự, không khoảng trắng). Trống = mọi webhook bị `401` (docs-old/21) |
 | `VNPAY_TMN_CODE` | `payments.vnpay.tmnCode` | *(trống)* | Mã website VNPay sandbox (8 ký tự). Đặt cùng `VNPAY_HASH_SECRET` hoặc để trống cả hai; trống = tài khoản `is_demo` bị `503 VNPAY_NOT_CONFIGURED` (trừ khi `PAYMENT_SIMULATION=true`) |
 | `VNPAY_HASH_SECRET` | `payments.vnpay.hashSecret` | *(trống)* | Chuỗi bí mật ký HMAC-SHA512 (16–128 ký tự). Không commit |
 | `VNPAY_PAY_URL` | `payments.vnpay.payUrl` | `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html` | Trang thanh toán của cổng |
@@ -227,7 +227,7 @@ Mặc định mọi route đều yêu cầu đăng nhập (trừ những route g
 | POST | `/api/payments` | đã đăng nhập | Tạo thanh toán VietQR `{ purpose: EXPORT_1 \| EXPORT_5 \| EXPORT_15 \| PRO_MONTH \| SAMPLE_ORDER, orderId? }`: `reference` `WF` + 6 ký tự, hạn 15 phút, `vietqr.payload` (EMVCo NAPAS) + `vietqr.qrSvg` |
 | GET | `/api/payments/:id` | chủ thanh toán | Trạng thái (`PENDING` / `PAID` / `EXPIRED`); quá hạn thì đổi `EXPIRED` |
 | POST | `/api/payments/:id/simulate-confirm` | chủ thanh toán | Chỉ khi `PAYMENT_SIMULATION=true` (ngược lại 404): `PAID` và cấp lô lượt / Pro 30 ngày / đơn in `PAID` trong một transaction; gọi lại không cấp thêm |
-| POST | `/api/webhooks/sepay` | public, `Authorization: Apikey` | SePay báo tiền vào: lưu `bank_transactions`, khớp mã `WF…` + đúng số tiền → `PAID` (docs/21 §3.3) |
+| POST | `/api/webhooks/sepay` | public, `Authorization: Apikey` | SePay báo tiền vào: lưu `bank_transactions`, khớp mã `WF…` + đúng số tiền → `PAID` (docs-old/21 §3.3) |
 | GET | `/api/payments/vnpay/ipn` | public, chữ ký VNPay | IPN của VNPay, luôn HTTP 200 `{ RspCode, Message }` |
 | GET | `/api/payments/vnpay/return` | chủ thanh toán | Trang trả về của FE xác nhận kết quả VNPay `{ result, payment }` |
 | GET · POST | `/api/admin/bank-transactions` · `/:id/resolve` | ADMIN | Đối soát tiền về không khớp (`assign` / `ignore`) |
@@ -345,7 +345,7 @@ await fetch(ticket.uploadUrl, { method: 'PUT', headers: ticket.headers, body: fi
 7. (Tùy chọn, cho backup DB) **Create bucket** thứ ba `wrapfit-backups`: không Custom Domain, không `r2.dev`, không CORS; thêm **Lifecycle rule** xóa object sau 30 ngày. Job backup nên dùng một API token riêng chỉ có quyền ghi bucket này. Đặt `STORAGE_BACKUP_BUCKET=wrapfit-backups`.
 8. Kiểm tra: `npm --workspace=be run storage:check` (container: `docker compose exec backend node dist/storage-check.js`) gọi `HeadBucket` trên từng bucket đã khai báo và báo `OK` hoặc mã lỗi HTTP kèm nguyên nhân thường gặp (401 = sai Access Key ID, 403 = token thiếu quyền bucket đó hoặc sai Secret Access Key, 404 = sai tên bucket). Không ghi gì.
 
-Mọi file (ảnh tải lên, ảnh AI, thumbnail, file xuất in, backup) nằm trên R2 qua `StorageService`; ảnh của chính trang web nằm trong `fe/public` (`next/image`). Không dùng CDN ảnh bên thứ ba (docs/25 mục 9).
+Mọi file (ảnh tải lên, ảnh AI, thumbnail, file xuất in, backup) nằm trên R2 qua `StorageService`; ảnh của chính trang web nằm trong `fe/public` (`next/image`). Không dùng CDN ảnh bên thứ ba (docs-old/25 mục 9).
 
 File xuất in tạo trước khi có bucket riêng tư (key `projects/<id>/exports/...`) vẫn nằm trong bucket công khai và vẫn tải được; chúng bị xóa cùng dự án như trước.
 
@@ -427,7 +427,7 @@ npm --workspace=be run test:e2e
 
 ## Lưu ý khi triển khai production
 
-- **Sau mỗi lần thêm phiên bản công thức dieline** (`CURRENT_FORMULA_VERSION` của `@wrapfit/shared`, docs/12 Phase 8):
+- **Sau mỗi lần thêm phiên bản công thức dieline** (`CURRENT_FORMULA_VERSION` của `@wrapfit/shared`, docs-old/12 Phase 8):
   container mới tự seed nên box template nhận phiên bản mới; sau đó chạy tay **một lần**
   `npm run db:upgrade-formulas -- --dry-run` (xem bảng: dự án, phiên bản cũ → mới, điểm FitCheck trước / sau, cảnh báo dự
   án PUBLIC tụt dưới 90) rồi `npm run db:upgrade-formulas` (trong container: `docker compose exec backend npm run

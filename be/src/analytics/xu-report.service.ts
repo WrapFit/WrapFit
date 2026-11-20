@@ -72,8 +72,8 @@ export function vietnamMonthRange(month: string): { from: Date; to: Date } {
 const round = (value: number) => Math.round(value);
 
 /**
- * Monthly xu report for admins (docs/19 S5): xu issued by source, spent and refunded, revenue recognised at the money
- * actually paid for each lot (allowance and gift xu are worth 0đ, docs/19 D6), breakage of expired purchased xu, the
+ * Monthly xu report for admins (docs/16 S5): xu issued by source, spent and refunded, revenue recognised at the money
+ * actually paid for each lot (allowance and gift xu are worth 0đ, docs/16 D6), breakage of expired purchased xu, the
  * deferred revenue of purchased xu still unspent, and the provider cost of the month for the gross margin.
  */
 @Injectable()

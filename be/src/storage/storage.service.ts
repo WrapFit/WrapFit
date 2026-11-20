@@ -248,7 +248,7 @@ export class StorageService implements IProjectFiles {
         update: record,
       });
     } catch (error) {
-      // The project (or the user) was deleted between the upload and the row (docs/30 review round 4): nothing will
+      // The project (or the user) was deleted between the upload and the row (docs-old/30 review round 4): nothing will
       // ever list this object, so it goes now. deleteObjects records a failed delete in orphaned_objects for a retry.
       // Any other error keeps the object: a row may already point at it (a QR code stored again).
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') await this.deleteObjects([file.key]);
@@ -313,7 +313,7 @@ export class StorageService implements IProjectFiles {
   }
 
   /**
-   * Checks an uploaded font (docs/23 S13, D11): it must open and draw every Vietnamese letter, otherwise 422
+   * Checks an uploaded font (docs-old/23 S13, D11): it must open and draw every Vietnamese letter, otherwise 422
    * FONT_NO_VIETNAMESE with the missing letters (a missing glyph prints as an empty box). Returns its family name.
    */
   async inspectFont(userId: string, url: string): Promise<{ url: string; family: string }> {
@@ -387,7 +387,7 @@ export class StorageService implements IProjectFiles {
   /**
    * Moves the files of these projects that other projects still show to the oldest of those projects. Runs in the
    * transaction that deletes them (`db`), after their rows are locked: `projectIds` must be exactly the projects that
-   * go, so a project skipped by the purge can still receive a file (docs/30 review round 3).
+   * go, so a project skipped by the purge can still receive a file (docs-old/30 review round 3).
    */
   async detachSharedFiles(projectIds: string[], db: Db = this.prisma): Promise<void> {
     if (!projectIds.length) return;
@@ -577,7 +577,7 @@ export class StorageService implements IProjectFiles {
           AND NOT EXISTS (SELECT 1 FROM packaging_projects p WHERE p.thumbnail_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM project_snapshots s WHERE s.preview_key = f.key)
           AND NOT EXISTS (SELECT 1 FROM library_assets a WHERE a.stored_file_id = f.id)
-          -- "Ảnh AI của tôi" keeps an AI image 30 days even when no design shows it (docs/19 D9).
+          -- "Ảnh AI của tôi" keeps an AI image 30 days even when no design shows it (docs/16 D9).
           AND NOT EXISTS (SELECT 1 FROM ai_image_outputs o WHERE o.stored_file_id = f.id AND o.keep_until > ${now})
         ORDER BY f.created_at
         LIMIT ${MAINTENANCE_BATCH}

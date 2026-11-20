@@ -1,5 +1,5 @@
 // Moves every project that was never exported for print to the current dieline formulas of its box structure
-// (docs/12 Phase 8, 8.10a). Exported projects keep their formulas: someone may hold their print files; their owners
+// (docs-old/12 Phase 8, 8.10a). Exported projects keep their formulas: someone may hold their print files; their owners
 // upgrade from the studio (POST /projects/:id/formula-upgrade), with undo.
 //
 //   npm --workspace=be run db:upgrade-formulas -- [--dry-run] [--project=<id>]

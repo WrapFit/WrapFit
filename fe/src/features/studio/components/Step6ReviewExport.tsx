@@ -369,7 +369,7 @@ export function Step6ReviewExport({
             onIccProfileChange={setSelectedIccProfile}
           />
 
-          {/* Comments and the print approval of customers / print shops (docs/23 S23); saved projects only. */}
+          {/* Comments and the print approval of customers / print shops (docs-old/23 S23); saved projects only. */}
           {projectId && (
             <StudioCard data-tour="s6-review" className="p-5">
               <ReviewPanel projectId={projectId} pieces={pieces} />

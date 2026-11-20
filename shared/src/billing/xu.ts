@@ -1,7 +1,7 @@
 /**
- * Xu Wrap (docs/19): the one currency of every AI task (images, AI patterns, image tools). A balance is a set of lots
+ * Xu Wrap (docs/16): the one currency of every AI task (images, AI patterns, image tools). A balance is a set of lots
  * with an expiry in `credit_lots` (kind XU): the monthly allowance of the plan, packs bought, lots granted by hand.
- * Export credits stay a separate kind (docs/16 §5).
+ * Export credits stay a separate kind (docs/14 §5).
  */
 import type { SubscriptionTier } from "./plans";
 import { PRO_MONTH } from "./prices";
@@ -9,7 +9,7 @@ import { PRO_MONTH } from "./prices";
 /** List price of one xu in VND, VAT included. Reports value each lot at what was paid for it (`credit_lots.value_vnd`). */
 export const XU_VALUE_VND = 100;
 
-/** Xu every plan receives per period (docs/19 D8). Business: for the whole team. */
+/** Xu every plan receives per period (docs/16 D8). Business: for the whole team. */
 export const XU_ALLOWANCE: Record<SubscriptionTier, number> = {
   FREE: 50,
   PAY_PER_EXPORT: 100,
@@ -74,7 +74,7 @@ export interface XuAllowancePeriod {
   startsAt: Date;
   /** When the next allowance arrives: the "reset" date shown to the user. */
   endsAt: Date;
-  /** End of the next period: unspent xu roll over one period, never more (docs/19 D2). */
+  /** End of the next period: unspent xu roll over one period, never more (docs/16 D2). */
   expiresAt: Date;
 }
 

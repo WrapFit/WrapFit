@@ -101,7 +101,7 @@ describe('AiImageProcessor', () => {
     expect(refunds.fail).toHaveBeenCalledWith('job-1', `${BLOCKED_PREFIX}nsfw`);
   });
 
-  it('runs a tool on an upload of the user, reading its size from the file (docs/23 S20)', async () => {
+  it('runs a tool on an upload of the user, reading its size from the file (docs-old/23 S20)', async () => {
     prisma.aiImageJob.findUniqueOrThrow.mockResolvedValue({
       userId: 'user-1',
       kind: 'REMOVE_BG',

@@ -78,7 +78,7 @@ const text = (panelId: string, x: number, y: number, width: number, height: numb
     style: { fontFamily: 'Be Vietnam Pro', fontSize: 18, color: '#1C1917' },
   }) as CanvasElement;
 
-describe('divider insert (docs/23 S18)', () => {
+describe('divider insert (docs-old/23 S18)', () => {
   it.each([
     [180, 120, 50, 2, 3],
     [120, 80, 40, 2, 2],
@@ -135,7 +135,7 @@ describe('divider insert (docs/23 S18)', () => {
   });
 });
 
-describe('flat products (docs/23 S18)', () => {
+describe('flat products (docs-old/23 S18)', () => {
   it.each([
     [40, 65],
     [55, 90],

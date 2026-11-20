@@ -109,7 +109,7 @@ describe('asset keys', () => {
     expect(isAllowedMediaUrl('xuan.mp3')).toBe(false);
   });
 
-  it('stores the uploaded fonts of a design as keys and refuses fonts from other hosts (docs/23 S13)', () => {
+  it('stores the uploaded fonts of a design as keys and refuses fonts from other hosts (docs-old/23 S13)', () => {
     const fontKey = 'users/0192a4c0-0000-7000-8000-000000000001/font/0192a4c0-0000-7000-8000-0000000000bb.ttf';
     const fontUrl = `https://cdn.wrapfit.vn/${fontKey}`;
     const client = {

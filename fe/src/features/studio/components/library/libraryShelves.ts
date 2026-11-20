@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The user's own shelves of the studio library (docs/23 S15): favourites and recently used items, kept in this
+ * The user's own shelves of the studio library (docs-old/23 S15): favourites and recently used items, kept in this
  * browser (localStorage, per device). An item is stored whole, so imported assets and stock photos stay listed even
  * when the library or the search that showed them changes.
  */

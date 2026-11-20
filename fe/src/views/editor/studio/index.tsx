@@ -19,7 +19,7 @@ import type { RestoreNotice } from "./StudioWorkspace";
 // Code splitting: the 2D/3D editor loads in its own chunk, behind the studio skeleton.
 const StudioWorkspace = dynamic<React.ComponentProps<typeof import("./StudioWorkspace").StudioWorkspace>>(loadStudioWorkspace, { ssr: false, loading: () => <StudioSkeleton /> });
 
-/** Route id of the offline demo: no sign-in, nothing saved (docs/12 D5). */
+/** Route id of the offline demo: no sign-in, nothing saved (docs-old/12 D5). */
 const DEMO_ID = "demo";
 
 const FALLBACK_STRUCTURES: BoxStructure[] = BOX_STRUCTURES.map((s) => ({

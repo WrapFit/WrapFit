@@ -12,7 +12,7 @@ export interface ProductEventInput {
 }
 
 /**
- * Writes the product events behind the analytics dashboard (docs/17 S7). Recording never fails the action that
+ * Writes the product events behind the analytics dashboard (docs-old/17 S7). Recording never fails the action that
  * caused it: a lost event is better than a refused export or a project that was not created.
  */
 @Injectable()

@@ -280,7 +280,7 @@ GET  /api/projects/:id   → ProjectDetail
 - **Quy ước kích thước** (từ công thức bản 3): `length × width × height` là **lòng trong** của hộp, món quà phải vừa;
   `paperThickness` (`t`, mm) ≈ GSM × 0,0014 (300 GSM ≈ 0,42 mm). Nét gấp nằm giữa bề dày giấy, nên mặt nào phủ một
   kích thước lòng trong giữa hai thành thì rộng thêm `t`; hộp âm dương và khay bao diêm còn cộng 2t theo chiều dài cho
-  tai dán nằm trong thành, nắp / vỏ rộng hơn mặt ngoài của đáy / khay 1 mm. Chi tiết từng cấu trúc: docs/14 §2.
+  tai dán nằm trong thành, nắp / vỏ rộng hơn mặt ngoài của đáy / khay 1 mm. Chi tiết từng cấu trúc: docs/12 §2.
 
 ### 5.2. `canvasState`
 
@@ -620,7 +620,7 @@ GET    /api/public/unboxing/:slug          → { recipientName, giftNote, audioT
 ## 11. AI: xu Wrap, ảnh AI và hoa văn
 
 Mọi tác vụ AI trả bằng **xu Wrap** (1 xu = 100đ), không còn "lượt / ngày" hay `usage.used / limit`. Quy tắc giá, cấp xu
-theo kỳ, trừ và hoàn xu: [19 · Xu Wrap](19_XU_WRAP_SPEC.md). Lỗi API: [03 · Xu Wrap và ảnh AI](03_API_DESIGN.md#xu-wrap-và-ảnh-ai).
+theo kỳ, trừ và hoàn xu: [16 · Xu Wrap](16_XU_WRAP_SPEC.md). Lỗi API: [03 · Xu Wrap và ảnh AI](03_API_DESIGN.md#xu-wrap-và-ảnh-ai).
 **Không chép giá vào code FE**: lấy từ `GET /api/ai/models`, `GET /api/ai/usage`, hoặc `@wrapfit/shared`
 (`AI_IMAGE_MODELS`, `XU_TOOL_COST`, `XU_PATTERN_COST`, `XU_PACKS`, `XU_CUSTOM`, `XU_ALLOWANCE`).
 

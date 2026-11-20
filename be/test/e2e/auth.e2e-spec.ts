@@ -15,7 +15,7 @@ import { accessCookie, TEST_PASSWORD } from './helpers/accounts';
 import { deleteUsers } from './helpers/cleanup';
 
 /**
- * Email verification, password reset and the Google link rule (docs/10_DB_HARDENING_DESIGN.md). Instead of reading a
+ * Email verification, password reset and the Google link rule (docs/03_API_DESIGN.md "Tài khoản & email", docs/06 §3). Instead of reading a
  * mailbox, the link is derived from the queued AuthToken exactly like the mail worker does (no worker runs here).
  */
 describe('Account emails (e2e)', () => {

@@ -1,5 +1,5 @@
 /**
- * Fonts the user uploads (docs/23 S13, D11): accepted only when they draw every Vietnamese letter (a missing glyph
+ * Fonts the user uploads (docs-old/23 S13, D11): accepted only when they draw every Vietnamese letter (a missing glyph
  * prints as an empty box), named by their family, measured and outlined with their own file in the print files.
  */
 import type { CanvasElement } from "../types/project";

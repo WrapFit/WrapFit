@@ -179,7 +179,7 @@ export class EnvironmentVariables {
   AI_TIMEOUT_MS: number = 30000;
 
   /**
-   * Who draws AI images paid with xu (docs/19): `fal` = fal.ai with FAL_KEY (an empty key turns AI images off),
+   * Who draws AI images paid with xu (docs/16): `fal` = fal.ai with FAL_KEY (an empty key turns AI images off),
    * `fake` = placeholder pictures made locally, for development and tests (refused in production).
    */
   @IsIn(['fal', 'fake'])
@@ -213,9 +213,9 @@ export class EnvironmentVariables {
 
   /**
    * `true` = `POST /payments/:id/simulate-confirm` marks a payment paid without a bank transfer, and the checkout shows
-   * "Giả lập đã thanh toán" (CP4 demo, docs/17 M6). Keep `false` wherever real money is taken. A VietQR payment (real
+   * "Giả lập đã thanh toán" (CP4 demo, docs-old/17 M6). Keep `false` wherever real money is taken. A VietQR payment (real
    * bank transfer) can only be simulated by a demo account (`users.is_demo`); the server refuses to start in
-   * production with `true` and a real VIETQR_* account (docs/25 item 6).
+   * production with `true` and a real VIETQR_* account (docs-old/25 item 6).
    */
   @IsIn(['true', 'false'])
   PAYMENT_SIMULATION: string = 'false';
@@ -232,14 +232,14 @@ export class EnvironmentVariables {
   VIETQR_ACCOUNT_NAME: string = '';
 
   /**
-   * Key SePay sends as `Authorization: Apikey <key>` to POST /api/webhooks/sepay (docs/21 §3.3). Empty = every
+   * Key SePay sends as `Authorization: Apikey <key>` to POST /api/webhooks/sepay (docs-old/21 §3.3). Empty = every
    * webhook is rejected with 401 and an error is logged at boot. Never commit it.
    */
   @Matches(/^(\S{16,256})?$/, { message: 'SEPAY_WEBHOOK_API_KEY must be 16-256 characters without whitespace, or empty' })
   SEPAY_WEBHOOK_API_KEY: string = '';
 
   /**
-   * VNPay sandbox for demo accounts (docs/21 §3.4): website code (`vnp_TmnCode`, 8 characters) and secret
+   * VNPay sandbox for demo accounts (docs-old/21 §3.4): website code (`vnp_TmnCode`, 8 characters) and secret
    * (`vnp_HashSecret`) from sandbox.vnpayment.vn. Both empty = a demo account cannot open the gateway (503
    * VNPAY_NOT_CONFIGURED, unless PAYMENT_SIMULATION is on) and every IPN is answered 97. Never commit the secret.
    */
@@ -306,7 +306,7 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   MAIL_FROM: string = 'WrapFit <no-reply@wrapfit.local>';
 
-  /** Pexels API key for the studio's stock photos (docs/23 S15, D10). Empty = stock photos off (503 STOCK_UNAVAILABLE). */
+  /** Pexels API key for the studio's stock photos (docs-old/23 S15, D10). Empty = stock photos off (503 STOCK_UNAVAILABLE). */
   @IsString()
   PEXELS_API_KEY: string = '';
 }
@@ -348,7 +348,7 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
       'Invalid environment variables:\n - VIETQR_BANK_BIN, VIETQR_ACCOUNT_NO and VIETQR_ACCOUNT_NAME must be set together (or all left empty)',
     );
   }
-  // docs/25 item 6: with a real bank account on the QR codes, simulation would let anyone mark real transfers paid.
+  // docs-old/25 item 6: with a real bank account on the QR codes, simulation would let anyone mark real transfers paid.
   if (
     validated.NODE_ENV === NodeEnv.Production &&
     validated.PAYMENT_SIMULATION === 'true' &&

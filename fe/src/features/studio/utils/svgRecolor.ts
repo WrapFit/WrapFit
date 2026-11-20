@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SVG logos with their colours swapped (docs/23 S14, `style.colorMap`) in the browser: the editor, the 3D box, the
+ * SVG logos with their colours swapped (docs-old/23 S14, `style.colorMap`) in the browser: the editor, the 3D box, the
  * thumbnail and the offline print files draw the recoloured copy, rewritten by the same shared recolorSvg as the print
  * worker. A file that is not an SVG, or cannot be read (no CORS), is drawn as it is.
  */

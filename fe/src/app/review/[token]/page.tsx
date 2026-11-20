@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Design review page (docs/23 S23): a customer or a print shop comments on the design and approves it for print. */
+/** Design review page (docs-old/23 S23): a customer or a print shop comments on the design and approves it for print. */
 export default async function ReviewPage({ params }: PageProps) {
   const { token } = await params;
   return <ReviewView token={token} />;

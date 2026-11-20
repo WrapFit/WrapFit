@@ -7,7 +7,7 @@ interface ModelPrice {
 /**
  * Prices of the models the pattern generator may be answered by: the fast and premium defaults and the models a
  * server-side fallback can switch to (`ai_generations.model` records the model that answered). Source: Anthropic
- * pricing, 2026-10 (docs/16 §4.1). Haiku 5.5 costs $0.50 / $2.50 above 100K prompt tokens; a pattern prompt is ~1K.
+ * pricing, 2026-10 (docs/14 §4.1). Haiku 5.5 costs $0.50 / $2.50 above 100K prompt tokens; a pattern prompt is ~1K.
  */
 export const AI_MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
   'claude-haiku-5-5': { input: 0.1, output: 0.5 },

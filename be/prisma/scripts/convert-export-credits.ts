@@ -1,4 +1,4 @@
-// Converts the export credits people still hold into xu Wrap, once (docs/25 item 7, decision Q4). Export packs are no
+// Converts the export credits people still hold into xu Wrap, once (docs-old/25 item 7, decision Q4). Export packs are no
 // longer sold and no export spends a credit (the print file opens with a paid print order), so a credit left is money
 // with no use.
 //
@@ -21,7 +21,10 @@ import { CreditsService } from '../../src/billing/credits.service';
 import { xuForExportCredits } from '../../src/billing/export-credit-conversion';
 import type { PrismaService } from '../../src/shared/prisma';
 
-/** Debit rows of the conversion carry this ref_id. */
+/**
+ * Debit rows of the conversion carry this ref_id. It is stored data, so it keeps the old doc number (docs-old/25)
+ * even after the docs were renumbered: changing it would let the script convert the same credits twice.
+ */
 export const CONVERSION_REF = 'docs/25-item-7:export-credits-to-xu';
 
 /**

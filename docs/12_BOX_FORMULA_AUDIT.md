@@ -1,4 +1,4 @@
-# 14 — Rà soát công thức hộp (Phase 8)
+# 12 — Rà soát công thức hộp (Phase 8)
 
 > Kế hoạch: Phase 8 của kế hoạch nối FE–BE tháng 10/2026 (mục H1–H11, việc 8.1–8.11). Phiên S10, bắt đầu 2026-10-12.
 > Mã: `shared/src/parametric/**`, test `be/src/projects/domain/dieline-geometry.spec.ts`.
@@ -13,7 +13,7 @@
 
 - **Vẽ phôi bằng code**: `npm run build:shared && node shared/scripts/render-dielines.mjs <thư mục> --versions=1,3`
   vẽ 4 cấu trúc × 4 cỡ (rộng 120 × 80 × 60, cao 60 × 60 × 150, dẹt 200 × 150 × 40, nhỏ nhất 40 × 30 × 20, `t` = 0,42)
-  thành SVG rồi PNG (Chrome headless). Đỏ: nét cắt; xanh đứt: nét gấp; xám: mặt in được kèm id. Ảnh ở `docs/assets/14/`.
+  thành SVG rồi PNG (Chrome headless). Đỏ: nét cắt; xanh đứt: nét gấp; xám: mặt in được kèm id. Ảnh ở `docs/assets/12/`.
 - **Gấp thử bằng code**: mỗi mặt của bản 3 khai báo bản lề (`PanelFace.fold`: mặt cha, cạnh chung, góc gấp);
   `shared/src/parametric/fold.ts` gấp phôi thành 3D. Test đo khối gấp xong so với L × W × H và kiểm mọi góc mặt khớp
   với góc của một mặt khác (không hở).
@@ -52,7 +52,7 @@ L × W × H là **lòng trong**; `t` = độ dày giấy (≈ GSM × 0,0014). N�
 | H7 | Ảnh xem trước, thumbnail | Thumbnail chỉ vẽ mảnh đầu. `BoxPreview` (phác thảo isometric khi chưa có thumbnail) vẽ theo L : W : H thật, cạnh ngắn tối thiểu ¼ cạnh dài nhất cho dễ nhìn (cố ý, giữ). **Sửa**: thumbnail vẽ mọi mảnh cạnh nhau | Đã sửa |
 | H8 | Số liệu hiển thị | Khổ trải phẳng `2L + 2W + 30` cứng, "bù 2t"; số nếp gấp cứng ở bước 1; kích thước mặt hiện 15 chữ số thập phân khi có bù `t`. **Sửa**: khổ phôi lấy từ `totalBoundingBox` của từng mảnh, "bù t mỗi mặt" (công thức cũ: không bù); số nếp gấp đếm trên phôi; `formatMm` (1 chữ số thập phân); canvas 2D đánh dấu phần tử theo báo cáo FitCheck (trước: chỉ xét mép trái / trên) và không còn vẽ phần tử của mảnh kia ở góc phôi | Đã sửa |
 | H9 | Vật liệu, độ dày | Ba bảng GSM / độ dày khác nhau (0,38 / 0,42 / 0,45 / 0,52 cho cùng loại giấy); mặc định backend `caliper: 0,35` cho 300 GSM. **Sửa**: `caliperOf(gsm)` = GSM × 0,0014 cho mọi bảng và mặc định (300 GSM = 0,42) | Đã sửa |
-| H10 | Gợi ý của Gói | Auto-fix chỉ đẩy về mép trái / trên. **Sửa**: `autoFixElements` của shared (mọi mép, khung đã xoay, thu nhỏ phần tử lớn hơn mặt, kéo hoa văn ra bleed); hoa văn AI phủ kín mặt + tràn 2 mm ở mép cắt. `AiCopilotAssistant` (preset kích thước) không màn nào dùng (nay đã gắn vào studio, `StudioWorkspace.tsx`; bảng quà mẫu của nó vẫn viết cứng độ dày giấy, xem [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1) | Đã sửa |
+| H10 | Gợi ý của Gói | Auto-fix chỉ đẩy về mép trái / trên. **Sửa**: `autoFixElements` của shared (mọi mép, khung đã xoay, thu nhỏ phần tử lớn hơn mặt, kéo hoa văn ra bleed); hoa văn AI phủ kín mặt + tràn 2 mm ở mép cắt. `AiCopilotAssistant` (preset kích thước) không màn nào dùng (nay đã gắn vào studio, `StudioWorkspace.tsx`; bảng quà mẫu của nó vẫn viết cứng độ dày giấy, xem [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1) | Đã sửa |
 | H11 | Mã không dùng | `shared/src/exporter/pdf-export.ts` (bộ xuất cũ) và `FoldingBox3D.tsx` (không màn nào dùng) đã xoá; `core/contracts.ts` giữ (AGENTS.md trỏ tới) nhưng ghi rõ là phác thảo, không export; `PanelFace.hingeAxis` / `hingeOffset` (không dùng) thay bằng `fold` | Đã sửa |
 
 ### 3.1. Ngưỡng FitCheck hiện hành (đối chiếu mã ngày 2026-11-19)
@@ -72,7 +72,7 @@ Cột H3 ở trên ghi lại lần sửa tháng 10/2026; câu "Chỉ lề an to�
 - **Mốc ≥ 90 điểm** chỉ dùng khi đưa mẫu vào thư viện cộng đồng (`MIN_COMMUNITY_FITCHECK_SCORE`).
 - **Điểm**: 100 − 30 × số lỗi − 10 × số cảnh báo, thấp nhất 0 (dòng tính `score` trong `validator.ts`).
 - **Còn mở**: FitCheck vẫn chưa kiểm chữ tràn khung (chú thích đầu `validator.ts` còn ghi "Not checked yet"). Việc này
-  theo dõi ở [28](28_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1.
+  theo dõi ở [18](18_VIEC_CON_TREO_SAU_AUDIT_BE.md) §1.
 - Các luật thêm sau tháng 10/2026 (hướng đọc, chữ < 6 pt, tương phản, chữ vắt qua nếp, hình dưới cửa sổ, ảnh kho đứng
   một mình…) nằm ngoài phạm vi file này.
 
@@ -85,10 +85,10 @@ Bản 1 (dự án cũ) và bản 3 (dự án mới), cùng 4 cỡ:
 
 | Cấu trúc | Bản 1 | Bản 3 |
 |---|---|---|
-| Nắp gài | ![](assets/14/tuck-top.v1.png) | ![](assets/14/tuck-top.v3.png) |
-| Gối | ![](assets/14/pillow.v1.png) | ![](assets/14/pillow.v3.png) |
-| Âm dương | ![](assets/14/lid-base.v1.png) | ![](assets/14/lid-base.v3.png) |
-| Bao diêm | ![](assets/14/sleeve-drawer.v1.png) | ![](assets/14/sleeve-drawer.v3.png) |
+| Nắp gài | ![](assets/12/tuck-top.v1.png) | ![](assets/12/tuck-top.v3.png) |
+| Gối | ![](assets/12/pillow.v1.png) | ![](assets/12/pillow.v3.png) |
+| Âm dương | ![](assets/12/lid-base.v1.png) | ![](assets/12/lid-base.v3.png) |
+| Bao diêm | ![](assets/12/sleeve-drawer.v1.png) | ![](assets/12/sleeve-drawer.v3.png) |
 
 Kiểm ảnh ngày 2026-11-19 (mở từng file):
 
@@ -103,7 +103,7 @@ Kiểm ảnh ngày 2026-11-19 (mở từng file):
 **4b. Mô hình 3D bản 3** (dự án thử, studio bước 4, Chrome headless 1440 px): nắp gài, gối, âm dương, bao diêm; trái
 đóng hẳn, phải mở nắp / nhấc nắp / rút khay. Chữ trên mặt in đọc xuôi từ phía trước.
 
-![](assets/14/3d-v3.png)
+![](assets/12/3d-v3.png)
 
 Ảnh có 4 hàng theo thứ tự nắp gài, gối, âm dương, bao diêm; cột trái đóng, cột phải mở. Hộp gối không có trạng thái mở
 nên hai ảnh của hàng đó giống nhau. Chữ "WrapFit S10" là dữ liệu thử của phiên chụp.

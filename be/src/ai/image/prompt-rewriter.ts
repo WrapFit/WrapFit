@@ -19,7 +19,7 @@ export type PromptVerdict =
   | { allowed: false; reason: string; costUsd: number };
 
 /**
- * Turns what a user typed into a prompt for an image model, before any xu is spent (docs/19 D3): translated to
+ * Turns what a user typed into a prompt for an image model, before any xu is spent (docs/16 D3): translated to
  * English, framed as flat print artwork for one box panel, and refused when it asks for content WrapFit will not print.
  */
 export interface PromptRewriter {

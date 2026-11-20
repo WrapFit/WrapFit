@@ -70,7 +70,7 @@ const validUnlock = (projectId: string, version: number, now: Date): Prisma.Expo
 /**
  * API side of the print export (docs 07, section 3.1): checks the design and that this version is unlocked, records an
  * ExportJob and queues it. Every export is a clean file: the watermarked free A4 PDF and the export credits are gone
- * (docs/25 item 7). The heavy rendering runs in the separate worker
+ * (docs-old/25 item 7). The heavy rendering runs in the separate worker
  * process (ExportProcessor), never in an HTTP request.
  */
 @Injectable()
@@ -87,7 +87,7 @@ export class ExportService {
   async request(projectId: string, fileType: ExportFileType) {
     if (!this.storage.enabled) throw new ServiceUnavailableException('File storage is not configured');
 
-    // One transaction with the project row locked (docs/30 item 1): FitCheck, the unlock and the job all see the same
+    // One transaction with the project row locked (docs-old/30 item 1): FitCheck, the unlock and the job all see the same
     // version, and the job keeps that design, so the worker prints what was checked and paid for even if the user
     // edits the project before it runs. ProjectOwnerGuard already made sure the caller is the owner.
     const outcome = await this.prisma.$transaction(async (tx) => {

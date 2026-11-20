@@ -1,7 +1,7 @@
 /**
  * WrapFit design-system primitives. Pages and feature components build on these instead of writing their own
  * buttons, cards, dialogs and fields. Catalogue with live examples: /design-system. Tokens:
- * src/assets/styles/tokens.ts. Rules: docs/15_DESIGN_SYSTEM.md.
+ * src/assets/styles/tokens.ts. Rules: docs/13_DESIGN_SYSTEM.md.
  */
 export * from "./button";
 export * from "./card";

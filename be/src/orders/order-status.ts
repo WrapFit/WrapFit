@@ -30,7 +30,7 @@ export const STATUS_TIMESTAMP: Partial<Record<OrderStatus, 'paidAt' | 'shippedAt
 };
 
 /**
- * Orders that still need the design of their project (docs/30 item 4, Q2): waiting for payment, paid, in production.
+ * Orders that still need the design of their project (docs-old/30 item 4, Q2): waiting for payment, paid, in production.
  * A project such an order holds cannot be deleted permanently, by hand or by the trash purge: the print shop would
  * lose the design and its print files, and a pending order could still be paid (`markPaid` does not look at the
  * project). Once the order is shipped, delivered or cancelled the project may go.

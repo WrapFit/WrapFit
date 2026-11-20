@@ -84,7 +84,7 @@ export class PrismaSnapshotRepository implements ISnapshotRepository {
     const dimensions = json(snapshot.dimensions);
     const [backupRow, projectRow] = await this.prisma.$transaction(async (tx) => {
       // Row locked: no save slips in between, and the backup is built from this read (stored form already), so it
-      // holds exactly the design this restore overwrites (docs/30 item 5).
+      // holds exactly the design this restore overwrites (docs-old/30 item 5).
       // Restoring the design the project already has (e.g. the snapshot of the last export) keeps its version, so
       // print files paid for and a print approval stay valid (decision Q3). jsonb equality ignores key order.
       const [current] = await tx.$queryRaw<LockedDesign[]>`

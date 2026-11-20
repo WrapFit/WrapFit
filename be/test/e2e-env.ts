@@ -34,11 +34,11 @@ for (const [key, value] of Object.entries(storageDefaults)) process.env[key] ??=
 
 // Never call the paid Claude API from tests: the AI module falls back to its procedural generator.
 process.env.ANTHROPIC_API_KEY = '';
-// Nor fal.ai: AI images are placeholder gradients drawn in the worker (docs/19).
+// Nor fal.ai: AI images are placeholder gradients drawn in the worker (docs/16).
 process.env.AI_IMAGE_PROVIDER = 'fake';
 process.env.FAL_KEY = '';
 
-// The simulate button of the VietQR checkout (docs/17 M6) is on for e2e; payments.e2e-spec.ts also boots an app with
+// The simulate button of the VietQR checkout (docs-old/17 M6) is on for e2e; payments.e2e-spec.ts also boots an app with
 // it off to check the 404.
 process.env.PAYMENT_SIMULATION = 'true';
 // Key of the SePay webhook (test value): sepay-webhook.e2e-spec.ts sends it as `Authorization: Apikey <key>`.
