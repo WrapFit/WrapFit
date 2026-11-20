@@ -1392,9 +1392,9 @@
     "semantic_hash": ""
   },
   "be/src/projects/domain/dieline-geometry.spec.ts": {
-    "mtime": 1795149784.3505802,
-    "seen": 1795185303.2440617,
-    "ast_hash": "408aea539d4d6de54ef24695fbee79ba",
+    "mtime": 1795198145.6557968,
+    "seen": 1795198478.8618724,
+    "ast_hash": "0b8f9c2ca3ee7a63fddff8e89b7db6bc",
     "semantic_hash": ""
   },
   "be/src/projects/domain/fitcheck.spec.ts": {
@@ -4086,9 +4086,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/boxModel.ts": {
-    "mtime": 1795196791.4822724,
-    "seen": 1795196951.0842216,
-    "ast_hash": "beb39172f727cd0e943e5d3129c3dece",
+    "mtime": 1795198204.8578546,
+    "seen": 1795198478.966018,
+    "ast_hash": "7ffc62f1ce63ba23f9c922d058e53e93",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/guides.ts": {
@@ -5166,9 +5166,9 @@
     "semantic_hash": ""
   },
   "shared/src/parametric/tuck-top.ts": {
-    "mtime": 1795149784.5522711,
-    "seen": 1795185303.3465695,
-    "ast_hash": "d4d403f8f0641981c4da9cb9db512eb3",
+    "mtime": 1795198131.0274677,
+    "seen": 1795198479.010679,
+    "ast_hash": "228174810bd7a0e060edf639b8c03b54",
     "semantic_hash": ""
   },
   "shared/src/parametric/tuck-top.v1.ts": {
@@ -5220,9 +5220,9 @@
     "semantic_hash": ""
   },
   "shared/src/types/dieline.ts": {
-    "mtime": 1795149784.5593505,
-    "seen": 1795185303.3474238,
-    "ast_hash": "462bcdd90c2c3cc76969c8b0720cacfd",
+    "mtime": 1795198111.411663,
+    "seen": 1795198479.0135558,
+    "ast_hash": "33e214b797e539540a489cba5fcbc273",
     "semantic_hash": ""
   },
   "shared/src/types/fitcheck.ts": {
@@ -14838,9 +14838,9 @@
     "semantic_hash": ""
   },
   "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
-    "mtime": 1795196900.0359855,
-    "seen": 1795196951.1524277,
-    "ast_hash": "0e9bd2ac660e680ad69b0380e1acef43",
+    "mtime": 1795198422.6353464,
+    "seen": 1795198479.030103,
+    "ast_hash": "e53b88fd7995421497b4902b3482e4ad",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/Preview3DCard.tsx": {
