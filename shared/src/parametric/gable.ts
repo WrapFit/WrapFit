@@ -20,6 +20,7 @@
 
 import { BoxDimensions, DielineGeometry, DielineOpening, PanelFace, Point2D } from "../types/dieline";
 import { cutOpening } from "./openings";
+import { flapFace } from "./flaps";
 import { segmentWriter } from "./segments";
 
 /** Fold of the roofs from upright, degrees. */
@@ -220,11 +221,39 @@ export function generateGableDieline(dimensions: BoxDimensions): DielineGeometry
   }));
   openings.forEach((opening, i) => cutOpening(writer, `cut_hand_hole_${i ? "front" : "back"}`, opening));
 
+  // Flaps for the 3D model (docs/21 S6), as the outline cuts them: the glue flap and the bottom of the tuck-top box.
+  // The support tabs on the sloped gable edges are left out: the model hinges flaps on straight sides only.
+  const flapDust = (x0: number, x1: number): Point2D[] => [
+    { x: x0, y: yBodyEnd },
+    { x: x0 + dustCorner, y: yBodyEnd + dust },
+    { x: x1 - dustCorner, y: yBodyEnd + dust },
+    { x: x1, y: yBodyEnd },
+  ];
+  const flaps = [
+    flapFace("flap_glue", "Mép dán (Glue Flap)", "glue", { parent: "gable_back", edge: "right", angle: 90 }, [
+      { x: xBack, y: yBody },
+      { x: 0, y: yBody + glueCorner },
+      { x: 0, y: yBodyEnd - glueCorner },
+      { x: xBack, y: yBodyEnd },
+    ]),
+    flapFace("flap_dust_bottom_left", "Tai bụi đáy trái", "dust", { parent: "gable_left", edge: "top", angle: 90 }, flapDust(xLeft, xFront)),
+    flapFace("flap_dust_bottom_right", "Tai bụi đáy phải", "dust", { parent: "gable_right", edge: "top", angle: 90 }, flapDust(xRight, xEnd)),
+    flapFace("flap_tuck_bottom", "Lưỡi gài đáy (Bottom Tuck)", "tuck", { parent: "gable_bottom", edge: "top", angle: 90 }, [
+      { x: xBack, y: yBottomEnd },
+      { x: xBack, y: yEnd - tuckCorner },
+      { x: xBack + tuckCorner, y: yEnd },
+      { x: xLeft - tuckCorner, y: yEnd },
+      { x: xLeft, y: yEnd - tuckCorner },
+      { x: xLeft, y: yBottomEnd },
+    ]),
+  ];
+
   return {
     structureType: "gable",
     dimensions,
     totalBoundingBox: { width: xEnd, height: yEnd },
     panels,
+    flaps,
     segments,
     glueAreas: [{ x: 0, y: yBody, width: glue, height: H }],
     openings,

@@ -81,9 +81,14 @@ export interface PanelFace {
  * `bounds`; `fold` hinges it on its parent panel exactly like a panel's.
  */
 export interface FlapFace extends PanelFace {
-  kind: "tuck" | "dust" | "glue" | "lock";
+  kind: "tuck" | "dust" | "glue" | "lock" | "ear";
   fold: NonNullable<PanelFace["fold"]>;
   outline: Point2D[];
+  /**
+   * Paper layers between the folded flap and the outside of the box (default 1): 3 for a mailer flap that slips inside
+   * a double wall. The 3D model sits the flap that deep so it never shows through.
+   */
+  layers?: number;
 }
 
 /**

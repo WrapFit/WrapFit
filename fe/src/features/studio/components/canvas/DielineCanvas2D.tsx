@@ -141,6 +141,11 @@ interface DielineCanvas2DProps {
    * of `mm` (the paper thickness the formulas add); two equal measures light the same sides.
    */
   measure?: { axis: DimensionAxis; mm: number; tolerance: number } | null;
+  /**
+   * A box the page floats over the top-right corner of the canvas, px (the 3D preview card): the fitted dieline keeps
+   * clear of it, by a right or a top inset, whichever leaves the dieline larger (docs/21).
+   */
+  reserveCorner?: { width: number; height: number } | null;
   showRulers?: boolean;
   /** Elements FitCheck flags (margin, bleed, glue…): drawn with a red badge. */
   flaggedElementIds?: ReadonlySet<string>;
@@ -225,6 +230,7 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   onSelectPanel,
   onHoverPanel,
   measure = null,
+  reserveCorner = null,
   showRulers = true,
   flaggedElementIds,
   variant = "card",
@@ -755,6 +761,27 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Room the page's corner box takes from the fitted dieline (docs/21): none when the dieline fitted to the whole
+  // viewport already misses it, else a right or a top inset, whichever keeps the dieline larger.
+  const [viewportSize, setViewportSize] = useState<{ width: number; height: number } | null>(null);
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || !reserveCorner) return;
+    const observer = new ResizeObserver(([entry]) => setViewportSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [reserveCorner === null]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cornerInset = useMemo(() => {
+    if (!reserveCorner || !viewportSize) return null;
+    const { width: cw, height: ch } = viewportSize;
+    const { width: rw, height: rh } = reserveCorner;
+    const fit = (w: number, h: number) => Math.min(w / viewBoxW, h / viewBoxH);
+    const whole = fit(cw, ch);
+    // The sheet fitted to the whole viewport, centred: does its top-right corner reach under the box?
+    if ((cw + viewBoxW * whole) / 2 <= cw - rw || (ch - viewBoxH * whole) / 2 >= rh) return null;
+    return fit(cw - rw, ch) >= fit(cw, ch - rh) ? { right: rw } : { top: rh };
+  }, [reserveCorner, viewportSize, viewBoxW, viewBoxH]);
+
   // Native non-passive Wheel listener on the viewport: smooth focal-point zoom at mouse cursor & wheel pan
   useEffect(() => {
     const el = viewportRef.current;
@@ -1228,6 +1255,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         style={{
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})`,
           transformOrigin: "center center",
+          // The dieline fits the rest of the viewport; zoom still turns about the viewport centre (the wheel zoom's maths).
+          ...(cornerInset ? { paddingRight: cornerInset.right ?? 0, paddingTop: cornerInset.top ?? 0 } : {}),
         }}
       >
         <svg

@@ -1112,6 +1112,24 @@ export function StudioWorkspace({
   const [faceMenu, setFaceMenu] = useState<FaceHit | null>(null);
   /** Panel under the pointer on the dieline, lit on the 3D preview card. */
   const [hoverPanelId, setHoverPanelId] = useState<string | null>(null);
+  // Room the 3D preview card takes in the stage's top-right corner (its offset and a little air): the dieline keeps
+  // clear of it. Null while the card is not shown (phone, 3D view).
+  const [cardBox, setCardBox] = useState<{ width: number; height: number } | null>(null);
+  const cardObserver = useRef<ResizeObserver | null>(null);
+  const cardRef = useCallback((node: HTMLDivElement | null) => {
+    cardObserver.current?.disconnect();
+    cardObserver.current = null;
+    if (!node) {
+      setCardBox(null);
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setCardBox(width && height ? { width: width + 20, height: height + 20 } : null);
+    });
+    observer.observe(node);
+    cardObserver.current = observer;
+  }, []);
   const faceOf = useCallback(
     (panelId: string) => {
       for (const piece of pieces) {
@@ -1838,6 +1856,7 @@ export function StudioWorkspace({
                     activePanelId={activePanelId}
                     onSelectPanel={selectPanel}
                     onHoverPanel={setHoverPanelId}
+                    reserveCorner={cardBox}
                     // The size field in focus or under the pointer (steps 1–2); the formulas add the paper thickness.
                     measure={activeAxis ? { axis: activeAxis, mm: dimensions[activeAxis], tolerance: 2 * dimensions.paperThickness + 0.6 } : null}
                     showRulers={showRulers}
@@ -1888,7 +1907,7 @@ export function StudioWorkspace({
                 )}
                 {/* The folded box beside the dieline while designing (docs/21 S2); tablets and up only, see Preview3DCard. */}
                 {artView === "2d" && (
-                  <div className="absolute right-3 top-3 z-20">
+                  <div ref={cardRef} className="absolute right-3 top-3 z-20">
                   <Preview3DCard
                     dimensions={dimensions}
                     boxType={boxType}

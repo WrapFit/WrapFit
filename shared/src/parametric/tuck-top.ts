@@ -22,6 +22,7 @@
 
 import { BoxDimensions, DielineGeometry, FlapFace, PanelFace, Point2D } from "../types/dieline";
 import { cutOpening, windowIn } from "./openings";
+import { flapFace } from "./flaps";
 import { segmentWriter } from "./segments";
 
 /** Gifts heavier than this (grams) get the crash-lock bottom (FEFCO 0215) unless the user picks the tuck bottom. */
@@ -225,18 +226,7 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
   // Flaps for the 3D model (docs/21 S6): the same outlines as the cut paths above, hinged on their creases. Every one
   // folds a quarter turn towards the inside: the glue flap against the right panel, the dust flaps under the lid and
   // the bottom, the tuck flaps down along the front panel.
-  const flap = (
-    id: string,
-    name: string,
-    kind: FlapFace["kind"],
-    fold: FlapFace["fold"],
-    outline: Point2D[],
-  ): FlapFace => {
-    const xs = outline.map((p) => p.x);
-    const ys = outline.map((p) => p.y);
-    const [x, y] = [Math.min(...xs), Math.min(...ys)];
-    return { id, name, kind, fold, outline, bounds: { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y } };
-  };
+  const flap = flapFace;
   const dustOutline = (x0: number, x1: number, hinge: number, edge: number): Point2D[] => [
     { x: x0, y: hinge },
     { x: x0 + dustCorner, y: edge },

@@ -30,6 +30,7 @@ import {
   type Point2D,
   type PrintSide,
   type ElementFinish,
+  type FlapFace,
 } from "@wrapfit/shared";
 import { elementImageKey, recoloredSrc } from "../../utils/svgRecolor";
 import { drawImageOnCanvas, drawTextOnCanvas } from "../canvas/elementVisuals";
@@ -462,14 +463,30 @@ function panelTexture(
       ctx.restore();
     }
     if (side === "outside" && options.decoration && MAIN_PANEL.includes(panel.id)) drawDecoration(ctx, panel, options.decoration, options.theme);
-    // Ink sinks into uncoated kraft: its fibres show through the print.
+    // Ink sinks into uncoated kraft: its fibres show through the print. Foil is laid on top of the paper, so the grain
+    // layer has the foil shapes cut out of it.
     if (grain && options.theme === "kraft" && elements.length > 0) {
-      ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      ctx.globalCompositeOperation = "multiply";
-      ctx.globalAlpha = KRAFT_INK_GRAIN;
-      fillGrain(ctx, grain, region);
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 1;
+      const layer = document.createElement("canvas");
+      layer.width = canvas.width;
+      layer.height = canvas.height;
+      const lctx = layer.getContext("2d");
+      if (lctx) {
+        lctx.setTransform(scale, 0, 0, scale, 0, 0);
+        fillGrain(lctx, grain, region);
+        lctx.globalCompositeOperation = "destination-out";
+        for (const { el, dx, dy } of elements) {
+          if (!el.finish || !FINISH_SPOTS[el.finish]?.metallic) continue;
+          enterPanel(lctx, scale);
+          placeElement(lctx, el, dx, dy);
+          drawContent(lctx, el);
+        }
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = "multiply";
+        ctx.globalAlpha = KRAFT_INK_GRAIN;
+        ctx.drawImage(layer, 0, 0);
+        ctx.restore();
+      }
     }
     texture.needsUpdate = true;
 
@@ -726,16 +743,31 @@ function visualThicknessOf(t: number): number {
  * Mailer: the walls rise, their inner layers roll over the rim, then the lid closes; open, the lid swings back.
  */
 function stagedProgress(structure: string, progress: number, open: number) {
+  const stage = (from: number, to: number) => clamp01((progress - from) / (to - from));
   return (panel: PanelFace) => {
     // A card opens like a book, a belly band comes off the box (docs-old/23 S18).
     if (structure === "folded-card") return mix(progress, 0.42, open);
     if (structure === "belly-band") return mix(progress, 0.55, open);
     if (structure === "gable") {
-      // Walls and bottom first, then the roofs close and the handles rise; open, the roofs swing back out.
+      // Glue flap and walls, then the bottom as on the tuck-top box (docs/21 S6), then the roofs close and the handles
+      // rise; open, the roofs swing back out.
       if (panel.id.startsWith("gable_roof_") || panel.id.startsWith("gable_handle_")) {
         return mix(clamp01((progress - 0.55) / 0.45), -0.6, open);
       }
-      return clamp01(progress / 0.55);
+      if (panel.id === "flap_glue") return stage(0, 0.3);
+      if (panel.id.startsWith("flap_dust_bottom_")) return stage(0.3, 0.42);
+      if (panel.id === "gable_bottom") return stage(0.38, 0.55);
+      if (panel.id === "flap_tuck_bottom") return stage(0.45, 0.57);
+      return stage(0, 0.35);
+    }
+    // Trays (docs/21 S6): the front and back walls rise with their corner tabs turning in, then the side walls close
+    // over the tabs. The sleeve of a drawer box folds all at once, its glue flap first.
+    if (structure === "lid-base" || structure === "sleeve-drawer" || structure === "insert") {
+      if (panel.id === "flap_glue") return stage(0, 0.5);
+      if (/^flap_.+_(front|back)_(left|right)$/.test(panel.id)) return stage(0.15, 0.55);
+      if (/^(base|lid|drawer|insert)_(left|right)$/.test(panel.id)) return stage(0.45, 1);
+      if (/^(base|lid|drawer|insert)_(front|back)$/.test(panel.id)) return stage(0, 0.55);
+      return progress;
     }
     if (structure === "cup-carrier") {
       // Walls rise from the base, then the shoulders close in and the handles meet; open, the shoulders swing out.
@@ -745,15 +777,20 @@ function stagedProgress(structure: string, progress: number, open: number) {
       return clamp01(progress / 0.5);
     }
     if (structure === "mailer") {
-      if (panel.id === "mailer_lid") return mix(clamp01((progress - 0.6) / 0.4), -0.25, open);
-      if (panel.id.endsWith("_inner")) return clamp01((progress - 0.3) / 0.4);
-      return clamp01(progress / 0.45);
+      // Front and back walls with their ears turning in, the side walls over the ears, the inner layers rolling over
+      // the rims (the ears end up between the layers), then the lid with its dust flaps and tuck (docs/21 S6).
+      if (panel.id === "mailer_lid") return mix(stage(0.6, 1), -0.25, open);
+      if (panel.id.startsWith("flap_ear_")) return stage(0.05, 0.3);
+      if (panel.id === "mailer_left" || panel.id === "mailer_right") return stage(0.12, 0.45);
+      if (panel.id.endsWith("_inner")) return stage(0.3, 0.7);
+      if (panel.id.startsWith("flap_dust_lid_")) return stage(0.62, 0.8);
+      if (panel.id === "flap_tuck_lid") return mix(stage(0.78, 0.97), 0, open);
+      return stage(0, 0.45);
     }
     if (structure !== "tuck-top") return progress;
     // The order a packer closes it (docs/21 S6): glue flap and walls, bottom dust flaps, bottom and its tuck, top dust
     // flaps, lid and its tuck. Each step starts before the last ends, so the slider never stalls. Open, the lid swings
     // back and its tuck flap lies flat.
-    const stage = (from: number, to: number) => clamp01((progress - from) / (to - from));
     switch (panel.id) {
       case "flap_glue":
         return stage(0, 0.3);
@@ -895,7 +932,9 @@ function foldedPiece(
       const matrix = toMatrix(mat);
       if (isFlap) {
         // A folding flap slides inside the panel it comes to lie against (none while it is flat on the sheet).
-        const inset = clamp01(Math.abs(progressOf(panel))) * FLAP_INSET * currentVisualThickness;
+        // A flap inside a double wall (mailer) goes one more layer of paper deeper for each layer beyond the first.
+        const layers = (panel as FlapFace).layers ?? 1;
+        const inset = clamp01(Math.abs(progressOf(panel))) * (FLAP_INSET + layers - 1) * currentVisualThickness;
         matrix.elements[12] += matrix.elements[8] * inset;
         matrix.elements[13] += matrix.elements[9] * inset;
         matrix.elements[14] += matrix.elements[10] * inset;

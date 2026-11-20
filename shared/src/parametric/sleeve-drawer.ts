@@ -19,6 +19,7 @@
  */
 
 import { BoxDimensions, DielineGeometry, PanelFace } from "../types/dieline";
+import { flapFace } from "./flaps";
 import { segmentWriter } from "./segments";
 import { generateTray } from "./tray";
 
@@ -105,6 +106,15 @@ export function generateSleeveDrawerDieline(dimensions: BoxDimensions): {
     dimensions,
     totalBoundingBox: { width: L, height: yEnd },
     panels,
+    // The glue flap for the 3D model (docs/21 S6): it turns on the top panel and lies inside the left one.
+    flaps: [
+      flapFace("flap_glue", "Mép dán (Glue Flap)", "glue", { parent: "sleeve_top", edge: "bottom", angle: 90 }, [
+        { x: 0, y: yTop },
+        { x: glueCorner, y: 0 },
+        { x: L - glueCorner, y: 0 },
+        { x: L, y: yTop },
+      ]),
+    ],
     segments,
     glueAreas: [{ x: 0, y: 0, width: L, height: glue }],
     orientation: { up: "-z", front: "+y" },

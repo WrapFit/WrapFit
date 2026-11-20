@@ -283,56 +283,73 @@ describe('formula version 3', () => {
       }
     }
   });
-
+  // Folding boxes whose formulas list their flaps (docs/21 S6) and how many each piece has: tuck-top 7 (glue flap,
+  // lid tuck, 2 top dust flaps, then 2 bottom dust flaps + bottom tuck or 3 lock flaps), a tray its 4 corner tabs, the sleeve
+  // its glue flap, the mailer 4 ears + 2 dust flaps + the tuck flap, the gable its glue flap, 2 dust flaps and a tuck.
+  const FLAP_CASES: [string, Partial<BoxDimensions>, number[]][] = [
+    ['tuck-top', { bottomType: 'tuck' }, [7]],
+    ['tuck-top', { bottomType: 'lock' }, [7]],
+    ['lid-base', {}, [4, 4]],
+    ['sleeve-drawer', {}, [1, 4]],
+    ['mailer', {}, [7]],
+    ['gable', {}, [4]],
+  ];
   it.each(
-    SIZES.flatMap((size) =>
-      (['tuck', 'lock'] as const).map((bottomType) => [size, bottomType] as const),
+    FLAP_CASES.flatMap(([structure, extra, counts]) =>
+      SIZES.map((size) => [structure, extra, size, counts] as const),
     ),
   )(
-    'tuck-top %p (%s bottom): its flaps sit off the panels and fold inside the closed box',
-    (size, bottomType) => {
-      const [geometry] = generateDielinePieces(
-        'tuck-top',
-        { ...box(size), bottomType },
+    '%s %p %p: its flaps sit off the panels and fold inside the closed piece',
+    (structure, extra, size, counts) => {
+      const pieces = generateDielinePieces(
+        structure,
+        { ...box(size), ...extra },
         3,
       ).map((p) => p.geometry);
-      const flaps = geometry.flaps ?? [];
-      expect(flaps.length).toBeGreaterThanOrEqual(6);
-      const ids = new Set(geometry.panels.map((p) => p.id));
-      for (const flap of flaps) {
-        expect([flap.id, ids.has(flap.fold.parent)]).toEqual([flap.id, true]);
-        for (const panel of geometry.panels)
-          expect([flap.id, panel.id, overlaps(flap.bounds, panel.bounds)]).toEqual([
-            flap.id,
-            panel.id,
-            false,
-          ]);
-      }
-      // Closed: every flap point lies within the box the panels make (a flap lies along a wall, under a lid…).
-      const frame = boxFrameOf(geometry)!;
-      const folded = panelTransforms(
-        { ...geometry, panels: [...geometry.panels, ...flaps] },
-        1,
-      );
-      const closed = foldedSize(geometry)!;
-      const panelPoints = Object.values(foldedCorners(geometry, 1))
-        .flat()
-        .map((p) => transformPoint(frame, p));
-      const min = [0, 1, 2].map((i) => Math.min(...panelPoints.map((p) => p[i])));
-      const max = [0, 1, 2].map((i) => Math.max(...panelPoints.map((p) => p[i])));
-      for (const flap of flaps) {
-        for (const { x, y } of flap.outline) {
-          const p = transformPoint(
-            multiply(frame, folded[flap.id]),
-            [x, y, 0],
-          );
-          for (const i of [0, 1, 2]) {
-            expect(p[i]).toBeGreaterThanOrEqual(min[i] - 0.01);
-            expect(p[i]).toBeLessThanOrEqual(max[i] + 0.01);
+      expect(pieces.map((g) => g.flaps?.length ?? 0)).toEqual(counts);
+      for (const geometry of pieces) {
+        const flaps = geometry.flaps ?? [];
+        const ids = new Set(geometry.panels.map((p) => p.id));
+        for (const flap of flaps) {
+          expect([flap.id, ids.has(flap.fold.parent)]).toEqual([flap.id, true]);
+          for (const panel of geometry.panels)
+            expect([
+              flap.id,
+              panel.id,
+              overlaps(flap.bounds, panel.bounds),
+            ]).toEqual([flap.id, panel.id, false]);
+        }
+        // Closed: every flap point lies within the box the panels make (a flap lies along a wall, under a lid…).
+        const frame = boxFrameOf(geometry)!;
+        const folded = panelTransforms(
+          { ...geometry, panels: [...geometry.panels, ...flaps] },
+          1,
+        );
+        const closed = foldedSize(geometry)!;
+        const panelPoints = Object.values(foldedCorners(geometry, 1))
+          .flat()
+          .map((p) => transformPoint(frame, p));
+        const min = [0, 1, 2].map((i) =>
+          Math.min(...panelPoints.map((p) => p[i])),
+        );
+        const max = [0, 1, 2].map((i) =>
+          Math.max(...panelPoints.map((p) => p[i])),
+        );
+        for (const flap of flaps) {
+          for (const { x, y } of flap.outline) {
+            const p = transformPoint(multiply(frame, folded[flap.id]), [
+              x,
+              y,
+              0,
+            ]);
+            for (const i of [0, 1, 2]) {
+              expect(p[i]).toBeGreaterThanOrEqual(min[i] - 0.01);
+              expect(p[i]).toBeLessThanOrEqual(max[i] + 0.01);
+            }
           }
         }
+        expect(closed).toEqual(foldedSize({ ...geometry, flaps: undefined })!);
       }
-      expect(closed).toEqual(foldedSize({ ...geometry, flaps: undefined })!);
     },
   );
 
