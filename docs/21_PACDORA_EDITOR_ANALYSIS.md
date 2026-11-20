@@ -228,6 +228,23 @@ Giới hạn của S5:
 - Hạt sinh ngẫu nhiên mỗi lần tải trang, nên hai lần mở hộp có hạt hơi khác nhau.
 - Chỉ so bằng mắt trên hộp đỏ phủ kín. Chưa thử hộp để trống nhiều giấy mộc.
 
+**S6 xong ngày 21/11/2026 (chưa commit), cho hộp nắp gài.** Hộp 3D giờ có lưỡi gài, tai bụi và mép dán, và gập theo thứ tự như người đóng hộp.
+
+- **Dữ liệu.** `DielineGeometry` có thêm trường tùy chọn `flaps` (kiểu `FlapFace`): mỗi tai có đường viền trên tấm phôi, loại tai và bản lề `fold` như một tấm. Tai không nằm trong `panels`, nên thiết kế 2D, FitCheck, báo giá và file in không đổi; nét cắt và nét gấp vẫn như cũ. Công thức hộp nắp gài bản 3 khai báo mép dán, hai lưỡi gài và bốn tai bụi. Nếu đáy khóa chịu lực thì khai báo ba tai khóa đáy thay cho tai bụi đáy và lưỡi gài đáy.
+- **Thứ tự gập trên thanh 0–100 %.** Mép dán và các vách (0–35 %), tai bụi đáy (30–45 %), đáy (42–62 %) và lưỡi gài đáy (50–64 %), tai bụi trên (60–74 %), nắp (70–94 %) rồi lưỡi gài nắp (80–97 %). Bước sau bắt đầu trước khi bước trước xong, nên thanh kéo không có đoạn đứng yên. Khi mở nắp, nắp ngả ra sau, lưỡi gài duỗi phẳng, tai bụi vẫn gập.
+- **Không chồng hình.** Tai đang gập lùi vào trong 1,3 lần độ dày giấy so với tấm nó áp vào, nên mép dán nằm trong vách phải và tai bụi nằm dưới nắp mà không nhấp nháy.
+- **Giấy của tai.** Tai không có hình in, dùng giấy trơn có hạt của S5 cho mặt ngoài và mặt trong.
+- **Test.** Thêm 8 ca vào `dieline-geometry.spec.ts`: 4 cỡ hộp, mỗi cỡ thử đáy gài và đáy khóa. Mỗi ca kiểm rằng tai không đè lên tấm nào trên phôi, mỗi tai có tấm cha, khi đóng kín mọi điểm của tai nằm trong hộp, và kích thước hộp gập không đổi. Toàn bộ test backend qua: 77 bộ, 1188 test.
+
+Đã xem trên Chrome ở 0 %, 20 %, 50 %, 70 %, 85 %, 88 %, 100 % và khi mở nắp với đáy gài. Chưa xem đáy khóa trên màn hình, chỉ có test hình học.
+
+Giới hạn của S6:
+
+- Chỉ hộp nắp gài có tai. Hộp âm dương, hộp bao diêm, hộp mailer và các kiểu khác chưa khai báo `flaps`, nên vẫn gập như trước.
+- Tai khóa đáy là hình gần đúng: tai trước bỏ khe nhận lưỡi, các tai chỉ gập một phần tư vòng, chưa mô phỏng khóa chéo.
+- Tai gập phẳng, chưa uốn cong ở góc như mô hình của Pacdora.
+- Hạt giấy trên tai lặp theo kích thước từng tai, chưa theo đúng mm như các tấm.
+
 ## 7. Giới hạn của khảo sát
 
 - Mã Pacdora đã được rút gọn. Các kết luận về mô hình gập, chọn mặt và hoàn thiện in đọc từ tên thuộc tính và đoạn mã, chưa chạy riêng từng hàm. Đồ thị REA của `pacdora-3d` chỉ đầy đủ một phần vì chạm giới hạn phân tích bí danh.
