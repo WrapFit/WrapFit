@@ -3966,9 +3966,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/canvas/DielineCanvas2D.tsx": {
-    "mtime": 1795149784.428478,
-    "seen": 1795185303.3145356,
-    "ast_hash": "ab117ea88b7a23f5afa7891ea7464499",
+    "mtime": 1795190440.333289,
+    "seen": 1795190917.6539845,
+    "ast_hash": "a271b8fe594f560f11820469fb193bc8",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/canvas/boxText.ts": {
@@ -4086,9 +4086,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/boxModel.ts": {
-    "mtime": 1795149784.4385076,
-    "seen": 1795185303.31618,
-    "ast_hash": "f9e62db6b8f79eff65da309a61a8cba3",
+    "mtime": 1795190605.2642212,
+    "seen": 1795190917.6569493,
+    "ast_hash": "25e77d77efc5bd70d1b38b3232d9474f",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/guides.ts": {
@@ -4812,9 +4812,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/StudioWorkspace.tsx": {
-    "mtime": 1795190047.134335,
-    "seen": 1795190210.0992997,
-    "ast_hash": "f24f0d7b19fa4ceddfcec47d0871b5de",
+    "mtime": 1795190809.122893,
+    "seen": 1795190917.6735852,
+    "ast_hash": "de8d910bc588ef56c3fc30f2c26e2192",
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/index.tsx": {
@@ -14826,9 +14826,9 @@
     "semantic_hash": ""
   },
   "docs/19_STUDIO_WORKSPACE.md": {
-    "mtime": 1795190176.7931345,
-    "seen": 1795190210.1176093,
-    "ast_hash": "d525e4908dafc26279f70b935b9e28a8",
+    "mtime": 1795190885.6695976,
+    "seen": 1795190917.692452,
+    "ast_hash": "b6069e16b3cca3bd97ac0549536f3ae0",
     "semantic_hash": ""
   },
   "docs/20_MESHY_WORKSPACE_ANALYSIS.md": {
@@ -14838,9 +14838,15 @@
     "semantic_hash": ""
   },
   "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
-    "mtime": 1795190171.5345366,
-    "seen": 1795190210.1176155,
-    "ast_hash": "c5bc8e76946697ea83335a6fe96c4de0",
+    "mtime": 1795190885.5047941,
+    "seen": 1795190917.6925647,
+    "ast_hash": "d9e277e85d2c0cb463f9289de04c135f",
+    "semantic_hash": ""
+  },
+  "fe/src/features/studio/components/three/Preview3DCard.tsx": {
+    "mtime": 1795190808.8975952,
+    "seen": 1795190917.6568544,
+    "ast_hash": "7f84c625981ca4937299896237078bb9",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {
