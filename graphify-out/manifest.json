@@ -3258,9 +3258,9 @@
     "semantic_hash": ""
   },
   "fe/src/components/ui/dropdown-menu.tsx": {
-    "mtime": 1792252312.6141953,
-    "seen": 1794852246.2647989,
-    "ast_hash": "b3137adbd717f4b9619472a9701ecf10",
+    "mtime": 1795189903.6286647,
+    "seen": 1795190210.0627346,
+    "ast_hash": "6488daee731248762bf2451e1d871e87",
     "semantic_hash": ""
   },
   "fe/src/components/ui/feedback.tsx": {
@@ -4074,9 +4074,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx": {
-    "mtime": 1795169963.23079,
-    "seen": 1795185303.3161767,
-    "ast_hash": "5bb4d0e92b0d02b44aa2691a1b96e8f2",
+    "mtime": 1795189885.9270747,
+    "seen": 1795190210.0815506,
+    "ast_hash": "3b92e502ed057e283c53d78768c13f86",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/backdrops.ts": {
@@ -4812,9 +4812,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/StudioWorkspace.tsx": {
-    "mtime": 1795184425.4503365,
-    "seen": 1795185303.3374438,
-    "ast_hash": "cb7f01b6de5fefe472c7123adb2f001e",
+    "mtime": 1795190047.134335,
+    "seen": 1795190210.0992997,
+    "ast_hash": "f24f0d7b19fa4ceddfcec47d0871b5de",
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/index.tsx": {
@@ -14826,15 +14826,21 @@
     "semantic_hash": ""
   },
   "docs/19_STUDIO_WORKSPACE.md": {
-    "mtime": 1795185253.2221718,
-    "seen": 1795185303.3593204,
-    "ast_hash": "9c62e54a0a47f0f45917a2fbde94c477",
+    "mtime": 1795190176.7931345,
+    "seen": 1795190210.1176093,
+    "ast_hash": "d525e4908dafc26279f70b935b9e28a8",
     "semantic_hash": ""
   },
   "docs/20_MESHY_WORKSPACE_ANALYSIS.md": {
-    "mtime": 1795168221.4238656,
-    "seen": 1795185303.3593223,
-    "ast_hash": "db9e12a999b79af469ad22283072d8b2",
+    "mtime": 1795185683.8171353,
+    "seen": 1795190210.1176126,
+    "ast_hash": "55349190d8bff60f21c4cf4efdb18082",
+    "semantic_hash": ""
+  },
+  "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
+    "mtime": 1795190171.5345366,
+    "seen": 1795190210.1176155,
+    "ast_hash": "c5bc8e76946697ea83335a6fe96c4de0",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {
