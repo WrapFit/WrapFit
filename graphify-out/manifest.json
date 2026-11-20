@@ -3966,9 +3966,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/canvas/DielineCanvas2D.tsx": {
-    "mtime": 1795190440.333289,
-    "seen": 1795190917.6539845,
-    "ast_hash": "a271b8fe594f560f11820469fb193bc8",
+    "mtime": 1795191225.104792,
+    "seen": 1795191319.4643123,
+    "ast_hash": "f8ae7813799de60c69d098ef4aed372f",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/canvas/boxText.ts": {
@@ -4074,9 +4074,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx": {
-    "mtime": 1795189885.9270747,
-    "seen": 1795190210.0815506,
-    "ast_hash": "3b92e502ed057e283c53d78768c13f86",
+    "mtime": 1795191118.221565,
+    "seen": 1795191319.4674308,
+    "ast_hash": "f1cc7c4e65eebb71837b209eb20f0927",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/backdrops.ts": {
@@ -4812,9 +4812,9 @@
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/StudioWorkspace.tsx": {
-    "mtime": 1795190809.122893,
-    "seen": 1795190917.6735852,
-    "ast_hash": "de8d910bc588ef56c3fc30f2c26e2192",
+    "mtime": 1795191144.2906747,
+    "seen": 1795191319.485187,
+    "ast_hash": "ac3baff6b0a3790f1736f3b5294b18f7",
     "semantic_hash": ""
   },
   "fe/src/views/editor/studio/index.tsx": {
@@ -14838,9 +14838,9 @@
     "semantic_hash": ""
   },
   "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
-    "mtime": 1795190885.5047941,
-    "seen": 1795190917.6925647,
-    "ast_hash": "d9e277e85d2c0cb463f9289de04c135f",
+    "mtime": 1795191287.805773,
+    "seen": 1795191319.5056403,
+    "ast_hash": "eb271bd11933d12cd2cff2a182e30d69",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/Preview3DCard.tsx": {
