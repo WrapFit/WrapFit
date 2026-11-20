@@ -1,23 +1,25 @@
 import { request } from "@/services/api";
-import type { PrintShop } from "@/types/api";
-import { DEMO_PRINT_SHOPS } from "@/features/dashboard/demoData";
+import type { AdminPrintShop, PrintShop, UpdatePrintShopRequest } from "@/types/api";
 
-/** Lists partner print shops with machine specs and lead times. */
-export async function listPrintShops(): Promise<PrintShop[]> {
-  try {
-    return await request("/print-shops");
-  } catch (error) {
-    console.warn("[PrintShops API] Failed to fetch print shops, using demo fallback:", error);
-    return DEMO_PRINT_SHOPS;
-  }
+/**
+ * Partner print shops. An error stays an error (docs/19 BR-G13): a list of example shops would let a customer order
+ * from a shop that does not exist. The offline demo answers these routes from its mock API.
+ */
+export function listPrintShops(): Promise<PrintShop[]> {
+  return request("/print-shops");
 }
 
-/** Get a single partner print shop by id. */
-export async function getPrintShop(id: string): Promise<PrintShop> {
-  try {
-    return await request(`/print-shops/${id}`);
-  } catch (error) {
-    console.warn("[PrintShops API] Failed to fetch print shop, using demo fallback:", error);
-    return DEMO_PRINT_SHOPS.find((p) => p.id === id) ?? DEMO_PRINT_SHOPS[0];
-  }
+/** A partner print shop a customer may see. */
+export function getPrintShop(id: string): Promise<PrintShop> {
+  return request(`/print-shops/${id}`);
+}
+
+/** Every shop with contacts, contract fee and queue (ADMIN). */
+export function listAdminPrintShops(): Promise<AdminPrintShop[]> {
+  return request("/admin/print-shops");
+}
+
+/** Changes a shop (ADMIN): status, pause, fee rate, capacity. Orders keep the fee rate they were placed with. */
+export function updatePrintShop(id: string, data: UpdatePrintShopRequest): Promise<AdminPrintShop> {
+  return request(`/admin/print-shops/${id}`, { method: "PATCH", json: data });
 }

@@ -9,7 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageCheck } from 'lucide-react';
 import React, { useState } from 'react';
-import { listPrintShops, listStaffOrders, updateOrderStatus } from '@/api';
+import { listAdminPrintShops, listStaffOrders, updateOrderStatus, updatePrintShop } from '@/api';
 import { useToast } from '@/components/common/Toast';
 import { Button, DataTable, type DataColumn } from '@/components/ui';
 import { AdminShell, AdminTimeline, Badge, Panel, PanelTitle, AdminStat, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, ADMIN_STAT_GROUP, dayKeyOf, lastDays, type TimelineEvent } from '@/components/workspace';
@@ -19,14 +19,26 @@ import { formatRelative } from '@/features/dashboard';
 import { ORDER_NEXT_STEPS, orderStatusBadge } from '@/features/orders';
 import { formatVnd } from '@/features/pricing';
 import { queryKeys } from '@/hooks/data';
-import type { OrderStatus, PrintShop, SampleOrder } from '@/types/api';
+import type { AdminPrintShop, OrderStatus, SampleOrder, UpdatePrintShopRequest } from '@/types/api';
 import { cn } from '@/utils/helpers';
 
 const SHOP_STATE = {
   active: { tone: 'green', label: 'Đang hợp tác' },
   review: { tone: 'amber', label: 'Đang thẩm định' },
   paused: { tone: 'grey', label: 'Tạm dừng' },
+  suspended: { tone: 'red', label: 'Đình chỉ' },
 } as const;
+
+/** What an admin may set a shop to (docs/19 B.1): paused keeps running orders, suspended hands them to another shop. */
+const SHOP_STATUS_OPTIONS: { value: NonNullable<UpdatePrintShopRequest['status']>; label: string }[] = [
+  { value: 'ACTIVE', label: 'Đang hợp tác' },
+  { value: 'REVIEW', label: 'Đang thẩm định' },
+  { value: 'PAUSED', label: 'Tạm dừng' },
+  { value: 'SUSPENDED', label: 'Đình chỉ' },
+];
+
+/** 1500 → "15 %". */
+const percentOf = (bps: number) => `${(bps / 100).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} %`;
 
 const STATUS_FILTERS: { value: OrderStatus | ''; label: string }[] = [
   { value: '', label: 'Mọi trạng thái' },
@@ -54,7 +66,14 @@ function PrintShopsScreen() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<OrderStatus | ''>('');
   const [shopId, setShopId] = useState('');
-  const shops = useQuery({ queryKey: queryKeys.printShops.all, queryFn: listPrintShops, staleTime: 60_000 });
+  // Admin list: contacts, contract fee and queue of every shop, also those under review.
+  const shops = useQuery({ queryKey: [...queryKeys.printShops.all, 'admin'], queryFn: listAdminPrintShops, staleTime: 60_000 });
+  const editShop = useMutation({
+    mutationFn: ({ shop, data }: { shop: AdminPrintShop; data: UpdatePrintShopRequest }) => updatePrintShop(shop.id, data),
+    onSuccess: (shop) => toast.show({ tone: 'success', title: `${shop.name}: đã lưu` }),
+    onError: (error) => toast.error(error, 'Chưa lưu được xưởng'),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: queryKeys.printShops.all }),
+  });
   // Every order once (for the counters), filtered in the page: the queue of a few partner shops stays small.
   const orders = useQuery({ queryKey: queryKeys.orders.staff({ limit: 100 }), queryFn: () => listStaffOrders({ limit: 100 }), staleTime: 15_000 });
 
@@ -89,7 +108,7 @@ function PrintShopsScreen() {
     }));
   const rows = all.filter((order) => (!status || order.orderStatus === status) && (!shopId || order.printShopId === shopId));
   const countBy = (predicate: (order: SampleOrder) => boolean) => (orders.data ? String(all.filter(predicate).length) : '–');
-  const shopList: PrintShop[] = shops.data ?? [];
+  const shopList: AdminPrintShop[] = shops.data ?? [];
 
   const columns: DataColumn<SampleOrder>[] = [
     {
@@ -118,6 +137,21 @@ function PrintShopsScreen() {
       ),
     },
     { key: 'total', label: 'Tổng', align: 'right', sortValue: (order) => order.totalVnd ?? 0, render: (order) => <span className="tabular-nums">{formatVnd(order.totalVnd ?? 0)}</span> },
+    {
+      key: 'fee',
+      label: 'Phí nền tảng',
+      align: 'right',
+      sortValue: (order) => order.platformFeeVnd ?? 0,
+      render: (order) =>
+        order.platformFeeVnd === undefined ? (
+          <span className="text-library-muted">–</span>
+        ) : (
+          <span className="block tabular-nums" title={`Xưởng nhận ${formatVnd(order.shopPayableVnd ?? 0)}`}>
+            {formatVnd(order.platformFeeVnd)}
+            <span className="block text-caption text-library-muted">{percentOf(order.platformFeeBps ?? 0)}</span>
+          </span>
+        ),
+    },
     {
       key: 'status',
       label: 'Trạng thái',
@@ -252,7 +286,7 @@ function PrintShopsScreen() {
           {shops.isError ? (
             <WorkspaceError error={shops.error} title="Không tải được danh sách xưởng" onRetry={() => void shops.refetch()} retrying={shops.isFetching} />
           ) : (
-            <DataTable<PrintShop>
+            <DataTable<AdminPrintShop>
               label="Danh sách xưởng in"
               rows={shopList}
               rowKey={(shop) => shop.id}
@@ -260,6 +294,17 @@ function PrintShopsScreen() {
               columns={[
                 { key: 'name', label: 'Xưởng', primary: true, render: (shop) => <span className="font-medium">{shop.name}</span> },
                 { key: 'city', label: 'Thành phố', render: (shop) => shop.city },
+                { key: 'fee', label: 'Phí nền tảng', align: 'right', render: (shop) => <span className="tabular-nums">{percentOf(shop.platformFeeBps)}</span> },
+                {
+                  key: 'queue',
+                  label: 'Hàng đợi',
+                  align: 'right',
+                  render: (shop) => (
+                    <span className="tabular-nums" title="Đơn đã thanh toán, chưa giao">
+                      {shop.activeOrders} đơn · {shop.dailyCapacity}/ngày
+                    </span>
+                  ),
+                },
                 { key: 'sheet', label: 'Khổ máy', render: (shop) => <span className="tabular-nums">{shop.sheet || shop.sheetSize}</span> },
                 { key: 'services', label: 'Gia công', render: (shop) => <span className="text-library-sub">{Array.isArray(shop.services) ? shop.services.join(', ') : String(shop.services ?? '')}</span> },
                 { key: 'lead', label: 'Thời gian', render: (shop) => shop.leadTime || (shop.leadTimeDays ? `${shop.leadTimeDays} ngày` : '') },
@@ -279,7 +324,26 @@ function PrintShopsScreen() {
                   align: 'right',
                   render: (shop) => {
                     const state = SHOP_STATE[(shop.state || shop.status || 'active') as keyof typeof SHOP_STATE] ?? SHOP_STATE.paused;
-                    return <Badge tone={state.tone}>{state.label}</Badge>;
+                    return (
+                      <span className="flex items-center justify-end gap-2">
+                        <Badge tone={state.tone}>{state.label}</Badge>
+                        <select
+                          aria-label={`Đổi trạng thái của ${shop.name}`}
+                          value={(shop.status ?? 'active').toUpperCase()}
+                          disabled={editShop.isPending}
+                          onChange={(event) =>
+                            editShop.mutate({ shop, data: { status: event.target.value as NonNullable<UpdatePrintShopRequest['status']> } })
+                          }
+                          className={cn(WORKSPACE_INPUT, 'h-8 w-auto py-0 text-caption text-library-ink')}
+                        >
+                          {SHOP_STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </span>
+                    );
                   },
                 },
               ]}

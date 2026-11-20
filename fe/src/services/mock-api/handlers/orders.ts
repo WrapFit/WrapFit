@@ -1,10 +1,10 @@
 /** Sample print orders of the offline demo: placed from the cart, paid through the checkout, moved by the admin. */
 
-import { DEMO_PRINT_SHOPS } from "@/features/dashboard/demoData";
 import type { OrderStatus, SampleOrder } from "@/types/api";
 import { badRequest, conflict, currentUser, MockHttpError, notFound, type Handler } from "../http";
 import { db, newId, nowIso, save } from "../store";
 import { ownProject } from "./projects";
+import { feeAt, matchShops, MOCK_SHOPS } from "./printShops";
 
 /** Same fees as `be/src/orders/orders.service.ts`. */
 const SAMPLE_FIRST_BOX_VND = 49_000;
@@ -64,7 +64,16 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
     return { projectId: project.id, projectTitle: project.title, projectVersion: project.version, quantity, lineTotalVnd: sampleFeeVnd(quantity), project };
   });
   const subtotalVnd = items.reduce((sum, item) => sum + item.lineTotalVnd, 0);
-  const shop = DEMO_PRINT_SHOPS.find((s) => s.id === body.printShopId) ?? DEMO_PRINT_SHOPS[0];
+  // Same rule as the API: the chosen shop must still take the order, otherwise the recommended one (docs/19 BR-G16).
+  const recipientProvince = typeof body.recipientProvince === "string" && body.recipientProvince ? body.recipientProvince : null;
+  const match = matchShops(lines, recipientProvince);
+  const shopId = (typeof body.printShopId === "string" && body.printShopId) || match.recommendedId;
+  if (!shopId) throw new MockHttpError(400, "Chưa có xưởng đối tác nào in được đơn này", { code: "NO_PRINT_SHOP" });
+  if (!match.offers.some((offer) => offer.shop.id === shopId)) {
+    throw new MockHttpError(400, "Xưởng in này chưa nhận đơn", { code: "PRINT_SHOP_UNAVAILABLE" });
+  }
+  const shop = MOCK_SHOPS.find((s) => s.id === shopId)!;
+  const fee = feeAt(shop.id, subtotalVnd);
   const first = items[0].project;
   const now = nowIso();
   const order: SampleOrder = {
@@ -78,7 +87,12 @@ function placeOrder(body: Record<string, unknown>, lines: Line[]): SampleOrder {
     dimensions: first.dimensions,
     printShopId: shop.id,
     printShopName: shop.name,
-    partnerShop: { id: shop.id, name: shop.name, city: shop.city, contactPhone: shop.phone },
+    // The shop phone shows once the shop has taken the order (docs/19 G.4).
+    partnerShop: { id: shop.id, name: shop.name, city: shop.city, contactPhone: "", zalo: null },
+    recipientProvince,
+    platformFeeBps: fee.platformFeeBps,
+    platformFeeVnd: fee.platformFeeVnd,
+    shopPayableVnd: fee.shopPayableVnd,
     quantity: items.reduce((sum, item) => sum + item.quantity, 0),
     paperStock: lines[0].paperStock ?? "Kraft 350g cán màng mờ",
     recipientName,
@@ -115,18 +129,26 @@ const createSample: Handler = ({ body }) =>
 
 const createBundle: Handler = ({ body }) => placeOrder(body, (Array.isArray(body.items) ? body.items : []) as Line[]);
 
+/** The customer view of an order: the platform fee and the shop share are for staff only, like on the API. */
+function forCustomer(order: SampleOrder): SampleOrder {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { platformFeeBps, platformFeeVnd, shopPayableVnd, ...rest } = order;
+  return rest;
+}
+
 const mine = () => {
   const user = currentUser();
   return db()
     .orders.filter((o) => o.userId === user.id)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map(forCustomer);
 };
 
 const getOrder: Handler = ({ params }) => {
   const user = currentUser();
   const order = db().orders.find((o) => o.id === params.id && (o.userId === user.id || user.role === "ADMIN"));
   if (!order) throw notFound("Không tìm thấy đơn.");
-  return order;
+  return user.role === "ADMIN" ? order : forCustomer(order);
 };
 
 const staffOrders: Handler = ({ query }) => {
@@ -154,6 +176,11 @@ const updateStatus: Handler = ({ params, body }) => {
   order.status = to.toLowerCase() as SampleOrder["status"];
   const stamp = STAMP[to];
   if (stamp) (order as unknown as Record<string, unknown>)[stamp] = now;
+  // The shop has taken the order: its phone shows to the customer from now on (docs/19 G.4).
+  const shop = MOCK_SHOPS.find((s) => s.id === order.printShopId);
+  if (shop && order.partnerShop && ["IN_PRODUCTION", "SHIPPED", "DELIVERED"].includes(to)) {
+    order.partnerShop = { ...order.partnerShop, contactPhone: shop.phone, zalo: shop.zalo };
+  }
   if (typeof body.note === "string" && body.note.trim()) order.notes = body.note.trim();
   order.updatedAt = now;
   save();

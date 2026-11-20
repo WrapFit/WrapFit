@@ -209,6 +209,9 @@ const CODE_MESSAGES: Record<ApiErrorCode, string> = {
   STOCK_RATE_LIMITED: "Ảnh kho đang tạm nghỉ vì đã dùng hết lượt tìm trong giờ này. Thử lại sau ít phút.",
   STOCK_PROVIDER_ERROR: "Pexels, nguồn ảnh kho, đang lỗi. Thử lại sau ít phút.",
   STOCK_UNAVAILABLE: "Ảnh kho chưa được bật trên máy chủ này.",
+  // Print shops (docs/19 G.3): the server message is shown, these are fallbacks.
+  NO_PRINT_SHOP: "Chưa có xưởng đối tác nào in được đơn này. Hãy liên hệ WrapFit để được báo giá riêng.",
+  PRINT_SHOP_UNAVAILABLE: "Xưởng bạn chọn vừa ngừng nhận đơn này. Hãy chọn xưởng khác.",
 };
 
 /** Codes whose server message is written for the user (Vietnamese, with the details): shown as sent. */
@@ -218,6 +221,8 @@ const SERVER_WORDED_CODES: ReadonlySet<ApiErrorCode> = new Set([
   "AI_IMAGE_BUSY",
   // Names the print order that still needs the design (docs-old/30 item 4).
   "PROJECT_IN_ACTIVE_ORDER",
+  "NO_PRINT_SHOP",
+  "PRINT_SHOP_UNAVAILABLE",
 ]);
 
 /** Vietnamese message for a failed call (docs/06, section 2). Validation errors keep the server's field messages. */

@@ -839,10 +839,16 @@ model Order {
   id              String      @id @default(uuid(7)) @db.Uuid
   orderCode       String      @unique @map("order_code") // WF-<năm>-<4 số>, năm theo giờ Việt Nam
   userId          String      @map("user_id") @db.Uuid
-  printShopId     String      @map("print_shop_id") // id xưởng trong PrintShopsService (ps-sg-01...)
+  printShopId     String      @map("print_shop_id") // print_shops.id (ps-sg-01...)
   recipientName   String      @map("recipient_name")
   recipientPhone  String      @map("recipient_phone")
   shippingAddress String      @map("shipping_address")
+  // Tỉnh / thành nhận hàng (@wrapfit/shared PROVINCES, docs/19 BR-G15). null ở đơn đặt trước khi có địa chỉ có cấu trúc
+  recipientProvince String?   @map("recipient_province")
+  // Phí nền tảng chụp lúc đặt (docs/19 BR-A3): tỷ lệ của xưởng lúc đó, phí trên tiền hộp, phần xưởng nhận = total - phí
+  platformFeeBps  Int         @default(1500) @map("platform_fee_bps")
+  platformFeeVnd  Int         @default(0) @map("platform_fee_vnd")
+  shopPayableVnd  Int         @default(0) @map("shop_payable_vnd")
   notes           String?
   subtotalVnd     Int         @map("subtotal_vnd")
   shippingVnd     Int         @default(0) @map("shipping_vnd")
@@ -858,10 +864,12 @@ model Order {
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User                 @relation(fields: [userId], references: [id], onDelete: Restrict) // docs-old/25 mục 3
-  payment Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  items   OrderItem[]
-  history OrderStatusHistory[]
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Restrict) // docs-old/25 mục 3
+  payment   Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  printShop PrintShop            @relation(fields: [printShopId], references: [id], onDelete: Restrict)
+  items     OrderItem[]
+  history   OrderStatusHistory[]
+  ledger    LedgerEntry[]
 
   @@index([userId, createdAt]) // GET /orders/my-orders
   @@index([printShopId, status, createdAt]) // Hàng đợi của xưởng / trang quản trị
@@ -907,16 +915,109 @@ model OrderStatusHistory {
   @@map("order_status_history")
 }
 
-// Tài khoản PRINT_SHOP thuộc xưởng nào (một tài khoản, một xưởng). Admin gán bằng seed / SQL ở MVP.
-model PrintShopMember {
-  userId      String   @id @map("user_id") @db.Uuid
-  printShopId String   @map("print_shop_id")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+// Xưởng in đối tác (docs/19 mục B, G). Id cũ ps-sg-01... giữ nguyên để đơn cũ vẫn trỏ đúng.
+enum PrintShopStatus {
+  ACTIVE // Đang nhận đơn
+  REVIEW // Đang thẩm định, chưa hiện cho khách
+  PAUSED // Tạm ngưng nhận đơn mới; đơn đang chạy vẫn làm tiếp
+  SUSPENDED // Đình chỉ (vi phạm): admin chuyển đơn chưa in sang xưởng khác
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model PrintShop {
+  id                 String          @id // ps-<tỉnh>-<số>
+  name               String
+  legalName          String?         @map("legal_name")
+  taxCode            String?         @map("tax_code")
+  provinceCode       String          @map("province_code") // @wrapfit/shared PROVINCES
+  city               String // Tên hiển thị của nơi đặt xưởng
+  address            String
+  latitude           Float
+  longitude          Float
+  sheetLabel         String          @map("sheet_label") // "B1 · 1020 × 720 mm"
+  maxSheetWidthMm    Int             @map("max_sheet_width_mm")
+  maxSheetHeightMm   Int             @map("max_sheet_height_mm")
+  services           String[]        @default([]) // Nhãn năng lực hiện cho khách
+  methods            String[]        @default([]) // digital | offset
+  papers             String[]        @default([]) // QuotePaper: ivory | kraft | duplex | rigid
+  finishes           String[]        @default([]) // QuoteFinish
+  windowPatching     Boolean         @default(false) @map("window_patching") // Dán màng PET cửa sổ
+  minQuantity        Int             @default(1) @map("min_quantity")
+  maxQuantity        Int             @default(10000) @map("max_quantity")
+  leadTimeLabel      String          @map("lead_time_label")
+  leadTimeDays       Int             @map("lead_time_days") // Ngày làm việc, đơn sản xuất
+  sampleLeadTimeDays Int             @map("sample_lead_time_days") // Ngày làm việc, đơn mẫu
+  dailyCapacity      Int             @default(10) @map("daily_capacity") // Số đơn bắt đầu mỗi ngày làm việc
+  serviceProvinces   String[]        @default([]) @map("service_provinces") // Rỗng = giao toàn quốc
+  status             PrintShopStatus @default(REVIEW)
+  pausedUntil        DateTime?       @map("paused_until") @db.Timestamptz(3) // Nghỉ có hẹn ngày mở lại (BR-G11)
+  probationUntil     DateTime?       @map("probation_until") @db.Timestamptz(3) // Xưởng mới: tối đa 3 đơn đang chạy
+  rating             Float           @default(0) // 0–5
+  completedOrders    Int             @default(0) @map("completed_orders")
+  contactEmail       String          @map("contact_email")
+  phone              String
+  zalo               String?
+  platformFeeBps     Int             @default(1500) @map("platform_fee_bps") // Theo hợp đồng; đơn chụp lại lúc đặt
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  members PrintShopMember[]
+  orders  Order[]
+  ledger  LedgerEntry[]
+
+  @@index([status])
+  @@map("print_shops")
+}
+
+enum PrintShopMemberRole {
+  OWNER // Xem tài chính, bảng kê, cấu hình xưởng
+  STAFF // Chỉ hàng đợi sản xuất
+}
+
+// Tài khoản PRINT_SHOP thuộc xưởng nào (một tài khoản, một xưởng).
+model PrintShopMember {
+  userId      String              @id @map("user_id") @db.Uuid
+  printShopId String              @map("print_shop_id")
+  role        PrintShopMemberRole @default(OWNER)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  printShop PrintShop @relation(fields: [printShopId], references: [id], onDelete: Cascade)
 
   @@index([printShopId])
   @@map("print_shop_members")
+}
+
+// Sổ cái đơn in (docs/19 A.8): chỉ ghi thêm, trigger trong migration chặn UPDATE / DELETE. amount_vnd luôn dương; loại
+// bút toán cho biết chiều. `key` chống ghi trùng khi một bước chạy lại (order:<id>:<TYPE>).
+enum LedgerEntryType {
+  CUSTOMER_PAYMENT // Khách trả tiền đơn (WrapFit giữ hộ)
+  PLATFORM_FEE // Phí nền tảng thành doanh thu WrapFit
+  SHOP_PAYABLE // Phần phải trả xưởng
+  PLATFORM_FEE_REVERSAL // Đảo phí khi hoàn tiền / in bù
+  REFUND // Hoàn tiền cho khách
+  PAYOUT // Đã chuyển tiền cho xưởng
+  ADJUSTMENT // Điều chỉnh tay, bắt buộc ghi chú
+}
+
+model LedgerEntry {
+  id          String          @id @default(uuid(7)) @db.Uuid
+  key         String          @unique
+  type        LedgerEntryType
+  amountVnd   Int             @map("amount_vnd")
+  orderId     String?         @map("order_id") @db.Uuid
+  printShopId String?         @map("print_shop_id")
+  paymentId   String?         @map("payment_id") @db.Uuid
+  note        String?
+  createdById String?         @map("created_by_id") @db.Uuid // Không khóa ngoại: giữ nguyên khi tài khoản bị xóa
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order     Order?     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  printShop PrintShop? @relation(fields: [printShopId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([printShopId, createdAt])
+  @@index([type, createdAt])
+  @@map("ledger_entries")
 }
 
 // Analytics (docs-old/17 S7): append-only product events behind the dashboard numbers. user_id / project_id become null when

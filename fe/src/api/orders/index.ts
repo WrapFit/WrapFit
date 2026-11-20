@@ -1,6 +1,14 @@
 import { OFFLINE_DEMO } from "@/config";
 import { ApiError, request } from "@/services/api";
-import type { CreateSampleBundleRequest, CreateSampleOrderRequest, OrderStatus, SampleOrder, StaffOrdersQuery } from "@/types/api";
+import type {
+  CreateSampleBundleRequest,
+  CreateSampleOrderRequest,
+  MatchSampleShopsRequest,
+  OrderStatus,
+  PrintShopMatch,
+  SampleOrder,
+  StaffOrdersQuery,
+} from "@/types/api";
 import { DEMO_ORDERS } from "@/features/dashboard/demoData";
 
 /**
@@ -17,6 +25,11 @@ function demoFallback<T>(error: unknown, value: () => T): T {
 /** Place a sample box order (1–10 boxes of one design). The order waits for payment; errors reach the caller. */
 export function createSampleOrder(data: CreateSampleOrderRequest): Promise<SampleOrder> {
   return request("/orders/sample", { method: "POST", json: data });
+}
+
+/** Shops that can print these designs, ranked for where they go (docs/19 G.3). Shown in the cart before paying. */
+export function matchSampleShops(data: MatchSampleShopsRequest): Promise<PrintShopMatch> {
+  return request("/orders/sample/match", { method: "POST", json: data });
 }
 
 /** Several designs as ONE order and one bill: the cart pays it once. */
