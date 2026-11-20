@@ -167,9 +167,18 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
    sách `operation_id` đủ điều kiện rồi đối chiếu từng mã ở bước 9.
 
    ```bash
-   docker exec wrapfit-postgres psql -U postgres -d wrapfit -At -c "SELECT DISTINCT operation_id FROM credit_debits d WHERE reason = 'AI_PATTERN' AND refunded_at IS NULL AND created_at > now() - interval '7 days' AND created_at < now() - interval '10 minutes' AND NOT EXISTS (SELECT 1 FROM ai_generations g WHERE g.debit_operation_id = d.operation_id)" > ~/orphan-pattern-ops.txt
-   wc -l < ~/orphan-pattern-ops.txt
+   rm -f ~/orphan-pattern-ops.txt ~/orphan-pattern-ops.tmp
+   if docker exec wrapfit-postgres psql -U postgres -d wrapfit -At -v ON_ERROR_STOP=1 -c "SELECT DISTINCT operation_id FROM credit_debits d WHERE reason = 'AI_PATTERN' AND refunded_at IS NULL AND created_at > now() - interval '7 days' AND created_at < now() - interval '10 minutes' AND NOT EXISTS (SELECT 1 FROM ai_generations g WHERE g.debit_operation_id = d.operation_id)" > ~/orphan-pattern-ops.tmp; then
+     mv ~/orphan-pattern-ops.tmp ~/orphan-pattern-ops.txt
+     echo "Truy vấn thành công: $(wc -l < ~/orphan-pattern-ops.txt) khoản chờ hoàn"
+   else
+     echo "TRUY VẤN LỖI: dừng lại, sửa lỗi rồi chạy lại bước này" >&2
+   fi
    ```
+
+   Lệnh chỉ tạo `~/orphan-pattern-ops.txt` khi `psql` chạy thành công. Thấy "TRUY VẤN LỖI", hoặc không có file này, thì
+   **chưa** khởi động bản mới: đọc lỗi `psql` ngay phía trên, sửa (thường là sai tên container hoặc CSDL), rồi chạy lại
+   bước 6a.
 
 8. **Khởi động bản mới.** Container backend chạy lại `prisma migrate deploy` (không còn gì để áp), seed, rồi mở API.
    Worker chờ backend khỏe rồi mới chạy.
@@ -181,7 +190,8 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 
 9. **Kiểm sau khi khởi động.**
    - `curl https://<APP_DOMAIN>/api/health` trả `"status":"ok"`, `"database":"up"`, `"redis":"up"`, `"worker":"up"`.
-   - **Hoàn xu hoa văn AI.** Bỏ qua nếu danh sách ở bước 6a rỗng. Mỗi 5 phút tác vụ xử lý tối đa 100 khoản, nên chờ ít
+   - **Hoàn xu hoa văn AI.** Chỉ bỏ qua khi bước 6a báo "Truy vấn thành công: 0 khoản chờ hoàn". Không có file
+     `~/orphan-pattern-ops.txt` nghĩa là bước 6a chưa chạy thành công: quay lại bước đó, không được bỏ qua. Mỗi 5 phút tác vụ xử lý tối đa 100 khoản, nên chờ ít
      nhất `ceil(số mã / 100) × 5` phút, rồi đếm các mã trong danh sách vẫn chưa hoàn và chưa có kết quả:
 
      ```bash
@@ -407,8 +417,8 @@ Giấy → Thiết kế → Quà & mở hộp → Đặt in**.
 |---|---|---|
 | 1 | Đăng nhập tài khoản demo | Vào `/dashboard`, thấy tên "Chị Linh (demo)" |
 | 2 | `/editor/new` (chuyển sang `/editor/demo`) → bước Kiểu hộp: hộp nắp gài → bước Kích thước: 80 × 80 × 95, quà 350 g → bước Giấy: Ivory 300 → bấm "Lưu dự án" trên thanh trên cùng | Bước Kích thước báo "Đáy khóa tự động (FEFCO 0215)". Sau khi lưu, địa chỉ đổi sang `/editor/<id>`. Chưa lưu thì bước Đặt in chỉ có nút "Lưu dự án để thanh toán" |
-| 3 | Bước Thiết kế: kéo logo sát mép cắt, rồi dùng Auto-Fix (nút "Tự sửa lề nhanh" trong danh sách lỗi FitCheck) | FitCheck báo lỗi lề; sau Auto-Fix chỉ logo dời, FitCheck không còn lỗi |
-| 4 | Bước Quà & mở hộp: gập hộp 0 → 100 %, xoay 360°. Bấm "Tạo lời chúc & mã QR", nhập tên người nhận và lời chúc, chọn hiệu ứng, bấm "Tạo mã QR" | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D. Nút đổi thành "Sửa lời chúc & mã QR" và có mã QR |
+| 3 | Bước Thiết kế: thiết kế mới bắt đầu với canvas trống, nên trước hết bấm "Tải lên" trên thanh công cụ bên trái (phím U) và chọn một file PNG logo chuẩn bị sẵn trên máy; logo hiện trên một mặt hộp. Kéo logo sát mép cắt, rồi dùng Auto-Fix (nút "Tự sửa lề nhanh" trong danh sách lỗi FitCheck) | Logo hiện trên canvas. FitCheck báo lỗi lề; sau Auto-Fix chỉ logo dời, FitCheck không còn lỗi |
+| 4 | Bước Quà & mở hộp: gập hộp 0 → 100 %, xoay 360°. Bấm "Tạo lời chúc & mã QR", nhập tên người nhận và lời chúc, chọn hiệu ứng, bấm "Tạo mã QR". Nếu muốn mã QR có trên file in, bấm thêm "Đặt mã lên hộp" trong cùng hộp thoại, trước khi sang bước Đặt in | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D. Mã QR hiện trong hộp thoại và quét được (kiểm ở bước 9). Chỉ sau "Đặt mã lên hộp" thì nút mới đổi thành "Sửa lời chúc & mã QR" và bước này ghi "Đã in mã QR trên mặt đáy hộp" |
 | 5 | Bước Đặt in, trước khi thanh toán | Thẻ file in ghi "mở sau khi bạn thanh toán đơn in ở giỏ hàng", nút "Thanh toán". Không có file in nào tải được trước khi thanh toán |
 | 6 | "Thanh toán" → giỏ `/cart` → điền người nhận → "Đặt in mẫu · 49.000đ" → đọc hết điều khoản, đánh dấu đồng ý → "Đồng ý & thanh toán" → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox | Quay về `/payments/vnpay-return` báo thành công; đơn `PAID` trong `/dashboard/orders` |
 | 7 | Quay lại bước Đặt in → "Xuất file in ngay" → SVG, rồi PDF CMYK | Hai file tải về |
