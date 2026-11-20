@@ -24,7 +24,7 @@ thực tế** (kèm vai trò người kiểm).
 |---|---|
 | Mã của mọi bước trong runbook (seed demo, cổng thanh toán, quyền xuất theo đơn in, migration, script đổi lượt xuất) | Có mã trên `develop`, đã gộp vào `main` |
 | Unit và E2E backend | Đã kiểm bằng test, 19/11/2026: 1.180/1.180 unit (77 bộ), 318/318 E2E (24 bộ) |
-| Kịch bản FE `fe/scripts/e2e-scenario.mjs` theo luồng đặt in mẫu | Chờ kiểm thực tế (dev FE, sau khi viết lại kịch bản FE) |
+| Kịch bản FE `fe/scripts/e2e-scenario.mjs` theo luồng đặt in mẫu | Đã kiểm bằng E2E trên máy local, 19/11/2026 và chạy lại 20/11/2026 (`M` và `Xp`, bước `1-14,16-18`). Ảnh bàn giao ở §9 |
 | Trình tự deploy lần này (§2.3) | Chờ kiểm thực tế (người deploy) |
 | R2 API token và CORS cho Vercel (§3.3) | Chờ kiểm thực tế (người giữ tài khoản Cloudflare) |
 | Lượt A: tài khoản demo, VNPay sandbox (§6.1) | Chờ kiểm thực tế (người giữ tài khoản VNPay sandbox, người demo) |
@@ -58,8 +58,8 @@ Trình duyệt ── PUT ảnh tải lên / GET ảnh ──► Cloudflare R2 (
 ### 2.1. Điều kiện
 
 1. Mã cần deploy đã ở `main` và CI xanh trên `main`. Mốc test của backend ở §0.
-2. Kịch bản FE `fe/scripts/e2e-scenario.mjs` đang được viết lại theo luồng đặt in mẫu. Khi chưa xong, kiểm luồng demo bằng
-   tay theo §6.1 trên môi trường thử trước khi deploy.
+2. Kịch bản FE `fe/scripts/e2e-scenario.mjs` đi theo luồng đặt in mẫu (điều kiện chạy ở §9). Chạy kịch bản trên máy
+   local, rồi diễn tập §6.1 bằng tay trên môi trường thử trước khi deploy.
 3. GitHub secrets của repo `WrapFit/WrapFit`: `VPS_HOST`, `VPS_USERNAME`, `VPS_SSH_KEY` (hoặc `VPS_PASSWORD`),
    `VPS_PORT`. Thiếu `VPS_HOST` thì workflow chỉ cảnh báo và bỏ qua bước SSH.
 
@@ -106,13 +106,8 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
    docker exec wrapfit-postgres pg_dump -U postgres -Fc wrapfit > ~/wrapfit-before-deploy-$(date +%F).dump
    ```
 
-2. **Đếm trước các lần trừ xu hoa văn AI sẽ được hoàn (chỉ đọc).** Bản mới có tác vụ dọn, chạy 5 phút một lần. Lần chạy
-   đầu sẽ hoàn xu cho mọi lần trừ `AI_PATTERN` trong 7 ngày gần nhất, chưa hoàn, không có dòng `ai_generations`. Ghi lại
-   con số để so với log sau deploy (bước 9).
-
-   ```bash
-   docker exec wrapfit-postgres psql -U postgres -d wrapfit -c "SELECT count(DISTINCT operation_id) FROM credit_debits d WHERE reason = 'AI_PATTERN' AND refunded_at IS NULL AND created_at > now() - interval '7 days' AND NOT EXISTS (SELECT 1 FROM ai_generations g WHERE g.debit_operation_id = d.operation_id)"
-   ```
+2. **Bước đếm khoản xu hoa văn AI chờ hoàn đã chuyển xuống bước 6a**, sau khi dừng bản cũ và áp migration. Lúc đó không
+   còn yêu cầu mới, và CSDL đã có đủ bảng theo schema mới.
 
 3. **Đếm lượt xuất còn hạn (chỉ đọc).** Kết quả `0` (hoặc lỗi "relation does not exist" khi CSDL chưa có bảng
    `credit_lots`) nghĩa là không có gì để đổi: bỏ qua bước 7.
@@ -165,6 +160,17 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
    thực tế (người deploy)**. Nếu lệnh lỗi, vẫn khởi động bản mới được: bản mới không đọc hay trừ lượt xuất cũ, nên có
    thể đổi sau, bằng cùng lệnh.
 
+6a. **Lưu danh sách khoản xu hoa văn AI sẽ được hoàn (chỉ đọc).** Bản mới có tác vụ chạy 5 phút một lần, hoàn xu cho
+   các lần trừ `AI_PATTERN` trong 7 ngày gần nhất, **đã quá 10 phút**, chưa hoàn và không có dòng `ai_generations`. Mỗi
+   lần chạy, tác vụ xét tối đa 100 khoản, khóa từng khoản rồi đọc lại trước khi hoàn
+   ([tác vụ hoàn xu](../be/src/ai/ai-pattern.service.ts)). Vì vậy không so số dòng log với một con số đếm trước: lưu danh
+   sách `operation_id` đủ điều kiện rồi đối chiếu từng mã ở bước 9.
+
+   ```bash
+   docker exec wrapfit-postgres psql -U postgres -d wrapfit -At -c "SELECT DISTINCT operation_id FROM credit_debits d WHERE reason = 'AI_PATTERN' AND refunded_at IS NULL AND created_at > now() - interval '7 days' AND created_at < now() - interval '10 minutes' AND NOT EXISTS (SELECT 1 FROM ai_generations g WHERE g.debit_operation_id = d.operation_id)" > ~/orphan-pattern-ops.txt
+   wc -l < ~/orphan-pattern-ops.txt
+   ```
+
 8. **Khởi động bản mới.** Container backend chạy lại `prisma migrate deploy` (không còn gì để áp), seed, rồi mở API.
    Worker chờ backend khỏe rồi mới chạy.
 
@@ -175,11 +181,17 @@ COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 
 9. **Kiểm sau khi khởi động.**
    - `curl https://<APP_DOMAIN>/api/health` trả `"status":"ok"`, `"database":"up"`, `"redis":"up"`, `"worker":"up"`.
-   - Sau khoảng 5–10 phút, số dòng log `ai_pattern.orphan_refunded` khớp với con số ở bước 2:
+   - **Hoàn xu hoa văn AI.** Bỏ qua nếu danh sách ở bước 6a rỗng. Mỗi 5 phút tác vụ xử lý tối đa 100 khoản, nên chờ ít
+     nhất `ceil(số mã / 100) × 5` phút, rồi đếm các mã trong danh sách vẫn chưa hoàn và chưa có kết quả:
 
      ```bash
-     $COMPOSE logs backend worker | grep -c "ai_pattern.orphan_refunded"
+     IDS=$(paste -sd, ~/orphan-pattern-ops.txt)
+     docker exec wrapfit-postgres psql -U postgres -d wrapfit -c "SELECT count(DISTINCT operation_id) FROM credit_debits d WHERE operation_id = ANY(string_to_array('$IDS', ',')::uuid[]) AND refunded_at IS NULL AND NOT EXISTS (SELECT 1 FROM ai_generations g WHERE g.debit_operation_id = d.operation_id)"
      ```
+
+     Kết quả mong đợi là `0`. Một mã vẫn còn thì tra log để biết lý do: `$COMPOSE logs backend worker | grep ai_pattern`. Mỗi lần
+     hoàn ghi một dòng `ai_pattern.orphan_refunded op=<operation_id> xu=<số xu>`. Mã nào có dòng `ai_generations` được tạo
+     muộn thì không được hoàn, và đó là hành vi đúng.
 
    - **Job xuất cũ.** Job tạo trước migration `20261118000200_export_job_design` có `design = NULL`. Worker vẫn xử lý
      được, bằng nhánh tương thích: dựng file từ dự án ở thời điểm chạy, thay vì từ thiết kế đã chốt lúc tạo job
@@ -394,17 +406,17 @@ Giấy → Thiết kế → Quà & mở hộp → Đặt in**.
 | # | Thao tác | Đạt khi |
 |---|---|---|
 | 1 | Đăng nhập tài khoản demo | Vào `/dashboard`, thấy tên "Chị Linh (demo)" |
-| 2 | `/editor/new` → bước Kiểu hộp: hộp nắp gài → bước Kích thước: 80 × 80 × 95, quà 350 g → bước Giấy: Ivory 300 | Bước Kích thước báo "Đáy khóa tự động (FEFCO 0215)" |
+| 2 | `/editor/new` (chuyển sang `/editor/demo`) → bước Kiểu hộp: hộp nắp gài → bước Kích thước: 80 × 80 × 95, quà 350 g → bước Giấy: Ivory 300 → bấm "Lưu dự án" trên thanh trên cùng | Bước Kích thước báo "Đáy khóa tự động (FEFCO 0215)". Sau khi lưu, địa chỉ đổi sang `/editor/<id>`. Chưa lưu thì bước Đặt in chỉ có nút "Lưu dự án để thanh toán" |
 | 3 | Bước Thiết kế: kéo logo sát mép cắt, rồi dùng Auto-Fix (nút "Tự sửa lề nhanh" trong danh sách lỗi FitCheck) | FitCheck báo lỗi lề; sau Auto-Fix chỉ logo dời, FitCheck không còn lỗi |
-| 4 | Bước Quà & mở hộp: gập hộp 0 → 100 %, xoay 360° | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D |
+| 4 | Bước Quà & mở hộp: gập hộp 0 → 100 %, xoay 360°. Bấm "Tạo lời chúc & mã QR", nhập tên người nhận và lời chúc, chọn hiệu ứng, bấm "Tạo mã QR" | Nhãn Nắp, Đáy, Mặt trước trên mô hình 3D. Nút đổi thành "Sửa lời chúc & mã QR" và có mã QR |
 | 5 | Bước Đặt in, trước khi thanh toán | Thẻ file in ghi "mở sau khi bạn thanh toán đơn in ở giỏ hàng", nút "Thanh toán". Không có file in nào tải được trước khi thanh toán |
-| 6 | "Thanh toán" → giỏ → "Đặt in mẫu · 49.000đ" → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox | Quay về `/payments/vnpay-return` báo thành công; đơn `PAID` trong `/dashboard/orders` |
+| 6 | "Thanh toán" → giỏ `/cart` → điền người nhận → "Đặt in mẫu · 49.000đ" → đọc hết điều khoản, đánh dấu đồng ý → "Đồng ý & thanh toán" → "Mở cổng VNPay" → thẻ test NCB trong tài liệu sandbox | Quay về `/payments/vnpay-return` báo thành công; đơn `PAID` trong `/dashboard/orders` |
 | 7 | Quay lại bước Đặt in → "Xuất file in ngay" → SVG, rồi PDF CMYK | Hai file tải về |
 | 8 | Sửa thiết kế (ví dụ dời logo), quay lại bước Đặt in | Nút về "Thanh toán": phiên bản mới cần đơn mới. File đã xuất ở bước 7 vẫn tải được trong lịch sử xuất. Đổi tên dự án thì không mất quyền |
-| 9 | Quét QR mở hộp bằng camera điện thoại | Trang 3D mở hộp kèm lời chúc |
+| 9 | Quét mã QR tạo ở bước 4 bằng camera điện thoại | Trang 3D mở hộp kèm lời chúc |
 | 10 | `/dashboard` | Số hộp, kiểu hộp, lỗi FitCheck đã chặn, thời gian tạo hộp tăng |
 
-Nhãn nút ở bước 2–4 lấy từ studio 6 bước hiện tại; đối chiếu lại khi kịch bản FE mới chạy xong.
+Nhãn nút trong bảng lấy từ mã studio 6 bước ngày 20/11/2026 và khớp với kịch bản FE (bước 4, 9, 16). Lượt A chưa được diễn tập trọn vẹn trên môi trường thử.
 
 Kiểm thêm của lượt A (từ việc còn lại của đợt cổng thanh toán):
 
@@ -516,16 +528,19 @@ Các lệnh chạy trên VPS, trong `~/WrapFit`, với `COMPOSE` đặt như ở
 Ảnh chụp ở 375 × 812 (`M`) và 1440 × 900 (`Xp`), nằm trong `fe/.page-shots/` (git bỏ qua thư mục này: chép sang thư mục
 slide khi cần). Các ảnh cũ dưới đây chụp ngày 2026-10-30, trước khi studio đổi sang 6 bước và trước khi bỏ luồng mua lượt
 xuất, nên đều phải chụp lại. Ảnh `e2e/*` chụp bằng kịch bản FE `fe/scripts/e2e-scenario.mjs`, đã viết lại theo luồng đặt
-in mẫu (commit c622f67) và chạy đạt ở cả `M` lẫn `Xp` trên máy local ngày 2026-11-19. Ảnh `s8-*` chụp bằng
+in mẫu (commit c622f67) và chạy đạt ở cả `M` lẫn `Xp` trên máy local ngày 2026-11-19. Ảnh `e2e/*` hiện có chụp lại ngày
+2026-11-20 trên checkout chính (kèm `report.json`, 36 mục đều đạt); ảnh cũ trước ngày đó nằm trong
+`e2e/_old-before-2026-11-20/`. Thư mục `fe/.page-shots/` chỉ có trên máy đã chạy: người làm slide lấy ảnh từ máy đó,
+hoặc tự chạy lại kịch bản theo điều kiện dưới bảng. Ảnh `s8-*` chụp bằng
 `npm --workspace=fe run shots`, chưa chụp lại.
 
 | Nội dung | Ảnh cũ (bỏ) | Vì sao chụp lại | Ảnh mới | Trạng thái |
 |---|---|---|---|---|
-| Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` | Số bước của kịch bản FE đổi | `e2e/{M,Xp}-18-dashboard-stats.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19). Ảnh `s8-*`: chờ kiểm thực tế (dev FE) |
+| Dashboard "Số liệu thiết kế" (tài khoản demo) | `s8-dashboard-stats-demo_wrapfit_vn-{M,Xp}-0.png`, `e2e/{M,Xp}-18-dashboard-stats.png` | Số bước của kịch bản FE đổi | `e2e/{M,Xp}-18-dashboard-stats.png` | Đã chụp bằng kịch bản FE (local, 2026-11-20). Ảnh `s8-*`: chờ kiểm thực tế (dev FE) |
 | Studio 3D có nhãn mặt, hũ nến 80 × 80 × 95 có logo | `s8-studio-3d-labels-demo_wrapfit_vn-{M,Xp}-0.png` | Giao diện studio cũ, trước khi đổi sang 6 bước | — | Chờ kiểm thực tế (dev FE): kịch bản FE không chụp cảnh này, chụp bằng `shots` |
-| Thẻ file in ở bước Đặt in, trước khi thanh toán: nút "Thanh toán" | `e2e/{M,Xp}-07-*` | Ảnh cũ là luồng file miễn phí trước khi thanh toán | `e2e/{M,Xp}-07-export-blocked.png`, `e2e/{M,Xp}-07-fitcheck-fixed.png`, `e2e/{M,Xp}-07-export-locked.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19) |
-| Giỏ in mẫu, thanh toán 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` | Tài khoản demo giờ trả qua VNPay sandbox, không qua VietQR | `e2e/{M,Xp}-16-cart.png`, `e2e/{M,Xp}-16-checkout.png`, `e2e/{M,Xp}-16-checkout-paid.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19). Máy local chưa cấu hình VNPay, nên ảnh thanh toán là nút "Giả lập đã thanh toán" |
-| Thẻ file in sau khi thanh toán: "Xuất file in ngay", file tải về | `e2e/{M,Xp}-16-*` | Ảnh cũ là luồng mua lượt xuất | `e2e/{M,Xp}-16-export-svg.png`, `e2e/{M,Xp}-16-export-pdf_cmyk.png`, `e2e/{M,Xp}-16-export-dxf.png`; phiên bản mới bị khóa lại: `e2e/{M,Xp}-17-new-version-locked.png` | Đã chụp bằng kịch bản FE (local, 2026-11-19) |
+| Thẻ file in ở bước Đặt in, trước khi thanh toán: nút "Thanh toán" | `e2e/{M,Xp}-07-*` | Ảnh cũ là luồng file miễn phí trước khi thanh toán | `e2e/{M,Xp}-07-export-blocked.png`, `e2e/{M,Xp}-07-fitcheck-fixed.png`, `e2e/{M,Xp}-07-export-locked.png` | Đã chụp bằng kịch bản FE (local, 2026-11-20) |
+| Giỏ in mẫu, thanh toán 49.000đ, đơn `PAID` | `e2e/{M,Xp}-17-cart.png`, `e2e/{M,Xp}-17-checkout-vietqr.png`, `e2e/{M,Xp}-17-checkout-paid.png`, `e2e/{M,Xp}-17-orders-paid.png` | Tài khoản demo giờ trả qua VNPay sandbox, không qua VietQR | `e2e/{M,Xp}-16-cart.png`, `e2e/{M,Xp}-16-checkout.png`, `e2e/{M,Xp}-16-checkout-paid.png` | Đã chụp bằng kịch bản FE (local, 2026-11-20). Máy local chưa cấu hình VNPay, nên ảnh thanh toán là nút "Giả lập đã thanh toán" |
+| Thẻ file in sau khi thanh toán: "Xuất file in ngay", file tải về | `e2e/{M,Xp}-16-*` | Ảnh cũ là luồng mua lượt xuất | `e2e/{M,Xp}-16-export-svg.png`, `e2e/{M,Xp}-16-export-pdf_cmyk.png`, `e2e/{M,Xp}-16-export-dxf.png`; phiên bản mới bị khóa lại: `e2e/{M,Xp}-17-new-version-locked.png` | Đã chụp bằng kịch bản FE (local, 2026-11-20) |
 | `CheckoutDialog` gói Pro từ `/pricing` | `s8-checkout-vietqr-*` | Ảnh cũ là gói lượt xuất đã ngừng bán | — | Chờ kiểm thực tế (dev FE): kịch bản FE không mở `/pricing`, chụp bằng `shots` |
 
 Chụp lại trên bản deploy: kịch bản FE cần Mailpit (chỉ có ở local) cho các bước tạo tài khoản, nên trên production chạy

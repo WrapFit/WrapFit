@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Logo of the demo shop (docs/17 S8): a candle jar in a round badge, shapes only (no font needed to print it). -->
+  <!-- Logo of the demo shop (docs-old/17 S8): a candle jar in a round badge, shapes only (no font needed to print it). -->
   <circle cx="100" cy="100" r="96" fill="#1A362B"/>
   <circle cx="100" cy="100" r="86" fill="none" stroke="#D4AF37" stroke-width="4"/>
   <path d="M100 38 C112 54 116 64 108 76 C104 82 96 82 92 76 C84 64 88 54 100 38 Z" fill="#D4AF37"/>

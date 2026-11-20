@@ -26,33 +26,33 @@
    - 1.4. Ghép các module trong `be/src/` (phụ thuộc, barrel, API & worker)
 2. [Sơ Đồ Lớp Kiến Trúc Tổng Thể (Master System Class Diagram)](#2-sơ-đồ-lớp-kiến-trúc-tổng-thể-master-system-class-diagram)
 3. [Chi Tiết 26 Gói Phân Hệ Chuyên Sâu (Deep Domain Class Diagrams)](#3-chi-tiết-26-gói-phân-hệ-chuyên-sâu-deep-domain-class-diagrams)
-   - 3.1. [Gói 1: Quản Trị Vòng Đời Dự Án & Aggregate Root (Domain Core & Lifecycle)](#31-gói-1-quản-trị-vòng-đời-dự-án--aggregate-root)
-   - 3.2. [Gói 2: Động Cơ Toán Hình Học Tham Số CAD (Parametric Dieline Engine)](#32-gói-2-động-cơ-toán-hình-học-tham-số-cad)
-   - 3.3. [Gói 3: Phòng Thu Vector 2D & Hệ Thống Phần Tử (2D Vector Canvas & Elements)](#33-gói-3-phòng-thu-vector-2d--hệ-thống-phần-tử)
-   - 3.4. [Gói 4: Động Cơ WebGL 3D & Mô Phỏng Gập Động Học (3D Folding Kinematics & Materials)](#34-gói-4-động-cơ-webgl-3d--mô-phỏng-gập-động-học)
-   - 3.5. [Gói 5: Động Cơ Thẩm Định Vật Lý & Tiền Kiểm In Ấn FitCheck™ (Preflight & Physics Engine)](#35-gói-5-động-cơ-thẩm-định-vật-lý--tiền-kiểm-in-ấn-fitcheck)
-   - 3.6. [Gói 6: Đường Ống Xuất Bản Công Nghiệp & Render Đám Mây (Prepress Export & Cloud Rendering)](#36-gói-6-đường-ống-xuất-bản-công-nghiệp--render-đám-mây)
-   - 3.7. [Gói 7: Trưng Bày Công Khai, Nhúng 3D & Trải Nghiệm Mở Hộp (Public Showcase & Viral Unboxing)](#37-gói-7-trưng-bày-công-khai-nhúng-3d--trải-nghiệm-mở-hộp)
-   - 3.8. [Gói 8: Xác Thực, Đăng Ký & Phân Quyền IAM (Authentication, Identity & RBAC)](#38-gói-8-xác-thực-đăng-ký--phân-quyền-iam)
-   - 3.9. [Gói 9: Danh Sách Yêu Thích & Quản Lý Bộ Sưu Tập (Wishlist & Custom Collections)](#39-gói-9-danh-sách-yêu-thích--quản-lý-bộ-sưu-tập)
-   - 3.10. [Gói 10: Quản Lý Lưu Trữ, Thùng Rác 30 Ngày & Hạn Mức Quota S3 (Project Storage & Archival)](#310-gói-10-quản-lý-lưu-trữ-thùng-rác-30-ngày--hạn-mức-quota-s3)
-   - 3.11. [Gói 11: Quản Trị Nền Tảng Toàn Diện & Nhật Ký Audit Log (Admin Platform Governance)](#311-gói-11-quản-trị-nền-tảng-toàn-diện--nhật-ký-audit-log)
-   - 3.12. [Gói 12: Quản Trị Bảo Mật Tài Khoản & Vòng Đời Mật Khẩu (Password & Account Security)](#312-gói-12-quản-trị-bảo-mật-tài-khoản--vòng-đời-mật-khẩu)
-   - 3.13. [Gói 13: Cổng Thanh Toán & Quản Lý Thuê Bao (Payment Gateway, Invoices & Subscriptions)](#313-gói-13-cổng-thanh-toán--quản-lý-thuê-bao)
-   - 3.14. [Gói 14: Giỏ Hàng, Đặt Hàng & Vận Chuyển In Ấn (Cart, Checkout & Order Fulfillment)](#314-gói-14-giỏ-hàng-đặt-hàng--vận-chuyển-in-ấn)
-   - 3.15. [Gói 15: Hệ Thống Thông Báo Đa Kênh (Multi-Channel Notification System)](#315-gói-15-hệ-thống-thông-báo-đa-kênh)
-   - 3.16. [Gói 16: Hỗ Trợ Khách Hàng, Ticket & Đánh Giá (Support Ticketing & Customer Feedback)](#316-gói-16-hỗ-trợ-khách-hàng-ticket--đánh-giá)
-   - 3.17. [Gói 17: Động Cơ Tìm Kiếm, Lọc Đa Tiêu Chí & Phân Trang (Search, Filter, Sort & Pagination)](#317-gói-17-động-cơ-tìm-kiếm-lọc-đa-tiêu-chí--phân-trang)
-   - 3.18. [Gói 18: Mã Giảm Giá, Khuyến Mãi & Tiếp Thị Liên Kết (Coupons & Referral Affiliate)](#318-gói-18-mã-giảm-giá-khuyến-mãi--tiếp-thị-liên-kết)
-   - 3.19. [Gói 19: Bảo Mật Nâng Cao, 2FA TOTP & Quản Lý Phiên Thiết Bị (Advanced Security & Sessions)](#319-gói-19-bảo-mật-nâng-cao-2fa-totp--quản-lý-phiên-thiết-bị)
-   - 3.20. [Gói 20: Hệ Thống Đánh Giá Sản Phẩm, Blog CMS & SEO (Reviews, Blog & SEO Engine)](#320-gói-20-hệ-thống-đánh-giá-sản-phẩm-blog-cms--seo)
-   - 3.21. [Gói 21: Kiểm Soát Lưu Lượng, Rate Limiting & Pháp Lý GDPR (Security Controls & GDPR)](#321-gói-21-kiểm-soát-lưu-lượng-rate-limiting--pháp-lý-gdpr)
-   - 3.22. [Gói 22: Sổ Địa Chỉ & Vận Chuyển Đa Điểm (Address Book & Multi-Shipping Management)](#322-gói-22-sổ-địa-chỉ--vận-chuyển-đa-điểm)
-   - 3.23. [Gói 23: Vòng Đời Đổi Trả, Hủy Đơn & Mua Lại (Order Cancellation, Refunds & Re-Order)](#323-gói-23-vòng-đời-đổi-trả-hủy-đơn--mua-lại)
-   - 3.24. [Gói 24: Bản Tin Newsletter, Form Liên Hệ & Khách Vãng Lai (Newsletter & Guest Contact)](#324-gói-24-bản-tin-newsletter-form-liên-hệ--khách-vãng-lai)
-   - 3.25. [Gói 25: Cộng Tác Thiết Kế & Phân Quyền Nhóm (Project Team Collaboration & Sharing)](#325-gói-25-cộng-tác-thiết-kế--phân-quyền-nhóm)
-   - 3.26. [Gói 26: Quản Trị Banner Slider, Trang Tĩnh & Cấu Hình Web (CMS Banners & Web Config)](#326-gói-26-quản-trị-banner-slider-trang-tĩnh--cấu-hình-web)
-4. [Đặc Tả 28 Luồng Nghiệp Vụ Xuyên Suốt Vòng Đời (End-to-End System & Sequence Flows)](#4-đặc-tả-28-luồng-nghiệp-vụ-xuyên-suốt-vòng-đời)
+   - 3.1. Gói 1: Quản Trị Vòng Đời Dự Án & Aggregate Root (Domain Core & Lifecycle) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.2. Gói 2: Động Cơ Toán Hình Học Tham Số CAD (Parametric Dieline Engine) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.3. Gói 3: Phòng Thu Vector 2D & Hệ Thống Phần Tử (2D Vector Canvas & Elements) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.4. Gói 4: Động Cơ WebGL 3D & Mô Phỏng Gập Động Học (3D Folding Kinematics & Materials) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.5. Gói 5: Động Cơ Thẩm Định Vật Lý & Tiền Kiểm In Ấn FitCheck™ (Preflight & Physics Engine) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.6. Gói 6: Đường Ống Xuất Bản Công Nghiệp & Render Đám Mây (Prepress Export & Cloud Rendering) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.7. Gói 7: Trưng Bày Công Khai, Nhúng 3D & Trải Nghiệm Mở Hộp (Public Showcase & Viral Unboxing) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.8. Gói 8: Xác Thực, Đăng Ký & Phân Quyền IAM (Authentication, Identity & RBAC) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.9. Gói 9: Danh Sách Yêu Thích & Quản Lý Bộ Sưu Tập (Wishlist & Custom Collections) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.10. Gói 10: Quản Lý Lưu Trữ, Thùng Rác 30 Ngày & Hạn Mức Quota S3 (Project Storage & Archival) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.11. Gói 11: Quản Trị Nền Tảng Toàn Diện & Nhật Ký Audit Log (Admin Platform Governance) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.12. Gói 12: Quản Trị Bảo Mật Tài Khoản & Vòng Đời Mật Khẩu (Password & Account Security) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.13. Gói 13: Cổng Thanh Toán & Quản Lý Thuê Bao (Payment Gateway, Invoices & Subscriptions) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.14. Gói 14: Giỏ Hàng, Đặt Hàng & Vận Chuyển In Ấn (Cart, Checkout & Order Fulfillment) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.15. Gói 15: Hệ Thống Thông Báo Đa Kênh (Multi-Channel Notification System) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.16. Gói 16: Hỗ Trợ Khách Hàng, Ticket & Đánh Giá (Support Ticketing & Customer Feedback) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.17. Gói 17: Động Cơ Tìm Kiếm, Lọc Đa Tiêu Chí & Phân Trang (Search, Filter, Sort & Pagination) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.18. Gói 18: Mã Giảm Giá, Khuyến Mãi & Tiếp Thị Liên Kết (Coupons & Referral Affiliate) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.19. Gói 19: Bảo Mật Nâng Cao, 2FA TOTP & Quản Lý Phiên Thiết Bị (Advanced Security & Sessions) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.20. Gói 20: Hệ Thống Đánh Giá Sản Phẩm, Blog CMS & SEO (Reviews, Blog & SEO Engine) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.21. Gói 21: Kiểm Soát Lưu Lượng, Rate Limiting & Pháp Lý GDPR (Security Controls & GDPR) *(chưa có mục chi tiết, trạng thái ở Mục 7)*
+   - 3.22. [Gói 22: Sổ Địa Chỉ & Vận Chuyển Đa Điểm (Address Book & Multi-Shipping Management)](#322-gói-22-sổ-địa-chỉ--vận-chuyển-đa-điểm-address-book--multi-shipping)
+   - 3.23. [Gói 23: Vòng Đời Đổi Trả, Hủy Đơn & Mua Lại (Order Cancellation, Refunds & Re-Order)](#323-gói-23-vòng-đời-đổi-trả-hủy-đơn--mua-lại-order-cancellation-refunds--re-order)
+   - 3.24. [Gói 24: Bản Tin Newsletter, Form Liên Hệ & Khách Vãng Lai (Newsletter & Guest Contact)](#324-gói-24-bản-tin-newsletter-form-liên-hệ--khách-vãng-lai-newsletter--guest-contact)
+   - 3.25. [Gói 25: Cộng Tác Thiết Kế & Phân Quyền Nhóm (Project Team Collaboration & Sharing)](#325-gói-25-cộng-tác-thiết-kế--phân-quyền-nhóm-project-team-collaboration--sharing)
+   - 3.26. [Gói 26: Quản Trị Banner Slider, Trang Tĩnh & Cấu Hình Web (CMS Banners & Web Config)](#326-gói-26-quản-trị-banner-slider-trang-tĩnh--cấu-hình-web-cms-banners--web-config)
+4. [Đặc Tả 28 Luồng Nghiệp Vụ Xuyên Suốt Vòng Đời (End-to-End System & Sequence Flows)](#4-đặc-tả-28-luồng-nghiệp-vụ-xuyên-suốt-vòng-đời-end-to-end-system--sequence-flows)
 5. [Bảng Tra Cứu Các Design Patterns Áp Dụng (Design Patterns Catalog)](#5-bảng-tra-cứu-các-design-patterns-áp-dụng)
 6. [Ma Trận Tuân Thủ Nguyên Tắc SOLID (SOLID Principles Compliance)](#6-ma-trận-tuân-thủ-nguyên-tắc-solid)
 7. [Ánh Xạ 26 Gói Phân Hệ Sang NestJS Modules (NestJS Module Map)](#7-ánh-xạ-26-gói-phân-hệ-sang-nestjs-modules)
@@ -408,7 +408,7 @@ classDiagram
 
 ## 3. CHI TIẾT 26 GÓI PHÂN HỆ CHUYÊN SÂU (DEEP DOMAIN CLASS DIAGRAMS)
 
-*(Các Gói 1 đến 21 đã được trình bày chi tiết. Dưới đây là các Gói 22 đến 26 hoàn thiện toàn bộ các luồng web thông thường còn lại).*
+*(File này chưa từng có mục chi tiết riêng cho Gói 1 đến 21: trạng thái và module tương ứng của từng gói xem bảng ở Mục 7. Dưới đây là các Gói 22 đến 26 hoàn thiện toàn bộ các luồng web thông thường còn lại).*
 
 > **Trạng thái: đề xuất.** Gói 22–26 chưa có mã. Sơ đồ lớp dưới đây là thiết kế cho sau MVP. Trạng thái của cả 26 gói xem [Mục 7](#7-ánh-xạ-26-gói-phân-hệ-sang-nestjs-modules).
 

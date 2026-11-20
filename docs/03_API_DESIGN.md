@@ -293,7 +293,7 @@ E2E: `sepay-webhook`, `admin-bank-transactions`.
 - **Giá.** Mỗi thiết kế: 49.000đ hộp đầu, thêm 25.000đ mỗi hộp sau. Phí giao hàng hiện là 0. Không có mã ưu đãi: body gửi `promoCode` → `400`. Mọi đơn tạo ra đều `PENDING_PAYMENT`, tổng tối thiểu 49.000đ.
 - **Mã đơn** `WF-<năm>-<6 chữ số>` (năm theo giờ Việt Nam), ví dụ `WF-2026-048213`. Đơn tạo trước 2026-11-16 giữ mã 4 chữ số cũ.
 - **Mỗi dòng hàng giữ phiên bản dự án.** Dòng hàng chụp lại `projectVersion`, tên, cấu trúc, kích thước, giấy lúc đặt. Phản hồi có `items: [{ projectId, projectTitle, quantity, lineTotalVnd }]`; các trường ở cấp đơn (`projectId`, `projectVersion`, `quantity`, `paperStock`…) mô tả dòng đầu tiên, giữ cho FE cũ. Đơn đã trả mở quyền xuất cho đúng phiên bản của từng dòng.
-- **Thanh toán đơn** bằng `POST /api/payments { purpose: "SAMPLE_ORDER", orderId }`. Đơn bị hủy trước khi tiền về → thanh toán không cấp gì (`409 ORDER_NOT_PAYABLE` khi giả lập, `ORDER_NOT_PAYABLE` khi đối soát).
+- **Thanh toán đơn** bằng `POST /api/payments { purpose: "SAMPLE_ORDER", orderId, termsVersion }`, với `termsVersion` = `PAYMENT_TERMS_VERSION` hiện hành (thiếu hoặc lệch → `400`; ví dụ đầy đủ ở [Gói, xu và thanh toán](#gói-xu-và-thanh-toán)). Đơn bị hủy trước khi tiền về → thanh toán không cấp gì (`409 ORDER_NOT_PAYABLE` khi giả lập, `ORDER_NOT_PAYABLE` khi đối soát).
 - **Vòng đời** `PENDING_PAYMENT → PAID → IN_PRODUCTION → SHIPPED → DELIVERED`; hủy được trước khi in. Tài khoản `PRINT_SHOP` chỉ chuyển các bước in, giao, đã giao của xưởng mình; thanh toán và hủy do ADMIN.
 
 E2E: `orders`, `payments`.

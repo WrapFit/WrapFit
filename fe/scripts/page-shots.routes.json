@@ -1,5 +1,5 @@
 {
-  "$comment": "Viewport audit routes of docs/12 Phase 7 (fe/scripts/page-shots.mjs --routes). Groups G1–G7 as in the plan. Placeholders {…} come from fe/.page-shots/fixtures.json (fe/scripts/ui-fixtures.mjs). Actions: waitFor (selector), click / clickText / hover / hoverText (+ in), into + type, key, scroll, eval, wait (ms after the step).",
+  "$comment": "Viewport audit routes of docs-old/12 Phase 7 (fe/scripts/page-shots.mjs --routes). Groups G1–G7 as in the plan. Placeholders {…} come from fe/.page-shots/fixtures.json (fe/scripts/ui-fixtures.mjs). Actions: waitFor (selector), click / clickText / hover / hoverText (+ in), into + type, key, scroll, eval, wait (ms after the step).",
   "expectedRequests": [
     { "role": "guest", "url": "^/api/auth/(me|refresh)$", "status": 401 },
     { "$comment": "Signed in: the access cookie expires every 15 minutes during a long scan, the client refreshes and retries (a real sign-out shows as a redirect).", "url": "^/api/", "status": 401 }
@@ -15,7 +15,7 @@
       "actions": [{ "click": "[aria-label='Toggle navigation menu']", "wait": 700 }] },
     { "name": "g1-avatar-menu", "group": "G1", "path": "/dashboard", "roles": ["admin"],
       "actions": [{ "click": "[aria-label^='Tài khoản của']", "wait": 600 }] },
-    { "$comment": "Notification bell (docs/25 S8): the panel opens over the page, from the header, at every width. present=1 keeps the first-visit tour of a new account from covering it.",
+    { "$comment": "Notification bell (docs-old/25 S8): the panel opens over the page, from the header, at every width. present=1 keeps the first-visit tour of a new account from covering it.",
       "name": "g1-notification-bell", "group": "G1", "path": "/dashboard?present=1", "roles": ["maker"],
       "actions": [{ "click": "[aria-haspopup='dialog'][aria-label^='Thông báo']", "wait": 900 }] },
     { "name": "g1-admin-mobile-nav", "group": "G1", "path": "/admin/accounts", "roles": ["admin"], "sizes": ["M", "T"], "allowOverlap": true,
@@ -130,7 +130,7 @@
     { "name": "g6-admin-ledger", "group": "G6", "path": "/admin/ledger", "roles": ["admin"] },
     { "name": "g6-admin-system-config", "group": "G6", "path": "/admin/system-config", "roles": ["admin"] },
 
-    { "name": "g7-editor-new", "group": "G7", "$comment": "Studio of docs/12 Phase 3a. Template 6f1c…0001 is a curated tuck-top of the backend seed.", "path": "/editor/new", "roles": ["admin"], "sizes": ["M", "X+"] },
+    { "name": "g7-editor-new", "group": "G7", "$comment": "Studio of docs-old/12 Phase 3a. Template 6f1c…0001 is a curated tuck-top of the backend seed.", "path": "/editor/new", "roles": ["admin"], "sizes": ["M", "X+"] },
     { "name": "g7-editor-new-step-2", "group": "G7", "path": "/editor/new", "roles": ["admin"], "sizes": ["M", "X+"],
       "actions": [{ "clickText": "Tiếp Tục Sang Nhập Kích Thước", "wait": 800 }] },
     { "name": "g7-editor-new-template", "group": "G7", "path": "/editor/new?template=6f1c2a80-0001-4c3e-9a51-7d0e5a1f0001", "roles": ["admin"], "sizes": ["M", "X+"] },
@@ -144,7 +144,7 @@
     { "name": "g7-editor-trashed", "group": "G7", "path": "/editor/{projects.trashed.id}", "roles": ["admin"], "sizes": ["M", "X+"] },
     { "name": "g7-editor-missing", "group": "G7", "path": "/editor/00000000-0000-4000-8000-000000000000", "roles": ["admin"], "sizes": ["M", "X+"],
       "expect": [{ "url": "^/api/projects/00000000-0000-4000-8000-000000000000$", "status": 404 }] },
-    { "name": "g7-studio-export-dialog", "group": "G7", "$comment": "Dialogs of docs/12 Phase 3b.", "path": "/editor/{projects.public.id}", "roles": ["admin"], "sizes": ["M", "X+"],
+    { "name": "g7-studio-export-dialog", "group": "G7", "$comment": "Dialogs of docs-old/12 Phase 3b.", "path": "/editor/{projects.public.id}", "roles": ["admin"], "sizes": ["M", "X+"],
       "actions": [{ "click": "[aria-label='Xuất File In']", "wait": 1200 }] },
     { "name": "g7-studio-snapshots-dialog", "group": "G7", "path": "/editor/{projects.public.id}", "roles": ["admin"], "sizes": ["M", "X+"],
       "actions": [{ "click": "[aria-label='Mốc phiên bản']", "wait": 1200 }] },
@@ -153,7 +153,7 @@
     { "name": "g7-studio-unboxing-dialog", "group": "G7", "path": "/editor/{projects.public.id}", "roles": ["admin"], "sizes": ["M", "X+"],
       "expect": [{ "url": "^/api/projects/[0-9a-f-]+/unboxing$", "status": 404 }],
       "actions": [{ "clickText": "Xem Phối Cảnh 3D", "wait": 2500 }, { "clickText": "Xem & Tải Mã QR In Ấn", "wait": 1500 }] },
-    { "name": "g7-studio-formula-banner", "group": "G7", "$comment": "Project on formula version 1 (docs/12 Phase 8, 8.10b).", "path": "/editor/{projects.oldFormula.id}", "roles": ["admin"], "sizes": ["M", "X+"],
+    { "name": "g7-studio-formula-banner", "group": "G7", "$comment": "Project on formula version 1 (docs-old/12 Phase 8, 8.10b).", "path": "/editor/{projects.oldFormula.id}", "roles": ["admin"], "sizes": ["M", "X+"],
       "actions": [{ "waitFor": "[role=status]", "wait": 800 }] },
     { "name": "g7-studio-formula-dialog", "group": "G7", "path": "/editor/{projects.oldFormula.id}", "roles": ["admin"], "sizes": ["M", "X+"],
       "actions": [{ "clickText": "Cập nhật lên công thức mới", "wait": 800 }] },
@@ -166,7 +166,7 @@
     { "name": "g7-editor-studio", "group": "G7", "path": "/editor/studio", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" },
     { "name": "g7-editor-export", "group": "G7", "path": "/editor/export", "roles": ["admin"], "sizes": ["M"], "endsAt": "^/editor/new$" },
 
-    { "name": "g8-wallet-demo", "group": "G8", "$comment": "Payment gateways of docs/21 S5. Role demo = SHOT_DEMO_EMAIL / SHOT_DEMO_PASSWORD (an is_demo account).", "path": "/dashboard/wallet", "roles": ["demo"], "sizes": ["M", "X+"] },
+    { "name": "g8-wallet-demo", "group": "G8", "$comment": "Payment gateways of docs-old/21 S5. Role demo = SHOT_DEMO_EMAIL / SHOT_DEMO_PASSWORD (an is_demo account).", "path": "/dashboard/wallet", "roles": ["demo"], "sizes": ["M", "X+"] },
     { "name": "g8-checkout-vietqr", "group": "G8", "path": "/dashboard/wallet", "roles": ["maker"], "sizes": ["M", "X+"],
       "actions": [{ "clickText": "Nạp ", "wait": 300 }, { "waitFor": "[role=dialog] img[alt^='Mã VietQR']", "wait": 800 }] },
     { "name": "g8-checkout-vietqr-paid", "group": "G8", "path": "/dashboard/wallet", "roles": ["maker"], "sizes": ["M", "X+"],

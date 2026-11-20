@@ -168,7 +168,7 @@ Sau khi đổi tên, sửa cả số trong dòng tiêu đề đầu mỗi file. 
 
 ### 4.3 Sửa tham chiếu
 
-Script dưới thay **một lượt** cho mọi file Git theo dõi có đuôi `.ts`, `.tsx`, `.mjs`, `.js`, `.cjs`, `.md`, `.prisma`, `.yml` hoặc `.yaml`. Script bỏ qua `graphify-out/`, `be/prisma/migrations/`, bản audit và plan 32. Ba quy tắc:
+Script dưới thay **một lượt** cho mọi file Git theo dõi có đuôi `.ts`, `.tsx`, `.mjs`, `.js`, `.cjs`, `.md`, `.prisma`, `.yml`, `.yaml`, `.json` (trừ `package-lock.json`), `.svg`, hoặc tên `.env.example`. Script bỏ qua `graphify-out/`, `be/prisma/migrations/`, bản audit và plan 32. Ba quy tắc:
 
 1. `docs/NN`:
    - file đổi số → đổi sang số mới;
@@ -193,7 +193,7 @@ const RENUM = { 11: '10', 13: '11', 14: '12', 15: '13', 16: '14', 18: '15', 19: 
 const GONE = new Set(['10', '12', '17', '20', '21', '22', '23', '25', '26', '27', '27a', '29', '30', '31']);
 const mode = process.argv.includes('--write') ? 'write' : process.argv.includes('--check') ? 'check' : 'dry';
 const files = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter((f) =>
-  /\.(ts|tsx|mjs|js|cjs|md|prisma|ya?ml)$/.test(f) && fs.existsSync(f) &&
+  (/\.(ts|tsx|mjs|js|cjs|md|prisma|ya?ml|json|svg)$/.test(f) || /(^|\/)\.env\.example$/.test(f)) && fs.existsSync(f) && !f.endsWith('package-lock.json') &&
   !f.startsWith('graphify-out/') && !f.startsWith('be/prisma/migrations/') &&
   f !== 'docs/README.md' && !f.startsWith('docs/32_'));
 
@@ -827,3 +827,4 @@ Plan này chỉ chuẩn bị chỗ ghi kết quả. Các việc dưới đây c�
 | 2026-11-19 | S9 · Luồng F | e3a2ef3 | 0 | 0 | Chưa chạy thử 18 §6 lượt A; lệnh migrate và đổi lượt xuất ở 18 §2.3 chờ người deploy chạy lần đầu |
 | 2026-11-20 | S10 · Gộp và điền kết quả | (commit này) | 64 dòng trong file giữ lại, đều có nhãn hoặc là mã lỗi hiện hành | 0 | Gộp A, B, C, E, F, D không xung đột. Đổi liên kết tạm thành liên kết tới mục. Điền kết quả luồng D vào 04, 18 §9, 28 #14. Kiểm §4.1: nội dung của từng file đã có ở file nhận |
 | 2026-11-20 | S10 · Gỡ file, đánh số lại, kiểm | aa47f4b (commit cuối còn file), c0feb50, 8f8b6d2, 417c30a | 64 dòng, đều có nhãn hoặc là mã lỗi hiện hành; script FE: 0 | 0 | Chủ dự án xác nhận lại trước khi xóa 26/27/27a/31. Script §4.3 `--write`: 664 chỗ; sửa tay 4 chỗ trỏ tới 10; 50 nhãn liên kết số cũ sửa bằng regex riêng. `--check` trên worktree sạch: 1 ngoại lệ có chủ ý, `CONVERSION_REF = 'docs/25-item-7:…'` trong `be/prisma/scripts/convert-export-credits.ts` là `ref_id` đã lưu trong CSDL, đổi sẽ làm script đổi lượt xuất chạy hai lần. Shared build, BE lint, FE `tsc --noEmit`, `tokens:check` đạt; unit BE 1180/1180 (77 bộ). `npm --workspace=fe run lint` không chạy được vì FE chưa cấu hình ESLint (18 mục 17). Mục lục 08 có 27 anchor lệch tiêu đề từ trước đợt này, chưa sửa |
+| 2026-11-20 | Sửa sau review lần hai (`docs/README.md` cuối file) | (commit này) | Không đổi | 0 | Cả 6 phát hiện đều đúng. (1) `e2e-scenario.mjs` bước 16: với `--user` không đổi cờ demo, tài khoản thường thì dừng trước khi đặt đơn (đã thử: cờ giữ `false`, không có đơn). (2) 15 §6.1: thêm bước lưu dự án và tạo QR, nhãn nút theo mã; sửa §0 và §2.1. (3) Kiểm hoàn xu: lưu danh sách `operation_id` ở bước 6a, đối chiếu từng mã ở bước 9 thay vì so số dòng log. (4) 03: ví dụ thanh toán đơn in có `termsVersion`. (5) Ảnh bàn giao mất vì worktree luồng D bị xóa cùng `fe/.page-shots/`; chạy lại kịch bản trên checkout chính, đạt 36/36 ở `M` và `X+`. (6) Script §4.3 quét thêm `.json`, `.svg`, `.env.example`: sửa `page-shots.routes.json`, hai `.env.example`, `demo-candle-logo.svg`; mục lục 08 hết anchor lệch (Gói 1–21 chưa từng có mục chi tiết, bỏ liên kết) |
