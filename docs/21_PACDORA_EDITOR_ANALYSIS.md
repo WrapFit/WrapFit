@@ -224,7 +224,7 @@ Mã chính: [paperLook](../fe/src/features/studio/components/three/paperLook.ts)
 
 Giới hạn của S5:
 
-- **Chưa có giấy sóng.** Bảng giá (`QuotePaper`) chỉ có ivory, kraft, duplex và rigid, nên chưa có mép giấy sóng E. Muốn thêm giấy sóng thì phải sửa cả báo giá, thông số vật liệu và mô hình 3D.
+- **Không có giấy sóng.** Bảng giá (`QuotePaper`) chỉ có ivory, kraft, duplex và rigid. WrapFit không bán giấy sóng E (quyết định ngày 21/11/2026), nên không có mép giấy sóng.
 - Hạt sinh ngẫu nhiên mỗi lần tải trang, nên hai lần mở hộp có hạt hơi khác nhau.
 - Chỉ so bằng mắt trên hộp đỏ phủ kín. Chưa thử hộp để trống nhiều giấy mộc.
 
@@ -240,10 +240,27 @@ Giới hạn của S5:
 
 Giới hạn của S6:
 
-- Chỉ hộp nắp gài có tai. Hộp âm dương, hộp bao diêm, hộp mailer và các kiểu khác chưa khai báo `flaps`, nên vẫn gập như trước.
 - Tai khóa đáy là hình gần đúng: tai trước bỏ khe nhận lưỡi, các tai chỉ gập một phần tư vòng, chưa mô phỏng khóa chéo.
 - Tai gập phẳng, chưa uốn cong ở góc như mô hình của Pacdora.
 - Hạt giấy trên tai lặp theo kích thước từng tai, chưa theo đúng mm như các tấm.
+
+**Hoàn thiện phần còn lại (21/11/2026, chưa commit).**
+
+- **Tai cho các kiểu hộp khác.** Hàm chung `flapFace` trong `shared/src/parametric/flaps.ts` dựng tai từ đường viền.
+  - Khay (`tray.ts`, dùng cho đáy và nắp hộp âm dương, ngăn kéo hộp bao diêm và khay lót) có 4 tai dán góc.
+  - Vỏ hộp bao diêm có mép dán.
+  - Hộp mailer có 4 tai cánh, 2 tai bụi của nắp và lưỡi gài.
+  - Hộp quai xách có mép dán, 2 tai bụi đáy và lưỡi gài đáy. Các tai đỡ mái trên cạnh xiên chưa có, vì bản lề của mô hình chỉ đặt trên cạnh thẳng.
+  - `FlapFace.layers` cho biết tai nằm sau mấy lớp giấy: tai bụi và lưỡi gài của mailer là 3 vì lọt vào vách đôi.
+  - Thứ tự gập: khay dựng vách trước và sau cùng tai góc, rồi mới gập vách hai bên đè lên tai; mailer gập tai cánh trước khi vách hông dựng, nên tai nằm giữa hai lớp vách.
+  - Test tai mở rộng ra 6 nhóm × 4 cỡ hộp, kiểm cả số tai của từng mảnh. Toàn bộ test backend qua: 77 bộ, 1204 test. Đã xem trên trang `/structures` ở các mức gập giữa chừng và đóng kín.
+- **Thẻ 3D không còn che khuôn.** `DielineCanvas2D` nhận prop `reserveCorner` là kích thước thẻ ở góc phải trên. Khi khuôn vừa khít khung sẽ chạm thẻ, khuôn chừa lề phải hoặc lề trên, chọn cách nào giữ khuôn lớn hơn. Hộp nắp gài trên màn 1547 px nhỏ đi khoảng 15%. Thu gọn thẻ thì khuôn về cỡ đầy đủ.
+- **Đo số khung hình.** Đo bằng Chrome headless ở mật độ điểm ảnh 2, dùng script `orbit-fps.mjs` chạy qua DevTools Protocol (không đưa vào repo).
+  - Với GPU RTX 5080, cả kéo xoay lẫn lướt góc nhìn đều chạm trần 200 khung/giây của headless.
+  - Với đồ họa phần mềm SwiftShader, giả lập máy yếu: kéo xoay ở nửa mật độ đạt 25 khung/giây (p95 50 ms), lướt góc nhìn ở mật độ đầy đủ chỉ 12 khung/giây (p95 100 ms).
+- **Hoàn thiện trên kraft.** Ép kim, phủ UV và dập nổi hiện đúng trên kraft. Hạt kraft trước đây bị nhân lên cả vùng ép kim; giờ lớp hạt được khoét bỏ hình các phần tử ép kim, vì lá kim nằm trên mặt giấy. Giấy forest và gold_foil không chọn được trong Studio (chỉ dùng ở trang giới thiệu) nên không cần thử.
+- **Đáy khóa trên màn hình.** Lúc phẳng có ba tai khóa ở hàng dưới; ở 48% các tai đang gập vào. Camera không xoay xuống dưới đáy được, nên chưa xem được đáy đóng kín từ bên dưới.
+- **Giấy sóng: không làm.** Quyết định ngày 21/11/2026: WrapFit không bán giấy sóng E, nên không thêm giấy sóng vào báo giá, thông số vật liệu hay mô hình 3D.
 
 ## 7. Giới hạn của khảo sát
 
