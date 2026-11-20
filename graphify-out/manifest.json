@@ -4086,9 +4086,9 @@
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/boxModel.ts": {
-    "mtime": 1795191945.494218,
-    "seen": 1795191997.5284526,
-    "ast_hash": "321728a5b869d1ad2455e1708e6047a8",
+    "mtime": 1795196791.4822724,
+    "seen": 1795196951.0842216,
+    "ast_hash": "beb39172f727cd0e943e5d3129c3dece",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/guides.ts": {
@@ -14838,15 +14838,21 @@
     "semantic_hash": ""
   },
   "docs/21_PACDORA_EDITOR_ANALYSIS.md": {
-    "mtime": 1795191966.0638928,
-    "seen": 1795191997.5671737,
-    "ast_hash": "425520ef57a4c37cce9e43691d3dd38a",
+    "mtime": 1795196900.0359855,
+    "seen": 1795196951.1524277,
+    "ast_hash": "0e9bd2ac660e680ad69b0380e1acef43",
     "semantic_hash": ""
   },
   "fe/src/features/studio/components/three/Preview3DCard.tsx": {
     "mtime": 1795190808.8975952,
     "seen": 1795190917.6568544,
     "ast_hash": "7f84c625981ca4937299896237078bb9",
+    "semantic_hash": ""
+  },
+  "fe/src/features/studio/components/three/paperLook.ts": {
+    "mtime": 1795196840.3737729,
+    "seen": 1795196951.0845983,
+    "ast_hash": "88556c7d7cad25de3347dc4bebb5d90a",
     "semantic_hash": ""
   },
   "NasaFilm/movie-theater-be/package-lock.json": {
