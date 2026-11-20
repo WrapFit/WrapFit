@@ -14,9 +14,6 @@ import {
 } from "@wrapfit/shared";
 import {
   AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  Box,
   Check,
   ChevronDown,
   CircleSlash,
@@ -25,7 +22,6 @@ import {
   Droplets,
   ExternalLink,
   Feather,
-  Gift,
   Info,
   PaintRoller,
   Lock,
@@ -35,14 +31,10 @@ import {
   Gem,
   Stamp,
   Sun,
-  Tag,
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { formatVnd } from "@/features/pricing";
-import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, stageBarButton, StudioCard } from "@/features/studio/components/studioUi";
-import { continueTo } from "@/features/studio/components/StudioStepper";
 import { clampDimension } from "@/features/studio/utils/dieline";
 import { PAPER_STOCKS, paperAdvice, paperStockOf, type PaperStock } from "@/features/studio/utils/paperStocks";
 import { Dialog, Tooltip } from "@/components/ui";
@@ -70,10 +62,6 @@ interface Step3PaperFinishProps {
   pieces: DielinePiece[];
   limits?: DimensionLimits;
   elements: CanvasElement[];
-  backgroundPatternSvg: string | null;
-  formulaVersion?: number;
-  onBack(): void;
-  onNext(): void;
 }
 
 const isLight = (hex: string | undefined) => {
@@ -389,16 +377,9 @@ export function Step3PaperFinish({
   pieces,
   limits,
   elements,
-  backgroundPatternSvg,
-  formulaVersion,
-  onBack,
-  onNext,
 }: Step3PaperFinishProps) {
   const paper = paperStockOf(activeMaterial);
-  const [showInside, setShowInside] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
-  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
-  const [showFaceLabels, setShowFaceLabels] = useState(true);
 
   // --- Draft and commit: slider and GSM / mm readouts follow every move smoothly at 60fps;
   // the studio state and 3D rebuild happen after a short pause (matching Step 2).
@@ -501,121 +482,10 @@ export function Step3PaperFinish({
     );
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-8 pt-4 sm:px-6">
-      <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <StudioCard className="flex flex-col overflow-hidden h-full min-h-[360px]">
-          <div className="relative flex-1 min-h-[320px] bg-landing-canvas">
-            <div className="absolute inset-0">
-              <Box3DView
-                dimensions={dimensions}
-                liveDimensions={draft}
-                foldProgress={1}
-                faceLabels={showFaceLabels}
-                cameraView={cameraView}
-                interactiveOpenState={showInside}
-                showCups={dimensions.showCups !== false}
-                boxType={boxType}
-                theme={activeMaterial}
-                elements={elements}
-                backgroundPatternSvg={backgroundPatternSvg}
-                formulaVersion={formulaVersion}
-                showHud={false}
-                showStatusBar={false}
-                viewControls={false}
-                enableMacroZoom={false}
-                frameless
-                minHeight={false}
-                className="h-full w-full"
-              />
-            </div>
-
-            {/* Bottom HUD bar with paper info & interactive 3D Controls dock identical to Step 2 */}
-            <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white/95 via-white/85 to-transparent px-4 pb-3 pt-6 backdrop-blur-xs">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-3 text-xs text-slate-700">
-                  <span className="font-semibold text-fg">{paper.name}</span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.outside }} />
-                    Mặt in
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span aria-hidden className="size-3 rounded-sm ring-1 ring-fg/15" style={{ backgroundColor: paper.swatch.inside }} />
-                    Mặt trong
-                  </span>
-                </div>
-
-                <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
-                  {boxType !== "pillow" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowInside((v) => !v)}
-                        aria-pressed={showInside}
-                        title={showInside ? "Đóng nắp hộp" : "Mở nắp hộp"}
-                        className={cn(
-                          "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                          showInside
-                            ? "bg-fpt-orange text-white shadow-xs"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                        )}
-                      >
-                        <Gift className="size-3.5" aria-hidden />
-                        <span>{showInside ? "Đóng nắp" : "Mở nắp"}</span>
-                      </button>
-                      <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
-                    </>
-                  )}
-                  {(
-                    [
-                      { view: "angle", label: "3/4" },
-                      { view: "front", label: "Trước" },
-                      { view: "side", label: "Bên" },
-                      { view: "top", label: "Trên" },
-                    ] as const
-                  ).map((item) => (
-                    <button
-                      key={item.view}
-                      type="button"
-                      onClick={() => setCameraView(item.view)}
-                      aria-pressed={cameraView === item.view}
-                      title={`Góc nhìn ${item.label.toLowerCase()}`}
-                      className={cn(
-                        "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                        cameraView === item.view
-                          ? "bg-fpt-orange text-white shadow-xs"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                      )}
-                    >
-                      {item.view === "angle" && <Box className="size-3" aria-hidden />}
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                  <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
-                  <button
-                    type="button"
-                    onClick={() => setShowFaceLabels((prev) => !prev)}
-                    aria-pressed={showFaceLabels}
-                    title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
-                    className={cn(
-                      "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                      showFaceLabels
-                        ? "bg-fpt-orange text-white shadow-xs"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                    )}
-                  >
-                    <Tag className="size-3" aria-hidden />
-                    <span>Nhãn mặt</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </StudioCard>
-
-        <div className="flex flex-col gap-4">
+    <>
           <section
             aria-label="Chất liệu giấy"
-            className="overflow-hidden rounded-sheet border border-line bg-surface-raised p-4 sm:p-5"
+            className="min-w-0"
           >
             {/* Top action: So sánh các loại giấy */}
             <div className="flex items-center justify-end pb-3">
@@ -805,7 +675,7 @@ export function Step3PaperFinish({
                 )}
               </div>
 
-              <div role="radiogroup" aria-label="Cán màng" className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div role="radiogroup" aria-label="Cán màng" className="mt-2 grid grid-cols-2 gap-2">
                 {[
                   { id: null, label: "Không cán", desc: "Giấy để mộc", icon: CircleSlash },
                   { id: "matte-lamination" as QuoteFinish, label: "Cán mờ", desc: "Chống chói, nhã nhặn", icon: Shield },
@@ -841,7 +711,7 @@ export function Step3PaperFinish({
                 <span>Gia công thêm</span>
               </p>
 
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="mt-2 grid grid-cols-1 gap-2">
                 {[
                   { id: "foil" as QuoteFinish, label: "Ép kim", icon: Crown, desc: "Nhũ vàng/bạc sang trọng" },
                   { id: "spot-uv" as QuoteFinish, label: "Phủ UV định hình", icon: Droplets, desc: "Bóng nổi chi tiết chính" },
@@ -882,8 +752,6 @@ export function Step3PaperFinish({
               </div>
             </div>
           </section>
-        </div>
-      </div>
 
       <PaperCompareDialog
         open={showCompare}
@@ -893,41 +761,6 @@ export function Step3PaperFinish({
         onChoose={choose}
       />
 
-      <StepActionBar
-        back={
-          <button
-            type="button"
-            onClick={() => {
-              flush();
-              onBack();
-            }}
-            className={SECONDARY_PILL}
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            Kích thước
-          </button>
-        }
-        summary={
-          <span className="block text-xs font-semibold text-landing-ink">
-            {paper.name}
-            {finishes.length > 0 && ` · ${finishes.map((f) => FINISH_LABELS[f]).join(", ")}`}
-          </span>
-        }
-        next={
-          <button
-            type="button"
-            data-tour="studio-next"
-            onClick={() => {
-              flush();
-              onNext();
-            }}
-            className={PRIMARY_PILL}
-          >
-            {continueTo(4)}
-            <ArrowRight className="size-4" aria-hidden />
-          </button>
-        }
-      />
-    </div>
+    </>
   );
 }

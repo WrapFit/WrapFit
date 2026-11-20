@@ -89,7 +89,7 @@ export function ExportPurchaseCard({
       )}
       aria-labelledby="export-card-title"
     >
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="flex flex-col gap-4">
         {/* Left side: Package info & Specs */}
         <div className="min-w-0 flex-1 space-y-2.5">
           <div className="flex flex-wrap items-center gap-2.5">
@@ -156,10 +156,10 @@ export function ExportPurchaseCard({
         </div>
 
         {/* Right side: Action CTA Button & Terms Note */}
-        <div className="shrink-0 flex flex-col items-stretch lg:items-end sm:min-w-[260px] border-t lg:border-t-0 lg:border-l border-line/60 pt-3 lg:pt-0 lg:pl-5">
+        <div className="shrink-0 flex flex-col items-stretch border-t border-line/60 pt-3">
           <div className="w-full">
             {!projectId && !signedIn ? (
-              <Link href={ROUTES.login} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
+              <Link href={`${ROUTES.login}?redirect=${encodeURIComponent(`${ROUTES.editorDemo}?step=6`)}`} className={buttonClass({ variant: "brand", size: "lg", block: true })}>
                 <LogIn className="size-4" aria-hidden />
                 Đăng nhập để thanh toán
               </Link>

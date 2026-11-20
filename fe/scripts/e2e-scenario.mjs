@@ -655,9 +655,8 @@ function scenario(size, browser, report) {
         .request('/analytics/summary', { query: { scope: 'global', days: 30 } })
         .catch(() => null);
       // A new box starts in the demo studio (/editor/new → /editor/demo): kind, size, then "Lưu dự án" makes the project.
-      await page.goto('/editor/new');
-      await page.click({ text: 'Hộp nắp gài đáy khóa' });
-      await page.click('Tiếp tục: kích thước');
+      await page.goto('/editor/demo?new=1');
+      await page.waitFor("document.querySelector('#studio-structure')?.value === 'tuck-top'", 'the default box structure');
       // Dài, Rộng, Cao (mm).
       for (const [nth, value] of [120, 80, 60].entries()) await page.type('input[inputmode="decimal"]', String(value), { nth, enter: true });
       log.shots.push(await page.shot('04-new-dimensions'));
@@ -668,7 +667,7 @@ function scenario(size, browser, report) {
       const { dimensions } = await projectOf(await state.owner.api(), state.projectId);
       const size = [dimensions.length, dimensions.width, dimensions.height].join(' × ');
       if (size !== '120 × 80 × 60') throw new Error(`the new project is ${size} mm`);
-      await page.click({ selector: '[aria-label^="Bước 4: Thiết kế"]' });
+      await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Thiết kế"]' });
       await page.settle();
       await page.upload('input[type="file"][accept*="image"]', pngFile());
       await page.waitFor(`document.querySelectorAll('image, img[src*="wrapfit"]').length > 0`, 'the uploaded image on the canvas', 30000);
@@ -796,9 +795,7 @@ function scenario(size, browser, report) {
     /** 8: unlisted link opened by a guest (noindex), then liked and remixed by another account. */
     8: async (log) => {
       const page = state.ownerPage;
-      // Step 7 ends on the print step; on a phone the share button sits in the design step's toolbar.
-      // A past step's label ends in " (đã qua)".
-      await page.click({ selector: '[aria-label^="Bước 4: Thiết kế"]' });
+      await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Thiết kế"]' });
       await page.click('Chia sẻ');
       await page.click({ text: 'Có link', in: DIALOG });
       const ownerApi = await state.owner.api();
@@ -840,7 +837,7 @@ function scenario(size, browser, report) {
     /** 9: QR unboxing page, opened by a guest. */
     9: async (log) => {
       const page = state.ownerPage;
-      await page.click({ selector: '[aria-label^="Bước 5: Quà & mở hộp"]' });
+      await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Quà tặng"]' });
       await page.click('Tạo lời chúc & mã QR');
       await page.waitSelector('input[placeholder="Mẹ yêu"]');
       await page.settle(800);
@@ -1075,7 +1072,7 @@ function scenario(size, browser, report) {
       const again = await exportFile(page, api, state.projectId, 'PDF_CMYK', 'PDF in CMYK nhiều lớp');
       log.notes.push(`renamed, v${renamed.version} still unlocked: PDF_CMYK ${again.bytes} B`);
       await page.closeDialog();
-      await page.click({ selector: '[aria-label^="Bước 4: Thiết kế"]' });
+      await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Thiết kế"]' });
       await addText(page, 'Sửa sau khi đặt in');
       await saved(page);
       const edited = await projectOf(api, state.projectId);
@@ -1226,10 +1223,10 @@ async function waitFor(check, what) {
 /** Opens the export dialog from the print step (step 6) of the studio, unless it is open already. */
 async function openExportDialog(page) {
   if (!(await page.eval(`document.body.innerText.includes('Lần xuất gần đây')`))) {
-    const onPrintStep = await page.eval(`Boolean(document.querySelector('[aria-label^="Bước 6: Đặt in"][aria-current="step"]'))`);
-    if (!onPrintStep) await page.click({ selector: '[aria-label^="Bước 6: Đặt in"]' });
-    // The action bar's button (also the payment card's once the design is paid); greyed out while FitCheck has errors.
-    await page.click('Xuất file in ngay');
+    const onPrintStep = await page.eval(`Boolean(document.querySelector('nav[aria-label="Công cụ Studio"] [aria-label="Đặt in"][aria-current="page"]'))`);
+    if (!onPrintStep) await page.click({ selector: 'nav[aria-label="Công cụ Studio"] [aria-label="Đặt in"]' });
+    // Export history also opens for a locked design, where the server checks each new export.
+    await page.click('Lịch sử xuất file');
   }
   await page.waitText('Lần xuất gần đây');
   // The panel springs in (anime.js): a click during the animation lands on a moving button and is lost.

@@ -3,10 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowLeftRight,
-  ArrowRight,
-  Box,
   CheckCircle,
   ChevronDown,
   Link2,
@@ -19,14 +16,12 @@ import {
   Gift,
   Coffee,
   SlidersHorizontal,
-  Tag,
   Unlink2,
   Wand2,
 } from "lucide-react";
 import {
   BoxDimensions,
   BoxStructureType,
-  CanvasElement,
   CURRENT_FORMULA_VERSION,
   DEFAULT_CELLS,
   DEFAULT_CUPS,
@@ -38,26 +33,16 @@ import {
   FLAT_STRUCTURES,
   MAX_CELLS,
   SHEET_ONLY_STRUCTURES,
-  FitCheckReport,
   LOCK_BOTTOM_MIN_WEIGHT_G,
   usesLockBottom,
 } from "@wrapfit/shared";
 
-import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import {
   AXIS_COLORS,
   AXIS_LETTER,
   DIMENSION_AXES,
   type DimensionAxis,
-  type DimensionGuides,
 } from "@/features/studio/components/three/guides";
-import {
-  PRIMARY_PILL,
-  SECONDARY_PILL,
-  StepActionBar,
-  StepHeader,
-} from "@/features/studio/components/studioUi";
-import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
 import { formatNumber, innerVolumeMl, outerSize, sheetFits } from "@/features/studio/utils/boxMetrics";
 import type { DimensionLimits } from "@/types/api";
 import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
@@ -144,40 +129,17 @@ const sameSize = (a: BoxDimensions, b: BoxDimensions) =>
 interface Step2DimensionAndMaterialProps {
   dimensions: BoxDimensions;
   onDimensionsChange: (dims: BoxDimensions) => void;
-  activeMaterial: string;
-  onMaterialChange: (mat: string) => void;
-  fitCheckReport: FitCheckReport;
   /** Allowed size of each dimension for the box structure (`GET /templates/structures`). */
   limits?: DimensionLimits;
   /** Box structure and dieline formulas (sheet size, proportion rules); a new design uses the current formulas. */
   structure: string;
   formulaVersion?: number;
-  /** Omitted: no way back (the structure of a saved project is fixed). */
-  onBack?: () => void;
-  onNext: () => void;
-  nextLabel?: string;
-  /** The next step is running (e.g. creating the project). */
-  busy?: boolean;
-  /** Artwork shown on the live 3D box. */
-  elements?: CanvasElement[];
-  backgroundPatternSvg?: string | null;
+  activeAxis: DimensionAxis | null;
+  onActiveAxis(axis: DimensionAxis | null): void;
 }
 
 export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps> = ({
-  dimensions,
-  onDimensionsChange,
-  activeMaterial,
-  onMaterialChange: _onMaterialChange,
-  fitCheckReport,
-  limits,
-  structure,
-  formulaVersion = CURRENT_FORMULA_VERSION,
-  onBack,
-  onNext,
-  nextLabel = continueTo(3),
-  busy = false,
-  elements = [],
-  backgroundPatternSvg = null,
+  dimensions, onDimensionsChange, limits, structure, formulaVersion = CURRENT_FORMULA_VERSION, activeAxis, onActiveAxis,
 }) => {
   const boxType = structure as BoxStructureType;
   const sheetOnly = SHEET_ONLY_STRUCTURES.includes(boxType);
@@ -233,15 +195,10 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   };
   useEffect(() => () => flush(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // --- Preferences of the panel (unit, basis, ratio lock, 3D guides)
+  // Unit, basis and ratio lock for the dimension inputs.
   const [unit, setUnit] = useState<Unit>("mm");
   const [basis, setBasis] = useState<Basis>("inner");
   const [locked, setLocked] = useState(false);
-  const [showGuides, setShowGuides] = useState(true);
-  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
-  const [showFaceLabels, setShowFaceLabels] = useState(true);
-  const [openLid, setOpenLid] = useState(false);
-  const [active, setActive] = useState<DimensionAxis | null>(null);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
 
   useEffect(() => {
@@ -249,15 +206,14 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
       const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}");
       if (saved.unit in UNITS) setUnit(saved.unit);
       if (saved.basis === "inner" || saved.basis === "outer") setBasis(saved.basis);
-      if (typeof saved.showGuides === "boolean") setShowGuides(saved.showGuides);
     } catch {}
   }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem(PREFS_KEY, JSON.stringify({ unit, basis, showGuides }));
+      localStorage.setItem(PREFS_KEY, JSON.stringify({ unit, basis }));
     } catch {}
-  }, [unit, basis, showGuides]);
+  }, [unit, basis]);
 
   const t = draft.paperThickness;
 
@@ -307,123 +263,38 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   const pieces = dielinePiecesOf(structure, draft, formulaVersion);
   const fits = sheetFits(pieces);
 
-  const fitTone =
-    fitCheckReport.score >= 90
-      ? "bg-orange-50 text-fpt-orange-ink"
-      : fitCheckReport.score >= 70
-        ? "bg-warning-bg text-warning-fg"
-        : "bg-danger-bg text-danger-fg";
-
   // Formatted outer sizes with Vietnamese comma
   const outerL = (draft.length + 2 * t).toFixed(1).replace(".", ",");
   const outerW = (draft.width + 2 * t).toFixed(1).replace(".", ",");
   const outerH = (draft.height + 2 * t).toFixed(1).replace(".", ",");
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-[1600px] flex-col px-4 sm:px-6">
-      <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-        {/* Left Column: Controls — natural flow without restrictive max-height */}
-        <div className="flex flex-col gap-4">
-          {/* Card 1: Dimension Controls (without redundant 'Kích thước' header, with Unit selector next to Basis) */}
+    <div className="space-y-4">
           <section
             data-tour="s2-size"
-            className="overflow-hidden rounded-sheet border border-line bg-surface-raised p-4 sm:p-5"
+            className="min-w-0"
           >
-            {/* Priority 1: Gift preset quick-pick pills (horizontal scroll) */}
-            {!flat && boxType !== "cup-carrier" && (
-              <div data-tour="s2-presets" className="pb-3">
-                <div className="flex items-center gap-2 pb-2">
-                  <Gift className="size-3.5 text-fpt-orange" aria-hidden />
-                  <span className="text-xs font-semibold text-fg-muted">Chọn nhanh theo món quà</span>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 hover-scrollbar">
-                  {GIFT_PRESETS.map((gp) => {
-                    const isMatch =
-                      gp.dims.length === draft.length &&
-                      gp.dims.width === draft.width &&
-                      gp.dims.height === draft.height;
-                    const presetFits = fitsLimits(gp.dims);
-                    return (
-                      <button
-                        key={gp.id}
-                        type="button"
-                        disabled={!presetFits}
-                        aria-pressed={isMatch}
-                        title={
-                          presetFits
-                            ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm`
-                            : "Ngoài giới hạn của cấu trúc hộp này"
-                        }
-                        onClick={() => change({ ...gp.dims, giftWeight: draft.giftWeight, bottomType: draft.bottomType, window: draft.window }, true)}
-                        className={cn(
-                          "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-                          isMatch
-                            ? "border-fpt-orange bg-orange-50 text-fpt-orange-ink ring-1 ring-fpt-orange font-semibold"
-                            : "border-line bg-surface-sunken/50 text-fg hover:border-fpt-orange/50 hover:bg-orange-50/40",
-                          !presetFits && "cursor-not-allowed opacity-40",
-                        )}
-                      >
-                        {gp.name.split("·")[0].trim()}
-                        <span className="ml-1 text-fg-muted tabular-nums">
-                          {gp.dims.length}×{gp.dims.width}×{gp.dims.height}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            <div className="border-t border-slate-100 pt-1 divide-y divide-slate-100">
+              {DIMENSION_AXES.filter((axis) => !(axis === "width" && SHEET_ONLY_STRUCTURES.includes(boxType))).map((axis) => (
+                <DimensionRow
+                  key={axis}
+                  axis={axis}
+                  label={axisLabelOf(boxType, axis)}
+                  inner={draft[axis]}
+                  range={range(axis)}
+                  active={activeAxis === axis}
+                  unit={unit}
+                  basis={basis}
+                  thickness={t}
+                  onActive={(on) => onActiveAxis(on ? axis : null)}
+                  onChange={(val, now) => updateAxis(axis, val, now)}
+                  onRelease={flush}
+                />
+              ))}
+            </div>
 
-            {/* Priority 1 for Cup Carrier: Presets by cup count (standard 350ml-500ml) */}
-            {boxType === "cup-carrier" && (
-              <div data-tour="s2-cup-presets" className="pb-3 border-b border-line/60 mb-3">
-                <div className="flex items-center gap-1.5 pb-2">
-                  <Coffee className="size-3.5 text-fpt-orange" aria-hidden />
-                  <span className="text-xs font-semibold text-fg">Chọn nhanh theo số ly (chuẩn ly 350ml – 500ml)</span>
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 hover-scrollbar">
-                  {CUP_CARRIER_PRESETS.map((cp) => {
-                    const isMatch =
-                      (draft.cells?.rows ?? DEFAULT_CUPS.rows) === cp.rows &&
-                      (draft.cells?.cols ?? DEFAULT_CUPS.cols) === cp.cols &&
-                      Math.abs(draft.length - cp.length) <= 5 &&
-                      Math.abs(draft.width - cp.width) <= 5;
-                    return (
-                      <button
-                        key={cp.id}
-                        type="button"
-                        aria-pressed={isMatch}
-                        onClick={() =>
-                          change(
-                            {
-                              ...draft,
-                              cells: { rows: cp.rows, cols: cp.cols },
-                              length: cp.length,
-                              width: cp.width,
-                              height: cp.height,
-                            },
-                            true
-                          )
-                        }
-                        className={cn(
-                          "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
-                          isMatch
-                            ? "border-fpt-orange bg-orange-50 text-fpt-orange-ink ring-1 ring-fpt-orange font-semibold shadow-2xs"
-                            : "border-line bg-surface-sunken/50 text-fg hover:border-fpt-orange/50 hover:bg-orange-50/40"
-                        )}
-                      >
-                        {cp.name}
-                        <span className="ml-1 text-fg-muted tabular-nums">
-                          ({cp.length}×{cp.width} mm)
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Basis & Unit selectors + quick actions */}
+            <details className="border-t border-line py-2">
+              <summary className="cursor-pointer py-2 text-label-sm font-semibold text-fg-muted">Tuỳ chọn đo · {unit}</summary>
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
               <div className="flex flex-wrap items-center gap-3 sm:gap-5">
                 <SegmentedSwitch
@@ -478,26 +349,99 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                 </button>
               </div>
             </div>
+            </details>
+            {!flat && boxType !== "cup-carrier" && (
+              <div data-tour="s2-presets" className="pt-3">
+                <div className="flex items-center gap-2 pb-2">
+                  <Gift className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span className="text-xs font-semibold text-fg-muted">Chọn nhanh theo món quà</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 hover-scrollbar">
+                  {GIFT_PRESETS.map((gp) => {
+                    const isMatch =
+                      gp.dims.length === draft.length &&
+                      gp.dims.width === draft.width &&
+                      gp.dims.height === draft.height;
+                    const nextSize = { ...draft, length: gp.dims.length, width: gp.dims.width, height: gp.dims.height };
+                    const presetFits = fitsLimits(nextSize);
+                    return (
+                      <button
+                        key={gp.id}
+                        type="button"
+                        disabled={!presetFits}
+                        aria-pressed={isMatch}
+                        title={
+                          presetFits
+                            ? `${gp.dims.length} × ${gp.dims.width} × ${gp.dims.height} mm`
+                            : "Ngoài giới hạn của cấu trúc hộp này"
+                        }
+                        onClick={() => change(nextSize, true)}
+                        className={cn(
+                          "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+                          isMatch
+                            ? "border-fpt-orange bg-orange-50 text-fpt-orange-ink ring-1 ring-fpt-orange font-semibold"
+                            : "border-line bg-surface-sunken/50 text-fg hover:border-fpt-orange/50 hover:bg-orange-50/40",
+                          !presetFits && "cursor-not-allowed opacity-40",
+                        )}
+                      >
+                        {gp.name.split("·")[0].trim()}
+                        <span className="ml-1 text-fg-muted tabular-nums">
+                          {gp.dims.length}×{gp.dims.width}×{gp.dims.height}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* 3 Dimension Rows */}
-            <div className="border-t border-slate-100 pt-1 divide-y divide-slate-100">
-              {DIMENSION_AXES.filter((axis) => !(axis === "width" && SHEET_ONLY_STRUCTURES.includes(boxType))).map((axis) => (
-                <DimensionRow
-                  key={axis}
-                  axis={axis}
-                  label={axisLabelOf(boxType, axis)}
-                  inner={draft[axis]}
-                  range={range(axis)}
-                  active={active === axis}
-                  unit={unit}
-                  basis={basis}
-                  thickness={t}
-                  onActive={(on) => setActive(on ? axis : null)}
-                  onChange={(val, now) => updateAxis(axis, val, now)}
-                  onRelease={flush}
-                />
-              ))}
-            </div>
+            {boxType === "cup-carrier" && (
+              <div data-tour="s2-cup-presets" className="pb-3 border-b border-line/60 mb-3">
+                <div className="flex items-center gap-1.5 pb-2">
+                  <Coffee className="size-3.5 text-fpt-orange" aria-hidden />
+                  <span className="text-xs font-semibold text-fg">Chọn nhanh theo số ly (chuẩn ly 350ml – 500ml)</span>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 hover-scrollbar">
+                  {CUP_CARRIER_PRESETS.map((cp) => {
+                    const isMatch =
+                      (draft.cells?.rows ?? DEFAULT_CUPS.rows) === cp.rows &&
+                      (draft.cells?.cols ?? DEFAULT_CUPS.cols) === cp.cols &&
+                      Math.abs(draft.length - cp.length) <= 5 &&
+                      Math.abs(draft.width - cp.width) <= 5;
+                    return (
+                      <button
+                        key={cp.id}
+                        type="button"
+                        aria-pressed={isMatch}
+                        onClick={() =>
+                          change(
+                            {
+                              ...draft,
+                              cells: { rows: cp.rows, cols: cp.cols },
+                              length: cp.length,
+                              width: cp.width,
+                              height: cp.height,
+                            },
+                            true
+                          )
+                        }
+                        className={cn(
+                          "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-all whitespace-nowrap",
+                          isMatch
+                            ? "border-fpt-orange bg-orange-50 text-fpt-orange-ink ring-1 ring-fpt-orange font-semibold shadow-2xs"
+                            : "border-line bg-surface-sunken/50 text-fg hover:border-fpt-orange/50 hover:bg-orange-50/40"
+                        )}
+                      >
+                        {cp.name}
+                        <span className="ml-1 text-fg-muted tabular-nums">
+                          ({cp.length}×{cp.width} mm)
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Consolidated Footer: Outer dimensions + Cup carrier fit status */}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3 text-xs text-fg-muted">
@@ -623,174 +567,11 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
               </div>
             )}
           </section>
-        </div>
-
-        {/* Right Column: 3D Box Preview — sticky with stable, fixed viewport */}
-        <div className="sticky top-4 flex w-full flex-col gap-0">
-          {/* 3D Box Card with integrated HUD stats and fixed stable viewport */}
-          <div className="relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs h-[540px] sm:h-[580px] lg:h-[calc(100dvh-200px)] min-h-[480px] max-h-[760px]">
-            {/* Top Left Badge */}
-            <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm border border-slate-100 backdrop-blur-xs">
-              <span aria-hidden className="size-2 rounded-full bg-fpt-orange" />
-              {sheetOnly
-                ? `${draft.length} × ${draft.height} mm`
-                : `${draft.length} × ${draft.width} × ${draft.height} mm · ${boxType === "belly-band" ? "phủ bì hộp" : "lọt lòng"}`}
-            </span>
-
-            {/* Top Right Guide & Cup Toggle Buttons */}
-            <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
-              {boxType === "cup-carrier" && (
-                <button
-                  type="button"
-                  onClick={() => change({ ...draft, showCups: !(draft.showCups !== false) }, true)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all shadow-sm",
-                    draft.showCups !== false
-                      ? "bg-fpt-orange text-white shadow-xs hover:bg-fpt-orange/90"
-                      : "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100",
-                  )}
-                  title={draft.showCups !== false ? "Bỏ ly 350ml ra khỏi khay" : "Bỏ ly 350ml vào khay"}
-                >
-                  <Coffee className="size-3.5" aria-hidden />
-                  <span>{draft.showCups !== false ? "Ly 350ml" : "Thử ly 350ml"}</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setShowGuides((prev) => !prev)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all shadow-sm",
-                  showGuides
-                    ? "bg-fg text-fg-inverse hover:bg-fg/90"
-                    : "bg-white/90 text-slate-700 border border-slate-200 hover:bg-slate-100",
-                )}
-              >
-                <Ruler className="size-3.5" aria-hidden />
-                <span>Đường kích thước</span>
-              </button>
-            </div>
-
-            {/* 3D Canvas — flex-1 so it matches left column height perfectly */}
-            <div className="relative min-h-[480px] flex-1 bg-landing-canvas sm:min-h-[520px]">
-              <div className="absolute inset-0">
-                <Box3DView
-                  dimensions={committed.current}
-                  liveDimensions={draft}
-                  foldProgress={1}
-                  interactiveOpenState={openLid}
-                  faceLabels={showFaceLabels ? true : false}
-                  boxType={boxType}
-                  theme={activeMaterial as never}
-                  elements={elements}
-                  showCups={draft.showCups !== false}
-                  backgroundPatternSvg={backgroundPatternSvg}
-                  formulaVersion={formulaVersion}
-                  cameraView={cameraView}
-                  guides={
-                    showGuides
-                      ? {
-                          active,
-                          labels: {
-                            length: `${draft.length} mm`,
-                            width: sheetOnly ? "" : `${draft.width} mm`,
-                            height: `${draft.height} mm`,
-                          },
-                        }
-                      : null
-                  }
-                  showHud={false}
-                  showStatusBar={false}
-                  viewControls={false}
-                  enableMacroZoom={false}
-                  frameless
-                  minHeight={false}
-                  className="h-full w-full"
-                />
-              </div>
-            </div>
-
-            {/* Bottom HUD bar with stats + interactive 3D Controls dock */}
-            <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-white/95 via-white/85 to-transparent px-4 pb-3 pt-6 backdrop-blur-xs">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <dl className="flex items-center gap-4 text-xs tabular-nums">
-                  <HudStat label="Thể tích" value={`${formatNumber(innerVolumeMl(draft))} ml`} />
-                  <span className="h-4 w-px bg-slate-200" aria-hidden />
-                  <HudStat label="Khổ phôi" value={fits.map((fit) => `${fit.width}×${fit.height}`).join(" + ") + " mm"} />
-                  <span className="hidden h-4 w-px bg-slate-200 sm:block" aria-hidden />
-                  <HudStat className="hidden sm:block" label="Hộp / tờ B1" value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"} />
-                </dl>
-                <div className="flex items-center gap-1.5">
-                  <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md">
-                    {boxType !== "pillow" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => setOpenLid((prev) => !prev)}
-                          aria-pressed={openLid}
-                          title={openLid ? "Đóng nắp hộp" : "Mở nắp hộp"}
-                          className={cn(
-                            "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                            openLid
-                              ? "bg-fpt-orange text-white shadow-xs"
-                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                          )}
-                        >
-                          <Gift className="size-3.5" aria-hidden />
-                          <span>{openLid ? "Đóng nắp" : "Mở nắp"}</span>
-                        </button>
-                        <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
-                      </>
-                    )}
-                    {(
-                      [
-                        { view: "angle", label: "3/4" },
-                        { view: "front", label: "Trước" },
-                        { view: "side", label: "Bên" },
-                        { view: "top", label: "Trên" },
-                      ] as const
-                    ).map((item) => (
-                      <button
-                        key={item.view}
-                        type="button"
-                        onClick={() => setCameraView(item.view)}
-                        aria-pressed={cameraView === item.view}
-                        title={`Góc nhìn ${item.label.toLowerCase()}`}
-                        className={cn(
-                          "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors",
-                          cameraView === item.view
-                            ? "bg-fpt-orange text-white shadow-xs"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                        )}
-                      >
-                        {item.view === "angle" && <Box className="size-3" aria-hidden />}
-                        <span>{item.label}</span>
-                      </button>
-                    ))}
-                    <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
-                    <button
-                      type="button"
-                      onClick={() => setShowFaceLabels((prev) => !prev)}
-                      aria-pressed={showFaceLabels}
-                      title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
-                      className={cn(
-                        "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                        showFaceLabels
-                          ? "bg-fpt-orange text-white shadow-xs"
-                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                      )}
-                    >
-                      <Tag className="size-3" aria-hidden />
-                      <span>Nhãn mặt</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <dl className="grid grid-cols-2 gap-3 rounded-panel bg-surface-sunken p-3">
+        <HudStat label="Thể tích" value={`${formatNumber(innerVolumeMl(draft))} ml`} />
+        <HudStat label="Khổ phôi" value={fits.map((fit) => `${fit.width}×${fit.height}`).join(" + ") + " mm"} />
+        <HudStat label="Hộp / tờ B1" value={fits.length ? `${Math.min(...fits.map((fit) => fit.perSheet))} hộp` : "–"} />
+      </dl>
       {errors.length > 0 && (
         <div role="alert" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-danger-bg p-3.5 text-sm text-danger-fg">
           <div className="flex items-start gap-2">
@@ -809,6 +590,9 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   width: rows * 100 + 5,
                   height: rows > 1 ? 60 : 55,
                 }, true);
+              } else if (boxType === "pillow" && draft.height > draft.width / 2) {
+                const width = Math.max(draft.width, 2 * range("height").min);
+                change({ ...draft, width, height: Math.floor(width / 2) }, true);
               } else {
                 resetToInitial();
               }
@@ -821,36 +605,6 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
         </div>
       )}
 
-      {/* Priority 3: Full-width sticky bottom action bar */}
-      <StepActionBar
-        back={
-          onBack ? (
-            <button type="button" onClick={onBack} className={SECONDARY_PILL}>
-              <ArrowLeft className="size-4" aria-hidden />
-              Đổi kiểu hộp
-            </button>
-          ) : undefined
-        }
-        summary={
-          <div className="font-sans">
-            <span className="block text-xs text-landing-muted">Kích thước lọt lòng</span>
-            <div className="flex items-center gap-2">
-              <span className="font-sans font-semibold text-landing-ink">
-                {draft.length} × {draft.width} × {draft.height} mm
-              </span>
-              <span className={`rounded-full px-2 py-0.5 font-sans text-xs font-semibold ${fitTone}`}>
-                FitCheck {fitCheckReport.score}
-              </span>
-            </div>
-          </div>
-        }
-        next={
-          <button type="button" data-tour="studio-next" onClick={onNext} disabled={busy || errors.length > 0} className={PRIMARY_PILL}>
-            {nextLabel}
-            <ArrowRight className="size-4" aria-hidden />
-          </button>
-        }
-      />
     </div>
   );
 };

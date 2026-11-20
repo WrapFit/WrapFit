@@ -1295,8 +1295,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           {stage}
         </div>
         <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line bg-surface-raised px-3 py-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">{barStart}</div>
-          <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="flex flex-wrap items-center gap-0.5">
+          {barStart && <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">{barStart}</div>}
+          <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="ml-auto flex min-w-0 items-center gap-0.5 overflow-x-auto whitespace-nowrap">
             {barEnd}
             {showHud && boxType !== "pillow" && (
               <button type="button" onClick={() => setOpen((value) => !value)} aria-pressed={open} className={barButton(open)}>

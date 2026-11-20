@@ -1,9 +1,20 @@
+import type { CanvasElement } from "@wrapfit/shared";
+
 /**
  * Files the user uploads in the offline demo (/editor/demo) are `blob:` URLs, which die with the tab. The demo draft
  * keeps them in IndexedDB of this browser, keyed by the blob URL the draft refers to, so a reload brings them back.
  */
 const DB_NAME = "wrapfit-studio-demo";
 const STORE = "assets";
+
+/** Only uploaded assets need a replacement. Vector shapes store their geometry outside of content. */
+export function remapDraftElements(elements: CanvasElement[], assets: ReadonlyMap<string, string | null>): CanvasElement[] {
+  return elements.flatMap((element) => {
+    if (!element.content.startsWith("blob:")) return [element];
+    const url = assets.get(element.content);
+    return url ? [{ ...element, content: url }] : [];
+  });
+}
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

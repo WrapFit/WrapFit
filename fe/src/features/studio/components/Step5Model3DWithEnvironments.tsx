@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
+import { Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
 import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
 import { useToast } from "@/components/common/Toast";
 import { Switch } from "@/components/ui";
-import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, stageBarButton } from "@/features/studio/components/studioUi";
-import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
+import { workspacePanes, workspaceStage, WorkspaceInspector } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { BACKDROPS, SCENE_IDS, sceneForOccasion, surfaceCss, type SceneId } from "@/features/studio/components/three/backdrops";
 import { STUDIO_PALETTES, STUDIO_PALETTE_IDS, type StudioPaletteId } from "@/features/studio/components/three/studioPalettes";
@@ -31,8 +30,6 @@ interface Step5Model3DWithEnvironmentsProps {
   /** Name of the mockup files. */
   title: string;
   onDimensionsChange?: (dims: BoxDimensions) => void;
-  onBack: () => void;
-  onNext: () => void;
   onOpenQrModal?: () => void;
   /** The box already carries the QR code of its unboxing page. */
   hasUnboxingQr?: boolean;
@@ -66,8 +63,6 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   occasion,
   title,
   onDimensionsChange,
-  onBack,
-  onNext,
   onOpenQrModal,
   hasUnboxingQr = false,
 }) => {
@@ -190,11 +185,9 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const tile = "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border border-line-strong bg-surface-raised px-1 py-1.5 text-center transition-colors hover:border-fg disabled:opacity-60";
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-4 sm:px-6">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-        {/* The set: what the photo will be. Sticky, so it stays in view while the panel scrolls. */}
-        <div className="flex flex-col overflow-hidden rounded-sheet bg-surface-raised lg:sticky lg:top-[88px] lg:self-start">
-          <div className="relative h-[480px] w-full overflow-hidden bg-landing-canvas lg:h-[calc(100dvh-160px)] lg:min-h-[480px]">
+    <div className={workspacePanes}>
+      <div className={workspaceStage} data-tour="studio-stage">
+        <div className="relative min-h-0 flex-1 overflow-hidden">
             <Box3DView
               dimensions={dimensions}
               foldProgress={1}
@@ -409,9 +402,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
           </div>
         </div>
 
-        {/* Right column: 2 balanced, elegant cards following WrapFit 20 rules */}
-        <div className="flex flex-col gap-4">
-          {/* Card 1: Trải nghiệm mở hộp & Mã QR */}
+      <WorkspaceInspector title="Quà tặng & bối cảnh">
           <section aria-labelledby="step5-gift" className="rounded-2xl border border-orange-200/80 bg-orange-50/70 p-4 transition-all shadow-xs">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5 min-w-0">
@@ -675,23 +666,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               )}
             </div>
           </section>
-        </div>
-      </div>
-
-      <StepActionBar
-        back={
-          <button type="button" onClick={onBack} className={SECONDARY_PILL}>
-            <ArrowLeft className="size-4" aria-hidden />
-            Sửa thiết kế
-          </button>
-        }
-        next={
-          <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
-            {continueTo(6)}
-            <ArrowRight className="size-4" aria-hidden />
-          </button>
-        }
-      />
+      </WorkspaceInspector>
     </div>
   );
 };

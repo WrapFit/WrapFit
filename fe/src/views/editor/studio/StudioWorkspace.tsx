@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import React, { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useCtrlWheelZoom } from "@/hooks/dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ import {
   CircleHelp,
   ShieldCheck,
   ShieldAlert,
-  ArrowRight,
+  Printer,
   Trash2,
   ImageUp,
   History,
@@ -25,10 +25,8 @@ import {
   X,
   Box,
   Gift,
-  Tag,
   LayoutPanelTop,
   PackageOpen,
-  PenTool,
   ZoomIn,
   ZoomOut,
   Maximize2,
@@ -39,9 +37,9 @@ import {
   Redo2,
   AlertTriangle,
 } from "lucide-react";
-import { buttonClass, hasSeenTour, markTourSeen, ProductTour, useTourContinuation } from "@/components/ui";
-import { skipStudioStepTours, STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID, STUDIO_STEP_TOURS, studioStepTourId } from "@/features/studio/studioTour";
-import { ViewToggle } from "@/features/studio/components/studioUi";
+import { Button, buttonClass, ProductTour, startTour, useTourContinuation } from "@/components/ui";
+import { STUDIO_INTRO_TOUR, STUDIO_INTRO_TOUR_ID } from "@/features/studio/studioTour";
+import { workspacePanes, workspaceStage, WorkspaceInspector, ViewToggle } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { cn } from "@/utils/helpers";
 import {
@@ -73,6 +71,8 @@ import {
   refitBackgrounds,
   reflowElements,
   PRODUCT_LABEL_DISCLAIMER,
+  SHEET_ONLY_STRUCTURES,
+  FLAT_STRUCTURES,
   safeMarginsOf,
   samePanel,
   setPanelBackground,
@@ -102,7 +102,7 @@ import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanv
 import { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
 import { DimensionControls } from "@/features/studio/components/DimensionControls";
 import { FitCheckDrawer } from "@/features/studio/components/fitcheck/FitCheckDrawer";
-import { DesignFlyout, DesignRail, type DesignRailId } from "@/features/studio/components/DesignRail";
+import { DESIGN_RAIL, DesignRail, type DesignRailId } from "@/features/studio/components/DesignRail";
 import { PanelNavigator } from "@/features/studio/components/PanelNavigator";
 import {
   BoxBackgroundPicker,
@@ -121,13 +121,14 @@ import { Step3PaperFinish } from "@/features/studio/components/Step3PaperFinish"
 import { Step5Model3DWithEnvironments } from "@/features/studio/components/Step5Model3DWithEnvironments";
 import { Step6ReviewExport } from "@/features/studio/components/Step6ReviewExport";
 import { BOX_STRUCTURES } from "@/features/studio/utils/boxStructures";
-import { continueTo, StudioStepper, type StudioStep } from "@/features/studio/components/StudioStepper";
+import { WorkspaceNav, type StudioStep } from "@/features/studio/components/WorkspaceNav";
+import type { DimensionAxis } from "@/features/studio/components/three/guides";
 import { UnsavedChangesError, useProjectSync, type SyncState } from "@/features/studio/hooks/useProjectSync";
 import { recordAutoFix, useStudioHeartbeat } from "@/features/studio/hooks/useStudioHeartbeat";
 import { checkDesign, dielinePiecesOf, dimensionErrors, formatMm, panelLabel, pieceIndexOfPanel } from "@/features/studio/utils/dieline";
 import { finishesOf, materialSpecFor, materialThemeOf } from "@/features/studio/utils/projectMaterial";
 import { renderThumbnail } from "@/features/studio/utils/thumbnail";
-import { clearDemoAssets, restoreDemoAssets, syncDemoAssets } from "@/features/studio/utils/demoDraftAssets";
+import { clearDemoAssets, remapDraftElements, restoreDemoAssets, syncDemoAssets } from "@/features/studio/utils/demoDraftAssets";
 import {
   createProject,
   errorMessage,
@@ -187,7 +188,7 @@ const isLibraryBackground = (el: CanvasElement) => el.type === "pattern" && !!pa
 /** Icon button of the light toolbars around the stage: 40 px, orange tint when on. */
 const lightToolButton = (on: boolean, className?: string) =>
   cn(
-    "flex size-10 shrink-0 items-center justify-center rounded-control outline-none transition-[background-color,color,transform] duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:ring-[3px] focus-visible:ring-focus/50 disabled:pointer-events-none disabled:opacity-35",
+    "flex size-11 shrink-0 items-center justify-center rounded-control outline-none transition-[background-color,color,transform] duration-150 active:scale-95 motion-reduce:active:scale-100 focus-visible:ring-[3px] focus-visible:ring-focus/50 disabled:pointer-events-none disabled:opacity-35",
     on ? "bg-fpt-orange-light text-accent" : "text-fg-muted hover:bg-surface-sunken hover:text-fg",
     className,
   );
@@ -320,7 +321,7 @@ interface StudioWorkspaceProps {
   demoTemplate?: TemplateDetail | null;
 }
 
-/** Steps 1–4 of the studio for one design. Mount it again (new `key`) to load another state of the project. */
+/** The workspace for one design. Mount it again (new `key`) to load another state of the project. */
 export function StudioWorkspace({
   project,
   structures,
@@ -336,14 +337,7 @@ export function StudioWorkspace({
   const presenting = usePresentMode();
   useStudioHeartbeat(project?.id ?? null);
 
-  // Guided tour: the overview of the screen once, then a short guide the first time each step opens.
   const tourContinued = useTourContinuation();
-  const [introSeen, setIntroSeen] = useState(true);
-  useEffect(() => setIntroSeen(hasSeenTour(STUDIO_INTRO_TOUR_ID)), []);
-  // "Hướng dẫn" button: counts the replays (remounts the intro) and, once a replayed intro is finished, names the
-  // step whose own tour then runs.
-  const [replay, setReplay] = useState(0);
-  const [chainedStep, setChainedStep] = useState<StudioStep | null>(null);
 
   // Query parameter overrides for demo mode (home page, structure pages, template hub or direct links)
   const paramStructure = searchParams.get("structure") as BoxStructureType | null;
@@ -366,12 +360,11 @@ export function StudioWorkspace({
   const hasParamDims =
     isDemo && Number.isFinite(paramL) && paramL > 0 && Number.isFinite(paramW) && paramW > 0 && Number.isFinite(paramH) && paramH > 0;
 
-  // Stepper: 1 structure → 2 size → 3 paper → 4 artwork → 5 3D & gift → 6 FitCheck & export.
-  const firstStep: StudioStep = isDemo ? 1 : 2;
+  // Legacy step links and drafts select a tool within the workspace.
   const paramStepRaw = searchParams.get("step");
   const paramStep = paramStepRaw ? Number(paramStepRaw) : null;
   const [currentStep, setCurrentStep] = useState<StudioStep>(() => {
-    if (paramStep && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
+    if (paramStep && Number.isInteger(paramStep) && paramStep >= 1 && paramStep <= 6) return paramStep as StudioStep;
     if (project) return 4;
     if (demoDraft) return demoDraft.step;
     if (hasParamDims || paramStructure || demoTemplate) return 4;
@@ -385,30 +378,6 @@ export function StudioWorkspace({
     url.searchParams.set("step", String(currentStep));
     window.history.replaceState(window.history.state, "", url);
   }, [currentStep]);
-
-  const [isStepChanging, startStepTransition] = useTransition();
-
-  const navigateToStep = useCallback((targetStep: StudioStep) => {
-    if (targetStep === currentStep) return;
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-    startStepTransition(() => {
-      setCurrentStep(targetStep);
-    });
-  }, [currentStep]);
-
-  // Going to another step while the intro is open leaves the intro (counted as skipped); that step's own tour starts
-  // if it was not seen. The first value, from the address or the project, is not a change.
-  const previousStep = useRef(currentStep);
-  useEffect(() => {
-    if (previousStep.current === currentStep) return;
-    previousStep.current = currentStep;
-    if (!introSeen) {
-      markTourSeen(STUDIO_INTRO_TOUR_ID, false);
-      setIntroSeen(true);
-    }
-  }, [currentStep, introSeen]);
 
   // Project Core State: a saved project fills it once, on mount
   const [projectTitle, setProjectTitle] = useState<string>(project?.title ?? demoSource?.title ?? "Bao bì quà tặng sang trọng");
@@ -471,17 +440,23 @@ export function StudioWorkspace({
   const [activePanelId, setActivePanelId] = useState<string>("panel_front");
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
 
-  // Step 4 rail: the open flyout panel (Canva-like); clicking the open one again folds it.
+  // Clicking the active artwork tool closes its settings.
   const [railPanel, setRailPanel] = useState<DesignRailId | null>("elements");
 
   // Step 4 stage: the flat dieline to edit, or the folded box to check it; the dock's text tool opens the composer
-  const [artView, setArtView] = useState<"2d" | "3d">("2d");
+  const flatStructure = (FLAT_STRUCTURES as readonly string[]).includes(boxType);
+  const [artView, setArtView] = useState<"2d" | "3d">(currentStep <= 3 && !flatStructure ? "3d" : "2d");
+  const [activeAxis, setActiveAxis] = useState<DimensionAxis | null>(null);
+  const navigateToStep = (step: StudioStep) => {
+    if (step <= 3 && currentStep > 3) setArtView(flatStructure ? "2d" : "3d");
+    if (step === 4 && currentStep !== 4) setArtView("2d");
+    setActiveAxis(null);
+    setCurrentStep(step);
+  };
   // Side of the sheet being designed (docs-old/23 S5): the inside is edited on the dieline mirrored, as seen from inside.
   const [editSide, setEditSide] = useState<PrintSide>("outside");
   const [foldProgress, setFoldProgress] = useState<number>(1);
   const [lidOpen, setLidOpen] = useState<boolean>(false);
-  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
-  const [showFaceLabels, setShowFaceLabels] = useState<boolean>(true);
   const [textComposerOpen, setTextComposerOpen] = useState<boolean>(false);
 
   // Ctrl/⌘ + wheel (or trackpad pinch) over the stage zooms the dieline, never the browser page. In 3D the box's own
@@ -494,7 +469,7 @@ export function StudioWorkspace({
     },
     [artView]
   );
-  useCtrlWheelZoom(stageRef, zoomStage);
+  useCtrlWheelZoom(stageRef, zoomStage, currentStep <= 4);
 
   // Artwork Canvas Elements
   const [elements, setElements] = useState<CanvasElement[]>(() => {
@@ -632,7 +607,7 @@ export function StudioWorkspace({
       .then((restored) => {
         if (cancelled) return;
         const remap = (url: string) => (url.startsWith("blob:") ? (restored.get(url) ?? "") : url);
-        setElements((prev) => prev.map((el) => ({ ...el, content: remap(el.content) })).filter((el) => el.content !== ""));
+        setElements((prev) => remapDraftElements(prev, restored));
         setCustomFonts((prev) => prev.map((f) => ({ ...f, url: remap(f.url) })).filter((f) => f.url !== ""));
         history.current.past = [];
         setDemoAssetsReady(true);
@@ -1282,9 +1257,7 @@ export function StudioWorkspace({
       }
     }
     const local = [...uploaded.values()].filter((v) => v === null);
-    const savedElements = elements
-      .map((el) => (uploaded.has(el.content) ? { ...el, content: uploaded.get(el.content) ?? "" } : el))
-      .filter((el) => el.content !== "");
+    const savedElements = remapDraftElements(elements, uploaded);
     const created = await createProject({
       templateId: boxType,
       title: payload.title,
@@ -1354,9 +1327,10 @@ export function StudioWorkspace({
   // "Thiết kế hộp mới" starts again from step 1. A guest keeps the draft in this browser only.
   const demoSavedRef = useRef(false);
   const demoTouchedRef = useRef(false);
+  const openingDimensions = useRef(dimensions);
   useEffect(() => {
-    if (isDemo && (currentStep > 1 || elements.length > 0)) demoTouchedRef.current = true;
-  }, [isDemo, currentStep, elements.length]);
+    if (isDemo && (currentStep > 1 || elements.length > 0 || boxType !== initialStructure || dimensions !== openingDimensions.current)) demoTouchedRef.current = true;
+  }, [isDemo, currentStep, elements.length, boxType, initialStructure, dimensions]);
   const leaveDemoRef = useRef<() => void>(() => undefined);
   leaveDemoRef.current = () => {
     if (!isDemo || demoSavedRef.current || !demoTouchedRef.current || authStatus !== "authenticated" || invalidReason) return;
@@ -1400,6 +1374,21 @@ export function StudioWorkspace({
   };
 
 
+  const chooseStructure = (type: BoxStructureType) => {
+    setBoxType(type);
+    setPieceIndex(0);
+    setArtView((FLAT_STRUCTURES as readonly string[]).includes(type) ? "2d" : "3d");
+    if (type === "cup-carrier") {
+      setDimensions((prev) => ({
+        ...prev,
+        cells: prev.cells ?? { rows: 1, cols: 2 },
+        length: prev.length >= 100 && prev.length <= 400 ? prev.length : 205,
+        width: prev.width >= 100 && prev.width <= 300 ? prev.width : 105,
+        height: prev.height >= 45 && prev.height <= 80 ? prev.height : 55,
+      }));
+    }
+  };
+
   const projectActions = (
     <>
       <button
@@ -1428,24 +1417,17 @@ export function StudioWorkspace({
   );
 
   return (
-    <div className={`${landingFontVariables} min-h-screen bg-landing-canvas flex flex-col font-landing-body select-none overflow-x-hidden`}>
-      {/* Top bar: logo, the 6 steps, save state, FitCheck, help, save */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md">
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
-          {/* Left: logo */}
-          <div className="flex items-center gap-3 shrink-0">
+    <div className={`${landingFontVariables} flex h-dvh min-h-0 flex-col overflow-hidden bg-canvas font-landing-body text-fg`}>
+      <header className="z-30 shrink-0 border-b border-line bg-surface-raised">
+        <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-4 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
             <LandingLogo size="sm" />
+            <div className="min-w-0 border-l border-line pl-3">
+              <span className="hidden text-caption font-medium text-fg-muted sm:block">WrapFit Studio</span>
+              <h1 title={projectTitle} className="truncate font-landing-heading text-label font-bold sm:text-body">{projectTitle}</h1>
+            </div>
           </div>
-
-          {/* The 6 steps */}
-          <StudioStepper
-            current={currentStep}
-            onSelect={navigateToStep}
-            locked={isDemo ? {} : { 1: "Cấu trúc hộp cố định sau khi tạo dự án. Tạo dự án mới để đổi kiểu hộp." }}
-          />
-
-          {/* Right: Cloud Save Status, FitCheck & Export. Never shrinks: the stepper scrolls instead. */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {/* Save status: the label from 2xl, a dot below (only for saved projects) */}
             {!isDemo && (
               <div
@@ -1464,7 +1446,8 @@ export function StudioWorkspace({
             <button
               type="button"
               onClick={() => {
-                navigateToStep(6);
+                navigateToStep(4);
+                setRailPanel("fitcheck");
               }}
               title={
                 fitBadge.tone === "empty"
@@ -1488,26 +1471,24 @@ export function StudioWorkspace({
             <button
               type="button"
               title="Hướng dẫn"
-              onClick={() => {
-                setChainedStep(null);
-                setReplay((count) => count + 1);
-                setIntroSeen(false);
-              }}
-              className={buttonClass({ variant: "ghost", size: "sm", className: "hidden md:inline-flex" })}
+              onClick={() => startTour(STUDIO_INTRO_TOUR_ID)}
+              aria-label="Hướng dẫn"
+              className={buttonClass({ variant: "ghost", size: "sm", className: "hidden lg:inline-flex" })}
             >
               <CircleHelp aria-hidden />
               <span className="sr-only 2xl:not-sr-only">Hướng dẫn</span>
             </button>
 
-            {/* Snapshots & sharing: icons, labels from 2xl; on phones they sit in the step 3 toolbar */}
-            {!isDemo && <div className="hidden sm:flex items-center gap-2">{projectActions}</div>}
+            {/* Saved-project actions are available in every mode. */}
+            {!isDemo && <div className="flex items-center gap-1 sm:gap-2">{projectActions}</div>}
 
             {!isDemo && !readOnly && (
               <button
                 type="button"
                 onClick={() => void saveNow()}
                 disabled={savingProject || sync.state === "saving"}
-                className={buttonClass({ variant: "brand", size: "sm", className: "min-h-10" })}
+                aria-label="Lưu dự án"
+                className={buttonClass({ variant: "secondary", size: "sm", className: "min-h-11 max-sm:px-2" })}
               >
                 <Save aria-hidden />
                 <span className="hidden sm:inline">{savingProject ? "Đang lưu…" : "Lưu dự án"}</span>
@@ -1520,20 +1501,20 @@ export function StudioWorkspace({
                   type="button"
                   onClick={() => void saveAsProject()}
                   disabled={savingProject}
-                  className={buttonClass({ variant: "brand", size: "sm", className: "min-h-10" })}
+                  aria-label="Lưu dự án"
+                className={buttonClass({ variant: "secondary", size: "sm", className: "min-h-11 max-sm:px-2" })}
                 >
                   <Save aria-hidden />
-                  {savingProject ? "Đang lưu…" : "Lưu dự án"}
+                  <span className="hidden sm:inline">{savingProject ? "Đang lưu…" : "Lưu dự án"}</span>
                 </button>
               ) : (
-                <Link href={`${ROUTES.login}?redirect=${encodeURIComponent(ROUTES.editorDemo)}`} className={buttonClass({ variant: "secondary", size: "sm", className: "min-h-10" })}>
+                <Link aria-label="Đăng nhập để lưu" href={`${ROUTES.login}?redirect=${encodeURIComponent(ROUTES.editorDemo)}`} className={buttonClass({ variant: "secondary", size: "sm", className: "min-h-10" })}>
                   <LogIn aria-hidden />
                   <span className="hidden sm:inline">Đăng nhập để lưu</span>
                 </Link>
               ))}
 
-            {/* No export button here: the print file is sold. Step 6 shows "Thanh toán", which becomes "Xuất file in"
-                once a package covers the design (ExportPurchaseCard). */}
+            <Button variant="brand" size="sm" disabled={readOnly} onClick={() => navigateToStep(6)} className="hidden min-h-11 sm:inline-flex" leadingIcon={<Printer aria-hidden />}>Đặt in</Button>
           </div>
         </div>
       </header>
@@ -1625,102 +1606,13 @@ export function StudioWorkspace({
         </div>
       )}
 
-      {!introSeen ? (
-        <ProductTour
-          key={`intro-${replay}`}
-          id={STUDIO_INTRO_TOUR_ID}
-          steps={STUDIO_INTRO_TOUR}
-          force={tourContinued || replay > 0}
-          onClose={(completed) => {
-            setIntroSeen(true);
-            // A replayed intro that was finished goes on with the tour of the step that is open; skipped, it stops.
-            if (completed && replay > 0) setChainedStep(currentStep);
-            // Skipped on the first visit: no step guide pops up right after (they stay one click away in "Hướng dẫn").
-            if (!completed && replay === 0) skipStudioStepTours();
-          }}
-        />
-      ) : (
-        // Keyed by step: each step has its own tour, started on its first visit (or by the replay above).
-        <ProductTour
-          key={chainedStep === currentStep ? `${currentStep}-replay-${replay}` : currentStep}
-          id={studioStepTourId(currentStep)}
-          steps={STUDIO_STEP_TOURS[currentStep]}
-          force={chainedStep === currentStep}
-          onClose={() => setChainedStep(null)}
-        />
-      )}
-
-      {/* The open step */}
-      {/* `inert`: a trashed project can be looked at, not edited */}
-      <main className={cn("flex-1 w-full flex flex-col transition-opacity duration-200", isStepChanging && "opacity-85")} inert={readOnly || undefined}>
-        <div key={currentStep} className="w-full flex-1 flex flex-col animate-in fade-in duration-200 ease-out fill-mode-both">
-        {/* STEP 1: CHỌN MẪU HỘP (demo only) */}
-        {currentStep === 1 && (
-          <Step1BoxTemplatePicker
-            selectedStructure={boxType}
-            onSelectStructure={(t) => {
-              setBoxType(t);
-              setPieceIndex(0);
-              if (t === "cup-carrier") {
-                setDimensions((prev) => ({
-                  ...prev,
-                  cells: prev.cells ?? { rows: 1, cols: 2 },
-                  length: prev.length >= 100 && prev.length <= 400 ? prev.length : 205,
-                  width: prev.width >= 100 && prev.width <= 300 ? prev.width : 105,
-                  height: prev.height >= 45 && prev.height <= 80 ? prev.height : 55,
-                }));
-              }
-            }}
-            onNext={() => navigateToStep(2)}
-          />
-        )}
-
-        {/* STEP 2: NHẬP KÍCH THƯỚC & VẬT LIỆU */}
-        {currentStep === 2 && (
-          <Step2DimensionAndMaterial
-            dimensions={dimensions}
-            onDimensionsChange={setDimensions}
-            activeMaterial={activeMaterial}
-            onMaterialChange={(m) => setActiveMaterial(m as BoxMaterialTheme)}
-            fitCheckReport={displayReport}
-            limits={limits}
-            structure={boxType}
-            formulaVersion={project?.formulaVersion}
-            onBack={isDemo ? () => navigateToStep(1) : undefined}
-            onNext={() => navigateToStep(3)}
-            elements={elements}
-            backgroundPatternSvg={backgroundPatternSvg}
-          />
-        )}
-
-        {/* STEP 3: GIẤY & BỀ MẶT */}
-        {currentStep === 3 && (
-          <Step3PaperFinish
-            boxType={boxType}
-            dimensions={dimensions}
-            onDimensionsChange={setDimensions}
-            activeMaterial={activeMaterial}
-            onMaterialChange={setActiveMaterial}
-            finishes={finishes}
-            onFinishesChange={setFinishes}
-            pieces={pieces}
-            limits={limits}
-            elements={elements}
-            backgroundPatternSvg={backgroundPatternSvg}
-            formulaVersion={project?.formulaVersion}
-            onBack={() => navigateToStep(2)}
-            onNext={() => navigateToStep(4)}
-          />
-        )}
-
-        {/* STEP 4: THIẾT KẾ — Canva-like: icon rail on the left, its flyout panel next to it, the stage (dieline or folded
-            box) like a slide in the middle, the faces of the dieline as a page strip and the zoom at the bottom. */}
-        {currentStep === 4 && (
-          <section
-            aria-label="Thiết kế hình in trên khuôn bế"
-            className="flex flex-1 flex-col bg-surface-sunken lg:h-[calc(100dvh-72px)] lg:min-h-[640px] lg:flex-none lg:flex-row lg:overflow-hidden"
-          >
-            <DesignRail active={railPanel} onSelect={toggleRail} fitcheckIssues={displayReport.violations.filter((v) => v.severity !== "info").length} />
+      <ProductTour id={STUDIO_INTRO_TOUR_ID} steps={STUDIO_INTRO_TOUR} autoStart={false} force={tourContinued} />
+      <div className="flex min-h-0 flex-1 flex-col-reverse lg:flex-row">
+        <WorkspaceNav current={currentStep} onSelect={navigateToStep}
+          onCopilot={presenting || readOnly ? undefined : () => window.dispatchEvent(new CustomEvent("wrapfit_toggle_copilot"))} />
+        <main className="flex min-h-0 min-w-0 flex-1" inert={readOnly || undefined}>
+        {currentStep <= 4 && (
+          <section aria-label="Bàn thiết kế bao bì" className={workspacePanes}>
             <input
               ref={imageInputRef}
               type="file"
@@ -1740,8 +1632,281 @@ export function StudioWorkspace({
               aria-hidden
             />
 
-            {railPanel && (
-              <DesignFlyout id={railPanel} onClose={() => setRailPanel(null)}>
+            {/* ── The workspace: toolbar, stage, page strip and zoom ── */}
+            <div className={workspaceStage}>
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-line bg-surface-raised px-2 py-1 lg:px-4 lg:py-2">
+                <div className="flex min-w-0 items-center gap-0.5">
+                  {currentStep === 4 && (
+                    <div className="flex items-center">
+                      <button type="button" aria-label="Hoàn tác" title="Hoàn tác · Ctrl+Z" disabled={historySize.past === 0} onClick={() => travel("undo")} className={lightToolButton(false)}>
+                        <Undo2 className="size-4" aria-hidden />
+                      </button>
+                      <button type="button" aria-label="Làm lại" title="Làm lại · Ctrl+Y" disabled={historySize.future === 0} onClick={() => travel("redo")} className={lightToolButton(false)}>
+                        <Redo2 className="size-4" aria-hidden />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    aria-pressed={showRulers}
+                    aria-label="Thước đo mm"
+                    title={showRulers ? "Ẩn thước mm" : "Hiện thước mm"}
+                    onClick={() => setShowRulers((on) => !on)}
+                    className={lightToolButton(showRulers, artView === "3d" && currentStep > 2 ? "hidden" : "")}
+                  >
+                    <Ruler className="size-4" aria-hidden />
+                  </button>
+                  {uploading && (
+                    <span role="status" className="ml-1 flex min-h-9 items-center gap-1.5 rounded-full bg-info-bg px-3 text-label-sm font-semibold text-info-fg">
+                      <ImageUp className="size-4 animate-pulse motion-reduce:animate-none" aria-hidden />
+                      <span className="hidden sm:inline">Đang tải ảnh…</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex min-w-0 items-center justify-center">
+                  <ViewToggle<"2d" | "3d">
+                    label="Chế độ xem"
+                    value={artView}
+                    onChange={setArtView}
+                    options={[
+                      { value: "2d", label: "Khuôn 2D", icon: LayoutPanelTop },
+                      { value: "3d", label: "Hộp 3D", icon: Box },
+                    ]}
+                  />
+                </div>
+              </div>
+              {artView === "2d" && currentStep === 4 && (
+                <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-line bg-surface-raised px-3 py-1.5 no-scrollbar">
+                    <ViewToggle<PrintSide>
+                      label="Mặt giấy đang thiết kế"
+                      value={editSide}
+                      onChange={(side) => {
+                        setEditSide(side);
+                        setSelectedElementId(null);
+                      }}
+                      options={[
+                        { value: "outside", label: "Mặt ngoài" },
+                        { value: "inside", label: "Mặt trong" },
+                      ]}
+                    />
+                  <div className="flex min-w-max items-center gap-2">
+                    {/* Pieces of a two-part box (sleeve & drawer, lid & base): which dieline is edited. */}
+                    {pieces.length > 1 && (
+                      <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
+                        {pieces.map((piece, index) => (
+                          <button
+                            key={piece.name}
+                            type="button"
+                            aria-pressed={index === pieceIndex}
+                            onClick={() => {
+                              setPieceIndex(index);
+                              setActivePanelId("all");
+                              setArtView("2d");
+                            }}
+                            className={`min-h-9 whitespace-nowrap rounded-full px-3.5 text-label-sm font-semibold transition-colors ${
+                              index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
+                            }`}
+                          >
+                            {piece.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} />
+                  </div>
+                </div>
+              )}
+
+              {/* Toolbar of the selection (docs-old/23 S8): exact place, size and turn, align, group */}
+              {artView === "2d" && !readOnly && selectedIds.length > 0 && (
+                <SelectionToolbar
+                  elements={elements}
+                  selectedIds={selectedIds}
+                  onChange={setElements}
+                  onSelect={selectIds}
+                  faceSize={(panelId) => {
+                    for (const piece of editPieces) {
+                      const panel = piece.geometry.panels.find((p) => samePanel(p.id, panelId));
+                      if (panel) return { width: panel.bounds.width, height: panel.bounds.height };
+                    }
+                    return null;
+                  }}
+                  onOpenSettings={() => setRailPanel(selectedElement?.type === "text" ? "text" : selectedElement?.type === "shape" ? "shapes" : "layers")}
+                />
+              )}
+
+              {/* Stage: the dieline sits on the grey desk like a slide */}
+              <div ref={stageRef} data-tour="studio-stage" className="relative min-h-0 flex-1 overflow-hidden">
+                {artView === "2d" ? (
+                  <DielineCanvas2D
+                    variant="stage"
+                    dieline={dieline}
+                    scale={zoomScale}
+                    onScaleChange={setZoomScale}
+                    elements={elements}
+                    onElementsChange={setElements}
+                    selectedElementId={selectedElementId}
+                    onSelectElement={setSelectedElementId}
+                    selectedIds={selectedIds}
+                    onSelectIds={setMultiIds}
+                    backgroundPatternSvg={backgroundPatternSvg}
+                    activePanelId={activePanelId}
+                    onSelectPanel={selectPanel}
+                    showRulers={showRulers}
+                    flaggedElementIds={flaggedElementIds}
+                    textComposerOpen={textComposerOpen}
+                    onTextComposerOpenChange={setTextComposerOpen}
+                    side={editSide}
+                  />
+                ) : (
+                  <div className="relative h-full w-full">
+                    <Box3DView
+                      guides={currentStep <= 2 && showRulers ? {
+                        active: activeAxis,
+                        labels: { length: `${dimensions.length} mm`, width: SHEET_ONLY_STRUCTURES.includes(boxType) ? "" : `${dimensions.width} mm`, height: `${dimensions.height} mm` },
+                      } : null}
+                      dimensions={dimensions}
+                      foldProgress={foldProgress}
+                      faceLabels="toggle"
+                      onToggleCups={(showCups: boolean) => setDimensions((prev) => ({ ...prev, showCups }))}
+                      showCups={dimensions.showCups !== false}
+                      boxType={boxType}
+                      theme={activeMaterial}
+                      elements={elements}
+                      formulaVersion={project?.formulaVersion}
+                      backgroundPatternSvg={backgroundPatternSvg}
+                      environment="transparent"
+                      interactiveOpenState={lidOpen}
+                      chrome="bar"
+                      showHud={false}
+                      showStatusBar={false}
+                      frameless
+                      minHeight={false}
+                      className="h-full w-full"
+                    />
+
+                  </div>
+                )}
+              </div>
+
+              {/* Zoom and fold controls for the shared canvas. */}
+              <div
+                role="toolbar"
+                aria-label={artView === "2d" ? "Thu phóng khuôn bế" : "Gập hộp 3D"}
+                className="flex min-h-11 shrink-0 items-center justify-between gap-1 border-t border-line bg-surface-raised px-2 lg:px-4"
+              >
+                {artView === "2d" ? (
+                  <>
+                    <div className="ml-auto flex shrink-0 items-center gap-1">
+                      <button type="button" onClick={() => setArtView("3d")} className={lightToolButton(false, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}>
+                        <Box className="size-4" aria-hidden />
+                        Gập thử
+                      </button>
+                      <span className="mx-1 h-6 w-px bg-line" aria-hidden />
+                      <button type="button" onClick={() => setZoomScale((s) => Math.max(0.4, +(s - 0.15).toFixed(2)))} className={lightToolButton(false)} aria-label="Thu nhỏ" title="Thu nhỏ">
+                        <ZoomOut className="size-4" aria-hidden />
+                      </button>
+                      <input
+                        type="range"
+                        min={40}
+                        max={250}
+                        step={5}
+                        value={Math.round(zoomScale * 100)}
+                        onChange={(e) => setZoomScale(Number(e.target.value) / 100)}
+                        aria-label="Mức thu phóng"
+                        className="hidden w-32 cursor-pointer accent-fpt-orange sm:block"
+                      />
+                      <button type="button" onClick={() => setZoomScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)))} className={lightToolButton(false)} aria-label="Phóng to" title="Phóng to">
+                        <ZoomIn className="size-4" aria-hidden />
+                      </button>
+                      <span className="w-12 text-center text-label-sm font-semibold tabular-nums text-fg" aria-live="polite">
+                        {Math.round(zoomScale * 100)}%
+                      </span>
+                      <button type="button" onClick={() => setZoomScale(1)} className={lightToolButton(zoomScale === 1)} aria-label="Vừa màn hình" title="Vừa màn hình">
+                        <Maximize2 className="size-4" aria-hidden />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {boxType !== "pillow" && (
+                      <Button variant="ghost" size="sm" aria-pressed={lidOpen} leadingIcon={<Gift aria-hidden />}
+                        onClick={() => { setFoldProgress(1); setLidOpen((open) => !open); }}>
+                        {lidOpen ? "Đóng nắp" : "Mở nắp"}
+                      </Button>
+                    )}
+                    <div className="ml-auto flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLidOpen(false);
+                          setFoldProgress(0);
+                        }}
+                        className={lightToolButton(foldProgress === 0)}
+                        aria-label="Trải phẳng"
+                        title="Trải phẳng"
+                      >
+                        <LayoutPanelTop className="size-4" aria-hidden />
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(foldProgress * 100)}
+                        onChange={(e) => {
+                          const value = Number(e.target.value) / 100;
+                          setFoldProgress(value);
+                          if (value < 0.9) setLidOpen(false);
+                        }}
+                        aria-label="Mức gập hộp"
+                        aria-valuetext={`${Math.round(foldProgress * 100)}% gập`}
+                        className="w-16 cursor-pointer accent-fpt-orange sm:w-40"
+                      />
+                      <span className="w-10 text-right text-label-sm font-semibold tabular-nums text-fg">{Math.round(foldProgress * 100)}%</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLidOpen(false);
+                          setFoldProgress(1);
+                        }}
+                        className={lightToolButton(foldProgress === 1 && !lidOpen)}
+                        aria-label="Gập kín"
+                        title="Gập kín"
+                      >
+                        <Box className="size-4" aria-hidden />
+                      </button>
+                    </div>
+                  </>
+                )}
+
+              </div>
+            </div>
+            {currentStep <= 3 ? (
+              <WorkspaceInspector key="setup" title="Hộp & giấy">
+                <Step1BoxTemplatePicker
+                  selectedStructure={boxType}
+                  structures={structures}
+                  onSelectStructure={isDemo ? chooseStructure : undefined}
+                />
+                <ViewToggle<"size" | "paper"> label="Thông số hộp" value={currentStep === 3 ? "paper" : "size"}
+                  options={[{ value: "size", label: "Kích thước", icon: Ruler }, { value: "paper", label: "Giấy & gia công" }]}
+                  onChange={(value) => navigateToStep(value === "paper" ? 3 : 2)} />
+                {currentStep === 3 ? (
+                  <Step3PaperFinish dimensions={dimensions} onDimensionsChange={setDimensions} boxType={boxType}
+                    activeMaterial={activeMaterial} onMaterialChange={setActiveMaterial} finishes={finishes}
+                    onFinishesChange={setFinishes} pieces={pieces} limits={limits} elements={elements} />
+                ) : (
+                  <Step2DimensionAndMaterial key={boxType} dimensions={dimensions} onDimensionsChange={setDimensions}
+                    structure={boxType} formulaVersion={project?.formulaVersion} limits={limits} activeAxis={activeAxis} onActiveAxis={setActiveAxis} />
+                )}
+              </WorkspaceInspector>
+            ) : (
+              <WorkspaceInspector key="design" title="Thiết kế hình in">
+                <DesignRail active={railPanel} onSelect={toggleRail} fitcheckIssues={displayReport.violations.filter((v) => v.severity !== "info").length} />
+                {railPanel && <div key={railPanel} className="space-y-3">
+                  <h3 className="font-landing-heading text-label font-bold text-fg">{DESIGN_RAIL.find((tool) => tool.id === railPanel)?.title}</h3>
                 <DesignColorsContext.Provider value={designColors}>
                 <CustomFontsContext.Provider value={customFonts}>
                 {railPanel === "elements" && placementPanel && (
@@ -2042,341 +2207,9 @@ export function StudioWorkspace({
                 )}
                 </CustomFontsContext.Provider>
                 </DesignColorsContext.Provider>
-              </DesignFlyout>
+                </div>}
+              </WorkspaceInspector>
             )}
-
-            {/* ── The workspace: toolbar, stage, page strip and zoom ── */}
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-              {/* Context toolbar */}
-              {/* Three columns from md: tools | 2D/3D switch, always centred | "Tiếp". */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-raised px-3 py-2 md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-2">
-                <div className="flex min-w-0 items-center gap-1">
-                  <button type="button" aria-label="Hoàn tác" title="Hoàn tác · Ctrl+Z" disabled={historySize.past === 0} onClick={() => travel("undo")} className={lightToolButton(false)}>
-                    <Undo2 className="size-4" aria-hidden />
-                  </button>
-                  <button type="button" aria-label="Làm lại" title="Làm lại · Ctrl+Y" disabled={historySize.future === 0} onClick={() => travel("redo")} className={lightToolButton(false)}>
-                    <Redo2 className="size-4" aria-hidden />
-                  </button>
-                  <span className="mx-1 h-6 w-px bg-line" aria-hidden />
-                  <button
-                    type="button"
-                    aria-pressed={showRulers}
-                    aria-label="Thước đo mm"
-                    title={showRulers ? "Ẩn thước mm" : "Hiện thước mm"}
-                    onClick={() => setShowRulers((on) => !on)}
-                    className={lightToolButton(showRulers)}
-                  >
-                    <Ruler className="size-4" aria-hidden />
-                  </button>
-                  {uploading && (
-                    <span role="status" className="ml-1 flex min-h-9 items-center gap-1.5 rounded-full bg-info-bg px-3 text-label-sm font-semibold text-info-fg">
-                      <ImageUp className="size-4 animate-pulse motion-reduce:animate-none" aria-hidden />
-                      <span className="hidden sm:inline">Đang tải ảnh…</span>
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <ViewToggle<"2d" | "3d">
-                    label="Chế độ xem"
-                    value={artView}
-                    onChange={setArtView}
-                    options={[
-                      { value: "2d", label: "Khuôn bế 2D", icon: LayoutPanelTop },
-                      { value: "3d", label: "Gập hộp 3D", icon: Box },
-                    ]}
-                  />
-                  {artView === "2d" && (
-                    <ViewToggle<PrintSide>
-                      label="Mặt giấy đang thiết kế"
-                      value={editSide}
-                      onChange={(side) => {
-                        setEditSide(side);
-                        setSelectedElementId(null);
-                      }}
-                      options={[
-                        { value: "outside", label: "Mặt ngoài" },
-                        { value: "inside", label: "Mặt trong" },
-                      ]}
-                    />
-                  )}
-                </div>
-
-                <div className="flex min-w-0 items-center gap-2">
-                  <button type="button" data-tour="studio-next" onClick={() => navigateToStep(5)} className={buttonClass({ variant: "brand", size: "md", className: "ml-auto min-h-10 shrink-0" })}>
-                    <span className="hidden md:inline">{continueTo(5)}</span>
-                    <span className="md:hidden">Tiếp tục</span>
-                    <ArrowRight className="size-4" aria-hidden />
-                  </button>
-                </div>
-              </div>
-
-              {/* Right under the 2D/3D switch: the pieces of a two-part box and the faces of the dieline (like Canva's pages),
-                  where new elements land. 2D only: the folded box shows every face at once. */}
-              {artView === "2d" && (
-                <div className="flex items-center gap-2 overflow-x-auto border-b border-line bg-surface-raised px-3 py-1.5 no-scrollbar">
-                  <div className="mx-auto flex min-w-max items-center gap-2">
-                    {/* Pieces of a two-part box (sleeve & drawer, lid & base): which dieline is edited. */}
-                    {pieces.length > 1 && (
-                      <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-sunken p-0.5" role="group" aria-label="Mảnh phôi">
-                        {pieces.map((piece, index) => (
-                          <button
-                            key={piece.name}
-                            type="button"
-                            aria-pressed={index === pieceIndex}
-                            onClick={() => {
-                              setPieceIndex(index);
-                              setActivePanelId("all");
-                              setArtView("2d");
-                            }}
-                            className={`min-h-9 whitespace-nowrap rounded-full px-3.5 text-label-sm font-semibold transition-colors ${
-                              index === pieceIndex ? "bg-surface-raised text-fg shadow-xs" : "text-fg-muted hover:text-fg"
-                            }`}
-                          >
-                            {piece.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} />
-                  </div>
-                </div>
-              )}
-
-              {/* Toolbar of the selection (docs-old/23 S8): exact place, size and turn, align, group */}
-              {artView === "2d" && !readOnly && selectedIds.length > 0 && (
-                <SelectionToolbar
-                  elements={elements}
-                  selectedIds={selectedIds}
-                  onChange={setElements}
-                  onSelect={selectIds}
-                  faceSize={(panelId) => {
-                    for (const piece of editPieces) {
-                      const panel = piece.geometry.panels.find((p) => samePanel(p.id, panelId));
-                      if (panel) return { width: panel.bounds.width, height: panel.bounds.height };
-                    }
-                    return null;
-                  }}
-                  onOpenSettings={() => setRailPanel(selectedElement?.type === "text" ? "text" : selectedElement?.type === "shape" ? "shapes" : "layers")}
-                />
-              )}
-
-              {/* Stage: the dieline sits on the grey desk like a slide */}
-              <div ref={stageRef} data-tour="studio-stage" className="relative h-[62vh] min-h-[420px] overflow-hidden lg:h-auto lg:min-h-0 lg:flex-1">
-                {artView === "2d" ? (
-                  <DielineCanvas2D
-                    variant="stage"
-                    dieline={dieline}
-                    scale={zoomScale}
-                    onScaleChange={setZoomScale}
-                    elements={elements}
-                    onElementsChange={setElements}
-                    selectedElementId={selectedElementId}
-                    onSelectElement={setSelectedElementId}
-                    selectedIds={selectedIds}
-                    onSelectIds={setMultiIds}
-                    backgroundPatternSvg={backgroundPatternSvg}
-                    activePanelId={activePanelId}
-                    onSelectPanel={selectPanel}
-                    showRulers={showRulers}
-                    flaggedElementIds={flaggedElementIds}
-                    textComposerOpen={textComposerOpen}
-                    onTextComposerOpenChange={setTextComposerOpen}
-                    side={editSide}
-                  />
-                ) : (
-                  <div className="relative h-full w-full">
-                    <Box3DView
-                      dimensions={dimensions}
-                      foldProgress={foldProgress}
-                      faceLabels={showFaceLabels}
-                      showCups={dimensions.showCups !== false}
-                      boxType={boxType}
-                      theme={activeMaterial}
-                      elements={elements}
-                      formulaVersion={project?.formulaVersion}
-                      backgroundPatternSvg={backgroundPatternSvg}
-                      environment="transparent"
-                      interactiveOpenState={lidOpen}
-                      cameraView={cameraView}
-                      showHud={false}
-                      showStatusBar={false}
-                      frameless
-                      minHeight={false}
-                      className="h-full w-full"
-                    />
-
-                    {/* Floating 3D Controls Dock identical to Step 2 & Step 3 */}
-                    <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-20 flex justify-center px-4">
-                      <div
-                        role="toolbar"
-                        aria-label="Góc nhìn hộp 3D"
-                        className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-white/90 p-1 shadow-sm ring-1 ring-black/5 backdrop-blur-md"
-                      >
-                        {boxType !== "pillow" && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFoldProgress(1);
-                                setLidOpen((open) => !open);
-                              }}
-                              aria-pressed={lidOpen}
-                              title={lidOpen ? "Đóng nắp hộp" : "Mở nắp hộp"}
-                              className={cn(
-                                "inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                                lidOpen
-                                  ? "bg-fpt-orange text-white shadow-xs"
-                                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                              )}
-                            >
-                              <Gift className="size-3.5" aria-hidden />
-                              <span>{lidOpen ? "Đóng nắp" : "Mở nắp"}</span>
-                            </button>
-                            <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
-                          </>
-                        )}
-
-                        {(
-                          [
-                            { view: "angle", label: "3/4" },
-                            { view: "front", label: "Trước" },
-                            { view: "side", label: "Bên" },
-                            { view: "top", label: "Trên" },
-                          ] as const
-                        ).map((item) => (
-                          <button
-                            key={item.view}
-                            type="button"
-                            onClick={() => setCameraView(item.view)}
-                            aria-pressed={cameraView === item.view}
-                            title={`Góc nhìn ${item.label.toLowerCase()}`}
-                            className={cn(
-                              "inline-flex h-7 min-w-7 items-center justify-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                              cameraView === item.view
-                                ? "bg-fpt-orange text-white shadow-xs"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                            )}
-                          >
-                            {item.view === "angle" && <Box className="size-3" aria-hidden />}
-                            <span>{item.label}</span>
-                          </button>
-                        ))}
-
-                        <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
-
-                        <button
-                          type="button"
-                          onClick={() => setShowFaceLabels((prev) => !prev)}
-                          aria-pressed={showFaceLabels}
-                          title={showFaceLabels ? "Ẩn nhãn tên các mặt hộp" : "Hiện nhãn tên các mặt hộp"}
-                          className={cn(
-                            "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-colors",
-                            showFaceLabels
-                              ? "bg-fpt-orange text-white shadow-xs"
-                              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                          )}
-                        >
-                          <Tag className="size-3" aria-hidden />
-                          <span>Nhãn mặt</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom bar: zoom (2D) or folding (3D) */}
-              <div
-                role="toolbar"
-                aria-label={artView === "2d" ? "Thu phóng khuôn bế" : "Gập hộp 3D"}
-                className="flex min-h-12 items-center justify-between gap-2 border-t border-line bg-surface-raised px-3 py-1.5 md:pr-24"
-              >
-                {artView === "2d" ? (
-                  <>
-                    <div className="ml-auto flex shrink-0 items-center gap-1">
-                      <button type="button" onClick={() => setArtView("3d")} className={lightToolButton(false, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}>
-                        <Box className="size-4" aria-hidden />
-                        Gập thử
-                      </button>
-                      <span className="mx-1 h-6 w-px bg-line" aria-hidden />
-                      <button type="button" onClick={() => setZoomScale((s) => Math.max(0.4, +(s - 0.15).toFixed(2)))} className={lightToolButton(false)} aria-label="Thu nhỏ" title="Thu nhỏ">
-                        <ZoomOut className="size-4" aria-hidden />
-                      </button>
-                      <input
-                        type="range"
-                        min={40}
-                        max={250}
-                        step={5}
-                        value={Math.round(zoomScale * 100)}
-                        onChange={(e) => setZoomScale(Number(e.target.value) / 100)}
-                        aria-label="Mức thu phóng"
-                        className="hidden w-32 cursor-pointer accent-fpt-orange sm:block"
-                      />
-                      <button type="button" onClick={() => setZoomScale((s) => Math.min(2.5, +(s + 0.15).toFixed(2)))} className={lightToolButton(false)} aria-label="Phóng to" title="Phóng to">
-                        <ZoomIn className="size-4" aria-hidden />
-                      </button>
-                      <span className="w-12 text-center text-label-sm font-semibold tabular-nums text-fg" aria-live="polite">
-                        {Math.round(zoomScale * 100)}%
-                      </span>
-                      <button type="button" onClick={() => setZoomScale(1)} className={lightToolButton(zoomScale === 1)} aria-label="Vừa màn hình" title="Vừa màn hình">
-                        <Maximize2 className="size-4" aria-hidden />
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" onClick={() => setArtView("2d")} className={lightToolButton(false, "w-auto gap-1.5 px-3 text-label-sm font-semibold")}>
-                      <PenTool className="size-4" aria-hidden />
-                      Sửa hình in
-                    </button>
-                    <div className="ml-auto flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLidOpen(false);
-                          setFoldProgress(0);
-                        }}
-                        className={lightToolButton(foldProgress === 0)}
-                        aria-label="Trải phẳng"
-                        title="Trải phẳng"
-                      >
-                        <LayoutPanelTop className="size-4" aria-hidden />
-                      </button>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={Math.round(foldProgress * 100)}
-                        onChange={(e) => {
-                          const value = Number(e.target.value) / 100;
-                          setFoldProgress(value);
-                          if (value < 0.9) setLidOpen(false);
-                        }}
-                        aria-label="Mức gập hộp"
-                        aria-valuetext={`${Math.round(foldProgress * 100)}% gập`}
-                        className="w-28 cursor-pointer accent-fpt-orange sm:w-40"
-                      />
-                      <span className="w-10 text-right text-label-sm font-semibold tabular-nums text-fg">{Math.round(foldProgress * 100)}%</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLidOpen(false);
-                          setFoldProgress(1);
-                        }}
-                        className={lightToolButton(foldProgress === 1 && !lidOpen)}
-                        aria-label="Gập kín"
-                        title="Gập kín"
-                      >
-                        <Box className="size-4" aria-hidden />
-                      </button>
-                    </div>
-                  </>
-                )}
-                {!isDemo && <div className="flex items-center gap-1 sm:hidden">{projectActions}</div>}
-              </div>
-            </div>
           </section>
         )}
 
@@ -2392,8 +2225,6 @@ export function StudioWorkspace({
             occasion={occasion}
             title={projectTitle}
             onDimensionsChange={setDimensions}
-            onBack={() => navigateToStep(4)}
-            onNext={() => navigateToStep(6)}
             onOpenQrModal={() => openDialog("unboxing")}
             hasUnboxingQr={elements.some(isUnboxingQr)}
           />
@@ -2414,7 +2245,8 @@ export function StudioWorkspace({
             pieces={pieces}
             report={blockingReport ?? displayReport}
             blocked={!!blockingReport}
-            onBack={() => navigateToStep(5)}
+            dimensionError={invalidReason}
+            onEditSize={() => navigateToStep(2)}
             onAutoFix={handleAutoFix}
             onExport={() => openDialog("export")}
             signedIn={authStatus === "authenticated"}
@@ -2428,11 +2260,11 @@ export function StudioWorkspace({
             }}
           />
         )}
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Gói, the packaging copilot: gift presets, FitCheck fixes, questions. Opened by `?copilot=open`. */}
-      {!presenting && <AiCopilotAssistant
+      {!presenting && !readOnly && <AiCopilotAssistant
         currentDimensions={dimensions}
         onApplyDimensions={setDimensions}
         fitCheckReport={displayReport}

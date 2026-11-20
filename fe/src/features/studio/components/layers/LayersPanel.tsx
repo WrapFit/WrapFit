@@ -216,7 +216,7 @@ export function LayersPanel({ elements, onChange, selectedId, onSelect, faces, f
 
       {artwork.length + backgrounds.length === 0 ? (
         <p className="rounded-panel bg-surface-sunken px-4 py-3 text-caption leading-5 text-fg-muted">
-          Mặt này chưa có lớp nào. Thêm chữ, hình khối, tem hoặc ảnh từ thanh bên trái.
+          Mặt này chưa có lớp nào. Chọn Văn bản, Hình khối hoặc Tải lên để thêm lớp.
         </p>
       ) : (
         <ul aria-label={`Các lớp của ${face?.name ?? "mặt"}, lớp trên cùng đầu tiên`} className="space-y-1">
