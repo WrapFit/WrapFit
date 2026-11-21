@@ -101,6 +101,12 @@ function OrdersScreen() {
     if (targetProjectId || wantsSample) router.replace(targetProjectId ? `/cart?add=${encodeURIComponent(targetProjectId)}` : '/cart');
   }, [router, targetProjectId, wantsSample]);
 
+  // ?order=<id> (order notifications, docs/19 G.5) opens that order.
+  const linkedOrder = searchParams.get('order');
+  useEffect(() => {
+    if (linkedOrder) setSelectedOrderId(linkedOrder);
+  }, [linkedOrder]);
+
   const inRange = (iso: string) => {
     const day = startOfDay(new Date(iso));
     return (!range.from || day >= range.from) && (!range.to || day <= range.to);
@@ -351,6 +357,19 @@ function OrdersScreen() {
             )}
           </Panel>
           {payingOrder && <CheckoutDialog purpose="SAMPLE_ORDER" orderId={payingOrder} doneLabel="Xong" onClose={() => setPayingOrder(null)} />}
+          {selectedOrderId && (
+            <OrderDetailDialog
+              orderId={selectedOrderId}
+              onClose={() => {
+                setSelectedOrderId(null);
+                if (linkedOrder) router.replace('/dashboard/orders');
+              }}
+              onPay={(id) => {
+                setSelectedOrderId(null);
+                setPayingOrder(id);
+              }}
+            />
+          )}
 
           {/* Exported Files Panel */}
           <Panel aria-labelledby="orders-files">

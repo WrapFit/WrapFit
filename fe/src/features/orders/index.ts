@@ -1,3 +1,5 @@
+export { OrderProgress, orderSteps, dayLabel } from "./OrderProgress";
+export { OrderChat } from "./OrderChat";
 import type { OrderStatus, SampleOrder } from "@/types/api";
 
 /** Badge of each order status (`SampleOrder.status`, lower case), shared by /dashboard/orders and /admin/print-shops. */
