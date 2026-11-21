@@ -25,7 +25,7 @@ interface Slide {
 // the 3D studio. The box is the real model of the editor (folded from its dieline), not a picture.
 const SLIDES: Slide[] = [
   {
-    title: "Hộp nắp gài đáy khoá",
+    title: "Hộp nắp gài",
     spec: "120 × 80 × 60 mm · Kraft 300 GSM",
     boxType: "tuck-top",
     theme: "kraft",

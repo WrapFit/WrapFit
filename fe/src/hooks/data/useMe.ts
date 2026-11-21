@@ -28,8 +28,9 @@ export function useMe() {
       try {
         const user = await getCurrentUser();
         if (user) return user;
-      } catch {
-        // Backend not reachable, network error or 401
+      } catch (error) {
+        if (isApiError(error) && error.status === 401) return null;
+        // When the backend is unavailable, retain the local demo fallback.
       }
       if (typeof window !== "undefined" && window.sessionStorage?.getItem("wrapfit_demo_logged_out") === "1") {
         return null;

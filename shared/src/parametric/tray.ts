@@ -16,6 +16,7 @@
  */
 
 import { DielineGeometry, PanelFace } from "../types/dieline";
+import { flapFace } from "./flaps";
 import { segmentWriter } from "./segments";
 import type { BoxDimensions, BoxStructureType, SheetAxis } from "../types/dieline";
 
@@ -100,11 +101,42 @@ export function generateTray(input: {
     { x: x0, y: 0 },
   ]);
 
+  // The four corner tabs for the 3D model (docs/21 S6), as the outline cuts them: each turns a quarter on the end of
+  // its wall and lies inside the side wall it is glued to.
+  const tabName = "Tai dán góc";
+  const flaps = [
+    flapFace(`flap_${ids.front.id}_right`, tabName, "glue", { parent: ids.front.id, edge: "left", angle: 90 }, [
+      { x: x1, y: 0 },
+      { x: x1 + tab, y: rimTaper },
+      { x: x1 + tab, y: y0 - bottomTaper },
+      { x: x1, y: y0 },
+    ]),
+    flapFace(`flap_${ids.front.id}_left`, tabName, "glue", { parent: ids.front.id, edge: "right", angle: 90 }, [
+      { x: x0, y: y0 },
+      { x: x0 - tab, y: y0 - bottomTaper },
+      { x: x0 - tab, y: rimTaper },
+      { x: x0, y: 0 },
+    ]),
+    flapFace(`flap_${ids.back.id}_right`, tabName, "glue", { parent: ids.back.id, edge: "left", angle: 90 }, [
+      { x: x1, y: y1 },
+      { x: x1 + tab, y: y1 + bottomTaper },
+      { x: x1 + tab, y: yEnd - rimTaper },
+      { x: x1, y: yEnd },
+    ]),
+    flapFace(`flap_${ids.back.id}_left`, tabName, "glue", { parent: ids.back.id, edge: "right", angle: 90 }, [
+      { x: x0, y: yEnd },
+      { x: x0 - tab, y: yEnd - rimTaper },
+      { x: x0 - tab, y: y1 + bottomTaper },
+      { x: x0, y: y1 },
+    ]),
+  ];
+
   return {
     structureType: input.structureType,
     dimensions: input.dimensions,
     totalBoundingBox: { width: xEnd, height: yEnd },
     panels,
+    flaps,
     segments,
     glueAreas: [
       { x: x0 - tab, y: 0, width: tab, height: H },

@@ -29,11 +29,14 @@ import {
   type PanelFace,
   type Point2D,
   type PrintSide,
+  type ElementFinish,
+  type FlapFace,
 } from "@wrapfit/shared";
 import { elementImageKey, recoloredSrc } from "../../utils/svgRecolor";
 import { drawImageOnCanvas, drawTextOnCanvas } from "../canvas/elementVisuals";
 import { drawArt, elementArt } from "../library/elementArt";
 import { placedCarrierCups, STANDARD_350ML_Y_SEAT } from "./cupModel";
+import { CORE_TILE_MM, fillGrain, GRAIN_TILE_MM, paperCoreTexture, paperGrain, plainPaperTexture } from "./paperLook";
 
 /**
  * 3D model of a box built from its dieline (docs-old/12 Phase 8, H6): every printable panel is a sheet of paper folded on
@@ -219,58 +222,80 @@ function drawDecoration(ctx: CanvasRenderingContext2D, panel: PanelFace, text: s
   ctx.restore();
 }
 
+/**
+ * Print finishes of a panel as material maps (docs/21 S4), so they react to light like the real thing as the box turns.
+ * `surface` packs clearcoat (R), roughness (G) and metalness (B), the channels three.js reads for each map;
+ * `relief` is a height map for embossing (light) and debossing (dark) around a mid grey.
+ */
+interface FinishMaps {
+  surface: THREE.CanvasTexture;
+  relief: THREE.CanvasTexture | null;
+  /** Some spot UV on the panel: the material turns its clearcoat on. */
+  clearcoat: boolean;
+  /** Some foil on the panel: its reflection of the room is brightened (`FOIL_ENV_BOOST`). */
+  foil: boolean;
+}
+
 interface PanelTexture {
   texture: THREE.CanvasTexture;
+  /** Sheet size the texture covers (mm): the paper fibres repeat to match it. */
+  size: { width: number; height: number };
+  /** Only for a panel with a finished element on this side. */
+  finish: FinishMaps | null;
   redraw: () => void;
 }
 
+/** How much of the kraft grain shows through the print (multiplied over it): ink sinks into uncoated kraft. */
+const KRAFT_INK_GRAIN = 0.55;
 /**
- * Draws an element with the look of its print finish (docs-old/23 S6): the element is drawn on its own layer, then foil
- * becomes a metal gradient, spot UV a glossy sheen and embossing a light / shadow relief, inside its own shape only.
+ * Width of one tile of the shared fibre bump and roughness maps on the sheet, mm. They used to repeat four times per
+ * face whatever its size, so a long face had stretched fibres and a small one tiny ones (docs/21 S5).
+ */
+const FIBER_TILE_MM = 30;
+
+/** Roughness of the unprinted inside of the paper (the `inside` material of the model). */
+const INSIDE_ROUGHNESS = 0.92;
+
+/** Surface of a finish: clearcoat, roughness and metalness (0–1), painted into `FinishMaps.surface`. */
+const FINISH_SURFACE: Partial<Record<ElementFinish, { clearcoat: number; roughness: number; metalness: number }>> = {
+  foil_gold: { clearcoat: 0, roughness: 0.24, metalness: 1 },
+  foil_silver: { clearcoat: 0, roughness: 0.2, metalness: 1 },
+  foil_rose: { clearcoat: 0, roughness: 0.24, metalness: 1 },
+  spot_uv: { clearcoat: 1, roughness: 0.32, metalness: 0 },
+};
+/**
+ * Height of the relief map over the panel. three.js estimates the bump from the map's change per screen pixel, so a
+ * softened die edge needs a large factor: 30 reads as a pressed ring on the studio stage (3 did not show).
+ */
+const RELIEF_BUMP_SCALE = 30;
+/** Softens the relief edge, in mm of the sheet: a die rounds the paper, it does not cut a step. */
+const RELIEF_SOFTEN_MM = 0.5;
+/** The finish maps are drawn at half the resolution of the colour texture. */
+const FINISH_MAP_SCALE = 0.5;
+
+const channelColor = (r: number, g: number, b: number) =>
+  `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+
+/**
+ * Draws an element with the colour of its print finish (docs-old/23 S6): foil becomes a flat foil colour inside the
+ * element's own shape; the shine comes from the metalness map, the gloss of spot UV and the relief of embossing from
+ * the other finish maps (docs/21 S4), not from light painted into the colour.
  */
 function drawFinished(ctx: CanvasRenderingContext2D, el: CanvasElement, draw: (layer: CanvasRenderingContext2D) => void) {
   const finish = el.finish ? FINISH_SPOTS[el.finish] : null;
-  if (!finish) return draw(ctx);
+  if (!finish?.metallic) return draw(ctx);
   const layer = document.createElement("canvas");
   layer.width = ctx.canvas.width;
   layer.height = ctx.canvas.height;
   const lctx = layer.getContext("2d");
   if (!lctx) return draw(ctx);
-  const at = ctx.getTransform();
-  lctx.setTransform(at);
+  lctx.setTransform(ctx.getTransform());
   draw(lctx);
   lctx.globalCompositeOperation = "source-atop";
-  if (finish.metallic) {
-    const gradient = lctx.createLinearGradient(0, 0, el.width, el.height);
-    gradient.addColorStop(0, "#FFFFFF");
-    gradient.addColorStop(0.35, finish.display);
-    gradient.addColorStop(0.65, "#FFFFFF");
-    gradient.addColorStop(1, finish.display);
-    lctx.globalAlpha = 0.85;
-    lctx.fillStyle = gradient;
-    lctx.fillRect(0, 0, el.width, el.height);
-  } else if (el.finish === "spot_uv") {
-    const gradient = lctx.createLinearGradient(0, 0, el.width, el.height);
-    gradient.addColorStop(0, "rgba(255,255,255,0.55)");
-    gradient.addColorStop(0.5, "rgba(255,255,255,0.05)");
-    gradient.addColorStop(1, "rgba(255,255,255,0.4)");
-    lctx.fillStyle = gradient;
-    lctx.fillRect(0, 0, el.width, el.height);
-  }
+  lctx.fillStyle = finish.display;
+  lctx.fillRect(0, 0, el.width, el.height);
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  if (el.finish === "emboss" || el.finish === "deboss") {
-    // Relief: a light edge on one side and a shadow on the other (swapped for debossing).
-    const off = Math.max(1, Math.round(ctx.canvas.width / 400));
-    const raised = el.finish === "emboss";
-    ctx.globalAlpha = 0.35;
-    ctx.filter = "brightness(0)";
-    ctx.drawImage(layer, raised ? off : -off, raised ? off : -off);
-    ctx.filter = "brightness(2)";
-    ctx.drawImage(layer, raised ? -off : off, raised ? -off : off);
-    ctx.filter = "none";
-    ctx.globalAlpha = 1;
-  }
   ctx.drawImage(layer, 0, 0);
   ctx.restore();
 }
@@ -297,6 +322,7 @@ function panelTexture(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   const paper = PAPER[options.theme];
+  const grain = paperGrain(options.theme, side);
   // One side of the sheet, visible layers only, in paint order (docs-old/23 D3).
   const elements = orderElements(options.elements).flatMap((el) => {
     if (el.hidden || sideOf(el) !== side) return [];
@@ -306,12 +332,102 @@ function panelTexture(
     return owner ? [{ el, dx: owner.bounds.x - panel.bounds.x, dy: owner.bounds.y - panel.bounds.y }] : [];
   });
 
+  // The element's own drawing, in its box (0, 0)–(width, height): vectors, an image or a text.
+  const drawContent = (target: CanvasRenderingContext2D, el: CanvasElement) => {
+    const art = elementArt(el);
+    if (art) {
+      drawArt(target, art); // shapes, library stickers, labels, backgrounds and barcodes: vectors
+    } else if (IMAGE_TYPES.has(el.type)) {
+      const image = images.get(elementImageKey(el));
+      if (image) drawImageOnCanvas(target, el, image); // crop, fill, frame, adjustments (docs-old/23 S10)
+    } else if (el.type === "text") {
+      drawTextOnCanvas(target, el, paper.ink); // spacing, outline, curve (docs-old/23 S9)
+    }
+  };
+  /** From the panel's frame (panel coordinates, mm) into the element's box: its place, turn and flips. */
+  const placeElement = (target: CanvasRenderingContext2D, el: CanvasElement, dx: number, dy: number) => {
+    target.translate(dx, dy);
+    target.translate(el.x + el.width / 2, el.y + el.height / 2);
+    target.rotate(((el.rotation || 0) * Math.PI) / 180);
+    if (el.flipX || el.flipY) target.scale(el.flipX ? -1 : 1, el.flipY ? -1 : 1);
+    target.translate(-el.width / 2, -el.height / 2);
+  };
+  /** Sheet → panel frame of a canvas drawn at `pxPerMm`, mirrored for the inside like the colour texture. */
+  const enterPanel = (target: CanvasRenderingContext2D, pxPerMm: number) => {
+    target.setTransform(pxPerMm, 0, 0, pxPerMm, 0, 0);
+    if (side === "inside") {
+      target.translate(region.width, 0);
+      target.scale(-1, 1);
+    }
+    target.translate(panel.bounds.x - region.x, panel.bounds.y - region.y);
+  };
+
+  // Finish maps (docs/21 S4), only where this side has a finished element.
+  const finished = elements.filter(({ el }) => el.finish && FINISH_SPOTS[el.finish]);
+  let finish: FinishMaps | null = null;
+  let mapScale = scale;
+  if (finished.length > 0) {
+    mapScale = scale * FINISH_MAP_SCALE;
+    const mapCanvas = () => {
+      const c = document.createElement("canvas");
+      c.width = Math.max(2, Math.round(region.width * mapScale));
+      c.height = Math.max(2, Math.round(region.height * mapScale));
+      return new THREE.CanvasTexture(c);
+    };
+    const relief = finished.some(({ el }) => el.finish === "emboss" || el.finish === "deboss");
+    finish = {
+      surface: mapCanvas(),
+      relief: relief ? mapCanvas() : null,
+      clearcoat: finished.some(({ el }) => el.finish === "spot_uv"),
+      foil: finished.some(({ el }) => el.finish && FINISH_SPOTS[el.finish].metallic),
+    };
+  }
+  // The paper around the finishes: the printed side's finish of the theme, or the plain inside paper (`inside` material).
+  const look = FINISH[options.theme];
+  const paperSurface =
+    side === "inside" ? channelColor(0, INSIDE_ROUGHNESS, 0) : channelColor(look.clearcoat ?? 0, look.roughness ?? 1, look.metalness ?? 0);
+  /**
+   * One finish map: `base` everywhere, then every element in paint order in the colour `colorOf` gives it (null:
+   * left out), cut to the element's own shape. A later plain element covers a finish under it, as the print does.
+   */
+  const paintMap = (map: THREE.CanvasTexture, base: string, colorOf: (el: CanvasElement) => string | null, soften = 0) => {
+    const target = (map.image as HTMLCanvasElement).getContext("2d");
+    const scratch = document.createElement("canvas");
+    scratch.width = map.image.width;
+    scratch.height = map.image.height;
+    const sctx = scratch.getContext("2d");
+    if (!target || !sctx) return;
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.fillStyle = base;
+    target.fillRect(0, 0, scratch.width, scratch.height);
+    for (const { el, dx, dy } of elements) {
+      const color = colorOf(el);
+      if (!color) continue;
+      sctx.setTransform(1, 0, 0, 1, 0, 0);
+      sctx.globalCompositeOperation = "source-over";
+      sctx.clearRect(0, 0, scratch.width, scratch.height);
+      enterPanel(sctx, mapScale);
+      placeElement(sctx, el, dx, dy);
+      drawContent(sctx, el);
+      sctx.setTransform(1, 0, 0, 1, 0, 0);
+      sctx.globalCompositeOperation = "source-in";
+      sctx.fillStyle = color;
+      sctx.fillRect(0, 0, scratch.width, scratch.height);
+      target.filter = soften > 0 ? `blur(${soften * mapScale}px)` : "none";
+      target.drawImage(scratch, 0, 0);
+      target.filter = "none";
+    }
+    map.needsUpdate = true;
+  };
+
   const redraw = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.fillStyle = side === "inside" ? paper.inside : paper.outside;
     ctx.fillRect(0, 0, region.width, region.height);
+    // The paper's own grain (docs/21 S5), in sheet millimetres so every face shows it at the same size.
+    if (grain) fillGrain(ctx, grain, region);
     if (side === "inside") {
       // The back of the panel shows the texture mirrored: draw it mirrored so it reads right from inside the box.
       ctx.translate(region.width, 0);
@@ -343,24 +459,94 @@ function panelTexture(
       }
       if (el.flipX || el.flipY) ctx.scale(el.flipX ? -1 : 1, el.flipY ? -1 : 1);
       ctx.translate(-el.width / 2, -el.height / 2);
-      drawFinished(ctx, el, (target) => {
-        const art = elementArt(el);
-        if (art) {
-          drawArt(target, art); // shapes, library stickers, labels, backgrounds and barcodes: vectors
-        } else if (IMAGE_TYPES.has(el.type)) {
-          const image = images.get(elementImageKey(el));
-          if (image) drawImageOnCanvas(target, el, image); // crop, fill, frame, adjustments (docs-old/23 S10)
-        } else if (el.type === "text") {
-          drawTextOnCanvas(target, el, paper.ink); // spacing, outline, curve (docs-old/23 S9)
-        }
-      });
+      drawFinished(ctx, el, (target) => drawContent(target, el));
       ctx.restore();
     }
     if (side === "outside" && options.decoration && MAIN_PANEL.includes(panel.id)) drawDecoration(ctx, panel, options.decoration, options.theme);
+    // Ink sinks into uncoated kraft: its fibres show through the print. Foil is laid on top of the paper, so the grain
+    // layer has the foil shapes cut out of it.
+    if (grain && options.theme === "kraft" && elements.length > 0) {
+      const layer = document.createElement("canvas");
+      layer.width = canvas.width;
+      layer.height = canvas.height;
+      const lctx = layer.getContext("2d");
+      if (lctx) {
+        lctx.setTransform(scale, 0, 0, scale, 0, 0);
+        fillGrain(lctx, grain, region);
+        lctx.globalCompositeOperation = "destination-out";
+        for (const { el, dx, dy } of elements) {
+          if (!el.finish || !FINISH_SPOTS[el.finish]?.metallic) continue;
+          enterPanel(lctx, scale);
+          placeElement(lctx, el, dx, dy);
+          drawContent(lctx, el);
+        }
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = "multiply";
+        ctx.globalAlpha = KRAFT_INK_GRAIN;
+        ctx.drawImage(layer, 0, 0);
+        ctx.restore();
+      }
+    }
     texture.needsUpdate = true;
+
+    if (finish) {
+      paintMap(finish.surface, paperSurface, (el) => {
+        const spot = el.finish ? FINISH_SURFACE[el.finish] : undefined;
+        return spot ? channelColor(spot.clearcoat, spot.roughness, spot.metalness) : paperSurface;
+      });
+      if (finish.relief) {
+        paintMap(
+          finish.relief,
+          "rgb(128, 128, 128)",
+          (el) => (el.finish === "emboss" ? "rgb(255, 255, 255)" : el.finish === "deboss" ? "rgb(0, 0, 0)" : null),
+          RELIEF_SOFTEN_MM
+        );
+      }
+    }
   };
   redraw();
-  return { texture, redraw };
+  return { texture, size: { width: region.width, height: region.height }, finish, redraw };
+}
+
+/**
+ * Reflection of the room on foil, relative to the paper. The studio lights the scene with a soft room at a low
+ * intensity that suits paper; a metal only shows what it reflects, so foil looked dull olive under it.
+ */
+const FOIL_ENV_BOOST = 2.6;
+
+/**
+ * Puts the finish maps of a panel on its material (docs/21 S4): the maps carry the paper's own roughness, metalness and
+ * clearcoat around the finished elements, so the material's factors go to 1. The relief replaces the paper fibres'
+ * bump on that panel only. With `boostFoil`, the room's reflection is brightened where the metalness map is high (the
+ * foil only: off for a board that is metallic all over).
+ */
+function applyFinishMaps(material: THREE.MeshStandardMaterial, maps: FinishMaps, boostFoil: boolean) {
+  if (maps.foil && boostFoil) {
+    material.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <lights_fragment_maps>",
+        `#include <lights_fragment_maps>
+#if defined( RE_IndirectSpecular )
+  radiance *= mix( 1.0, ${FOIL_ENV_BOOST.toFixed(2)}, metalnessFactor );
+#endif`
+      );
+    };
+    material.customProgramCacheKey = () => "wrapfit-foil";
+  }
+  material.roughness = 1;
+  material.metalness = 1;
+  material.roughnessMap = maps.surface;
+  material.metalnessMap = maps.surface;
+  if (maps.clearcoat && material instanceof THREE.MeshPhysicalMaterial) {
+    material.clearcoat = 1;
+    material.clearcoatMap = maps.surface;
+    material.clearcoatRoughness = 0.08;
+  }
+  if (maps.relief) {
+    material.bumpMap = maps.relief;
+    material.bumpScale = RELIEF_BUMP_SCALE;
+  }
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -511,7 +697,10 @@ function panelCutRimGeometry(
   if (segments.length === 0) return null;
 
   const vertices: number[] = [];
+  const uvs: number[] = [];
   const indices: number[] = [];
+  // u runs along the edge (one core tile per CORE_TILE_MM), v across the thickness from the printed side (docs/21 S5).
+  let along = 0;
 
   segments.forEach((seg, idx) => {
     const [x1, y1] = seg.from;
@@ -524,6 +713,10 @@ function panelCutRimGeometry(
       x2, y2, 1,
       x1, y1, 1
     );
+    const u0 = along / CORE_TILE_MM;
+    along += Math.hypot(x2 - x1, y2 - y1);
+    const u1 = along / CORE_TILE_MM;
+    uvs.push(u0, 0, u1, 0, u1, 1, u0, 1);
     indices.push(
       base, base + 1, base + 2,
       base, base + 2, base + 3
@@ -532,6 +725,7 @@ function panelCutRimGeometry(
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
@@ -549,16 +743,31 @@ function visualThicknessOf(t: number): number {
  * Mailer: the walls rise, their inner layers roll over the rim, then the lid closes; open, the lid swings back.
  */
 function stagedProgress(structure: string, progress: number, open: number) {
+  const stage = (from: number, to: number) => clamp01((progress - from) / (to - from));
   return (panel: PanelFace) => {
     // A card opens like a book, a belly band comes off the box (docs-old/23 S18).
     if (structure === "folded-card") return mix(progress, 0.42, open);
     if (structure === "belly-band") return mix(progress, 0.55, open);
     if (structure === "gable") {
-      // Walls and bottom first, then the roofs close and the handles rise; open, the roofs swing back out.
+      // Glue flap and walls, then the bottom as on the tuck-top box (docs/21 S6), then the roofs close and the handles
+      // rise; open, the roofs swing back out.
       if (panel.id.startsWith("gable_roof_") || panel.id.startsWith("gable_handle_")) {
         return mix(clamp01((progress - 0.55) / 0.45), -0.6, open);
       }
-      return clamp01(progress / 0.55);
+      if (panel.id === "flap_glue") return stage(0, 0.3);
+      if (panel.id.startsWith("flap_dust_bottom_")) return stage(0.3, 0.42);
+      if (panel.id === "gable_bottom") return stage(0.38, 0.55);
+      if (panel.id === "flap_tuck_bottom") return stage(0.45, 0.57);
+      return stage(0, 0.35);
+    }
+    // Trays (docs/21 S6): the front and back walls rise with their corner tabs turning in, then the side walls close
+    // over the tabs. The sleeve of a drawer box folds all at once, its glue flap first.
+    if (structure === "lid-base" || structure === "sleeve-drawer" || structure === "insert") {
+      if (panel.id === "flap_glue") return stage(0, 0.5);
+      if (/^flap_.+_(front|back)_(left|right)$/.test(panel.id)) return stage(0.15, 0.55);
+      if (/^(base|lid|drawer|insert)_(left|right)$/.test(panel.id)) return stage(0.45, 1);
+      if (/^(base|lid|drawer|insert)_(front|back)$/.test(panel.id)) return stage(0, 0.55);
+      return progress;
     }
     if (structure === "cup-carrier") {
       // Walls rise from the base, then the shoulders close in and the handles meet; open, the shoulders swing out.
@@ -568,16 +777,52 @@ function stagedProgress(structure: string, progress: number, open: number) {
       return clamp01(progress / 0.5);
     }
     if (structure === "mailer") {
-      if (panel.id === "mailer_lid") return mix(clamp01((progress - 0.6) / 0.4), -0.25, open);
-      if (panel.id.endsWith("_inner")) return clamp01((progress - 0.3) / 0.4);
-      return clamp01(progress / 0.45);
+      // Front and back walls with their ears turning in, the side walls over the ears, the inner layers rolling over
+      // the rims (the ears end up between the layers), then the lid with its dust flaps and tuck (docs/21 S6).
+      if (panel.id === "mailer_lid") return mix(stage(0.6, 1), -0.25, open);
+      if (panel.id.startsWith("flap_ear_")) return stage(0.05, 0.3);
+      if (panel.id === "mailer_left" || panel.id === "mailer_right") return stage(0.12, 0.45);
+      if (panel.id.endsWith("_inner")) return stage(0.3, 0.7);
+      if (panel.id.startsWith("flap_dust_lid_")) return stage(0.62, 0.8);
+      if (panel.id === "flap_tuck_lid") return mix(stage(0.78, 0.97), 0, open);
+      return stage(0, 0.45);
     }
     if (structure !== "tuck-top") return progress;
-    if (panel.id === "panel_top_lid") return mix(clamp01((progress - 0.55) / 0.45), -0.32, open);
-    if (panel.id === "panel_bottom") return clamp01((progress - 0.45) / 0.45);
-    return clamp01(progress / 0.6);
+    // The order a packer closes it (docs/21 S6): glue flap and walls, bottom dust flaps, bottom and its tuck, top dust
+    // flaps, lid and its tuck. Each step starts before the last ends, so the slider never stalls. Open, the lid swings
+    // back and its tuck flap lies flat.
+    switch (panel.id) {
+      case "flap_glue":
+        return stage(0, 0.3);
+      case "flap_dust_bottom_left":
+      case "flap_dust_bottom_right":
+      case "flap_lock_left":
+      case "flap_lock_right":
+        return stage(0.3, 0.45);
+      case "flap_lock_front":
+        return stage(0.38, 0.52);
+      case "panel_bottom":
+        return stage(0.42, 0.62);
+      case "flap_tuck_bottom":
+        return stage(0.5, 0.64);
+      case "flap_dust_top_left":
+      case "flap_dust_top_right":
+        return stage(0.6, 0.74);
+      case "panel_top_lid":
+        return mix(stage(0.7, 0.94), -0.32, open);
+      case "flap_tuck_top":
+        return mix(stage(0.8, 0.97), 0, open);
+      default:
+        return stage(0, 0.35);
+    }
   };
 }
+
+/**
+ * How far a folded flap sits inside the panel it lies against, in paper thicknesses (docs/21 S6): past that panel's
+ * inside face, so the two never fight for the same pixels.
+ */
+const FLAP_INSET = 1.3;
 
 const toMatrix = (m: Mat4) => new THREE.Matrix4().fromArray(m);
 
@@ -591,10 +836,17 @@ function foldedPiece(
   paperCore: THREE.Material,
   initialThickness: number,
   disposables: { dispose(): void }[],
-  initialElevation = 0
+  initialElevation = 0,
+  /** Plain paper of the flaps (docs/21 S6): they carry no artwork. */
+  flapPaper?: { outside: THREE.Material; inside: THREE.Material }
 ) {
   const group = new THREE.Group();
   const frame = boxFrameOf(geometry)!;
+  // Flaps fold with the panels when the formulas list them and the model has paper for them.
+  const flaps = flapPaper ? (geometry.flaps ?? []) : [];
+  const flapIds = new Set(flaps.map((flap) => flap.id));
+  const parts: PanelFace[] = [...geometry.panels, ...flaps];
+  const folding: DielineGeometry = { ...geometry, panels: parts };
   // Rotation only: the shift to the ground is recomputed for each fold state.
   const rotation: Mat4 = [...frame.slice(0, 12), 0, 0, 0, 1];
   const lastMatrices: Record<string, Mat4> = {};
@@ -602,18 +854,19 @@ function foldedPiece(
   let currentElevation = initialElevation;
   let lastProgressOf: ((panel: PanelFace) => number) | null = null;
 
-  const meshes = geometry.panels.map((panel) => {
+  const meshes = parts.map((panel) => {
+    const isFlap = flapIds.has(panel.id);
     const shape = panelGeometry(panel.bounds, panel.outline, geometry.openings?.filter((o) => o.panelId === panel.id));
     const isCarrierBase = panel.id === "carrier_base";
-    const isBasePanel = isCarrierBase || panel.id.endsWith("_base") || panel.id.endsWith("_bottom");
-    const printed = makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
-    if (isBasePanel) {
+    const isBasePanel = !isFlap && (isCarrierBase || panel.id.endsWith("_base") || panel.id.endsWith("_bottom"));
+    const printed = isFlap && flapPaper ? flapPaper.outside : makePrinted(textures.get(panel.id)?.texture ?? null, THREE.FrontSide, panel.id);
+    if (isBasePanel && printed instanceof THREE.MeshPhysicalMaterial) {
       printed.polygonOffset = false;
     }
     const front = new THREE.Mesh(shape, printed);
     // For cup-carrier base or open trays, the upper surface facing into the tray displays the paper inside texture/color,
     // ensuring the bottom is completely visible, solid, and seamless from both above and below without reference errors.
-    const backMaterial = insideOf(panel.id);
+    const backMaterial = isFlap && flapPaper ? flapPaper.inside : insideOf(panel.id);
     if (isBasePanel && "polygonOffset" in backMaterial) {
       (backMaterial as THREE.MeshStandardMaterial).polygonOffset = false;
     }
@@ -645,13 +898,14 @@ function foldedPiece(
       object.matrixAutoUpdate = false;
       group.add(object);
     }
-    disposables.push(shape, printed, outline);
-    return { panel, front, back, rim, edge };
+    // The flaps' paper is shared by all of them and disposed with the model.
+    disposables.push(shape, outline, ...(isFlap ? [] : [printed]));
+    return { panel, front, back, rim, edge, isFlap };
   });
 
   const update = (progressOf: (panel: PanelFace) => number) => {
     lastProgressOf = progressOf;
-    const transforms = panelTransforms(geometry, progressOf);
+    const transforms = panelTransforms(folding, progressOf);
     const placed = meshes.map(({ panel }) => multiply(rotation, transforms[panel.id]));
     const corners = meshes.flatMap(({ panel }, i) => {
       const { x, y, width, height } = panel.bounds;
@@ -672,10 +926,19 @@ function foldedPiece(
       0, 0, 1, 0,
       -(min[0] + max[0]) / 2, -min[1] + BOX_GROUND_CLEARANCE, -(min[2] + max[2]) / 2, 1
     ];
-    meshes.forEach(({ front, back, rim, edge, panel }, i) => {
+    meshes.forEach(({ front, back, rim, edge, panel, isFlap }, i) => {
       const mat = multiply(shift, placed[i]);
       lastMatrices[panel.id] = mat;
       const matrix = toMatrix(mat);
+      if (isFlap) {
+        // A folding flap slides inside the panel it comes to lie against (none while it is flat on the sheet).
+        // A flap inside a double wall (mailer) goes one more layer of paper deeper for each layer beyond the first.
+        const layers = (panel as FlapFace).layers ?? 1;
+        const inset = clamp01(Math.abs(progressOf(panel))) * (FLAP_INSET + layers - 1) * currentVisualThickness;
+        matrix.elements[12] += matrix.elements[8] * inset;
+        matrix.elements[13] += matrix.elements[9] * inset;
+        matrix.elements[14] += matrix.elements[10] * inset;
+      }
 
       // Front face stays precisely at outer fold crease (z = 0)
       front.matrix.copy(matrix);
@@ -882,7 +1145,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   // Inside of the folded panels (seen from behind), and of the pillow end flaps (seen from both sides).
   const inside = new THREE.MeshStandardMaterial({
     color: paper.inside,
-    roughness: 0.92,
+    roughness: INSIDE_ROUGHNESS,
     metalness: 0,
     side: THREE.BackSide,
     envMapIntensity: 0.5,
@@ -899,14 +1162,26 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   disposables.push(inside, flapPaper, edges);
   const foil = options.theme === "gold_foil";
   const printedOf = new Map<string, THREE.MeshPhysicalMaterial[]>();
+  /**
+   * The shared fibre map repeated to the face's size, one tile per FIBER_TILE_MM. A clone shares the image, so the
+   * GPU holds it once; only the repeat differs.
+   */
+  const fibresFor = (map: THREE.Texture | null | undefined, panelId: string) => {
+    const size = textures.get(panelId)?.size;
+    if (!map || !size) return map ?? null;
+    const scaled = map.clone();
+    scaled.repeat.set(size.width / FIBER_TILE_MM, size.height / FIBER_TILE_MM);
+    disposables.push(scaled);
+    return scaled;
+  };
   const makePrinted: MakePrinted = (map, side, panelId) => {
     const material = new THREE.MeshPhysicalMaterial({
       ...finish,
       map,
       side,
-      bumpMap: options.surface?.bumpMap ?? null,
+      bumpMap: fibresFor(options.surface?.bumpMap, panelId),
       bumpScale: options.surface?.bumpScale ?? 0,
-      roughnessMap: foil ? null : (options.surface?.roughnessMap ?? null),
+      roughnessMap: foil ? null : fibresFor(options.surface?.roughnessMap, panelId),
       emissive: HOVER_GLOW,
       emissiveIntensity: 0,
       // The edge hairlines sit exactly on the panels: the faces step back a little so the lines win the depth test.
@@ -914,6 +1189,8 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
       polygonOffsetFactor: 1,
       polygonOffsetUnits: 1,
     });
+    const maps = textures.get(panelId)?.finish;
+    if (maps) applyFinishMaps(material, maps, !foil);
     printedOf.set(panelId, [...(printedOf.get(panelId) ?? []), material]);
     return material;
   };
@@ -921,7 +1198,8 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
   const highlight = (panelId: string | null) => {
     if (panelId === lit) return;
     printedOf.get(lit ?? "")?.forEach((material) => (material.emissiveIntensity = 0));
-    printedOf.get(panelId ?? "")?.forEach((material) => (material.emissiveIntensity = 0.14));
+    // Strong enough to read on the small preview card and on ivory paper (docs/21 S2), still letting the artwork show.
+    printedOf.get(panelId ?? "")?.forEach((material) => (material.emissiveIntensity = 0.26));
     lit = panelId;
   };
 
@@ -937,6 +1215,7 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
       const texture = panelTexture(panel, region, options, images, "outside", piece.geometry.panels);
       textures.set(panel.id, texture);
       disposables.push(texture.texture);
+      if (texture.finish) disposables.push(texture.finish.surface, ...(texture.finish.relief ? [texture.finish.relief] : []));
     }
   }
   let disposed = false;
@@ -991,8 +1270,31 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
         material.color = new THREE.Color("#FFFFFF");
         material.emissiveIntensity = 0.15;
         material.map = texture.texture;
+        if (texture.finish) {
+          applyFinishMaps(material, texture.finish, true);
+          disposables.push(texture.finish.surface, ...(texture.finish.relief ? [texture.finish.relief] : []));
+        }
         insideMaterials.set(panel.id, material);
         disposables.push(texture.texture, material);
+      }
+    }
+  } else {
+    // Nothing printed inside: the bare paper with its grain (docs/21 S5), e.g. the flecked grey back of duplex. One
+    // tile image for the whole box, repeated to each face's size.
+    const tile = plainPaperTexture(options.theme, "inside", paper.inside);
+    if (tile) {
+      disposables.push(tile);
+      for (const piece of pieces) {
+        for (const panel of piece.geometry.panels) {
+          const map = tile.clone();
+          map.repeat.set(panel.bounds.width / GRAIN_TILE_MM, panel.bounds.height / GRAIN_TILE_MM);
+          const material = inside.clone() as THREE.MeshStandardMaterial;
+          material.color = new THREE.Color("#FFFFFF");
+          material.emissiveIntensity = 0.15;
+          material.map = map;
+          insideMaterials.set(panel.id, material);
+          disposables.push(map, material);
+        }
       }
     }
   }
@@ -1012,14 +1314,37 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
     group.add(carrierCups.group);
   }
 
+  // Cut edges show the paper's layers (docs/21 S5): the coated top of duplex over its grey back, a wrapped greyboard…
+  const coreMap = paperCoreTexture(options.theme);
   const paperCore = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(edgeColor || "#C8BCA8"),
+    color: coreMap ? new THREE.Color("#FFFFFF") : new THREE.Color(edgeColor || "#C8BCA8"),
+    map: coreMap,
     roughness: 0.92,
     metalness: 0,
     side: THREE.DoubleSide,
     polygonOffset: false,
   });
-  disposables.push(paperCore);
+  disposables.push(paperCore, ...(coreMap ? [coreMap] : []));
+
+  // Tuck, dust and glue flaps (docs/21 S6): bare paper on both sides, one material each for every flap of the box.
+  const flapOutsideMap = plainPaperTexture(options.theme, "outside", paper.outside);
+  const flapInsideMap = plainPaperTexture(options.theme, "inside", paper.inside);
+  const flapOutside = new THREE.MeshPhysicalMaterial({
+    ...finish,
+    color: flapOutsideMap ? "#FFFFFF" : paper.outside,
+    map: flapOutsideMap,
+    side: THREE.FrontSide,
+    polygonOffset: true,
+    polygonOffsetFactor: 1,
+    polygonOffsetUnits: 1,
+  });
+  const flapInside = inside.clone() as THREE.MeshStandardMaterial;
+  if (flapInsideMap) {
+    flapInside.color = new THREE.Color("#FFFFFF");
+    flapInside.emissiveIntensity = 0.15;
+    flapInside.map = flapInsideMap;
+  }
+  disposables.push(flapOutside, flapInside, ...[flapOutsideMap, flapInsideMap].filter((map): map is THREE.CanvasTexture => map !== null));
 
   const folded = foldable.map((piece) =>
     foldedPiece(
@@ -1031,7 +1356,8 @@ export function buildBoxModel(options: BoxModelOptions): BoxModel {
       paperCore,
       dimensions.paperThickness,
       disposables,
-      structure === "cup-carrier" ? carrierElevation : 0
+      structure === "cup-carrier" ? carrierElevation : 0,
+      { outside: flapOutside, inside: flapInside }
     )
   );
   folded.forEach((piece) => group.add(piece.group));

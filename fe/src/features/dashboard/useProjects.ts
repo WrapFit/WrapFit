@@ -44,10 +44,11 @@ const STALE_PROJECT = "Dự án vừa được đổi ở nơi khác. Danh sách
  * One page of `GET /projects`. Projects are created and saved in the editor, so a list checks the API again every
  * time it mounts; the previous page stays on screen while the next one loads.
  */
-export function useProjectList(query: ProjectListQuery, options: { keepPrevious?: boolean } = {}) {
+export function useProjectList(query: ProjectListQuery, options: { keepPrevious?: boolean; accountOnly?: boolean; enabled?: boolean } = {}) {
   return useQuery({
-    queryKey: queryKeys.projects.list(query),
-    queryFn: () => listProjects(query),
+    queryKey: options.accountOnly ? [...queryKeys.projects.list(query), "account"] : queryKeys.projects.list(query),
+    queryFn: () => listProjects(query, !options.accountOnly),
+    enabled: options.enabled,
     placeholderData: options.keepPrevious ? keepPreviousData : undefined,
     staleTime: 0,
   });

@@ -15,10 +15,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'npm'
 
       - name: Check Project Structure
@@ -85,10 +85,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: 'npm'
 
       # Service containers cannot take a command, so the S3-compatible storage is started by hand.

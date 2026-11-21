@@ -20,8 +20,10 @@ import type {
 import { DEMO_PROJECTS, getDemoProjectDetail } from "@/features/dashboard/demoData";
 
 /** My projects, without their canvas. Default: ACTIVE, most recently updated first. */
-export function listProjects(query: ProjectListQuery = {}): Promise<Paginated<ProjectSummary>> {
-  return request<Paginated<ProjectSummary>>("/projects", { query }).catch(() => {
+export function listProjects(query: ProjectListQuery = {}, demoFallback = true): Promise<Paginated<ProjectSummary>> {
+  const response = request<Paginated<ProjectSummary>>("/projects", { query });
+  if (!demoFallback) return response;
+  return response.catch(() => {
     let filtered = DEMO_PROJECTS;
     if (query.status) {
       filtered = filtered.filter((p) => p.status === query.status);

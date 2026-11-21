@@ -1,17 +1,14 @@
 "use client";
 
 import { BLEED_MM, FINISH_LABELS, HARD_MIN_DPI, MIN_DPI, MIN_LINE_MM, SAFE_MARGIN_CREASE_MM, SAFE_MARGIN_CUT_MM, type BoxDimensions, type CanvasElement, type DielinePiece, type FitCheckErrorCode, type FitCheckReport, type QuoteFinish } from "@wrapfit/shared";
-import { AlertTriangle, ArrowLeft, Box, Check, CreditCard, Download, Grid3x3, LogIn, PackageOpen, Palette, Plus, Save, ShieldCheck, Wand2 } from "lucide-react";
+import { AlertTriangle, Box, Check, Grid3x3, PackageOpen, Palette, Plus, ShieldCheck, Wand2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
 import { DielineCanvas2D } from "@/features/studio/components/canvas/DielineCanvas2D";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import type { BoxMaterialTheme, BoxStructureType } from "@/features/studio/components/three/InteractiveFoldingBox3D";
-import { PRIMARY_PILL, SECONDARY_PILL, SectionCard, StepActionBar, StepHeader, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
-import { studioStep } from "@/features/studio/components/StudioStepper";
+import { workspacePanes, workspaceStage, WorkspaceInspector, StudioCard, ViewToggle } from "@/features/studio/components/studioUi";
 import { ReviewPanel } from "@/features/studio/components/review/ReviewPanel";
-import { Dialog } from "@/components/ui";
-import { ROUTES } from "@/constants";
+import { Button, Dialog } from "@/components/ui";
 import { formatNumber, innerVolumeMl, sheetFits } from "@/features/studio/utils/boxMetrics";
 import { paperStockOf } from "@/features/studio/utils/paperStocks";
 import { cn } from "@/utils/helpers";
@@ -54,12 +51,13 @@ interface Step6ReviewExportProps {
   report: FitCheckReport;
   /** The server refused the last export with this report. */
   blocked: boolean;
+  dimensionError: string | null;
+  onEditSize(): void;
   /** Title of the design (quote summary) and its project (null: offline demo). */
   title: string;
   projectId: string | null;
-  onBack(): void;
   onAutoFix(): void;
-  /** Opens the export dialog: only reachable once a package covers this design (ExportPurchaseCard). */
+  /** Opens export history and the formats available for this project. */
   onExport(): void;
   /** Demo of a signed-in user: saves it as a project to export. */
   signedIn?: boolean;
@@ -83,9 +81,10 @@ export function Step6ReviewExport({
   pieces,
   report,
   blocked,
+  dimensionError,
+  onEditSize,
   title,
   projectId,
-  onBack,
   onAutoFix,
   onExport,
   onDesign,
@@ -105,6 +104,7 @@ export function Step6ReviewExport({
   /** Boxes of the quote: the card and the breakdown below follow the same number. */
   const [quantity, setQuantity] = useState(50);
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showQuote, setShowQuote] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
   /** Default scale of the dieline in Step 6 is fixed at 111% (1.11) on initial open */
   const [scale, setScale] = useState<number>(1.11);
@@ -112,7 +112,7 @@ export function Step6ReviewExport({
   const fits = sheetFits(pieces);
   const errors = report.violations.filter((v) => v.severity === "error").length;
   const warnings = report.violations.filter((v) => v.severity === "warning").length;
-  const passed = errors === 0;
+  const passed = !blocked && !dimensionError && errors === 0;
   // No artwork: a plain box can be printed, but it is not "print-ready art".
   const empty = report.violations.some((v) => v.code === "EMPTY_DESIGN");
   const fixable = report.violations.some((v) => (["CUT_OVERLAP", "CREASE_OVERLAP", "BLEED_INSUFFICIENT"].includes(v.code) || (v.code === "READING_DIRECTION" && v.severity === "warning")));
@@ -126,11 +126,9 @@ export function Step6ReviewExport({
   const passingRules = ruleStates.filter((r) => r.hits.length === 0);
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-4 sm:px-6">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_400px] lg:items-stretch">
-        {/* Stage */}
-        <div className="flex flex-col h-full min-h-[520px]">
-          <StudioCard className="flex flex-col overflow-hidden h-full shadow-xs border border-line/60">
+    <div className={workspacePanes}>
+      <div className={workspaceStage} data-tour="studio-stage">
+        <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-wrap items-center justify-between gap-3 p-4 shrink-0">
               <ViewToggle<"2d" | "3d">
                 label="Chế độ xem"
@@ -222,13 +220,16 @@ export function Step6ReviewExport({
                 </button>
               </div>
             )}
-          </StudioCard>
         </div>
-
-        {/* Right Column: Unified FitCheck Status & Export File In */}
-        <div className="flex flex-col gap-4 h-full">
+      </div>
+      <WorkspaceInspector title="Kiểm tra & đặt in">
           {/* FitCheck Status Card */}
-          {empty ? (
+          {dimensionError ? (
+            <div role="alert" className="space-y-2 rounded-panel bg-danger-bg p-3 text-body-sm text-danger-fg">
+              <p>{dimensionError}</p>
+              <Button variant="secondary" size="sm" onClick={onEditSize}>Sửa kích thước</Button>
+            </div>
+          ) : empty && passed && !warnings ? (
             <StudioCard data-tour="s6-status" className="border border-emerald-200 bg-emerald-50/70 p-4 rounded-2xl shadow-xs">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5 min-w-0">
@@ -258,7 +259,7 @@ export function Step6ReviewExport({
                   onClick={() => setShowRulesModal(true)}
                   className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline underline-offset-2 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
                 >
-                  <span>11/11 tiêu chí đạt chuẩn</span>
+                  <span>{passingRules.length}/{RULES.length} tiêu chí đạt chuẩn</span>
                   <span>↗</span>
                 </button>
                 <button
@@ -301,7 +302,7 @@ export function Step6ReviewExport({
                   onClick={() => setShowRulesModal(true)}
                   className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline underline-offset-2 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
                 >
-                  <span>11/11 tiêu chí đạt chuẩn</span>
+                  <span>{passingRules.length}/{RULES.length} tiêu chí đạt chuẩn</span>
                   <span>↗</span>
                 </button>
                 <button
@@ -362,6 +363,22 @@ export function Step6ReviewExport({
             </button>
           )}
 
+        <Button variant="secondary" block onClick={() => setShowQuote(true)}>Xem báo giá in</Button>
+        <ExportPurchaseCard
+          projectId={projectId}
+          blocked={!passed}
+          onExport={onExport}
+          signedIn={signedIn}
+          onSaveProject={onSaveProject}
+          saving={saving}
+          specSummary={{
+            structureName,
+            dimensions,
+            paperName: `${paper.name} • ${ICC_PROFILES.find((p) => p.id === selectedIccProfile)?.name ?? selectedIccProfile}`,
+            finishesText: finishes.length ? finishes.map((f) => FINISH_LABELS[f] ?? f).join(", ") : undefined,
+          }}
+        />
+        {projectId && <Button variant="secondary" block onClick={onExport}>Lịch sử xuất file</Button>}
           {/* Thiết lập chế bản xưởng & Quản trị màu ICC */}
           <PrePressColorCard
             activeMaterial={activeMaterial}
@@ -375,8 +392,7 @@ export function Step6ReviewExport({
               <ReviewPanel projectId={projectId} pieces={pieces} />
             </StudioCard>
           )}
-        </div>
-      </div>
+      </WorkspaceInspector>
 
       {/* Modal báo cáo kiểm định sản xuất: Hiển thị cả lỗi và tất cả điểm FitCheck đã đạt */}
       {showRulesModal && (
@@ -450,7 +466,7 @@ export function Step6ReviewExport({
                           }}
                           className="text-xs font-semibold text-fpt-orange hover:underline inline-flex items-center gap-1"
                         >
-                          <Palette className="size-3" /> Mở bước Thiết kế để sửa →
+                          <Palette className="size-3" /> Sửa hình in →
                         </button>
                       </div>
                     </div>
@@ -491,8 +507,8 @@ export function Step6ReviewExport({
         </Dialog>
       )}
 
-      {/* Báo giá in & Gói file xuất xưởng đặt cùng hàng/khu vực bên dưới khuôn bế để cân đối hoàn hảo */}
-      <div className="mt-5 space-y-4">
+      {showQuote && (
+        <Dialog title="Báo giá in" size="xl" onClose={() => setShowQuote(false)}>
         <QuoteCard
           structure={boxType}
           pieces={pieces}
@@ -523,79 +539,8 @@ export function Step6ReviewExport({
           </div>
         )}
 
-        {/* Card Gói File Xuất Xưởng & Thanh Toán - Đặt ngay bên dưới Báo giá in */}
-        <ExportPurchaseCard
-          projectId={projectId}
-          blocked={!passed}
-          onExport={onExport}
-          signedIn={signedIn}
-          onSaveProject={onSaveProject}
-          saving={saving}
-          specSummary={{
-            structureName,
-            dimensions,
-            paperName: `${paper.name} • ${ICC_PROFILES.find((p) => p.id === selectedIccProfile)?.name ?? selectedIccProfile}`,
-            finishesText: finishes.length ? finishes.map((f) => FINISH_LABELS[f] ?? f).join(", ") : undefined,
-          }}
-        />
-      </div>
-
-      <StepActionBar
-        back={
-          <button type="button" onClick={onBack} className={SECONDARY_PILL}>
-            <ArrowLeft className="size-4" aria-hidden />
-            {studioStep(5).label}
-          </button>
-        }
-        summary={
-          <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-0.5 font-sans text-xs font-semibold tabular-nums",
-                passed && !warnings
-                  ? "bg-emerald-100 text-emerald-800"
-                  : errors > 0
-                    ? "bg-red-100 text-red-800"
-                    : "bg-amber-100 text-amber-800"
-              )}
-            >
-              FitCheck {report.score}/100
-            </span>
-            <div className="text-left font-sans">
-              <span className="block text-xs text-fg-muted">Gói file in xuất xưởng</span>
-              <span className="font-semibold text-fg">PDF CMYK 300 DPI · DXF dao bế · SVG</span>
-            </div>
-          </div>
-        }
-        next={
-          !projectId && !signedIn ? (
-            <Link href={ROUTES.login} className={PRIMARY_PILL}>
-              <LogIn className="size-4" aria-hidden />
-              <span>Đăng nhập đặt in</span>
-            </Link>
-          ) : !projectId ? (
-            <button
-              type="button"
-              onClick={onSaveProject}
-              disabled={saving || !onSaveProject}
-              className={PRIMARY_PILL}
-            >
-              <Save className="size-4" aria-hidden />
-              <span>{saving ? "Đang lưu…" : "Lưu dự án & Đặt in"}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onExport}
-              disabled={!passed}
-              className={PRIMARY_PILL}
-            >
-              <Download className="size-4" aria-hidden />
-              <span>Xuất file in ngay</span>
-            </button>
-          )
-        }
-      />
+        </Dialog>
+      )}
     </div>
   );
 }

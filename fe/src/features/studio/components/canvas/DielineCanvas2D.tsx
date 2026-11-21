@@ -39,9 +39,10 @@ import { FramedImage, TextVisual, useImageSizes } from "./elementVisuals";
 import { formatMm, panelLabel } from "@/features/studio/utils/dieline";
 import { elementLabel } from "@/features/studio/utils/elementLabel";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
-import { printFontOf, textBlockHeight } from "@wrapfit/shared";
+import { panelSideMeasures, printFontOf, textBlockHeight } from "@wrapfit/shared";
 import { Checkbox } from "@/components/ui";
 import { useCtrlWheelZoom } from "@/hooks/dom";
+import { AXIS_COLORS, AXIS_LETTER, type DimensionAxis } from "../three/guides";
 
 /** Font of the texts added with "Thêm Chữ" (a print font, so the PDF embeds it). */
 const NEW_TEXT_STYLE = { fontFamily: "Cormorant Garamond, serif", fontSize: 12, color: "#1A362B" };
@@ -132,6 +133,21 @@ interface DielineCanvas2DProps {
   backgroundPatternSvg?: string | null;
   activePanelId?: string;
   onSelectPanel?: (panelId: string) => void;
+  /** The panel under the pointer, null when it leaves the panels (the page lights that face on its 3D preview). */
+  onHoverPanel?: (panelId: string | null) => void;
+  /**
+   * Box measure being edited or hovered in the size fields (docs/21 S3): a dimension line in its colour on every panel
+   * side that runs along that measure once folded (`panelSideMeasures`, docs/21 §8.2) and is within `tolerance` mm of
+   * `mm` (the paper thickness the formulas add; a lid or a gable end is shorter or taller). L = W still lights
+   * different sides. A pillow face shows W across it, the chord it closes to. A piece without a folded model falls
+   * back on the length alone.
+   */
+  measure?: { axis: DimensionAxis; mm: number; tolerance: number } | null;
+  /**
+   * A box the page floats over the top-right corner of the canvas, px (the 3D preview card): the fitted dieline keeps
+   * clear of it, by a right or a top inset, whichever leaves the dieline larger (docs/21).
+   */
+  reserveCorner?: { width: number; height: number } | null;
   showRulers?: boolean;
   /** Elements FitCheck flags (margin, bleed, glue…): drawn with a red badge. */
   flaggedElementIds?: ReadonlySet<string>;
@@ -214,6 +230,9 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   backgroundPatternSvg,
   activePanelId = "panel_front",
   onSelectPanel,
+  onHoverPanel,
+  measure = null,
+  reserveCorner = null,
   showRulers = true,
   flaggedElementIds,
   variant = "card",
@@ -285,7 +304,15 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
 
   const uid = useId().replace(/:/g, "");
   const [hoveredPanelId, setHoveredPanelId] = useState<string | null>(null);
+  const onHoverPanelRef = useRef(onHoverPanel);
+  onHoverPanelRef.current = onHoverPanel;
+  useEffect(() => onHoverPanelRef.current?.(hoveredPanelId), [hoveredPanelId]);
+  // A dieline that goes away (another piece, the 3D view) leaves nothing lit.
+  useEffect(() => () => onHoverPanelRef.current?.(null), []);
   const sheet = useMemo(() => sheetPath(dieline), [dieline]);
+  /** The measure each panel side runs along once folded, for the dimension lines of `measure`. */
+  const measuring = !!measure;
+  const sideMeasures = useMemo(() => (measuring ? panelSideMeasures(dieline) : null), [dieline, measuring]);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cursorMm, setCursorMm] = useState<{ x: number; y: number } | null>(null);
   const [newTextValue, setNewTextValue] = useState<string>("");
@@ -738,6 +765,27 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   };
 
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Room the page's corner box takes from the fitted dieline (docs/21): none when the dieline fitted to the whole
+  // viewport already misses it, else a right or a top inset, whichever keeps the dieline larger.
+  const [viewportSize, setViewportSize] = useState<{ width: number; height: number } | null>(null);
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || !reserveCorner) return;
+    const observer = new ResizeObserver(([entry]) => setViewportSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [reserveCorner === null]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cornerInset = useMemo(() => {
+    if (!reserveCorner || !viewportSize) return null;
+    const { width: cw, height: ch } = viewportSize;
+    const { width: rw, height: rh } = reserveCorner;
+    const fit = (w: number, h: number) => Math.min(w / viewBoxW, h / viewBoxH);
+    const whole = fit(cw, ch);
+    // The sheet fitted to the whole viewport, centred: does its top-right corner reach under the box?
+    if ((cw + viewBoxW * whole) / 2 <= cw - rw || (ch - viewBoxH * whole) / 2 >= rh) return null;
+    return fit(cw - rw, ch) >= fit(cw, ch - rh) ? { right: rw } : { top: rh };
+  }, [reserveCorner, viewportSize, viewBoxW, viewBoxH]);
 
   // Native non-passive Wheel listener on the viewport: smooth focal-point zoom at mouse cursor & wheel pan
   useEffect(() => {
@@ -1212,6 +1260,8 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
         style={{
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})`,
           transformOrigin: "center center",
+          // The dieline fits the rest of the viewport; zoom still turns about the viewport centre (the wheel zoom's maths).
+          ...(cornerInset ? { paddingRight: cornerInset.right ?? 0, paddingTop: cornerInset.top ?? 0 } : {}),
         }}
       >
         <svg
@@ -1801,6 +1851,76 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                 />
               </g>
             )
+          )}
+
+          {/* Measure being edited (docs/21 S3): a dimension line across each panel side of that length, at its middle */}
+          {measure && (
+            <g className="pointer-events-none select-none" style={{ fontFamily: "var(--font-landing-body), Inter, sans-serif" }}>
+              {dieline.panels.flatMap((panel) => {
+                const color = AXIS_COLORS[measure.axis];
+                const { width: pw, height: ph } = panel.bounds;
+                // Length the side stands for once closed (the chord of a bowed pillow face), null when it is not this measure.
+                const lengthOf = (side: "x" | "y", own: number) => {
+                  if (!sideMeasures) return own;
+                  const tagged = sideMeasures[panel.id]?.[side];
+                  return tagged?.measure === measure.axis ? tagged.mm : null;
+                };
+                const close = (length: number | null) => length !== null && Math.abs(length - measure.mm) <= measure.tolerance;
+                const xMm = lengthOf("x", pw);
+                const yMm = lengthOf("y", ph);
+                const nearX = close(xMm);
+                const nearY = close(yMm);
+                const [px, py] = [panel.bounds.x + padding, panel.bounds.y + padding];
+                const size = Math.min(4, Math.max(2.6, Math.min(pw, ph) / 8));
+                const tick = size * 0.5;
+                // A length of the closed box that the flat side does not have (pillow width): "khi gập" on the tag.
+                const foldedOnly = (side: "x" | "y") => sideMeasures?.[panel.id]?.[side]?.folded === true;
+                const tag = (cx: number, cy: number, length: number, folded = false) => {
+                  const text = `${AXIS_LETTER[measure.axis]} ${formatMm(length)}${folded ? " khi gập" : ""}`;
+                  const w = text.length * size * 0.6 + size;
+                  return (
+                    <>
+                      <rect x={cx - w / 2} y={cy - size * 0.8} width={w} height={size * 1.6} rx={size * 0.8} fill={color} />
+                      <text x={cx} y={cy + size * 0.36} textAnchor="middle" fontSize={size} fontWeight={700} fill="white">
+                        {text}
+                      </text>
+                    </>
+                  );
+                };
+                // The line with its end ticks, over a white halo so it reads on any artwork.
+                const rule = (key: string, segments: [number, number, number, number][], label: React.ReactNode) => (
+                  <g key={key}>
+                    {[
+                      { stroke: "white", width: 1.4, opacity: 0.85 },
+                      { stroke: color, width: 0.6, opacity: 1 },
+                    ].map((pass) => (
+                      <g key={pass.width} stroke={pass.stroke} strokeWidth={pass.width} strokeOpacity={pass.opacity} strokeLinecap="round">
+                        {segments.map(([x1, y1, x2, y2], i) => (
+                          <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} />
+                        ))}
+                      </g>
+                    ))}
+                    {label}
+                  </g>
+                );
+                const lines: React.ReactNode[] = [];
+                if (nearX) {
+                  const [y, x1, x2] = [py + ph / 2, px + 0.8, px + pw - 0.8];
+                  lines.push(
+                    rule(`${panel.id}-x`, [[x1, y, x2, y], [x1, y - tick, x1, y + tick], [x2, y - tick, x2, y + tick]], tag(px + pw / 2, y, xMm!, foldedOnly("x")))
+                  );
+                }
+                if (nearY) {
+                  const [x, y1, y2] = [px + pw / 2, py + 0.8, py + ph - 0.8];
+                  // Both sides match (a square face without a folded model): the vertical tag steps below the other.
+                  const tagY = py + ph / 2 + (nearX ? size * 2.2 : 0);
+                  lines.push(
+                    rule(`${panel.id}-y`, [[x, y1, x, y2], [x - tick, y1, x + tick, y1], [x - tick, y2, x + tick, y2]], tag(x, tagY, yMm!, foldedOnly("y")))
+                  );
+                }
+                return lines;
+              })}
+            </g>
           )}
 
           {/* Smart guides: the lines the moved layer snapped to */}

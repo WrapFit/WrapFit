@@ -24,6 +24,7 @@
  */
 
 import { BoxDimensions, DielineGeometry, PanelFace, Point2D } from "../types/dieline";
+import { flapFace } from "./flaps";
 import { segmentWriter } from "./segments";
 
 /** Gap left under the inner walls, mm. */
@@ -242,11 +243,64 @@ export function generateMailerDieline(dimensions: BoxDimensions): DielineGeometr
     { x: x0 + inset, y: 0 },
   ]);
 
+  // Flaps for the 3D model (docs/21 S6), as the outline cuts them. The ears turn in on the ends of the front and back
+  // walls and end up between the two layers of the side walls; the dust flaps and the tuck flap of the lid slip inside
+  // the double walls, three layers of paper from the outside.
+  const earFlap = (id: string, parent: string, edge: "left" | "right", outline: Point2D[]) =>
+    flapFace(id, "Tai cánh", "ear", { parent, edge, angle: 90 }, outline);
+  const flaps = [
+    earFlap("flap_ear_front_right", "mailer_front", "left", [
+      { x: x1, y: yFront },
+      { x: x1 + ear, y: yFront + earTaper },
+      { x: x1 + ear, y: yBottom - 1 },
+      { x: x1, y: yBottom },
+    ]),
+    earFlap("flap_ear_front_left", "mailer_front", "right", [
+      { x: x0, y: yBottom },
+      { x: x0 - ear, y: yBottom - 1 },
+      { x: x0 - ear, y: yFront + earTaper },
+      { x: x0, y: yFront },
+    ]),
+    earFlap("flap_ear_back_right", "mailer_back", "left", [
+      { x: x1, y: yBack },
+      { x: x1 + ear, y: yBack + 1 },
+      { x: x1 + ear, y: yLid - earTaper },
+      { x: x1, y: yLid },
+    ]),
+    earFlap("flap_ear_back_left", "mailer_back", "right", [
+      { x: x0, y: yLid },
+      { x: x0 - ear, y: yLid - earTaper },
+      { x: x0 - ear, y: yBack + 1 },
+      { x: x0, y: yBack },
+    ]),
+    flapFace("flap_dust_lid_right", "Tai bụi nắp phải", "dust", { parent: "mailer_lid", edge: "left", angle: 90 }, [
+      { x: x1, y: yLid },
+      { x: x1 + dust, y: yLid + dustCorner },
+      { x: x1 + dust, y: yTuck - dustCorner },
+      { x: x1, y: yTuck },
+    ], 3),
+    flapFace("flap_dust_lid_left", "Tai bụi nắp trái", "dust", { parent: "mailer_lid", edge: "right", angle: 90 }, [
+      { x: x0, y: yTuck },
+      { x: x0 - dust, y: yTuck - dustCorner },
+      { x: x0 - dust, y: yLid + dustCorner },
+      { x: x0, y: yLid },
+    ], 3),
+    flapFace("flap_tuck_lid", "Lưỡi gài nắp", "tuck", { parent: "mailer_lid", edge: "top", angle: 90 }, [
+      { x: x1, y: yTuck },
+      { x: x1, y: yEnd - tuckCorner },
+      { x: x1 - tuckCorner, y: yEnd },
+      { x: x0 + tuckCorner, y: yEnd },
+      { x: x0, y: yEnd - tuckCorner },
+      { x: x0, y: yTuck },
+    ], 3),
+  ];
+
   return {
     structureType: "mailer",
     dimensions,
     totalBoundingBox: { width: xEnd, height: yEnd },
     panels,
+    flaps,
     segments,
     glueAreas: [],
     orientation: { up: "+z", front: "-y" },

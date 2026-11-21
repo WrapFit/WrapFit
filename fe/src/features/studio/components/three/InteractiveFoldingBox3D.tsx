@@ -4,8 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { BoxDimensions, BoxStructureType, CanvasElement } from "@wrapfit/shared";
-import { Box, Coffee, Gift, Pause, Play, Tag, ZoomIn, ZoomOut } from "lucide-react";
+import { BoxDimensions, BoxStructureType, CanvasElement, usesLockBottom, type CameraView } from "@wrapfit/shared";
+import { Bookmark, BookmarkPlus, Box, Coffee, Gift, Pause, Play, Tag, ZoomIn, ZoomOut } from "lucide-react";
 import { buildBoxModel, foldablePieces, type BoxMaterialTheme, type BoxModel } from "./boxModel";
 import { stageBarButton } from "../studioUi";
 import { BACKDROPS, type Backdrop, type BoxEnvironment, type SceneId } from "./backdrops";
@@ -32,7 +32,13 @@ interface InteractiveFoldingBox3DProps {
   /** Dieline formulas of the project (default: the current ones). */
   formulaVersion?: number;
   backgroundPatternSvg?: string | null;
-  onFlapClick?: (flapName: string) => void;
+  /**
+   * A click (no drag) on a face of the box: the panel, the side of the sheet hit and the pointer, for a menu at that
+   * spot. With a handler the page decides what the click does; without one a click opens or closes the lid.
+   */
+  onFaceClick?: (hit: FaceHit) => void;
+  /** Panel lit on the model while the pointer is not over another face (the face a menu is about). */
+  highlightPanelId?: string | null;
   className?: string;
   autoRotate?: boolean;
   /** Backdrop behind the box; "transparent" shows the page behind the canvas. */
@@ -48,7 +54,20 @@ interface InteractiveFoldingBox3DProps {
   /** Camera dock (3/4, front, side, top, turntable); default: on unless the box turns by itself. */
   viewControls?: boolean;
   /** Camera preset driven by the page (a slider of views); the camera glides there whenever it changes. */
-  cameraView?: "angle" | "front" | "side" | "top";
+  cameraView?: "angle" | "front" | "side" | "top" | "bottom" | "saved";
+  /** Bumped by the page on every press of a view button: the camera goes back there even when `cameraView` is unchanged. */
+  cameraViewKey?: number;
+  /** The user turned or zoomed the camera by hand (a click does not count): a page with its own view buttons unlights them. */
+  onCameraMoved?: () => void;
+  /**
+   * Camera angle the user saved for this project (docs/21 §8.5): a "Góc đã lưu" view in the dock (and `cameraView`
+   * "saved"), and the start of the clip while the stage shows it.
+   */
+  savedView?: CameraView | null;
+  /** With a handler, the dock offers "Lưu góc" and hands it the angle on screen. */
+  onSaveView?: (view: CameraView) => void;
+  /** Filled with a function that reads the angle on screen, for a page with its own controls (step 5). */
+  viewRef?: React.MutableRefObject<(() => CameraView | null) | null>;
   /** 460 px minimum height; false lets the parent decide (e.g. a square stage on a phone). */
   minHeight?: boolean;
   /** No frame of its own (border, corners): the stage fills the parent's card. */
@@ -104,7 +123,7 @@ const shortFaceName = (name: string) => name.replace(/\s*\([^)]*\)/g, "").trim()
 // Labels of the stage (its scenes are in ./backdrops)
 
 const STRUCTURE_LABEL: Record<BoxStructureType, string> = {
-  "tuck-top": "Hộp nắp gài đáy khoá",
+  "tuck-top": "Hộp nắp gài",
   "sleeve-drawer": "Hộp bao diêm (khay rút)",
   "lid-base": "Hộp âm dương (nắp rời)",
   pillow: "Hộp gối cánh cung",
@@ -143,20 +162,26 @@ const PAPER_LABEL: Record<BoxMaterialTheme, string> = {
 };
 
 /** Camera directions of the dock (from the target, y up). `distance` is relative to the framing distance. */
-type ViewName = "angle" | "front" | "side" | "top" | "macro";
-const VIEWS: Record<ViewName, { dir: THREE.Vector3; distance: number }> = {
+type ViewName = "angle" | "front" | "side" | "top" | "bottom" | "macro" | "saved";
+const VIEWS: Record<Exclude<ViewName, "saved">, { dir: THREE.Vector3; distance: number }> = {
   angle: { dir: new THREE.Vector3(1.1, 0.8, 1.45).normalize(), distance: 1 },
   front: { dir: new THREE.Vector3(0, 0.2, 1).normalize(), distance: 1 },
   side: { dir: new THREE.Vector3(1, 0.2, 0).normalize(), distance: 1 },
   top: { dir: new THREE.Vector3(0.001, 1, 0.14).normalize(), distance: 1 },
+  // From below and ahead (docs/21 §8.4): the closed bottom with the front and a side for bearings.
+  bottom: { dir: new THREE.Vector3(0.7, -0.95, 1.05).normalize(), distance: 1 },
   macro: { dir: new THREE.Vector3(0.75, 0.55, 0.95).normalize(), distance: 0.42 },
 };
-const DOCK: { view: Exclude<ViewName, "macro">; label: string }[] = [
-  { view: "angle", label: "3/4" },
-  { view: "front", label: "Trước" },
-  { view: "side", label: "Bên" },
-  { view: "top", label: "Trên" },
+const DOCK: { view: Exclude<ViewName, "macro" | "saved">; label: string; title: string }[] = [
+  { view: "angle", label: "3/4", title: "Góc nhìn 3/4" },
+  { view: "front", label: "Trước", title: "Góc nhìn trước" },
+  { view: "side", label: "Bên", title: "Góc nhìn bên" },
+  { view: "top", label: "Trên", title: "Góc nhìn trên" },
+  { view: "bottom", label: "Đáy", title: "Xem đáy hộp từ bên dưới" },
 ];
+/** Lowest the camera goes (polar angle from straight up): just above the floor, or under the box to see its bottom. */
+const ABOVE_FLOOR = Math.PI / 2 - 0.04;
+const UNDER_FLOOR = Math.PI - 0.05;
 
 // ---------------------------------------------------------------------------------------------------------------
 // Shared paper textures: generated once per page, reused by every viewer and every rebuild of the box.
@@ -247,6 +272,14 @@ const approach = (value: number, target: number, rate: number, dt: number) => {
 
 export type CaptureFn = (size?: { width: number; height: number }) => HTMLCanvasElement;
 
+/** Face of the box under a click: panel id as in the dieline, side of the sheet, pointer in viewport pixels. */
+export interface FaceHit {
+  panelId: string;
+  side: "outside" | "inside";
+  clientX: number;
+  clientY: number;
+}
+
 interface StageApi {
   setSceneSet(id: SceneId | null, props: boolean): void;
   setStudioPalette(paletteId: StudioPaletteId): void;
@@ -261,6 +294,10 @@ interface StageApi {
   setAutoRotate(on: boolean): void;
   setRotation(x?: number, y?: number): void;
   goTo(view: ViewName): void;
+  /** The angle on screen, relative to the framing (null before the first box). */
+  currentView(): CameraView | null;
+  /** Panel lit when the pointer is not over a face (null: none). */
+  setPinnedHighlight(panelId: string | null): void;
   invalidate(): void;
 }
 
@@ -273,7 +310,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   elements,
   formulaVersion,
   backgroundPatternSvg = null,
-  onFlapClick,
+  onFaceClick,
+  highlightPanelId = null,
   className = "",
   autoRotate = false,
   environment = "studio",
@@ -285,6 +323,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   showHud = true,
   viewControls,
   cameraView,
+  cameraViewKey,
+  onCameraMoved,
+  savedView = null,
+  onSaveView,
+  viewRef,
   minHeight = true,
   frameless = false,
   liveDimensions,
@@ -331,10 +374,18 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   /** Preset the camera sits on; null once the user turned the box by hand. */
   const [view, setView] = useState<ViewName | null>("angle");
   const [spinning, setSpinning] = useState(autoRotate);
-  const onFlapClickRef = useRef(onFlapClick);
-  onFlapClickRef.current = onFlapClick;
+  const onFaceClickRef = useRef(onFaceClick);
+  onFaceClickRef.current = onFaceClick;
+  const highlightRef = useRef(highlightPanelId);
+  highlightRef.current = highlightPanelId;
   const structureRef = useRef(boxType);
   structureRef.current = boxType;
+  const savedRef = useRef(savedView);
+  savedRef.current = savedView;
+  /** Whether the stage shows the saved angle: the clip then starts from it. */
+  const onSavedRef = useRef(false);
+  const onCameraMovedRef = useRef(onCameraMoved);
+  onCameraMovedRef.current = onCameraMoved;
   const showDock = viewControls ?? !autoRotate;
   const backdrop = environment === "transparent" ? null : BACKDROPS[environment];
 
@@ -350,7 +401,11 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // While the box is turned by hand it renders at half density (at least 1 px per CSS px, docs/21 S3): the frames keep
+    // up on large high-density screens, and the sharp frame comes back when the pointer is released (see the loop).
+    const fullRatio = Math.min(window.devicePixelRatio, 2);
+    const movingRatio = Math.max(1, fullRatio * 0.5);
+    renderer.setPixelRatio(fullRatio);
     renderer.setClearColor(0x000000, 0);
     renderer.shadowMap.enabled = true;
     // PCF with a blur radius: a soft penumbra instead of the hard edge of PCFSoft.
@@ -375,7 +430,9 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     controls.dampingFactor = 0.08;
     controls.rotateSpeed = 0.8;
     controls.enablePan = false;
-    controls.maxPolarAngle = Math.PI / 2 - 0.04;
+    controls.maxPolarAngle = ABOVE_FLOOR;
+    /** The camera went under the box (bottom or saved view): the floor limit comes back once it is above again. */
+    let restoreLimit = false;
     controls.autoRotateSpeed = 1.1;
 
     // Lights: soft key with the shadow, cool fill, coloured rim from behind (set by the backdrop).
@@ -402,6 +459,12 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     blob.position.y = 0.02;
     blob.renderOrder = -1;
     scene.add(ground, blob);
+    /** Seen from under the floor (the bottom view), the floor, its shadows and the photo set would hide the box. */
+    const placeFloor = () => {
+      const under = camera.position.y < 0;
+      ground.visible = blob.visible = !set && !under;
+      if (set) set.group.visible = !under;
+    };
 
     const root = new THREE.Group();
     scene.add(root);
@@ -563,9 +626,12 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       }
     };
     const look = new THREE.Vector3();
-    let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; toDistance: number; t: number; duration: number } | null = null;
+    let tween: { from: THREE.Vector3; to: THREE.Vector3; fromDistance: number; distanceFactor: number; t: number; duration: number } | null = null;
     let visible = true;
     let hoverPoint: THREE.Vector2 | null = null;
+    /** Panel lit while no face is under the pointer (`highlightPanelId`); the hovered face lit last. */
+    let pinned: string | null = highlightRef.current;
+    let hovered: string | null = null;
     let dragging = false;
     /** The clip recorder has the stage (docs-old/23 S19): the loop leaves the camera and the fold alone. */
     let filming = false;
@@ -631,7 +697,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         from: offset.clone().normalize(),
         to: dir.clone(),
         fromDistance: offset.length(),
-        toDistance: framingDistance(fit.radius) * distanceFactor,
+        distanceFactor,
         t: 0,
         duration: reducedMotion ? 0.001 : duration,
       };
@@ -645,7 +711,12 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       renderer.setSize(width, height, false);
       renderer.domElement.style.width = "100%";
       renderer.domElement.style.height = "100%";
+      // Preserve the user's zoom relative to the available frame when a workspace panel opens.
+      const previousDistance = framingDistance(fit.radius);
       camera.aspect = width / height;
+      const ratio = framingDistance(fit.radius) / previousDistance;
+      camera.position.sub(controls.target).multiplyScalar(ratio).add(controls.target);
+      if (tween) tween.fromDistance *= ratio;
       camera.updateProjectionMatrix();
       dirty = true;
     };
@@ -665,32 +736,60 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       const rect = renderer.domElement.getBoundingClientRect();
       return new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
     };
-    const pick = (ndc: THREE.Vector2) => {
+    /**
+     * Face under the pointer: the panel (its cut rim counts as the panel) and the side of the sheet. The printed side
+     * and the inside are two meshes of one panel; the inside one draws its back faces only.
+     */
+    const pick = (ndc: THREE.Vector2): { panelId: string; side: FaceHit["side"] } | null => {
       if (!model) return null;
       raycaster.setFromCamera(ndc, camera);
-      return raycaster.intersectObjects(model.group.children, true).find((hit) => hit.object.name)?.object.name ?? null;
+      const hit = raycaster.intersectObjects(model.group.children, true).find((h) => h.object.name);
+      if (!hit) return null;
+      const material = (hit.object as THREE.Mesh).material;
+      const back = !Array.isArray(material) && material?.side === THREE.BackSide;
+      return { panelId: hit.object.name.replace(/_rim$/, ""), side: back ? "inside" : "outside" };
+    };
+    /**
+     * The user turned or zoomed the camera by hand: the stage no longer shows a preset or the saved angle, and the clip
+     * starts from the 3/4 view again. Only a real move counts: OrbitControls reports "start" on every press, so a click
+     * on the stage would drop the saved angle while the camera stays on it (docs/21 §10).
+     */
+    let turnedByHand = false;
+    const userTurned = () => {
+      tween = null;
+      onSavedRef.current = false;
+      setView((current) => (current === "macro" ? current : null));
+      onCameraMovedRef.current?.();
     };
     const onPointerDown = (event: PointerEvent) => {
       downAt = { x: event.clientX, y: event.clientY };
+      turnedByHand = false;
     };
     const onPointerUp = (event: PointerEvent) => {
       if (!downAt) return;
       const moved = Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y);
       downAt = null;
       if (moved > 5) return;
-      const name = pick(toNdc(event));
-      if (!name) return;
-      if (structureRef.current !== "pillow") setOpen((value) => !value);
-      onFlapClickRef.current?.(name);
+      const face = pick(toNdc(event));
+      if (!face) return;
+      const onFace = onFaceClickRef.current;
+      if (onFace) onFace({ ...face, clientX: event.clientX, clientY: event.clientY });
+      else if (structureRef.current !== "pillow") setOpen((value) => !value);
     };
     const onPointerMove = (event: PointerEvent) => {
+      // Same 5 px as a click above: past it, the press is a drag that turns the box.
+      if (downAt && !turnedByHand && Math.hypot(event.clientX - downAt.x, event.clientY - downAt.y) > 5) {
+        turnedByHand = true;
+        userTurned();
+      }
       if (event.pointerType !== "mouse") return;
       hoverPoint = toNdc(event);
       dirty = true;
     };
     const onPointerLeave = () => {
       hoverPoint = null;
-      model?.highlight(null);
+      hovered = null;
+      model?.highlight(pinned);
       renderer.domElement.style.cursor = "";
       dirty = true;
     };
@@ -699,6 +798,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     el.addEventListener("pointerup", onPointerUp);
     el.addEventListener("pointermove", onPointerMove);
     el.addEventListener("pointerleave", onPointerLeave);
+    // A wheel step zooms: the angle on screen is not the saved one any more.
+    el.addEventListener("wheel", userTurned, { passive: true });
     // Ctrl/⌘ + wheel (or a pinch) must never zoom the browser page. OrbitControls stops it over the canvas only, and
     // not while a drag is going on; the overlays (toolbar, buttons) stop nothing. So the whole stage swallows it in
     // the capture phase, and a wheel over an overlay is replayed on the canvas so the box still zooms.
@@ -724,12 +825,14 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     };
     wrapper.addEventListener("wheel", onZoomWheel, { capture: true, passive: false });
     controls.addEventListener("start", () => {
-      tween = null;
       dragging = true;
-      setView((current) => (current === "macro" ? current : null));
     });
     controls.addEventListener("end", () => {
       dragging = false;
+      if (renderer.getPixelRatio() !== fullRatio) {
+        renderer.setPixelRatio(fullRatio);
+        dirty = true;
+      }
     });
 
     // --- loop: renders only when something moved
@@ -782,23 +885,34 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         const e = easeInOutCubic(tween.t);
         const turn = new THREE.Quaternion().setFromUnitVectors(tween.from, tween.to);
         const dir = tween.from.clone().applyQuaternion(new THREE.Quaternion().slerp(turn, e));
-        const distance = tween.fromDistance + (tween.toDistance - tween.fromDistance) * e;
+        const distance = THREE.MathUtils.lerp(tween.fromDistance, base * tween.distanceFactor, e);
         camera.position.copy(controls.target).addScaledVector(dir, distance);
         fit.shownRadius = fit.radius;
         if (tween.t >= 1) tween = null;
         dirty = true;
       }
 
-      if (controls.update()) dirty = true;
+      if (controls.update()) {
+        dirty = true;
+        // A pointer turning the box (not a wheel step, not a click without a move): half density until released.
+        if (dragging && downAt && renderer.getPixelRatio() !== movingRatio) renderer.setPixelRatio(movingRatio);
+      }
 
       if (hoverPoint && !dragging && structureRef.current !== "pillow") {
-        const name = pick(hoverPoint);
-        model.highlight(name);
-        el.style.cursor = name ? "pointer" : "";
+        hovered = pick(hoverPoint)?.panelId ?? null;
+        model.highlight(hovered ?? pinned);
+        el.style.cursor = hovered ? "pointer" : "";
         hoverPoint = null;
       }
 
+      // Back above the box after the bottom view: the floor limit again, so a drag cannot sink under the floor.
+      if (restoreLimit && !tween && camera.position.y >= controls.target.y) {
+        controls.maxPolarAngle = ABOVE_FLOOR;
+        restoreLimit = false;
+      }
+
       if (dirty) {
+        placeFloor();
         renderer.render(scene, camera);
         placeLabels();
         dirty = false;
@@ -854,6 +968,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         model = next;
         root.add(next.group);
         next.update(progress, openness);
+        next.highlight(hovered ?? pinned);
         builtDims = dims;
         // Which way the model lies: the horizontal extent closest to the length carries it.
         const extent = new THREE.Box3().setFromObject(next.group).getSize(new THREE.Vector3());
@@ -911,7 +1026,34 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         dirty = true;
       },
       goTo(name) {
-        startTween(VIEWS[name].dir, VIEWS[name].distance, 0.8);
+        const saved = name === "saved" ? savedRef.current : null;
+        // No angle, or one without a direction (data older than the API check): stay where the camera is.
+        const savedDir = saved?.dir;
+        if (name === "saved" && (!Array.isArray(savedDir) || Math.hypot(...savedDir) < 0.5)) return;
+        const view = saved
+          ? { dir: new THREE.Vector3(...saved.dir).normalize(), distance: THREE.MathUtils.clamp(saved.zoom, 0.32, 3) }
+          : VIEWS[name as Exclude<ViewName, "saved">];
+        if (view.dir.y < 0) {
+          controls.maxPolarAngle = UNDER_FLOOR;
+          restoreLimit = false;
+        } else if (controls.maxPolarAngle !== ABOVE_FLOOR) {
+          restoreLimit = true;
+        }
+        startTween(view.dir, view.distance, 0.8);
+      },
+      currentView() {
+        if (!model) return null;
+        const offset = camera.position.clone().sub(controls.target);
+        const distance = offset.length();
+        if (!distance) return null;
+        const dir = offset.divideScalar(distance);
+        const round = (n: number) => Math.round(n * 1000) / 1000;
+        return { dir: [round(dir.x), round(dir.y), round(dir.z)], zoom: round(THREE.MathUtils.clamp(distance / framingDistance(fit.radius), 0.32, 3)) };
+      },
+      setPinnedHighlight(panelId) {
+        pinned = panelId;
+        if (!hovered) model?.highlight(pinned);
+        dirty = true;
       },
       invalidate() {
         dirty = true;
@@ -933,6 +1075,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       },
     };
     stageRef.current = api;
+    if (viewRef) viewRef.current = () => api.currentView();
     if (captureRef)
       captureRef.current = (size) => {
         if (!size) {
@@ -969,9 +1112,13 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       let saved: { position: THREE.Vector3; target: THREE.Vector3 } | null = null;
       /** Smoothed framing radius: the camera moves in as the sheet folds into a smaller box. */
       let radius = 0;
+      /** The clip turns around from the 3/4 view, or from the saved angle while the stage shows it (kept above the set). */
+      let filmDir = VIEWS.angle.dir;
       filmRef.current = {
         start() {
           if (!model) return false;
+          const angle = onSavedRef.current ? savedRef.current : null;
+          filmDir = angle ? new THREE.Vector3(angle.dir[0], Math.max(angle.dir[1], 0.12), angle.dir[2]).normalize() : VIEWS.angle.dir;
           filming = true;
           tween = null;
           set?.setProps(false);
@@ -984,12 +1131,13 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
             const pose = filmPose(t);
             model.update(pose.progress, pose.open);
             measure();
-            const dir = VIEWS.angle.dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), pose.yaw);
+            const dir = filmDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), pose.yaw);
             radius = radius ? radius + (fit.radius - radius) * 0.25 : fit.radius;
             // A margin around the box: the clip is cut square out of the stage, the shadow needs room too.
             camera.position.copy(fit.center).addScaledVector(dir, framingDistance(radius) * 1.18);
             camera.lookAt(fit.center);
           }
+          placeFloor();
           renderer.render(scene, camera);
           return renderer.domElement;
         },
@@ -1012,6 +1160,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     return () => {
       cancelAnimationFrame(frame);
       stageRef.current = null;
+      if (viewRef) viewRef.current = null;
       if (captureRef) captureRef.current = null;
       if (filmRef) filmRef.current = null;
       resizeObserver.disconnect();
@@ -1020,6 +1169,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       el.removeEventListener("pointerup", onPointerUp);
       el.removeEventListener("pointermove", onPointerMove);
       el.removeEventListener("pointerleave", onPointerLeave);
+      el.removeEventListener("wheel", userTurned);
       wrapper.removeEventListener("wheel", onZoomWheel, { capture: true });
       controls.dispose();
       model?.dispose();
@@ -1036,6 +1186,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
       if (container.contains(el)) container.removeChild(el);
     };
   }, []);
+
+  useEffect(() => stageRef.current?.setPinnedHighlight(highlightPanelId), [highlightPanelId]);
 
   // Fold targets first: the first box is built already in the state the page asks for.
   useEffect(() => {
@@ -1127,9 +1279,28 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
   }, [rotationX, rotationY]);
 
   const goTo = (next: ViewName) => {
+    if (next === "saved" && !savedRef.current) return;
     setView(next);
+    onSavedRef.current = next === "saved";
     stageRef.current?.goTo(next);
   };
+  const saveView = () => {
+    const current = stageRef.current?.currentView();
+    if (current && onSaveView) onSaveView(current);
+  };
+  // A new saved angle is the one on screen (just saved here or by the page): the stage now shows the saved view.
+  useEffect(() => {
+    if (!savedView) {
+      onSavedRef.current = false;
+      setView((current) => (current === "saved" ? null : current));
+      return;
+    }
+    const current = stageRef.current?.currentView();
+    if (current && Math.hypot(...current.dir.map((v, i) => v - savedView.dir[i])) < 0.01) {
+      onSavedRef.current = true;
+      setView("saved");
+    }
+  }, [savedView]);
 
   // Views asked by the page; the first one waits for the entrance of the box (it ends on the 3/4 view).
   const firstView = useRef(true);
@@ -1144,7 +1315,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
     goTo(cameraView);
     // goTo only reads refs and setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraView]);
+  }, [cameraView, cameraViewKey]);
 
   const dark = backdrop?.dark ?? false;
   const pill = dark
@@ -1172,12 +1343,31 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           onClick={() => goTo(item.view)}
           aria-pressed={view === item.view}
           className={button(view === item.view)}
-          title={`Góc nhìn ${item.label.toLowerCase()}`}
+          title={item.title}
         >
           {item.view === "angle" && <Box className="size-3.5" aria-hidden />}
           <span>{item.label}</span>
         </button>
       ))}
+      {savedView && (
+        <button type="button" onClick={() => goTo("saved")} aria-pressed={view === "saved"} className={button(view === "saved")} title="Về góc nhìn đã lưu của dự án">
+          <Bookmark className="size-3.5" aria-hidden />
+          <span className="hidden md:inline">Góc đã lưu</span>
+          <span className="sr-only md:hidden">Góc đã lưu</span>
+        </button>
+      )}
+      {onSaveView && (
+        <button
+          type="button"
+          onClick={saveView}
+          className={button(false)}
+          title={savedView ? "Lưu góc đang xem, thay góc đã lưu" : "Lưu góc đang xem cho ảnh sản phẩm và clip"}
+          aria-label={savedView ? "Lưu góc đang xem thay góc đã lưu" : "Lưu góc đang xem"}
+        >
+          <BookmarkPlus className="size-3.5" aria-hidden />
+          {!savedView && <span className="hidden md:inline">Lưu góc</span>}
+        </button>
+      )}
       <span className={`mx-0.5 h-4 w-px ${bar ? "bg-line" : dark ? "bg-white/20" : "bg-landing-line"}`} aria-hidden />
       {faceLabels && (
         <button
@@ -1295,8 +1485,8 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
           {stage}
         </div>
         <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line bg-surface-raised px-3 py-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">{barStart}</div>
-          <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="flex flex-wrap items-center gap-0.5">
+          {barStart && <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-fg-muted">{barStart}</div>}
+          <div role="toolbar" aria-label="Góc nhìn hộp 3D" className="ml-auto flex min-w-0 items-center gap-0.5 overflow-x-auto whitespace-nowrap">
             {barEnd}
             {showHud && boxType !== "pillow" && (
               <button type="button" onClick={() => setOpen((value) => !value)} aria-pressed={open} className={barButton(open)}>
@@ -1325,7 +1515,7 @@ export const InteractiveFoldingBox3D: React.FC<InteractiveFoldingBox3DProps> = (
         <div className="pointer-events-none absolute left-4 top-4">
           <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${pill}`}>
             <span className="size-1.5 rounded-full bg-fpt-orange" aria-hidden />
-            {STRUCTURE_LABEL[boxType]}
+            {boxType === "tuck-top" ? `Hộp nắp gài · ${usesLockBottom(dimensions) ? "đáy khóa" : "đáy gài"}` : STRUCTURE_LABEL[boxType]}
           </span>
         </div>
       )}

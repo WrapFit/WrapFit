@@ -20,8 +20,9 @@
  * `window: true` (docs-old/23 S17) cuts a display window in the front panel (see openings.ts); nothing else moves.
  */
 
-import { BoxDimensions, DielineGeometry, PanelFace, Point2D } from "../types/dieline";
+import { BoxDimensions, DielineGeometry, FlapFace, PanelFace, Point2D } from "../types/dieline";
 import { cutOpening, windowIn } from "./openings";
+import { flapFace } from "./flaps";
 import { segmentWriter } from "./segments";
 
 /** Gifts heavier than this (grams) get the crash-lock bottom (FEFCO 0215) unless the user picks the tuck bottom. */
@@ -222,11 +223,74 @@ export function generateTuckTopDieline(dimensions: BoxDimensions): DielineGeomet
   const window = dimensions.window ? windowIn(panels.find((panel) => panel.id === "panel_front")!) : null;
   if (window) cutOpening(writer, "cut_window", window);
 
+  // Flaps for the 3D model (docs/21 S6): the same outlines as the cut paths above, hinged on their creases. Every one
+  // folds a quarter turn towards the inside: the glue flap against the right panel, the dust flaps under the lid and
+  // the bottom, the tuck flaps down along the front panel.
+  const flap = flapFace;
+  const dustOutline = (x0: number, x1: number, hinge: number, edge: number): Point2D[] => [
+    { x: x0, y: hinge },
+    { x: x0 + dustCorner, y: edge },
+    { x: x1 - dustCorner, y: edge },
+    { x: x1, y: hinge },
+  ];
+  const flaps: FlapFace[] = [
+    flap("flap_glue", "Mép dán (Glue Flap)", "glue", { parent: "panel_back", edge: "right", angle: 90 }, [
+      { x: xBack, y: yBody },
+      { x: 0, y: yBody + glueCorner },
+      { x: 0, y: yBodyEnd - glueCorner },
+      { x: xBack, y: yBodyEnd },
+    ]),
+    flap("flap_tuck_top", "Lưỡi gài nắp (Top Tuck)", "tuck", { parent: "panel_top_lid", edge: "bottom", angle: 90 }, [
+      { x: xBack, y: yLid },
+      { x: xBack, y: tuckCorner },
+      { x: xBack + tuckCorner, y: 0 },
+      { x: xLeft - tuckCorner, y: 0 },
+      { x: xLeft, y: tuckCorner },
+      { x: xLeft, y: yLid },
+    ]),
+    flap("flap_dust_top_left", "Tai bụi trên trái", "dust", { parent: "panel_left", edge: "bottom", angle: 90 }, dustOutline(xLeft, xFront, yBody, yBody - dust)),
+    flap("flap_dust_top_right", "Tai bụi trên phải", "dust", { parent: "panel_right", edge: "bottom", angle: 90 }, dustOutline(xRight, xEnd, yBody, yBody - dust)),
+    ...(isLockBottom
+      ? [
+          flap("flap_lock_left", "Tai khóa đáy trái", "lock", { parent: "panel_left", edge: "top", angle: 90 }, [
+            { x: xLeft, y: yBodyEnd },
+            { x: xLeft + 3, y: yBodyEnd + lockFlapH * 0.75 },
+            { x: xFront - 5, y: yBodyEnd + lockFlapH * 0.6 },
+            { x: xFront, y: yBodyEnd },
+          ]),
+          flap("flap_lock_front", "Tai khóa đáy trước", "lock", { parent: "panel_front", edge: "top", angle: 90 }, [
+            { x: xFront, y: yBodyEnd },
+            { x: xFront + 4, y: yBodyEnd + lockFlapH - 6 },
+            { x: xRight - 4, y: yBodyEnd + lockFlapH - 6 },
+            { x: xRight, y: yBodyEnd },
+          ]),
+          flap("flap_lock_right", "Tai khóa đáy phải", "lock", { parent: "panel_right", edge: "top", angle: 90 }, [
+            { x: xRight, y: yBodyEnd },
+            { x: xRight + 3, y: yBodyEnd + lockFlapH * 0.75 },
+            { x: xEnd - 5, y: yBodyEnd + lockFlapH * 0.6 },
+            { x: xEnd, y: yBodyEnd },
+          ]),
+        ]
+      : [
+          flap("flap_dust_bottom_left", "Tai bụi đáy trái", "dust", { parent: "panel_left", edge: "top", angle: 90 }, dustOutline(xLeft, xFront, yBodyEnd, yBodyEnd + dust)),
+          flap("flap_dust_bottom_right", "Tai bụi đáy phải", "dust", { parent: "panel_right", edge: "top", angle: 90 }, dustOutline(xRight, xEnd, yBodyEnd, yBodyEnd + dust)),
+          flap("flap_tuck_bottom", "Lưỡi gài đáy (Bottom Tuck)", "tuck", { parent: "panel_bottom", edge: "top", angle: 90 }, [
+            { x: xBack, y: yBottomEnd },
+            { x: xBack, y: yEnd - tuckCorner },
+            { x: xBack + tuckCorner, y: yEnd },
+            { x: xLeft - tuckCorner, y: yEnd },
+            { x: xLeft, y: yEnd - tuckCorner },
+            { x: xLeft, y: yBottomEnd },
+          ]),
+        ]),
+  ];
+
   return {
     structureType: "tuck-top",
     dimensions,
     totalBoundingBox: { width: xEnd, height: yEnd },
     panels,
+    flaps,
     segments,
     glueAreas: [{ x: 0, y: yBody, width: glue, height: H }],
     ...(window ? { openings: [window] } : {}),

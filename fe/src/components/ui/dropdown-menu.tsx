@@ -69,7 +69,8 @@ function MenuPanel({
   label: string;
   id: string;
   anchor: HTMLElement | null;
-  side: "below" | "right";
+  /** below: under a trigger, end-aligned; right: beside a submenu item; point: from a pointer position, start-aligned. */
+  side: "below" | "right" | "point";
   onClose(refocus: boolean): void;
   onCloseSubmenu?: () => void;
   widthClassName?: string;
@@ -135,7 +136,9 @@ function MenuPanel({
   const position =
     side === "below"
       ? cn(placement.flipY ? "bottom-full mb-2" : "top-full mt-2", placement.flipX ? "left-0" : "right-0")
-      : cn("-top-1.5", placement.flipX ? "right-full mr-1" : "left-full ml-1");
+      : side === "point"
+        ? cn(placement.flipY ? "bottom-full mb-1" : "top-full mt-1", placement.flipX ? "right-0" : "left-0")
+        : cn("-top-1.5", placement.flipX ? "right-full mr-1" : "left-full ml-1");
 
   return (
     <div
@@ -214,6 +217,49 @@ function MenuPanel({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+export interface ContextMenuProps {
+  /** Names the menu for screen readers. */
+  label: string;
+  items: MenuEntry[];
+  /** Pointer position in viewport pixels (`clientX`, `clientY`); the menu opens there and flips at the edges. */
+  x: number;
+  y: number;
+  /** Closed by a choice, Escape, Tab or a pointer down outside the menu. */
+  onClose(): void;
+  widthClassName?: string;
+}
+
+/**
+ * Menu at a pointer position (a click on a canvas or a 3D model), with the keyboard of `DropdownMenu`. Rendered at
+ * fixed viewport coordinates, so a parent with `overflow: hidden` does not clip it. It has no trigger: the caller
+ * moves focus back where it belongs, if anywhere, after `onClose`.
+ */
+export function ContextMenu({ label, items, x, y, onClose, widthClassName }: ContextMenuProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const close = () => onCloseRef.current();
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) close();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("resize", close);
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className="fixed z-50 size-0" style={{ left: x, top: y }}>
+      <MenuPanel items={items} label={label} id={menuId} anchor={rootRef.current} side="point" onClose={() => onCloseRef.current()} widthClassName={widthClassName} />
     </div>
   );
 }

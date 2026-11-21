@@ -10,6 +10,8 @@ interface PanelNavigatorProps {
   dieline: DielineGeometry;
   activePanelId: string;
   onSelectPanel: (panelId: string) => void;
+  /** The chip under the pointer or in focus, null when none (the page lights that face on its 3D preview, docs/21 §8.5). */
+  onHoverPanel?: (panelId: string | null) => void;
   className?: string;
 }
 
@@ -21,17 +23,41 @@ const chip = (on: boolean) =>
   );
 
 /** Panels of the piece on screen, as a scrolling row of chips with their size in mm. */
-export const PanelNavigator: React.FC<PanelNavigatorProps> = ({ dieline, activePanelId, onSelectPanel, className = "" }) => {
+export const PanelNavigator: React.FC<PanelNavigatorProps> = ({ dieline, activePanelId, onSelectPanel, onHoverPanel, className = "" }) => {
+  const lit = (panelId: string | null) => onHoverPanel && (() => onHoverPanel(panelId));
   return (
-    <div role="group" aria-label="Mặt hộp" className={cn("flex items-center gap-0.5 overflow-x-auto no-scrollbar", className)}>
-      <button type="button" aria-pressed={activePanelId === "all"} onClick={() => onSelectPanel("all")} className={chip(activePanelId === "all")}>
+    <div
+      role="group"
+      aria-label="Mặt hộp"
+      onPointerLeave={lit(null)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onHoverPanel?.(null);
+      }}
+      className={cn("flex items-center gap-0.5 overflow-x-auto no-scrollbar", className)}
+    >
+      <button
+        type="button"
+        aria-pressed={activePanelId === "all"}
+        onClick={() => onSelectPanel("all")}
+        onPointerEnter={lit(null)}
+        onFocus={lit(null)}
+        className={chip(activePanelId === "all")}
+      >
         Toàn bộ
       </button>
 
       {dieline.panels.map((panel) => {
         const isSelected = activePanelId === panel.id;
         return (
-          <button key={panel.id} type="button" aria-pressed={isSelected} onClick={() => onSelectPanel(panel.id)} className={chip(isSelected)}>
+          <button
+            key={panel.id}
+            type="button"
+            aria-pressed={isSelected}
+            onClick={() => onSelectPanel(panel.id)}
+            onPointerEnter={lit(panel.id)}
+            onFocus={lit(panel.id)}
+            className={chip(isSelected)}
+          >
             <span>{panelLabel(panel.name)}</span>
             <span className={cn("font-mono text-cad-spec-micro tabular-nums", isSelected ? "text-fg-inverse/70" : "text-fg-muted/80")}>
               {formatMm(panel.bounds.width)} × {formatMm(panel.bounds.height)}

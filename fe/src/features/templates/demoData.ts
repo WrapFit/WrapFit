@@ -122,12 +122,12 @@ const DEMO_CURATED_CARDS: CuratedCard[] = [
     usesCount: 990,
   },
 
-  // --- HỘP NẮP GÀI ĐÁY KHÓA (TUCK TOP) ---
+  // --- HỘP NẮP GÀI (TUCK TOP) ---
   {
     id: "curated-candle-minimal",
     title: "Hộp Nến Thơm Mộc Botanical",
-    description: "Cấu trúc nắp gài đáy khóa chắc chắn, chất liệu Kraft mộc tự nhiên bảo vệ hũ nến thủy tinh.",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    description: "Cấu trúc nắp gài chắc chắn, chất liệu Kraft mộc tự nhiên bảo vệ hũ nến thủy tinh.",
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "MINIMAL",
     industry: "CANDLES",
     dimensions: { length: 90, width: 90, height: 110, paperThickness: caliperOf(300) },
@@ -140,8 +140,8 @@ const DEMO_CURATED_CARDS: CuratedCard[] = [
   {
     id: "curated-cosmetics-gift",
     title: "Set Hộp Mỹ Phẩm Serum & Nước Hoa",
-    description: "Cấu trúc hộp nắp gài đáy khóa chia ngăn chuẩn xác, chịu lực rơi tốt.",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    description: "Cấu trúc hộp nắp gài chia ngăn chuẩn xác, chịu lực rơi tốt.",
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "BIRTHDAY",
     industry: "COSMETICS",
     dimensions: { length: 140, width: 70, height: 150, paperThickness: caliperOf(350) },
@@ -155,7 +155,7 @@ const DEMO_CURATED_CARDS: CuratedCard[] = [
     id: "curated-christmas-holiday",
     title: "Hộp Quà Giáng Sinh Noel Pine Forest",
     description: "Tone xanh thông Bắc Âu kết hợp nắp gài tiện dụng, hoàn hảo cho bánh gừng và thiệp chúc mừng.",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "CHRISTMAS",
     industry: "BAKERY",
     dimensions: { length: 150, width: 100, height: 70, paperThickness: caliperOf(300) },
@@ -168,11 +168,12 @@ const DEMO_CURATED_CARDS: CuratedCard[] = [
   {
     id: "curated-coffee-box-tuck",
     title: "Hộp Cà Phê Đặc Sản Robusta Măng Đen",
-    description: "Chất liệu Kraft mộc phong trần, đáy khóa chịu tải 500g hạt cà phê rang xay cao cấp.",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    description: "Chất liệu Kraft mộc phong trần, đáy khóa giữ chắc túi 500 g cà phê rang xay cao cấp.",
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "MINIMAL",
     industry: "TEA_AGRI",
-    dimensions: { length: 110, width: 70, height: 160, paperThickness: caliperOf(350) },
+    // The bag weighs more than LOCK_BOTTOM_MIN_WEIGHT_G: the crash-lock bottom the description promises.
+    dimensions: { length: 110, width: 70, height: 160, paperThickness: caliperOf(350), giftWeight: 500, bottomType: "lock" },
     materialSpec: { type: "kraft", gsm: 350, caliper: caliperOf(350), finish: "raw" },
     color: "#451A03",
     thumbnailUrl: null,
@@ -183,7 +184,7 @@ const DEMO_CURATED_CARDS: CuratedCard[] = [
     id: "curated-sandalwood-candle-tuck",
     title: "Hộp Nắp Gài Nến Trầm Sandalwood & Amber",
     description: "Tone màu ấm áp mùa đông, viền cấn dao sắc sảo, chống xê dịch hũ nến khi vận chuyển.",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "CHRISTMAS",
     industry: "CANDLES",
     dimensions: { length: 95, width: 95, height: 115, paperThickness: caliperOf(350) },
@@ -197,7 +198,7 @@ const DEMO_CURATED_CARDS: CuratedCard[] = [
     id: "curated-organic-soap-tuck",
     title: "Hộp Xà Bông Nghệ Mật Ong Hữu Cơ",
     description: "Kích thước vừa khít bánh xà phòng thảo dược, có khe thoáng khí tự nhiên.",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "MINIMAL",
     industry: "COSMETICS",
     dimensions: { length: 90, width: 65, height: 35, paperThickness: caliperOf(300) },
@@ -429,7 +430,7 @@ export const DEMO_COMMUNITY_TEMPLATES: CommunityCard[] = [
   {
     slug: "nen-thom-lavender-candle-studio",
     title: "Hộp Nến Thơm Lavender — An Nhiên Studio",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "BIRTHDAY",
     industry: "CANDLES",
     dimensions: { length: 85, width: 85, height: 110, paperThickness: caliperOf(350) },
@@ -480,7 +481,7 @@ export const DEMO_COMMUNITY_TEMPLATES: CommunityCard[] = [
   {
     slug: "tinh-dau-tram-huong-hoang-gia",
     title: "Hộp Nắp Gài Chai Tinh Dầu Trầm Hương",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "TET",
     industry: "TEA_AGRI",
     dimensions: { length: 60, width: 60, height: 120, paperThickness: caliperOf(350) },
@@ -548,7 +549,7 @@ export const DEMO_COMMUNITY_TEMPLATES: CommunityCard[] = [
   {
     slug: "tra-oolong-bao-loc-tuck",
     title: "Hộp Nắp Gài Trà Oolong Thuần Khiết Bảo Lộc",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "TET",
     industry: "TEA_AGRI",
     dimensions: { length: 80, width: 80, height: 150, paperThickness: caliperOf(350) },
@@ -633,7 +634,7 @@ export const DEMO_COMMUNITY_TEMPLATES: CommunityCard[] = [
   {
     slug: "hop-qua-noel-gingerbread-tuck",
     title: "Hộp Nắp Gài Bánh Quy Gừng Giáng Sinh",
-    structure: { id: "tuck-top", name: "Hộp Nắp Gài Đáy Khóa" },
+    structure: { id: "tuck-top", name: "Hộp Nắp Gài" },
     occasion: "CHRISTMAS",
     industry: "BAKERY",
     dimensions: { length: 140, width: 90, height: 60, paperThickness: caliperOf(300) },

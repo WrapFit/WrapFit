@@ -48,8 +48,20 @@ const BUTTON =
  * Grey tile of a project (its flat dieline and its box, as in the template library), tags, title and the actions
  * of its status.
  */
-export function ProjectTile({ project, children }: { project: ProjectSummary; children?: React.ReactNode }) {
+export function ProjectTile({ project, compact = false, children }: { project: ProjectSummary; compact?: boolean; children?: React.ReactNode }) {
   const inTrash = project.status === "DELETED";
+  if (compact) {
+    return (
+      <div className="relative aspect-[3/2] overflow-hidden rounded-control border border-line bg-library-tile p-2">
+        <ProjectThumb project={project} className="h-full w-full object-contain" />
+        {project.hasFitcheckErrors && (
+          <span title="FitCheck có lỗi" className="absolute right-2 top-2 size-3 rounded-full border-2 border-white bg-danger">
+            <span className="sr-only">FitCheck có lỗi</span>
+          </span>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="relative aspect-[321/201] overflow-hidden rounded-2xl border border-line bg-library-tile transition-shadow group-hover:shadow-soft-16">
       <div className="absolute inset-0 grid grid-cols-2">

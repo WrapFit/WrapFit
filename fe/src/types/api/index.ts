@@ -197,6 +197,7 @@ export interface ProjectSummary {
   color?: string;
   /** 0–100 from the last server-side FitCheck; null until checked. */
   fitcheckScore: number | null;
+  hasFitcheckErrors?: boolean;
   thumbnailUrl: string | null;
   tags: string[];
   occasion: Occasion | null;

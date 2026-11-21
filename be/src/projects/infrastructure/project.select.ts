@@ -50,10 +50,12 @@ type SnapshotRow = Prisma.ProjectSnapshotGetPayload<{ select: typeof snapshotSum
 
 // JSON columns are only written through validated DTOs, so their shape is trusted when read back.
 // Stored keys of uploads are returned as URLs (thumbnail, preview, canvas images).
-export const toSummary = ({ thumbnailKey, ...row }: SummaryRow) =>
-  ({ ...row, thumbnailUrl: assetUrl(thumbnailKey) }) as unknown as ProjectSummary;
+// A list does not load the FitCheck reports: the repository asks the database which rows have errors.
+export const toSummary = ({ thumbnailKey, ...row }: SummaryRow, hasFitcheckErrors = false) =>
+  ({ ...row, hasFitcheckErrors, thumbnailUrl: assetUrl(thumbnailKey) }) as unknown as ProjectSummary;
 export const toDetail = (row: DetailRow) => {
-  const { template, ...summary } = toSummary(row) as unknown as DetailRow;
+  const fitcheckState = row.fitcheckState as ProjectDetail['fitcheckState'];
+  const { template, ...summary } = toSummary(row, fitcheckState?.isValidForProduction === false) as unknown as DetailRow;
   return {
     ...summary,
     template: { id: template.id, name: template.name },

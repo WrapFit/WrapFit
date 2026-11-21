@@ -110,7 +110,7 @@ graph TD
 
 | Hạng mục | Công nghệ | Ghi chú triển khai |
 | :--- | :--- | :--- |
-| Runtime & Framework | Node.js 22 LTS, **NestJS 11** (TypeScript `strict`) | Express adapter, `app.setGlobalPrefix('api')`. Cấu trúc mã nguồn theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) — Mục 1.3 |
+| Runtime & Framework | Node.js 24 LTS, **NestJS 11** (TypeScript `strict`) | Express adapter, `app.setGlobalPrefix('api')`. Cấu trúc mã nguồn theo skeleton [nestjs-project-structure](https://github.com/CatsMiaow/nestjs-project-structure) — Mục 1.3 |
 | ORM & CSDL | **Prisma ORM 6** + PostgreSQL 16 | Một `PrismaService` duy nhất, cung cấp qua `PrismaModule` (`@Global()`) tại `src/shared/prisma/` |
 | Xác thực | `@nestjs/passport`, `passport-google-oauth20`, `passport-jwt`, `@nestjs/jwt`, `bcryptjs` | Access Token 15 phút + Refresh Token 7 ngày (xoay vòng), cả hai trong **HttpOnly Cookie**; email xác minh & đặt lại mật khẩu gửi qua hàng đợi `mail` |
 | Phân quyền | `JwtAuthGuard` (toàn cục, `src/auth/guards/`) + `@Public()`, `RolesGuard` + `@Roles()` (`src/common/`) | Mặc định mọi route đều yêu cầu đăng nhập, route công khai phải khai báo rõ |

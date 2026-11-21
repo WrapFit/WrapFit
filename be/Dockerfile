@@ -2,7 +2,7 @@
 # WrapFit Backend (NestJS) — build context is the REPO ROOT:
 #   docker build -f be/Dockerfile .
 # ===================================================
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 # Prisma engines need OpenSSL on Alpine
 RUN apk add --no-cache openssl
 WORKDIR /app

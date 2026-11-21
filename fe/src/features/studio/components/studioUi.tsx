@@ -1,8 +1,8 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import React from "react";
-import { buttonClass, Tab, TabList, Tabs } from "@/components/ui";
+import { Tab, TabList, Tabs } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 
 // Building blocks of the studio steps: slate canvas, white cards, bold headings, orange pill actions.
@@ -147,30 +147,24 @@ export function MetricRow({ icon: Icon, label, value, hint }: { icon: LucideIcon
   );
 }
 
-/** Orange main action (shared Button, xl). */
-export const PRIMARY_PILL = buttonClass({ variant: "brand", size: "xl" });
-/** White secondary action (shared Button, xl). */
-export const SECONDARY_PILL = buttonClass({ variant: "secondary", size: "xl", className: "ring-0 font-medium" });
+/** The canvas takes the available space. On phones the inspector scrolls beneath the preview. */
+export const workspacePanes = "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex-row";
+export const workspaceStage = "relative flex min-h-0 min-w-0 flex-[1_1_45%] flex-col overflow-hidden bg-canvas lg:flex-1";
 
-/** Bar at the bottom of a step: back on the left, the current spec, the next step on the right. */
-export function StepActionBar({
-  back,
-  summary,
-  next,
-  className,
-}: {
-  back?: React.ReactNode;
-  summary?: React.ReactNode;
-  next?: React.ReactNode;
-  className?: string;
-}) {
+export function WorkspaceInspector({ title, children }: { title: string; children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = React.useState(false);
+  const bodyId = React.useId();
   return (
-    <div className={cn("sticky bottom-3 z-30 mt-6 sm:mt-8", className)}>
-      <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 rounded-2xl border border-line bg-white/95 px-5 py-3 shadow-sm backdrop-blur-md sm:px-6">
-        <div className="flex items-center gap-3">{back}</div>
-        {summary && <div className="hidden min-w-0 text-right text-body-sm text-landing-muted md:block">{summary}</div>}
-        {next && <div className="flex flex-wrap items-center justify-end gap-2">{next}</div>}
-      </div>
-    </div>
+    <aside data-tour="studio-inspector" aria-label={title} className={cn("flex min-h-0 min-w-0 flex-col border-t border-line bg-surface-raised lg:order-first lg:w-[360px] lg:flex-none lg:border-r lg:border-t-0 xl:w-[392px]", collapsed ? "flex-none" : "flex-[1_1_55%]")}>
+      <h2 className="shrink-0 border-b border-line font-landing-heading text-title text-fg">
+        <span className="hidden px-5 py-4 lg:block">{title}</span>
+        <button type="button" aria-expanded={!collapsed} aria-controls={bodyId}
+          onClick={() => setCollapsed((value) => !value)}
+          className="flex min-h-12 w-full items-center justify-between px-4 text-left lg:hidden">
+          {title}<ChevronDown className={cn("size-4", collapsed && "rotate-180")} aria-hidden />
+        </button>
+      </h2>
+      <div id={bodyId} className={cn("min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 lg:block lg:p-5", collapsed && "hidden")}>{children}</div>
+    </aside>
   );
 }

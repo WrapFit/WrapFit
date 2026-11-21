@@ -47,7 +47,7 @@ export const POPULAR_GIFT_PRESETS: GiftPreset[] = [
     category: "Cosmetics",
     dimensions: { length: 25, width: 25, height: 85, paperThickness: 0.38, giftWeight: 35, bottomType: "tuck" },
     boxType: "tuck-top",
-    boxTypeName: "Hộp nắp gài đáy khóa",
+    boxTypeName: "Hộp nắp gài đáy gài thường",
     recommendedGsm: "300 GSM Kraft",
     tip: "Khít thân son, thêm tai gài mở êm tay.",
   },
@@ -97,7 +97,7 @@ export const POPULAR_GIFT_PRESETS: GiftPreset[] = [
     category: "Gourmet",
     dimensions: { length: 120, width: 80, height: 60, paperThickness: 0.38 },
     boxType: "tuck-top",
-    boxTypeName: "Hộp nắp gài đáy khóa",
+    boxTypeName: "Hộp nắp gài đáy gài thường",
     recommendedGsm: "300 GSM Kraft",
     tip: "Kích thước tiêu chuẩn phù hợp đựng túi trà hoặc bánh nhỏ.",
   },
@@ -292,7 +292,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
   // Folded: one round button in the corner (the step bars leave room for it), never a bar over the page's buttons.
   if (!isExpanded) {
     return (
-      <div ref={islandRef} className={`fixed bottom-6 right-6 z-50 hidden md:block ${className}`}>
+      <div ref={islandRef} className={`fixed bottom-6 left-4 z-50 hidden lg:block ${className}`}>
         <button
           type="button"
           onClick={toggleExpanded}
@@ -315,7 +315,7 @@ export const AiCopilotAssistant: React.FC<AiCopilotAssistantProps> = ({
       ref={islandRef}
       role="dialog"
       aria-label="Trợ lý Bé Gói"
-      className={`fixed bottom-16 right-4 z-50 w-[94vw] font-sans md:bottom-6 md:right-6 sm:w-[410px] ${className}`}
+      className={`fixed bottom-16 right-4 z-50 w-[94vw] font-sans lg:bottom-6 lg:left-4 lg:right-auto sm:w-[410px] ${className}`}
     >
       {/* Floating Dynamic Island Container */}
       <div className="relative overflow-hidden rounded-3xl border border-landing-line bg-white/95 shadow-soft-16 backdrop-blur-md">

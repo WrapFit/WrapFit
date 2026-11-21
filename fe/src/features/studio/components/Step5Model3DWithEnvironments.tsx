@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
-import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
+import { Bookmark, BookmarkPlus, Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
+import { LIBRARY_OCCASIONS, type BoxDimensions, type CameraView, type CanvasElement } from "@wrapfit/shared";
 import { useToast } from "@/components/common/Toast";
 import { Switch } from "@/components/ui";
-import { PRIMARY_PILL, SECONDARY_PILL, StepActionBar, StepHeader, stageBarButton } from "@/features/studio/components/studioUi";
-import { continueTo, studioStep } from "@/features/studio/components/StudioStepper";
+import { workspacePanes, workspaceStage, WorkspaceInspector } from "@/features/studio/components/studioUi";
 import { Box3DView } from "@/features/studio/components/three/Box3DView";
 import { BACKDROPS, SCENE_IDS, sceneForOccasion, surfaceCss, type SceneId } from "@/features/studio/components/three/backdrops";
 import { STUDIO_PALETTES, STUDIO_PALETTE_IDS, type StudioPaletteId } from "@/features/studio/components/three/studioPalettes";
@@ -31,11 +30,13 @@ interface Step5Model3DWithEnvironmentsProps {
   /** Name of the mockup files. */
   title: string;
   onDimensionsChange?: (dims: BoxDimensions) => void;
-  onBack: () => void;
-  onNext: () => void;
   onOpenQrModal?: () => void;
   /** The box already carries the QR code of its unboxing page. */
   hasUnboxingQr?: boolean;
+  /** Camera angle saved for the project (docs/21 §8.5): the stage opens on it, photos and the clip start from it. */
+  savedView?: CameraView | null;
+  /** Saves the angle on screen for the project; absent while the project is read only. */
+  onSaveView?: (view: CameraView) => void;
 }
 
 const STRUCTURE_NAMES: Record<string, string> = {
@@ -66,10 +67,10 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   occasion,
   title,
   onDimensionsChange,
-  onBack,
-  onNext,
   onOpenQrModal,
   hasUnboxingQr = false,
+  savedView = null,
+  onSaveView,
 }) => {
   const toast = useToast();
   const suggested = sceneForOccasion(occasion);
@@ -79,7 +80,16 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const [props, setProps] = useState(true);
   const [isLidOpen, setIsLidOpen] = useState<boolean>(false);
   const [showCups, setShowCups] = useState<boolean>(dimensions.showCups !== false);
-  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  // Null once the box is turned by hand: no view button is lit, as the stage shows none of them (docs/21 §10).
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top" | "saved" | null>(savedView ? "saved" : "angle");
+  /** Reads the angle on the stage, for "Lưu góc". */
+  const readView = useRef<(() => CameraView | null) | null>(null);
+  // Every press sends the camera back, also to the view already lit after the box was turned by hand (docs/21 §9).
+  const [viewPress, setViewPress] = useState(0);
+  const showView = (view: NonNullable<typeof cameraView>) => {
+    setCameraView(view);
+    setViewPress((n) => n + 1);
+  };
   const [showFaceLabels, setShowFaceLabels] = useState<boolean>(false);
   const [saving, setSaving] = useState<MockupFormat["id"] | "all" | null>(null);
   const capture = useRef<CaptureFn | null>(null);
@@ -190,15 +200,17 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const tile = "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-control border border-line-strong bg-surface-raised px-1 py-1.5 text-center transition-colors hover:border-fg disabled:opacity-60";
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pb-6 pt-4 sm:px-6">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-        {/* The set: what the photo will be. Sticky, so it stays in view while the panel scrolls. */}
-        <div className="flex flex-col overflow-hidden rounded-sheet bg-surface-raised lg:sticky lg:top-[88px] lg:self-start">
-          <div className="relative h-[480px] w-full overflow-hidden bg-landing-canvas lg:h-[calc(100dvh-160px)] lg:min-h-[480px]">
+    <div className={workspacePanes}>
+      <div className={workspaceStage} data-tour="studio-stage">
+        <div className="relative min-h-0 flex-1 overflow-hidden">
             <Box3DView
               dimensions={dimensions}
               foldProgress={1}
-              cameraView={cameraView}
+              cameraView={cameraView ?? undefined}
+              cameraViewKey={viewPress}
+              onCameraMoved={() => setCameraView(null)}
+              savedView={savedView}
+              viewRef={readView}
               faceLabels={showFaceLabels}
               boxType={boxType as never}
               theme={activeMaterial}
@@ -287,7 +299,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                     <button
                       key={item.view}
                       type="button"
-                      onClick={() => setCameraView(item.view)}
+                      onClick={() => showView(item.view)}
                       aria-pressed={cameraView === item.view}
                       title={`Góc nhìn ${item.label.toLowerCase()}`}
                       className={cn(
@@ -301,6 +313,38 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                       <span>{item.label}</span>
                     </button>
                   ))}
+                  {savedView && (
+                    <button
+                      type="button"
+                      onClick={() => showView("saved")}
+                      aria-pressed={cameraView === "saved"}
+                      title="Về góc nhìn đã lưu của dự án"
+                      className={cn(
+                        "inline-flex h-7 items-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors",
+                        cameraView === "saved" ? "bg-fpt-orange text-white shadow-xs" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      )}
+                    >
+                      <Bookmark className="size-3" aria-hidden />
+                      <span>Góc đã lưu</span>
+                    </button>
+                  )}
+                  {onSaveView && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const view = readView.current?.();
+                        if (!view) return;
+                        onSaveView(view);
+                        setCameraView("saved");
+                      }}
+                      title={savedView ? "Lưu góc đang xem, thay góc đã lưu" : "Lưu góc đang xem cho ảnh và clip"}
+                      aria-label={savedView ? "Lưu góc đang xem thay góc đã lưu" : "Lưu góc đang xem"}
+                      className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    >
+                      <BookmarkPlus className="size-3" aria-hidden />
+                      {!savedView && <span>Lưu góc</span>}
+                    </button>
+                  )}
                   <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
                   <button
                     type="button"
@@ -409,9 +453,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
           </div>
         </div>
 
-        {/* Right column: 2 balanced, elegant cards following WrapFit 20 rules */}
-        <div className="flex flex-col gap-4">
-          {/* Card 1: Trải nghiệm mở hộp & Mã QR */}
+      <WorkspaceInspector title="Quà tặng & bối cảnh">
           <section aria-labelledby="step5-gift" className="rounded-2xl border border-orange-200/80 bg-orange-50/70 p-4 transition-all shadow-xs">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5 min-w-0">
@@ -675,23 +717,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
               )}
             </div>
           </section>
-        </div>
-      </div>
-
-      <StepActionBar
-        back={
-          <button type="button" onClick={onBack} className={SECONDARY_PILL}>
-            <ArrowLeft className="size-4" aria-hidden />
-            Sửa thiết kế
-          </button>
-        }
-        next={
-          <button type="button" data-tour="studio-next" onClick={onNext} className={PRIMARY_PILL}>
-            {continueTo(6)}
-            <ArrowRight className="size-4" aria-hidden />
-          </button>
-        }
-      />
+      </WorkspaceInspector>
     </div>
   );
 };
