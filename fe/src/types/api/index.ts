@@ -950,7 +950,7 @@ export interface SampleOrder {
   promoCode?: string | null;
   totalVnd?: number;
   /** Every design of the order, one bill; a single-design order has one line. */
-  items?: { projectId: string | null; projectTitle: string; quantity: number; lineTotalVnd: number }[];
+  items?: { projectId: string | null; projectTitle: string; quantity: number; lineTotalVnd: number; paperStock?: string; projectVersion?: number }[];
   sampleFeeVnd?: number;
   status: Lowercase<OrderStatus>;
   orderStatus?: OrderStatus;
@@ -962,10 +962,83 @@ export interface SampleOrder {
   cancelledAt?: string | null;
   createdAt: string;
   updatedAt?: string;
-  /** Staff only (ADMIN, the order's shop): WrapFit's platform fee and the shop's share, fixed when ordered. */
+  /** Date the customer should receive the boxes, YYYY-MM-DD (Vietnam); null on old orders. */
+  estimatedDelivery?: string | null;
+  /** Not delivered by `estimatedDelivery`. */
+  isLate?: boolean;
+  /** Deadline for the shop to take the paid order (docs/19 BR-A8). */
+  acceptDeadline?: string | null;
+  acceptedAt?: string | null;
+  /** Set while the order waits to be moved to another shop. */
+  rejectedAt?: string | null;
+  /** Staff only. */
+  rejectReason?: string | null;
+  carrier?: string | null;
+  carrierName?: string | null;
+  trackingCode?: string | null;
+  trackingUrl?: string | null;
+  /** Every status the order went through, oldest first. */
+  timeline?: { status: OrderStatus; at: string; note: string | null }[];
+  /** Messages of the other side the viewer has not read. */
+  unreadMessages?: number;
+  /** ADMIN and the shop's OWNER: WrapFit's platform fee and the shop's share, fixed when ordered. */
   platformFeeBps?: number;
   platformFeeVnd?: number;
   shopPayableVnd?: number;
+}
+
+/** A line of the conversation of an order (docs/19 G.4). */
+export interface OrderMessage {
+  id: string;
+  authorRole: "CUSTOMER" | "SHOP" | "ADMIN" | "SYSTEM";
+  authorName: string;
+  /** Written by the viewer. */
+  mine: boolean;
+  body: string;
+  /** Phone or account number sent before the shop took the order (staff see it). */
+  flagged: boolean;
+  createdAt: string;
+}
+
+/** A print file of an order line, short-lived link (`GET /orders/:id/print-files`). */
+export interface OrderPrintFile {
+  projectTitle: string;
+  projectVersion: number;
+  fileType: "PDF_CMYK" | "PDF_A4_PRINT" | "SVG" | "DXF" | "PRINT_PACKAGE";
+  fileName: string;
+  url: string;
+  expiresIn: number;
+}
+
+/** `PATCH /orders/:id/status`: SHIPPED needs the carrier and its code; a shop's DELIVERED needs its proof in the note. */
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
+  note?: string;
+  carrier?: string;
+  trackingCode?: string;
+}
+
+/** The shop of a print shop account (`GET /partner/me`). */
+export interface PartnerMe {
+  role: "OWNER" | "STAFF";
+  shop: PrintShop & { phone: string; zalo: string | null; contactEmail: string; dailyCapacity: number; platformFeeBps?: number };
+}
+
+/** Counters of the shop's queue (`GET /partner/summary`). */
+export interface PartnerSummary {
+  waitingAccept: number;
+  overdueAccept: number;
+  toStart: number;
+  inProduction: number;
+  shipped: number;
+  unreadMessages: number;
+}
+
+export interface UpdatePartnerShopRequest {
+  pausedUntil?: string | null;
+  dailyCapacity?: number;
+  phone?: string;
+  zalo?: string;
 }
 
 /** Filters of `GET /orders` (ADMIN, PRINT_SHOP). */
@@ -1129,7 +1202,7 @@ export interface NewReviewComment {
 
 // ─── Notifications (`be/src/notifications`, docs-old/25 S8) ─────────────────────────────────────────────────────────────
 
-export type NotificationType = "PROJECT_REMIXED" | "EXPORT_COMPLETED";
+export type NotificationType = "PROJECT_REMIXED" | "EXPORT_COMPLETED" | "ORDER_UPDATE" | "ORDER_MESSAGE" | "ORDER_NEW" | "ORDER_ALERT";
 
 /** One row of `GET /notifications`. */
 export interface AppNotification {
@@ -1137,8 +1210,12 @@ export interface AppNotification {
   type: NotificationType;
   createdAt: string;
   readAt: string | null;
-  /** PROJECT_REMIXED: my own design that was remixed. EXPORT_COMPLETED: the design whose print file is ready. */
-  project: { id: string; title: string };
+  /** PROJECT_REMIXED: my own design that was remixed. EXPORT_COMPLETED: the design whose print file is ready. Null for order notifications. */
+  project: { id: string; title: string } | null;
+  /** ORDER_*: the order. */
+  order?: { id: string; orderCode: string } | null;
+  /** ORDER_*: what happened (accepted, in_production, shipped, delivered, cancelled, reassigning, reassigned, received, paid, message, rejected, overdue). */
+  event?: string | null;
   /** PROJECT_REMIXED: remixes folded into this row since I last read it. */
   count: number;
   /** Latest remixer's name; null when unknown, deleted or anonymized ("Một người dùng WrapFit"). */

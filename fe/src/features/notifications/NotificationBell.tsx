@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, CheckCheck, FileCheck2, Shuffle } from "lucide-react";
+import { AlertTriangle, Bell, CheckCheck, FileCheck2, MessageCircle, PackagePlus, Shuffle, Truck } from "lucide-react";
+import { useAuth } from "@/features/auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useId, useRef, useState } from "react";
@@ -206,12 +207,22 @@ function NotificationPanel({ id, unread, onNavigate }: { id: string; unread: num
   );
 }
 
+const ICONS: Record<AppNotification["type"], typeof Shuffle> = {
+  PROJECT_REMIXED: Shuffle,
+  EXPORT_COMPLETED: FileCheck2,
+  ORDER_UPDATE: Truck,
+  ORDER_MESSAGE: MessageCircle,
+  ORDER_NEW: PackagePlus,
+  ORDER_ALERT: AlertTriangle,
+};
+
 function NotificationItem({ notification, onOpen }: { notification: AppNotification; onOpen(): void }) {
+  const { user } = useAuth();
   const unread = !notification.readAt;
-  const Icon = notification.type === "EXPORT_COMPLETED" ? FileCheck2 : Shuffle;
+  const Icon = ICONS[notification.type] ?? Shuffle;
   return (
     <Link
-      href={notificationHref(notification)}
+      href={notificationHref(notification, user?.role)}
       onClick={onOpen}
       className={cn(
         "flex items-start gap-3 rounded-xl p-2.5 outline-none transition-colors hover:bg-landing-tile/70 focus-visible:ring-[3px] focus-visible:ring-landing-ink/20",
