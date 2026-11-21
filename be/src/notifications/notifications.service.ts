@@ -15,8 +15,19 @@ const notificationSelect = {
   readAt: true,
   createdAt: true,
   project: { select: { id: true, title: true } },
+  order: { select: { id: true, orderCode: true } },
   actor: { select: { fullName: true, shopName: true, anonymizedAt: true } },
 } satisfies Prisma.NotificationSelect;
+
+/** An order event for the bell (docs/19 G.5). `event` names what happened, for the wording of the frontend. */
+export interface OrderNotification {
+  type: Extract<NotificationType, 'ORDER_UPDATE' | 'ORDER_MESSAGE' | 'ORDER_NEW' | 'ORDER_ALERT'>;
+  orderId: string;
+  userIds: string[];
+  /** Who caused it; never notified about their own action. */
+  actorId?: string | null;
+  payload?: { event: string; [key: string]: unknown };
+}
 
 type NotificationRow = Prisma.NotificationGetPayload<{ select: typeof notificationSelect }>;
 
@@ -25,8 +36,12 @@ export interface NotificationView {
   type: NotificationType;
   createdAt: string;
   readAt: string | null;
-  /** PROJECT_REMIXED: the recipient's own design (never the remixer's copy). EXPORT_COMPLETED: the exported design. */
-  project: { id: string; title: string };
+  /** PROJECT_REMIXED: the recipient's own design (never the remixer's copy). EXPORT_COMPLETED: the exported design. Null for order notifications. */
+  project: { id: string; title: string } | null;
+  /** ORDER_*: the order. */
+  order: { id: string; orderCode: string } | null;
+  /** ORDER_*: what happened (accepted, shipped, delivered, rejected, overdue, reassigned, paid, cancelled). */
+  event: string | null;
   /** PROJECT_REMIXED: remixes collapsed into this row since it was last read; 1 otherwise. */
   count: number;
   /**
@@ -139,6 +154,52 @@ export class NotificationsService {
     return { updated: count };
   }
 
+  /**
+   * Order notifications (docs/19 G.5) for several recipients: the customer, the shop's accounts or the admins. A new
+   * message folds into the recipient's unread ORDER_MESSAGE row of the same order (count + 1, latest sender), like
+   * remixes; other events add a row each. Best effort after the order change is committed: a failure is logged.
+   */
+  async notifyOrder(event: OrderNotification): Promise<void> {
+    const recipients = [...new Set(event.userIds)].filter((id) => id && id !== event.actorId);
+    try {
+      const now = new Date();
+      for (const userId of recipients) {
+        if (event.type === 'ORDER_MESSAGE') {
+          const { count } = await this.prisma.notification.updateMany({
+            where: { userId, type: 'ORDER_MESSAGE', orderId: event.orderId, readAt: null },
+            data: { actorId: event.actorId ?? null, count: { increment: 1 }, createdAt: now },
+          });
+          if (count > 0) continue;
+        }
+        await this.prisma.notification.create({
+          data: {
+            userId,
+            type: event.type,
+            orderId: event.orderId,
+            actorId: event.actorId ?? null,
+            payload: (event.payload ?? {}) as Prisma.InputJsonValue,
+            createdAt: now,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(`Order notification (${event.type} ${event.orderId}) not stored`, error instanceof Error ? error.stack : String(error));
+      return;
+    }
+    await Promise.all(recipients.map((userId) => this.push(userId)));
+  }
+
+  /** Accounts of a print shop, and the administrators: recipients of shop and alert notifications. */
+  async shopAccounts(printShopId: string): Promise<string[]> {
+    const rows = await this.prisma.printShopMember.findMany({ where: { printShopId, user: { isActive: true } }, select: { userId: true } });
+    return rows.map((row) => row.userId);
+  }
+
+  async adminAccounts(): Promise<string[]> {
+    const rows = await this.prisma.user.findMany({ where: { role: 'ADMIN', isActive: true }, select: { id: true } });
+    return rows.map((row) => row.id);
+  }
+
   /** Never throws: Redis down only means the browser learns at its next poll. */
   /** Tells the user's open browsers that the inbox changed. Best effort: a Redis error is logged, never thrown. */
   async push(userId: string): Promise<void> {
@@ -150,17 +211,22 @@ export class NotificationsService {
   }
 }
 
+const ORDER_TYPES: readonly NotificationType[] = ['ORDER_UPDATE', 'ORDER_MESSAGE', 'ORDER_NEW', 'ORDER_ALERT'];
+
 function present(row: NotificationRow): NotificationView {
-  const payload = (row.payload ?? {}) as Partial<{ exportJobId: string; fileType: string }>;
+  const payload = (row.payload ?? {}) as Partial<{ exportJobId: string; fileType: string; event: string }>;
   const actor = row.actor && !row.actor.anonymizedAt ? row.actor : null;
+  const named = row.type === 'PROJECT_REMIXED' || row.type === 'ORDER_MESSAGE';
   return {
     id: row.id,
     type: row.type,
     createdAt: row.createdAt.toISOString(),
     readAt: row.readAt?.toISOString() ?? null,
     project: row.project,
+    order: row.order,
+    event: ORDER_TYPES.includes(row.type) ? (payload.event ?? null) : null,
     count: row.count,
-    actorName: row.type === 'PROJECT_REMIXED' ? actor?.fullName?.trim() || actor?.shopName?.trim() || null : null,
+    actorName: named ? actor?.fullName?.trim() || actor?.shopName?.trim() || null : null,
     export:
       row.type === 'EXPORT_COMPLETED' && payload.exportJobId
         ? { jobId: payload.exportJobId, fileType: payload.fileType ?? '' }

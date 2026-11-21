@@ -20,6 +20,7 @@ import type { BillingSummary, Payment, PaymentPurpose, SubscriptionTier, XuHisto
 import { badRequest, conflict, currentUser, cursorPage, MockHttpError, notFound, requireAdmin, type Handler } from "../http";
 import { db, newId, nowIso, save, type MockLot, type MockPayment, type MockUser } from "../store";
 import { ownProject } from "./projects";
+import { onOrderPaid } from "./orders";
 
 const PAYMENT_MINUTES = 15;
 const SAMPLE_BANK = { bankBin: "970422", bankName: "MB Bank", accountNo: "0000000000", accountName: "WRAPFIT DEMO" };
@@ -251,6 +252,7 @@ function settle(payment: MockPayment, via: NonNullable<Payment["confirmedVia"]>)
       order.paidAt = payment.paidAt;
       order.paymentId = payment.id;
       order.updatedAt = payment.paidAt!;
+      onOrderPaid(order);
     }
   }
   const user = db().users.find((u) => u.id === payment.userId);

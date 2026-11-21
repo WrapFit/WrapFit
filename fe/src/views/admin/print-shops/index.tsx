@@ -9,7 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageCheck } from 'lucide-react';
 import React, { useState } from 'react';
-import { listAdminPrintShops, listStaffOrders, updateOrderStatus, updatePrintShop } from '@/api';
+import { listAdminPrintShops, listStaffOrders, reassignOrder, updateOrderStatus, updatePrintShop } from '@/api';
 import { useToast } from '@/components/common/Toast';
 import { Button, DataTable, type DataColumn } from '@/components/ui';
 import { AdminShell, AdminTimeline, Badge, Panel, PanelTitle, AdminStat, WORKSPACE_INPUT, WorkspaceEmpty, WorkspaceError, ADMIN_STAT_GROUP, dayKeyOf, lastDays, type TimelineEvent } from '@/components/workspace';
@@ -82,6 +82,14 @@ function PrintShopsScreen() {
     onSuccess: (order) => toast.show({ tone: 'success', title: `${order.orderCode}: ${orderStatusBadge(order.status).label}` }),
     onError: (error) => toast.error(error, 'Chưa đổi được trạng thái đơn'),
     // A 409 means someone else moved the order first: reload the list either way.
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all }),
+  });
+
+  // A paid order no shop took (refused, late): move it to a shop that can print it (docs/19 AF-A2).
+  const reassign = useMutation({
+    mutationFn: ({ order, shopId }: { order: SampleOrder; shopId: string }) => reassignOrder(order.id, shopId),
+    onSuccess: (order) => toast.show({ tone: 'success', title: `${order.orderCode}: đã chuyển sang ${order.printShopName}` }),
+    onError: (error) => toast.error(error, 'Chưa chuyển được đơn'),
     onSettled: () => void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all }),
   });
 
@@ -158,7 +166,21 @@ function PrintShopsScreen() {
       sortValue: (order) => orderStatusBadge(order.status).label,
       render: (order) => {
         const badge = orderStatusBadge(order.status);
-        return <Badge tone={badge.tone}>{badge.label}</Badge>;
+        const waiting = order.orderStatus === 'PAID' && !order.acceptedAt;
+        const overdue = waiting && !order.rejectedAt && !!order.acceptDeadline && new Date(order.acceptDeadline) < new Date();
+        return (
+          <span className="flex flex-col items-start gap-1">
+            <Badge tone={badge.tone}>{badge.label}</Badge>
+            {waiting && order.rejectedAt && (
+              <span className="text-caption font-semibold text-danger-fg" title={order.rejectReason ?? undefined}>
+                Xưởng từ chối{order.rejectReason ? `: ${order.rejectReason}` : ''}
+              </span>
+            )}
+            {overdue && <span className="text-caption font-semibold text-danger-fg">Quá hạn nhận</span>}
+            {waiting && !order.rejectedAt && !overdue && <span className="text-caption text-library-muted">Chờ xưởng nhận</span>}
+            {order.isLate && <span className="text-caption font-semibold text-danger-fg">Trễ hẹn giao</span>}
+          </span>
+        );
       },
     },
     { key: 'time', label: 'Đặt lúc', sortValue: (order) => new Date(order.createdAt), render: (order) => <span className="whitespace-nowrap text-library-sub">{formatRelative(order.createdAt)}</span> },
@@ -167,10 +189,32 @@ function PrintShopsScreen() {
       label: 'Thao tác',
       align: 'right',
       render: (order) => {
-        const steps = order.orderStatus ? ORDER_NEXT_STEPS[order.orderStatus] : [];
-        if (!steps.length) return <span className="text-caption text-library-muted">Đã xong</span>;
+        // Shipping needs the carrier and its tracking code, which the shop enters in its portal (docs/19 BR-G25).
+        const steps = (order.orderStatus ? ORDER_NEXT_STEPS[order.orderStatus] : []).filter((step) => step.to !== 'SHIPPED');
+        const movable = order.orderStatus === 'PAID' && !order.acceptedAt;
+        if (!steps.length && !movable) {
+          return <span className="text-caption text-library-muted">{order.orderStatus === 'IN_PRODUCTION' ? 'Xưởng nhập vận đơn' : 'Đã xong'}</span>;
+        }
         return (
           <span className="flex flex-wrap justify-end gap-2">
+            {movable && (
+              <select
+                aria-label={`Chuyển ${order.orderCode} sang xưởng khác`}
+                value=""
+                disabled={reassign.isPending}
+                onChange={(event) => event.target.value && reassign.mutate({ order, shopId: event.target.value })}
+                className={cn(WORKSPACE_INPUT, 'h-8 w-auto py-0 text-caption text-library-ink')}
+              >
+                <option value="">Chuyển xưởng…</option>
+                {shopList
+                  .filter((shop) => shop.id !== order.printShopId && (shop.status ?? 'active') === 'active')
+                  .map((shop) => (
+                    <option key={shop.id} value={shop.id}>
+                      {shop.name}
+                    </option>
+                  ))}
+              </select>
+            )}
             {steps.map((step) => (
               <Button
                 key={step.to}

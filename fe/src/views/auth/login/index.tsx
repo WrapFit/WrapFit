@@ -18,6 +18,10 @@ import { AuthBrandPanel } from "@/components/auth/AuthBrandPanel";
 import { ROUTES } from "@/constants";
 import { ADMIN_HOME, afterSignInTarget, isDemoUser, ONBOARDING_TOUR_ID, signedInOnPurpose, useAuth, WELCOME_HOME } from "@/features/auth";
 import { DEMO_ADMIN_USER, DEMO_USER, DEMO_USERS } from "@/features/dashboard/demoData";
+import { PARTNER_HOME } from "@/features/auth/roles";
+
+/** The print shop account of the demo (Sài Gòn Xanh), for the partner portal (docs/19 G.1). */
+const DEMO_SHOP_USER = DEMO_USERS.find((user) => user.role === "PRINT_SHOP");
 import { useHydrated } from "@/hooks/dom";
 import { ApiError, isApiError } from "@/services/api";
 import type { LoginRequest, RegisterRequest, SafeUser } from "@/types/api";
@@ -491,7 +495,7 @@ function AuthLoginScreen({
                     onClose={() => setDemoOpen(false)}
                     size="lg"
                   >
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <DemoChoice
                         image="/mascots/goi-cheer.webp"
                         title="Demo người dùng"
@@ -522,6 +526,20 @@ function AuthLoginScreen({
                           router.replace(ADMIN_HOME);
                         }}
                       />
+                      {DEMO_SHOP_USER && (
+                        <DemoChoice
+                          image="/mascots/goi-ruler.webp"
+                          title="Demo xưởng in"
+                          body="Cổng xưởng đối tác: nhận đơn, in, gửi hàng, nhắn với khách."
+                          tone="orange"
+                          onSelect={() => {
+                            redirected.current = true;
+                            setDemoOpen(false);
+                            signedIn(DEMO_SHOP_USER);
+                            router.replace(PARTNER_HOME);
+                          }}
+                        />
+                      )}
                     </div>
                   </Dialog>,
                   document.body,

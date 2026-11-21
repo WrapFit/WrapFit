@@ -40,9 +40,34 @@ Mặc định đã chọn khi chưa có câu trả lời (đổi được sau):
 
 Chưa kiểm: test e2e của backend (cần Postgres của dự án; Docker không chạy lúc làm). Cách xóa dữ liệu test của e2e đã sửa để xóa được sổ cái (`purgeLedger`).
 
+### Đợt 2 (2026-11-21): cổng xưởng, tin nhắn trong đơn, theo dõi đơn
+
+| Việc | Mã | Đã kiểm |
+|---|---|---|
+| Xưởng nhận / từ chối đơn đã thanh toán; hạn nhận 24 giờ làm việc (bỏ Chủ nhật) tính lúc thanh toán; từ chối bắt buộc lý do (BR-A8, AF-A2) | `be/src/orders/orders.service.ts`, `POST /orders/:id/accept`, `/reject` | Unit test; demo offline |
+| Admin chuyển đơn chưa xưởng nào nhận sang xưởng khác: kiểm lại năng lực, phí nền tảng theo hợp đồng xưởng mới, hạn nhận mới (AF-A2) | `PATCH /orders/:id/shop`, trang admin xưởng | Unit test; **chưa mở trên trình duyệt** |
+| Xưởng chỉ bắt đầu in khi đã nhận đơn; gửi hàng bắt buộc hãng + mã vận đơn (trừ xưởng tự giao / khách tự lấy); xưởng báo đã giao phải ghi bằng chứng; khách bấm "Đã nhận hàng" (BR-G23, BR-G25) | `shared/src/partners/order-tracking.ts`, `orders.service.ts` | Unit test; demo offline |
+| Ai thấy gì (G.4): khách thấy số xưởng từ khi xưởng nhận đơn; xưởng thấy số điện thoại / địa chỉ khách từ lúc đó; STAFF của xưởng không thấy tiền | `toResponse` theo phía người xem | Unit test |
+| Tin nhắn trong đơn (BR-G17): khách / xưởng / admin, dòng hệ thống khi nhận đơn, chuyển xưởng, gửi hàng; số tin chưa đọc mỗi phía; đóng sau 30 ngày (trừ admin); có số điện thoại / số tài khoản trước khi xưởng nhận đơn thì cảnh báo và gắn cờ, không chặn (BR-G19) | `be/src/orders/order-messages.service.ts`, `fe/src/features/orders/OrderChat.tsx` | Unit test; demo offline |
+| Thông báo đơn hàng vào chuông: đơn mới cho xưởng, cập nhật cho khách, tin nhắn (gộp theo đơn), cảnh báo cho admin (xưởng từ chối, quá hạn nhận) | `notifications.service.ts` (`notifyOrder`), `NotificationBell`, `copy.ts` | Unit test; demo offline (chuông khách đủ 4 thông báo) |
+| Việc chạy mỗi phút: báo xưởng đơn mới sau khi giao dịch thanh toán đã ghi, báo admin + khách khi quá hạn nhận, tự chuyển "đã giao" sau 10 ngày gửi hàng (BR-G24); mỗi bước tự giữ chỗ nên nhiều máy chủ không báo trùng | `be/src/orders/order-follow-up.task.ts` | Unit test |
+| Cổng xưởng `/partner`: hàng đợi theo việc (chờ nhận / cần in / đang in / đang giao / đã xong) với hạn nhận đếm ngược, chi tiết đơn (nhận, từ chối, in, gửi hàng, báo giao, tải file in đúng phiên bản, chat), phiếu đóng gói có QR mở đơn trên điện thoại, thông tin xưởng (OWNER tự tạm nghỉ đến ngày, công suất, số điện thoại, Zalo) | `fe/src/views/partner/*`, `be/src/orders/partner.controller.ts` | Demo offline: trọn luồng nhận → in → gửi GHN → khách xác nhận |
+| Khách theo dõi đơn: tiến trình đủ bước có giờ, ngày nhận dự kiến và cảnh báo trễ, link tra cứu vận đơn, chat, nút "Đã nhận hàng"; mở thẳng từ thông báo (`/dashboard/orders?order=`) | `fe/src/views/dashboard/orders/OrderDetailDialog.tsx`, `OrderProgress.tsx` | Demo offline |
+| Đăng nhập tài khoản xưởng vào thẳng `/partner`; nút "Demo xưởng in" ở trang đăng nhập | `fe/src/features/auth`, `views/auth/login` | Demo offline |
+| Sửa lỗi có sẵn trên `develop`: nút "Chi tiết" ở trang Đơn hàng không mở hộp chi tiết (hộp chưa từng được render) | `fe/src/views/dashboard/orders/index.tsx` | Demo offline |
+
+Migration `20261121000100_partner_portal` chạy trên Postgres trong bộ nhớ cùng 44 migration trước; các ràng buộc mới (độ dài tin nhắn, mã vận đơn phải có hãng, từ chối phải có lý do, ngày dự kiến đúng định dạng, thông báo phải có dự án hoặc đơn) đều chặn đúng.
+
+Còn mở của đợt 2:
+
+- Link tra cứu chỉ có cho GHN và GHTK; các hãng khác hiện mã để chép. Cần kiểm lại với hãng (Q-G2).
+- Chưa có Zalo / SMS / email cho xưởng (G.1 mức 2) và API + webhook cho xưởng (mức 3); chưa có màn hình mời nhân viên xưởng (STAFF).
+- Tin nhắn chưa đính kèm được ảnh / file.
+- Chưa có cảnh báo khi một phía không trả lời quá 4 giờ (BR-G18): mới có số tin chưa đọc.
+- Test e2e chưa chạy (chưa có Postgres của dự án).
+
 ### Đợt kế tiếp
 
-- **Đợt 2:** cổng xưởng `/partner` (hàng đợi, nhận / từ chối, mã vận đơn, quét QR), tin nhắn trong đơn, theo dõi đơn đủ bước, thông báo.
 - **Đợt 3:** đơn sản xuất theo báo giá, cọc, hoàn tiền, khiếu nại, `COMPLETED`, đối soát và báo cáo tài chính.
 - **Đợt 4:** kiểm duyệt mẫu cộng đồng, Brand Kit ở trang hồ sơ (phần áp lên hộp chờ studio).
 

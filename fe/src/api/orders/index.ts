@@ -4,7 +4,10 @@ import type {
   CreateSampleBundleRequest,
   CreateSampleOrderRequest,
   MatchSampleShopsRequest,
+  OrderMessage,
+  OrderPrintFile,
   OrderStatus,
+  UpdateOrderStatusRequest,
   PrintShopMatch,
   SampleOrder,
   StaffOrdersQuery,
@@ -58,7 +61,51 @@ export function listStaffOrders(query: StaffOrdersQuery = {}): Promise<SampleOrd
   return request("/orders", { query });
 }
 
-/** Moves an order one step of its lifecycle; a step that is not allowed answers 409. */
-export function updateOrderStatus(id: string, status: OrderStatus, note?: string): Promise<SampleOrder> {
-  return request(`/orders/${id}/status`, { method: "PATCH", json: { status, note } });
+/**
+ * Moves an order one step of its lifecycle; a step that is not allowed answers 409. SHIPPED needs `carrier` and its
+ * `trackingCode`; a shop saying DELIVERED writes its proof in `note` (docs/19 G.5).
+ */
+export function updateOrderStatus(id: string, status: OrderStatus, note?: string, shipment?: { carrier?: string; trackingCode?: string }): Promise<SampleOrder> {
+  const body: UpdateOrderStatusRequest = { status, note, ...shipment };
+  return request(`/orders/${id}/status`, { method: "PATCH", json: body });
+}
+
+/** One order as the reader may see it: owner, its shop, or an admin (docs/19 G.4). */
+export function getStaffOrder(id: string): Promise<SampleOrder> {
+  return request(`/orders/${id}`);
+}
+
+/** The shop takes a paid order: its phone shows to the customer from now on. */
+export function acceptOrder(id: string): Promise<SampleOrder> {
+  return request(`/orders/${id}/accept`, { method: "POST" });
+}
+
+/** The shop refuses a paid order it has not taken; WrapFit moves it to another shop. */
+export function rejectOrder(id: string, reason: string): Promise<SampleOrder> {
+  return request(`/orders/${id}/reject`, { method: "POST", json: { reason } });
+}
+
+/** ADMIN moves a paid order no shop took to another shop. */
+export function reassignOrder(id: string, printShopId: string, note?: string): Promise<SampleOrder> {
+  return request(`/orders/${id}/shop`, { method: "PATCH", json: { printShopId, note } });
+}
+
+/** The customer received the boxes. */
+export function confirmOrderReceived(id: string): Promise<SampleOrder> {
+  return request(`/orders/${id}/received`, { method: "POST" });
+}
+
+/** Print files of the ordered versions, links valid 15 minutes. */
+export function getOrderPrintFiles(id: string): Promise<OrderPrintFile[]> {
+  return request(`/orders/${id}/print-files`);
+}
+
+/** The conversation of an order; reading it marks the reader's side as read. */
+export function listOrderMessages(id: string): Promise<OrderMessage[]> {
+  return request(`/orders/${id}/messages`);
+}
+
+/** `warning`: a phone or account number sent before the shop took the order (kept, shown to WrapFit). */
+export function postOrderMessage(id: string, body: string): Promise<{ message: OrderMessage; warning: boolean }> {
+  return request(`/orders/${id}/messages`, { method: "POST", json: { body } });
 }

@@ -58,7 +58,7 @@ const strip = ({ userId: _userId, ...notification }: MockNotification): AppNotif
  */
 export function notifyRemix(source: MockProject, remixerId: string, remixerName: string | null): void {
   if (source.ownerId === remixerId) return;
-  const unread = store().find((n) => n.userId === source.ownerId && n.type === "PROJECT_REMIXED" && n.project.id === source.id && !n.readAt);
+  const unread = store().find((n) => n.userId === source.ownerId && n.type === "PROJECT_REMIXED" && n.project?.id === source.id && !n.readAt);
   if (unread) {
     unread.count += 1;
     unread.actorName = remixerName;
@@ -73,6 +73,43 @@ export function notifyRemix(source: MockProject, remixerId: string, remixerName:
       project: { id: source.id, title: source.title },
       count: 1,
       actorName: remixerName,
+      export: null,
+    });
+  }
+  save();
+}
+
+/**
+ * Order notifications of the demo (docs/19 G.5), like NotificationsService.notifyOrder: a message folds into the
+ * recipient's unread one of the same order; the actor is never told about their own action.
+ */
+export function notifyOrder(
+  type: "ORDER_UPDATE" | "ORDER_MESSAGE" | "ORDER_NEW" | "ORDER_ALERT",
+  order: { id: string; orderCode: string },
+  userIds: string[],
+  event: string,
+  actor?: { id: string; name: string | null },
+): void {
+  for (const userId of new Set(userIds)) {
+    if (!userId || userId === actor?.id) continue;
+    const unread = type === "ORDER_MESSAGE" ? store().find((n) => n.userId === userId && n.type === type && n.order?.id === order.id && !n.readAt) : undefined;
+    if (unread) {
+      unread.count += 1;
+      unread.actorName = actor?.name ?? null;
+      unread.createdAt = nowIso();
+      continue;
+    }
+    store().push({
+      id: newId("notif-"),
+      userId,
+      type,
+      createdAt: nowIso(),
+      readAt: null,
+      project: null,
+      order: { id: order.id, orderCode: order.orderCode },
+      event,
+      count: 1,
+      actorName: type === "ORDER_MESSAGE" ? (actor?.name ?? null) : null,
       export: null,
     });
   }

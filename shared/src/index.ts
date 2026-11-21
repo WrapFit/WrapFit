@@ -50,6 +50,7 @@ export * from "./pricing/quote";
 export * from "./partners/provinces";
 export * from "./partners/matching";
 export * from "./partners/fees";
+export * from "./partners/order-tracking";
 export * from "./billing/plans";
 export * from "./billing/prices";
 export * from "./billing/entitlements";

@@ -3,13 +3,16 @@ import { DEMO_USER } from "@/features/dashboard/demoData";
 import type { Role, SafeUser } from "@/types/api";
 
 /**
- * Where each role works. An administrator manages the platform from /admin and has no use for the maker's
- * workspace; makers, artisans and print shops work in /dashboard (print shops have no console of their own yet).
+ * Where each role works. An administrator manages the platform from /admin, a print shop its orders from /partner
+ * (docs/19 G.1); makers and artisans work in /dashboard.
  */
 export const ADMIN_HOME = "/admin";
+export const PARTNER_HOME = "/partner";
 
 export function homeForRole(role: Role): string {
-  return role === "ADMIN" ? ADMIN_HOME : ROUTES.dashboard;
+  if (role === "ADMIN") return ADMIN_HOME;
+  if (role === "PRINT_SHOP") return PARTNER_HOME;
+  return ROUTES.dashboard;
 }
 
 /**
