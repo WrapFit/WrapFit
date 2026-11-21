@@ -1,32 +1,32 @@
-# Graph Report - print-partner-flows  (2026-11-20)
+# Graph Report - print-partner-flows  (2026-11-21)
 
 ## Corpus Check
-- 1201 files · ~971,613 words
+- 1220 files · ~986,734 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 70 file(s) not represented in the graph (top: .woff2 26, .ttf 18, .css 11)
 
 ## Summary
-- 9657 nodes · 27203 edges · 339 communities (256 shown, 83 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 949 edges (avg confidence: 0.89)
+- 9955 nodes · 27938 edges · 344 communities (245 shown, 99 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 984 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b0de0167`
+- Built from commit: `f8c0dc75`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - text-layout.ts
 - react
-- ConfigService
+- PrismaService
 - PublicProjectsService
 - bank-transactions.service.ts
 - types/api/index.ts
-- StorageService
+- PresignUploadDto
 - cn
 - LibraryPanel.tsx
 - CanvasElement
-- projects.service.ts
+- @tanstack/react-query
 - workspace/index.ts
 - ReviewsService
 - xu-wallet.service.ts
@@ -35,10 +35,10 @@
 - ai-image.service.ts
 - ElementInspector.tsx
 - ProjectsService
-- HistoryPanel.tsx
+- CheckoutDialog.tsx
 - be/package.json
-- @tanstack/react-query
-- projects/index.tsx
+- data/index.ts
+- DesignStats.tsx
 - brand-kit/index.tsx
 - notifications.service.ts
 - templates/index.tsx
@@ -48,57 +48,57 @@
 - fal-models.ts
 - stock-photos.service.ts
 - 19. Kế hoạch mở rộng tính năng: đơn in, hoa hồng, kết nối xưởng, vật liệu, cộng đồng mẫu, Brand Kit, editor, khuôn tùy chỉnh
-- Step3PaperFinish.tsx
+- Step6ReviewExport.tsx
 - 9.1 Module mới
-- dependencies
+- users.service.ts
 - next
-- dashboard/index.ts
+- 5. BẢNG TRA CỨU CÁC DESIGN PATTERNS ÁP DỤNG
 - templates.service.ts
 - PackagingSpecSheet.tsx
-- orders.service.ts
-- vnpay.ts
+- ledger.ts
+- features/auth/index.ts
 - login/index.tsx
-- WrapFit Backend (NestJS)
-- set-password/index.tsx
+- AiImageController
+- library.service.ts
 - Public
-- renderers.ts
+- BillingDetailsDto
 - db
 - fe/package.json
-- xu.ts
+- ai-image-models.ts
 - NotificationBell.tsx
-- review/index.tsx
+- request
 - mail.processor.ts
 - billing.ts
 - matching.ts
 - project-spec.dto.ts
-- request
+- p/[slug]/page.tsx
 - prisma-project.repository.ts
-- UpdateBrandKitDto
+- UsersController
 - public-project/index.tsx
-- Step1BoxTemplatePicker.tsx
-- Step6ReviewExport.tsx
+- AuthService
+- CurrentUser
 - payments.service.ts
 - mock-api/pattern/procedural-pattern.generator.ts
 - GeneratePatternDto
 - print-renderers.ts
-- tour.tsx
+- cart/index.tsx
 - UnboxingDialog.tsx
 - e2e-scenario.mjs
 - a11y-audit.mjs
-- CollectionDialog.tsx
+- dashboard/index.ts
 - sync.mjs
 - contracts.ts
 - SafeUser
-- printShops.ts
-- quote.ts
-- AiCostGuard
-- project.repository.port.ts
+- handlers/orders.ts
+- ai-image.controller.ts
+- WrapFit Backend (NestJS)
+- user-removal.ts
 - configuration.ts
 - src/index.ts
-- ShareDialog.tsx
+- film.ts
 - legal/index.tsx
 - src/common/index.ts
-- prepress.ts
+- LibraryController
 - ListNotificationsQueryDto
 - sceneSet.ts
 - UpdatePrintShopDto
@@ -106,72 +106,74 @@
 - reviews.ts
 - InteractiveFoldingBox3D.tsx
 - CreateAiImageDto
-- AiImageReconcileTask
-- currentUser
-- fonts/index.ts
-- print-shops.service.ts
+- UpdatePartnerShopDto
+- store.ts
+- AppProviders.tsx
+- AdminPrintShopsController
 - DesignStats.tsx
 - ExportDialog.tsx
 - features/templates/index.ts
-- useProjects.ts
+- AiImageService
 - ref_node_fs
 - 2. Endpoints đã triển khai
 - PaymentsController
-- Toast/index.ts
+- PrintShopsService
 - ExportController
 - GifWriter
-- CheckoutDialog.tsx
+- tour.tsx
 - UnboxingService
-- asset-keys.ts
+- projects.service.ts
 - Hardening Controls
 - CreateSnapshotDto
 - 2. Chi Tiết Các Bảng Dữ Liệu
-- useToast
-- useCollections.ts
+- .resolve
+- print-shops.service.ts
 - search.ts
-- Icon
-- CreateSampleBundleDto
-- TemplatesController
-- tailwind.config.ts
+- ProjectCard.tsx
+- dialog.tsx
+- 11 — Rà soát giao diện theo kích thước màn hình (Phase 7)
+- StageApi
 - e2e
 - @nestjs/common
 - StitchRuntime.tsx
-- barcode.ts
-- seed-data.ts
-- EnvironmentVariables
-- button.tsx
+- order-tracking.ts
+- PartnerController
+- shapes.ts
+- GrantCreditsDto
 - CreateSampleOrderDto
 - CreatePaymentDto
 - RecordProjectEventDto
-- behavior.mjs
-- Context
-- BlueprintIntro.tsx
-- BoxPreview.tsx
-- prices.ts
-- effects-spelling.spec.ts
+- AvatarCropDialog.tsx
+- SearchStockPhotosDto
+- ListOrdersQueryDto
+- BoxStage3D.tsx
+- AuthCookieService
+- RegisterDto
 - MatchSampleShopsDto
-- useAccount.ts
+- UpdateOrderStatusDto
 - Step2DimensionAndMaterial.tsx
-- 📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION)
-- app/login/page.tsx
+- BoxStructureType
+- 3. Cấu trúc `canvas_state`
 - FitCheckDrawer.tsx
-- EmailOnlyDto
+- redis
 - ui-fixtures.mjs
-- ListPaymentsQueryDto
+- SceneSet
 - svg-sanitizer.ts
 - mock-api/index.ts
 - WorkerHeartbeat
-- animejs
-- UnboxView
-- platformFeeSplit
+- Bảng Theo Dõi Tiến Độ 3 IT
+- IAuthorizationGuard
+- ICaptchaVerifier
 - WrapFit Backend & Data Flow Skill (InsForge Architecture)
 - WrapFit Backend & Data Flow Skill (InsForge Architecture)
-- textLayout.ts
-- CreateExportDto
-- process-box-mascot.mjs
-- ImpositionCanvas2D.tsx
+- IFixAction
+- IOrderCancellationService
+- storage.service.ts
+- .export
+- IRateLimiterService
+- IReorderService
 - tailwindStitch.ts
-- svgRecolor.ts
+- placement.ts
 - Code Review and Quality
 - Test-Driven Development
 - Context Engineering
@@ -195,14 +197,13 @@
 - package.json
 - Documentation and ADRs
 - Incremental Implementation
-- textOutlines
 - Code Simplification
 - Debugging and Error Recovery
 - environment
 - PackagingAudioEngine
 - compilerOptions
 - intro-blueprint.ts
-- BoxStructureType
+- prisma-project.repository.ts
 - UpdateProjectDto
 - frontend
 - scripts
@@ -241,7 +242,7 @@
 - Refinement & Evaluation Criteria
 - particles.ts
 - services
-- Artwork
+- WrapFit Platform — AI Agent Development Guidelines
 - editor.ts
 - compilerOptions
 - x-storage
@@ -254,10 +255,9 @@
 - Ponytail Help
 - nest-cli.json
 - storage-init
-- docker-compose.prod.yml
+- volumes
 - jest
-- Chuẩn file cho người vẽ nội dung thư viện
-- ConfigService
+- xu-report.service.ts
 - frontend
 - redis
 - intro-minimal.ts
@@ -325,7 +325,6 @@
 - ISupportTicketAggregate
 - IWebConfigService
 - idea-refine.sh
-- upgrade-formulas.ts
 - docker-entrypoint.sh
 - CLAUDE.md
 - routes.generated.ts
@@ -335,28 +334,28 @@
 - 💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 341 edges
-2. `react` - 287 edges
-3. `@nestjs/common` - 194 edges
-4. `next` - 174 edges
-5. `lucide-react` - 167 edges
-6. `PrismaService` - 152 edges
-7. `request()` - 141 edges
+1. `cn()` - 351 edges
+2. `react` - 294 edges
+3. `@nestjs/common` - 197 edges
+4. `next` - 180 edges
+5. `lucide-react` - 172 edges
+6. `request()` - 153 edges
+7. `PrismaService` - 146 edges
 8. `BoxDimensions` - 128 edges
 9. `StudioWorkspace()` - 115 edges
-10. `@prisma/client` - 103 edges
+10. `@prisma/client` - 106 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `4.4 Cầu chì chi phí toàn hệ thống` --references--> `AiCostGuard`  [INFERRED]
-  docs/14_PRICING_ENTITLEMENTS_SPEC.md → be/src/ai/ai-cost.guard.ts
-- `7. Nhật ký` --references--> `XuReportService`  [INFERRED]
-  docs/16_XU_WRAP_SPEC.md → be/src/analytics/xu-report.service.ts
-- `UC-01: Đăng ký & Đăng nhập Tài khoản Đa phương thức` --references--> `GoogleStrategy`  [INFERRED]
-  docs/07_SYSTEM_BLUEPRINT_AND_TASK_BREAKDOWN.md → be/src/auth/strategies/google.strategy.ts
-- `1. Nguyên tắc kỹ thuật` --references--> `BillingService`  [INFERRED]
-  docs/14_PRICING_ENTITLEMENTS_SPEC.md → be/src/billing/billing.service.ts
-- `3.1. Biến thêm từ Path 2` --references--> `OriginGuard`  [INFERRED]
-  docs/15_PATH2_DEPLOY_RUNBOOK.md → be/src/common/guards/origin.guard.ts
+- `Đợt 1 (2026-11-20): xưởng trong DB, phí nền tảng theo đơn, sổ cái, chọn xưởng thật` --references--> `purgeLedger()`  [INFERRED]
+  docs/19_KE_HOACH_MO_RONG_TINH_NANG.md → be/test/e2e/helpers/cleanup.ts
+- `A.6 Luồng thay thế (AF)` --references--> `BankTransaction`  [INFERRED]
+  docs/19_KE_HOACH_MO_RONG_TINH_NANG.md → fe/src/api/admin/bank-transactions.ts
+- `C.1 Ràng buộc` --references--> `syncProjectFileRefs()`  [INFERRED]
+  docs/19_KE_HOACH_MO_RONG_TINH_NANG.md → be/src/projects/infrastructure/project-file-refs.ts
+- `D.1 Ràng buộc` --references--> `isPdfUrl()`  [INFERRED]
+  docs/19_KE_HOACH_MO_RONG_TINH_NANG.md → fe/src/features/profile/brandKit.ts
+- `0. TÓM TẮT TRẠNG THÁI (19/11/2026)` --references--> `StorageService`  [INFERRED]
+  docs/wrapfit_architecture_security_blueprint.md → be/src/storage/storage.service.ts
 
 ## Import Cycles
 - 2-file cycle: `fe/src/components/workspace/AdminShell.tsx -> fe/src/components/workspace/WorkspaceShell.tsx -> fe/src/components/workspace/AdminShell.tsx`
@@ -364,335 +363,331 @@
 - 5-file cycle: `fe/src/components/workspace/AdminShell.tsx -> fe/src/components/workspace/WorkspaceShell.tsx -> fe/src/features/dashboard/index.ts -> fe/src/features/dashboard/components/DesignStats.tsx -> fe/src/components/workspace/index.ts -> fe/src/components/workspace/AdminShell.tsx`
 - 5-file cycle: `fe/src/components/workspace/AdminShell.tsx -> fe/src/features/admin/index.ts -> fe/src/features/admin/accounts/AccountDetailDrawer.tsx -> fe/src/features/admin/accounts/DemoFlagToggle.tsx -> fe/src/components/workspace/index.ts -> fe/src/components/workspace/AdminShell.tsx`
 
-## Communities (339 total, 83 thin omitted)
+## Communities (344 total, 99 thin omitted)
 
 ### Community 0 - "text-layout.ts"
-Cohesion: 0.06
-Nodes (75): boxFontCss(), boxFontFamily(), cssFont(), cssFontFamily(), faceAttributes(), families, layoutBoxText(), measureInBrowser() (+67 more)
+Cohesion: 0.04
+Nodes (87): fontUnreadable(), beVietnam, bigShoulders, cormorant, inter, jakarta, jetbrains, playfair (+79 more)
 
 ### Community 1 - "react"
 Cohesion: 0.02
-Nodes (146): createAiImages(), getAiImageCatalog(), getAiUsage(), listAiImages(), runAiImageTool(), metadata, Page(), Breakpoint (+138 more)
+Nodes (130): createAiImages(), getAiImageCatalog(), listAiImages(), runAiImageTool(), metadata, Page(), metadata, Breakpoint (+122 more)
 
-### Community 2 - "ConfigService"
-Cohesion: 0.02
-Nodes (79): bcryptjs@^3.0.2, @nestjs/passport@^11.0.0, Cấu trúc thư mục, AccountRecoveryService, AuthTokenErrorCode, TOKEN_ERRORS, tokenError(), AUTH_EMAIL_MIN_INTERVAL_MS (+71 more)
+### Community 2 - "PrismaService"
+Cohesion: 0.03
+Nodes (61): AccountRecoveryService, AuthTokenErrorCode, TOKEN_ERRORS, tokenError(), AUTH_EMAIL_MIN_INTERVAL_MS, AUTH_EMAILS_PER_DAY, DEFAULT_LOGIN_REDIRECT, FAILED_LOGIN_WINDOW_SECONDS (+53 more)
+
+### Community 3 - "PublicProjectsService"
+Cohesion: 0.10
+Nodes (3): PublicProjectsController, isShared(), PublicProjectsService
 
 ### Community 4 - "bank-transactions.service.ts"
-Cohesion: 0.05
-Nodes (21): toOutputView(), encodePageCursor(), olderThan(), parsePageCursor(), BankTransactionsController, BANK_TX_MAX_LIMIT, BankTransactionsQueryDto, ResolveBankTransactionDto (+13 more)
+Cohesion: 0.06
+Nodes (21): toOutputView(), encodePageCursor(), olderThan(), parsePageCursor(), present(), BANK_TX_MAX_LIMIT, BankTransactionsQueryDto, ResolveBankTransactionDto (+13 more)
 
 ### Community 5 - "types/api/index.ts"
 Cohesion: 0.03
-Nodes (96): Xuất file in (BullMQ), 4.1. Lược đồ Prisma PostgreSQL mở rộng (Schema v2.1), A.3 Ràng buộc nghiệp vụ, BankTransaction, getUser(), GrantCreditsRequest, listProjectExports(), EMPTY (+88 more)
+Nodes (73): generateAiPattern(), getAiImageJob(), getAiUsage(), runAiUploadTool(), getCurrentUser(), EMPTY, importStockPhoto(), listLibraryAssets() (+65 more)
 
-### Community 6 - "StorageService"
-Cohesion: 0.03
-Nodes (59): @aws-sdk/s3-request-presigner@^3.1145.0, ADVISORY_LOCK, lockForTransaction(), ProjectFile, UploadPurpose, isShared(), LikeState, PublicRow (+51 more)
+### Community 6 - "PresignUploadDto"
+Cohesion: 0.09
+Nodes (3): InspectFontDto, PresignUploadDto, StorageController
 
 ### Community 7 - "cn"
-Cohesion: 0.03
-Nodes (173): 3. Thành phần, getHealth(), metadata, Page(), metadata, Page(), metadata, Page() (+165 more)
+Cohesion: 0.02
+Nodes (192): 3. Thành phần, getHealth(), metadata, Page(), metadata, Page(), metadata, Page() (+184 more)
 
 ### Community 8 - "LibraryPanel.tsx"
 Cohesion: 0.02
-Nodes (141): 4. Tên, nhóm, thẻ, ngành, importStockPhoto(), listLibraryAssets(), searchStockPhotos(), useBoxFonts(), ArtPreview(), BoxBackgroundPicker(), BoxBackgroundPickerProps (+133 more)
+Nodes (136): 4. Tên, nhóm, thẻ, ngành, cssFontFamily(), faceAttributes(), ArtPreview(), BoxBackgroundPicker(), BoxBackgroundPickerProps, cmykRisk(), ColorPaletteSelector() (+128 more)
 
 ### Community 9 - "CanvasElement"
 Cohesion: 0.04
-Nodes (127): Edge, num(), PIECE_GAP_MM, placedCurve(), PlacedPiece, Point, PrintLayout, same() (+119 more)
+Nodes (95): newOrderCode(), tuck(), 5.1. Tạo, liệt kê, mở, 5.2. `canvasState`, 5.3.1. Đồng bộ giữa hai tab, 5.3. Lưu (autosave) và xung đột giữa hai tab, 5.4. Vòng đời, 5. Dự án và editor (+87 more)
 
-### Community 10 - "projects.service.ts"
-Cohesion: 0.10
-Nodes (23): IProjectEvents, PROJECT_EVENTS, ProjectSource, IProjectFiles, PROJECT_FILES, PROJECT_REPOSITORY, SNAPSHOT_REPOSITORY, dropUnchangedContent() (+15 more)
+### Community 10 - "@tanstack/react-query"
+Cohesion: 0.03
+Nodes (92): 2.4 Mục 4: lỗi nhập ảnh kho (S), acceptOrder(), confirmOrderReceived(), createSampleOrder(), demoFallback(), getOrder(), getOrderPrintFiles(), getStaffOrder() (+84 more)
 
 ### Community 11 - "workspace/index.ts"
 Cohesion: 0.02
-Nodes (225): createLibraryAsset(), listLibraryLicenses(), manageLibraryAssets(), updateLibraryAsset(), listMyOrders(), listStaffOrders(), updateOrderStatus(), getBillingDetails() (+217 more)
+Nodes (180): createLibraryAsset(), listLibraryLicenses(), manageLibraryAssets(), updateLibraryAsset(), getBillingDetails(), getXuReport(), listMyPayments(), saveBillingDetails() (+172 more)
 
 ### Community 12 - "ReviewsService"
 Cohesion: 0.07
-Nodes (10): ApproveDto, CreateCommentDto, GuestCommentDto, ResolveCommentDto, PublicReviewController, ReviewsController, approvalOf(), newToken() (+2 more)
+Nodes (12): ApproveDto, COMMENT_MAX_LENGTH, CreateCommentDto, GuestCommentDto, ResolveCommentDto, REVIEWER_NAME_MAX_LENGTH, PublicReviewController, ReviewsController (+4 more)
 
 ### Community 13 - "xu-wallet.service.ts"
-Cohesion: 0.02
-Nodes (55): CONVERSION_REF, ConversionReport, ConvertedLot, convertExportCredits(), ExportLotRow, main(), plan(), unexpiredExportLots() (+47 more)
+Cohesion: 0.04
+Nodes (59): CONVERSION_REF, ConversionReport, ConvertedLot, convertExportCredits(), ExportLotRow, main(), plan(), unexpiredExportLots() (+51 more)
 
 ### Community 14 - "formatVnd"
-Cohesion: 0.05
-Nodes (70): metadata, metadata, Page(), metadata, Page(), metadata, Page(), CheckoutSelection (+62 more)
+Cohesion: 0.07
+Nodes (54): CheckoutSelection, CheckoutShell(), CheckoutShellProps, OrderSummary(), PAID, PaidTier, priceOf(), STEPS (+46 more)
 
 ### Community 15 - "Button"
-Cohesion: 0.05
-Nodes (66): BANK_TX_KEY, BankTransactionPage, BankTxPayment, BankTxStatus, BankTxUnmatchedReason, listBankTransactions(), previewBankTxPayment(), resolveBankTransaction() (+58 more)
+Cohesion: 0.09
+Nodes (41): BANK_TX_KEY, BankTransactionPage, BankTxPayment, BankTxStatus, BankTxUnmatchedReason, previewBankTxPayment(), resolveBankTransaction(), ResolveBankTransactionRequest (+33 more)
 
 ### Community 16 - "ai-image.service.ts"
-Cohesion: 0.07
-Nodes (36): AI_PATTERN_GENERATOR, AI_IMAGE_JOB_OPTIONS, AI_IMAGE_QUEUE, AiImageJobData, BLOCKED_PREFIX, MAX_ACTIVE_AI_IMAGE_JOBS, MAX_PROVIDER_IMAGE_BYTES, RUN_JOB (+28 more)
+Cohesion: 0.04
+Nodes (58): AiCostGuard, MonthSpend, vietnamMonthStart(), AI_PATTERN_GENERATOR, AiPatternService, lockDebit(), ORPHANED_PATTERN_DEBIT_AFTER_MS, PatternSource (+50 more)
 
 ### Community 17 - "ElementInspector.tsx"
-Cohesion: 0.08
-Nodes (43): getAiImageJob(), runAiUploadTool(), newRequestId(), ImageAiTools(), takesImageTools(), TOOLS, wait(), ANCHOR_H (+35 more)
+Cohesion: 0.09
+Nodes (37): ANCHOR_H, ANCHOR_V, AnchorField(), baseCrop(), BasicInspector(), CMYK_INKS, ColorField(), CommonControls() (+29 more)
 
 ### Community 18 - "ProjectsService"
-Cohesion: 0.08
-Nodes (8): IProjectRepository, assertOwnFileContents(), notInTrash(), projectInActiveOrder(), ProjectsService, fitCheckOf(), canEdit(), ProjectDetail
+Cohesion: 0.06
+Nodes (18): IProjectRepository, notInTrash(), projectInActiveOrder(), ProjectsService, versionConflict(), checkProject(), dielinePieces(), fitCheckOf() (+10 more)
 
-### Community 19 - "HistoryPanel.tsx"
-Cohesion: 0.05
-Nodes (60): getXuHistory(), metadata, metadata, Page(), PlanComparison(), VisualSparkPricingCards(), COLUMNS, PACKS (+52 more)
+### Community 19 - "CheckoutDialog.tsx"
+Cohesion: 0.04
+Nodes (91): exportPackDiscontinued(), createPayment(), getBillingSummary(), getPayment(), getVnpayReturn(), getXuHistory(), MockTransferScenario, simulatePayment() (+83 more)
 
 ### Community 20 - "be/package.json"
 Cohesion: 0.02
-Nodes (137): dependencies, @aws-sdk/client-s3@^3.1145.0, bullmq@^6.3.11, cache-manager@^7.2.9, class-transformer@^0.5.1, class-validator@^0.14.2, cookie@^1.1.1, cookie-parser@^1.4.7 (+129 more)
+Nodes (129): dependencies, @anthropic-ai/sdk@^0.131.0, bcryptjs@^3.0.2, bullmq@^6.3.11, cache-manager@^7.2.9, class-transformer@^0.5.1, class-validator@^0.14.2, cookie@^1.1.1 (+121 more)
 
-### Community 21 - "@tanstack/react-query"
+### Community 21 - "data/index.ts"
+Cohesion: 0.14
+Nodes (24): getProject(), getTemplate(), listBoxStructures(), Loading(), metadata, Page(), useBoxStructures(), queryKeys (+16 more)
+
+### Community 22 - "DesignStats.tsx"
 Cohesion: 0.05
-Nodes (57): getHealthDetails(), createSampleBundle(), matchSampleShops(), getStorageUsage(), getTemplate(), listBoxStructures(), AdminLayout(), metadata (+49 more)
-
-### Community 22 - "projects/index.tsx"
-Cohesion: 0.07
-Nodes (49): getAnalyticsSummary(), listProjects(), metadata, metadata, EmptyState(), EmptyStateProps, ErrorState(), ErrorStateProps (+41 more)
+Nodes (58): listBankTransactions(), getAnalyticsSummary(), StudioEvent, AdminLayout(), metadata, metadata, ADMIN_NAV, AdminFrame() (+50 more)
 
 ### Community 23 - "brand-kit/index.tsx"
-Cohesion: 0.13
-Nodes (31): metadata, HEX_COLOR, readableInk(), BrandKitDraft, BrandKitProblems, brandKitProblems(), COLOR_ROLES, draftFrom() (+23 more)
+Cohesion: 0.08
+Nodes (50): getMyProfile(), updateMyBrandKit(), updateMyProfile(), metadata, HEX_COLOR, readableInk(), IMAGE_TYPES, showUploadError() (+42 more)
 
 ### Community 24 - "notifications.service.ts"
-Cohesion: 0.05
-Nodes (26): WebSocket, ExportCompletedEvent, EDITOR_TAB_HEADER, PROJECT_FORKED, ProjectForkedEvent, ProjectSavedEvent, EventsGateway, EventsModule (+18 more)
+Cohesion: 0.04
+Nodes (39): WebSocket, EXPORT_COMPLETED, ExportCompletedEvent, PROJECT_FORKED, ProjectForkedEvent, ProjectSavedEvent, EventsGateway, EventsModule (+31 more)
 
 ### Community 25 - "templates/index.tsx"
-Cohesion: 0.10
-Nodes (39): listCommunityTemplates(), listCuratedTemplates(), metadata, DEFAULT_LIMITS, DEMO_BOX_STRUCTURES, DEMO_COMMUNITY_TEMPLATES, DEMO_CURATED_CARDS, demoCuratedTemplates() (+31 more)
+Cohesion: 0.08
+Nodes (49): listCommunityTemplates(), listCuratedTemplates(), metadata, HowItWorks(), StartBar(), LibraryBodySkeleton(), LibraryCardSkeleton(), DEFAULT_LIMITS (+41 more)
 
 ### Community 26 - "OrdersService"
-Cohesion: 0.06
-Nodes (9): AuthUser, ListOrdersQueryDto, UpdateOrderStatusDto, OrdersController, isOrderCodeTaken(), OrdersService, sampleFeeVnd(), MatchLine (+1 more)
+Cohesion: 0.10
+Nodes (6): OrderFollowUpTask, OrderMessagesService, isOrderCodeTaken(), OrderSide, OrdersService, sampleFeeVnd()
 
 ### Community 27 - "collections.service.ts"
 Cohesion: 0.06
-Nodes (10): CollectionsController, CollectionRow, collectionSelect, CollectionsService, CollectionView, MAX_COLLECTIONS_PER_USER, toView(), CreateCollectionDto (+2 more)
+Nodes (4): CollectionsController, toView(), CreateCollectionDto, UpdateCollectionDto
 
 ### Community 28 - "account/shared/index.ts"
-Cohesion: 0.11
-Nodes (35): requestPasswordReset(), resendVerificationEmail(), metadata, metadata, metadata, BackToLogin(), CheckEmail(), CheckEmailFromQuery() (+27 more)
+Cohesion: 0.06
+Nodes (71): requestPasswordReset(), resendVerificationEmail(), resetPassword(), verifyEmail(), metadata, metadata, CompleteSignupRoute(), metadata (+63 more)
 
 ### Community 29 - "fal-models.ts"
 Cohesion: 0.10
-Nodes (29): colorsOf(), FAKE_BLOCKED, FAKE_OUTAGE, FakeImageProvider, gradientSvg(), FalImage, FalImageProvider, FalOutput (+21 more)
+Nodes (32): colorsOf(), FAKE_BLOCKED, FAKE_OUTAGE, FakeImageProvider, gradientSvg(), FalImage, FalImageProvider, FalOutput (+24 more)
 
 ### Community 30 - "stock-photos.service.ts"
-Cohesion: 0.07
-Nodes (16): SearchStockPhotosDto, credit(), isPhotoUrl(), MAX_DOWNLOAD_BYTES, normalizeQuery(), PEXELS_CALLS_PER_HOUR, PexelsPhoto, providerError() (+8 more)
+Cohesion: 0.05
+Nodes (22): lockForTransaction(), credit(), isPhotoUrl(), MAX_DOWNLOAD_BYTES, normalizeQuery(), PEXELS_CALLS_PER_HOUR, PexelsPhoto, providerError() (+14 more)
 
 ### Community 31 - "19. Kế hoạch mở rộng tính năng: đơn in, hoa hồng, kết nối xưởng, vật liệu, cộng đồng mẫu, Brand Kit, editor, khuôn tùy chỉnh"
 Cohesion: 0.05
-Nodes (42): 19. Kế hoạch mở rộng tính năng: đơn in, hoa hồng, kết nối xưởng, vật liệu, cộng đồng mẫu, Brand Kit, editor, khuôn tùy chỉnh, 7. Phân quyền theo gói (đề xuất, thêm vào bảng hạn mức của [14](14_PRICING_ENTITLEMENTS_SPEC.md) §3.1), 8. Thứ tự làm và phụ thuộc, 9. Câu hỏi cần chốt trước khi code, A.10 Thay đổi dữ liệu, A.11 Tiêu chí nghiệm thu, A.1 Phạm vi, A.2 Tác nhân (+34 more)
+Nodes (43): 19. Kế hoạch mở rộng tính năng: đơn in, hoa hồng, kết nối xưởng, vật liệu, cộng đồng mẫu, Brand Kit, editor, khuôn tùy chỉnh, 7. Phân quyền theo gói (đề xuất, thêm vào bảng hạn mức của [14](14_PRICING_ENTITLEMENTS_SPEC.md) §3.1), 8. Thứ tự làm và phụ thuộc, 9. Câu hỏi cần chốt trước khi code, A.10 Thay đổi dữ liệu, A.11 Tiêu chí nghiệm thu, A.1 Phạm vi, A.2 Tác nhân (+35 more)
 
-### Community 32 - "Step3PaperFinish.tsx"
-Cohesion: 0.09
-Nodes (31): H.0 Vì sao đổi vật liệu mà hình gần như không đổi, H.1 Mô hình dữ liệu vật liệu (đề xuất), H.2 Yêu cầu hiển thị đúng thực tế, H.3 Thứ tự làm, H. Vật liệu giấy: dữ liệu và hiển thị đúng thực tế, QuoteCardProps, EdgeSection(), EXTRAS (+23 more)
+### Community 32 - "Step6ReviewExport.tsx"
+Cohesion: 0.03
+Nodes (124): gift, pieces, H.0 Vì sao đổi vật liệu mà hình gần như không đổi, H.1 Mô hình dữ liệu vật liệu (đề xuất), H.2 Yêu cầu hiển thị đúng thực tế, H.3 Thứ tự làm, H. Vật liệu giấy: dữ liệu và hiển thị đúng thực tế, AuthShowcase() (+116 more)
 
 ### Community 33 - "9.1 Module mới"
-Cohesion: 0.07
-Nodes (25): 0. Backend Code Layout (`be/src/`), AiModule, AiImageWorkerModule, AuthModule, BillingCoreModule, BillingModule, CollectionsModule, ExportModule (+17 more)
-
-### Community 34 - "dependencies"
 Cohesion: 0.06
-Nodes (33): dependencies, clsx@^2.1.1, fabric@^7.4.0, fflate@^0.8.3, fontkit@^2.0.4, gsap@^3.12.5, lucide-react@^0.446.0, next@15.5.27 (+25 more)
+Nodes (25): 0. Backend Code Layout (`be/src/`), AiModule, AiImageWorkerModule, AuthModule, BillingModule, CollectionsModule, HttpThrottlerGuard, Config (+17 more)
+
+### Community 34 - "users.service.ts"
+Cohesion: 0.06
+Nodes (19): assetUrl(), toClientBrandKit(), communityCard(), AdminUpdateUserDto, UpdateBrandKitDto, UpdateProfileDto, anonymizeUser(), hardDeleteUser() (+11 more)
 
 ### Community 35 - "next"
 Cohesion: 0.03
-Nodes (129): metadata, Page(), metadata, Page(), RouteError(), metadata, metadata, metadata (+121 more)
+Nodes (123): metadata, Page(), RouteError(), LoginRedirect(), SearchParams, metadata, metadata, RegisterRedirect() (+115 more)
 
-### Community 36 - "dashboard/index.ts"
-Cohesion: 0.11
-Nodes (31): FolderFilter, NO_FOLDER, FITCHECK_TAG, ProjectCard, ProjectCardActions, ProjectCardProps, ProjectTile(), ProjectThumb() (+23 more)
+### Community 36 - "5. BẢNG TRA CỨU CÁC DESIGN PATTERNS ÁP DỤNG"
+Cohesion: 0.05
+Nodes (29): @nestjs/platform-socket.io@^11.0.0, socket.io@^4.8.1, JwtAuthGuard, SocketIoAdapter, IS_PUBLIC_KEY, OPTIONAL_AUTH_KEY, OptionalAuth(), ROLES_KEY (+21 more)
 
 ### Community 37 - "templates.service.ts"
-Cohesion: 0.03
-Nodes (34): @nestjs/cache-manager@^3.1.3, ErrorResponseDto, paginate(), Paginated, PaginationQueryDto, toSkipTake(), CreateLibraryAssetDto, QueryLibraryDto (+26 more)
+Cohesion: 0.05
+Nodes (19): @nestjs/cache-manager@^3.1.3, paginate(), Paginated, PaginationQueryDto, toSkipTake(), MIN_COMMUNITY_FITCHECK_SCORE, QueryHubDto, TemplatesController (+11 more)
 
 ### Community 38 - "PackagingSpecSheet.tsx"
-Cohesion: 0.24
-Nodes (14): BOX, COS30, DIELINE, Dim(), faceMatrix(), FrontArt(), HEADING, IsoBox() (+6 more)
+Cohesion: 0.12
+Nodes (23): boxTemplates, designTemplates, dimensionParams, sheetParams, ensureProject(), seedDemo(), uploadLogo(), main() (+15 more)
 
-### Community 39 - "orders.service.ts"
-Cohesion: 0.07
-Nodes (26): entry(), LedgerOrder, postOrderDelivered(), postOrderPaid(), canTransition(), noOrderHoldsDesign(), ORDER_STATUSES_HOLDING_DESIGN, ORDER_TRANSITIONS (+18 more)
+### Community 39 - "ledger.ts"
+Cohesion: 0.60
+Nodes (4): entry(), LedgerOrder, postOrderDelivered(), postOrderPaid()
 
-### Community 40 - "vnpay.ts"
-Cohesion: 0.10
-Nodes (16): buildPayUrl(), VnpayController, encode(), isVnpaySuccess(), PayUrlInput, VnpayService, signData(), signParams() (+8 more)
+### Community 40 - "features/auth/index.ts"
+Cohesion: 0.08
+Nodes (39): metadata, Page(), metadata, Page(), metadata, Page(), metadata, Page() (+31 more)
 
 ### Community 41 - "login/index.tsx"
+Cohesion: 0.06
+Nodes (25): googleSignInUrl(), login(), register(), LoginPage(), metadata, metadata, RegisterPage(), AuthLoginPage() (+17 more)
+
+### Community 43 - "library.service.ts"
 Cohesion: 0.09
-Nodes (31): googleSignInUrl(), login(), register(), LoginPage(), metadata, metadata, RegisterPage(), LoginRequest (+23 more)
-
-### Community 42 - "WrapFit Backend (NestJS)"
-Cohesion: 0.07
-Nodes (14): Biến môi trường, AiImageController, AiImageService, isClientRequestTaken(), toJobView(), unavailable(), AiGalleryQueryDto, AiImageToolDto (+6 more)
-
-### Community 43 - "set-password/index.tsx"
-Cohesion: 0.10
-Nodes (30): resetPassword(), verifyEmail(), CompleteSignupRoute(), metadata, metadata, ResetPasswordRoute(), metadata, COPY (+22 more)
+Nodes (15): CreateLibraryAssetDto, QueryLibraryDto, UpdateLibraryAssetDto, InspectedLibraryFile, inspectLibraryFile(), LIBRARY_LICENSE_IDS, LIBRARY_LICENSES, LibraryFileError (+7 more)
 
 ### Community 44 - "Public"
 Cohesion: 0.17
-Nodes (3): AuthController, sessionMeta(), Public()
+Nodes (4): AuthController, sessionMeta(), EmailOnlyDto, Public()
 
-### Community 45 - "renderers.ts"
-Cohesion: 0.09
-Nodes (47): buildPrintFile(), EXTENSIONS, fileNameFor(), titleSlug(), buildPrintLayout(), artSvg(), artVectors(), ascii() (+39 more)
+### Community 45 - "BillingDetailsDto"
+Cohesion: 0.07
+Nodes (5): AdminCreditsController, BillingController, BillingDetails, BillingDetailsDto, XuHistoryQueryDto
 
 ### Community 46 - "db"
 Cohesion: 0.16
-Nodes (42): putBillingDetails(), markAllRead(), notifyRemix(), listUsers(), changeStatus(), changeVisibility(), collectionView(), create() (+34 more)
+Nodes (34): notifyRemix(), changeStatus(), changeVisibility(), create(), createSnapshot(), deleteCollection(), deleteSnapshot(), detail() (+26 more)
 
 ### Community 47 - "fe/package.json"
-Cohesion: 0.07
-Nodes (39): description, devDependencies, autoprefixer@^10.6.1, axe-core@^4.10.3, @babel/parser@^7.29.9, @babel/traverse@^7.29.8, cheerio@^1.2.0, html-to-jsx@^0.0.4 (+31 more)
+Cohesion: 0.04
+Nodes (76): dependencies, @chenglou/pretext@^0.0.9, clsx@^2.1.1, fabric@^7.4.0, fflate@^0.8.3, fontkit@^2.0.4, gsap@^3.12.5, lucide-react@^0.446.0 (+68 more)
 
-### Community 48 - "xu.ts"
-Cohesion: 0.07
-Nodes (32): 18. Việc còn treo sau audit backend, 1. Danh sách, 2.10 Mục 10: Pexels thật (S), 2.11 Mục 11: kiểm trên trình duyệt (S), 2.1 Mục 1: câu chữ gói Pro (M), 2.2 Mục 2: gói "Lượt xuất" còn được quảng cáo (S), 2.3 Mục 3: runbook demo (S), 2.5 Mục 5: phông tải lên thiếu ký tự (N) (+24 more)
+### Community 48 - "ai-image-models.ts"
+Cohesion: 0.16
+Nodes (12): AI_IMAGE_KEEP_DAYS, AI_IMAGE_MODELS, AiImageModel, AiImageTier, COMMON_RATIOS, GPT_RATIOS, MIN_XU_MARGIN, RATIO_VALUES (+4 more)
 
 ### Community 49 - "NotificationBell.tsx"
-Cohesion: 0.13
-Nodes (27): getUnreadNotificationCount(), listNotifications(), markAllNotificationsRead(), markNotificationRead(), FILE_LABELS, notificationHref(), notificationText(), UNKNOWN_ACTOR (+19 more)
+Cohesion: 0.10
+Nodes (31): getUnreadNotificationCount(), listNotifications(), markAllNotificationsRead(), markNotificationRead(), FILE_LABELS, isOrder(), notificationHref(), notificationText() (+23 more)
 
-### Community 50 - "review/index.tsx"
-Cohesion: 0.14
-Nodes (28): addGuestReviewComment(), addReviewComment(), approveReview(), base(), closeReviewLink(), deleteReviewComment(), getPublicReview(), getReview() (+20 more)
+### Community 50 - "request"
+Cohesion: 0.07
+Nodes (55): deleteUser(), getHealthDetails(), getUser(), GrantCreditsRequest, listUsers(), logout(), logoutAll(), apiClient (+47 more)
 
 ### Community 51 - "mail.processor.ts"
-Cohesion: 0.11
-Nodes (21): rawAuthToken(), ACCOUNT_EXISTS_JOB, ACCOUNT_EXISTS_WINDOW_MS, AccountExistsJobData, AUTH_EMAIL_JOB, AuthEmailJobData, MAIL_JOB_OPTIONS, MAIL_QUEUE (+13 more)
+Cohesion: 0.06
+Nodes (36): @nestjs/config@^4.0.0, CommonModule, hashAuthToken(), rawAuthToken(), QUEUE_ADD_TIMEOUT_MS, TimeoutError, withTimeout(), RFC-9562 (+28 more)
 
 ### Community 52 - "billing.ts"
-Cohesion: 0.10
-Nodes (57): activeSubscription(), balanceOf(), bankPaymentOf(), billingMe(), createPayment(), ensureAllowance(), exportAccess(), grantCredits() (+49 more)
+Cohesion: 0.07
+Nodes (67): me(), publicUser(), storageUsage(), updateProfile(), activeSubscription(), balanceOf(), bankPaymentOf(), billingMe() (+59 more)
 
 ### Community 53 - "matching.ts"
-Cohesion: 0.08
-Nodes (29): HCM, HN, item, NOW, addWorkingDays(), DEFAULT_MATCH_WEIGHTS, ExcludedShop, EXCLUSION_REASON_LABELS (+21 more)
+Cohesion: 0.06
+Nodes (49): HCM, HN, item, NOW, adminList(), adminUpdate(), detail(), feeAt() (+41 more)
 
 ### Community 54 - "project-spec.dto.ts"
-Cohesion: 0.10
-Nodes (34): ANCHOR_H, ANCHOR_V, BoxDimensionsDto, CanvasElementDto, CanvasElementStyleDto, CanvasStateDto, CellsDto, ColorSwapDto (+26 more)
+Cohesion: 0.08
+Nodes (40): MAX_TITLE_LENGTH, normalizeTags(), ANCHOR_H, ANCHOR_V, BoxDimensionsDto, CanvasElementDto, CanvasElementStyleDto, CanvasStateDto (+32 more)
 
-### Community 55 - "request"
-Cohesion: 0.11
-Nodes (27): 8.1. Thông báo (chuông ở header), 8.2. Duyệt mẫu theo link (khách, xưởng in), 8. Chia sẻ, remix, thả tim, getCurrentUser(), getCollection(), changeProjectVisibility(), getProject(), API_BASE_URL (+19 more)
+### Community 55 - "p/[slug]/page.tsx"
+Cohesion: 0.24
+Nodes (10): 8.1. Thông báo (chuông ở header), 8.2. Duyệt mẫu theo link (khách, xưởng in), 8. Chia sẻ, remix, thả tim, changeProjectVisibility(), generateMetadata(), PageProps, PublicProjectPage(), loadPublicProject (+2 more)
 
 ### Community 56 - "prisma-project.repository.ts"
-Cohesion: 0.12
-Nodes (20): NewSnapshot, SnapshotContent, SnapshotSummary, LockedDesign, PrismaSnapshotRepository, canvasFileKeys(), lockProjectForRefs(), syncProjectFileRefs() (+12 more)
+Cohesion: 0.09
+Nodes (27): fitCheckWith(), main(), needsUpgrade(), UpgradeCandidate, upgradeSnapshotName(), NewSnapshot, SnapshotContent, formulaUpgradeSnapshotName() (+19 more)
 
 ### Community 58 - "public-project/index.tsx"
-Cohesion: 0.14
-Nodes (29): forkPublicProject(), getPublicProject(), likePublicProject(), unlikePublicProject(), generateMetadata(), PageProps, PublicProjectPage(), LibraryCard() (+21 more)
+Cohesion: 0.20
+Nodes (18): forkPublicProject(), getPublicProject(), likePublicProject(), unlikePublicProject(), LibraryCard(), getDemoPublicProject(), LikeState, dateFormat (+10 more)
 
-### Community 59 - "Step1BoxTemplatePicker.tsx"
-Cohesion: 0.09
-Nodes (27): AuthShowcase(), AuthShowcaseProps, CameraView, ControlButton(), Slide, SLIDES, VIEWS, StructureArt() (+19 more)
+### Community 59 - "AuthService"
+Cohesion: 0.10
+Nodes (5): AuthService, emailNotVerified(), LoginDto, LoginAttemptsService, SessionMeta
 
-### Community 60 - "Step6ReviewExport.tsx"
-Cohesion: 0.13
-Nodes (21): PrePressColorCard(), GROUP_DOT, QuoteBreakdown(), QuoteBreakdownProps, AXIS_LABELS, QUANTITIES, QuoteCard(), RULES (+13 more)
+### Community 60 - "CurrentUser"
+Cohesion: 0.23
+Nodes (3): CurrentUser, Roles(), OrdersController
 
 ### Community 61 - "payments.service.ts"
-Cohesion: 0.04
-Nodes (52): SimulateTransferDto, assertMaySimulate(), ConfirmPaidOptions, EXPORT_PACK_DISCONTINUED, httpErrorCode(), isReferenceTaken(), PAYMENT_REFERENCE_PATTERN, PAYMENT_TTL_MS (+44 more)
+Cohesion: 0.03
+Nodes (72): OrdersModule, orderNotPayable(), SimulateTransferDto, PaymentsModule, assertMaySimulate(), ConfirmPaidOptions, EXPORT_PACK_DISCONTINUED, httpErrorCode() (+64 more)
 
 ### Community 62 - "mock-api/pattern/procedural-pattern.generator.ts"
 Cohesion: 0.14
 Nodes (21): assertValidDesign(), HEX_COLOR, InvalidPatternError, n(), renderPatternSvg(), renderShapes(), TILE_SIZE, AiQuality (+13 more)
 
 ### Community 63 - "GeneratePatternDto"
-Cohesion: 0.07
-Nodes (4): AiController, AiPatternService, GeneratePatternDto, 4.2. Danh sách Endpoints API RESTful (NestJS)
+Cohesion: 0.08
+Nodes (3): AiController, GeneratePatternDto, 4.2. Danh sách Endpoints API RESTful (NestJS)
 
 ### Community 64 - "print-renderers.ts"
-Cohesion: 0.08
-Nodes (49): renderPrintPackage(), renderProofJpeg(), dimensions, artSvg(), centreOf(), CMYK_INFO, COLORS, cropRegion() (+41 more)
+Cohesion: 0.03
+Nodes (139): 5. Tech Stack & Architecture, dimensions, layoutOf(), shadow, square, buildPrintLayout(), renderPrintPackage(), renderProofJpeg() (+131 more)
 
-### Community 65 - "tour.tsx"
-Cohesion: 0.14
-Nodes (20): clamp(), consumeTourContinuation(), dimPath(), findTarget(), isShown(), openPopupsIn(), placeTooltip(), ProductTourProps (+12 more)
+### Community 65 - "cart/index.tsx"
+Cohesion: 0.17
+Nodes (19): createSampleBundle(), metadata, Page(), deliveryDateLabel(), OfferCard(), ProvinceSelect(), ShopPicker(), CartItem (+11 more)
 
 ### Community 66 - "UnboxingDialog.tsx"
-Cohesion: 0.13
-Nodes (28): deleteProjectUnboxing(), getProjectUnboxing(), saveProjectUnboxing(), unboxingQrDownloadUrl(), createOfflineUnboxing(), fromBase64Url(), giftFromLocation(), loadOfflineUnboxing() (+20 more)
+Cohesion: 0.10
+Nodes (33): getPublicUnboxing(), deleteProjectUnboxing(), getProjectUnboxing(), saveProjectUnboxing(), unboxingQrDownloadUrl(), metadata, UnboxPage(), createOfflineUnboxing() (+25 more)
 
 ### Community 67 - "e2e-scenario.mjs"
-Cohesion: 0.09
-Nodes (36): addText(), args, backendDown, baseUrl, CHROME_CANDIDATES, downloadJob(), expectPaymentRequired(), exportFile() (+28 more)
+Cohesion: 0.08
+Nodes (37): addText(), args, backendDown, baseUrl, Browser, CHROME_CANDIDATES, downloadJob(), expectPaymentRequired() (+29 more)
 
 ### Community 68 - "a11y-audit.mjs"
 Cohesion: 0.15
 Nodes (15): args, AXE_SOURCE, failed, given, GUEST, overflowAt(), profile, require (+7 more)
 
-### Community 69 - "CollectionDialog.tsx"
-Cohesion: 0.11
-Nodes (15): CollectionDialog(), CollectionDialogProps, ConfirmDialogProps, DIALOG_CANCEL, DIALOG_DANGER, DIALOG_PANEL, FolderBar(), FolderBarProps (+7 more)
+### Community 69 - "dashboard/index.ts"
+Cohesion: 0.04
+Nodes (111): createCollection(), deleteCollection(), getCollection(), listCollections(), updateCollection(), changeProjectStatus(), deleteProjectPermanently(), duplicateProject() (+103 more)
 
 ### Community 70 - "sync.mjs"
 Cohesion: 0.07
-Nodes (50): decodeEntities(), EXTENSIONS, readIndex(), sha1(), vendorRemoteImages(), vendorFonts(), createOutputGuard(), hash() (+42 more)
+Nodes (49): decodeEntities(), EXTENSIONS, readIndex(), sha1(), vendorRemoteImages(), vendorFonts(), createOutputGuard(), hash() (+41 more)
 
 ### Community 71 - "contracts.ts"
-Cohesion: 0.03
-Nodes (69): AccountDeletionScheduledEvent, AssetFileMetadata, AuditLogEntry, AuthCredentials, AuthResult, AuthTokens, BlogPostEntity, BookmarkTargetType (+61 more)
+Cohesion: 0.04
+Nodes (62): AccountDeletionScheduledEvent, AssetFileMetadata, AuditLogEntry, AuthCredentials, AuthResult, AuthTokens, BlogPostEntity, BookmarkTargetType (+54 more)
 
 ### Community 72 - "SafeUser"
 Cohesion: 0.06
-Nodes (70): setUserDemo(), deleteUser(), grantUserCredits(), listUsers(), updateUser(), metadata, Input(), Select() (+62 more)
+Nodes (68): setUserDemo(), grantUserCredits(), updateUser(), metadata, Icon(), ROLE_LABELS, AccountAvatar(), AccountDetailDrawer() (+60 more)
 
-### Community 73 - "printShops.ts"
-Cohesion: 0.13
-Nodes (27): createBundle(), createSample(), forCustomer(), getOrder(), Line, mine(), NEXT, nextOrderCode() (+19 more)
-
-### Community 74 - "quote.ts"
+### Community 73 - "handlers/orders.ts"
 Cohesion: 0.10
-Nodes (27): gift, pieces, PALETTE_PARTNERS, decimal(), DIGITAL_MAX_QUANTITY, FINISHING_LABELS, priceWith(), PrintMethod (+19 more)
+Nodes (56): list(), markAllRead(), markRead(), mine(), MockNotification, notifyOrder(), seed(), store() (+48 more)
 
-### Community 75 - "AiCostGuard"
-Cohesion: 0.10
-Nodes (18): AI sinh hoa văn, API hiện có, Chạy nhanh (local), Chạy test, Chạy toàn bộ bằng Docker, Lưu trữ file (S3 / Cloudflare R2), Lưu ý khi triển khai production, Thêm module mới (+10 more)
+### Community 74 - "ai-image.controller.ts"
+Cohesion: 0.17
+Nodes (7): AI_GALLERY_MAX_LIMIT, AiGalleryQueryDto, AiImageToolDto, AiImageToolParams, AiUploadToolDto, AiUploadToolParams, TOOLS
 
-### Community 76 - "project.repository.port.ts"
-Cohesion: 0.13
-Nodes (4): PermanentDeletion, heirChangedMeanwhile(), orderHoldingDesign(), PrismaProjectRepository
+### Community 75 - "WrapFit Backend (NestJS)"
+Cohesion: 0.12
+Nodes (16): AI sinh hoa văn, API hiện có, Chạy nhanh (local), Chạy test, Chạy toàn bộ bằng Docker, Cấu trúc thư mục, Gọi API từ frontend (Next.js), Luồng token (+8 more)
+
+### Community 76 - "user-removal.ts"
+Cohesion: 0.15
+Nodes (9): Db, INVOICE_RETENTION_YEARS, invoiceRetentionCutoff(), scrubExpiredInvoiceData(), InvoiceRetentionTask, ANONYMIZED_NAME, anonymizedEmail(), UsersModule (+1 more)
 
 ### Community 77 - "configuration.ts"
-Cohesion: 0.16
-Nodes (18): Config, ConfigOverride, DeepPartial, configuration(), isObject(), merge(), overrides, NodeEnv (+10 more)
+Cohesion: 0.10
+Nodes (18): ConfigOverride, DeepPartial, configuration(), isObject(), merge(), overrides, EnvironmentVariables, NodeEnv (+10 more)
 
 ### Community 78 - "src/index.ts"
 Cohesion: 0.06
-Nodes (70): AiPatternPanelProps, AiCopilotAssistant(), AiCopilotAssistantProps, GiftPreset, POPULAR_GIFT_PRESETS, ExportPurchaseCardProps, LibraryPanelProps, IBoxStructureGenerator (+62 more)
+Nodes (77): fontkit, AiPatternPanelProps, AiCopilotAssistantProps, GiftPreset, LibraryPanelProps, num(), outlinePaths(), same() (+69 more)
 
-### Community 79 - "ShareDialog.tsx"
-Cohesion: 0.10
-Nodes (24): COMPANY_LINKS, INDUSTRY_LINKS, LEGAL_LINKS, NavGroup, navGroups(), NavLink, structureLinks(), ShareDialogProps (+16 more)
+### Community 79 - "film.ts"
+Cohesion: 0.24
+Nodes (13): Backdrop, CLIP_SECONDS, FilmApi, filmPose(), paintFrame(), recordGif(), recordVideo(), smooth() (+5 more)
 
 ### Community 80 - "legal/index.tsx"
-Cohesion: 0.10
-Nodes (20): metadata, Page(), metadata, Page(), metadata, Page(), metadata, Page() (+12 more)
+Cohesion: 0.08
+Nodes (24): metadata, Page(), metadata, Page(), metadata, Page(), metadata, Page() (+16 more)
 
 ### Community 81 - "src/common/index.ts"
-Cohesion: 0.04
-Nodes (47): AI_GALLERY_MAX_LIMIT, TOOLS, ASPECT_RATIOS, ResetPasswordDto, IsAccountPassword(), normalizeEmail(), GRANT_LIMIT_XU, HEX_COLOR (+39 more)
-
-### Community 82 - "prepress.ts"
-Cohesion: 0.12
-Nodes (23): imageShadow(), 1. Triết Lý & Nguồn Cảm Hứng, 2. Luồng Trải Nghiệm Khách Hàng (4 Giai Đoạn), 3. Kiến Trúc Phân Lớp Toàn Diện, 🎁 TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW) — WrapFit Platform, areaCmyk(), BLEED_MM, FOLD_TICK_MM (+15 more)
+Cohesion: 0.02
+Nodes (74): ASPECT_RATIOS, OneTimeTokenDto, ResetPasswordDto, VerifyEmailDto, IsAccountPassword(), normalizeEmail(), GRANT_LIMIT_XU, CollectionRow (+66 more)
 
 ### Community 84 - "sceneSet.ts"
-Cohesion: 0.12
-Nodes (22): three@^0.168.0, buildProps(), createBirthdaySceneSet(), createChristmasSceneSet(), createKraftWoodSceneSet(), createModernStudioSceneSet(), createSceneSet(), createTetSceneSet() (+14 more)
+Cohesion: 0.20
+Nodes (18): buildProps(), createBirthdaySceneSet(), createChristmasSceneSet(), createKraftWoodSceneSet(), createModernStudioSceneSet(), createSceneSet(), createTetSceneSet(), createTropicalPodiumSceneSet() (+10 more)
 
 ### Community 85 - "UpdatePrintShopDto"
 Cohesion: 0.13
@@ -704,107 +699,99 @@ Nodes (54): environment, AI_IMAGE_CONCURRENCY, AI_IMAGE_MODELS, AI_IMAGE_PROVIDE
 
 ### Community 87 - "reviews.ts"
 Cohesion: 0.24
-Nodes (18): addComment(), approvalOf(), approve(), byToken(), closeLink(), getState(), guestComment(), MockComment (+10 more)
+Nodes (19): addComment(), approvalOf(), approve(), byToken(), closeLink(), getState(), guestComment(), MockComment (+11 more)
 
 ### Community 88 - "InteractiveFoldingBox3D.tsx"
-Cohesion: 0.07
-Nodes (26): stageBarButton(), BoxEnvironment, SceneId, BoxModel, foldablePieces(), AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES (+18 more)
-
-### Community 89 - "CreateAiImageDto"
 Cohesion: 0.09
-Nodes (8): @anthropic-ai/sdk@^0.131.0, CreateAiImageDto, packagingFrame(), PromptRequest, PromptVerdict, SCHEMA, @anthropic-ai/sdk, AiImageAspectRatio
+Nodes (24): stageBarButton(), BoxEnvironment, BoxModel, foldablePieces(), AXIS_COLORS, AXIS_LETTER, DIMENSION_AXES, DimensionAxis (+16 more)
 
-### Community 90 - "AiImageReconcileTask"
-Cohesion: 0.10
-Nodes (15): AiImageReconcileTask, 16. Xu Wrap: đồng xu chung cho mọi tác vụ AI, 1. Bối cảnh, 2.1. Quy tắc cấp, trừ và hoàn xu, 2. Quyết định, 3. Bảng giá, 4.2 Engine ảnh (S2), `be/src/ai/image/`, 4.3 Hoa văn AI trả bằng xu (S3) (+7 more)
+### Community 90 - "UpdatePartnerShopDto"
+Cohesion: 0.20
+Nodes (4): OrderMessageDto, ReassignOrderDto, RejectOrderDto, UpdatePartnerShopDto
 
-### Community 91 - "currentUser"
-Cohesion: 0.14
-Nodes (21): 11.1. Hoa văn AI, 11.2. Ảnh AI cho mặt hộp, 11.3. Ví xu và lịch sử, 11. AI: xu Wrap, ảnh AI và hoa văn, findByEmail(), login(), logout(), me() (+13 more)
-
-### Community 92 - "fonts/index.ts"
+### Community 91 - "store.ts"
 Cohesion: 0.12
-Nodes (19): logout(), logoutAll(), metadata, RootLayout(), beVietnam, bigShoulders, cormorant, fontVariables (+11 more)
+Nodes (24): BankTransaction, getDemoProjectDetail(), PurchaseSuccessDialogProps, bankTx(), DEMO_USER_ID, iso(), MockDb, MockEvent (+16 more)
 
-### Community 93 - "print-shops.service.ts"
-Cohesion: 0.07
-Nodes (17): AdminPrintShopsController, PrintShopsController, AdminPrintShop, flatSizeOf(), iso(), ORDER_STATUSES_IN_QUEUE, PrintShopOffer, PrintShopsService (+9 more)
+### Community 92 - "AppProviders.tsx"
+Cohesion: 0.21
+Nodes (11): metadata, RootLayout(), fontVariables, isPresenting(), PresentModeBoot(), PresentModeSync(), setPresenting(), usePresentMode() (+3 more)
 
 ### Community 94 - "DesignStats.tsx"
-Cohesion: 0.07
-Nodes (28): AnalyticsController, AnalyticsService, GLOBAL_SUMMARY_TTL_MS, ANALYTICS_TIME_ZONE, boxTypesOf(), countsByDay(), creationTimeOf(), mean() (+20 more)
+Cohesion: 0.08
+Nodes (20): AnalyticsController, AnalyticsService, GLOBAL_SUMMARY_TTL_MS, ANALYTICS_TIME_ZONE, boxTypesOf(), countsByDay(), creationTimeOf(), mean() (+12 more)
 
 ### Community 95 - "ExportDialog.tsx"
-Cohesion: 0.13
-Nodes (20): 7.1. Trình tự ở bước Đặt in, getExportAccess(), getExportJob(), requestExport(), dateTime, ExportDialog(), ExportDialogProps, FORMAT_NAMES (+12 more)
+Cohesion: 0.10
+Nodes (26): Xuất file in (BullMQ), 7.1. Trình tự ở bước Đặt in, 4.1. Lược đồ Prisma PostgreSQL mở rộng (Schema v2.1), A.3 Ràng buộc nghiệp vụ, getExportAccess(), getExportJob(), listProjectExports(), requestExport() (+18 more)
 
 ### Community 96 - "features/templates/index.ts"
-Cohesion: 0.26
-Nodes (17): DesignThumb(), DeckCard(), DeckSkeleton(), deckStyle(), HomeTemplateDeck(), ringOffset(), CommunityTemplateCard(), CuratedTemplateCard() (+9 more)
+Cohesion: 0.14
+Nodes (33): EmptyState(), VISIBILITIES, AuthorAvatar(), SIZES, DesignThumb(), DeckCard(), DeckSkeleton(), deckStyle() (+25 more)
 
-### Community 97 - "useProjects.ts"
-Cohesion: 0.16
-Nodes (20): changeProjectStatus(), deleteProjectPermanently(), duplicateProject(), applyToLists(), DUPLICATE_KEY, ListSnapshot, MOVE_KEY, PROJECTS_PAGE_SIZE (+12 more)
+### Community 97 - "AiImageService"
+Cohesion: 0.26
+Nodes (6): AiImageService, isClientRequestTaken(), toJobView(), unavailable(), upscaleFactor(), XuDebitReason
 
 ### Community 98 - "ref_node_fs"
-Cohesion: 0.07
-Nodes (24): [tool, file, ...extra], maxIndex, perFile, ROOT, RULES, totals, walk(), alias() (+16 more)
+Cohesion: 0.08
+Nodes (22): maxIndex, perFile, ROOT, RULES, totals, walk(), alias(), color() (+14 more)
 
 ### Community 99 - "2. Endpoints đã triển khai"
-Cohesion: 0.11
-Nodes (19): 1. Quy ước chung, 2. Endpoints đã triển khai, 3. Endpoints chưa triển khai, AI sinh hoa văn (IT3-09), Bộ sưu tập (IT3-05), Chia sẻ công khai, Remix & thả tim (IT3-06), Duyệt mẫu theo link, Dự án: quy tắc chính (IT3-03) (+11 more)
+Cohesion: 0.09
+Nodes (21): CreateExportDto, 1. Quy ước chung, 2. Endpoints đã triển khai, 3. Endpoints chưa triển khai, AI sinh hoa văn (IT3-09), Bộ sưu tập (IT3-05), Chia sẻ công khai, Remix & thả tim (IT3-06), Duyệt mẫu theo link (+13 more)
 
-### Community 101 - "Toast/index.ts"
-Cohesion: 0.20
-Nodes (12): mediaUp(), reducedMotion(), slide(), ToastApi, ToastCard(), ToastContext, ToastInput, ToastItem (+4 more)
+### Community 101 - "PrintShopsService"
+Cohesion: 0.24
+Nodes (4): iso(), PrintShopsService, toMatchableShop(), toPublicShop()
 
 ### Community 103 - "GifWriter"
 Cohesion: 0.23
 Nodes (7): buildGifPalette(), encodeGif(), GifPalette, GifWriter, indexFrame(), key15(), lzwEncode()
 
-### Community 104 - "CheckoutDialog.tsx"
-Cohesion: 0.05
-Nodes (69): exportPackDiscontinued(), createPayment(), getBillingSummary(), getPayment(), getVnpayReturn(), MockTransferScenario, simulatePayment(), simulateTransfer() (+61 more)
+### Community 104 - "tour.tsx"
+Cohesion: 0.04
+Nodes (75): animejs@^4.5.0, react-dom@^19.3.0, metadata, ART, Art, ARTS, DIZZY_KEYFRAMES, Extra (+67 more)
 
 ### Community 105 - "UnboxingService"
 Cohesion: 0.07
 Nodes (4): SaveUnboxingDto, PublicUnboxingController, UnboxingController, UnboxingService
 
-### Community 106 - "asset-keys.ts"
-Cohesion: 0.31
-Nodes (14): canvasKeys(), CanvasLike, configureAssetBase(), disallowedFileContents(), FILE_ELEMENT_TYPES, fileReferences(), isAllowedFileContent(), isAllowedMediaUrl() (+6 more)
+### Community 106 - "projects.service.ts"
+Cohesion: 0.13
+Nodes (27): assertOwnFileContents(), canvasKeys(), dropUnchangedContent(), THUMBNAIL_PURPOSES, definedKeys(), sameJson(), changeStatus(), duplicateTitle() (+19 more)
 
 ### Community 107 - "Hardening Controls"
 Cohesion: 0.05
 Nodes (42): Broken Access Control, Broken Authentication, Cross-Site Scripting (XSS), Data Classification, Dependency Audit Triage, Destructive Operations on Derived Paths, File Upload Safety, Hardening Patterns (+34 more)
 
 ### Community 108 - "CreateSnapshotDto"
-Cohesion: 0.07
-Nodes (4): ISnapshotRepository, SnapshotsService, CreateSnapshotDto, SnapshotsController
+Cohesion: 0.05
+Nodes (14): PROJECT_EVENTS, ProjectSource, IProjectFiles, PROJECT_FILES, ProjectFile, PROJECT_REPOSITORY, ISnapshotRepository, SNAPSHOT_REPOSITORY (+6 more)
 
 ### Community 109 - "2. Chi Tiết Các Bảng Dữ Liệu"
-Cohesion: 0.12
-Nodes (16): 1.1. Người dùng, dự án và file, 1.2. Thanh toán, ví xu, quyền xuất và đơn in, 1.3. Ảnh AI, duyệt mẫu, sự kiện và thông báo, 1.4. Quan hệ phiên bản giữa dự án, đơn và job xuất, 1. Sơ Đồ Thực Thể Quan Hệ (ERD Diagram), 2.1. Người dùng và phiên đăng nhập, 2.2. Cấu trúc hộp, mẫu và dự án, 2.4. AI: hoa văn và ảnh (+8 more)
+Cohesion: 0.25
+Nodes (8): 2.1. Người dùng và phiên đăng nhập, 2.2. Cấu trúc hộp, mẫu và dự án, 2.4. AI: hoa văn và ảnh, 2.5. Duyệt mẫu, 2.6. Thanh toán, ví, quyền xuất và thuê bao, 2.7. Đơn in và xưởng in, 2.8. Sự kiện và thông báo, 2. Chi Tiết Các Bảng Dữ Liệu
 
-### Community 110 - "useToast"
-Cohesion: 0.28
-Nodes (12): useToast(), IMAGE_TYPES, showUploadError(), UPLOAD_RULES, uploadAccept(), uploadErrorMessage(), uploadProblem(), UploadRejectedError (+4 more)
-
-### Community 111 - "useCollections.ts"
-Cohesion: 0.26
-Nodes (13): createCollection(), deleteCollection(), listCollections(), updateCollection(), DEMO_COLLECTIONS, CollectionUpdate, refreshFolders(), useCollections() (+5 more)
+### Community 111 - "print-shops.service.ts"
+Cohesion: 0.15
+Nodes (13): AdminPrintShop, flatSizeOf(), MatchLine, ORDER_STATUSES_IN_QUEUE, PrintShopMatchResponse, PrintShopOffer, PublicPrintShop, CT (+5 more)
 
 ### Community 112 - "search.ts"
-Cohesion: 0.19
-Nodes (12): RESOURCE_LINKS, STUDIO_LINKS, ALL_ARTICLES, SearchSuggestion, foldText(), KIND_LABEL, PAGES, Result (+4 more)
+Cohesion: 0.31
+Nodes (8): SearchSuggestion, foldText(), KIND_LABEL, PAGES, Result, scoreOf(), SiteResultKind, useSiteSearch()
 
-### Community 113 - "Icon"
-Cohesion: 0.18
-Nodes (10): DropdownMenu(), DropdownMenuProps, MenuEntry, MenuPanel(), Icon(), IconProps, ICONS, MenuAction (+2 more)
-
-### Community 116 - "tailwind.config.ts"
+### Community 113 - "ProjectCard.tsx"
 Cohesion: 0.15
-Nodes (13): tailwindcss@^3.4.12, paletteTheme(), radiusTheme(), semanticColorTheme(), semanticColorVariables(), spacingTheme(), typeScaleTheme(), appTheme (+5 more)
+Nodes (17): DropdownMenu(), DropdownMenuProps, MenuEntry, MenuPanel(), MenuAction, ProjectActionsMenu(), ProjectActionsMenuProps, FITCHECK_TAG (+9 more)
+
+### Community 114 - "dialog.tsx"
+Cohesion: 0.15
+Nodes (10): CloseButton(), DialogProps, Drawer(), DRAWER_WIDTH, DrawerProps, LAYER, ModalLayerProps, ModalPlacement (+2 more)
+
+### Community 115 - "11 — Rà soát giao diện theo kích thước màn hình (Phase 7)"
+Cohesion: 0.15
+Nodes (13): 11 — Rà soát giao diện theo kích thước màn hình (Phase 7), 1. Cách chạy, 2.1. Tổng hợp, 2.2. Bảng route × kích thước (lượt cuối), 2.3. Mốc `stitch:parity` (1280 px, 2026-10-11), 2. Kết quả, 3. Lỗi tìm thấy và cách sửa, 4. Chuyển phiên sau (+5 more)
 
 ### Community 117 - "e2e"
 Cohesion: 0.05
@@ -812,87 +799,67 @@ Nodes (41): env, name, needs, runs-on, services, steps, CORS_ORIGINS, DATABASE_U
 
 ### Community 118 - "@nestjs/common"
 Cohesion: 0.07
-Nodes (52): bootstrap(), limitWebhookBody(), middleware(), AppModule, AuthMaintenanceTask, UNVERIFIED_ACCOUNT_TTL_MS, env, createAppLogger() (+44 more)
+Nodes (55): bootstrap(), limitWebhookBody(), middleware(), AppModule, AuthMaintenanceTask, UNVERIFIED_ACCOUNT_TTL_MS, allowedOrigins(), parseCorsOrigins() (+47 more)
 
 ### Community 119 - "StitchRuntime.tsx"
 Cohesion: 0.28
 Nodes (8): stitchBehaviors, StitchBehaviorScreen, bindInlineHandlers(), mountStitchBehavior(), StitchRuntimeProps, StitchBehavior, StitchBehaviorResult, StitchHandler
 
-### Community 120 - "barcode.ts"
-Cohesion: 0.20
-Nodes (15): barcodeVectors(), barcodeVectorArt(), BarcodeArt, barcodeArt(), ean13CheckDigit(), ean13Digits(), ean13Modules(), G_CODES (+7 more)
+### Community 120 - "order-tracking.ts"
+Cohesion: 0.17
+Nodes (12): ACCEPT_WITHIN_HOURS, AUTO_DELIVER_AFTER_DAYS, Carrier, CARRIER_IDS, CarrierId, CARRIERS, estimateFrom(), isOrderLate() (+4 more)
 
-### Community 121 - "seed-data.ts"
-Cohesion: 0.21
-Nodes (9): boxTemplates, designTemplates, dimensionParams, sheetParams, ensureProject(), seedDemo(), uploadLogo(), main() (+1 more)
+### Community 122 - "shapes.ts"
+Cohesion: 0.32
+Nodes (11): ArtShape, libraryArt(), DEFAULT_SHAPE_FILL, DEFAULT_SHAPE_STROKE, elementVectorArt(), ellipsePath(), n(), polygonPath() (+3 more)
 
-### Community 123 - "button.tsx"
-Cohesion: 0.29
-Nodes (10): BUTTON_SHAPES, BUTTON_SIZES, BUTTON_VARIANTS, ButtonLinkProps, ButtonProps, ButtonShape, ButtonSize, ButtonStyleProps (+2 more)
+### Community 126 - "RecordProjectEventDto"
+Cohesion: 0.13
+Nodes (5): IProjectEvents, CLIENT_EVENT_TYPES, ClientEventType, RecordProjectEventDto, MAX_STUDIO_HEARTBEAT_SECONDS
 
-### Community 127 - "behavior.mjs"
-Cohesion: 0.27
-Nodes (9): @babel/generator@^7.29.8, buildBehaviorModule(), collectWindowNames(), indent(), isolateScript(), PARSE_OPTIONS, rewriteGlobals(), SCOPE_NAMES (+1 more)
+### Community 127 - "AvatarCropDialog.tsx"
+Cohesion: 0.31
+Nodes (7): AvatarCropDialog(), AvatarCropDialogProps, drawIllustration(), ILLUSTRATED_AVATARS, Illustration, IllustrationSwatch(), toFile()
 
-### Community 129 - "BlueprintIntro.tsx"
-Cohesion: 0.24
-Nodes (8): MARK_H, MARK_ORANGE, MARK_PIECES, MARK_W, WrapFitMark(), WrapFitMarkProps, BlueprintIntro(), BlueprintIntroProps
-
-### Community 130 - "BoxPreview.tsx"
-Cohesion: 0.24
-Nodes (10): BoxPreview(), BoxPreviewProps, COS30, iso(), P2, P3, PAPER, shade() (+2 more)
-
-### Community 131 - "prices.ts"
-Cohesion: 0.22
-Nodes (8): ENTITLEMENTS, BUSINESS_MONTH_DISPLAY, EXPORT_PACK_IDS, ExportPackId, isExportPackId(), PaymentPurpose, PRO_MONTH, PURCHASED_LOT_VALID_MONTHS
-
-### Community 132 - "effects-spelling.spec.ts"
-Cohesion: 0.22
-Nodes (7): dimensions, layoutOf(), shadow, square, buildPrintLayout(), layoutOf(), layoutOf()
-
-### Community 134 - "useAccount.ts"
-Cohesion: 0.38
-Nodes (8): getMyProfile(), updateMyBrandKit(), updateMyProfile(), useStoreSessionUser(), useUpdateBrandKit(), useUpdateProfile(), UpdateBrandKitRequest, UpdateProfileRequest
+### Community 130 - "BoxStage3D.tsx"
+Cohesion: 0.12
+Nodes (19): ProjectThumb(), BoxStage3D(), Environment, InteractiveFoldingBox3D, StageLoading(), WebGlBoundary, isShareSlug(), unboxSlugFrom() (+11 more)
 
 ### Community 135 - "Step2DimensionAndMaterial.tsx"
-Cohesion: 0.05
-Nodes (61): MobileBottomSheet(), MobileBottomSheetProps, DEFAULT_RANGES, DimensionControls(), DimensionControlsProps, FitCheckDrawer(), MmInput(), AXIS_LABEL (+53 more)
+Cohesion: 0.06
+Nodes (55): MobileBottomSheet(), MobileBottomSheetProps, DEFAULT_RANGES, DimensionControls(), DimensionControlsProps, FitCheckDrawer(), MmInput(), AXIS_LABEL (+47 more)
 
-### Community 136 - "📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION)"
-Cohesion: 0.22
-Nodes (9): 1. TỔNG QUAN CẤU TRÚC MONOREPO CẤP CAO (HIGH-LEVEL OVERVIEW), 2. BẢN ĐỒ CÂY THƯ MỤC CHI TIẾT (COMPLETE DIRECTORY TREE), 3. PHÂN VÙNG DỮ LIỆU & QUY TẮC PHỤ THUỘC (IMPORT BOUNDARIES), 4.1. Dịch vụ đang dùng, 4.2. Đề xuất, chưa có mã, 4. CHI TIẾT TÍCH HỢP DỊCH VỤ BÊN THỨ BA (3RD-PARTY INTEGRATIONS), 5. QUY ƯỚC ĐẶT TÊN TỆP TIN CHUẨN (NAMING CONVENTIONS), 📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION) (+1 more)
+### Community 136 - "BoxStructureType"
+Cohesion: 0.10
+Nodes (19): 1. TỔNG QUAN CẤU TRÚC MONOREPO CẤP CAO (HIGH-LEVEL OVERVIEW), 2. BẢN ĐỒ CÂY THƯ MỤC CHI TIẾT (COMPLETE DIRECTORY TREE), 3. PHÂN VÙNG DỮ LIỆU & QUY TẮC PHỤ THUỘC (IMPORT BOUNDARIES), 4.1. Dịch vụ đang dùng, 4.2. Đề xuất, chưa có mã, 4. CHI TIẾT TÍCH HỢP DỊCH VỤ BÊN THỨ BA (3RD-PARTY INTEGRATIONS), 5. QUY ƯỚC ĐẶT TÊN TỆP TIN CHUẨN (NAMING CONVENTIONS), 📁 ĐẶC TẢ KIẾN TRÚC HỆ THỐNG THƯ MỤC & TỆP TIN CHUẨN CÔNG NGHIỆP (PROJECT DIRECTORY & FILE SPECIFICATION) (+11 more)
 
-### Community 137 - "app/login/page.tsx"
-Cohesion: 0.33
-Nodes (6): LoginRedirect(), SearchParams, RegisterRedirect(), SearchParams, SearchParamsRecord, toQueryString()
+### Community 137 - "3. Cấu trúc `canvas_state`"
+Cohesion: 0.25
+Nodes (8): 1.1. Người dùng, dự án và file, 1.2. Thanh toán, ví xu, quyền xuất và đơn in, 1.3. Ảnh AI, duyệt mẫu, sự kiện và thông báo, 1.4. Quan hệ phiên bản giữa dự án, đơn và job xuất, 1. Sơ Đồ Thực Thể Quan Hệ (ERD Diagram), 3. Cấu trúc `canvas_state`, Quy ước bắt buộc, 🗄️ THIẾT KẾ CƠ SỞ DỮ LIỆU (DATABASE DESIGN) — PostgreSQL & Prisma
 
 ### Community 138 - "FitCheckDrawer.tsx"
 Cohesion: 0.25
 Nodes (6): FitCheckDrawerProps, IPreflightRule, RuleEvaluationResult, FitCheckErrorCode, FitCheckViolation, SeverityLevel
 
-### Community 140 - "EmailOnlyDto"
-Cohesion: 0.25
-Nodes (3): EmailOnlyDto, OneTimeTokenDto, VerifyEmailDto
+### Community 140 - "redis"
+Cohesion: 0.29
+Nodes (7): REDISCLI_AUTH, test, command, environment, healthcheck, ports, redis
 
 ### Community 141 - "ui-fixtures.mjs"
-Cohesion: 0.13
-Nodes (20): AppSession, backendEnv(), FIXTURES_FILE, readFixtures(), seedAdmin(), SHOTS_DIR, admin, args (+12 more)
+Cohesion: 0.10
+Nodes (21): Context, AppSession, backendEnv(), FIXTURES_FILE, readFixtures(), seedAdmin(), SHOTS_DIR, admin (+13 more)
 
 ### Community 143 - "svg-sanitizer.ts"
 Cohesion: 0.52
 Nodes (5): ALLOWED_ELEMENTS, clean(), cleanAttributes(), InvalidSvgError, sanitizeSvg()
 
 ### Community 144 - "mock-api/index.ts"
-Cohesion: 0.07
-Nodes (32): 2.4 Mục 4: lỗi nhập ảnh kho (S), accountRoutes, billingRoutes, list(), markRead(), mine(), MockNotification, notificationRoutes (+24 more)
+Cohesion: 0.09
+Nodes (30): accountRoutes, findByEmail(), login(), logout(), recordUpload(), register(), updateBrandKit(), billingRoutes (+22 more)
 
-### Community 147 - "UnboxView"
-Cohesion: 0.33
-Nodes (6): getPublicUnboxing(), metadata, UnboxPage(), giftToPublic(), ExpiredCode(), UnboxView()
-
-### Community 148 - "platformFeeSplit"
-Cohesion: 0.40
-Nodes (5): DEFAULT_PLATFORM_FEE_BPS, MAX_PLATFORM_FEE_BPS, PlatformFeeSplit, platformFeeSplit(), round100()
+### Community 146 - "Bảng Theo Dõi Tiến Độ 3 IT"
+Cohesion: 0.50
+Nodes (4): Bảng Theo Dõi Tiến Độ 3 IT, Review backend 18/11/2026 và commit sửa, 📊 TIẾN ĐỘ THỰC HIỆN & PHÂN CÔNG (PROJECT PROGRESS), Tài liệu đã gỡ
 
 ### Community 149 - "WrapFit Backend & Data Flow Skill (InsForge Architecture)"
 Cohesion: 0.40
@@ -902,21 +869,17 @@ Nodes (4): 1. Relational Database Schema (PostgreSQL), 2. Asset Storage Strategy
 Cohesion: 0.40
 Nodes (4): 1. Relational Database Schema (PostgreSQL), 2. Asset Storage Strategy (S3 / Cloud Storage), 3. Real-time Synchronization Protocol, WrapFit Backend & Data Flow Skill (InsForge Architecture)
 
-### Community 151 - "textLayout.ts"
-Cohesion: 0.40
-Nodes (3): @chenglou/pretext@^0.0.9, PretextMeasuredText, @chenglou/pretext
-
-### Community 156 - "ImpositionCanvas2D.tsx"
-Cohesion: 0.16
-Nodes (20): ImpositionCanvas2D(), ImpositionCanvas2DProps, PrePressColorCardProps, DEFAULT_PRINTER_MARKS, ICC_PROFILES, IccProfileId, IccProfileSpec, ImpositionItem (+12 more)
+### Community 153 - "storage.service.ts"
+Cohesion: 0.07
+Nodes (25): @aws-sdk/client-s3@^3.1145.0, @aws-sdk/s3-request-presigner@^3.1145.0, DIMENSIONS, LOGO_FILE, MATERIAL, ADVISORY_LOCK, UploadPurpose, CONFIRM_UPLOADS_AFTER_MS (+17 more)
 
 ### Community 160 - "tailwindStitch.ts"
-Cohesion: 0.16
-Nodes (15): APP_TOKENS_ATTRIBUTE, CssInJs, CssValue, flattenColors(), fontFamilyValue(), fontSizeParts(), FontSizeValue, mergeTheme() (+7 more)
+Cohesion: 0.08
+Nodes (30): tailwindcss@^3.4.12, @tailwindcss/forms@^0.5.10, paletteTheme(), radiusTheme(), semanticColorTheme(), semanticColorVariables(), spacingTheme(), typeScaleTheme() (+22 more)
 
-### Community 163 - "svgRecolor.ts"
-Cohesion: 0.23
-Nodes (16): SvgColors(), isSvgText(), pending, ready, recoloredSrc(), svgColorsOfUrl(), svgTextOf(), texts (+8 more)
+### Community 163 - "placement.ts"
+Cohesion: 0.07
+Nodes (49): Edge, num(), PIECE_GAP_MM, placedCurve(), PlacedPiece, Point, PrintLayout, same() (+41 more)
 
 ### Community 165 - "Code Review and Quality"
 Cohesion: 0.07
@@ -939,8 +902,8 @@ Cohesion: 0.07
 Nodes (25): Connection Pool Exhaustion, Large Bundle Size, Missing Caching (Backend), Missing Image Optimization (Frontend), N+1 Queries (Backend), Optimization Patterns, Queries That Ignore Their Index, Unbounded Data Fetching (+17 more)
 
 ### Community 187 - "boxModel.ts"
-Cohesion: 0.05
-Nodes (76): carrier(), closed(), Bounds, cases, SIZES, STRUCTURES, VERSIONS, Bounds (+68 more)
+Cohesion: 0.04
+Nodes (80): carrier(), closed(), Bounds, cases, SIZES, STRUCTURES, VERSIONS, Bounds (+72 more)
 
 ### Community 194 - "Shipping and Launch"
 Cohesion: 0.08
@@ -971,12 +934,12 @@ Cohesion: 0.10
 Nodes (21): args, baseUrl, CHROME_CANDIDATES, chromePath, evaluate(), fixtures, loadRoutes(), openChrome() (+13 more)
 
 ### Community 207 - "11 — Hướng dẫn tích hợp Frontend ↔ Backend"
-Cohesion: 0.10
-Nodes (20): 06 — Hướng dẫn tích hợp Frontend ↔ Backend, 10. Mở hộp 3D qua QR, 12. Hồ sơ, Brand Kit, bộ sưu tập, 13. Những chỗ `apiClient` cũ lệch backend (đã sửa), 15. Chạy và kiểm thử local, 16. Danh mục đầy đủ endpoint (đối chiếu với code), 1. Kết nối và phiên đăng nhập, 2. Định dạng lỗi và mã lỗi (+12 more)
+Cohesion: 0.08
+Nodes (28): 06 — Hướng dẫn tích hợp Frontend ↔ Backend, 10. Mở hộp 3D qua QR, 11.1. Hoa văn AI, 11.2. Ảnh AI cho mặt hộp, 11.3. Ví xu và lịch sử, 11. AI: xu Wrap, ảnh AI và hoa văn, 12. Hồ sơ, Brand Kit, bộ sưu tập, 13. Những chỗ `apiClient` cũ lệch backend (đã sửa) (+20 more)
 
 ### Community 209 - "15 — Runbook deploy và demo bản Path 2"
-Cohesion: 0.09
-Nodes (23): 0. Trạng thái, 15 — Runbook deploy và demo bản Path 2, 1. Kiến trúc bản demo, 2.1. Điều kiện, 2.2. Kiểm `.env` trên VPS, 2.3. Trình tự deploy lần này, 2.4. Giới hạn vận hành cần biết, 2. Trước khi deploy (+15 more)
+Cohesion: 0.05
+Nodes (39): 0. Trạng thái, 15 — Runbook deploy và demo bản Path 2, 1. Kiến trúc bản demo, 2.1. Điều kiện, 2.2. Kiểm `.env` trên VPS, 2.3. Trình tự deploy lần này, 2.4. Giới hạn vận hành cần biết, 2. Trước khi deploy (+31 more)
 
 ### Community 210 - "CI/CD and Automation"
 Cohesion: 0.08
@@ -984,7 +947,7 @@ Nodes (23): Automation Beyond CI, Basic CI Pipeline, Build Cop Role, CI/CD and A
 
 ### Community 211 - "Constraint-Driven Development"
 Cohesion: 0.08
-Nodes (22): Adapting it, Contract, Floor guard: reference implementation, Reference (Node, ~stack-agnostic patterns), Common Rationalizations, Constraint-Driven Development, Escalation Path, Loading Constraints (+14 more)
+Nodes (23): Adapting it, Contract, Floor guard: reference implementation, Reference (Node, ~stack-agnostic patterns), [tool, file, ...extra], Common Rationalizations, Constraint-Driven Development, Escalation Path (+15 more)
 
 ### Community 212 - "Deprecation and Migration"
 Cohesion: 0.08
@@ -995,8 +958,8 @@ Cohesion: 0.05
 Nodes (38): 2.1. Phân hệ 1: Quản trị Tài khoản, Xác thực & Brand Kit (Auth & Identity), 2.2. Phân hệ 2: Quản lý Dự án, Lưu trữ & Lịch sử Phiên bản (Project Lifecycle, Archive & Versioning), 2.3. Phân hệ 3: Chia sẻ Công Khai, Nhúng 3D & Cộng Đồng Remix (Public Showcase, 3D Embed & Fork), 2.4. Phân hệ 4: Thư Viện Mẫu Bao Bì Chuẩn Hóa & Cộng Đồng (Curated & Community Template Hub), 2.5. Phân hệ 5: Phòng thu Thiết kế 2D Dieline Đa Lớp (2D Vector Canvas Studio), 2.6. Phân hệ 6: Mô phỏng Gập & Vật liệu 3D Thời Gian Thực (3D Folding & Material Physics), 2.7. Phân hệ 7: Động cơ Thẩm định Vật lý & In ấn FitCheck™ (Physics & Preflight Engine), 2.8. Phân hệ 8: Độc Đáo Phục Vụ Marketing & Viral Growth (Marketing & Viral Engine) (+30 more)
 
 ### Community 217 - "validator.ts"
-Cohesion: 0.04
-Nodes (67): of(), tuck, codes(), dimensions, tuckTop, tuck(), 5.1. Tạo, liệt kê, mở, 5.2. `canvasState` (+59 more)
+Cohesion: 0.03
+Nodes (80): of(), tuck, codes(), dimensions, tuckTop, F.1 Bậc 1: lỗ khoét do người dùng đặt, metadata, ALL_ARTICLES (+72 more)
 
 ### Community 218 - "package.json"
 Cohesion: 0.09
@@ -1009,10 +972,6 @@ Nodes (22): ADR Lifecycle, ADR Template, API Documentation, Architecture Decisio
 ### Community 220 - "Incremental Implementation"
 Cohesion: 0.09
 Nodes (22): Common Rationalizations, Contract-First Slicing, Implementation Rules, Increment Checklist, Incremental Implementation, Overview, Red Flags, Risk-First Slicing (+14 more)
-
-### Community 223 - "textOutlines"
-Cohesion: 0.16
-Nodes (18): fontkit, artVectors(), drawList(), fontOf(), labelPath(), measure(), textOutlines(), undrawable() (+10 more)
 
 ### Community 224 - "Code Simplification"
 Cohesion: 0.09
@@ -1038,9 +997,9 @@ Nodes (20): compilerOptions, allowSyntheticDefaultImports, baseUrl, declaration,
 Cohesion: 0.20
 Nodes (3): playFeedbackClick(), switchStage(), updateButtonStates()
 
-### Community 236 - "BoxStructureType"
-Cohesion: 0.12
-Nodes (34): DesignTemplateSource, NewProject, ProjectChanges, ProjectListQuery, TemplateRules, UncheckedProject, changeStatus(), duplicateTitle() (+26 more)
+### Community 236 - "prisma-project.repository.ts"
+Cohesion: 0.08
+Nodes (32): noOrderHoldsDesign(), DesignTemplateSource, NewProject, PermanentDeletion, ProjectChanges, ProjectListQuery, TemplateRules, UncheckedProject (+24 more)
 
 ### Community 238 - "frontend"
 Cohesion: 0.17
@@ -1056,7 +1015,7 @@ Nodes (19): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModu
 
 ### Community 241 - "StudioWorkspace.tsx"
 Cohesion: 0.03
-Nodes (132): generateAiPattern(), apiClient, createProject(), createSnapshot(), deleteSnapshot(), listSnapshots(), restoreSnapshot(), updateProject() (+124 more)
+Nodes (115): recordProjectEvent(), createProject(), createSnapshot(), deleteSnapshot(), listSnapshots(), restoreSnapshot(), updateProject(), upgradeProjectFormula() (+107 more)
 
 ### Community 245 - "Interview Me"
 Cohesion: 0.11
@@ -1075,8 +1034,8 @@ Cohesion: 0.11
 Nodes (5): 6. MA TRẬN TUÂN THỦ NGUYÊN TẮC SOLID, IAddressBookService, INewsletterService, IOrderFulfillmentService, IPaymentGateway
 
 ### Community 256 - "Step5Model3DWithEnvironments.tsx"
-Cohesion: 0.11
-Nodes (31): Step5Model3DWithEnvironments(), Step5Model3DWithEnvironmentsProps, STRUCTURE_NAMES, Backdrop, BACKDROPS, SCENE_IDS, sceneForOccasion(), surfaceCss() (+23 more)
+Cohesion: 0.16
+Nodes (17): Step5Model3DWithEnvironments(), STRUCTURE_NAMES, BACKDROPS, SCENE_IDS, sceneForOccasion(), surfaceCss(), SurfaceKind, CaptureFn (+9 more)
 
 ### Community 257 - "ReOrder: Keep Your Regulars Ordering Direct"
 Cohesion: 0.11
@@ -1103,8 +1062,8 @@ Cohesion: 0.12
 Nodes (15): 1. Define "working" before instrumenting, 2. Pick the right signal for each question, 3. Structured logging, 4. Metrics, 5. Distributed tracing, 6. Alerting, 7. Verify the telemetry itself, Common Rationalizations (+7 more)
 
 ### Community 273 - "visual-parity.mjs"
-Cohesion: 0.19
-Nodes (12): SOURCE_DIR, chrome, CHROME_CANDIDATES, filters, main(), options, outDir, redirectedRoutes() (+4 more)
+Cohesion: 0.14
+Nodes (16): pixelmatch@^5.3.0, pngjs@^7.0.0, readManifest(), chrome, CHROME_CANDIDATES, filters, main(), options (+8 more)
 
 ### Community 274 - "StitchRuntime"
 Cohesion: 0.18
@@ -1112,7 +1071,7 @@ Nodes (8): metadata, metadata, metadata, StitchRuntime(), EditorPage(), Step3Stu
 
 ### Community 276 - "export.processor.ts"
 Cohesion: 0.04
-Nodes (43): design(), AnalyticsModule, ProductEventInput, ProductEventsService, STUDIO_HEARTBEAT_MIN_GAP_MS, BaseModule, Check, orderPaymentRequired() (+35 more)
+Nodes (40): design(), AnalyticsModule, ProductEventInput, ProductEventsService, STUDIO_HEARTBEAT_MIN_GAP_MS, BaseModule, Check, neverSentToRedis() (+32 more)
 
 ### Community 281 - "Using Agent Skills"
 Cohesion: 0.13
@@ -1128,19 +1087,23 @@ Nodes (15): scripts, a11y, build, build:shared, demo, dev, dev:webpack, lint (+7
 
 ### Community 285 - "jsx.mjs"
 Cohesion: 0.20
-Nodes (14): ATTRIBUTE_NAMES, attributeName(), attributeValue(), element(), BOOLEAN_ATTRIBUTES, camel(), isPreformatted(), NUMERIC_ATTRIBUTES (+6 more)
+Nodes (16): ATTRIBUTE_NAMES, attributeName(), attributeValue(), bodyToJsx(), element(), BOOLEAN_ATTRIBUTES, camel(), isPreformatted() (+8 more)
 
 ### Community 287 - "createStitchScope.ts"
 Cohesion: 0.17
 Nodes (9): createStitchScope(), ListenerRecord, StitchScopeHandle, createThreeCompat(), LEGACY_GEOMETRY_ALIASES, LightCtor, ThreeCompatHandle, ThreeNamespace (+1 more)
+
+### Community 291 - "HealthController"
+Cohesion: 0.11
+Nodes (3): HealthController, withTimeout(), VnpayController
 
 ### Community 292 - "Spec-Driven Development"
 Cohesion: 0.14
 Nodes (13): Common Rationalizations, Keeping the Spec Alive, Overview, Phase 0: Scope Check, Phase 1: Specify, Phase 2: Plan, Phase 3: Tasks, Phase 4: Implement (+5 more)
 
 ### Community 293 - "ProjectsController"
-Cohesion: 0.13
-Nodes (4): ChangeStatusDto, FormulaUpgradeDto, ProjectsController, Patch
+Cohesion: 0.07
+Nodes (8): EDITOR_TAB_HEADER, PROJECT_SAVED, ChangeStatusDto, ChangeVisibilityDto, FormulaUpgradeDto, QueryProjectsDto, ProjectsController, 2. SƠ ĐỒ LỚP KIẾN TRÚC TỔNG THỂ (MASTER SYSTEM CLASS DIAGRAM)
 
 ### Community 294 - "backend"
 Cohesion: 0.14
@@ -1151,16 +1114,16 @@ Cohesion: 0.23
 Nodes (12): arcToCubics(), elementToPath(), ellipse(), entries, here, ICONS, lucideDir, missing (+4 more)
 
 ### Community 296 - "1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG"
-Cohesion: 0.25
-Nodes (8): 1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG, 2. RỦI RO LỖI HỆ THỐNG, CRASH CODE & TRANH CHẤP THANH TOÁN, 3. RỦI RO BẢO MẬT & XÂY DỰNG NIỀM TIN CHO NGƯỜI DÙNG (COMPLIANCE), 5. GIẢI QUYẾT TRIỆT ĐỂ 3 NHÓM RỦI RO LỚN, A. Khai tử biến RAM `SAMPLE_ORDERS` — đã xong, B. Sao lưu CSDL, C. Sao lưu file thiết kế của khách hàng — **Đề xuất**, Giải pháp:
+Cohesion: 0.13
+Nodes (15): 0. TÓM TẮT TRẠNG THÁI (19/11/2026), 1. RỦI RO MẤT DỮ LIỆU & SẬP SERVER PHẢI ĐỀN BÙ KHÁCH HÀNG, 1. ĐỐI CHIẾU & HỌC HỎI TỪ MÃ NGUỒN `NasaFilm`, 2. DANH MỤC BIẾN MÔI TRƯỜNG (.ENV) PRODUCTION, 2. RỦI RO LỖI HỆ THỐNG, CRASH CODE & TRANH CHẤP THANH TOÁN, 3. KIẾN TRÚC DỊCH VỤ BÊN THỨ BA ĐANG VẬN HÀNH, 3. RỦI RO BẢO MẬT & XÂY DỰNG NIỀM TIN CHO NGƯỜI DÙNG (COMPLIANCE), 4. CHIẾN LƯỢC PHÂN LOẠI & LƯU TRỮ DỮ LIỆU (KHÔNG LƯU HẾT VÀO DB) (+7 more)
 
 ### Community 299 - "🎁 WrapFit Platform — Make Every Present, Present."
 Cohesion: 0.13
 Nodes (14): 1. 📐 Parametric Dieline Engine (Động cơ Tham số hóa Bản vẽ Bế), 2. 🧊 3D Fold Simulation (Mô phỏng Gập hộp 3D bằng Three.js & GSAP), 3. 🛡️ FitCheck™ Engine (Kiểm duyệt Rủi ro In ấn & Gập), 4. 🖨️ Production-Ready Vector Export, 📌 Bối cảnh & Nỗi đau thị trường (The Problem), Cách 1: Khởi chạy toàn bộ hệ thống bằng Docker (Khuyên dùng) 🐳, Cách 2: Khởi chạy thủ công qua Node.js (Local Development), 🛠️ Công Nghệ Phát Triển (Tech Stack) (+6 more)
 
 ### Community 300 - "14_PRICING_ENTITLEMENTS_SPEC.md"
-Cohesion: 0.07
-Nodes (26): deploy.sh script, Bảng Theo Dõi Tiến Độ 3 IT, Review backend 18/11/2026 và commit sửa, 📊 TIẾN ĐỘ THỰC HIỆN & PHÂN CÔNG (PROJECT PROGRESS), Tài liệu đã gỡ, 11 — Rà soát giao diện theo kích thước màn hình (Phase 7), 1. Cách chạy, 2.1. Tổng hợp (+18 more)
+Cohesion: 0.06
+Nodes (32): deploy.sh script, 1. Triết Lý & Nguồn Cảm Hứng, 2. Luồng Trải Nghiệm Khách Hàng (4 Giai Đoạn), 3. Kiến Trúc Phân Lớp Toàn Diện, 🎁 TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW) — WrapFit Platform, 1.3. Quyền Xuất File, Đơn In, Ví Xu và Duyệt Mẫu, 1.4. Trình Chỉnh Sửa Bước 4–6, 1. Yêu Cầu Chức Năng (Functional Requirements) (+24 more)
 
 ### Community 301 - "Source-Driven Development"
 Cohesion: 0.15
@@ -1175,16 +1138,16 @@ Cohesion: 0.17
 Nodes (11): 1. User Value, 2. Feasibility, 3. Differentiation, Assumption Audit, Core Evaluation Dimensions, Decision Framework, Might Be True (Nice to Have), Must Be True (Dealbreakers) (+3 more)
 
 ### Community 307 - "particles.ts"
-Cohesion: 0.11
-Nodes (13): SERVER_API_BASE_URL, draw(), EFFECTS, EffectSpec, FIREWORK_SHELLS_MS, Particle, playParticles(), Shape (+5 more)
+Cohesion: 0.17
+Nodes (7): draw(), EFFECTS, EffectSpec, FIREWORK_SHELLS_MS, Particle, playParticles(), Shape
 
 ### Community 308 - "services"
-Cohesion: 0.11
-Nodes (19): ports, POSTGRES_PASSWORD, REDISCLI_AUTH, test, ports, environment, ports, command (+11 more)
+Cohesion: 0.17
+Nodes (12): ports, POSTGRES_PASSWORD, ports, environment, ports, ports, services, backend (+4 more)
 
-### Community 309 - "Artwork"
-Cohesion: 0.08
-Nodes (27): 1. Domain Knowledge & Packaging Physics, 2. UI/UX Craftsmanship & Brand System (pack.ly + Pacdora, FPT accents), 3. Brand Mascot as AI Packaging Copilot ("Gói" / BeBoxy), 4. 3-Stage User Journey & Physical 3D Packaging Model, 5. Tech Stack & Architecture, 6. MANDATORY 2-TIER AGENT EXECUTION PROTOCOL (AUTOMATIC PER TURN), WrapFit Platform — AI Agent Development Guidelines, Artwork (+19 more)
+### Community 309 - "WrapFit Platform — AI Agent Development Guidelines"
+Cohesion: 0.29
+Nodes (6): 1. Domain Knowledge & Packaging Physics, 2. UI/UX Craftsmanship & Brand System (pack.ly + Pacdora, FPT accents), 3. Brand Mascot as AI Packaging Copilot ("Gói" / BeBoxy), 4. 3-Stage User Journey & Physical 3D Packaging Model, 6. MANDATORY 2-TIER AGENT EXECUTION PROTOCOL (AUTOMATIC PER TURN), WrapFit Platform — AI Agent Development Guidelines
 
 ### Community 310 - "editor.ts"
 Cohesion: 0.36
@@ -1195,12 +1158,12 @@ Cohesion: 0.17
 Nodes (11): compilerOptions, declaration, esModuleInterop, forceConsistentCasingInFileNames, module, outDir, rootDir, skipLibCheck (+3 more)
 
 ### Community 320 - "x-storage"
-Cohesion: 0.18
-Nodes (11): x-storage, STORAGE_ACCESS_KEY_ID, STORAGE_BACKUP_BUCKET, STORAGE_BUCKET, STORAGE_ENDPOINT, STORAGE_FORCE_PATH_STYLE, STORAGE_PRIVATE_BUCKET, STORAGE_PUBLIC_ENDPOINT (+3 more)
+Cohesion: 0.12
+Nodes (14): x-service-urls, DATABASE_URL, REDIS_URL, x-storage, STORAGE_ACCESS_KEY_ID, STORAGE_BACKUP_BUCKET, STORAGE_BUCKET, STORAGE_ENDPOINT (+6 more)
 
 ### Community 327 - "claude-pattern.generator.ts"
 Cohesion: 0.10
-Nodes (29): lockDebit(), ClaudeGeneratorOptions, ClaudePatternGenerator, color, DESIGN_SCHEMA, hasServerFallback(), num, opacity (+21 more)
+Nodes (27): ClaudeGeneratorOptions, ClaudePatternGenerator, color, DESIGN_SCHEMA, hasServerFallback(), num, opacity, PatternGenerationError (+19 more)
 
 ### Community 329 - "shared/package.json"
 Cohesion: 0.20
@@ -1234,21 +1197,17 @@ Nodes (8): collection, compilerOptions, assets, deleteOutDir, plugins, entryFile
 Cohesion: 0.22
 Nodes (9): seaweedfs, condition, storage-init, container_name, depends_on, entrypoint, image, networks (+1 more)
 
-### Community 345 - "docker-compose.prod.yml"
-Cohesion: 0.12
-Nodes (15): name, name, volumes, caddy_config, caddy_data, x-service-urls, DATABASE_URL, REDIS_URL (+7 more)
+### Community 345 - "volumes"
+Cohesion: 0.40
+Nodes (5): name, name, volumes, caddy_config, caddy_data
 
 ### Community 352 - "jest"
 Cohesion: 0.18
 Nodes (11): jest, collectCoverageFrom, coverageDirectory, maxWorkers, moduleFileExtensions, rootDir, testEnvironment, testRegex (+3 more)
 
-### Community 353 - "Chuẩn file cho người vẽ nội dung thư viện"
-Cohesion: 0.29
-Nodes (7): 1. Định dạng, 2. SVG an toàn, 3. Để đổi màu được trong studio, 5. Giấy phép và ghi nguồn, 6. Mục tiêu nội dung, 7. Kiểm trước khi nhập, Chuẩn file cho người vẽ nội dung thư viện
-
-### Community 354 - "ConfigService"
-Cohesion: 0.03
-Nodes (39): Gọi API từ frontend (Next.js), Luồng token, Xác thực bằng HttpOnly Cookie, Đăng nhập bằng Google — cách lấy Client ID, AdminAnalyticsController, XuReportQueryDto, vietnamMonthOf(), vietnamMonthRange() (+31 more)
+### Community 354 - "xu-report.service.ts"
+Cohesion: 0.10
+Nodes (7): AdminAnalyticsController, XuReportQueryDto, vietnamMonthOf(), vietnamMonthRange(), XuReport, XuReportService, 7. Nhật ký
 
 ### Community 357 - "frontend"
 Cohesion: 0.25
@@ -1374,41 +1333,37 @@ Nodes (8): command, container_name, image, networks, ports, restart, volumes, se
 Cohesion: 0.33
 Nodes (6): 3.22. Gói 22: Sổ Địa Chỉ & Vận Chuyển Đa Điểm (Address Book & Multi-Shipping), 3.23. Gói 23: Vòng Đời Đổi Trả, Hủy Đơn & Mua Lại (Order Cancellation, Refunds & Re-Order), 3.24. Gói 24: Bản Tin Newsletter, Form Liên Hệ & Khách Vãng Lai (Newsletter & Guest Contact), 3.25. Gói 25: Cộng Tác Thiết Kế & Phân Quyền Nhóm (Project Team Collaboration & Sharing), 3.26. Gói 26: Quản Trị Banner Slider, Trang Tĩnh & Cấu Hình Web (CMS Banners & Web Config), 3. CHI TIẾT 26 GÓI PHÂN HỆ CHUYÊN SÂU (DEEP DOMAIN CLASS DIAGRAMS)
 
-### Community 464 - "upgrade-formulas.ts"
-Cohesion: 0.46
-Nodes (6): fitCheckWith(), main(), needsUpgrade(), UpgradeCandidate, upgradeSnapshotName(), formulaUpgradeSnapshotName()
-
 ### Community 470 - "MonthPicker.tsx"
 Cohesion: 0.46
 Nodes (6): format(), MonthPicker(), MonthPickerProps, MONTHS, parse(), shift()
 
 ### Community 530 - "currentRequestId"
-Cohesion: 0.05
-Nodes (33): rxjs@^7.8.2, JwtAuthGuard, currentRequestId(), REQUEST_ID_HEADER, RequestContext, requestIdMiddleware(), storage, AllExceptionsFilter (+25 more)
+Cohesion: 0.09
+Nodes (15): rxjs@^7.8.2, currentRequestId(), REQUEST_ID_HEADER, RequestContext, requestIdMiddleware(), runWithRequestId(), storage, AllExceptionsFilter (+7 more)
 
 ### Community 569 - "💳 ĐẶC TẢ GÓI DỊCH VỤ, HẠN MỨC & BILLING (PRICING ENTITLEMENTS SPEC)"
-Cohesion: 0.05
-Nodes (44): 11. Frontend, 12. Lộ trình triển khai và kiểm thử, 13. Câu hỏi mở cho nhóm Kinh tế, 1. Nguyên tắc kỹ thuật, 2. Gói và ánh xạ enum hiện có, 3.2 File cấu hình, 3.3 Ghi đè theo tài khoản, 3.4 "Đã dùng" được đếm thế nào (+36 more)
+Cohesion: 0.04
+Nodes (47): 11. Frontend, 12. Lộ trình triển khai và kiểm thử, 13. Câu hỏi mở cho nhóm Kinh tế, 1. Nguyên tắc kỹ thuật, 3.2 File cấu hình, 3.3 Ghi đè theo tài khoản, 3.4 "Đã dùng" được đếm thế nào, 3. Bảng hạn mức (entitlements) (+39 more)
 
 ## Knowledge Gaps
-- **8 isolated node(s):** `RFC-9562`, `Development`, `Production`, `Test`, `RFC-2606` (+3 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3451 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **83 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8 isolated node(s):** `RFC-9562`, `RFC-9562`, `./tsconfig.json`, `./tsconfig.build.json`, `RFC-2606` (+3 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3582 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **99 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `@nestjs/common` connect `@nestjs/common` to `ConfigService`, `bank-transactions.service.ts`, `StorageService`, `CanvasElement`, `projects.service.ts`, `xu-wallet.service.ts`, `ai-image.service.ts`, `currentRequestId`, `be/package.json`, `export.processor.ts`, `notifications.service.ts`, `collections.service.ts`, `stock-photos.service.ts`, `9.1 Module mới`, `templates.service.ts`, `orders.service.ts`, `mail.processor.ts`, `prisma-project.repository.ts`, `payments.service.ts`, `print-renderers.ts`, `AiCostGuard`, `src/common/index.ts`, `CreateAiImageDto`, `print-shops.service.ts`, `DesignStats.tsx`, `ConfigService`, `BoxStructureType`?**
-  _High betweenness centrality (0.071) - this node is a cross-community bridge._
-- **What connects `RFC-9562`, `Development`, `Production` to the rest of the system?**
+- **Why does `@nestjs/common` connect `@nestjs/common` to `PrismaService`, `bank-transactions.service.ts`, `ReviewsService`, `xu-wallet.service.ts`, `ai-image.service.ts`, `currentRequestId`, `ProjectsService`, `be/package.json`, `export.processor.ts`, `notifications.service.ts`, `storage.service.ts`, `stock-photos.service.ts`, `users.service.ts`, `5. BẢNG TRA CỨU CÁC DESIGN PATTERNS ÁP DỤNG`, `ProjectsController`, `templates.service.ts`, `library.service.ts`, `mail.processor.ts`, `prisma-project.repository.ts`, `payments.service.ts`, `print-renderers.ts`, `ai-image.controller.ts`, `user-removal.ts`, `src/common/index.ts`, `DesignStats.tsx`, `xu-report.service.ts`, `projects.service.ts`, `CreateSnapshotDto`, `prisma-project.repository.ts`, `print-shops.service.ts`?**
+  _High betweenness centrality (0.063) - this node is a cross-community bridge._
+- **What connects `RFC-9562`, `RFC-9562`, `./tsconfig.json` to the rest of the system?**
   _8 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `text-layout.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.06112616681722373 - nodes in this community are weakly interconnected._
-- **Why does `react` connect `react` to `text-layout.ts`, `BlueprintIntro.tsx`, `Step5Model3DWithEnvironments.tsx`, `BoxPreview.tsx`, `StructureArt.tsx`, `cn`, `Step2DimensionAndMaterial.tsx`, `CanvasElement`, `LibraryPanel.tsx`, `workspace/index.ts`, `FitCheckDrawer.tsx`, `formatVnd`, `Button`, `ElementInspector.tsx`, `StitchRuntime`, `HistoryPanel.tsx`, `@tanstack/react-query`, `projects/index.tsx`, `brand-kit/index.tsx`, `templates/index.tsx`, `ImpositionCanvas2D.tsx`, `account/shared/index.ts`, `Step3PaperFinish.tsx`, `dependencies`, `next`, `dashboard/index.ts`, `svgRecolor.ts`, `PackagingSpecSheet.tsx`, `login/index.tsx`, `set-password/index.tsx`, `fe/package.json`, `NotificationBell.tsx`, `review/index.tsx`, `particles.ts`, `GoiMark.tsx`, `public-project/index.tsx`, `Step1BoxTemplatePicker.tsx`, `Step6ReviewExport.tsx`, `boxModel.ts`, `tour.tsx`, `UnboxingDialog.tsx`, `CollectionDialog.tsx`, `SafeUser`, `src/index.ts`, `ShareDialog.tsx`, `legal/index.tsx`, `MonthPicker.tsx`, `InteractiveFoldingBox3D.tsx`, `fonts/index.ts`, `DesignStats.tsx`, `ExportDialog.tsx`, `features/templates/index.ts`, `useProjects.ts`, `Toast/index.ts`, `CheckoutDialog.tsx`, `BoxStructureType`, `useToast`, `search.ts`, `Icon`, `StudioWorkspace.tsx`, `StitchRuntime.tsx`, `button.tsx`?**
-  _High betweenness centrality (0.071) - this node is a cross-community bridge._
+  _Cohesion score 0.04225932797361369 - nodes in this community are weakly interconnected._
+- **Why does `react` connect `next` to `text-layout.ts`, `react`, `BoxStage3D.tsx`, `Step5Model3DWithEnvironments.tsx`, `StructureArt.tsx`, `types/api/index.ts`, `cn`, `BoxStructureType`, `Step2DimensionAndMaterial.tsx`, `@tanstack/react-query`, `workspace/index.ts`, `CanvasElement`, `LibraryPanel.tsx`, `formatVnd`, `Button`, `FitCheckDrawer.tsx`, `ElementInspector.tsx`, `StitchRuntime`, `CheckoutDialog.tsx`, `data/index.ts`, `DesignStats.tsx`, `brand-kit/index.tsx`, `templates/index.tsx`, `account/shared/index.ts`, `Step6ReviewExport.tsx`, `placement.ts`, `PackagingSpecSheet.tsx`, `features/auth/index.ts`, `login/index.tsx`, `fe/package.json`, `NotificationBell.tsx`, `request`, `GoiMark.tsx`, `public-project/index.tsx`, `cart/index.tsx`, `UnboxingDialog.tsx`, `dashboard/index.ts`, `SafeUser`, `legal/index.tsx`, `MonthPicker.tsx`, `InteractiveFoldingBox3D.tsx`, `validator.ts`, `AppProviders.tsx`, `ExportDialog.tsx`, `features/templates/index.ts`, `tour.tsx`, `search.ts`, `ProjectCard.tsx`, `dialog.tsx`, `StudioWorkspace.tsx`, `StitchRuntime.tsx`, `AvatarCropDialog.tsx`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
 - **Should `react` be split into smaller, more focused modules?**
-  _Cohesion score 0.020934929313826903 - nodes in this community are weakly interconnected._
-- **Why does `cn()` connect `cn` to `Step5Model3DWithEnvironments.tsx`, `react`, `Step2DimensionAndMaterial.tsx`, `LibraryPanel.tsx`, `CanvasElement`, `workspace/index.ts`, `formatVnd`, `Button`, `ElementInspector.tsx`, `HistoryPanel.tsx`, `@tanstack/react-query`, `projects/index.tsx`, `brand-kit/index.tsx`, `templates/index.tsx`, `ImpositionCanvas2D.tsx`, `account/shared/index.ts`, `Step3PaperFinish.tsx`, `next`, `dashboard/index.ts`, `login/index.tsx`, `set-password/index.tsx`, `NotificationBell.tsx`, `review/index.tsx`, `Artwork`, `public-project/index.tsx`, `Step1BoxTemplatePicker.tsx`, `Step6ReviewExport.tsx`, `tour.tsx`, `SafeUser`, `legal/index.tsx`, `MonthPicker.tsx`, `InteractiveFoldingBox3D.tsx`, `ExportDialog.tsx`, `CheckoutDialog.tsx`, `useToast`, `Icon`, `StudioWorkspace.tsx`, `button.tsx`?**
-  _High betweenness centrality (0.042) - this node is a cross-community bridge._
-- **Should `ConfigService` be split into smaller, more focused modules?**
-  _Cohesion score 0.02225746761829236 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.02269404803341455 - nodes in this community are weakly interconnected._
+- **Why does `BoxDimensions` connect `src/index.ts` to `Step5Model3DWithEnvironments.tsx`, `BoxStage3D.tsx`, `types/api/index.ts`, `Step2DimensionAndMaterial.tsx`, `BoxStructureType`, `CanvasElement`, `LibraryPanel.tsx`, `ProjectsService`, `export.processor.ts`, `templates/index.tsx`, `Step6ReviewExport.tsx`, `placement.ts`, `next`, `PackagingSpecSheet.tsx`, `matching.ts`, `project-spec.dto.ts`, `prisma-project.repository.ts`, `boxModel.ts`, `print-renderers.ts`, `UnboxingDialog.tsx`, `dashboard/index.ts`, `contracts.ts`, `ISearchFilterEngine`, `src/common/index.ts`, `InteractiveFoldingBox3D.tsx`, `validator.ts`, `ExportDialog.tsx`, `features/templates/index.ts`, `tour.tsx`, `projects.service.ts`, `prisma-project.repository.ts`, `CreateSnapshotDto`, `print-shops.service.ts`, `StudioWorkspace.tsx`, `StageApi`?**
+  _High betweenness centrality (0.043) - this node is a cross-community bridge._
+- **Should `PrismaService` be split into smaller, more focused modules?**
+  _Cohesion score 0.03329065300896287 - nodes in this community are weakly interconnected._
