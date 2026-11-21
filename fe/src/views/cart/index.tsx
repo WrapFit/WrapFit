@@ -6,7 +6,6 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { listProjects } from "@/api/projects";
 import { createSampleBundle } from "@/api/orders";
-import { listPrintShops } from "@/api/print-shops";
 import { Container } from "@/components/landing";
 import { Card, PRIMARY_CTA, SECONDARY_CTA, SitePage } from "@/components/site";
 import { Badge, Button, buttonClass } from "@/components/ui";
@@ -14,18 +13,20 @@ import { RequireAuth } from "@/features/auth";
 import { CheckoutDialog } from "@/features/payments";
 import { formatVnd } from "@/features/pricing";
 import { MAX_QUANTITY, PAPER_STOCKS, sampleFee, useSampleCart } from "@/features/site/cart";
+import { ProvinceSelect, ShopPicker, deliveryDateLabel, useShopMatch } from "@/features/print-shops/ShopPicker";
 import { BoxPreview } from "@/features/templates/components/BoxPreview";
 import { queryKeys } from "@/hooks/data";
-import { errorMessage } from "@/services/api";
-import type { ProjectSummary, SampleOrder } from "@/types/api";
+import { errorMessage, isApiError } from "@/services/api";
+import type { PrintShopOffer, ProjectSummary, SampleOrder } from "@/types/api";
 import { cn } from "@/utils/helpers";
 
 const PROJECTS_QUERY = { status: "ACTIVE" as const, sortBy: "updatedAt" as const, order: "desc" as const, limit: 50 };
 const PAPER_OF: Record<string, string> = { ivory: PAPER_STOCKS[0], kraft: PAPER_STOCKS[1], duplex: PAPER_STOCKS[2] };
 
 /**
- * `/cart`: the sample-print cart. Projects come from `GET /projects`, the partner shops from `GET /print-shops`, and
- * "Đặt in mẫu" places one `POST /orders/sample` per project, priced like the API (49.000đ + 25.000đ per extra box).
+ * `/cart`: the sample-print cart. Projects come from `GET /projects`; the shops that can print them, ranked for the
+ * province of the recipient, from `POST /orders/sample/match` (docs/19 G.3). "Đặt in mẫu" places ONE
+ * `POST /orders/sample/bundle` with the chosen shop, priced like the API (49.000đ + 25.000đ per extra box).
  */
 export default function CartPage() {
   return (
@@ -41,11 +42,14 @@ function CartScreen() {
   const cart = useSampleCart();
   const queryClient = useQueryClient();
   const projects = useQuery({ queryKey: queryKeys.projects.list(PROJECTS_QUERY), queryFn: () => listProjects(PROJECTS_QUERY) });
-  const shops = useQuery({ queryKey: queryKeys.printShops.all, queryFn: listPrintShops, staleTime: 10 * 60_000 });
+  /** Chosen shop; "" = the recommended one (named on screen before payment, docs/19 BR-G12). */
   const [shopId, setShopId] = useState<string>("");
+  const [province, setProvince] = useState<string>("");
   const [form, setForm] = useState({ recipientName: "", phone: "", shippingAddress: "", notes: "" });
   const [formError, setFormError] = useState<string | null>(null);
   const [placed, setPlaced] = useState<SampleOrder[] | null>(null);
+  /** The shop offer the order went to, for the delivery date on the confirmation. */
+  const [placedShop, setPlacedShop] = useState<PrintShopOffer | null>(null);
   /** Order whose VietQR checkout is open. */
   const [paying, setPaying] = useState<SampleOrder | null>(null);
 
@@ -65,14 +69,24 @@ function CartScreen() {
   const known = lines.filter((line) => line.project);
   const subtotal = known.reduce((sum, { item }) => sum + sampleFee(item.quantity), 0);
   const suggestions = (projects.data?.items ?? []).filter((project) => !cart.items.some((item) => item.projectId === project.id)).slice(0, 3);
-  const activeShops = (shops.data ?? []).filter((shop) => (shop.status ?? shop.state ?? "active") === "active");
+  const match = useShopMatch(
+    known.map(({ item }) => ({ projectId: item.projectId, quantity: item.quantity })),
+    province
+  );
+  const chosenId = shopId || match.data?.recommendedId || "";
+  const chosen = match.data?.offers.find((offer) => offer.shop.id === chosenId) ?? null;
+  // The ranking moved (province, designs): a choice that is no longer offered falls back to the recommended shop.
+  useEffect(() => {
+    if (shopId && match.data && !match.data.offers.some((offer) => offer.shop.id === shopId)) setShopId("");
+  }, [shopId, match.data]);
 
   const order = useMutation({
     // Every design of the cart goes into ONE order: one bill, one payment.
     mutationFn: async () => {
       const bill = await createSampleBundle({
         items: known.map(({ item }) => ({ projectId: item.projectId, quantity: item.quantity, paperStock: item.paperStock })),
-        printShopId: shopId || undefined,
+        printShopId: chosenId,
+        recipientProvince: province,
         recipientName: form.recipientName.trim(),
         phone: form.phone.trim(),
         shippingAddress: form.shippingAddress.trim(),
@@ -82,17 +96,29 @@ function CartScreen() {
     },
     onSuccess: (orders) => {
       setPlaced(orders);
+      setPlacedShop(chosen);
       // One order (the usual sample): its VietQR checkout opens right away.
       if (orders.length === 1 && orders[0].status === "pending_payment") setPaying(orders[0]);
       cart.clear();
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
+    onError: (error) => {
+      // The shop stopped taking this order between the cart and now (docs/19 EF-G1): rank again.
+      if (isApiError(error, "PRINT_SHOP_UNAVAILABLE")) {
+        setShopId("");
+        void match.refetch();
+      }
+    },
   });
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.recipientName.trim() || !form.phone.trim() || !form.shippingAddress.trim()) {
-      setFormError("Hãy nhập tên người nhận, số điện thoại và địa chỉ giao hàng.");
+    if (!form.recipientName.trim() || !form.phone.trim() || !form.shippingAddress.trim() || !province) {
+      setFormError("Hãy nhập tên người nhận, số điện thoại, tỉnh / thành và địa chỉ giao hàng.");
+      return;
+    }
+    if (!chosen) {
+      setFormError("Chưa có xưởng nào nhận được đơn này.");
       return;
     }
     if (!/^(\+?84|0)\d{8,10}$/.test(form.phone.replace(/[\s.]/g, ""))) {
@@ -124,7 +150,7 @@ function CartScreen() {
               <p className="mt-1 text-sm text-landing-muted">
                 {unpaid.length
                   ? "Thanh toán để xưởng bắt đầu in. Đơn chưa trả vẫn nằm trong Đơn hàng & file in."
-                  : "Xưởng in sẽ gọi xác nhận trước khi in. Theo dõi trạng thái trong Đơn hàng & file in."}
+                  : "Xưởng đã nhận được đơn và sẽ bắt đầu in. Theo dõi trạng thái trong Đơn hàng & file in."}
               </p>
             </div>
           </header>
@@ -183,9 +209,13 @@ function CartScreen() {
             </h2>
             <ol className="mt-3 grid gap-3 sm:grid-cols-3">
               {[
-                { icon: Factory, title: "Xưởng xác nhận", text: "Gọi lại trong giờ làm việc" },
-                { icon: PackagePlus, title: "In mẫu", text: "1–3 ngày làm việc" },
-                { icon: Truck, title: "Giao hàng", text: "Tới địa chỉ bạn đã nhập" },
+                { icon: Factory, title: "Xưởng nhận đơn", text: placedShop ? placedShop.shop.name : "Sau khi bạn thanh toán" },
+                { icon: PackagePlus, title: "In mẫu", text: placedShop ? `${placedShop.productionDays} ngày làm việc` : "Theo lịch của xưởng" },
+                {
+                  icon: Truck,
+                  title: "Giao hàng",
+                  text: placedShop ? `Dự kiến ${deliveryDateLabel(placedShop.estimatedDelivery)}` : "Tới địa chỉ bạn đã nhập",
+                },
               ].map(({ icon: Icon, title, text }, index) => (
                 <li key={title} className="flex gap-3">
                   <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-landing-canvas text-landing-muted">
@@ -319,16 +349,11 @@ function CartScreen() {
             <h2 className="flex items-center gap-2 font-landing-heading text-lg font-bold">
               <Factory className="size-5" aria-hidden /> Xưởng in
             </h2>
-            <select value={shopId} onChange={(event) => setShopId(event.target.value)} className="h-11 rounded-xl bg-landing-canvas px-3 text-sm ring-1 ring-landing-line">
-              <option value="">Để WrapFit chọn xưởng phù hợp</option>
-              {activeShops.map((shop) => (
-                <option key={shop.id} value={shop.id}>
-                  {shop.name} · {shop.city}
-                  {shop.leadTime ? ` · ${shop.leadTime}` : ""}
-                </option>
-              ))}
-            </select>
-            {shops.isError && <p className="text-xs text-landing-muted">Chưa tải được danh sách xưởng; WrapFit sẽ chọn xưởng gần bạn.</p>}
+            <label htmlFor="cart-province" className="text-sm font-medium">
+              Giao tới tỉnh / thành
+              <ProvinceSelect id="cart-province" value={province} onChange={setProvince} />
+            </label>
+            <ShopPicker match={match} value={shopId} onChange={setShopId} />
 
             <h2 className="mt-2 flex items-center gap-2 font-landing-heading text-lg font-bold">
               <Truck className="size-5" aria-hidden /> Nhận hàng
@@ -337,7 +362,7 @@ function CartScreen() {
               [
                 ["recipientName", "Người nhận", "name", "Nguyễn Mai Anh"],
                 ["phone", "Số điện thoại", "tel", "0901 234 567"],
-                ["shippingAddress", "Địa chỉ", "street-address", "Số nhà, đường, phường, quận, tỉnh"],
+                ["shippingAddress", "Địa chỉ", "street-address", "Số nhà, đường, phường / xã"],
               ] as const
             ).map(([key, label, autoComplete, placeholder]) => (
               <label key={key} className="text-sm font-medium">
@@ -355,9 +380,14 @@ function CartScreen() {
                 {formError ?? errorMessage(order.error)}
               </p>
             )}
-            <button type="submit" disabled={!known.length || order.isPending} className={cn(PRIMARY_CTA, "h-12 w-full disabled:opacity-50")}>
+            <button type="submit" disabled={!known.length || !chosen || order.isPending} className={cn(PRIMARY_CTA, "h-12 w-full disabled:opacity-50")}>
               {order.isPending ? "Đang gửi đơn…" : `Đặt in mẫu · ${formatVnd(subtotal)}`}
             </button>
+            {chosen && (
+              <p className="text-xs text-landing-muted">
+                In tại <strong className="font-semibold text-landing-ink">{chosen.shop.name}</strong>, nhận dự kiến {deliveryDateLabel(chosen.estimatedDelivery)}.
+              </p>
+            )}
             <div className="flex flex-col gap-1.5 text-xs text-landing-muted">
               <p className="flex items-center gap-1.5">
                 <CreditCard className="size-3.5" aria-hidden /> COD hoặc chuyển khoản VietQR khi xác nhận đơn

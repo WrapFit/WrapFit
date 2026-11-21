@@ -5,6 +5,7 @@ import { ACCESS_COOKIE, AuthUser, CurrentUser, Roles } from '../common';
 import { CreateSampleBundleDto } from './dto/create-sample-bundle.dto';
 import { CreateSampleOrderDto } from './dto/create-sample-order.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
+import { MatchSampleShopsDto } from './dto/match-sample-shops.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
 
@@ -18,6 +19,14 @@ export class OrdersController {
   @ApiOperation({ summary: 'Đặt in mẫu thử (Sample Box 1–10 chiếc) chuyển tới xưởng đối tác; đơn mới chờ thanh toán' })
   createSample(@CurrentUser('id') userId: string, @Body() dto: CreateSampleOrderDto) {
     return this.service.createSampleOrder(userId, dto);
+  }
+
+  @Post('sample/match')
+  @ApiOperation({
+    summary: 'Xưởng in được các thiết kế này, xếp hạng theo giá, ngày nhận, chất lượng, khoảng cách (docs/19 G.3); kèm xưởng bị loại và lý do',
+  })
+  matchSample(@CurrentUser('id') userId: string, @Body() dto: MatchSampleShopsDto) {
+    return this.service.matchSampleShops(userId, dto);
   }
 
   @Post('sample/bundle')

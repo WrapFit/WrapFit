@@ -53,7 +53,9 @@ export type ApiErrorCode =
   | "STOCK_PHOTO_TOO_LARGE"
   | "STOCK_RATE_LIMITED"
   | "STOCK_PROVIDER_ERROR"
-  | "STOCK_UNAVAILABLE";
+  | "STOCK_UNAVAILABLE"
+  | "NO_PRINT_SHOP"
+  | "PRINT_SHOP_UNAVAILABLE";
 
 /** Body of every failed request (`be/src/common/filters/all-exceptions.filter.ts`). */
 export interface ApiErrorBody {
@@ -813,20 +815,100 @@ export interface XuWallet {
 
 // ---------------------------------------------------------------- print-shops & orders
 
+export type PrintShopStatus = 'active' | 'review' | 'paused' | 'suspended';
+
+/** A partner shop as customers see it (`GET /print-shops`): no phone or email (docs/19 G.4). */
 export interface PrintShop {
   id: string;
   name: string;
   city: string;
+  provinceCode?: string;
   address: string;
-  phone: string;
+  /** Only in the admin list and the offline demo data. */
+  phone?: string;
   sheet?: string;
   sheetSize?: string;
+  maxSheetMm?: { width: number; height: number };
   services: string[];
+  methods?: string[];
+  papers?: string[];
+  finishes?: string[];
+  windowPatching?: boolean;
   leadTime?: string;
   leadTimeDays?: number;
+  sampleLeadTimeDays?: number;
   minQuantity?: number;
-  state?: 'active' | 'review' | 'paused';
-  status?: 'active' | 'review' | 'paused';
+  maxQuantity?: number;
+  state?: PrintShopStatus;
+  status?: PrintShopStatus;
+  pausedUntil?: string | null;
+  rating?: number;
+  completedOrders?: number;
+}
+
+/** A shop with everything an admin manages (`GET /admin/print-shops`). */
+export interface AdminPrintShop extends PrintShop {
+  provinceCode: string;
+  legalName: string | null;
+  taxCode: string | null;
+  latitude: number;
+  longitude: number;
+  dailyCapacity: number;
+  serviceProvinces: string[];
+  probationUntil: string | null;
+  contactEmail: string;
+  phone: string;
+  zalo: string | null;
+  /** Platform fee of the contract, basis points (1500 = 15 %). */
+  platformFeeBps: number;
+  /** Paid orders not yet shipped. */
+  activeOrders: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** `PATCH /admin/print-shops/:id`. */
+export type UpdatePrintShopRequest = Partial<{
+  status: 'ACTIVE' | 'REVIEW' | 'PAUSED' | 'SUSPENDED';
+  pausedUntil: string | null;
+  probationUntil: string | null;
+  platformFeeBps: number;
+  dailyCapacity: number;
+  serviceProvinces: string[];
+  minQuantity: number;
+  maxQuantity: number;
+  leadTimeDays: number;
+  sampleLeadTimeDays: number;
+}>;
+
+/** Why a shop was recommended (`@wrapfit/shared` MatchReason). */
+export type PrintShopMatchReason = 'recommended' | 'cheapest' | 'fastest' | 'nearest' | 'top_rated' | 'returning';
+/** Why a shop cannot take the order (`@wrapfit/shared` ExclusionReason). */
+export type PrintShopExclusionReason = 'not_active' | 'paused' | 'no_delivery' | 'quantity' | 'sheet_size' | 'probation_full';
+
+export interface PrintShopOffer {
+  shop: PrintShop;
+  priceVnd: number;
+  productionDays: number;
+  shippingDays: number;
+  /** YYYY-MM-DD, Vietnam time. */
+  estimatedDelivery: string;
+  distanceKm: number | null;
+  score: number;
+  reasons: PrintShopMatchReason[];
+}
+
+/** `POST /orders/sample/match`: shops ranked for the cart (docs/19 G.3). */
+export interface PrintShopMatch {
+  provinceCode: string | null;
+  recommendedId: string | null;
+  offers: PrintShopOffer[];
+  excluded: { shop: PrintShop; reasons: PrintShopExclusionReason[] }[];
+}
+
+export interface MatchSampleShopsRequest {
+  provinceCode?: string;
+  items: { projectId: string; quantity?: number }[];
 }
 
 /** Lifecycle of a sample print order (`be/src/orders/order-status.ts`). */
@@ -849,7 +931,9 @@ export interface SampleOrder {
     id: string;
     name: string;
     city: string;
+    /** Empty until the shop has taken the order (docs/19 G.4). */
     contactPhone?: string;
+    zalo?: string | null;
   };
   quantity: number;
   paperStock?: string;
@@ -857,6 +941,8 @@ export interface SampleOrder {
   phone?: string;
   recipientPhone?: string;
   shippingAddress: string;
+  /** Province code (@wrapfit/shared PROVINCES); null on orders placed before structured addresses. */
+  recipientProvince?: string | null;
   notes?: string | null;
   subtotalVnd?: number;
   shippingVnd?: number;
@@ -877,6 +963,10 @@ export interface SampleOrder {
   cancelledAt?: string | null;
   createdAt: string;
   updatedAt?: string;
+  /** Staff only (ADMIN, the order's shop): WrapFit's platform fee and the shop's share, fixed when ordered. */
+  platformFeeBps?: number;
+  platformFeeVnd?: number;
+  shopPayableVnd?: number;
 }
 
 /** Filters of `GET /orders` (ADMIN, PRINT_SHOP). */
@@ -893,6 +983,8 @@ export interface CreateSampleOrderRequest {
   phone?: string;
   recipientPhone?: string;
   shippingAddress: string;
+  /** Province code (@wrapfit/shared PROVINCES): picks the nearest shop and dates the delivery. */
+  recipientProvince?: string;
   notes?: string;
   quantity?: number;
   paperStock?: string;

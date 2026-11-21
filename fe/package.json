@@ -2,6 +2,9 @@
   "name": "@wrapfit/frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24"
+  },
   "description": "WrapFit Frontend — 2D Canvas Editor, 3D Folding Simulation & Landing Page",
   "scripts": {
     "dev": "next dev -p 3000",
@@ -47,7 +50,7 @@
     "@babel/parser": "^7.29.9",
     "@babel/traverse": "^7.29.8",
     "@tailwindcss/forms": "^0.5.10",
-    "@types/node": "^20.19.43",
+    "@types/node": "^24.19.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

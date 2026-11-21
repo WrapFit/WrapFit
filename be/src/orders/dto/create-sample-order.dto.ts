@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { PROVINCE_CODES } from '@wrapfit/shared';
 
 /**
  * There is no voucher field: vouchers were removed (docs-old/25 item 1). A body that still sends `promoCode` gets 400 from
@@ -37,6 +38,14 @@ export class CreateSampleOrderDto {
   @IsNotEmpty()
   shippingAddress!: string;
 
+  @ApiPropertyOptional({
+    enum: PROVINCE_CODES,
+    description: 'Tỉnh / thành nhận hàng (GET /print-shops/provinces): dùng để chọn xưởng gần và ước tính ngày nhận',
+  })
+  @IsOptional()
+  @IsIn(PROVINCE_CODES as string[])
+  recipientProvince?: string;
+
   @ApiPropertyOptional({ description: 'Chất liệu giấy yêu cầu (Ivory 300g, Kraft 350g, Duplex...)' })
   @IsOptional()
   @IsString()
@@ -47,7 +56,7 @@ export class CreateSampleOrderDto {
   @IsString()
   notes?: string;
 
-  @ApiPropertyOptional({ description: 'ID xưởng in đối tác được chọn' })
+  @ApiPropertyOptional({ description: 'ID xưởng in đối tác được chọn; bỏ trống thì WrapFit chọn xưởng được đề xuất (POST /orders/sample/match)' })
   @IsOptional()
   @IsString()
   printShopId?: string;

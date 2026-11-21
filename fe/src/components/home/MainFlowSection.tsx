@@ -1,54 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Maximize2 } from "lucide-react";
+import { Play } from "lucide-react";
 import { Container, Reveal } from "@/components/landing";
-import { StructureArt } from "./StructureArt";
 import { tactileAudio } from "@/services/audio/tactileAudio";
 import { FLOW_STEPS, FlowStepModal } from "./FlowStepModal";
 
-/** Papers of step 3, as a fanned stack of swatches. */
-const PAPERS = [
-  { name: "Ivory", fill: "#FBF7EE" },
-  { name: "Duplex", fill: "#F1F1EC" },
-  { name: "Carton bồi", fill: "#E9E2D3" },
-  { name: "Kraft", fill: "#C9A273" },
-];
-
-/**
- * Illustration of each step on the card; the screenshot of the studio opens with the card. Same family as the rest of
- * the home page: WrapFit's box drawings, Gói, flat paper tones.
- */
-function StepArt({ index, label }: { index: number; label: string }) {
-  const img = (src: string) => <img src={src} alt="" aria-hidden loading="lazy" className="max-h-full w-auto object-contain" />;
-  switch (index) {
-    case 0:
-      return <StructureArt structure="tuck-top" className="h-full w-auto" />;
-    case 1:
-      return img("/branding/flow-art-1.png");
-    case 2:
-      return (
-        <svg viewBox="0 0 200 140" className="h-full w-auto" role="img" aria-label={label}>
-          <ellipse cx="100" cy="122" rx="70" ry="8" fill="#000" opacity="0.06" />
-          {PAPERS.map((paper, i) => (
-            <g key={paper.name} transform={`rotate(${(i - 1.5) * 9} 100 120)`}>
-              <rect x="62" y="22" width="76" height="96" rx="6" fill={paper.fill} stroke="#A98A5B" strokeOpacity="0.45" />
-              <path d="M124 118 L138 104 L138 118 Z" fill="#000" opacity="0.06" />
-            </g>
-          ))}
-          <rect x="62" y="22" width="76" height="12" rx="6" transform="rotate(13.5 100 120)" className="fill-fpt-orange" opacity="0.9" />
-        </svg>
-      );
-    case 3:
-      return img("/branding/flow-art-2.png");
-    case 4:
-      return img("/mascots/goi-cheer.webp");
-    default:
-      return img("/branding/flow-art-4.png");
-  }
-}
-
-/** "Quy trình hoạt động": the six steps of the studio; each card opens a screenshot of its step. */
+/** "Quy trình hoạt động": the six steps of the studio; each card shows a still of its step and plays the clip of the studio demo when clicked. */
 export function MainFlowSection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStepIndex, setSelectedStepIndex] = useState(0);
@@ -85,15 +43,20 @@ export function MainFlowSection() {
                 <button
                   type="button"
                   onClick={() => open(index)}
-                  title={`Xem giao diện bước ${step.number}: ${step.name}`}
+                  title={`Xem video bước ${step.number}: ${step.name}`}
                   className="group flex h-full w-full flex-col overflow-hidden rounded-sheet border border-line/70 bg-white text-left outline-none transition-colors duration-300 hover:border-fpt-orange/60 focus-visible:ring-2 focus-visible:ring-fpt-orange"
                 >
-                  <div className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden border-b border-line/60 bg-white">
-                    <div className="flex h-[78%] w-full items-center justify-center transition-transform duration-500 group-hover:scale-105">
-                      <StepArt index={index} label={step.name} />
-                    </div>
-                    <span className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full border border-line/80 bg-white/90 text-fg-muted opacity-0 shadow-2xs transition-opacity group-hover:opacity-100 group-hover:text-fpt-orange">
-                      <Maximize2 className="size-3.5" aria-hidden />
+                  <div className="relative aspect-video w-full overflow-hidden border-b border-line/60 bg-white">
+                    <img
+                      src={`${step.clip}.webp`}
+                      alt={step.imageAlt}
+                      loading="lazy"
+                      className="size-full select-none object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="flex size-12 items-center justify-center rounded-full bg-white/90 text-fpt-orange shadow-soft-8 transition-transform duration-300 group-hover:scale-110 group-hover:bg-fpt-orange group-hover:text-white">
+                        <Play className="ml-0.5 size-5 fill-current" aria-hidden />
+                      </span>
                     </span>
                   </div>
                   <div className="flex items-center gap-3 px-5 py-4 sm:px-6">

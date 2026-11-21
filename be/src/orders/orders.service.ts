@@ -7,15 +7,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus, Prisma, ProjectStatus, Role } from '@prisma/client';
+import { OrderStatus, Prisma, PrintShopStatus, ProjectStatus, Role } from '@prisma/client';
+import { platformFeeSplit, type BoxDimensions } from '@wrapfit/shared';
 import { randomInt } from 'crypto';
 import { AuthUser } from '../common';
 import { PrismaService } from '../shared/prisma';
-import { PrintShopsService } from '../print-shops';
+import { PrintShopsService, type MatchLine, type PrintShopMatchResponse } from '../print-shops';
 import { CreateSampleBundleDto } from './dto/create-sample-bundle.dto';
 import { CreateSampleOrderDto } from './dto/create-sample-order.dto';
 import { ListOrdersQueryDto } from './dto/list-orders-query.dto';
+import { MatchSampleShopsDto } from './dto/match-sample-shops.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { postOrderDelivered, postOrderPaid } from './ledger';
 import { STATUS_TIMESTAMP, canTransition, roleMaySet } from './order-status';
 
 /** Sample print fee: 49.000đ for the first box of a design, 25.000đ for each extra box. */
@@ -40,7 +43,18 @@ const orderNotPayable = (status: OrderStatus | undefined) =>
     HttpStatus.CONFLICT,
   );
 
-const ORDER_INCLUDE = { items: { orderBy: { id: 'asc' } } } satisfies Prisma.OrderInclude;
+/** 400 when no partner shop can print the order (docs/19 AF-G1); the body lists why each shop was left out. */
+export const NO_PRINT_SHOP = 'NO_PRINT_SHOP';
+/** 400 when the shop the customer chose can no longer take the order (docs/19 BR-G16, EF-G1). */
+export const PRINT_SHOP_UNAVAILABLE = 'PRINT_SHOP_UNAVAILABLE';
+
+/** Statuses from which the customer sees the shop's phone: the shop has taken the order (docs/19 G.4). */
+const CONTACT_VISIBLE: readonly OrderStatus[] = [OrderStatus.IN_PRODUCTION, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+
+const ORDER_INCLUDE = {
+  items: { orderBy: { id: 'asc' } },
+  printShop: { select: { name: true, city: true, phone: true, zalo: true, leadTimeLabel: true } },
+} satisfies Prisma.OrderInclude;
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>;
 
 /**
@@ -65,6 +79,7 @@ export interface SampleOrderResponse {
   phone: string;
   recipientPhone: string;
   shippingAddress: string;
+  recipientProvince: string | null;
   notes: string | null;
   status: Lowercase<OrderStatus>;
   orderStatus: OrderStatus;
@@ -80,7 +95,8 @@ export interface SampleOrderResponse {
   totalVnd: number;
   printShopId: string;
   printShopName: string;
-  partnerShop: { id: string; name: string; city: string; contactPhone: string };
+  /** `contactPhone` / `zalo` are empty until the shop has taken the order (docs/19 G.4). */
+  partnerShop: { id: string; name: string; city: string; contactPhone: string; zalo: string | null };
   estimatedDeliveryDays: string;
   paymentId: string | null;
   paidAt: string | null;
@@ -89,6 +105,10 @@ export interface SampleOrderResponse {
   cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Staff only (ADMIN, the order's shop): WrapFit's platform fee and the shop's share, as fixed when ordered. */
+  platformFeeBps?: number;
+  platformFeeVnd?: number;
+  shopPayableVnd?: number;
 }
 
 @Injectable()
@@ -104,6 +124,19 @@ export class OrdersService {
   }
 
   /**
+   * Shops that can print these designs, ranked for the customer (docs/19 G.3): the cart shows them before payment, and
+   * an order placed without a shop goes to the first one.
+   */
+  async matchSampleShops(userId: string, dto: MatchSampleShopsDto): Promise<PrintShopMatchResponse> {
+    const projects = await this.ownedProjects(userId, dto.items.map((item) => item.projectId));
+    return this.printShops.match(this.matchLines(projects, dto.items), {
+      kind: 'sample',
+      provinceCode: dto.provinceCode ?? null,
+      returningShopIds: await this.returningShops(userId),
+    });
+  }
+
+  /**
    * Several designs in one order: one bill, one payment. Each design is a line; the fee covers the bill. There is no
    * voucher: every order is created PENDING_PAYMENT with a total of at least one first-box fee, and only a confirmed
    * payment (PaymentsService.confirmPaid) or an admin by hand moves it to PAID.
@@ -114,44 +147,61 @@ export class OrdersService {
       throw new BadRequestException('Vui lòng cung cấp số điện thoại người nhận');
     }
 
-    // Only the owner can order prints of a design, and not from the trash.
-    const projects = await this.prisma.packagingProject.findMany({
-      where: { id: { in: dto.items.map((item) => item.projectId) }, userId, status: { not: ProjectStatus.DELETED } },
-      select: { id: true, title: true, templateId: true, dimensions: true, version: true },
-    });
+    const projects = await this.ownedProjects(userId, dto.items.map((item) => item.projectId));
     const lines = dto.items.map((item) => {
-      const project = projects.find((p) => p.id === item.projectId);
-      if (!project) {
-        throw new NotFoundException('Dự án hộp không tồn tại');
-      }
+      const project = projects.find((p) => p.id === item.projectId)!;
       const quantity = item.quantity ?? 1;
       return { project, quantity, paperStock: item.paperStock, fee: sampleFeeVnd(quantity) };
     });
 
-    let partner = this.printShops.getDefaultPartner();
-    if (dto.printShopId) {
-      const chosen = this.printShops.get(dto.printShopId);
-      if (!chosen || chosen.status !== 'active') {
-        throw new BadRequestException('Xưởng in này chưa nhận đơn');
-      }
-      partner = chosen;
+    // The shop is checked again now, not only when the cart showed it (docs/19 BR-G16).
+    const match = await this.printShops.match(this.matchLines(projects, dto.items), {
+      kind: 'sample',
+      provinceCode: dto.recipientProvince ?? null,
+      returningShopIds: await this.returningShops(userId),
+    });
+    const shopId = dto.printShopId ?? match.recommendedId;
+    if (!shopId) {
+      throw new BadRequestException({
+          code: NO_PRINT_SHOP,
+          message: 'Chưa có xưởng đối tác nào in được đơn này',
+          excluded: match.excluded.map(({ shop, reasons }) => ({ id: shop.id, name: shop.name, reasons })),
+      });
+    }
+    if (!match.offers.some((offer) => offer.shop.id === shopId)) {
+      const left = match.excluded.find(({ shop }) => shop.id === shopId);
+      throw new BadRequestException({
+          code: PRINT_SHOP_UNAVAILABLE,
+          message: 'Xưởng in này chưa nhận đơn',
+          reasons: left?.reasons ?? ['not_active'],
+          recommendedId: match.recommendedId,
+      });
+    }
+    const partner = await this.printShops.findRow(shopId);
+    if (!partner || partner.status !== PrintShopStatus.ACTIVE) {
+      throw new BadRequestException('Xưởng in này chưa nhận đơn');
     }
 
     // Every line has at least one box, so the total is never 0.
     const subtotal = lines.reduce((sum, line) => sum + line.fee, 0);
+    const fee = platformFeeSplit({ subtotalVnd: subtotal, totalVnd: subtotal }, partner.platformFeeBps);
     const data = (orderCode: string): Prisma.OrderCreateInput => ({
       orderCode,
       user: { connect: { id: userId } },
-      printShopId: partner.id,
+      printShop: { connect: { id: partner.id } },
       recipientName: dto.recipientName.trim(),
       recipientPhone: phone,
       shippingAddress: dto.shippingAddress.trim(),
+      recipientProvince: dto.recipientProvince ?? null,
       notes: dto.notes?.trim() || null,
       subtotalVnd: subtotal,
       shippingVnd: 0,
       totalVnd: subtotal,
+      platformFeeBps: fee.platformFeeBps,
+      platformFeeVnd: fee.platformFeeVnd,
+      shopPayableVnd: fee.shopPayableVnd,
       items: {
-        create: lines.map(({ project, quantity, paperStock, fee }) => ({
+        create: lines.map(({ project, quantity, paperStock, fee: lineFee }) => ({
           project: { connect: { id: project.id } },
           projectVersion: project.version,
           projectTitle: project.title,
@@ -160,7 +210,7 @@ export class OrdersService {
           paperStock: paperStock?.trim() || DEFAULT_PAPER_STOCK,
           quantity,
           unitPriceVnd: SAMPLE_FIRST_BOX_VND,
-          lineTotalVnd: fee,
+          lineTotalVnd: lineFee,
         })),
       },
       history: { create: { toStatus: OrderStatus.PENDING_PAYMENT, changedById: userId } },
@@ -207,7 +257,7 @@ export class OrdersService {
       take: query.limit,
       include: ORDER_INCLUDE,
     });
-    return orders.map((order) => this.toResponse(order));
+    return orders.map((order) => this.toResponse(order, { staff: true }));
   }
 
   /**
@@ -223,7 +273,9 @@ export class OrdersService {
     if (!roleMaySet(actor.role, dto.status)) {
       throw new ForbiddenException('Tài khoản xưởng in chỉ cập nhật các bước in, giao và đã giao');
     }
-    return this.transition(id, order.status, dto.status, actor.id, dto.note);
+    return this.prisma.$transaction((tx) =>
+      this.transitionIn(tx, id, order.status, dto.status, { changedById: actor.id, note: dto.note, staff: true }),
+    );
   }
 
   /**
@@ -266,7 +318,12 @@ export class OrdersService {
     id: string,
     from: OrderStatus,
     to: OrderStatus,
-    { changedById, note, paymentId }: { changedById: string | null; note?: string; paymentId?: string },
+    {
+      changedById,
+      note,
+      paymentId,
+      staff = false,
+    }: { changedById: string | null; note?: string; paymentId?: string; staff?: boolean },
   ): Promise<SampleOrderResponse> {
     if (!canTransition(from, to)) {
       throw new ConflictException(`Không thể chuyển đơn từ ${from} sang ${to}`);
@@ -282,7 +339,49 @@ export class OrdersService {
     await tx.orderStatusHistory.create({
       data: { orderId: id, fromStatus: from, toStatus: to, changedById, note: note?.trim() || null },
     });
-    return this.toResponse(await tx.order.findUniqueOrThrow({ where: { id }, include: ORDER_INCLUDE }));
+    const order = await tx.order.findUniqueOrThrow({ where: { id }, include: ORDER_INCLUDE });
+    // The ledger moves with the order, in the same transaction (docs/19 A.8).
+    if (to === OrderStatus.PAID && order.paymentId) await postOrderPaid(tx, order, order.paymentId);
+    if (to === OrderStatus.DELIVERED) await postOrderDelivered(tx, order);
+    return this.toResponse(order, { staff });
+  }
+
+  /** The caller's projects among `ids`, not in the trash; 404 when one is missing or someone else's. */
+  private async ownedProjects(userId: string, ids: string[]) {
+    // Only the owner can order prints of a design, and not from the trash.
+    const projects = await this.prisma.packagingProject.findMany({
+      where: { id: { in: ids }, userId, status: { not: ProjectStatus.DELETED } },
+      select: { id: true, title: true, templateId: true, dimensions: true, version: true, formulaVersion: true },
+    });
+    if (ids.some((id) => !projects.some((p) => p.id === id))) {
+      throw new NotFoundException('Dự án hộp không tồn tại');
+    }
+    return projects;
+  }
+
+  private matchLines(
+    projects: { id: string; templateId: string; dimensions: Prisma.JsonValue; formulaVersion: number }[],
+    items: { projectId: string; quantity?: number }[],
+  ): MatchLine[] {
+    return items.map((item) => {
+      const project = projects.find((p) => p.id === item.projectId)!;
+      return {
+        structure: project.templateId,
+        dimensions: project.dimensions as unknown as BoxDimensions,
+        formulaVersion: project.formulaVersion,
+        quantity: item.quantity ?? 1,
+      };
+    });
+  }
+
+  /** Shops that already delivered an order of this customer (docs/19 AF-G4). */
+  private async returningShops(userId: string): Promise<string[]> {
+    const rows = await this.prisma.order.findMany({
+      where: { userId, status: OrderStatus.DELIVERED },
+      distinct: ['printShopId'],
+      select: { printShopId: true },
+    });
+    return rows.map((row) => row.printShopId);
   }
 
   /** Shop of a PRINT_SHOP account. An account not linked to a shop has no orders to see. */
@@ -294,9 +393,14 @@ export class OrdersService {
     return member.printShopId;
   }
 
-  private toResponse(order: OrderRow): SampleOrderResponse {
+  private staffFields(order: Pick<OrderRow, 'platformFeeBps' | 'platformFeeVnd' | 'shopPayableVnd'>) {
+    return { platformFeeBps: order.platformFeeBps, platformFeeVnd: order.platformFeeVnd, shopPayableVnd: order.shopPayableVnd };
+  }
+
+  private toResponse(order: OrderRow, { staff = false }: { staff?: boolean } = {}): SampleOrderResponse {
     const item = order.items[0];
-    const shop = this.printShops.get(order.printShopId);
+    const shop = order.printShop;
+    const contact = staff || CONTACT_VISIBLE.includes(order.status);
     const iso = (date: Date | null) => date?.toISOString() ?? null;
     return {
       id: order.id,
@@ -319,6 +423,7 @@ export class OrdersService {
       phone: order.recipientPhone,
       recipientPhone: order.recipientPhone,
       shippingAddress: order.shippingAddress,
+      recipientProvince: order.recipientProvince,
       notes: order.notes,
       status: order.status.toLowerCase() as Lowercase<OrderStatus>,
       orderStatus: order.status,
@@ -334,9 +439,10 @@ export class OrdersService {
         id: order.printShopId,
         name: shop?.name ?? order.printShopId,
         city: shop?.city ?? '',
-        contactPhone: shop?.phone ?? '',
+        contactPhone: contact ? (shop?.phone ?? '') : '',
+        zalo: contact ? (shop?.zalo ?? null) : null,
       },
-      estimatedDeliveryDays: shop?.leadTime ?? '',
+      estimatedDeliveryDays: shop?.leadTimeLabel ?? '',
       paymentId: order.paymentId,
       paidAt: iso(order.paidAt),
       shippedAt: iso(order.shippedAt),
@@ -344,6 +450,7 @@ export class OrdersService {
       cancelledAt: iso(order.cancelledAt),
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
+      ...(staff ? this.staffFields(order) : {}),
     };
   }
 }

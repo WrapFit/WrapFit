@@ -1,7 +1,7 @@
 # ===================================================
 # Stage 1: Build Stage (Monorepo shared & Next.js frontend)
 # ===================================================
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Cap Node memory to prevent SWC/Webpack RAM spikes during build
@@ -41,7 +41,7 @@ RUN npm --workspace=fe run build
 # ===================================================
 # Stage 2: Ultra-light Production Runtime Stage (Standalone)
 # ===================================================
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
