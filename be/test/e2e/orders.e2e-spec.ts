@@ -182,7 +182,10 @@ describe('Orders API (e2e)', () => {
   });
 
   it('answers 409 to a step outside the lifecycle', async () => {
-    const res = await as(admin).patch(`/api/orders/${orderId}/status`).send({ status: 'SHIPPED' }).expect(409);
+    const res = await as(admin)
+      .patch(`/api/orders/${orderId}/status`)
+      .send({ status: 'SHIPPED', carrier: 'GHN', trackingCode: '123456789' })
+      .expect(409);
     expect(res.body.message).toContain('PENDING_PAYMENT');
   });
 
@@ -199,14 +202,24 @@ describe('Orders API (e2e)', () => {
     const queue = await as(saigonStaff).get('/api/orders?status=PAID').expect(200);
     expect(queue.body.map((o: { id: string }) => o.id)).toContain(orderId);
 
+    // The shop takes the order before it prints it (docs/19 G.5).
+    await as(saigonStaff).patch(`/api/orders/${orderId}/status`).send({ status: 'IN_PRODUCTION' }).expect(409);
+    await as(saigonStaff).post(`/api/orders/${orderId}/accept`).expect(200);
     await as(saigonStaff).patch(`/api/orders/${orderId}/status`).send({ status: 'IN_PRODUCTION' }).expect(200);
     await as(saigonStaff).patch(`/api/orders/${orderId}/status`).send({ status: 'IN_PRODUCTION' }).expect(409);
     await as(admin).patch(`/api/orders/${orderId}/status`).send({ status: 'CANCELLED' }).expect(409);
+    // SHIPPED needs the carrier and its tracking code (BR-G25).
+    await as(saigonStaff).patch(`/api/orders/${orderId}/status`).send({ status: 'SHIPPED' }).expect(400);
     await as(saigonStaff)
       .patch(`/api/orders/${orderId}/status`)
-      .send({ status: 'SHIPPED', note: 'GHN 123456789' })
+      .send({ status: 'SHIPPED', carrier: 'GHN', trackingCode: '123456789', note: 'GHN 123456789' })
       .expect(200);
-    const delivered = await as(saigonStaff).patch(`/api/orders/${orderId}/status`).send({ status: 'DELIVERED' }).expect(200);
+    // A shop saying DELIVERED writes its proof in the note (BR-G23).
+    await as(saigonStaff).patch(`/api/orders/${orderId}/status`).send({ status: 'DELIVERED' }).expect(400);
+    const delivered = await as(saigonStaff)
+      .patch(`/api/orders/${orderId}/status`)
+      .send({ status: 'DELIVERED', note: 'Người nhận đã ký' })
+      .expect(200);
     expect(delivered.body).toMatchObject({ orderStatus: 'DELIVERED', shippedAt: expect.any(String), deliveredAt: expect.any(String) });
 
     // The owner sees the new status; the history keeps every step and who took it.

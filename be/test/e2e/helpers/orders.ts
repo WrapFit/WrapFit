@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { platformFeeSplit } from '@wrapfit/shared';
 import request from 'supertest';
 import { PrismaService } from '../../../src/shared/prisma';
 
@@ -24,6 +25,8 @@ export const sampleOrderData = (
   shippingAddress: 'E2E',
   subtotalVnd: 49_000,
   totalVnd: 49_000,
+  // The checkout splits the total at the shop's rate; the database CHECKs shop payable = total − platform fee.
+  ...platformFeeSplit({ subtotalVnd: 49_000, totalVnd: 49_000 }),
   status: 'PENDING_PAYMENT',
   items: {
     create: {

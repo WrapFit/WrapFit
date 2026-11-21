@@ -134,6 +134,8 @@ describe('Notifications (e2e)', () => {
           count: 1,
           actorName: 'Bình',
           export: null,
+          order: null,
+          event: null,
         },
       ]);
       expect(await unread(ana)).toBe(1);
