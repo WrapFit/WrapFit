@@ -139,6 +139,7 @@ model User {
   resolvedBankTransactions BankTransaction[]   @relation("BankTransactionResolver")
   notifications            Notification[]      @relation("NotificationRecipient")
   notificationsCaused      Notification[]      @relation("NotificationActor")
+  orderMessages            OrderMessage[]      @relation("OrderMessageAuthor")
 
   @@index([referredById])
   @@map("users")
@@ -849,6 +850,21 @@ model Order {
   platformFeeBps  Int         @default(1500) @map("platform_fee_bps")
   platformFeeVnd  Int         @default(0) @map("platform_fee_vnd")
   shopPayableVnd  Int         @default(0) @map("shop_payable_vnd")
+  // Xưởng nhận / từ chối đơn đã thanh toán (docs/19 BR-A8): hạn nhận tính lúc thanh toán; từ chối thì admin chuyển xưởng
+  acceptDeadline  DateTime?   @map("accept_deadline") @db.Timestamptz(3)
+  acceptedAt      DateTime?   @map("accepted_at") @db.Timestamptz(3)
+  rejectedAt      DateTime?   @map("rejected_at") @db.Timestamptz(3)
+  rejectReason    String?     @map("reject_reason")
+  adminAlertedAt  DateTime?   @map("admin_alerted_at") @db.Timestamptz(3) // Đã báo admin quá hạn nhận, không báo lại
+  shopNotifiedAt  DateTime?   @map("shop_notified_at") @db.Timestamptz(3) // Đã báo xưởng có đơn mới (OrderFollowUpTask)
+  // Ngày nhận dự kiến lúc đặt (YYYY-MM-DD giờ Việt Nam, docs/19 G.3); trễ khi qua ngày này mà chưa giao
+  estimatedDelivery String?   @map("estimated_delivery")
+  // Vận chuyển (docs/19 BR-G25): hãng (@wrapfit/shared CARRIERS) và mã vận đơn, bắt buộc khi chuyển SHIPPED
+  carrier         String?
+  trackingCode    String?     @map("tracking_code")
+  // Tin nhắn đã đọc tới lúc nào, mỗi phía (docs/19 G.4)
+  customerReadAt  DateTime?   @map("customer_read_at") @db.Timestamptz(3)
+  shopReadAt      DateTime?   @map("shop_read_at") @db.Timestamptz(3)
   notes           String?
   subtotalVnd     Int         @map("subtotal_vnd")
   shippingVnd     Int         @default(0) @map("shipping_vnd")
@@ -868,8 +884,10 @@ model Order {
   payment   Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   printShop PrintShop            @relation(fields: [printShopId], references: [id], onDelete: Restrict)
   items     OrderItem[]
-  history   OrderStatusHistory[]
-  ledger    LedgerEntry[]
+  history       OrderStatusHistory[]
+  ledger        LedgerEntry[]
+  messages      OrderMessage[]
+  notifications Notification[]
 
   @@index([userId, createdAt]) // GET /orders/my-orders
   @@index([printShopId, status, createdAt]) // Hàng đợi của xưởng / trang quản trị
@@ -987,6 +1005,33 @@ model PrintShopMember {
   @@map("print_shop_members")
 }
 
+// Tin nhắn trong đơn (docs/19 G.4, BR-G17): kênh chính thức giữa khách, xưởng và admin, giữ làm bằng chứng khi tranh
+// chấp. author_id không khóa ngoại chặn xóa: SET NULL khi tài khoản bị xóa, vai trò vẫn còn.
+enum OrderMessageAuthor {
+  CUSTOMER
+  SHOP
+  ADMIN
+  SYSTEM // Dòng hệ thống: xưởng nhận / từ chối, chuyển xưởng, gửi hàng
+}
+
+model OrderMessage {
+  id         String             @id @default(uuid(7)) @db.Uuid
+  orderId    String             @map("order_id") @db.Uuid
+  authorId   String?            @map("author_id") @db.Uuid
+  authorRole OrderMessageAuthor @map("author_role")
+  body       String // 1–2000 ký tự (CHECK)
+  // Có số điện thoại / số tài khoản khi xưởng chưa nhận đơn (BR-G19): chỉ cảnh báo, không chặn
+  flagged    Boolean            @default(false)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User? @relation("OrderMessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+  @@index([authorId])
+  @@map("order_messages")
+}
+
 // Sổ cái đơn in (docs/19 A.8): chỉ ghi thêm, trigger trong migration chặn UPDATE / DELETE. amount_vnd luôn dương; loại
 // bút toán cho biết chiều. `key` chống ghi trùng khi một bước chạy lại (order:<id>:<TYPE>).
 enum LedgerEntryType {
@@ -1052,13 +1097,18 @@ model ProductEvent {
 enum NotificationType {
   PROJECT_REMIXED // project = thiết kế gốc của người nhận; actor = người remix gần nhất; count = số lượt gộp lại
   EXPORT_COMPLETED // project = thiết kế đã xuất; payload { exportJobId, fileType }
+  ORDER_UPDATE // order = đơn của khách; payload { status, event }: xưởng nhận, gửi hàng, giao, chuyển xưởng (docs/19 G.5)
+  ORDER_MESSAGE // order; count = tin chưa đọc gộp lại; actor = người gửi gần nhất
+  ORDER_NEW // order = đơn mới đã thanh toán, cho tài khoản xưởng
+  ORDER_ALERT // order; payload { event }: quá hạn nhận, xưởng từ chối, cho admin
 }
 
 model Notification {
   id        String           @id @default(uuid(7)) @db.Uuid
   userId    String           @map("user_id") @db.Uuid // Người nhận
   type      NotificationType
-  projectId String           @map("project_id") @db.Uuid
+  projectId String?          @map("project_id") @db.Uuid // null cho thông báo đơn hàng (CHECK: có project hoặc order)
+  orderId   String?          @map("order_id") @db.Uuid
   actorId   String?          @map("actor_id") @db.Uuid // Người gây ra (remix); null khi tài khoản bị xóa hoặc ẩn danh
   count     Int              @default(1) // Lượt remix chưa đọc của cùng thiết kế được gộp vào một dòng
   payload   Json             @default("{}")
@@ -1067,12 +1117,14 @@ model Notification {
 
   user    User             @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
   actor   User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  project PackagingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project PackagingProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  order   Order?            @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   // Thêm trong migration (Prisma chưa khai báo được chỉ mục một phần): notifications_unread_idx (user_id, project_id)
   // WHERE read_at IS NULL, cho số chưa đọc và luật gộp remix.
   @@index([userId, createdAt(sort: Desc), id(sort: Desc)]) // Danh sách mới nhất trước, con trỏ (createdAt, id)
   @@index([projectId]) // CASCADE khi xóa dự án
+  @@index([orderId])
   @@index([actorId]) // SET NULL khi xóa người dùng
   @@map("notifications")
 }

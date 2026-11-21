@@ -36,6 +36,7 @@ describe('sample orders without vouchers', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       items: [],
+      history: [],
     }));
     const prisma = {
       packagingProject: { findMany: jest.fn().mockResolvedValue(projects) },
@@ -43,10 +44,10 @@ describe('sample orders without vouchers', () => {
     } as unknown as PrismaService;
     // One shop taking every order: this spec is about the price, not about choosing the shop.
     const printShops = {
-      match: jest.fn().mockResolvedValue({ recommendedId: 'ps-sg-01', offers: [{ shop: { id: 'ps-sg-01' } }], excluded: [] }),
+      match: jest.fn().mockResolvedValue({ recommendedId: 'ps-sg-01', offers: [{ shop: { id: 'ps-sg-01' }, estimatedDelivery: '2026-11-25' }], excluded: [] }),
       findRow: jest.fn().mockResolvedValue({ id: 'ps-sg-01', status: 'ACTIVE', platformFeeBps: 1500 }),
     } as unknown as PrintShopsService;
-    return { create, service: new OrdersService(prisma, printShops) };
+    return { create, service: new OrdersService(prisma, printShops, {} as never, {} as never) };
   };
 
   it.each([
