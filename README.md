@@ -93,8 +93,8 @@ docker compose up --build
 ### Cách 2: Khởi chạy thủ công qua Node.js (Local Development)
 
 ### Yêu cầu tiên quyết:
-- **Node.js**: Phiên bản `>= 20.x`
-- **npm** (v10+)
+- **Node.js**: Phiên bản `>= 24` (LTS, có sẵn trong `.nvmrc`)
+- **npm** (v11+, đi kèm Node 24)
 - **Docker Desktop** (PostgreSQL, Redis, lưu trữ file, Mailpit)
 
 ```bash

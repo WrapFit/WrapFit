@@ -95,7 +95,7 @@ test/
 
 ## Chạy nhanh (local)
 
-Yêu cầu: Node.js >= 20, Docker. Các lệnh dưới đây chạy **tại gốc repo** (`WrapFit/`).
+Yêu cầu: Node.js >= 24 (xem `.nvmrc`), Docker. Các lệnh dưới đây chạy **tại gốc repo** (`WrapFit/`).
 
 ```bash
 npm install                                  # cài toàn bộ workspace (fe, be, shared)
