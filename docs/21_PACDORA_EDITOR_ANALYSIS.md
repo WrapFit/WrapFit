@@ -280,14 +280,82 @@ Các phát hiện dưới đây đã được đối chiếu với mã nguồn n
 | **4 · Người dùng khó nhìn ra hai loại đáy khác nhau thế nào** | Trên Pacdora, tab **Parts** hiện các biến thể **nắp** (Standard, Thumb notch, Tab lock, Handle, Tear strip) dưới dạng thẻ có hình khuôn thu nhỏ. Pacdora không có thư viện đáy riêng; đây chỉ là mẫu trình bày nên học theo. Trong WrapFit, hai lựa chọn đáy chỉ có chữ. Camera bị giới hạn `maxPolarAngle = π/2 − 0,04`, nên người dùng không thể xoay xuống kiểm tra đáy đã gập. | Thêm hình khuôn thu nhỏ cho **hai loại đáy WrapFit thực sự hỗ trợ**, rồi thêm góc **Xem đáy**. Sàn và bóng đổ sẽ che góc nhìn từ dưới, nên khi xem đáy cần ẩn sàn hoặc nhấc hộp lên, không chỉ nới giới hạn camera. Nghiệm thu ở cả trạng thái trải phẳng và đóng kín, đặc biệt với đáy khóa. [Bộ chọn đáy](../fe/src/features/studio/components/Step2DimensionAndMaterial.tsx#L640) · [Giới hạn camera](../fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx#L401) |
 | **5 · Hoàn thiện điều hướng mặt và góc nhìn** | WrapFit đã tô sáng mặt 3D khi rê trên khuôn. Dải nút chọn mặt mới xử lý bấm, chưa nối hover/focus với preview. Pacdora có sáu góc dựng sẵn và nút **Save view**. WrapFit có bốn hướng nhìn (3/4, Trước, Bên, Trên) cộng nút **Cận cảnh**, vốn là góc 3/4 phóng to. WrapFit chưa có chức năng lưu góc nhìn. | Nối hover và focus của dải nút mặt với cơ chế tô sáng sẵn có. Xếp **Lưu góc nhìn** sau **Xem đáy** vì xem đáy giải quyết ngay một thao tác kiểm tra đang bị chặn. [Dải nút mặt](../fe/src/features/studio/components/PanelNavigator.tsx#L34) · [Các góc nhìn](../fe/src/features/studio/components/three/InteractiveFoldingBox3D.tsx#L152) |
 
-### Trạng thái và thứ tự thực hiện
+### Trạng thái
 
-Ngày 21/11/2026, cả năm điểm trên **chưa được thực hiện**. Mục này mới ghi lại phát hiện; mã nguồn chưa thay đổi. Phiên làm tiếp nên đi theo thứ tự:
+**Cả năm điểm xong ngày 21/11/2026 (chưa commit).**
 
-1. **Chặn tai trong `designFace`.** Id không phải mặt in thì giữ nguyên mặt đang chọn, áp dụng cho cả thẻ 3D nhỏ lẫn 3D toàn màn hình.
-2. **Gắn vai trò Dài/Rộng/Cao cho cạnh đo.** Lớp đo của `DielineCanvas2D` dùng vai trò này thay cho việc so độ dài. Thêm test cho `L = W` và `H ≈ L`.
-3. **Thống nhất tên hộp và ngưỡng đáy.** Đổi tên cấu trúc thành “Hộp nắp gài”. Chú thích đáy dùng `LOCK_BOTTOM_MIN_WEIGHT_G`. Sửa mô tả mẫu cà phê.
-4. **Hình thu nhỏ cho hai loại đáy và góc Xem đáy.** Khi xem đáy, ẩn sàn và bóng đổ hoặc nhấc hộp lên.
-5. **Nối hover/focus của dải nút mặt với tô sáng 3D, rồi thêm Lưu góc nhìn.**
+1. **Bấm tai không còn đổi mặt đang thiết kế.** `designFace` và `openFaceMenu` trong `StudioWorkspace` kiểm tra id bằng `faceOf`. Nếu id là một tai, mặt đang chọn giữ nguyên và một toast báo tên tai, ví dụ “Mép dán không in hình”. Hai chế độ (thẻ 3D nhỏ và Hộp 3D) dùng chung kiểm tra này.
+   - Đã thử: chọn **Mặt sau**, bấm lưỡi gài nắp trên thẻ 3D nhỏ, rồi thêm hình chữ nhật. **Mặt sau** vẫn được chọn và nhận hình.
+   - Ở **Hộp 3D**, bấm mép dán hiện toast, không mở menu.
+2. **Đường đo theo đúng trục.** Hàm `panelSideMeasures` mới trong `shared/src/parametric/fold.ts` gập phôi bằng mô hình 3D. Hàm cho biết mỗi cạnh của từng tấm nằm theo Dài, Rộng hay Cao. Một cạnh được đánh dấu khi đúng trục và độ dài vẫn nằm trong dung sai. Vì vậy nắp âm dương hay đầu hồi hộp quai xách không bị gắn số đo sai.
+   - Với hộp 85 × 85 × 105 mm đáy khóa: **Dài** đánh dấu 4 cạnh (mặt sau, mặt trước, nắp, đáy). **Rộng** đánh dấu 3 cạnh khác (hai mặt hông và chiều sâu nắp). **Cao** đánh dấu 4 mặt thân.
+   - Hộp gối không có mô hình gập. Cách đo hộp gối được bổ sung ở mục 9.
+   - Test mới trong `dieline-geometry.spec.ts` kiểm tra `L = W`, `H ≈ L` và `W ≈ H`. Test cũng kiểm tra với 5 kiểu hộp × 4 cỡ: không cạnh nào dài hơn hộp đóng theo trục của nó, kể cả mặt trong.
+3. **Tên hộp và ngưỡng đáy.**
+   - Tên cấu trúc thành **“Hộp nắp gài”** ở `boxStructures.ts`, seed backend và dữ liệu mẫu. Seed chạy lại khi backend khởi động.
+   - Nhãn trên hộp 3D ghi loại đáy thật, ví dụ “Hộp nắp gài · đáy khóa”.
+   - Chú thích đáy lấy mốc từ `LOCK_BOTTOM_MIN_WEIGHT_G`. Mốc này chỉ là ngưỡng *gợi ý*, không phải khả năng *chịu tải*. Nếu quà nặng hơn mốc mà người dùng chọn đáy thường, chú thích chuyển màu cảnh báo.
+   - Mẫu cà phê nay khai báo quà 500 g và đáy khóa, khớp với mô tả. Hai mẫu nến có mô tả “đáy khóa” nhưng dùng đáy thường, nên bỏ chữ “đáy khóa” khỏi mô tả.
+   - Copilot ghi “đáy gài thường” cho hai gợi ý có đáy thường.
+4. **Hai thẻ đáy có hình và góc Đáy.**
+   - `BottomTypeSketch` vẽ phần đáy của khuôn thật ở kích thước đang nhập, tô màu các tai đáy. Bộ chọn đáy ở **Tuỳ chọn hộp** thành hai thẻ có hình.
+   - Thanh góc nhìn 3D có thêm nút **Đáy**. Camera đi xuống dưới hộp. Sàn, bóng đổ và đạo cụ bối cảnh tự ẩn khi camera ở dưới mặt sàn. Giới hạn camera trên sàn trở lại khi người dùng chọn góc khác và camera đã lên trên.
+5. **Dải nút mặt và Lưu góc nhìn.**
+   - Rê chuột hoặc dùng phím Tab đến một nút ở dải **Mặt hộp** sẽ tô sáng mặt đó trên thẻ 3D.
+   - Thanh góc nhìn ở **Hộp 3D** và ở mục **Quà tặng** có nút **Lưu góc**. Góc lưu vào `canvasState.cameraView` gồm hướng nhìn và mức phóng tương đối, nên vẫn đúng sau khi đổi kích thước.
+   - Backend kiểm tra góc bằng `CameraViewDto`, có test riêng.
+   - Mục **Quà tặng** mở ở góc đã lưu, nên ảnh sản phẩm chụp ở góc đó. Khi sân khấu đang ở góc đã lưu, clip quay quanh góc đó và luôn giữ camera trên mặt bàn.
 
-Sau mỗi bước: chạy `npm run tokens:check`, test BE nếu đụng `@wrapfit/shared` (nhớ build lại `shared`), kiểm tra trên dev server cổng 3107, rồi chạy `graphify update .`.
+Kiểm tra: build `shared`, typecheck FE và BE sạch. `tokens:check` sạch. Toàn bộ test backend qua: 78 bộ, 1233 test. Đã thử trên `/editor/demo` cổng 3107 ở cỡ 1024 × 700, không chạy backend.
+
+Giới hạn:
+
+- Chưa quay thử clip từ góc đã lưu. Chưa lưu góc qua backend thật, chỉ có test DTO và bản nháp demo.
+- Hình đáy thu nhỏ khá nhỏ với hộp dẹt và dài, vì cả bề ngang phôi phải vừa thẻ.
+
+## 9. Còn bốn điểm sau khi kiểm tra bản hiện tại.
+| Ưu tiên | Phát hiện |
+|---|---|
+| **P2 · Đường đo hộp gối vẫn nhầm trục** | Với **hộp gối 85 × 85 × 20 mm**, rê Dài rồi Rộng vẫn tô đúng cùng hai đường đứng, chỉ đổi nhãn `D 85` thành `R 85`. Hộp gối vẫn dùng phép so độ dài vì thiếu ánh xạ trục. Cần xác định chiều dài theo đường dọc thân và biểu diễn chiều rộng theo tiết diện hộp. [DielineCanvas2D.tsx](D:/FPTU_SCHOOL/2026/FALL_2026/EXE101/project/WrapFit/fe/src/features/studio/components/canvas/DielineCanvas2D.tsx:1861) |
+| **P2 · “Góc đã lưu” chưa khôi phục camera sau khi xoay tay** | Trong **Quà tặng**, mình lưu góc Trước, kéo xoay hộp rồi bấm **Góc đã lưu**. Nút vẫn báo đang chọn và camera giữ góc vừa kéo. Bấm **Trên**, rồi bấm **Góc đã lưu** mới khôi phục đúng hình ban đầu. Nút cần gửi lệnh đưa camera về mỗi lần bấm, kể cả khi giá trị đang chọn vẫn là `saved`. [Step5Model3DWithEnvironments.tsx](D:/FPTU_SCHOOL/2026/FALL_2026/EXE101/project/WrapFit/fe/src/features/studio/components/Step5Model3DWithEnvironments.tsx:310) |
+| **P2 · Backend chấp nhận góc camera không dùng được** | Mình chạy trực tiếp `ValidationPipe` của dự án. Cả `cameraView: []` và hướng `[0, 0, 0]` đều được chấp nhận. Trường hợp đầu thiếu `dir` mà Studio cần để mở góc đã lưu. Trường hợp sau không xác định được hướng nhìn. Nên kiểm tra `cameraView` là object và vector có độ dài khác 0, rồi bổ sung hai ca test này. [project-spec.dto.ts](D:/FPTU_SCHOOL/2026/FALL_2026/EXE101/project/WrapFit/be/src/projects/presentation/dto/project-spec.dto.ts:579) |
+| **P3 · Dashboard demo còn tên đáy cũ** | Dữ liệu dự án **Hộp Nến Thơm Tinh Dầu Lavender** vẫn ghi “Hộp Nắp Gài Đáy Khóa”, dù cấu hình dùng đáy gài thường. Thẻ dự án hiển thị trực tiếp tên này. Đổi nhãn dữ liệu mẫu thành “Hộp Nắp Gài” sẽ thống nhất với Studio. [Dữ liệu demo](D:/FPTU_SCHOOL/2026/FALL_2026/EXE101/project/WrapFit/fe/src/features/dashboard/demoData.ts:148) · [ProjectCard.tsx](D:/FPTU_SCHOOL/2026/FALL_2026/EXE101/project/WrapFit/fe/src/features/dashboard/components/ProjectCard.tsx:131) |
+
+### Trạng thái
+
+Cả bốn điểm đã được xác nhận và **sửa xong ngày 21/11/2026 (chưa commit)**.
+
+1. **Đường đo hộp gối.** `panelSideMeasures` nay trả về cả số đo mà một cạnh biểu diễn, không chỉ tên trục. Với hộp gối:
+   - Cạnh đứng của mỗi mặt là **Dài**.
+   - Bề ngang mỗi mặt là **Rộng**, ghi bằng dây cung của tiết diện khi đóng (`W + t`). Mặt hộp gối cong, nên trên phôi bề ngang dài hơn W và trước đây không bao giờ khớp.
+   - **Cao** của hộp gối là độ phồng của tiết diện, không có cạnh thẳng trên phôi nên không vẽ đường đo.
+
+   Với hộp gối 85 × 85 × 20: **Dài** vẽ hai đường đứng ghi `D 85`. **Rộng** vẽ hai đường ngang qua mặt ghi `R 85,4`. Đã thêm test hộp gối cho cỡ 85 × 85 × 20 và 120 × 80 × 60.
+2. **Góc đã lưu.** Mỗi lần bấm một nút góc nhìn ở **Quà tặng** đều tăng `cameraViewKey`. Nhờ vậy camera quay về ngay cả khi nút đó đang sáng. Lỗi tương tự với các nút 3/4, Trước, Bên, Trên cũng hết.
+   - Đã thử: lưu góc Trước `(0,004; 0,194; 0,981)`, kéo xoay, rồi bấm **Góc đã lưu** lúc nút đang sáng. Camera về `(0,068; 0,16; 0,985)`, trước khi sửa thì camera đứng yên ở góc vừa kéo.
+   - Còn lệch một chút vì khung Browser bị ẩn, trang chỉ vẽ khoảng 1 khung/giây nên quán tính của cú kéo chưa kịp tắt.
+3. **Kiểm tra góc ở backend.** `cameraView` phải là object (`@IsObject`), và `dir` phải là vector đơn vị (độ dài 1 ± 0,05). Test DTO thêm các ca: mảng rỗng, mảng các góc, hướng `[0, 0, 0]`, vector không đơn vị và thiếu `dir`.
+   - Studio cũng bỏ qua góc đã lưu mà không có hướng hợp lệ, phòng dữ liệu đã lưu trước khi backend kiểm tra.
+4. **Tên đáy trong dashboard demo.** Ba dự án mẫu đổi thành “Hộp Nắp Gài”. Mô tả bộ sưu tập “Nến Thơm & Spa Thư Giãn” bỏ chữ “đáy khóa”. Slide giới thiệu ở trang đăng nhập cũng bị lỗi này (hộp 3D đáy thường mà tên ghi “đáy khoá”) nên cũng đã sửa.
+
+Kiểm tra: typecheck FE và BE sạch. `tokens:check` sạch. Toàn bộ test backend qua: 78 bộ, 1240 test. Đã thử điểm 1 và 2 trên `/editor/demo` cổng 3107.
+
+Còn lại: màn `views/editor/step-1` cũ vẫn ghi “Nắp Gài Đáy Khóa”. Màn này đã được chuyển hướng sang Studio nên không sửa.
+
+## 10. Hai điểm sau lần kiểm tra mục 9
+
+Ngày 21/11/2026 đã xác nhận cả hai điểm dưới đây trong mã và **sửa xong (chưa commit)**.
+
+| Ưu tiên | Phát hiện | Nguyên nhân và cách sửa |
+|---|---|---|
+| **P2 · Một cú bấm vào vùng trống làm clip mất góc đã lưu** | Lưu góc Trước rồi bấm vào vùng trống của sân khấu, không kéo. Hộp vẫn ở góc Trước và nút **Góc đã lưu** vẫn sáng, nhưng clip lại quay theo góc 3/4. | OrbitControls phát sự kiện `start` ngay khi nhấn chuột (`OrbitControls.js`, `onMouseDown`). Handler `start` trong `InteractiveFoldingBox3D` xóa trạng thái góc đã lưu. Ở **Quà tặng**, nút dùng state riêng nên vẫn sáng. Cách sửa: chỉ xóa trạng thái khi chuột di chuyển quá 5 px (cùng ngưỡng phân biệt bấm và kéo) hoặc khi lăn chuột để phóng. Prop mới `onCameraMoved` báo cho mục **Quà tặng** tắt nút đang sáng, nên nút luôn khớp với trạng thái dùng để quay clip. |
+| **P3 · Nhãn Rộng của hộp gối chưa nói rõ là số đo khi gập** | Với hộp gối 120 × 80 × 40 mm, mặt phôi rộng 93,3 mm nhưng đường ngang trên mặt ghi `R 80,4`. | `SideMeasure` có thêm cờ `folded` cho số đo lấy trên hộp đã đóng, khác với cạnh trên phôi trải phẳng. Nhãn khi đó ghi `R 80,4 khi gập`. Chỉ bề ngang mặt hộp gối có cờ này. |
+
+Đã thử trên `/editor/demo` cổng 3107:
+
+- Hộp gối 120 × 80 × 40: rê **Rộng** hiện hai nhãn `R 80,4 khi gập`. Nút mặt vẫn ghi kích thước phôi `93,3 × 120`.
+- **Quà tặng**: sau khi lưu góc Trước, bấm vùng trống không kéo thì **Góc đã lưu** vẫn sáng. Kéo xoay thì không nút nào sáng. Bấm **Góc đã lưu** thì nút sáng lại và camera về gần góc lưu.
+
+Test backend qua 1240/1240. Typecheck FE, BE và `tokens:check` sạch.
+
+Chưa quay thử clip. Nút sáng và hướng quay clip cùng được cập nhật trong `userTurned`, nên trạng thái nút phản ánh hướng clip sẽ dùng. Tuy vậy, chưa xuất video để so sánh trực tiếp.
