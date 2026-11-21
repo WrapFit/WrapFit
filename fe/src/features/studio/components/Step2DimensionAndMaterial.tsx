@@ -46,6 +46,7 @@ import {
 import { formatNumber, innerVolumeMl, outerSize, sheetFits } from "@/features/studio/utils/boxMetrics";
 import type { DimensionLimits } from "@/types/api";
 import { GIFT_PRESETS, type GiftPreset } from "@/features/studio/utils/boxStructures";
+import { BottomTypeSketch } from "@/features/studio/components/BottomTypeSketch";
 import { Badge, Button, Field, Input } from "@/components/ui";
 import { cn } from "@/utils/helpers";
 import {
@@ -531,6 +532,7 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
                   <div className="mt-1 divide-y divide-line/40">
                     {boxType === "tuck-top" && (
                       <GiftWeightCard
+                        dimensions={draft}
                         weight={draft.giftWeight}
                         bottomType={draft.bottomType}
                         onWeight={(giftWeight, now) => change({ ...draft, giftWeight }, now)}
@@ -609,43 +611,62 @@ export const Step2DimensionAndMaterial: React.FC<Step2DimensionAndMaterialProps>
   );
 };
 
+const BOTTOM_OPTIONS = [
+  { value: "tuck", label: "Đáy gài thường", hint: "Lưỡi gài và hai tai bụi, gấp nhanh" },
+  { value: "lock", label: "Đáy khóa", hint: "Ba tai cài vào nhau thành đáy phẳng" },
+] as const;
+
 /**
- * "Khối lượng quà (g)": above LOCK_BOTTOM_MIN_WEIGHT_G the tuck-top dieline gets a crash-lock bottom (FEFCO 0215,
- * shared/src/parametric/tuck-top.ts); the user may keep the plain tuck bottom instead (`bottomType: "tuck"`).
+ * "Kiểu đáy hộp" of a tuck-top box: the plain tuck bottom or the crash-lock bottom (FEFCO 0215,
+ * shared/src/parametric/tuck-top.ts), each with its dieline at the size being set (docs/21 §8.4). Above
+ * LOCK_BOTTOM_MIN_WEIGHT_G the formula picks the lock bottom unless the user chose: that weight is when WrapFit suggests
+ * it, not a load either bottom is rated for.
  */
 function GiftWeightCard({
+  dimensions,
   weight,
   bottomType,
-  onWeight,
   onBottom,
 }: {
+  dimensions: BoxDimensions;
   weight: number | undefined;
   bottomType: "tuck" | "lock" | undefined;
   onWeight(weight: number | undefined, now: boolean): void;
   onBottom(bottomType: "tuck" | "lock" | undefined): void;
 }) {
   const lock = usesLockBottom({ giftWeight: weight, bottomType });
+  const heavy = weight !== undefined && weight > LOCK_BOTTOM_MIN_WEIGHT_G;
+  const note = !lock && heavy
+    ? `Quà ${weight} g nặng hơn ${LOCK_BOTTOM_MIN_WEIGHT_G} g: nên chọn đáy khóa.`
+    : lock && !bottomType && heavy
+      ? `Tự chọn đáy khóa vì quà ${weight} g nặng hơn ${LOCK_BOTTOM_MIN_WEIGHT_G} g.`
+      : `WrapFit gợi ý đáy khóa cho quà nặng hơn ${LOCK_BOTTOM_MIN_WEIGHT_G} g.`;
 
   return (
     <div data-tour="s2-weight" className="pt-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h4 className="text-xs font-semibold text-fg">Kiểu đáy hộp</h4>
-          <p className="text-caption text-fg-muted">
-            {lock ? "Đáy khóa tự động (FEFCO 0215) chịu quà nặng an toàn" : "Đáy gài tiêu chuẩn (cho quà nhẹ < 500g)"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <SegmentedSwitch
-            value={lock ? "lock" : "tuck"}
-            options={[
-              { value: "tuck", label: "Đáy gài thường" },
-              { value: "lock", label: "Đáy khóa chịu lực" },
-            ]}
-            onChange={(v) => onBottom(v as "tuck" | "lock")}
-          />
-        </div>
+      <h4 id="s2-bottom-title" className="text-xs font-semibold text-fg">Kiểu đáy hộp</h4>
+      <div role="group" aria-labelledby="s2-bottom-title" className="mt-2 grid grid-cols-2 gap-2">
+        {BOTTOM_OPTIONS.map((option) => {
+          const active = (option.value === "lock") === lock;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onBottom(option.value)}
+              className={cn(
+                "flex min-w-0 flex-col gap-1 rounded-control border p-2 text-left transition-colors",
+                active ? "border-fpt-orange bg-fpt-orange-light/40" : "border-line-strong bg-surface-raised hover:border-fg"
+              )}
+            >
+              <BottomTypeSketch dimensions={dimensions} bottomType={option.value} className="h-12 w-full" />
+              <span className="text-xs font-semibold text-fg">{option.label}</span>
+              <span className="text-caption text-fg-muted">{option.hint}</span>
+            </button>
+          );
+        })}
       </div>
+      <p className={cn("mt-1.5 text-caption", !lock && heavy ? "text-warning-fg" : "text-fg-muted")}>{note}</p>
     </div>
   );
 }

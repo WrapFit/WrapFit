@@ -39,7 +39,7 @@ import { FramedImage, TextVisual, useImageSizes } from "./elementVisuals";
 import { formatMm, panelLabel } from "@/features/studio/utils/dieline";
 import { elementLabel } from "@/features/studio/utils/elementLabel";
 import { sheetPath } from "@/features/studio/utils/dielineOutline";
-import { printFontOf, textBlockHeight } from "@wrapfit/shared";
+import { panelSideMeasures, printFontOf, textBlockHeight } from "@wrapfit/shared";
 import { Checkbox } from "@/components/ui";
 import { useCtrlWheelZoom } from "@/hooks/dom";
 import { AXIS_COLORS, AXIS_LETTER, type DimensionAxis } from "../three/guides";
@@ -137,8 +137,10 @@ interface DielineCanvas2DProps {
   onHoverPanel?: (panelId: string | null) => void;
   /**
    * Box measure being edited or hovered in the size fields (docs/21 S3): a dimension line in its colour on every panel
-   * side that long. The formulas do not tag sides with a measure, so a side matches when it is within `tolerance` mm
-   * of `mm` (the paper thickness the formulas add); two equal measures light the same sides.
+   * side that runs along that measure once folded (`panelSideMeasures`, docs/21 §8.2) and is within `tolerance` mm of
+   * `mm` (the paper thickness the formulas add; a lid or a gable end is shorter or taller). L = W still lights
+   * different sides. A pillow face shows W across it, the chord it closes to. A piece without a folded model falls
+   * back on the length alone.
    */
   measure?: { axis: DimensionAxis; mm: number; tolerance: number } | null;
   /**
@@ -308,6 +310,9 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
   // A dieline that goes away (another piece, the 3D view) leaves nothing lit.
   useEffect(() => () => onHoverPanelRef.current?.(null), []);
   const sheet = useMemo(() => sheetPath(dieline), [dieline]);
+  /** The measure each panel side runs along once folded, for the dimension lines of `measure`. */
+  const measuring = !!measure;
+  const sideMeasures = useMemo(() => (measuring ? panelSideMeasures(dieline) : null), [dieline, measuring]);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cursorMm, setCursorMm] = useState<{ x: number; y: number } | null>(null);
   const [newTextValue, setNewTextValue] = useState<string>("");
@@ -1853,13 +1858,25 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
             <g className="pointer-events-none select-none" style={{ fontFamily: "var(--font-landing-body), Inter, sans-serif" }}>
               {dieline.panels.flatMap((panel) => {
                 const color = AXIS_COLORS[measure.axis];
-                const near = (length: number) => Math.abs(length - measure.mm) <= measure.tolerance;
                 const { width: pw, height: ph } = panel.bounds;
+                // Length the side stands for once closed (the chord of a bowed pillow face), null when it is not this measure.
+                const lengthOf = (side: "x" | "y", own: number) => {
+                  if (!sideMeasures) return own;
+                  const tagged = sideMeasures[panel.id]?.[side];
+                  return tagged?.measure === measure.axis ? tagged.mm : null;
+                };
+                const close = (length: number | null) => length !== null && Math.abs(length - measure.mm) <= measure.tolerance;
+                const xMm = lengthOf("x", pw);
+                const yMm = lengthOf("y", ph);
+                const nearX = close(xMm);
+                const nearY = close(yMm);
                 const [px, py] = [panel.bounds.x + padding, panel.bounds.y + padding];
                 const size = Math.min(4, Math.max(2.6, Math.min(pw, ph) / 8));
                 const tick = size * 0.5;
-                const tag = (cx: number, cy: number, length: number) => {
-                  const text = `${AXIS_LETTER[measure.axis]} ${formatMm(length)}`;
+                // A length of the closed box that the flat side does not have (pillow width): "khi gập" on the tag.
+                const foldedOnly = (side: "x" | "y") => sideMeasures?.[panel.id]?.[side]?.folded === true;
+                const tag = (cx: number, cy: number, length: number, folded = false) => {
+                  const text = `${AXIS_LETTER[measure.axis]} ${formatMm(length)}${folded ? " khi gập" : ""}`;
                   const w = text.length * size * 0.6 + size;
                   return (
                     <>
@@ -1887,18 +1904,18 @@ export const DielineCanvas2D: React.FC<DielineCanvas2DProps> = ({
                   </g>
                 );
                 const lines: React.ReactNode[] = [];
-                if (near(pw)) {
+                if (nearX) {
                   const [y, x1, x2] = [py + ph / 2, px + 0.8, px + pw - 0.8];
                   lines.push(
-                    rule(`${panel.id}-x`, [[x1, y, x2, y], [x1, y - tick, x1, y + tick], [x2, y - tick, x2, y + tick]], tag(px + pw / 2, y, pw))
+                    rule(`${panel.id}-x`, [[x1, y, x2, y], [x1, y - tick, x1, y + tick], [x2, y - tick, x2, y + tick]], tag(px + pw / 2, y, xMm!, foldedOnly("x")))
                   );
                 }
-                if (near(ph)) {
+                if (nearY) {
                   const [x, y1, y2] = [px + pw / 2, py + 0.8, py + ph - 0.8];
-                  // Both sides match (a square face): the vertical tag steps below the horizontal one.
-                  const tagY = py + ph / 2 + (near(pw) ? size * 2.2 : 0);
+                  // Both sides match (a square face without a folded model): the vertical tag steps below the other.
+                  const tagY = py + ph / 2 + (nearX ? size * 2.2 : 0);
                   lines.push(
-                    rule(`${panel.id}-y`, [[x, y1, x, y2], [x - tick, y1, x + tick, y1], [x - tick, y2, x + tick, y2]], tag(x, tagY, ph))
+                    rule(`${panel.id}-y`, [[x, y1, x, y2], [x - tick, y1, x + tick, y1], [x - tick, y2, x + tick, y2]], tag(x, tagY, yMm!, foldedOnly("y")))
                   );
                 }
                 return lines;

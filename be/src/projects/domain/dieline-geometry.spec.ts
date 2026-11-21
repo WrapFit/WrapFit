@@ -6,7 +6,9 @@ import {
   foldedCorners,
   foldedSize,
   generateDielinePieces,
+  mirrorGeometry,
   multiply,
+  panelSideMeasures,
   panelTransforms,
   pillowShapeOf,
   segmentPoints,
@@ -361,6 +363,74 @@ describe('formula version 3', () => {
           .sort();
       expect(ids(3)).toEqual(ids(2));
     }
+  });
+});
+
+// The size fields light the panel sides of their measure on the dieline (docs/21 §8.2). Sides are tagged from the folded
+// model, never from their length, so equal or nearly equal measures still light different sides.
+describe('panel side measures', () => {
+  const v3 = (structure: string, size: [number, number, number]) =>
+    generateDielinePieces(structure, box(size), 3).map((p) => p.geometry);
+
+  it.each<[number, number, number]>([
+    [85, 85, 105],
+    [100, 60, 100.3],
+    [60, 100.2, 100],
+  ])('tuck-top %s × %s × %s: every face side carries its own measure', (...size) => {
+    const sides = panelSideMeasures(v3('tuck-top', size)[0])!;
+    const measures = (id: string) => ({ x: sides[id].x?.measure, y: sides[id].y?.measure });
+    expect(measures('panel_front')).toEqual({ x: 'length', y: 'height' });
+    expect(measures('panel_back')).toEqual({ x: 'length', y: 'height' });
+    expect(measures('panel_left')).toEqual({ x: 'width', y: 'height' });
+    expect(measures('panel_right')).toEqual({ x: 'width', y: 'height' });
+    expect(measures('panel_top_lid')).toEqual({ x: 'length', y: 'width' });
+    expect(measures('panel_bottom')).toEqual({ x: 'length', y: 'width' });
+    // A side of a folded box stands for its own length.
+    const front = v3('tuck-top', size)[0].panels.find((p) => p.id === 'panel_front')!;
+    expect(sides.panel_front.x?.mm).toBe(front.bounds.width);
+    expect(sides.panel_front.x?.folded).toBeUndefined();
+  });
+
+  it.each<[number, number, number]>([
+    [85, 85, 20],
+    [120, 80, 60],
+  ])('pillow %s × %s × %s: L down each face, W across it as the chord of the closed section (docs/21 §9)', (...size) => {
+    const geometry = v3('pillow', size)[0];
+    const sides = panelSideMeasures(geometry)!;
+    for (const panel of geometry.panels) {
+      expect(sides[panel.id].y).toEqual({ measure: 'length', mm: panel.bounds.height });
+      expect(sides[panel.id].x?.measure).toBe('width');
+      // Not the width of the flat face: the label says "khi gập" (docs/21 §10).
+      expect(sides[panel.id].x?.folded).toBe(true);
+      expect(Math.abs(sides[panel.id].x!.mm - (size[1] + T))).toBeLessThan(1e-9);
+      // The bowed face is wider than its chord on the sheet: matching by length alone never found W.
+      expect(panel.bounds.width).toBeGreaterThan(size[1] + 2 * T + 0.6);
+    }
+    expect(panelSideMeasures(mirrorGeometry(geometry))).toEqual(sides);
+  });
+
+  const EXTENT = { length: 'x', height: 'y', width: 'z' } as const;
+  it.each(
+    ['tuck-top', 'lid-base', 'sleeve-drawer', 'mailer', 'gable'].flatMap((s) =>
+      SIZES.map((size) => [s, size] as const),
+    ),
+  )('%s %p: no side is longer than the closed piece along its measure, inside or out', (structure, size) => {
+    for (const geometry of v3(structure, size)) {
+      const sides = panelSideMeasures(geometry)!;
+      const closed = foldedSize(geometry)!;
+      for (const panel of geometry.panels) {
+        const { x, y } = sides[panel.id];
+        if (x) expect(x.mm).toBeLessThanOrEqual(closed[EXTENT[x.measure]] + 1e-3);
+        if (y) expect(y.mm).toBeLessThanOrEqual(closed[EXTENT[y.measure]] + 1e-3);
+      }
+      // The inside of the sheet is the same dieline mirrored: the sides keep their measures.
+      expect(panelSideMeasures(mirrorGeometry(geometry))).toEqual(sides);
+    }
+  });
+
+  it('is null for a piece without a folded model', () => {
+    const [geometry] = v3('tuck-top', [120, 80, 60]);
+    expect(panelSideMeasures({ ...geometry, orientation: undefined })).toBeNull();
   });
 });
 

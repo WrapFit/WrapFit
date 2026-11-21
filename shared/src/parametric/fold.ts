@@ -10,6 +10,7 @@
  */
 
 import { DielineGeometry, PanelFace, SheetAxis } from "../types/dieline";
+import { pillowShapeOf } from "./pillow";
 
 /** 4 × 4 matrix, column-major (the layout of three.js `Matrix4.fromArray`). */
 export type Mat4 = number[];
@@ -148,6 +149,63 @@ export function boxFrameOf(geometry: DielineGeometry): Mat4 | null {
   const max = [0, 1, 2].map((i) => Math.max(...points.map((p) => p[i])));
   const shift: Mat4 = [...IDENTITY.slice(0, 12), -(min[0] + max[0]) / 2, -min[1], -(min[2] + max[2]) / 2, 1];
   return multiply(shift, rotation);
+}
+
+/** A measure of the box the user types: L, W or H. */
+export type BoxMeasure = "length" | "width" | "height";
+
+/** Box-space axis index → measure: x along L, y up (H), z along W. */
+const MEASURE_OF_AXIS: BoxMeasure[] = ["length", "height", "width"];
+
+/** The measure a side of a panel stands for once the piece is closed, and its length there (mm). */
+export interface SideMeasure {
+  measure: BoxMeasure;
+  mm: number;
+  /**
+   * `mm` is measured on the closed box and differs from the side on the flat sheet (the chord of a bowed pillow face):
+   * the label says so, so artwork is not sized to it by mistake (docs/21 §10).
+   */
+  folded?: true;
+}
+
+/**
+ * Which measure each side of a panel runs along once the piece is closed (docs/21 §8.2): `x` for its horizontal sides
+ * on the sheet, `y` for its vertical ones; null for a side that is not square to the box (a sloped gable roof). Read
+ * from the folded model, so two measures of the same length (L = W) still tag different sides; `mm` is then the length
+ * of the side itself. A pillow box has no folded model: its faces run along L, and across them the bowed face closes
+ * to the chord of its section, W + t (docs/21 §9). Null for any other piece without `orientation`.
+ */
+export function panelSideMeasures(
+  geometry: DielineGeometry,
+): Record<string, { x: SideMeasure | null; y: SideMeasure | null }> | null {
+  if (geometry.structureType === "pillow") {
+    const { chord } = pillowShapeOf(geometry.dimensions);
+    return Object.fromEntries(
+      geometry.panels.map((panel) => [
+        panel.id,
+        { x: { measure: "width", mm: chord, folded: true }, y: { measure: "length", mm: panel.bounds.height } },
+      ]),
+    );
+  }
+  const frame = boxFrameOf(geometry);
+  if (!frame) return null;
+  const transforms = panelTransforms(geometry, 1);
+  const measureOf = (direction: Vec3, mm: number): SideMeasure | null => {
+    const sizes = direction.map(Math.abs);
+    const axis = sizes.indexOf(Math.max(...sizes));
+    // A side square to the box points along one axis (cos 10° ≈ 0.985).
+    return sizes[axis] > 0.985 ? { measure: MEASURE_OF_AXIS[axis], mm } : null;
+  };
+  return Object.fromEntries(
+    geometry.panels.map((panel) => {
+      const m = multiply(frame, transforms[panel.id]);
+      // Columns 0 and 1 of the rotation: where the sheet's x and y directions end up in box space.
+      return [
+        panel.id,
+        { x: measureOf([m[0], m[1], m[2]], panel.bounds.width), y: measureOf([m[4], m[5], m[6]], panel.bounds.height) },
+      ];
+    }),
+  );
 }
 
 /** Size of the closed piece in box space (x along L, y up, z along W), measured on the paper mid-plane, mm. */

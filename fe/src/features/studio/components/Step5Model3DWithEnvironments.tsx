@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
-import { LIBRARY_OCCASIONS, type BoxDimensions, type CanvasElement } from "@wrapfit/shared";
+import { Bookmark, BookmarkPlus, Box, Camera, Check, CheckCircle2, Coffee, Download, Film, Gift, Image as ImageIcon, Images, Palette, QrCode, Tag, Video, X } from "lucide-react";
+import { LIBRARY_OCCASIONS, type BoxDimensions, type CameraView, type CanvasElement } from "@wrapfit/shared";
 import { useToast } from "@/components/common/Toast";
 import { Switch } from "@/components/ui";
 import { workspacePanes, workspaceStage, WorkspaceInspector } from "@/features/studio/components/studioUi";
@@ -33,6 +33,10 @@ interface Step5Model3DWithEnvironmentsProps {
   onOpenQrModal?: () => void;
   /** The box already carries the QR code of its unboxing page. */
   hasUnboxingQr?: boolean;
+  /** Camera angle saved for the project (docs/21 §8.5): the stage opens on it, photos and the clip start from it. */
+  savedView?: CameraView | null;
+  /** Saves the angle on screen for the project; absent while the project is read only. */
+  onSaveView?: (view: CameraView) => void;
 }
 
 const STRUCTURE_NAMES: Record<string, string> = {
@@ -65,6 +69,8 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   onDimensionsChange,
   onOpenQrModal,
   hasUnboxingQr = false,
+  savedView = null,
+  onSaveView,
 }) => {
   const toast = useToast();
   const suggested = sceneForOccasion(occasion);
@@ -74,7 +80,16 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
   const [props, setProps] = useState(true);
   const [isLidOpen, setIsLidOpen] = useState<boolean>(false);
   const [showCups, setShowCups] = useState<boolean>(dimensions.showCups !== false);
-  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top">("angle");
+  // Null once the box is turned by hand: no view button is lit, as the stage shows none of them (docs/21 §10).
+  const [cameraView, setCameraView] = useState<"angle" | "front" | "side" | "top" | "saved" | null>(savedView ? "saved" : "angle");
+  /** Reads the angle on the stage, for "Lưu góc". */
+  const readView = useRef<(() => CameraView | null) | null>(null);
+  // Every press sends the camera back, also to the view already lit after the box was turned by hand (docs/21 §9).
+  const [viewPress, setViewPress] = useState(0);
+  const showView = (view: NonNullable<typeof cameraView>) => {
+    setCameraView(view);
+    setViewPress((n) => n + 1);
+  };
   const [showFaceLabels, setShowFaceLabels] = useState<boolean>(false);
   const [saving, setSaving] = useState<MockupFormat["id"] | "all" | null>(null);
   const capture = useRef<CaptureFn | null>(null);
@@ -191,7 +206,11 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
             <Box3DView
               dimensions={dimensions}
               foldProgress={1}
-              cameraView={cameraView}
+              cameraView={cameraView ?? undefined}
+              cameraViewKey={viewPress}
+              onCameraMoved={() => setCameraView(null)}
+              savedView={savedView}
+              viewRef={readView}
               faceLabels={showFaceLabels}
               boxType={boxType as never}
               theme={activeMaterial}
@@ -280,7 +299,7 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                     <button
                       key={item.view}
                       type="button"
-                      onClick={() => setCameraView(item.view)}
+                      onClick={() => showView(item.view)}
                       aria-pressed={cameraView === item.view}
                       title={`Góc nhìn ${item.label.toLowerCase()}`}
                       className={cn(
@@ -294,6 +313,38 @@ export const Step5Model3DWithEnvironments: React.FC<Step5Model3DWithEnvironments
                       <span>{item.label}</span>
                     </button>
                   ))}
+                  {savedView && (
+                    <button
+                      type="button"
+                      onClick={() => showView("saved")}
+                      aria-pressed={cameraView === "saved"}
+                      title="Về góc nhìn đã lưu của dự án"
+                      className={cn(
+                        "inline-flex h-7 items-center gap-1 rounded-full px-2 text-xs font-semibold transition-colors",
+                        cameraView === "saved" ? "bg-fpt-orange text-white shadow-xs" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                      )}
+                    >
+                      <Bookmark className="size-3" aria-hidden />
+                      <span>Góc đã lưu</span>
+                    </button>
+                  )}
+                  {onSaveView && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const view = readView.current?.();
+                        if (!view) return;
+                        onSaveView(view);
+                        setCameraView("saved");
+                      }}
+                      title={savedView ? "Lưu góc đang xem, thay góc đã lưu" : "Lưu góc đang xem cho ảnh và clip"}
+                      aria-label={savedView ? "Lưu góc đang xem thay góc đã lưu" : "Lưu góc đang xem"}
+                      className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    >
+                      <BookmarkPlus className="size-3" aria-hidden />
+                      {!savedView && <span>Lưu góc</span>}
+                    </button>
+                  )}
                   <span className="mx-0.5 h-3.5 w-px bg-slate-200" aria-hidden />
                   <button
                     type="button"

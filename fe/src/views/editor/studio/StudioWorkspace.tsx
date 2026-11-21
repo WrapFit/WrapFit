@@ -50,6 +50,7 @@ import {
   type QuoteFinish,
   boxBackgrounds,
   BoxDimensions,
+  type CameraView,
   CANVAS_SCHEMA_VERSION,
   CanvasElement,
   duplicateElements,
@@ -398,6 +399,13 @@ export function StudioWorkspace({
   const [backgroundPatternSvg, setBackgroundPatternSvg] = useState<string | null>(
     project?.canvasState?.backgroundPattern ?? demoSource?.canvasState?.backgroundPattern ?? null
   );
+  // Camera angle saved on the 3D box (docs/21 §8.5), stored with the canvas: step 5 opens on it for photos and clips.
+  // A stored angle without a usable direction (saved before the API checked it, docs/21 §9) counts as none.
+  const [savedCameraView, setSavedCameraView] = useState<CameraView | null>(() => {
+    const view = project?.canvasState?.cameraView ?? demoSource?.canvasState?.cameraView ?? null;
+    const dir = view?.dir;
+    return Array.isArray(dir) && dir.length === 3 && Math.abs(Math.hypot(...dir) - 1) <= 0.05 && Number.isFinite(view?.zoom) ? view : null;
+  });
 
   // Image 2 Inspired Palette & Typography states
   // Palette of the design (a library palette); choosing one recolours the printed artwork. Null until one is chosen.
@@ -589,9 +597,10 @@ export function StudioWorkspace({
         customFonts,
         materialTheme: activeMaterial,
         finishes,
+        cameraView: savedCameraView,
       },
     }),
-    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId, customFonts]
+    [projectTitle, dimensions, activeMaterial, finishes, elements, backgroundPatternSvg, paletteId, customFonts, savedCameraView]
   );
   // Demo draft restored: its uploaded images and fonts come back from IndexedDB with new blob: URLs of this tab.
   // Until then the draft is not written again, so the stored files are not dropped.
@@ -1140,10 +1149,45 @@ export function StudioWorkspace({
     },
     [pieces]
   );
-  const openFaceMenu = useCallback((hit: FaceHit) => setFaceMenu(faceOf(hit.panelId) ? hit : null), [faceOf]);
+  // Flaps (tuck, dust, glue, lock flaps) fold in 3D but carry no artwork (docs/21 S6): a click on one keeps the face
+  // being designed and says what was clicked (docs/21 §8.1). One notice at a time, however often it is clicked.
+  const flapToast = useRef<number | null>(null);
+  const flapNotice = useCallback(
+    (id: string) => {
+      let name: string | null = null;
+      for (const piece of pieces) {
+        const flap = piece.geometry.flaps?.find((f) => f.id === id);
+        if (flap) name = flap.name.replace(/\s*\(.*\)\s*$/, "");
+      }
+      if (flapToast.current !== null) toast.dismiss(flapToast.current);
+      flapToast.current = toast.show({
+        tone: "info",
+        title: `${name ?? "Phần này"} không in hình`,
+        description: "Tai và mép dán gập vào trong hộp. Bấm vào một mặt hộp để thiết kế.",
+      });
+    },
+    [pieces, toast]
+  );
+  const openFaceMenu = useCallback(
+    (hit: FaceHit) => {
+      const face = faceOf(hit.panelId);
+      if (!face) flapNotice(hit.panelId);
+      setFaceMenu(face ? hit : null);
+    },
+    [faceOf, flapNotice]
+  );
   useEffect(() => setFaceMenu(null), [artView, currentStep, boxType]);
+  const saveCameraView = useCallback(
+    (view: CameraView) => {
+      setSavedCameraView(view);
+      toast.show({ tone: "success", title: "Đã lưu góc nhìn", description: "Ảnh sản phẩm và clip ở mục Quà tặng mở hộp ở góc này." });
+    },
+    [toast]
+  );
   /** The face on the dieline, ready for artwork: the design tool, the right side of the sheet, the face selected. */
   const designFace = (hit: FaceHit) => {
+    // A flap is not a printed face: placementPanel would fall back to the front while no face tab shows as selected.
+    if (!faceOf(hit.panelId)) return flapNotice(hit.panelId);
     if (currentStep !== 4) navigateToStep(4);
     setArtView("2d");
     setEditSide(hit.side);
@@ -1815,7 +1859,7 @@ export function StudioWorkspace({
                         ))}
                       </div>
                     )}
-                    <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} />
+                    <PanelNavigator dieline={dieline} activePanelId={activePanelId} onSelectPanel={selectPanel} onHoverPanel={setHoverPanelId} />
                   </div>
                 </div>
               )}
@@ -1886,6 +1930,8 @@ export function StudioWorkspace({
                       interactiveOpenState={lidOpen}
                       onFaceClick={readOnly ? undefined : openFaceMenu}
                       highlightPanelId={faceMenu?.panelId ?? null}
+                      savedView={savedCameraView}
+                      onSaveView={readOnly ? undefined : saveCameraView}
                       chrome="bar"
                       showHud={false}
                       showStatusBar={false}
@@ -2366,6 +2412,8 @@ export function StudioWorkspace({
             onDimensionsChange={setDimensions}
             onOpenQrModal={() => openDialog("unboxing")}
             hasUnboxingQr={elements.some(isUnboxingQr)}
+            savedView={savedCameraView}
+            onSaveView={readOnly ? undefined : saveCameraView}
           />
         )}
 

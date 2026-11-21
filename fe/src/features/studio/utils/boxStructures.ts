@@ -31,9 +31,9 @@ export const BOX_STRUCTURES: BoxStructureOption[] = [
   {
     id: "tuck-top",
     name: "Tuck Top Box",
-    vietnameseName: "Hộp nắp gài đáy khóa",
+    vietnameseName: "Hộp nắp gài",
     subtitle: "Hộp bán lẻ, quà tặng phổ biến",
-    description: "Một mảnh, nắp gài, đáy khóa chắc.",
+    description: "Một mảnh, nắp gài, đáy gài hoặc đáy khóa.",
     badge: "Phổ biến nhất",
     badgeColor: "bg-fpt-orange-light text-fpt-orange-ink border-fpt-orange/30",
     recommendedGifts: ["Hũ nến thơm", "Chai nước hoa", "Mỹ phẩm dưỡng da", "Cốc gốm sứ"],

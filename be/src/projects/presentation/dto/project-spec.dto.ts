@@ -10,15 +10,18 @@ import {
   IsIn,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
   Max,
   MaxLength,
   Min,
+  ValidateBy,
   ValidateNested,
 } from 'class-validator';
 import type {
+  CameraView,
   CanvasElement,
   CanvasElementStyle,
   CanvasElementType,
@@ -554,7 +557,44 @@ export class CustomFontDto {
   url: string;
 }
 
+/** Camera angle saved on the 3D box (docs/21 §8.5): a unit direction and a relative zoom. */
+export class CameraViewDto implements CameraView {
+  @ApiProperty({ type: [Number], example: [0.55, 0.4, 0.73], description: 'Unit vector from the box to the camera' })
+  @IsArray()
+  @ArrayMinSize(3)
+  @ArrayMaxSize(3)
+  @IsNumber({ allowNaN: false, allowInfinity: false }, { each: true })
+  @Min(-1, { each: true })
+  @Max(1, { each: true })
+  // A direction the camera can look along: unit length, give or take the rounding of the client (docs/21 §9).
+  @ValidateBy({
+    name: 'isUnitVector',
+    validator: {
+      validate: (value: unknown) =>
+        Array.isArray(value) &&
+        value.every((n) => typeof n === 'number') &&
+        Math.abs(Math.hypot(...(value as number[])) - 1) <= 0.05,
+      defaultMessage: () => '$property must be a unit vector',
+    },
+  })
+  dir: [number, number, number];
+
+  @ApiProperty({ example: 1, description: 'Distance over the distance that frames the box' })
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(0.2)
+  @Max(4)
+  zoom: number;
+}
+
 export class CanvasStateDto implements CanvasState {
+  @ApiPropertyOptional({ type: CameraViewDto, nullable: true, description: 'Camera angle saved on the 3D box' })
+  @IsOptional()
+  // An object, never an array: @ValidateNested lets an empty array through.
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CameraViewDto)
+  cameraView?: CameraViewDto | null;
+
   @ApiPropertyOptional({ type: [Object], description: 'Fonts uploaded for the design (docs-old/23 S13)' })
   @IsOptional()
   @IsArray()

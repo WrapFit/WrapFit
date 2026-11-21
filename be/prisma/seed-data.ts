@@ -26,10 +26,10 @@ const sheetParams = {
 export const boxTemplates: Prisma.BoxTemplateCreateInput[] = [
   {
     id: 'tuck-top',
-    name: 'Hộp Nắp Gài Đáy Khóa',
+    name: 'Hộp Nắp Gài',
     category: 'retail',
     description:
-      'Hộp gài nắp trên, đáy khóa cài — phổ biến cho mỹ phẩm, nến thơm.',
+      'Hộp gài nắp trên, đáy gài thường hoặc đáy khóa — phổ biến cho mỹ phẩm, nến thơm.',
     formulaSchema: {
       generator: 'generateTuckTopDieline',
       params: dimensionParams,
@@ -185,7 +185,7 @@ export const designTemplates: Prisma.DesignTemplateUncheckedCreateInput[] = [
     boxTemplateId: 'tuck-top',
     title: 'Hộp Nến Tết Lộc Xuân',
     description:
-      'Nắp gài đáy khóa giấy kraft, chữ đỏ son cho nến thơm mùa Tết.',
+      'Hộp nắp gài giấy kraft, chữ đỏ son cho nến thơm mùa Tết.',
     occasion: 'TET',
     industry: 'CANDLES',
     dimensions: { length: 90, width: 90, height: 110, paperThickness: 0.4 },

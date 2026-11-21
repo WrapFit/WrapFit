@@ -118,6 +118,16 @@ export interface CustomFont {
   url: string;
 }
 
+/**
+ * A camera angle of the 3D box the user saved (docs/21 §8.5): `dir` is the unit vector from the centre of the box to
+ * the camera (x along L, y up, z along W towards the front), `zoom` the distance over the distance that frames the box.
+ * Relative, so the angle still fits after the size changes.
+ */
+export interface CameraView {
+  dir: [number, number, number];
+  zoom: number;
+}
+
 /** Current version of `CanvasState`; `normalizeCanvas` upgrades older states when a project opens. */
 export const CANVAS_SCHEMA_VERSION = 2;
 
@@ -138,6 +148,8 @@ export interface CanvasState {
   materialTheme?: string | null;
   /** Finishes of the print shop (`QuoteFinish`: lamination, foil, spot UV), priced by the quote. */
   finishes?: string[];
+  /** Camera angle saved on the 3D box (docs/21 §8.5), reused by the product photos and the clip; null = none. */
+  cameraView?: CameraView | null;
 }
 
 /**
