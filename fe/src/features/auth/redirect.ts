@@ -1,6 +1,6 @@
 import { DEFAULT_AFTER_LOGIN, ROUTES } from "@/constants";
 import type { SafeUser } from "@/types/api";
-import { ADMIN_HOME, isRealAdmin } from "./roles";
+import { ADMIN_HOME, isRealAdmin, PARTNER_HOME } from "./roles";
 
 /**
  * The `?redirect=` target after signing in, or `fallback`. Only paths of this site are followed: "//host" and
@@ -28,6 +28,8 @@ export function afterSignInTarget(redirect: string | null | undefined, user?: Sa
   const explicit = safeRedirect(redirect, "");
   // An administrator goes to the admin console: no maker onboarding, and a `?redirect=` only into /admin.
   if (user && isRealAdmin(user)) return explicit.startsWith(ADMIN_HOME) ? explicit : ADMIN_HOME;
+  // A print shop account works in its portal (docs/19 G.1), unless a link sent it somewhere precise.
+  if (user?.role === "PRINT_SHOP") return explicit || PARTNER_HOME;
   return explicit || WELCOME_HOME;
 }
 
